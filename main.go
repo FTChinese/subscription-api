@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/controller"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
@@ -48,6 +49,11 @@ func main() {
 	user := os.Getenv("MYSQL_USER")
 	pass := os.Getenv("MYSQL_PASS")
 
+	wx := util.WxConfig{}
+	wx.AppID = os.Getenv("WXPAY_APPID")
+	wx.MchID = os.Getenv("WXPAY_MCHID")
+	wx.APIKey = os.Getenv("WXPAY_API_KEY")
+
 	log.WithField("package", "next-api.main").Infof("Connecting to MySQL: %s", host)
 
 	db, err := util.NewDB(host, port, user, pass)
@@ -56,9 +62,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	orderRouter := controller.NewOrderRouter(wx, db)
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	if !isProd {
+		r.Use(controller.LogRequest)
+	}
+
+	r.Use(controller.CheckUserID)
+
+	r.Use(controller.NoCache)
+
+	r.Route("/place-order", func(r1 chi.Router) {
+		r1.Post("/wxpay/{tier}/{cycle}", orderRouter.NewWxOrder)
+	})
 
 	log.WithField("package", "next-api.main").Infof("next-api is running on port 8000")
 	log.Fatal(http.ListenAndServe(":8000", r))

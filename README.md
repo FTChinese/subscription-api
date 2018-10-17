@@ -6,7 +6,7 @@ API for subscription service
 
 ### Place order
 
-* POST `/order/alipay/<standard|premium>/<year|month|week>` Create an order for alipay.
+* POST `/place-order/alipay/{standard|premium}/{year|month}` Create an order for alipay.
 
 Request header:
 ```
@@ -24,7 +24,7 @@ Response:
 }
 ```
 
-* POST `/order/tenpay/<standard|premium>/<year|month|week>`
+* POST `/place-order/tenpay/{standard|premium}/{year|month}`
 
 Request header:
 ```
@@ -48,8 +48,10 @@ Response:
 }
 ```
 
+* POST `/verify/alipay/app-pay`
+
 * POST `/notify/alipay`
 
 * POST `/notify/tenpay`
 
-* POST `/verify/alipay/app-pay`
+* `GET /query-order/tenpay/{orderId}`
