@@ -30,12 +30,14 @@ func NewOrderRouter(wx util.WxConfig, db *sql.DB) OrderRouter {
 }
 
 func (o OrderRouter) createPrepayOrder(prepayID string) wxpay.Params {
+	nonce, _ := util.RandomHex(10)
+
 	p := make(wxpay.Params)
 	p["appid"] = o.wxConfig.AppID
 	p["partnerid"] = o.wxConfig.MchID
 	p["prepayid"] = prepayID
 	p["package"] = "Sign=WXPay"
-	p["noncestr"] = ""
+	p["noncestr"] = nonce
 	p["timestamp"] = fmt.Sprintf("%d", time.Now().Unix())
 	p["sign"] = o.wxClient.Sign(p)
 
