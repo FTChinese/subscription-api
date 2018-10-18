@@ -15,17 +15,17 @@ type Env struct {
 	DB *sql.DB
 }
 
-func normalizeMemberTier(vipType int64) string {
+func normalizeMemberTier(vipType int64) MemberTier {
 	switch vipType {
 
 	case 10:
-		return "standard"
+		return TierStandard
 
 	case 100:
-		return "premium"
+		return TierPremium
 
 	default:
-		return "free"
+		return TierInvalid
 	}
 }
 

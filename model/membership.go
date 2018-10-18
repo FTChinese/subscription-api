@@ -1,14 +1,90 @@
 package model
 
-import "gitlab.com/ftchinese/subscription-api/util"
+import (
+	"database/sql"
+	"time"
+
+	"gitlab.com/ftchinese/subscription-api/util"
+)
 
 // Membership contains a user's membership details
 type Membership struct {
 	UserID string
-	Tier   string
-	Cycle  string
+	Tier   MemberTier
+	Cycle  BillingCycle
 	Start  string
 	Expire string
+}
+
+// CanRenew tests if current member is allowed to renuew subscription.
+// A member could only renew its subscripiton one billing cycle ahead of current cycle.
+func (m Membership) CanRenew(cycle BillingCycle) bool {
+	expireAt, err := time.Parse(time.RFC3339, m.Expire)
+
+	if err != nil {
+		logger.WithField("location", "Parse expiration time")
+		return false
+	}
+
+	now := time.Now()
+
+	switch cycle {
+	case Yearly:
+		// expiration time < today + cycle
+		return expireAt.Before(now.AddDate(1, 0, 0))
+	case Monthly:
+		return expireAt.Before(now.AddDate(0, 1, 0))
+	}
+
+	return false
+}
+
+// IsExpired tests is membership is expired.
+func (m Membership) IsExpired() bool {
+	t, err := time.Parse(time.RFC3339, m.Expire)
+
+	if err != nil {
+		return true
+	}
+
+	// If expire is before now, it is expired.
+	return t.Before(time.Now())
+}
+
+// NewMemberFromOrder create a membership based the an order.
+// ConfirmedAt field must be empty at this step.
+func (env Env) NewMemberFromOrder(order SubscribeOrder, confirmTime time.Time) Membership {
+	expireTime := order.CalculateExpireTime(confirmTime)
+
+	startAt := util.SQLDatetimeUTC.FromTime(confirmTime)
+	expireAt := util.SQLDatetimeUTC.FromTime(expireTime)
+
+	member, err := env.Membership(order.UserID)
+
+	if err != nil && err == sql.ErrNoRows {
+		member.UserID = order.UserID
+		member.Tier = order.TierToBuy
+		member.Cycle = order.BillingCycle
+		member.Start = startAt
+		member.Expire = expireAt
+
+		return member
+	}
+
+	// If membership existed but expired,
+	if member.IsExpired() {
+		member.Tier = order.TierToBuy
+		member.Cycle = order.BillingCycle
+		member.Start = startAt
+		member.Expire = expireAt
+
+		return member
+	}
+
+	// Membership renewal. Just extend expiration time.
+	member.Expire = expireAt
+
+	return member
 }
 
 // Membership retrieves a user's membership
@@ -26,6 +102,8 @@ func (env Env) Membership(userID string) (Membership, error) {
 	LIMIT 1`
 
 	var m Membership
+	var tier string
+	var cycle string
 	var vipType int64
 	var expireTime int64
 
@@ -33,8 +111,8 @@ func (env Env) Membership(userID string) (Membership, error) {
 		&m.UserID,
 		&vipType,
 		&expireTime,
-		&m.Tier,
-		&m.Cycle,
+		&tier,
+		&cycle,
 		&m.Start,
 		&m.Expire,
 	)
@@ -45,9 +123,13 @@ func (env Env) Membership(userID string) (Membership, error) {
 		return m, err
 	}
 
-	if m.Tier == "" {
+	if tier == "" {
 		m.Tier = normalizeMemberTier(vipType)
+	} else {
+		m.Tier, _ = NewTier(tier)
 	}
+
+	m.Cycle, _ = NewCycle(cycle)
 
 	if m.Expire == "" {
 		m.Expire = normalizeExpireTime(expireTime)
@@ -65,11 +147,18 @@ func (env Env) Membership(userID string) (Membership, error) {
 	return m, nil
 }
 
-// NewMember creates a new member
-func (env Env) NewMember(m Membership) error {
+// CreateMember creates a new member or renew it.
+// A member might already exits but expired, and now he is re-subscribe.
+// In such case the ON DUPLICATE KEY UPDATE clause will take effect.
+func (env Env) CreateMember(m Membership) error {
 	query := `
 	INSERT INTO premium.ftc_vip
 	SET vip_id = ?,
+		member_tier = ?,
+		billing_cycle = ?,
+		start_utc = ?,
+		expire_utc = ?
+	ON DUPLICATE KEY UPDATE
 		member_tier = ?,
 		billing_cycle = ?,
 		start_utc = ?,
@@ -77,40 +166,18 @@ func (env Env) NewMember(m Membership) error {
 
 	_, err := env.DB.Exec(query,
 		m.UserID,
-		m.Tier,
-		m.Cycle,
+		string(m.Tier),
+		string(m.Cycle),
+		m.Start,
+		m.Expire,
+		string(m.Tier),
+		string(m.Cycle),
 		m.Start,
 		m.Expire,
 	)
 
 	if err != nil {
 		logger.WithField("location", "Create a new member").Error(err)
-
-		return err
-	}
-
-	return nil
-}
-
-// RenewMember renews membership duration before piror to expiration.
-func (env Env) RenewMember(m Membership) error {
-	query := `
-	UPDATE premium.ftc_vip
-	SET member_tier = ?,
-		billing_cyce = ?,
-		expire_utc = ?
-	WHERE vip_id = ?
-	LIMIT 1`
-
-	_, err := env.DB.Exec(query,
-		m.Tier,
-		m.Cycle,
-		m.Expire,
-		m.UserID,
-	)
-
-	if err != nil {
-		logger.WithField("location", "Renew membership").Error(err)
 
 		return err
 	}

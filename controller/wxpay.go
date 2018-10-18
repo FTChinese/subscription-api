@@ -2,7 +2,9 @@ package controller
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -44,7 +46,8 @@ func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
 	return p
 }
 
-// NewWxOrder creates a new order for wxpay.
+// NewWxOrder implements 统一下单.
+// https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_1
 //
 // Workflow
 //
@@ -78,11 +81,11 @@ func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 	tierKey := getURLParam(req, "tier").toString()
 	cycleKey := getURLParam(req, "cycle").toString()
 
-	tier, ok := util.NewTier(tierKey)
+	tier, err := model.NewTier(tierKey)
 
-	cycle, ok := util.NewCycle(cycleKey)
+	cycle, err := model.NewCycle(cycleKey)
 
-	if !ok {
+	if err != nil {
 		util.Render(w, util.NewBadRequest(msgInvalidURI))
 		return
 	}
@@ -90,9 +93,26 @@ func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 	// Get user id from request header
 	userID := req.Header.Get(userIDKey)
 
-	plan, err := util.NewPlan(tier, cycle)
+	// Find if this user is already subscribed.
+	// If a membership is not found, sql.ErrNoRows will be returned.
+	// Discard the error.
+	member, err := wr.model.Membership(userID)
 
-	orderID := util.CreateOrderID(plan)
+	// If membership for this user is found, and is not in the allowed renewal period.
+	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
+	if err == nil && !member.CanRenew(cycle) {
+		reason := util.InvalidReason{
+			Message: "Already a subscribed user",
+			Field:   "order",
+			Code:    util.CodeAlreadyExsits,
+		}
+		util.Render(w, util.NewUnprocessable(reason))
+		return
+	}
+
+	plan, err := model.NewPlan(tier, cycle)
+
+	orderID := model.CreateOrderID(plan)
 
 	if err != nil {
 		util.Render(w, util.NewBadRequest(msgInvalidURI))
@@ -109,7 +129,7 @@ func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 		BillingCycle:  cycle,
 		Price:         plan.Price,
 		TotalAmount:   plan.Price * 1,
-		PaymentMethod: util.Wxpay,
+		PaymentMethod: model.Wxpay,
 		UserID:        userID,
 	}
 
@@ -141,4 +161,172 @@ func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 	appParams := wr.createPrepayOrder(prepayID)
 
 	util.Render(w, util.NewResponse().SetBody(appParams))
+}
+
+// Notification implements 支付结果通知
+// https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
+func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
+	body, err := ioutil.ReadAll(req.Body)
+
+	// Reply to wx.
+	if err != nil {
+		resp := buildWxReply("Cannot parse request body", false)
+		w.Write(resp)
+
+		return
+	}
+
+	params, err := wr.processWxResponse(string(body))
+
+	if err != nil {
+		logger.WithField("location", "Wx pay notification").Error(err)
+
+		w.Write(buildWxReply(err.Error(), false))
+
+		return
+	}
+
+	// Verify appid, mch_id, trade_type, total_fee.
+	// Get out_trade_no to retrieve order.
+	// Check the order's confirmed_utc field.
+	// If confirmed_utc is empty, get time_end from params and set confirmed_utc to it.
+
+	if ok := wr.verifyRespIdentity(params); !ok {
+		w.Write(buildWxReply("", true))
+
+		return
+	}
+
+	orderID := params.GetString("out_trade_no")
+	totalFee := params.GetInt64("total_fee")
+	timeEnd := params.GetString("time_end")
+
+	// Find order
+	order, err := wr.model.RetrieveOrder(orderID)
+
+	// if order is not found
+	if err != nil {
+		w.Write(buildWxReply("", true))
+		return
+	}
+
+	// Verify total amount
+	// TODO: SQL decimal to Int
+	if totalFee != (order.TotalAmount * 100) {
+		w.Write(buildWxReply("", true))
+		return
+	}
+
+	// If order is found, and is already confirmed.
+	// Should we check membership data here?
+	if order.ConfirmedAt != "" {
+		w.Write(buildWxReply("", true))
+		return
+	}
+
+	// Convert this time end to SQL DATETIME
+	confirmTime := util.ParseWxTime(timeEnd)
+	expireTime := order.CalculateExpireTime(confirmTime)
+
+	order.ConfirmedAt = util.SQLDatetimeUTC.FromTime(confirmTime)
+
+	expireAt := util.SQLDatetimeUTC.FromTime(expireTime)
+
+	// Find a member
+	member, err := wr.model.Membership(order.UserID)
+
+	// If membership is not found, create one
+	if err != nil && err == sql.ErrNoRows {
+		m := model.Membership{
+			UserID: order.UserID,
+			Tier:   order.TierToBuy,
+			Cycle:  order.BillingCycle,
+			Start:  order.ConfirmedAt,
+			Expire: expireAt,
+		}
+
+		wr.model.NewMember(m)
+
+		w.Write(buildWxReply("", true))
+
+		return
+	}
+
+	// If this user was a member, but membership is expired, update it.
+	if member.IsExpired() {
+		member.Start = order.ConfirmedAt
+		member.Expire = expireAt
+
+		wr.model.NewMember(member)
+
+		w.Write(buildWxReply("", true))
+
+		return
+	}
+
+	// If this user is still a valid member, it is a renewal
+
+	member.Expire = expireAt
+	wr.model.RenewMember(member)
+
+	w.Write(buildWxReply("", true))
+}
+
+func (wr WxPayRouter) processWxResponse(xmlStr string) (wxpay.Params, error) {
+	var returnCode string
+	params := wxpay.XmlToMap(xmlStr)
+	if params.ContainsKey("return_code") {
+		returnCode = params.GetString("return_code")
+	} else {
+		return nil, errors.New("no return_code in XML")
+	}
+
+	switch returnCode {
+	case wxpay.Fail:
+		return nil, errors.New("wx notification failed")
+
+	case wxpay.Success:
+		if wr.wxClient.ValidSign(params) {
+			return params, nil
+		}
+		return nil, errors.New("invalid sign value in XML")
+
+	default:
+		return nil, errors.New("return_code value is invalid in XML")
+	}
+}
+
+func (wr WxPayRouter) verifyRespIdentity(params wxpay.Params) bool {
+	if params.ContainsKey("appid") {
+		return false
+	}
+
+	if params.ContainsKey("mch_id") {
+		return false
+	}
+
+	if params.GetString("appid") != wr.wxConfig.AppID {
+		return false
+	}
+
+	if params.GetString("mch_id") != wr.wxConfig.MchID {
+		return false
+	}
+
+	return true
+}
+
+func buildWxReply(msg string, isSuccess bool) []byte {
+	p := make(wxpay.Params)
+	if isSuccess {
+		p["return_code"] = wxpay.Success
+		p["return_msg"] = "OK"
+	} else {
+		p["return_code"] = wxpay.Fail
+		p["return_msg"] = msg
+	}
+
+	xmlStr := wxpay.MapToXml(p)
+
+	return []byte(xmlStr)
 }

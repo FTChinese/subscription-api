@@ -1,19 +1,36 @@
 package model
 
-import "gitlab.com/ftchinese/subscription-api/util"
+import (
+	"time"
+
+	"gitlab.com/ftchinese/subscription-api/util"
+)
 
 // SubscribeOrder records the details of an order a user placed.
 type SubscribeOrder struct {
 	OrderID       string
-	TierToBuy     util.MemberTier
-	BillingCycle  util.BillingCycle
+	TierToBuy     MemberTier
+	BillingCycle  BillingCycle
 	Price         int64
 	TotalAmount   int64
-	PaymentMethod util.PaymentMethod
+	PaymentMethod PaymentMethod
 	Currency      string
 	CreatedAt     string
 	ConfirmedAt   string
 	UserID        string
+}
+
+// CalculateExpireTime get membership expiration time based on when it is confirmed and the billing cycle.
+func (o SubscribeOrder) CalculateExpireTime(t time.Time) time.Time {
+	switch o.BillingCycle {
+	case Yearly:
+		return t.AddDate(1, 0, 0)
+
+	case Monthly:
+		return t.AddDate(0, 1, 0)
+	}
+
+	return t
 }
 
 // NewOrder saves a new order
@@ -90,17 +107,63 @@ func (env Env) RetrieveOrder(orderID string) (SubscribeOrder, error) {
 }
 
 // ConfirmOrder marks an order as completed and create a member.
+// Confirm order and create/renew a new member should be an all-or-nothing operation.
 // Or update membership duration.
-func (env Env) ConfirmOrder(orderID string) error {
-	query := `
+func (env Env) ConfirmOrder(order SubscribeOrder, confirmTime time.Time) error {
+
+	confirmedAt := util.SQLDatetimeUTC.FromTime(confirmTime)
+
+	m := env.NewMemberFromOrder(order, confirmTime)
+
+	tx, err := env.DB.Begin()
+	if err != nil {
+		return err
+	}
+	stmtUpdate := `
 	UPDATE premium.ftc_trade
-	SET confirmed_utc = UTC_TIMESTAMP()
+	SET confirmed_utc = ?
 	WHERE trade_no = ?
 	LIMIT 1`
 
-	_, err := env.DB.Exec(query, orderID)
+	_, updateErr := tx.Exec(stmtUpdate,
+		confirmedAt,
+		order.OrderID,
+	)
 
-	if err != nil {
+	if updateErr != nil {
+		_ = tx.Rollback()
+	}
+
+	stmtCreate := `
+	INSERT INTO premium.ftc_vip
+	SET vip_id = ?,
+		member_tier = ?,
+		billing_cycle = ?,
+		start_utc = ?,
+		expire_utc = ?
+	ON DUPLICATE KEY UPDATE
+		member_tier = ?,
+		billing_cycle = ?,
+		start_utc = ?,
+		expire_utc = ?`
+
+	_, createErr := tx.Exec(stmtCreate,
+		m.UserID,
+		string(m.Tier),
+		string(m.Cycle),
+		m.Start,
+		m.Expire,
+		string(m.Tier),
+		string(m.Cycle),
+		m.Start,
+		m.Expire,
+	)
+
+	if createErr != nil {
+		_ = tx.Rollback()
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
