@@ -1,4 +1,4 @@
-package util
+package model
 
 import (
 	"errors"
@@ -17,10 +17,14 @@ type BillingCycle string
 type PaymentMethod string
 
 const (
-	// Standard is the standard tier
-	Standard MemberTier = "standard"
-	// Premium is the premium tier
-	Premium MemberTier = "premium"
+	// TierInvalid is a placeholder
+	TierInvalid MemberTier = ""
+	// TierStandard is the standard tier
+	TierStandard MemberTier = "standard"
+	// TierPremium is the premium tier
+	TierPremium MemberTier = "premium"
+	// CycleInvalid is a placeholder
+	CycleInvalid BillingCycle = ""
 	// Yearly bills every year
 	Yearly BillingCycle = "year"
 	// Monthly bills every month
@@ -33,30 +37,32 @@ const (
 	Stripe PaymentMethod = "stripe"
 )
 
-var tiers = map[string]MemberTier{
-	"standard": Standard,
-	"premium":  Premium,
+// NewTier returns a MemberTier.
+// `key` either `standard` or `premium`
+func NewTier(key string) (MemberTier, error) {
+	switch key {
+	case "standard":
+		return TierStandard, nil
+
+	case "premium":
+		return TierPremium, nil
+
+	default:
+		return MemberTier(""), errors.New("Only standard and premium tier allowed")
+	}
 }
 
-// NewTier tests if a tier eixsts and returns it.
-// `key` is the request url's `tier` part
-func NewTier(key string) (MemberTier, bool) {
-	t, ok := tiers[key]
-
-	return t, ok
-}
-
-var cycles = map[string]BillingCycle{
-	"year":  Yearly,
-	"month": Monthly,
-}
-
-// NewCycle returns a BillingCycle if key is one of year or month.
-// `key` is request url's `cycle` part.
-func NewCycle(key string) (BillingCycle, bool) {
-	c, ok := cycles[key]
-
-	return c, ok
+// NewCycle returns a new BillingCycle.
+// `key` is either `year` or `month`.
+func NewCycle(key string) (BillingCycle, error) {
+	switch key {
+	case "year":
+		return Yearly, nil
+	case "month":
+		return Monthly, nil
+	default:
+		return CycleInvalid, errors.New("cycle must either be year or month")
+	}
 }
 
 // Plan represents a subscription plan
@@ -75,28 +81,28 @@ func (p Plan) GetPriceCent() int64 {
 
 var plans = map[string]Plan{
 	"standard_year": Plan{
-		Tier:        Standard,
+		Tier:        TierStandard,
 		Cycle:       Yearly,
 		Price:       198,
 		ID:          10,
 		Description: "FT中文网 - 标准会员",
 	},
 	"standard_month": Plan{
-		Tier:        Standard,
+		Tier:        TierStandard,
 		Cycle:       Monthly,
 		Price:       28,
 		ID:          5,
 		Description: "FT中文网 - 标准会员",
 	},
 	"premium_year": Plan{
-		Tier:        Premium,
+		Tier:        TierPremium,
 		Cycle:       Yearly,
 		Price:       1998,
 		ID:          100,
 		Description: "FT中文网 - 高端会员",
 	},
 	"premium_month": Plan{
-		Tier:        Premium,
+		Tier:        TierPremium,
 		Cycle:       Monthly,
 		ID:          50,
 		Description: "FT中文网 - 高端会员",

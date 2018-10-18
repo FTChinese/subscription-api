@@ -7,6 +7,8 @@ const (
 	secondsOfHour   = 60 * secondsOfMinute
 	iso9075         = "2006-01-02 15:04:05" // Layout for SQL DATETIME
 	iso9075Date     = "2006-01-02"          // Layout for SQL DATE
+	layoutWxTime    = "20060102150405"
+	stmtUTC8Now     = "DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR)"
 )
 
 var (
@@ -61,4 +63,15 @@ func (f timeForamtter) FromTime(t time.Time) string {
 // Timezone is irrelative as long as all times are processed on the same machine.
 func ParseSQLDatetime(value string) (time.Time, error) {
 	return time.Parse(iso9075, value)
+}
+
+// ParseWxTime is used to parse wxpay's time format.
+func ParseWxTime(value string) time.Time {
+	t, err := time.ParseInLocation(layoutWxTime, value, TZShanghai)
+
+	if err != nil {
+		return time.Now()
+	}
+
+	return t
 }
