@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/go-chi/chi"
@@ -54,11 +53,11 @@ func main() {
 	wx.MchID = os.Getenv("WXPAY_MCHID")
 	wx.APIKey = os.Getenv("WXPAY_API_KEY")
 
-	log.WithField("package", "next-api.main").Infof("Connecting to MySQL: %s", host)
+	// log.WithField("package", "next-api.main").Infof("Connecting to MySQL: %s", host)
 
 	db, err := util.NewDB(host, port, user, pass)
 	if err != nil {
-		log.WithField("package", "next-api.main").Error(err)
+		// log.WithField("package", "next-api.main").Error(err)
 		os.Exit(1)
 	}
 
@@ -79,6 +78,6 @@ func main() {
 		r1.Post("/wxpay/{tier}/{cycle}", orderRouter.NewWxOrder)
 	})
 
-	log.WithField("package", "next-api.main").Infof("next-api is running on port 8000")
-	log.Fatal(http.ListenAndServe(":8000", r))
+	// log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8000")
+	// log.Fatal(http.ListenAndServe(":8000", r))
 }
