@@ -11,41 +11,69 @@ import (
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
-// OrderRouter wraps wxpay and alipay sdk instances.
-type OrderRouter struct {
+// WxPayRouter wraps wxpay and alipay sdk instances.
+type WxPayRouter struct {
 	wxConfig util.WxConfig
 	wxClient *wxpay.Client
 	model    model.Env
 }
 
 // NewOrderRouter creates a new instance or OrderRouter
-func NewOrderRouter(wx util.WxConfig, db *sql.DB) OrderRouter {
+func NewOrderRouter(wx util.WxConfig, db *sql.DB) WxPayRouter {
 	account := wxpay.NewAccount(wx.AppID, wx.MchID, wx.APIKey, false)
 
-	return OrderRouter{
+	return WxPayRouter{
 		model:    model.Env{DB: db},
 		wxConfig: wx,
 		wxClient: wxpay.NewClient(account),
 	}
 }
 
-func (o OrderRouter) createPrepayOrder(prepayID string) wxpay.Params {
+func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
 	nonce, _ := util.RandomHex(10)
 
 	p := make(wxpay.Params)
-	p["appid"] = o.wxConfig.AppID
-	p["partnerid"] = o.wxConfig.MchID
+	p["appid"] = wr.wxConfig.AppID
+	p["partnerid"] = wr.wxConfig.MchID
 	p["prepayid"] = prepayID
 	p["package"] = "Sign=WXPay"
 	p["noncestr"] = nonce
 	p["timestamp"] = fmt.Sprintf("%d", time.Now().Unix())
-	p["sign"] = o.wxClient.Sign(p)
+	p["sign"] = wr.wxClient.Sign(p)
 
 	return p
 }
 
-// NewWxOrder creates a new order for wxpay
-func (o OrderRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
+// NewWxOrder creates a new order for wxpay.
+//
+// Workflow
+//
+// 1. First extract userID from request header;
+//
+// 2. Use this userID to retrieve this user's membership from `premium.ftc_vip` table;
+//
+// 3. If the membership is not found, proceed to order creation;
+//
+// 4. If the membership is found, compare the membership's expiration date:
+// If the difference between now and expire_time is less than billing_cycle, then the user is allowed to subscribe to next billing cycle;
+// If the difference between now and expire_time is greater than billing_cycle, it means user has already pre-subscribed to next billing cycle, refuse this request.
+//
+// 5. Generate order.
+//
+// After order is confirmed by payment providers:
+//
+// 1. Use response message to find order, and then find the userID;
+//
+// 2. Try to find is membership for this userID exists;
+//
+// 3. If not exists, this is a new subscription, simply populate start_utc and expire_utc columns with current time and current time + billing cycle respectively;
+//
+// 4. If the membership already exists, then check whether expire_utc is before now;
+//
+// 5. If the expire_utc is before now, it means this user's membership has already expired, he is re-subscribing now, so treat it as a new subscription;
+//
+// 6. If the expire_utc is after now, it means this user is renewing subscription, the expire_utc should be the the current value + next billing cycle. `start_utc` remain unchanged.
+func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 	// Get member tier and billing cycle from url
 	tierKey := getURLParam(req, "tier").toString()
 	cycleKey := getURLParam(req, "cycle").toString()
@@ -85,7 +113,7 @@ func (o OrderRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 		UserID:        userID,
 	}
 
-	err = o.model.NewOrder(ftcOrder, c)
+	err = wr.model.NewOrder(ftcOrder, c)
 
 	// Prepare to send wx unified order.
 	params := make(wxpay.Params)
@@ -98,7 +126,7 @@ func (o OrderRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 		SetString("trade_type", "APP")
 
 	// Send order to wx
-	resp, err := o.wxClient.UnifiedOrder(params)
+	resp, err := wr.wxClient.UnifiedOrder(params)
 
 	if err != nil {
 		util.Render(w, util.NewInternalError(err.Error()))
@@ -110,7 +138,7 @@ func (o OrderRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 	prepayID := resp.GetString("prepay_id")
 
 	// Create prepay order accoding to https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_12&index=2
-	appParams := o.createPrepayOrder(prepayID)
+	appParams := wr.createPrepayOrder(prepayID)
 
 	util.Render(w, util.NewResponse().SetBody(appParams))
 }
