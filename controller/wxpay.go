@@ -123,7 +123,7 @@ func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 	c := util.NewRequestClient(req)
 
 	// Save this order to db.
-	ftcOrder := model.SubscribeOrder{
+	ftcOrder := model.Subscription{
 		OrderID:       orderID,
 		TierToBuy:     tier,
 		BillingCycle:  cycle,
@@ -226,48 +226,14 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 
 	// Convert this time end to SQL DATETIME
 	confirmTime := util.ParseWxTime(timeEnd)
-	expireTime := order.CalculateExpireTime(confirmTime)
 
-	order.ConfirmedAt = util.SQLDatetimeUTC.FromTime(confirmTime)
+	err = wr.model.ConfirmOrder(order, confirmTime)
 
-	expireAt := util.SQLDatetimeUTC.FromTime(expireTime)
-
-	// Find a member
-	member, err := wr.model.Membership(order.UserID)
-
-	// If membership is not found, create one
-	if err != nil && err == sql.ErrNoRows {
-		m := model.Membership{
-			UserID: order.UserID,
-			Tier:   order.TierToBuy,
-			Cycle:  order.BillingCycle,
-			Start:  order.ConfirmedAt,
-			Expire: expireAt,
-		}
-
-		wr.model.NewMember(m)
-
-		w.Write(buildWxReply("", true))
+	if err != nil {
+		w.Write(buildWxReply(err.Error(), false))
 
 		return
 	}
-
-	// If this user was a member, but membership is expired, update it.
-	if member.IsExpired() {
-		member.Start = order.ConfirmedAt
-		member.Expire = expireAt
-
-		wr.model.NewMember(member)
-
-		w.Write(buildWxReply("", true))
-
-		return
-	}
-
-	// If this user is still a valid member, it is a renewal
-
-	member.Expire = expireAt
-	wr.model.RenewMember(member)
 
 	w.Write(buildWxReply("", true))
 }
