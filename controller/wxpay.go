@@ -64,13 +64,13 @@ func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
 //
 // 1. Use response message to find order, and then find the userID;
 //
-// 2. Try to find is membership for this userID exists;
+// 2. Try to find if membership for this userID exists;
 //
-// 3. If not exists, this is a new subscription, simply populate start_utc and expire_utc columns with current time and current time + billing cycle respectively;
+// 3. If not exists, this is a new subscription, simply add a new record with start_utc and expire_utc columns set to current time and current time + billing cycle respectively;
 //
 // 4. If the membership already exists, then check whether expire_utc is before now;
 //
-// 5. If the expire_utc is before now, it means this user's membership has already expired, he is re-subscribing now, so treat it as a new subscription;
+// 5. If the expire_utc is before now, it means this user's membership has already expired, he is re-subscribing now, so treat it as a new subscription: update member_tier, billing_cycle, start_utc and expire_utc;
 //
 // 6. If the expire_utc is after now, it means this user is renewing subscription, the expire_utc should be the the current value + next billing cycle. `start_utc` remain unchanged.
 func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
