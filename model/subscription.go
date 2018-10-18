@@ -6,8 +6,8 @@ import (
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
-// SubscribeOrder records the details of an order a user placed.
-type SubscribeOrder struct {
+// Subscription contains the details of a user's action to place an order.
+type Subscription struct {
 	OrderID       string
 	TierToBuy     MemberTier
 	BillingCycle  BillingCycle
@@ -20,8 +20,8 @@ type SubscribeOrder struct {
 	UserID        string
 }
 
-// CalculateExpireTime get membership expiration time based on when it is confirmed and the billing cycle.
-func (o SubscribeOrder) CalculateExpireTime(t time.Time) time.Time {
+// DeduceExpireTime deduces membership expiration time based on when it is confirmed and the billing cycle.
+func (o Subscription) DeduceExpireTime(t time.Time) time.Time {
 	switch o.BillingCycle {
 	case Yearly:
 		return t.AddDate(1, 0, 0)
@@ -34,7 +34,7 @@ func (o SubscribeOrder) CalculateExpireTime(t time.Time) time.Time {
 }
 
 // NewOrder saves a new order
-func (env Env) NewOrder(order SubscribeOrder, c util.RequestClient) error {
+func (env Env) NewOrder(s Subscription, c util.RequestClient) error {
 	query := `
 	INSERT INTO premium.ftc_trade
 	SET trade_no = ?,
@@ -50,16 +50,16 @@ func (env Env) NewOrder(order SubscribeOrder, c util.RequestClient) error {
 		user_ip_bin = INET6_ATON(?)`
 
 	_, err := env.DB.Exec(query,
-		order.OrderID,
-		order.Price,
-		order.TotalAmount,
-		string(order.TierToBuy),
-		string(order.BillingCycle),
-		string(order.PaymentMethod),
-		order.UserID,
+		s.OrderID,
+		s.Price,
+		s.TotalAmount,
+		string(s.TierToBuy),
+		string(s.BillingCycle),
+		string(s.PaymentMethod),
+		s.UserID,
 		c.ClientType,
 		c.Version,
-		order.CreatedAt,
+		s.CreatedAt,
 		c.UserIP,
 	)
 
@@ -71,7 +71,7 @@ func (env Env) NewOrder(order SubscribeOrder, c util.RequestClient) error {
 }
 
 // RetrieveOrder tries to find an order
-func (env Env) RetrieveOrder(orderID string) (SubscribeOrder, error) {
+func (env Env) RetrieveOrder(orderID string) (Subscription, error) {
 	query := `
 	SELECT trade_no AS orderId,
 		trade_price AS price,
@@ -86,30 +86,30 @@ func (env Env) RetrieveOrder(orderID string) (SubscribeOrder, error) {
 	WHERE trade_no = ?
 	LIMIT 1`
 
-	var order SubscribeOrder
+	var s Subscription
 	err := env.DB.QueryRow(query, orderID).Scan(
-		order.OrderID,
-		order.Price,
-		order.TotalAmount,
-		order.UserID,
-		order.TierToBuy,
-		order.BillingCycle,
-		order.PaymentMethod,
-		order.CreatedAt,
-		order.ConfirmedAt,
+		s.OrderID,
+		s.Price,
+		s.TotalAmount,
+		s.UserID,
+		s.TierToBuy,
+		s.BillingCycle,
+		s.PaymentMethod,
+		s.CreatedAt,
+		s.ConfirmedAt,
 	)
 
 	if err != nil {
-		return order, err
+		return s, err
 	}
 
-	return order, nil
+	return s, nil
 }
 
 // ConfirmOrder marks an order as completed and create a member.
 // Confirm order and create/renew a new member should be an all-or-nothing operation.
 // Or update membership duration.
-func (env Env) ConfirmOrder(order SubscribeOrder, confirmTime time.Time) error {
+func (env Env) ConfirmOrder(order Subscription, confirmTime time.Time) error {
 
 	confirmedAt := util.SQLDatetimeUTC.FromTime(confirmTime)
 

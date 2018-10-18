@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"time"
 
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -16,8 +15,8 @@ type Membership struct {
 	Expire string
 }
 
-// CanRenew tests if current member is allowed to renuew subscription.
-// A member could only renew its subscripiton one billing cycle ahead of current cycle.
+// CanRenew tests if a membership is allowed to renuew subscription.
+// A member could only renew its subscripiton when remaining duration of a membership is shorter than a billing cycle.
 func (m Membership) CanRenew(cycle BillingCycle) bool {
 	expireAt, err := time.Parse(time.RFC3339, m.Expire)
 
@@ -39,7 +38,7 @@ func (m Membership) CanRenew(cycle BillingCycle) bool {
 	return false
 }
 
-// IsExpired tests is membership is expired.
+// IsExpired tests is the membership saved in database is expired.
 func (m Membership) IsExpired() bool {
 	t, err := time.Parse(time.RFC3339, m.Expire)
 
@@ -51,37 +50,45 @@ func (m Membership) IsExpired() bool {
 	return t.Before(time.Now())
 }
 
-// NewMemberFromOrder create a membership based the an order.
+// NewMemberFromOrder create a membership based on an order.
 // ConfirmedAt field must be empty at this step.
-func (env Env) NewMemberFromOrder(order SubscribeOrder, confirmTime time.Time) Membership {
-	expireTime := order.CalculateExpireTime(confirmTime)
+func (env Env) NewMemberFromOrder(s Subscription, confirmTime time.Time) Membership {
+	// Calculate expiration time based the when this subscription is confirmed and the billing cycle.
+	expireTime := s.DeduceExpireTime(confirmTime)
 
+	// Use confirmTime as membership's starting point.
+	// Convert it into SQL DATETIME string in UTC.
 	startAt := util.SQLDatetimeUTC.FromTime(confirmTime)
+	// Convert expiration time into SQL DATETIME string in UTC.
 	expireAt := util.SQLDatetimeUTC.FromTime(expireTime)
 
-	member, err := env.Membership(order.UserID)
+	// Try to find out if this subscription order's owner is already a member, or used to be a member.
+	member, err := env.Membership(s.UserID)
 
-	if err != nil && err == sql.ErrNoRows {
-		member.UserID = order.UserID
-		member.Tier = order.TierToBuy
-		member.Cycle = order.BillingCycle
+	// If there's any error (including sql.ErrNoRows), create a new mebership.
+	if err != nil {
+		member.UserID = s.UserID
+		member.Tier = s.TierToBuy
+		member.Cycle = s.BillingCycle
 		member.Start = startAt
 		member.Expire = expireAt
 
 		return member
 	}
 
-	// If membership existed but expired,
+	// Membership exists. If it is expired, treat is a new subscription.
 	if member.IsExpired() {
-		member.Tier = order.TierToBuy
-		member.Cycle = order.BillingCycle
+		member.Tier = s.TierToBuy
+		member.Cycle = s.BillingCycle
 		member.Start = startAt
 		member.Expire = expireAt
 
 		return member
 	}
 
-	// Membership renewal. Just extend expiration time.
+	// Membership exists, and it is not expired.
+	// It means user is renewing subscription.
+	// Just extend the expiration time.
 	member.Expire = expireAt
 
 	return member
@@ -145,42 +152,4 @@ func (env Env) Membership(userID string) (Membership, error) {
 	}
 
 	return m, nil
-}
-
-// CreateMember creates a new member or renew it.
-// A member might already exits but expired, and now he is re-subscribe.
-// In such case the ON DUPLICATE KEY UPDATE clause will take effect.
-func (env Env) CreateMember(m Membership) error {
-	query := `
-	INSERT INTO premium.ftc_vip
-	SET vip_id = ?,
-		member_tier = ?,
-		billing_cycle = ?,
-		start_utc = ?,
-		expire_utc = ?
-	ON DUPLICATE KEY UPDATE
-		member_tier = ?,
-		billing_cycle = ?,
-		start_utc = ?,
-		expire_utc = ?`
-
-	_, err := env.DB.Exec(query,
-		m.UserID,
-		string(m.Tier),
-		string(m.Cycle),
-		m.Start,
-		m.Expire,
-		string(m.Tier),
-		string(m.Cycle),
-		m.Start,
-		m.Expire,
-	)
-
-	if err != nil {
-		logger.WithField("location", "Create a new member").Error(err)
-
-		return err
-	}
-
-	return nil
 }
