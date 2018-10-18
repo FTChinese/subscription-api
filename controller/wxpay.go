@@ -137,7 +137,7 @@ func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 	// Get prepay id from response
 	prepayID := resp.GetString("prepay_id")
 
-	// Create prepay order accoding to https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_12&index=2
+	// Create prepay order according to https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_12&index=2
 	appParams := wr.createPrepayOrder(prepayID)
 
 	util.Render(w, util.NewResponse().SetBody(appParams))
