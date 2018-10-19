@@ -22,7 +22,7 @@ type WxPayRouter struct {
 
 // NewOrderRouter creates a new instance or OrderRouter
 func NewOrderRouter(wx util.WxConfig, db *sql.DB) WxPayRouter {
-	account := wxpay.NewAccount(wx.AppID, wx.MchID, wx.APIKey, false)
+	account := wxpay.NewAccount(wx.AppID, wx.MchID, wx.APIKey, wx.IsSandbox)
 
 	return WxPayRouter{
 		model:    model.Env{DB: db},
@@ -96,7 +96,7 @@ func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 	// Find if this user is already subscribed.
 	// If a membership is not found, sql.ErrNoRows will be returned.
 	// Discard the error.
-	member, err := wr.model.Membership(userID)
+	member, err := wr.model.FindMember(userID)
 
 	// If membership for this user is found, and is not in the allowed renewal period.
 	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
@@ -125,15 +125,15 @@ func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
 	// Save this order to db.
 	ftcOrder := model.Subscription{
 		OrderID:       orderID,
-		TierToBuy:     tier,
-		BillingCycle:  cycle,
-		Price:         plan.Price,
-		TotalAmount:   plan.Price * 1,
+		TierToBuy:     plan.Tier,
+		BillingCycle:  plan.Cycle,
+		Price:         float32(plan.Price),
+		TotalAmount:   float32(plan.Price),
 		PaymentMethod: model.Wxpay,
 		UserID:        userID,
 	}
 
-	err = wr.model.NewOrder(ftcOrder, c)
+	err = wr.model.NewSubscription(ftcOrder, c)
 
 	// Prepare to send wx unified order.
 	params := make(wxpay.Params)
@@ -202,7 +202,7 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	timeEnd := params.GetString("time_end")
 
 	// Find order
-	order, err := wr.model.RetrieveOrder(orderID)
+	subs, err := wr.model.FindSubscription(orderID)
 
 	// if order is not found
 	if err != nil {
@@ -211,23 +211,23 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Verify total amount
-	// TODO: SQL decimal to Int
-	if totalFee != (order.TotalAmount * 100) {
+	if totalFee != subs.WxTotalFee() {
 		w.Write(buildWxReply("", true))
 		return
 	}
 
 	// If order is found, and is already confirmed.
 	// Should we check membership data here?
-	if order.ConfirmedAt != "" {
+	if subs.ConfirmedAt != "" {
 		w.Write(buildWxReply("", true))
 		return
 	}
 
 	// Convert this time end to SQL DATETIME
+	// The problem here is we record confirmation time always in UTC. This if fixed.
 	confirmTime := util.ParseWxTime(timeEnd)
 
-	err = wr.model.ConfirmOrder(order, confirmTime)
+	err = wr.model.ConfirmSubscription(subs, confirmTime)
 
 	if err != nil {
 		w.Write(buildWxReply(err.Error(), false))
