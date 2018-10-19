@@ -11,30 +11,36 @@ type Subscription struct {
 	OrderID       string
 	TierToBuy     MemberTier
 	BillingCycle  BillingCycle
-	Price         int64
-	TotalAmount   int64
+	Price         float32
+	TotalAmount   float32
 	PaymentMethod PaymentMethod
 	Currency      string
-	CreatedAt     string
+	CreatedAt     string // Only for retrieval
 	ConfirmedAt   string
 	UserID        string
 }
 
+// WxTotalFee converts TotalAmount to int64 in cent for comparison with wx notification.
+func (s Subscription) WxTotalFee() int64 {
+	return int64(s.TotalAmount * 100)
+}
+
 // DeduceExpireTime deduces membership expiration time based on when it is confirmed and the billing cycle.
-func (o Subscription) DeduceExpireTime(t time.Time) time.Time {
-	switch o.BillingCycle {
+// Add one day more to accomodate timezone change
+func (s Subscription) DeduceExpireTime(t time.Time) time.Time {
+	switch s.BillingCycle {
 	case Yearly:
-		return t.AddDate(1, 0, 0)
+		return t.AddDate(1, 0, 1)
 
 	case Monthly:
-		return t.AddDate(0, 1, 0)
+		return t.AddDate(0, 1, 1)
 	}
 
 	return t
 }
 
-// NewOrder saves a new order
-func (env Env) NewOrder(s Subscription, c util.RequestClient) error {
+// NewSubscription saves a new order
+func (env Env) NewSubscription(s Subscription, c util.RequestClient) error {
 	query := `
 	INSERT INTO premium.ftc_trade
 	SET trade_no = ?,
@@ -59,19 +65,19 @@ func (env Env) NewOrder(s Subscription, c util.RequestClient) error {
 		s.UserID,
 		c.ClientType,
 		c.Version,
-		s.CreatedAt,
 		c.UserIP,
 	)
 
 	if err != nil {
+		logger.WithField("location", "New subscription").Error(err)
 		return err
 	}
 
 	return nil
 }
 
-// RetrieveOrder tries to find an order
-func (env Env) RetrieveOrder(orderID string) (Subscription, error) {
+// FindSubscription tries to find an order
+func (env Env) FindSubscription(orderID string) (Subscription, error) {
 	query := `
 	SELECT trade_no AS orderId,
 		trade_price AS price,
@@ -88,35 +94,39 @@ func (env Env) RetrieveOrder(orderID string) (Subscription, error) {
 
 	var s Subscription
 	err := env.DB.QueryRow(query, orderID).Scan(
-		s.OrderID,
-		s.Price,
-		s.TotalAmount,
-		s.UserID,
-		s.TierToBuy,
-		s.BillingCycle,
-		s.PaymentMethod,
-		s.CreatedAt,
-		s.ConfirmedAt,
+		&s.OrderID,
+		&s.Price,
+		&s.TotalAmount,
+		&s.UserID,
+		&s.TierToBuy,
+		&s.BillingCycle,
+		&s.PaymentMethod,
+		&s.CreatedAt,
+		&s.ConfirmedAt,
 	)
 
 	if err != nil {
+		logger.WithField("location", "Find subscription").Error(err)
 		return s, err
 	}
 
 	return s, nil
 }
 
-// ConfirmOrder marks an order as completed and create a member.
+// ConfirmSubscription marks an order as completed and create a member.
 // Confirm order and create/renew a new member should be an all-or-nothing operation.
 // Or update membership duration.
-func (env Env) ConfirmOrder(order Subscription, confirmTime time.Time) error {
-
+// NOTE: The passed in Subscription must be one retrieved from database. Otherwise you should never call this method.
+func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) error {
+	// Subscription confirmation time.
 	confirmedAt := util.SQLDatetimeUTC.FromTime(confirmTime)
 
-	m := env.NewMemberFromOrder(order, confirmTime)
+	// Build membership based on subscription.
+	m := env.buildMembership(s, confirmTime)
 
 	tx, err := env.DB.Begin()
 	if err != nil {
+		logger.WithField("location", "Confirm subscripiton").Error(err)
 		return err
 	}
 	stmtUpdate := `
@@ -127,11 +137,12 @@ func (env Env) ConfirmOrder(order Subscription, confirmTime time.Time) error {
 
 	_, updateErr := tx.Exec(stmtUpdate,
 		confirmedAt,
-		order.OrderID,
+		s.OrderID,
 	)
 
 	if updateErr != nil {
 		_ = tx.Rollback()
+		logger.WithField("location", "Update subscription confirmation time").Error(err)
 	}
 
 	stmtCreate := `
@@ -139,31 +150,30 @@ func (env Env) ConfirmOrder(order Subscription, confirmTime time.Time) error {
 	SET vip_id = ?,
 		member_tier = ?,
 		billing_cycle = ?,
-		start_utc = ?,
-		expire_utc = ?
+		expire_date = ?
 	ON DUPLICATE KEY UPDATE
 		member_tier = ?,
 		billing_cycle = ?,
-		start_utc = ?,
-		expire_utc = ?`
+		expire_date = ?`
 
 	_, createErr := tx.Exec(stmtCreate,
 		m.UserID,
 		string(m.Tier),
 		string(m.Cycle),
-		m.Start,
 		m.Expire,
 		string(m.Tier),
 		string(m.Cycle),
-		m.Start,
 		m.Expire,
 	)
 
 	if createErr != nil {
 		_ = tx.Rollback()
+
+		logger.WithField("location", "Create or renew membership").Error(err)
 	}
 
 	if err := tx.Commit(); err != nil {
+		logger.WithField("location", "Commit transaction to commit and create/renew membership").Error(err)
 		return err
 	}
 

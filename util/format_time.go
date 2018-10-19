@@ -5,6 +5,7 @@ import "time"
 const (
 	secondsOfMinute = 60
 	secondsOfHour   = 60 * secondsOfMinute
+	iso8601Date     = "2006-01-02"
 	iso9075         = "2006-01-02 15:04:05" // Layout for SQL DATETIME
 	iso9075Date     = "2006-01-02"          // Layout for SQL DATE
 	layoutWxTime    = "20060102150405"
@@ -20,6 +21,8 @@ var (
 	SQLDatetimeUTC = timeForamtter{iso9075, time.UTC}
 	// SQLDateUTC turns time into SQL's DATE string in UTC.
 	SQLDateUTC = timeForamtter{iso9075Date, time.UTC}
+	// SQLDateUTC8 turns time into SQL's DATE string set in UTC+8.
+	SQLDateUTC8 = timeForamtter{iso9075Date, TZShanghai}
 )
 
 // timeFormatter converts a time.Time instance to the specified layout in specified location
@@ -65,7 +68,13 @@ func ParseSQLDatetime(value string) (time.Time, error) {
 	return time.Parse(iso9075, value)
 }
 
+// ParseSQLDate parse string layout `2006-01-02`
+func ParseSQLDate(value string) (time.Time, error) {
+	return time.Parse(iso9075Date, value)
+}
+
 // ParseWxTime is used to parse wxpay's time format.
+// If it cannot be parsed, default to current time.
 func ParseWxTime(value string) time.Time {
 	t, err := time.ParseInLocation(layoutWxTime, value, TZShanghai)
 
