@@ -11,28 +11,28 @@ type Membership struct {
 	UserID string
 	Tier   MemberTier
 	Cycle  BillingCycle
-	Start  string
-	Expire string
+	Expire string // On which date the membership ends
 }
 
 // CanRenew tests if a membership is allowed to renuew subscription.
 // A member could only renew its subscripiton when remaining duration of a membership is shorter than a billing cycle.
 func (m Membership) CanRenew(cycle BillingCycle) bool {
-	expireAt, err := time.Parse(time.RFC3339, m.Expire)
+	expireDate, err := util.ParseSQLDate(m.Expire)
 
 	if err != nil {
-		logger.WithField("location", "Parse expiration time")
+		logger.WithField("location", "Parse expiration date")
 		return false
 	}
 
 	now := time.Now()
 
+	// Add one day more to accomodate timezone change.
 	switch cycle {
 	case Yearly:
 		// expiration time < today + cycle
-		return expireAt.Before(now.AddDate(1, 0, 0))
+		return expireDate.Before(now.AddDate(1, 0, 1))
 	case Monthly:
-		return expireAt.Before(now.AddDate(0, 1, 0))
+		return expireDate.Before(now.AddDate(0, 1, 1))
 	}
 
 	return false
@@ -40,7 +40,7 @@ func (m Membership) CanRenew(cycle BillingCycle) bool {
 
 // IsExpired tests is the membership saved in database is expired.
 func (m Membership) IsExpired() bool {
-	t, err := time.Parse(time.RFC3339, m.Expire)
+	t, err := util.ParseSQLDate(m.Expire)
 
 	if err != nil {
 		return true
@@ -50,38 +50,37 @@ func (m Membership) IsExpired() bool {
 	return t.Before(time.Now())
 }
 
-// NewMemberFromOrder create a membership based on an order.
+// buildMembership create a membership based on an subscripiton.
 // ConfirmedAt field must be empty at this step.
-func (env Env) NewMemberFromOrder(s Subscription, confirmTime time.Time) Membership {
+func (env Env) buildMembership(s Subscription, confirmTime time.Time) Membership {
 	// Calculate expiration time based the when this subscription is confirmed and the billing cycle.
 	expireTime := s.DeduceExpireTime(confirmTime)
 
-	// Use confirmTime as membership's starting point.
-	// Convert it into SQL DATETIME string in UTC.
-	startAt := util.SQLDatetimeUTC.FromTime(confirmTime)
-	// Convert expiration time into SQL DATETIME string in UTC.
-	expireAt := util.SQLDatetimeUTC.FromTime(expireTime)
+	expireDate := util.SQLDateUTC.FromTime(expireTime)
 
 	// Try to find out if this subscription order's owner is already a member, or used to be a member.
-	member, err := env.Membership(s.UserID)
+	member, err := env.FindMember(s.UserID)
 
 	// If there's any error (including sql.ErrNoRows), create a new mebership.
+	// Err here should not prevent user becoming a member.
 	if err != nil {
+		logger.WithField("location", "Build membership").Infof("Membership for user %s not found. Assuming this is a new member", s.UserID)
+
 		member.UserID = s.UserID
 		member.Tier = s.TierToBuy
 		member.Cycle = s.BillingCycle
-		member.Start = startAt
-		member.Expire = expireAt
+		member.Expire = expireDate
 
 		return member
 	}
 
-	// Membership exists. If it is expired, treat is a new subscription.
+	// Membership exists. See if curent membership is expired. If expired, update startDate and expireDate.
 	if member.IsExpired() {
+		logger.WithField("location", "Build membership").Infof("Membership for user %s found but expired.", s.UserID)
+
 		member.Tier = s.TierToBuy
 		member.Cycle = s.BillingCycle
-		member.Start = startAt
-		member.Expire = expireAt
+		member.Expire = expireDate
 
 		return member
 	}
@@ -89,21 +88,21 @@ func (env Env) NewMemberFromOrder(s Subscription, confirmTime time.Time) Members
 	// Membership exists, and it is not expired.
 	// It means user is renewing subscription.
 	// Just extend the expiration time.
-	member.Expire = expireAt
+	logger.WithField("location", "Build membership").Infof("Membership for user %s found for renewal", s.UserID)
+	member.Expire = expireDate
 
 	return member
 }
 
-// Membership retrieves a user's membership
-func (env Env) Membership(userID string) (Membership, error) {
+// FindMember retrieves a user's membership
+func (env Env) FindMember(userID string) (Membership, error) {
 	query := `
 	SELECT vip_id AS userId,
 		vip_type AS vipType,
 		expire_time AS expireTime,
-		IFNULL(v.member_tier, '') AS memberTier,
-		IFNULL(v.billing_cycle, '') AS billingCyce,
-		IFNULL(v.start_utc, '') AS startAt,
-		IFNULL(v.expire_utc, '') AS expireAt
+		IFNULL(member_tier, '') AS memberTier,
+		IFNULL(billing_cycle, '') AS billingCyce,
+		IFNULL(expire_date, '') AS expireDate
 	FROM premium.ftc_vip
 	WHERE vip_id = ?
 	LIMIT 1`
@@ -120,7 +119,6 @@ func (env Env) Membership(userID string) (Membership, error) {
 		&expireTime,
 		&tier,
 		&cycle,
-		&m.Start,
 		&m.Expire,
 	)
 
@@ -139,16 +137,7 @@ func (env Env) Membership(userID string) (Membership, error) {
 	m.Cycle, _ = NewCycle(cycle)
 
 	if m.Expire == "" {
-		m.Expire = normalizeExpireTime(expireTime)
-	} else {
-		// Convert UTC DATETIME to UTC ISO8601
-		m.Expire = util.ISO8601UTC.FromDatetime(m.Expire, nil)
-	}
-
-	if m.Start == "" {
-		m.Start = normalizeStartTime(expireTime)
-	} else {
-		m.Start = util.ISO8601UTC.FromDatetime(m.Start, nil)
+		m.Expire = normalizeExpireDate(expireTime)
 	}
 
 	return m, nil
