@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/go-chi/chi"
@@ -76,10 +77,12 @@ func main() {
 
 	r.Use(controller.NoCache)
 
+	r.Get("/__version", controller.Version(version, build))
+
 	r.Route("/place-order", func(r1 chi.Router) {
 		r1.Post("/wxpay/{tier}/{cycle}", orderRouter.NewWxOrder)
 	})
 
-	// log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8000")
-	// log.Fatal(http.ListenAndServe(":8000", r))
+	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8000")
+	log.Fatal(http.ListenAndServe(":8000", r))
 }
