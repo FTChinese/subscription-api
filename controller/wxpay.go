@@ -20,8 +20,8 @@ type WxPayRouter struct {
 	model    model.Env
 }
 
-// NewOrderRouter creates a new instance or OrderRouter
-func NewOrderRouter(wx util.WxConfig, db *sql.DB) WxPayRouter {
+// NewWxRouter creates a new instance or OrderRouter
+func NewWxRouter(wx util.WxConfig, db *sql.DB) WxPayRouter {
 	account := wxpay.NewAccount(wx.AppID, wx.MchID, wx.APIKey, wx.IsSandbox)
 
 	return WxPayRouter{
@@ -46,7 +46,7 @@ func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
 	return p
 }
 
-// NewWxOrder implements 统一下单.
+// UnifiedOrder implements 统一下单.
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_1
 //
 // Workflow
@@ -76,7 +76,7 @@ func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
 // 5. If the expire_utc is before now, it means this user's membership has already expired, he is re-subscribing now, so treat it as a new subscription: update member_tier, billing_cycle, start_utc and expire_utc;
 //
 // 6. If the expire_utc is after now, it means this user is renewing subscription, the expire_utc should be the the current value + next billing cycle. `start_utc` remain unchanged.
-func (wr WxPayRouter) NewWxOrder(w http.ResponseWriter, req *http.Request) {
+func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	// Get member tier and billing cycle from url
 	tierKey := getURLParam(req, "tier").toString()
 	cycleKey := getURLParam(req, "cycle").toString()
