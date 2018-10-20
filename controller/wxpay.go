@@ -156,6 +156,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	// Prepare to send wx unified order.
 	params := make(wxpay.Params)
 
+	// Compose request parameters
 	params.SetString("body", plan.Description).
 		SetString("out_trade_no", orderID).
 		SetInt64("total_fee", plan.GetPriceCent()).
@@ -175,7 +176,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		logger.WithField("location", "UnifiedOrder").Error(err)
 
-		util.Render(w, util.NewInternalError(err.Error()))
+		util.Render(w, util.NewBadRequest(err.Error()))
 
 		return
 	}
@@ -183,22 +184,6 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	// Possible response:
 	//  map[return_code:FAIL return_msg:appid不存在]
 	logger.WithField("location", "UnifiedOrder").Infof("Wx unified order response: %+v", resp)
-
-	// NOTE: this sdk treat return_code == FAIL as valid.
-	// Possible return_msg:
-	// appid不存在;
-	// 商户号mch_id与appid不匹配;
-	// invalid spbill_create_ip;
-	// spbill_create_ip参数长度有误; (Wx does not accept IPv6 like 9b5b:2ef9:6c9f:cf5:130e:984d:8958:75f9 :-<)
-	if resp.GetString("return_code") == wxpay.Fail {
-		returnMsg := resp.GetString("return_msg")
-		logger.
-			WithField("location", "UnifiedOrder").
-			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
-
-		util.Render(w, util.NewBadRequest(returnMsg))
-		return
-	}
 
 	// Example response:
 	// return_code:SUCCESS|FAIL
@@ -217,7 +202,23 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	// trade_type:APP
 	// prepay_id:wx20125006086590be8d9519f40090763508
 
-	if resp.GetString("reseul_code") == wxpay.Fail {
+	// NOTE: this sdk treat return_code == FAIL as valid.
+	// Possible return_msg:
+	// appid不存在;
+	// 商户号mch_id与appid不匹配;
+	// invalid spbill_create_ip;
+	// spbill_create_ip参数长度有误; (Wx does not accept IPv6 like 9b5b:2ef9:6c9f:cf5:130e:984d:8958:75f9 :-<)
+	if resp.GetString("return_code") == wxpay.Fail {
+		returnMsg := resp.GetString("return_msg")
+		logger.
+			WithField("location", "UnifiedOrder").
+			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
+
+		util.Render(w, util.NewBadRequest(returnMsg))
+		return
+	}
+
+	if resp.GetString("result_code") == wxpay.Fail {
 		errCode := resp.GetString("err_code")
 		errCodeDes := resp.GetString("err_code_des")
 
@@ -314,6 +315,54 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Write([]byte(resp.OK()))
+}
+
+// OrderQuery implements 查询订单
+// https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
+// Only transaction_id or out_trade_no is required.
+func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
+	orderID := getURLParam(req, "orderId").toString()
+
+	params := make(wxpay.Params)
+	params.SetString("out_trade_no", orderID)
+
+	resp, err := wr.wxClient.OrderQuery(params)
+
+	if err != nil {
+		logger.WithField("location", "OrderQuery").Error(err)
+
+		util.Render(w, util.NewNotFound())
+
+		return
+	}
+
+	if resp.GetString("return_code") == wxpay.Fail {
+		returnMsg := resp.GetString("return_msg")
+		logger.
+			WithField("location", "OrderQuery").
+			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
+
+		util.Render(w, util.NewNotFound())
+		return
+	}
+
+	if resp.GetString("result_code") == wxpay.Fail {
+		errCode := resp.GetString("err_code")
+		errCodeDes := resp.GetString("err_code_des")
+
+		logger.WithField("location", "OrderQuery").
+			WithField("err_code", errCode).
+			WithField("err_code_des", errCodeDes).
+			Error("Wx unified order result failed")
+		util.Render(w, util.NewBadRequest(errCodeDes))
+
+		return
+	}
+
+	if ok := wr.verifyRespIdentity(resp); !ok {
+		util.Render(w, util.NewNotFound())
+		return
+	}
 }
 
 func (wr WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
