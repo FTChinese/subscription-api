@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/icrowley/fake"
+
 	"github.com/objcoding/wxpay"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -22,7 +24,9 @@ type WxPayRouter struct {
 
 // NewWxRouter creates a new instance or OrderRouter
 func NewWxRouter(wx util.WxConfig, db *sql.DB) WxPayRouter {
-	account := wxpay.NewAccount(wx.AppID, wx.MchID, wx.APIKey, wx.IsSandbox)
+	// Pay attention to the last parameter.
+	// It should always be false because Weixin's sandbox address does not work!
+	account := wxpay.NewAccount(wx.AppID, wx.MchID, wx.APIKey, false)
 
 	return WxPayRouter{
 		model:    model.Env{DB: db},
@@ -112,12 +116,22 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	plan, err := model.NewPlan(tier, cycle)
 
-	orderID := model.CreateOrderID(plan)
-
 	if err != nil {
+		logger.WithField("location", "UnifiedOrder").Error(err)
+
 		util.Render(w, util.NewBadRequest(msgInvalidURI))
 		return
 	}
+
+	if !wr.wxConfig.IsProd {
+		plan.Price = 0.01
+	}
+
+	logger.WithField("location", "UnifiedOrder").Infof("Subscritpion plan: %+v", plan)
+
+	orderID := model.CreateOrderID(plan)
+
+	logger.WithField("location", "UnifiedOrder").Infof("Created order: %s", orderID)
 
 	// Get request client metadata
 	c := util.NewRequestClient(req)
@@ -127,8 +141,8 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 		OrderID:       orderID,
 		TierToBuy:     plan.Tier,
 		BillingCycle:  plan.Cycle,
-		Price:         float32(plan.Price),
-		TotalAmount:   float32(plan.Price),
+		Price:         plan.Price,
+		TotalAmount:   plan.Price,
 		PaymentMethod: model.Wxpay,
 		UserID:        userID,
 	}
@@ -145,11 +159,69 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 		SetString("notify_url", wxNotifyURL).
 		SetString("trade_type", "APP")
 
+	if !wr.wxConfig.IsProd {
+		params.SetString("spbill_create_ip", fake.IPv4())
+	}
+
+	logger.WithField("location", "UnifiedOrder").Infof("Order params: %+v", params)
+
 	// Send order to wx
 	resp, err := wr.wxClient.UnifiedOrder(params)
 
 	if err != nil {
+		logger.WithField("location", "UnifiedOrder").Error(err)
+
 		util.Render(w, util.NewInternalError(err.Error()))
+
+		return
+	}
+
+	// Possible response:
+	//  map[return_code:FAIL return_msg:appid不存在]
+	logger.WithField("location", "UnifiedOrder").Infof("Wx unified order response: %+v", resp)
+
+	// NOTE: this sdk treat return_code == FAIL as valid.
+	// Possible return_msg:
+	// appid不存在;
+	// 商户号mch_id与appid不匹配;
+	// invalid spbill_create_ip;
+	// spbill_create_ip参数长度有误; (Wx does not accept IPv6 like 9b5b:2ef9:6c9f:cf5:130e:984d:8958:75f9 :-<)
+	if resp.GetString("return_code") == wxpay.Fail {
+		returnMsg := resp.GetString("return_msg")
+		logger.
+			WithField("location", "UnifiedOrder").
+			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
+
+		util.Render(w, util.NewBadRequest(returnMsg))
+		return
+	}
+
+	// Example response:
+	// return_code:SUCCESS|FAIL
+	// return_msg:OK
+	//
+	// Present only if return_code == SUCCESS
+	// appid:wx......
+	// mch_id:........
+	// nonce_str:8p8ZlUBkLsFPxC6g
+	// sign:DB68F0D9F193D499DF9A2EDBFFEAF312
+	// result_code:SUCCESS|FAIL
+	// err_code
+	// err_code_des
+	//
+	// Present only if returnd_code == SUCCESS and result_code == SUCCCESS
+	// trade_type:APP
+	// prepay_id:wx20125006086590be8d9519f40090763508
+
+	if resp.GetString("reseul_code") == wxpay.Fail {
+		errCode := resp.GetString("err_code")
+		errCodeDes := resp.GetString("err_code_des")
+
+		logger.WithField("location", "UnifiedOrder").
+			WithField("err_code", errCode).
+			WithField("err_code_des", errCodeDes).
+			Error("Wx unified order result failed")
+		util.Render(w, util.NewBadRequest(errCodeDes))
 
 		return
 	}
@@ -228,8 +300,8 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	// The problem here is we record confirmation time always in UTC. This if fixed.
 	confirmTime := util.ParseWxTime(timeEnd)
 
-	// For sandbox environment stop here.
-	if wr.wxConfig.IsSandbox {
+	// For test environment stops here.
+	if !wr.wxConfig.IsProd {
 		w.Write(buildWxReply("", true))
 		return
 	}
