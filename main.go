@@ -64,7 +64,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	orderRouter := controller.NewOrderRouter(wx, db)
+	wxRouter := controller.NewWxRouter(wx, db)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -79,9 +79,12 @@ func main() {
 
 	r.Get("/__version", controller.Version(version, build))
 
-	r.Route("/place-order", func(r1 chi.Router) {
+	r.Route("/wxpay", func(r1 chi.Router) {
 		r1.Use(controller.CheckUserID)
-		r1.Post("/wxpay/{tier}/{cycle}", orderRouter.NewWxOrder)
+
+		r1.Post("/unified-order/{tier}/{cycle}", wxRouter.UnifiedOrder)
+
+		r1.Post("/callback", wxRouter.Notification)
 	})
 
 	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8000")
