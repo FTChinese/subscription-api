@@ -11,7 +11,7 @@ build :
 	go build $(LDFLAGS) -o $(build_dir)/$(BINARY) -v .
 
 deploy : linux
-	rsync -v $(build_dir)/$(BINARY) nodeserver:/home/node/go/bin/
+	rsync -v $(build_dir)/$(BINARY) ftaserver:/home/node/go/bin/
 
 # Copy env varaible to server
 config :
