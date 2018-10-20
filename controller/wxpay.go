@@ -129,6 +129,10 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	logger.WithField("location", "UnifiedOrder").Infof("Subscritpion plan: %+v", plan)
 
+	// Order id will be used:
+	// 1. Save in our database;
+	// 2. Send to wx;
+	// 3. Send to app;
 	orderID := model.CreateOrderID(plan)
 
 	logger.WithField("location", "UnifiedOrder").Infof("Created order: %s", orderID)
@@ -231,6 +235,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	// Create prepay order according to https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_12&index=2
 	appParams := wr.createPrepayOrder(prepayID)
+	appParams.SetString("ftcOrderId", orderID)
 
 	util.Render(w, util.NewResponse().SetBody(appParams))
 }
