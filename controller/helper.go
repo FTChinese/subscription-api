@@ -10,7 +10,7 @@ import (
 	"github.com/tomasen/realip"
 )
 
-var logger = log.WithField("package", "next-api.controller")
+var logger = log.WithField("package", "subscription-api.controller")
 
 const (
 	msgInvalidURI = "Invalid request URI"
