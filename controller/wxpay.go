@@ -186,6 +186,7 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	logger.WithField("location", "Wx pay notification").Infof("Wx pay response: %+v", params)
 	// Verify appid, mch_id, trade_type, total_fee.
 	// Get out_trade_no to retrieve order.
 	// Check the order's confirmed_utc field.
@@ -227,6 +228,12 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	// The problem here is we record confirmation time always in UTC. This if fixed.
 	confirmTime := util.ParseWxTime(timeEnd)
 
+	// For sandbox environment stop here.
+	if wr.wxConfig.IsSandbox {
+		w.Write(buildWxReply("", true))
+		return
+	}
+
 	err = wr.model.ConfirmSubscription(subs, confirmTime)
 
 	if err != nil {
@@ -239,10 +246,14 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 }
 
 func (wr WxPayRouter) processWxResponse(xmlStr string) (wxpay.Params, error) {
+	logger.WithField("location", "process wx response").Info(xmlStr)
+
 	var returnCode string
 	params := wxpay.XmlToMap(xmlStr)
 	if params.ContainsKey("return_code") {
 		returnCode = params.GetString("return_code")
+
+		logger.WithField("location", "process wx response").Infof("Wx return_code: %s", returnCode)
 	} else {
 		return nil, errors.New("no return_code in XML")
 	}
@@ -253,6 +264,7 @@ func (wr WxPayRouter) processWxResponse(xmlStr string) (wxpay.Params, error) {
 
 	case wxpay.Success:
 		if wr.wxClient.ValidSign(params) {
+			logger.WithField("location", "process wx response").Info("Valiating signature passed")
 			return params, nil
 		}
 		return nil, errors.New("invalid sign value in XML")
@@ -264,18 +276,22 @@ func (wr WxPayRouter) processWxResponse(xmlStr string) (wxpay.Params, error) {
 
 func (wr WxPayRouter) verifyRespIdentity(params wxpay.Params) bool {
 	if params.ContainsKey("appid") {
+		logger.WithField("location", "Verify wx response id").Error("Missing appid")
 		return false
 	}
 
 	if params.ContainsKey("mch_id") {
+		logger.WithField("location", "Verify wx response id").Error("Missing mch_id")
 		return false
 	}
 
 	if params.GetString("appid") != wr.wxConfig.AppID {
+		logger.WithField("location", "Verify wx response id").Error("appid does not match")
 		return false
 	}
 
 	if params.GetString("mch_id") != wr.wxConfig.MchID {
+		logger.WithField("location", "Verify wx response id").Error("mch_id does not match")
 		return false
 	}
 
