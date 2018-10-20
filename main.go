@@ -83,8 +83,10 @@ func main() {
 		r1.Use(controller.CheckUserID)
 
 		r1.Post("/unified-order/{tier}/{cycle}", wxRouter.UnifiedOrder)
+	})
 
-		r1.Post("/callback", wxRouter.Notification)
+	r.Route("/callback", func(r1 chi.Router) {
+		r1.Post("/wxpay", wxRouter.Notification)
 	})
 
 	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8000")
