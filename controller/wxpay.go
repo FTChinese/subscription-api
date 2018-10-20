@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -238,22 +238,15 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 // Notification implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
 func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
-	body, err := ioutil.ReadAll(req.Body)
 
-	// Reply to wx.
-	if err != nil {
-		resp := buildWxReply("Cannot parse request body", false)
-		w.Write(resp)
+	resp := wxpay.Notifies{}
 
-		return
-	}
-
-	params, err := wr.processWxResponse(string(body))
+	params, err := wr.processWxResponse(req.Body)
 
 	if err != nil {
-		logger.WithField("location", "Wx pay notification").Error(err)
+		logger.WithField("location", "WxNotification").Error(err)
 
-		w.Write(buildWxReply(err.Error(), false))
+		w.Write([]byte(resp.NotOK(err.Error())))
 
 		return
 	}
@@ -264,8 +257,9 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	// Check the order's confirmed_utc field.
 	// If confirmed_utc is empty, get time_end from params and set confirmed_utc to it.
 
+	// If this notification does not belong to use, refuse wx's retry.
 	if ok := wr.verifyRespIdentity(params); !ok {
-		w.Write(buildWxReply("", true))
+		w.Write([]byte(resp.OK()))
 
 		return
 	}
@@ -279,20 +273,20 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 
 	// if order is not found
 	if err != nil {
-		w.Write(buildWxReply("", true))
+		w.Write([]byte(resp.OK()))
 		return
 	}
 
 	// Verify total amount
 	if totalFee != subs.WxTotalFee() {
-		w.Write(buildWxReply("", true))
+		w.Write([]byte(resp.OK()))
 		return
 	}
 
 	// If order is found, and is already confirmed.
 	// Should we check membership data here?
 	if subs.ConfirmedAt != "" {
-		w.Write(buildWxReply("", true))
+		w.Write([]byte(resp.OK()))
 		return
 	}
 
@@ -302,30 +296,29 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 
 	// For test environment stops here.
 	if !wr.wxConfig.IsProd {
-		w.Write(buildWxReply("", true))
+		w.Write([]byte(resp.OK()))
 		return
 	}
 
 	err = wr.model.ConfirmSubscription(subs, confirmTime)
 
 	if err != nil {
-		w.Write(buildWxReply(err.Error(), false))
+		w.Write([]byte(resp.NotOK(err.Error())))
 
 		return
 	}
 
-	w.Write(buildWxReply("", true))
+	w.Write([]byte(resp.OK()))
 }
 
-func (wr WxPayRouter) processWxResponse(xmlStr string) (wxpay.Params, error) {
-	logger.WithField("location", "process wx response").Info(xmlStr)
+func (wr WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
 
 	var returnCode string
-	params := wxpay.XmlToMap(xmlStr)
+	params := util.Decode(r)
+	logger.WithField("location", "processWxResponse").Infof("Resp params: %+v", params)
+
 	if params.ContainsKey("return_code") {
 		returnCode = params.GetString("return_code")
-
-		logger.WithField("location", "process wx response").Infof("Wx return_code: %s", returnCode)
 	} else {
 		return nil, errors.New("no return_code in XML")
 	}
@@ -336,7 +329,7 @@ func (wr WxPayRouter) processWxResponse(xmlStr string) (wxpay.Params, error) {
 
 	case wxpay.Success:
 		if wr.wxClient.ValidSign(params) {
-			logger.WithField("location", "process wx response").Info("Valiating signature passed")
+			logger.WithField("location", "process wx response").Info("Validating signature passed")
 			return params, nil
 		}
 		return nil, errors.New("invalid sign value in XML")
@@ -368,19 +361,4 @@ func (wr WxPayRouter) verifyRespIdentity(params wxpay.Params) bool {
 	}
 
 	return true
-}
-
-func buildWxReply(msg string, isSuccess bool) []byte {
-	p := make(wxpay.Params)
-	if isSuccess {
-		p["return_code"] = wxpay.Success
-		p["return_msg"] = "OK"
-	} else {
-		p["return_code"] = wxpay.Fail
-		p["return_msg"] = msg
-	}
-
-	xmlStr := wxpay.MapToXml(p)
-
-	return []byte(xmlStr)
 }
