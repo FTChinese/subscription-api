@@ -69,41 +69,42 @@ func NewCycle(key string) (BillingCycle, error) {
 type Plan struct {
 	Tier        MemberTier
 	Cycle       BillingCycle
-	Price       int64
+	Price       float32
 	ID          int // 10 for standard and 100 for premium
 	Description string
 }
 
 // GetPriceCent calculates price in cent to be used for Wechat pay.
 func (p Plan) GetPriceCent() int64 {
-	return p.Price * 100
+	return int64(p.Price * 100)
 }
 
 var plans = map[string]Plan{
 	"standard_year": Plan{
 		Tier:        TierStandard,
 		Cycle:       Yearly,
-		Price:       198,
+		Price:       198.00,
 		ID:          10,
 		Description: "FT中文网 - 标准会员",
 	},
 	"standard_month": Plan{
 		Tier:        TierStandard,
 		Cycle:       Monthly,
-		Price:       28,
+		Price:       28.00,
 		ID:          5,
 		Description: "FT中文网 - 标准会员",
 	},
 	"premium_year": Plan{
 		Tier:        TierPremium,
 		Cycle:       Yearly,
-		Price:       1998,
+		Price:       1998.00,
 		ID:          100,
 		Description: "FT中文网 - 高端会员",
 	},
 	"premium_month": Plan{
 		Tier:        TierPremium,
 		Cycle:       Monthly,
+		Price:       280.00,
 		ID:          50,
 		Description: "FT中文网 - 高端会员",
 	},
