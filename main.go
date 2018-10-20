@@ -50,17 +50,17 @@ func main() {
 	pass := os.Getenv("MYSQL_PASS")
 
 	wx := util.WxConfig{
-		AppID:     os.Getenv("WXPAY_APPID"),
-		MchID:     os.Getenv("WXPAY_MCHID"),
-		APIKey:    os.Getenv("WXPAY_API_KEY"),
-		IsSandbox: !isProd,
+		AppID:  os.Getenv("WXPAY_APPID"),
+		MchID:  os.Getenv("WXPAY_MCHID"),
+		APIKey: os.Getenv("WXPAY_API_KEY"),
+		IsProd: isProd,
 	}
 
-	// log.WithField("package", "next-api.main").Infof("Connecting to MySQL: %s", host)
+	log.WithField("package", "subscription-api.main").Infof("Connecting to MySQL: %s", host)
 
 	db, err := util.NewDB(host, port, user, pass)
 	if err != nil {
-		// log.WithField("package", "next-api.main").Error(err)
+		log.WithField("package", "subscription-api.main").Error(err)
 		os.Exit(1)
 	}
 
