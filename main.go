@@ -34,12 +34,12 @@ func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
 
-	log.WithField("package", "next-api.main").Infof("Is production: %t", isProd)
+	log.WithField("package", "subscription-api.main").Infof("Is production: %t", isProd)
 
 	// NOTE: godotenv load .env file from current working directory, not where the program is located.
 	err := godotenv.Load()
 	if err != nil {
-		log.WithField("package", "next-api.main").Error(err)
+		log.WithField("package", "subscription-api.main").Error(err)
 		os.Exit(1)
 	}
 }
@@ -73,13 +73,14 @@ func main() {
 		r.Use(controller.LogRequest)
 	}
 
-	r.Use(controller.CheckUserID)
+	// r.Use(controller.CheckUserID)
 
 	r.Use(controller.NoCache)
 
 	r.Get("/__version", controller.Version(version, build))
 
 	r.Route("/place-order", func(r1 chi.Router) {
+		r1.Use(controller.CheckUserID)
 		r1.Post("/wxpay/{tier}/{cycle}", orderRouter.NewWxOrder)
 	})
 
