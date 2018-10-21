@@ -83,10 +83,12 @@ func main() {
 
 	r.Route("/alipay", func(r1 chi.Router) {
 		r1.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
+		r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
 	})
 
 	r.Route("/callback", func(r1 chi.Router) {
 		r1.Post("/wxpay", wxRouter.Notification)
+		r1.Post("/alipay", aliRouter.Notification)
 	})
 
 	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8000")
