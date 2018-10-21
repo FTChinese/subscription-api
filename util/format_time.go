@@ -62,6 +62,16 @@ func (f timeForamtter) FromTime(t time.Time) string {
 	return t.In(f.loc).Format(f.layout)
 }
 
+func (f timeForamtter) FromWx(value string) string {
+	t, err := ParseWxTime(value)
+
+	if err != nil {
+		return ""
+	}
+
+	return t.In(f.loc).Format(f.layout)
+}
+
 // ParseSQLDatetime parses SQL DATETIME string into a time.Time instance.
 // Timezone is irrelative as long as all times are processed on the same machine.
 func ParseSQLDatetime(value string) (time.Time, error) {
@@ -75,12 +85,6 @@ func ParseSQLDate(value string) (time.Time, error) {
 
 // ParseWxTime is used to parse wxpay's time format.
 // If it cannot be parsed, default to current time.
-func ParseWxTime(value string) time.Time {
-	t, err := time.ParseInLocation(layoutWxTime, value, TZShanghai)
-
-	if err != nil {
-		return time.Now()
-	}
-
-	return t
+func ParseWxTime(value string) (time.Time, error) {
+	return time.ParseInLocation(layoutWxTime, value, TZShanghai)
 }
