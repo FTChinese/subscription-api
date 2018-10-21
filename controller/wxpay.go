@@ -296,14 +296,18 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Convert this time end to SQL DATETIME
-	// The problem here is we record confirmation time always in UTC. This if fixed.
-	confirmTime := util.ParseWxTime(timeEnd)
-
 	// For test environment stops here.
 	if !wr.wxConfig.IsProd {
 		w.Write([]byte(resp.OK()))
 		return
+	}
+
+	// Convert this time end to SQL DATETIME
+	// The problem here is we record confirmation time always in UTC. This if fixed.
+	confirmTime, err := util.ParseWxTime(timeEnd)
+
+	if err != nil {
+		confirmTime = time.Now()
 	}
 
 	err = wr.model.ConfirmSubscription(subs, confirmTime)
@@ -328,6 +332,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 
 	resp, err := wr.wxClient.OrderQuery(params)
 
+	// If there are any errors when querying order.
 	if err != nil {
 		logger.WithField("location", "OrderQuery").Error(err)
 
@@ -336,6 +341,16 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Reponse fields:
+	// return_code: SUCCESS|FAIL
+	// return_msg: string
+	// appid
+	// mch_id
+	// nonce_str
+	// sign
+	// result_code
+	// err_code
+	// err_code_des
 	if resp.GetString("return_code") == wxpay.Fail {
 		returnMsg := resp.GetString("return_msg")
 		logger.
@@ -363,6 +378,30 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		util.Render(w, util.NewNotFound())
 		return
 	}
+
+	// Response if return_code == SUCCESS and result_code == SUCCESS
+	// openid
+	// trade_type: APP
+	// trade_state: SUCCESS | REFUND | NOTPAY | CLOSED | REVOKED | USERPAYING | PAYERROR
+	// bank_type
+	// total_fee
+	// cash_fee
+	// transaction_id
+	// out_trade_no
+	// time_end: 20091225091010
+	// trade_state_desc
+	timeEnd := resp.GetString("time_end")
+	order := WxOrder{
+		OpenID:        resp.GetString("openid"),
+		TradeType:     resp.GetString("trade_type"),
+		PaymentState:  resp.GetString("trade_state"),
+		TotalFee:      resp.GetString("total_fee"),
+		TransactionID: resp.GetString("transaction_id"),
+		FTCOrderID:    resp.GetString("out_trade_no"),
+		PaidAt:        util.ISO8601UTC.FromWx(timeEnd),
+	}
+
+	util.Render(w, util.NewResponse().SetBody(order))
 }
 
 func (wr WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
