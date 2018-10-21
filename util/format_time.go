@@ -72,12 +72,6 @@ func (f timeForamtter) FromWx(value string) string {
 	return t.In(f.loc).Format(f.layout)
 }
 
-// ParseSQLDatetime parses SQL DATETIME string into a time.Time instance.
-// Timezone is irrelative as long as all times are processed on the same machine.
-func ParseSQLDatetime(value string) (time.Time, error) {
-	return time.Parse(iso9075, value)
-}
-
 // ParseSQLDate parse string layout `2006-01-02`
 func ParseSQLDate(value string) (time.Time, error) {
 	return time.Parse(iso9075Date, value)
@@ -87,4 +81,10 @@ func ParseSQLDate(value string) (time.Time, error) {
 // If it cannot be parsed, default to current time.
 func ParseWxTime(value string) (time.Time, error) {
 	return time.ParseInLocation(layoutWxTime, value, TZShanghai)
+}
+
+// ParseAliTime parses alipay time string.
+// Not clear what timezone it uses. Assming Shanghai time.
+func ParseAliTime(value string) (time.Time, error) {
+	return time.ParseInLocation(iso9075, value, TZShanghai)
 }

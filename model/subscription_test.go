@@ -15,8 +15,8 @@ var mockSubs = Subscription{
 	OrderID:       mockOrderID,
 	TierToBuy:     mockPlan.Tier,
 	BillingCycle:  mockPlan.Cycle,
-	Price:         float32(mockPlan.Price),
-	TotalAmount:   float32(mockPlan.Price),
+	Price:         mockPlan.Price,
+	TotalAmount:   mockPlan.Price,
 	PaymentMethod: Wxpay,
 	UserID:        "e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae",
 }

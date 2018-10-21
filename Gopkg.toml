@@ -49,6 +49,10 @@
   branch = "master"
   name = "github.com/tomasen/realip"
 
+[[constraint]]
+  name = "github.com/smartwalle/alipay"
+  branch = "master"
+
 [prune]
   go-tests = true
   unused-packages = true

@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/corpix/uarand"
+  packages = ["."]
+  revision = "2b8494104d86337cdd41d0a49cbed8e4583c0ab4"
+
+[[projects]]
   name = "github.com/go-chi/chi"
   packages = [
     ".",
@@ -15,6 +21,12 @@
   packages = ["."]
   revision = "d523deb1b23d913de5bdada721a6071e71283618"
   version = "v1.4.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/icrowley/fake"
+  packages = ["."]
+  revision = "4178557ae428460c3780a381c824a1f3aceb6325"
 
 [[projects]]
   name = "github.com/joho/godotenv"
@@ -39,6 +51,15 @@
   packages = ["."]
   revision = "ad15b42461921f1fb3529b058c6786c6a45d5162"
   version = "v1.1.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/smartwalle/alipay"
+  packages = [
+    ".",
+    "encoding"
+  ]
+  revision = "00f6f4d1d587d2faec29c0a0b175bc905b838fc2"
 
 [[projects]]
   branch = "master"
@@ -74,6 +95,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0762608bce99d796f8e90659682f6c8dbb4d32f5f2fdef41ae9bc1b47788f6a1"
+  inputs-digest = "561143bfe2d26f8e4e818d7f47fdbedc37c0e851c6c82cb119d8265aa47c247e"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strconv"
 	"time"
 
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -11,8 +12,8 @@ type Subscription struct {
 	OrderID       string
 	TierToBuy     MemberTier
 	BillingCycle  BillingCycle
-	Price         float32
-	TotalAmount   float32
+	Price         float64
+	TotalAmount   float64
 	PaymentMethod PaymentMethod
 	Currency      string
 	CreatedAt     string // Only for retrieval
@@ -23,6 +24,11 @@ type Subscription struct {
 // WxTotalFee converts TotalAmount to int64 in cent for comparison with wx notification.
 func (s Subscription) WxTotalFee() int64 {
 	return int64(s.TotalAmount * 100)
+}
+
+// AliTotalAmount converts TotalAmount to ailpay format
+func (s Subscription) AliTotalAmount() string {
+	return strconv.FormatFloat(s.TotalAmount, 'f', 2, 32)
 }
 
 // DeduceExpireTime deduces membership expiration time based on when it is confirmed and the billing cycle.

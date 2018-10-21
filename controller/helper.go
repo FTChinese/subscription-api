@@ -1,8 +1,11 @@
 package controller
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/go-chi/chi"
@@ -13,8 +16,10 @@ import (
 var logger = log.WithField("package", "subscription-api.controller")
 
 const (
-	msgInvalidURI = "Invalid request URI"
-	wxNotifyURL   = "http://www.ftacademy.cn/api/v1/notify/wxpay"
+	msgInvalidURI  = "Invalid request URI"
+	wxNotifyURL    = "http://www.ftacademy.cn/api/v1/callback/wxpay"
+	aliNotifyURL   = "http://www.ftacademy.cn/api/v1/callback/alipay"
+	aliProductCode = "QUICK_MSECURITY_PAY"
 )
 
 type paramValue string
@@ -87,4 +92,31 @@ func getClientInfo(req *http.Request) client {
 	}
 
 	return c
+}
+
+type aliAppPayResult struct {
+	Response map[string]string `json:"alipay_trade_app_pay_response"`
+	Sign     string            `json:"sign"`
+	SignTyp  string            `json:"sign_type"`
+}
+
+func (r aliAppPayResult) URLValues() url.Values {
+	var data url.Values
+
+	for k, v := range r.Response {
+		data.Set(k, v)
+	}
+
+	data.Set("sign", r.Sign)
+	data.Set("sign_type", r.SignTyp)
+
+	return data
+}
+
+// Parse parses input data to struct
+func parseJSON(data io.ReadCloser, v interface{}) error {
+	dec := json.NewDecoder(data)
+	defer data.Close()
+
+	return dec.Decode(v)
 }
