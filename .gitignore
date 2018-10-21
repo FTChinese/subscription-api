@@ -18,3 +18,4 @@ build/
 _docs/**/*.png
 _docs/build
 .env
+*.pem

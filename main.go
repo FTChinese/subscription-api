@@ -49,13 +49,6 @@ func main() {
 	user := os.Getenv("MYSQL_USER")
 	pass := os.Getenv("MYSQL_PASS")
 
-	wx := util.WxConfig{
-		AppID:  os.Getenv("WXPAY_APPID"),
-		MchID:  os.Getenv("WXPAY_MCHID"),
-		APIKey: os.Getenv("WXPAY_API_KEY"),
-		IsProd: isProd,
-	}
-
 	log.WithField("package", "subscription-api.main").Infof("Connecting to MySQL: %s", host)
 
 	db, err := util.NewDB(host, port, user, pass)
@@ -64,7 +57,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	wxRouter := controller.NewWxRouter(wx, db)
+	wxRouter := controller.NewWxRouter(db, isProd)
+	aliRouter := controller.NewAliRouter(db, isProd)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -83,6 +77,12 @@ func main() {
 		r1.Use(controller.CheckUserID)
 
 		r1.Post("/unified-order/{tier}/{cycle}", wxRouter.UnifiedOrder)
+
+		r1.Get("/order/{orderId}", wxRouter.OrderQuery)
+	})
+
+	r.Route("/alipay", func(r1 chi.Router) {
+		r1.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
 	})
 
 	r.Route("/callback", func(r1 chi.Router) {

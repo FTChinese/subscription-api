@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -69,7 +70,7 @@ func NewCycle(key string) (BillingCycle, error) {
 type Plan struct {
 	Tier        MemberTier
 	Cycle       BillingCycle
-	Price       float32
+	Price       float64
 	ID          int // 10 for standard and 100 for premium
 	Description string
 }
@@ -77,6 +78,11 @@ type Plan struct {
 // GetPriceCent calculates price in cent to be used for Wechat pay.
 func (p Plan) GetPriceCent() int64 {
 	return int64(p.Price * 100)
+}
+
+// GetPriceAli formats price for alipay
+func (p Plan) GetPriceAli() string {
+	return strconv.FormatFloat(p.Price, 'f', 2, 32)
 }
 
 var plans = map[string]Plan{

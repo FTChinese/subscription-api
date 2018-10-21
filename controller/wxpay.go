@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/icrowley/fake"
@@ -23,14 +24,20 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(wx util.WxConfig, db *sql.DB) WxPayRouter {
+func NewWxRouter(db *sql.DB, isProd bool) WxPayRouter {
+	config := util.WxConfig{
+		AppID:  os.Getenv("WXPAY_APPID"),
+		MchID:  os.Getenv("WXPAY_MCHID"),
+		APIKey: os.Getenv("WXPAY_API_KEY"),
+		IsProd: isProd,
+	}
 	// Pay attention to the last parameter.
 	// It should always be false because Weixin's sandbox address does not work!
-	account := wxpay.NewAccount(wx.AppID, wx.MchID, wx.APIKey, false)
+	account := wxpay.NewAccount(config.AppID, config.MchID, config.APIKey, false)
 
 	return WxPayRouter{
 		model:    model.Env{DB: db},
-		wxConfig: wx,
+		wxConfig: config,
 		wxClient: wxpay.NewClient(account),
 	}
 }
@@ -279,7 +286,11 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 
 	// if order is not found
 	if err != nil {
-		w.Write([]byte(resp.OK()))
+		if err == sql.ErrNoRows {
+			w.Write([]byte(resp.OK()))
+		} else {
+			w.Write([]byte(resp.NotOK(err.Error())))
+		}
 		return
 	}
 
