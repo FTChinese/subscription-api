@@ -1,5 +1,13 @@
 package controller
 
+// WxConfig contains wxpay configuration.
+type WxConfig struct {
+	AppID  string
+	MchID  string
+	APIKey string
+	IsProd bool
+}
+
 // WxOrder is the query result of wxpay.
 type WxOrder struct {
 	OpenID           string `json:"openId"`

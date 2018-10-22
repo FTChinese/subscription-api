@@ -18,14 +18,14 @@ import (
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
 type WxPayRouter struct {
-	wxConfig util.WxConfig
-	wxClient *wxpay.Client
-	model    model.Env
+	config WxConfig
+	client *wxpay.Client
+	model  model.Env
 }
 
 // NewWxRouter creates a new instance or OrderRouter
 func NewWxRouter(db *sql.DB, isProd bool) WxPayRouter {
-	config := util.WxConfig{
+	config := WxConfig{
 		AppID:  os.Getenv("WXPAY_APPID"),
 		MchID:  os.Getenv("WXPAY_MCHID"),
 		APIKey: os.Getenv("WXPAY_API_KEY"),
@@ -36,25 +36,10 @@ func NewWxRouter(db *sql.DB, isProd bool) WxPayRouter {
 	account := wxpay.NewAccount(config.AppID, config.MchID, config.APIKey, false)
 
 	return WxPayRouter{
-		model:    model.Env{DB: db},
-		wxConfig: config,
-		wxClient: wxpay.NewClient(account),
+		model:  model.Env{DB: db},
+		config: config,
+		client: wxpay.NewClient(account),
 	}
-}
-
-func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
-	nonce, _ := util.RandomHex(10)
-
-	p := make(wxpay.Params)
-	p["appid"] = wr.wxConfig.AppID
-	p["partnerid"] = wr.wxConfig.MchID
-	p["prepayid"] = prepayID
-	p["package"] = "Sign=WXPay"
-	p["noncestr"] = nonce
-	p["timestamp"] = fmt.Sprintf("%d", time.Now().Unix())
-	p["sign"] = wr.wxClient.Sign(p)
-
-	return p
 }
 
 // UnifiedOrder implements 统一下单.
@@ -130,7 +115,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !wr.wxConfig.IsProd {
+	if !wr.config.IsProd {
 		plan.Price = 0.01
 	}
 
@@ -171,14 +156,14 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 		SetString("notify_url", wxNotifyURL).
 		SetString("trade_type", "APP")
 
-	if !wr.wxConfig.IsProd {
+	if !wr.config.IsProd {
 		params.SetString("spbill_create_ip", fake.IPv4())
 	}
 
 	logger.WithField("location", "UnifiedOrder").Infof("Order params: %+v", params)
 
 	// Send order to wx
-	resp, err := wr.wxClient.UnifiedOrder(params)
+	resp, err := wr.client.UnifiedOrder(params)
 
 	if err != nil {
 		logger.WithField("location", "UnifiedOrder").Error(err)
@@ -248,6 +233,21 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	util.Render(w, util.NewResponse().SetBody(appParams))
 }
 
+func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
+	nonce, _ := util.RandomHex(10)
+
+	p := make(wxpay.Params)
+	p["appid"] = wr.config.AppID
+	p["partnerid"] = wr.config.MchID
+	p["prepayid"] = prepayID
+	p["package"] = "Sign=WXPay"
+	p["noncestr"] = nonce
+	p["timestamp"] = fmt.Sprintf("%d", time.Now().Unix())
+	p["sign"] = wr.client.Sign(p)
+
+	return p
+}
+
 // Notification implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
 func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
@@ -308,7 +308,7 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// For test environment stops here.
-	if !wr.wxConfig.IsProd {
+	if !wr.config.IsProd {
 		w.Write([]byte(resp.OK()))
 		return
 	}
@@ -341,7 +341,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	params := make(wxpay.Params)
 	params.SetString("out_trade_no", orderID)
 
-	resp, err := wr.wxClient.OrderQuery(params)
+	resp, err := wr.client.OrderQuery(params)
 
 	// If there are any errors when querying order.
 	if err != nil {
@@ -432,7 +432,7 @@ func (wr WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
 		return nil, errors.New("wx notification failed")
 
 	case wxpay.Success:
-		if wr.wxClient.ValidSign(params) {
+		if wr.client.ValidSign(params) {
 			logger.WithField("location", "process wx response").Info("Validating signature passed")
 			return params, nil
 		}
@@ -454,12 +454,12 @@ func (wr WxPayRouter) verifyRespIdentity(params wxpay.Params) bool {
 		return false
 	}
 
-	if params.GetString("appid") != wr.wxConfig.AppID {
+	if params.GetString("appid") != wr.config.AppID {
 		logger.WithField("location", "Verify wx response id").Error("appid does not match")
 		return false
 	}
 
-	if params.GetString("mch_id") != wr.wxConfig.MchID {
+	if params.GetString("mch_id") != wr.config.MchID {
 		logger.WithField("location", "Verify wx response id").Error("mch_id does not match")
 		return false
 	}
