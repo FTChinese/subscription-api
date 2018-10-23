@@ -7,6 +7,7 @@ import (
 )
 
 // RequestClient contains essential data of a user who are placing an order
+// It is exported since both controller and model need it.
 type RequestClient struct {
 	ClientType string
 	Version    string
