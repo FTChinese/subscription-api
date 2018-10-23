@@ -29,7 +29,7 @@ func TestNewSubscription(t *testing.T) {
 		UserIP:     "127.0.0.1",
 	}
 
-	err := devEnv.NewSubscription(mockSubs, c)
+	err := devEnv.SaveSubscription(mockSubs, c)
 
 	if err != nil {
 		t.Error(err)
