@@ -12,7 +12,7 @@ type WxConfig struct {
 type WxOrder struct {
 	OpenID           string `json:"openId"`
 	TradeType        string `json:"tradeType"`
-	PaymentState     string `json:"paymentState"`
+	PaymentState     string `json:"paymentState"` // SUCCESS, REFUND, NOTPAY, CLOSED, REVOKED, USERPAYING, PAYERROR
 	TotalFee         string `json:"totalFee"`
 	TransactionID    string `json:"transactionId"`
 	FTCOrderID       string `json:"ftcOrderId"`
