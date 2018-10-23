@@ -97,7 +97,7 @@ func getClientInfo(req *http.Request) client {
 type aliAppPayResult struct {
 	Response map[string]string `json:"alipay_trade_app_pay_response"`
 	Sign     string            `json:"sign"`
-	SignTyp  string            `json:"sign_type"`
+	SignType string            `json:"sign_type"`
 }
 
 func (r aliAppPayResult) URLValues() url.Values {
@@ -108,7 +108,7 @@ func (r aliAppPayResult) URLValues() url.Values {
 	}
 
 	data.Set("sign", r.Sign)
-	data.Set("sign_type", r.SignTyp)
+	data.Set("sign_type", r.SignType)
 
 	return data
 }
