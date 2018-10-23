@@ -45,8 +45,8 @@ func (s Subscription) DeduceExpireTime(t time.Time) time.Time {
 	return t
 }
 
-// NewSubscription saves a new order
-func (env Env) NewSubscription(s Subscription, c util.RequestClient) error {
+// SaveSubscription saves a new order
+func (env Env) SaveSubscription(s Subscription, c util.RequestClient) error {
 	query := `
 	INSERT INTO premium.ftc_trade
 	SET trade_no = ?,

@@ -123,7 +123,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		UserID:        userID,
 	}
 
-	err = ar.model.NewSubscription(ftcOrder, c)
+	err = ar.model.SaveSubscription(ftcOrder, c)
 
 	param := alipay.AliPayTradeAppPay{}
 	param.NotifyURL = aliNotifyURL
@@ -142,7 +142,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 
 	util.Render(w, util.NewResponse().SetBody(map[string]string{
 		"ftcOrderId": orderID,
-		"aliOrder":   values.Encode(),
+		"param":      values.Encode(),
 	}))
 }
 
@@ -251,6 +251,8 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 }
 
 // VerifyAppPay verify the result of native app pay.
+// Implements https://docs.open.alipay.com/204/105301/
+// 一、同步通知参数说明
 func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	var result aliAppPayResult
 
