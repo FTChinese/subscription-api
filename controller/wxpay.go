@@ -99,7 +99,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	if err == nil && !member.CanRenew(cycle) {
 		reason := util.InvalidReason{
 			Message: "Already a subscribed user",
-			Field:   "order",
+			Field:   "membership",
 			Code:    util.CodeAlreadyExsits,
 		}
 		util.Render(w, util.NewUnprocessable(reason))
@@ -129,7 +129,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	logger.WithField("location", "UnifiedOrder").Infof("Created order: %s", orderID)
 
-	// Get request client metadata
+	// Get request client required headers
 	c := util.NewRequestClient(req)
 
 	// Save this order to db.
@@ -143,7 +143,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 		UserID:        userID,
 	}
 
-	err = wr.model.NewSubscription(ftcOrder, c)
+	err = wr.model.SaveSubscription(ftcOrder, c)
 
 	// Prepare to send wx unified order.
 	params := make(wxpay.Params)
@@ -338,6 +338,11 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	orderID := getURLParam(req, "orderId").toString()
 
+	if orderID == "" {
+		util.Render(w, util.NewBadRequest(""))
+		return
+	}
+
 	params := make(wxpay.Params)
 	params.SetString("out_trade_no", orderID)
 
@@ -368,7 +373,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 			WithField("location", "OrderQuery").
 			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
 
-		util.Render(w, util.NewNotFound())
+		util.Render(w, util.NewBadRequest("Failed to contact wx server"))
 		return
 	}
 
@@ -386,7 +391,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if ok := wr.verifyRespIdentity(resp); !ok {
-		util.Render(w, util.NewNotFound())
+		util.Render(w, util.NewBadRequest("Wrong identity"))
 		return
 	}
 
