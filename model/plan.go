@@ -107,13 +107,13 @@ var plans = map[string]Plan{
 		ID:          100,
 		Description: "FT中文网 - 高端会员",
 	},
-	"premium_month": Plan{
-		Tier:        TierPremium,
-		Cycle:       Monthly,
-		Price:       280.00,
-		ID:          50,
-		Description: "FT中文网 - 高端会员",
-	},
+	// "premium_month": Plan{
+	// 	Tier:        TierPremium,
+	// 	Cycle:       Monthly,
+	// 	Price:       280.00,
+	// 	ID:          50,
+	// 	Description: "FT中文网 - 高端会员",
+	// },
 }
 
 // CreateOrderID creates the order number based on the plan selected.
