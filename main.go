@@ -93,7 +93,7 @@ func main() {
 
 	r.Route("/membership", func(r1 chi.Router) {
 
-		r1.Get("renewabel", memberRouter.IsRenewable)
+		r1.Get("/renewabel", memberRouter.IsRenewable)
 	})
 
 	r.Route("/callback", func(r1 chi.Router) {
