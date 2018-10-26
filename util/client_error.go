@@ -1,35 +1,42 @@
 package util
 
-// UnprocessableCode is an enum for UnprocessableError's Code field
-type UnprocessableCode string
-
 const (
 	// CodeMissing means a resource does not exist
-	CodeMissing UnprocessableCode = "missing"
+	CodeMissing = "missing"
 	// CodeMissingField means a required field on a resource has not been set.
-	CodeMissingField UnprocessableCode = "missing_field"
+	CodeMissingField = "missing_field"
 	// CodeInvalid means the formatting of a field is invalid
-	CodeInvalid UnprocessableCode = "invalid"
+	CodeInvalid = "invalid"
 	// CodeAlreadyExsits means another resource has the same value as this field.
-	CodeAlreadyExsits UnprocessableCode = "already_exists"
+	CodeAlreadyExsits = "already_exists"
+	// CodeIncorrect means some field is not correct.
+	CodeIncorrect = "incorrect"
 )
 
 // ClientError respond to 4xx http status.
 type ClientError struct {
-	Message string `json:"message"`
+	Message string  `json:"message"`
+	Reason  *Reason `json:"error,omitempty"`
 }
 
-// InvalidReason respond to 422 status code
-type InvalidReason struct {
-	// Message is only used to pass data to the first argument of NewUnprocessable()
-	Message string            `json:"message"`
-	Field   string            `json:"field"`
-	Code    UnprocessableCode `json:"code"`
+// Reason tells why its unprocessable.
+type Reason struct {
+	message string
+	Field   string `json:"field"`
+	Code    string `json:"code"`
 }
 
-// NewInvalidReason returns a new instance of InvalidReason.
-func NewInvalidReason() *InvalidReason {
-	return &InvalidReason{
-		Message: "Validation failed",
-	}
+// NewReason creates a new instance of Reason
+func NewReason() *Reason {
+	return &Reason{message: "Validation failed"}
+}
+
+// SetMessage set the message to be carried away.
+func (r *Reason) SetMessage(msg string) {
+	r.message = msg
+}
+
+// GetMessage returns Reason's descriptive message.
+func (r *Reason) GetMessage() string {
+	return r.message
 }
