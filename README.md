@@ -87,17 +87,40 @@ If subscription plan if not found;
 
 If wechat server send back error;
 
-* `422 Unprocessable Entity`
+* `403 Forbidden`
 
-If this user is alrady a member and current date is not within the allowed renewal period.
+If this user is already a member and current date is not within the allowed renewal period.
 
 ```json
 {
-    "message": "Already a subscribed user",
-    "field": "membership",
-    "code": "already_exists"
+    "message": "Already a subscribed user and not within allowed renewal period.",
 }
 ```
+* `422 Unprocessable Entity`
+
+if `return_code` in wechat's reponse is `FAIL`:
+```json
+{
+    "message": "appid不存在 | 商户号mch_id与appid不匹配 | invalid spbill_create_ip | spbill_create_ip参数长度有误",
+    "error": {
+        "field": "return_code",
+        "code": "fail"
+    }
+}
+```
+
+if `result_code` from wechat is `FAIL`:
+```json
+{
+    "message": "系统异常，请用相同参数重新调用",
+    "error": {
+        "field": "result_code",
+        "code": "SYSTEMERROR"
+    }
+}
+```
+
+* `500 Internal Server Error` for any server or database error.
 
 * `200 OK`
 
@@ -123,6 +146,8 @@ All fields except `ftcOrderId` is required by https://pay.weixin.qq.com/wiki/doc
     GET /wxpay/order/{orderId}
 
 #### Response
+
+* `401 Unauthorized` if request header does not contain `X-User-Id`.
 
 * `400 Bad Request` 
 
@@ -168,17 +193,15 @@ If `tier` and `cycle` is not one of the values as specified above;
 
 If subscription plan if not found;
 
-If wechat server send back error;
+If sign request parameters failed;
 
-* `422 Unprocessable Entity`
+* `403 Forbidden`
 
-If this user is alrady a member and current date is not within the allowed renewal period.
+If this user is already a member and current date is not within the allowed renewal period.
 
 ```json
 {
-    "message": "Already a subscribed user",
-    "field": "membership",
-    "code": "already_exists"
+    "message": "Already a subscribed user and not within allowed renewal period.",
 }
 ```
 
@@ -219,14 +242,55 @@ App forwards pyament results here:
 
 #### Response
 
-* `400 Bad Request`
+* `400 Bad Request` if parsing JSON failed.
 
-If Verifiy singature errored or failed;
+* `422 Unprocessable Entity`
 
-Returned `app_id` is not us;
+if signature is not valid:
+```json
+{
+    "message": "",
+    "error": {
+        "field": "sign",
+        "code": "invalid"
+    }
+}
+```
 
-`out_trade_no` is not found in our database;
+if signature is valid but not correct:
+```json
+{
+    "message": "",
+    "error": {
+        "field": "sign",
+        "code": "incorrect"
+    }
+}
+```
 
-`total_amount` does not match the one recorded in database.
+if `app_id` is wrong:
+```json
+{
+    "message": "",
+    "error": {
+        "field": "app_id",
+        "code": "incorrect"
+    }
+}
+```
+if `total_amount` does not match the one recorded in database.
+```json
+{
+    "message": "",
+    "error": {
+        "field": "total_amount",
+        "code": "incorrect"
+    }
+}
+```
+
+* `404 Not Found` if `out_trade_no` is not found in our database;
+
+
 
 * `204 No Content`

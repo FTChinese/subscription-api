@@ -97,15 +97,11 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	// If membership for this user is found, and is not in the allowed renewal period.
 	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
 	if err == nil && !member.CanRenew(cycle) {
-		reason := util.InvalidReason{
-			Message: "Already a subscribed user",
-			Field:   "membership",
-			Code:    util.CodeAlreadyExsits,
-		}
-		util.Render(w, util.NewUnprocessable(reason))
+		util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
 		return
 	}
 
+	// Plan if not found.
 	plan, err := model.NewPlan(tier, cycle)
 
 	if err != nil {
@@ -145,6 +141,10 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	err = wr.model.SaveSubscription(ftcOrder, c)
 
+	if err != nil {
+		util.Render(w, util.NewDBFailure(err))
+		return
+	}
 	// Prepare to send wx unified order.
 	params := make(wxpay.Params)
 
@@ -206,7 +206,13 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 			WithField("location", "UnifiedOrder").
 			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
 
-		util.Render(w, util.NewBadRequest(returnMsg))
+		reason := &util.Reason{
+			Field: "return_code",
+			Code:  "fail",
+		}
+		reason.SetMessage(returnMsg)
+
+		util.Render(w, util.NewUnprocessable(reason))
 		return
 	}
 
@@ -218,7 +224,13 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 			WithField("err_code", errCode).
 			WithField("err_code_des", errCodeDes).
 			Error("Wx unified order result failed")
-		util.Render(w, util.NewBadRequest(errCodeDes))
+
+		reason := &util.Reason{
+			Field: "result_code",
+			Code:  errCode,
+		}
+		reason.SetMessage(errCodeDes)
+		util.Render(w, util.NewUnprocessable(reason))
 
 		return
 	}

@@ -3,8 +3,6 @@ package util
 import (
 	"database/sql"
 	"net/http"
-
-	"github.com/go-sql-driver/mysql"
 )
 
 // Response collects all data needed for an HTTP response
@@ -43,7 +41,7 @@ func NewResponse() Response {
 
 // NewNoContent creates an HTTP 204 No Content response
 func NewNoContent() Response {
-	r := NewResponse().NoCache()
+	r := NewResponse()
 	r.StatusCode = http.StatusNoContent
 
 	return r
@@ -51,7 +49,7 @@ func NewNoContent() Response {
 
 // NewNotFound creates response 404 Not Found
 func NewNotFound() Response {
-	r := NewResponse().NoCache()
+	r := NewResponse()
 
 	r.StatusCode = http.StatusNotFound
 	r.Body = ClientError{Message: "Not Found"}
@@ -65,7 +63,7 @@ func NewUnauthorized(msg string) Response {
 		msg = "Requires authorization."
 	}
 
-	r := NewResponse().NoCache()
+	r := NewResponse()
 	r.StatusCode = http.StatusUnauthorized
 	r.Body = ClientError{Message: msg}
 
@@ -74,7 +72,7 @@ func NewUnauthorized(msg string) Response {
 
 // NewForbidden creates response for 403
 func NewForbidden(msg string) Response {
-	r := NewResponse().NoCache()
+	r := NewResponse()
 
 	r.StatusCode = http.StatusForbidden
 	r.Body = ClientError{Message: msg}
@@ -88,7 +86,7 @@ func NewBadRequest(msg string) Response {
 	if msg == "" {
 		msg = "Problems parsing JSON"
 	}
-	r := NewResponse().NoCache()
+	r := NewResponse()
 
 	r.StatusCode = http.StatusBadRequest
 	r.Body = ClientError{Message: msg}
@@ -97,23 +95,21 @@ func NewBadRequest(msg string) Response {
 }
 
 // NewUnprocessable creates response 422 Unprocessable Entity
-func NewUnprocessable(vr InvalidReason) Response {
+func NewUnprocessable(r *Reason) Response {
 
-	if vr.Message == "" {
-		vr.Message = "Validation Failed"
-	}
+	c := ClientError{Message: r.GetMessage(), Reason: r}
 
-	r := NewResponse().NoCache()
-	r.StatusCode = http.StatusUnprocessableEntity
-	r.Body = vr
+	resp := NewResponse()
+	resp.StatusCode = http.StatusUnprocessableEntity
+	resp.Body = c
 
-	return r
+	return resp
 }
 
 // NewInternalError creates response for internal server error
 func NewInternalError(msg string) Response {
 
-	r := NewResponse().NoCache()
+	r := NewResponse()
 
 	r.StatusCode = http.StatusInternalServerError
 	r.Body = ClientError{Message: msg}
@@ -125,17 +121,7 @@ func NewInternalError(msg string) Response {
 // MySQL duplicate error when inerting into uniquely constraint column;
 // ErrNoRows if it cannot retrieve any rows of the specified criteria;
 // `field` is used to identify which field is causing duplicate error.
-func NewDBFailure(err error, field string) Response {
-
-	if e, ok := err.(*mysql.MySQLError); ok && e.Number == 1062 {
-		r := InvalidReason{
-			Field: field,
-			Code:  CodeAlreadyExsits,
-		}
-
-		return NewUnprocessable(r)
-	}
-
+func NewDBFailure(err error) Response {
 	switch err {
 	case sql.ErrNoRows:
 		return NewNotFound()

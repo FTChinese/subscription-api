@@ -81,12 +81,8 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	// If membership for this user is found, and is not in the allowed renewal period.
 	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
 	if err == nil && !member.CanRenew(cycle) {
-		reason := util.InvalidReason{
-			Message: "Already a subscribed user",
-			Field:   "order",
-			Code:    util.CodeAlreadyExsits,
-		}
-		util.Render(w, util.NewUnprocessable(reason))
+		util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+
 		return
 	}
 
@@ -124,6 +120,11 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	}
 
 	err = ar.model.SaveSubscription(ftcOrder, c)
+
+	if err != nil {
+		util.Render(w, util.NewDBFailure(err))
+		return
+	}
 
 	param := alipay.AliPayTradeAppPay{}
 	param.NotifyURL = aliNotifyURL
@@ -264,14 +265,27 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 
 	ok, err := ar.client.VerifySign(result.URLValues())
 
+	// 422
 	if err != nil {
-		util.Render(w, util.NewBadRequest(err.Error()))
+		reason := &util.Reason{
+			Field: "sign",
+			Code:  util.CodeInvalid,
+		}
+		reason.SetMessage(err.Error())
+
+		util.Render(w, util.NewUnprocessable(reason))
 
 		return
 	}
 
 	if !ok {
-		util.Render(w, util.NewBadRequest("Verification failed"))
+		reason := &util.Reason{
+			Field: "sign",
+			Code:  util.CodeIncorrect,
+		}
+		reason.SetMessage(err.Error())
+
+		util.Render(w, util.NewUnprocessable(reason))
 
 		return
 	}
@@ -284,7 +298,13 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	if appID != ar.appID {
 		logger.WithField("location", "AliNotification").Info("AppID does not match")
 
-		util.Render(w, util.NewBadRequest("App ID mismatched"))
+		reason := &util.Reason{
+			Field: "app_id",
+			Code:  util.CodeIncorrect,
+		}
+		reason.SetMessage("APP ID mismatched.")
+
+		util.Render(w, util.NewUnprocessable(reason))
 		return
 	}
 
@@ -294,16 +314,23 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	// If the order does not exist, tell ali success;
 	// If err is not `not found`, tell ali to resend.
 	if err != nil {
-		util.Render(w, util.NewBadRequest(err.Error()))
+		util.Render(w, util.NewDBFailure(err))
 
 		return
 	}
 
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
 	if subs.AliTotalAmount() != totalAmount {
-		logger.WithField("location", "AliNotification").Infof("Subscrition total amount: %s vs Notification total amount: %s", subs.AliTotalAmount(), totalAmount)
+		logger.
+			WithField("location", "AliNotification").
+			Infof("Subscrition total amount: %s vs Notification total amount: %s", subs.AliTotalAmount(), totalAmount)
 
-		util.Render(w, util.NewBadRequest("Total amount does not match"))
+		reason := &util.Reason{
+			Field: "total_amount",
+			Code:  util.CodeIncorrect,
+		}
+		reason.SetMessage("Total amount does not match.")
+		util.Render(w, util.NewUnprocessable(reason))
 
 		return
 	}
