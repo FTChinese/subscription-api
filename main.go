@@ -91,6 +91,6 @@ func main() {
 		r1.Post("/alipay", aliRouter.Notification)
 	})
 
-	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8000")
-	log.Fatal(http.ListenAndServe(":8000", r))
+	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8200")
+	log.Fatal(http.ListenAndServe(":8200", r))
 }
