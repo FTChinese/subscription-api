@@ -59,6 +59,7 @@ func main() {
 
 	wxRouter := controller.NewWxRouter(db, isProd)
 	aliRouter := controller.NewAliRouter(db, isProd)
+	memberRouter := controller.NewMemberRouter(db)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -73,6 +74,7 @@ func main() {
 
 	r.Get("/__version", controller.Version(version, build))
 
+	// Requires user id.
 	r.Route("/wxpay", func(r1 chi.Router) {
 		r1.Use(controller.CheckUserID)
 
@@ -81,9 +83,17 @@ func main() {
 		r1.Get("/order/{orderId}", wxRouter.OrderQuery)
 	})
 
+	// Requries user id.
 	r.Route("/alipay", func(r1 chi.Router) {
+		r1.Use(controller.CheckUserID)
+
 		r1.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
 		r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
+	})
+
+	r.Route("/membership", func(r1 chi.Router) {
+
+		r1.Get("renewabel", memberRouter.IsRenewable)
 	})
 
 	r.Route("/callback", func(r1 chi.Router) {
