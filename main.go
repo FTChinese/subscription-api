@@ -80,7 +80,10 @@ func main() {
 
 		r1.Post("/unified-order/{tier}/{cycle}", wxRouter.UnifiedOrder)
 
-		r1.Get("/order/{orderId}", wxRouter.OrderQuery)
+		// Query order
+		r1.Get("/query/{orderId}", wxRouter.OrderQuery)
+
+		// Cancel order
 	})
 
 	// Requries user id.
