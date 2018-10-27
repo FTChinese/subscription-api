@@ -143,23 +143,41 @@ All fields except `ftcOrderId` is required by https://pay.weixin.qq.com/wiki/doc
 
 ### Wx Query Order
 
-    GET /wxpay/order/{orderId}
+    GET /wxpay/query/{orderId}
 
 #### Response
 
 * `401 Unauthorized` if request header does not contain `X-User-Id`.
 
-* `400 Bad Request` 
+* `400 Bad Request` if orderId is empty;
 
-if orderId is empty;
+* `404 Not Found` if the orderId is not found, or if this order's `appid` and `mchid` is not us.
 
-if failed to contact weixin server;
+* `422 Unprocessable Entity`
 
-if weixin send back error;
+if wechat's `return_code` is `FAIL`:
+```json
+{
+    "message": "签名失败",
+    "error": {
+        "field": "return_code",
+        "code": "fail"
+    }
+}
+```
 
-if this order's appid and mchid is not us;
+if wechat's `result_code` is `FAIL`:
+```json
+{
+    "message": "系统错误",
+    "error": {
+        "field": "result_code",
+        "code": "fail"
+    }
+}
+```
 
-* `404 Not Found` if the orderId is not found or wechat server returned any error.
+* `500 Internal Server Error` if errors occurred while contacting wechat server.
 
 * `200 OK`
 ```json
@@ -291,6 +309,59 @@ if `total_amount` does not match the one recorded in database.
 
 * `404 Not Found` if `out_trade_no` is not found in our database;
 
-
-
 * `204 No Content`
+
+## Server to Server Notification
+
+### Wechat
+
+Example wx notification data as described on https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
+
+```json
+{
+    "cash_fee":1,
+    "is_subscribe": "N",
+    "mch_id": "1504993271",
+    "time_end": "20181027175113",
+    "total_fee":1,
+    "bank_type": "CFT",
+    "nonce_str":"1540633845456125000", 
+    "result_code":"SUCCESS",
+    "return_code":"SUCCESS",
+    "transaction_id":"4200000190201810278529489604",
+    "fee_type": "CNY",
+    "out_trade_no":"FT0055501540633845",
+    "sign":"8C4B3D90F2B989EAAC4B541329EF5F8B",
+    "appid":"wxacddf1c20516eb69",
+    "openid":"ob7fA0h69OO0sTLyQQpYc55iF_P0",
+    "trade_type":"APP"
+}
+```
+
+Order query response:
+```json
+{
+    "return_msg":"OK",
+    "total_fee":1,
+    "fee_type":"CNY", 
+    "transaction_id":"4200000192201810276298895392",
+    "out_trade_no":"FT0059051540637408",
+    "mch_id":"1504993271",
+    "is_subscribe":"N",
+    "trade_state_desc":"支付成功",
+    "return_code":"SUCCESS",
+    "openid":"ob7fA0h69OO0sTLyQQpYc55iF_P0",
+    "trade_type":"APP",
+    "bank_type":"CFT",
+    "trade_state":"SUCCESS",
+    "time_end":"20181027185023",
+    "cash_fee":1,
+    "appid":"wxacddf1c20516eb69",
+    "nonce_str":"iP1joB3m1zqDAzUL",
+    "sign":"2C5F0583127CE3D975DEC5EF2E4A8C45",
+    "result_code":"SUCCESS",
+    "attach":""
+}
+
+```
+### Ali
