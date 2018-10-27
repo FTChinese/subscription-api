@@ -276,7 +276,8 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logger.WithField("location", "Wx pay notification").Infof("Wx pay response: %+v", params)
+	logger.WithField("location", "WxPayNotification").Infof("Successfully received wechat notification")
+
 	// Verify appid, mch_id, trade_type, total_fee.
 	// Get out_trade_no to retrieve order.
 	// Check the order's confirmed_utc field.
@@ -284,6 +285,8 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 
 	// If this notification does not belong to use, refuse wx's retry.
 	if ok := wr.verifyRespIdentity(params); !ok {
+		logger.WithField("location", "WxPayNotification").Info("App idnetity verification not passed")
+
 		w.Write([]byte(resp.OK()))
 
 		return
@@ -299,6 +302,8 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	// if order is not found
 	if err != nil {
 		if err == sql.ErrNoRows {
+			logger.WithField("location", "WxPayNotification").Infof("Order %s is not found", orderID)
+
 			w.Write([]byte(resp.OK()))
 		} else {
 			w.Write([]byte(resp.NotOK(err.Error())))
@@ -308,6 +313,8 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 
 	// Verify total amount
 	if totalFee != subs.WxTotalFee() {
+		logger.WithField("location", "WxPayNotification").Infof("Total fee does not match. Should be %d, actual %d", subs.WxTotalFee(), totalFee)
+
 		w.Write([]byte(resp.OK()))
 		return
 	}
@@ -315,12 +322,8 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	// If order is found, and is already confirmed.
 	// Should we check membership data here?
 	if subs.ConfirmedAt != "" {
-		w.Write([]byte(resp.OK()))
-		return
-	}
+		logger.WithField("location", "WxPayNotification").Infof("Order %s already confirmed.", orderID)
 
-	// For test environment stops here.
-	if !wr.config.IsProd {
 		w.Write([]byte(resp.OK()))
 		return
 	}
@@ -358,16 +361,19 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	params := make(wxpay.Params)
 	params.SetString("out_trade_no", orderID)
 
+	// Send query to Wechat server
 	resp, err := wr.client.OrderQuery(params)
 
 	// If there are any errors when querying order.
 	if err != nil {
 		logger.WithField("location", "OrderQuery").Error(err)
 
-		util.Render(w, util.NewNotFound())
+		util.Render(w, util.NewInternalError(err.Error()))
 
 		return
 	}
+
+	logger.WithField("location", "OrderQuery").Infof("Order query result: %+v", resp)
 
 	// Reponse fields:
 	// return_code: SUCCESS|FAIL
@@ -385,7 +391,14 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 			WithField("location", "OrderQuery").
 			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
 
-		util.Render(w, util.NewBadRequest("Failed to contact wx server"))
+		reason := &util.Reason{
+			Field: "return_code",
+			Code:  "fail",
+		}
+		reason.SetMessage(returnMsg)
+
+		util.Render(w, util.NewUnprocessable(reason))
+
 		return
 	}
 
@@ -397,13 +410,27 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 			WithField("err_code", errCode).
 			WithField("err_code_des", errCodeDes).
 			Error("Wx unified order result failed")
-		util.Render(w, util.NewBadRequest(errCodeDes))
+
+		switch errCode {
+		case "ORDERNOTEXIST":
+			util.Render(w, util.NewNotFound())
+
+		default:
+			reason := &util.Reason{
+				Field: "result_code",
+				Code:  "fail",
+			}
+			reason.SetMessage(errCodeDes)
+			util.Render(w, util.NewUnprocessable(reason))
+		}
 
 		return
 	}
 
 	if ok := wr.verifyRespIdentity(resp); !ok {
-		util.Render(w, util.NewBadRequest("Wrong identity"))
+		logger.WithField("location", "OrderQuery").Info("appid or mch_id mismatched")
+
+		util.Render(w, util.NewNotFound())
 		return
 	}
 
@@ -450,7 +477,7 @@ func (wr WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
 
 	case wxpay.Success:
 		if wr.client.ValidSign(params) {
-			logger.WithField("location", "process wx response").Info("Validating signature passed")
+			logger.WithField("location", "processWxResponse").Info("Validating signature passed")
 			return params, nil
 		}
 		return nil, errors.New("invalid sign value in XML")
@@ -461,23 +488,23 @@ func (wr WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
 }
 
 func (wr WxPayRouter) verifyRespIdentity(params wxpay.Params) bool {
-	if params.ContainsKey("appid") {
-		logger.WithField("location", "Verify wx response id").Error("Missing appid")
+	if !params.ContainsKey("appid") {
+		logger.WithField("location", "WxPay verifyRespIdentity").Error("Missing appid")
 		return false
 	}
 
-	if params.ContainsKey("mch_id") {
-		logger.WithField("location", "Verify wx response id").Error("Missing mch_id")
+	if !params.ContainsKey("mch_id") {
+		logger.WithField("location", "WxPay verifyRespIdentity").Error("Missing mch_id")
 		return false
 	}
 
 	if params.GetString("appid") != wr.config.AppID {
-		logger.WithField("location", "Verify wx response id").Error("appid does not match")
+		logger.WithField("location", "WxPay verifyRespIdentity").Error("appid does not match")
 		return false
 	}
 
 	if params.GetString("mch_id") != wr.config.MchID {
-		logger.WithField("location", "Verify wx response id").Error("mch_id does not match")
+		logger.WithField("location", "WxPay verifyRespIdentity").Error("mch_id does not match")
 		return false
 	}
 
