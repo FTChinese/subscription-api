@@ -13,6 +13,9 @@ inputfiles := frontmatter.md README.md
 build :
 	go build $(LDFLAGS) -o $(build_dir)/$(BINARY) -v .
 
+run :
+	./$(build_dir)/${BINARY}
+
 deploy : linux
 	rsync -v $(build_dir)/linux/$(BINARY) nodeserver:/home/node/go/bin/
 
