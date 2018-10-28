@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -33,12 +34,14 @@ type AliPayRouter struct {
 func NewAliRouter(db *sql.DB, isProd bool) AliPayRouter {
 	appID := os.Getenv("ALIPAY_APP_ID")
 
+	// Ali's public key is used to verify alipay's response.
 	publicKey, err := ioutil.ReadFile("alipay_public_key.pem")
 	if err != nil {
 		logger.WithField("location", "NewAliRouter").Error(err)
 		os.Exit(1)
 	}
 
+	// Private key is used to sign our data that will be sent to alipay.
 	privateKey, err := ioutil.ReadFile("ftc_private_key.pem")
 	if err != nil {
 		logger.WithField("location", "NewAliRouter").Error(err)
@@ -80,9 +83,16 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 
 	// If membership for this user is found, and is not in the allowed renewal period.
 	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
+	if err != nil {
+		if err != sql.ErrNoRows {
+			util.Render(w, util.NewDBFailure(err))
+
+			return
+		}
+	}
+
 	if err == nil && !member.CanRenew(cycle) {
 		util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-
 		return
 	}
 
@@ -134,7 +144,10 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	param.ProductCode = aliProductCode
 	param.GoodsType = "0"
 
+	// Call URLValues to generate alipay required data structure and sign it.
 	values, err := ar.client.URLValues(param)
+
+	logger.WithField("location", "AliAppOrder").Infof("App pay param: %+v\n", values)
 
 	if err != nil {
 		util.Render(w, util.NewBadRequest(err.Error()))
@@ -257,13 +270,25 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	var result aliAppPayResult
 
-	if err := parseJSON(req.Body, &result); err != nil {
+	body, err := ioutil.ReadAll(req.Body)
+
+	if err != nil {
+		util.Render(w, util.NewBadRequest("Problems parsing JSON"))
+
+		return
+	}
+
+	signedStr := extractAppPayResp(string(body), keyAppPayResp)
+
+	if err := json.Unmarshal(body, result); err != nil {
 		util.Render(w, util.NewBadRequest(err.Error()))
 
 		return
 	}
 
-	ok, err := ar.client.VerifySign(result.URLValues())
+	sign := result.Sign
+	signType := result.SignType
+	ok, err := verifyAliResp([]byte(signedStr), sign, signType, ar.client.AliPayPublicKey)
 
 	// 422
 	if err != nil {
@@ -290,9 +315,9 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	appID := result.Response["app_id"]
-	orderID := result.Response["out_trade_no"]
-	totalAmount := result.Response["total_amount"]
+	appID := result.Response.AppID
+	orderID := result.Response.FtcOrderID
+	totalAmount := result.Response.TotalAmount
 
 	// 4、验证app_id是否为该商户本身
 	if appID != ar.appID {
