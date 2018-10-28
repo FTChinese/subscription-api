@@ -262,6 +262,8 @@ If you parse it into a map and then verify the pased data structure, you'll neve
 
 * `400 Bad Request` if parsing JSON failed.
 
+* `404 Not Found` if the order is not found.
+
 * `422 Unprocessable Entity`
 
 if signature is not valid:
@@ -307,7 +309,13 @@ if `total_amount` does not match the one recorded in database.
 }
 ```
 
-* `204 No Content`
+* `200 OK`
+```json
+{
+    "code": "",
+    ""
+}
+```
 
 ## Server to Server Notification
 

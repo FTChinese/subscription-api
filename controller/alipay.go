@@ -360,5 +360,17 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	util.Render(w, util.NewNoContent())
+	paidAt := util.ISO8601UTC.
+		FromDatetime(
+			result.Response.DateTime,
+			util.TZShanghai,
+		)
+
+	order := AliAppOrder{
+		FtcOrderID: result.Response.FtcOrderID,
+		AliOrderID: result.Response.AliOrderID,
+		PaidAt:     paidAt,
+	}
+
+	util.Render(w, util.NewResponse().SetBody(order))
 }
