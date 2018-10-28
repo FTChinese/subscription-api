@@ -59,7 +59,8 @@ func (env Env) SaveSubscription(s Subscription, c util.RequestClient) error {
 		client_type = ?,
 		client_version = ?,
 		created_utc = UTC_TIMESTAMP(),
-		user_ip_bin = INET6_ATON(?)`
+		user_ip_bin = INET6_ATON(?),
+		user_agent = NULLIF(?, '')`
 
 	_, err := env.DB.Exec(query,
 		s.OrderID,
@@ -72,6 +73,7 @@ func (env Env) SaveSubscription(s Subscription, c util.RequestClient) error {
 		c.ClientType,
 		c.Version,
 		c.UserIP,
+		c.UserAgent,
 	)
 
 	if err != nil {
