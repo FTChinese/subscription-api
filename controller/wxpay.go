@@ -96,6 +96,14 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	// If membership for this user is found, and is not in the allowed renewal period.
 	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
+	if err != nil {
+		if err != sql.ErrNoRows {
+			util.Render(w, util.NewDBFailure(err))
+
+			return
+		}
+	}
+
 	if err == nil && !member.CanRenew(cycle) {
 		util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
 		return
