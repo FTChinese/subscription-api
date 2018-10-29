@@ -77,6 +77,17 @@ func ParseSQLDate(value string) (time.Time, error) {
 	return time.Parse(iso9075Date, value)
 }
 
+// ParseSQLDatetime parse SQL DATETIME string in UTC.
+func ParseSQLDatetime(value string) time.Time {
+	t, err := time.ParseInLocation(iso9075, value, time.UTC)
+
+	if err != nil {
+		return time.Now()
+	}
+
+	return t
+}
+
 // ParseWxTime is used to parse wxpay's time format.
 // If it cannot be parsed, default to current time.
 func ParseWxTime(value string) (time.Time, error) {

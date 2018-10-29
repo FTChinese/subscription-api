@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
+
+	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // MemberTier represents membership tiers
@@ -85,6 +87,13 @@ func (p Plan) GetPriceAli() string {
 	return strconv.FormatFloat(p.Price, 'f', 2, 32)
 }
 
+// DiscountDuration contains a discount period.
+// Start and end are time string in SQL DATETIME format.
+type DiscountDuration struct {
+	Start string
+	End   string
+}
+
 var plans = map[string]Plan{
 	"standard_year": Plan{
 		Tier:        TierStandard,
@@ -107,13 +116,35 @@ var plans = map[string]Plan{
 		ID:          100,
 		Description: "FT中文网 - 高端会员",
 	},
-	// "premium_month": Plan{
-	// 	Tier:        TierPremium,
-	// 	Cycle:       Monthly,
-	// 	Price:       280.00,
-	// 	ID:          50,
-	// 	Description: "FT中文网 - 高端会员",
-	// },
+}
+
+var discountPlans = map[string]Plan{
+	"standard_year": Plan{
+		Tier:        TierStandard,
+		Cycle:       Yearly,
+		Price:       0.01,
+		ID:          10,
+		Description: "FT中文网 - 标准会员",
+	},
+	"standard_month": Plan{
+		Tier:        TierStandard,
+		Cycle:       Monthly,
+		Price:       0.01,
+		ID:          5,
+		Description: "FT中文网 - 标准会员",
+	},
+	"premium_year": Plan{
+		Tier:        TierPremium,
+		Cycle:       Yearly,
+		Price:       0.01,
+		ID:          100,
+		Description: "FT中文网 - 高端会员",
+	},
+}
+
+var discountDuration = DiscountDuration{
+	Start: "2018-10-01 16:00:00",
+	End:   "2018-10-31 16:00:00",
 }
 
 // CreateOrderID creates the order number based on the plan selected.
@@ -131,7 +162,18 @@ func CreateOrderID(p Plan) string {
 func NewPlan(tier MemberTier, cycle BillingCycle) (Plan, error) {
 	key := string(tier) + "_" + string(cycle)
 
-	p, ok := plans[key]
+	now := time.Now()
+	start := util.ParseSQLDatetime(discountDuration.Start)
+	end := util.ParseSQLDatetime(discountDuration.End)
+
+	var p Plan
+	var ok bool
+
+	if now.Before(start) || now.After(end) {
+		p, ok = plans[key]
+	} else {
+		p, ok = discountPlans[key]
+	}
 
 	if !ok {
 		return p, errors.New("subscription plan not found")
