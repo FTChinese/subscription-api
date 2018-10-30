@@ -7,7 +7,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
-var mockPlan = plans["standard_year"]
+var mockPlan = DefaultPlans["standard_year"]
 
 const mockOrderID = "FT0102381539932302"
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
@@ -75,5 +76,34 @@ func Version(version, build string) func(http.ResponseWriter, *http.Request) {
 		}
 
 		util.Render(w, util.NewResponse().NoCache().SetBody(b))
+	}
+}
+
+// DefaultPlans shows what our subscription plans are.
+func DefaultPlans() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		util.Render(w, util.NewResponse().NoCache().SetBody(model.DefaultPlans))
+	}
+}
+
+// DiscountPlans show the current discount plans available.
+func DiscountPlans() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		util.Render(w, util.NewResponse().NoCache().SetBody(model.DiscountPlans))
+	}
+}
+
+// CurrentPlans see what plan we are using now.
+func CurrentPlans() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		util.Render(
+			w,
+			util.
+				NewResponse().
+				NoCache().
+				SetBody(
+					model.GetCurrentPlans(),
+				),
+		)
 	}
 }
