@@ -2,6 +2,9 @@ package util
 
 import "time"
 
+// All time output are formatted in ISO8601 string,
+// with timezone set in UTC.
+// Example 2006-01-02T15:04:05Z
 const (
 	secondsOfMinute = 60
 	secondsOfHour   = 60 * secondsOfMinute

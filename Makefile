@@ -3,8 +3,9 @@ BINARY := subscription-api
 
 VERSION := `git describe --tags`
 BUILD := `date +%FT%T%z`
+COMMIT := `git log --max-count=1 --pretty=format:%aI_%h`
 
-LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD}"
+LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD} -X main.lastCommit=${COMMIT}"
 
 doc_file := subscription_api
 inputfiles := frontmatter.md README.md
