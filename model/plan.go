@@ -6,8 +6,6 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
-
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // MemberTier represents membership tiers
@@ -87,14 +85,26 @@ func (p Plan) GetPriceAli() string {
 	return strconv.FormatFloat(p.Price, 'f', 2, 32)
 }
 
-// DiscountDuration contains a discount period.
-// Start and end are time string in SQL DATETIME format.
-type DiscountDuration struct {
-	Start string
-	End   string
+// CreateOrderID creates the order number based on the plan selected.
+func CreateOrderID(p Plan) string {
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate a random number between [100, 999)
+	rn := 100 + rand.Intn(999-100+1)
+
+	return fmt.Sprintf("FT%03d%d%d", p.ID, rn, time.Now().Unix())
 }
 
-var plans = map[string]Plan{
+// Discount contains discount plans and duration.
+// Start and end are all formatted to ISO8601 in UTC: 2006-01-02T15:04:05Z
+type Discount struct {
+	Start string          `json:"startAt"`
+	End   string          `json:"endAt"`
+	Plans map[string]Plan `json:"plans"`
+}
+
+// DefaultPlans is the default subscription. No discount.
+var DefaultPlans = map[string]Plan{
 	"standard_year": Plan{
 		Tier:        TierStandard,
 		Cycle:       Yearly,
@@ -118,43 +128,46 @@ var plans = map[string]Plan{
 	},
 }
 
-var discountPlans = map[string]Plan{
-	"standard_year": Plan{
-		Tier:        TierStandard,
-		Cycle:       Yearly,
-		Price:       0.01,
-		ID:          10,
-		Description: "FT中文网 - 标准会员",
-	},
-	"standard_month": Plan{
-		Tier:        TierStandard,
-		Cycle:       Monthly,
-		Price:       0.01,
-		ID:          5,
-		Description: "FT中文网 - 标准会员",
-	},
-	"premium_year": Plan{
-		Tier:        TierPremium,
-		Cycle:       Yearly,
-		Price:       0.01,
-		ID:          100,
-		Description: "FT中文网 - 高端会员",
+// DiscountPlans and their duration.
+var DiscountPlans = Discount{
+	Start: "2018-10-01T16:00:00Z",
+	End:   "2018-10-31T16:00:00Z",
+	Plans: map[string]Plan{
+		"standard_year": Plan{
+			Tier:        TierStandard,
+			Cycle:       Yearly,
+			Price:       0.01,
+			ID:          10,
+			Description: "FT中文网 - 标准会员",
+		},
+		"standard_month": Plan{
+			Tier:        TierStandard,
+			Cycle:       Monthly,
+			Price:       0.01,
+			ID:          5,
+			Description: "FT中文网 - 标准会员",
+		},
+		"premium_year": Plan{
+			Tier:        TierPremium,
+			Cycle:       Yearly,
+			Price:       0.01,
+			ID:          100,
+			Description: "FT中文网 - 高端会员",
+		},
 	},
 }
 
-var discountDuration = DiscountDuration{
-	Start: "2018-10-01 16:00:00",
-	End:   "2018-10-31 16:00:00",
-}
+// GetCurrentPlans get default plans or discount plans depending on current time.
+func GetCurrentPlans() map[string]Plan {
+	now := time.Now()
+	start := parseISO8601(DiscountPlans.Start)
+	end := parseISO8601(DiscountPlans.End)
 
-// CreateOrderID creates the order number based on the plan selected.
-func CreateOrderID(p Plan) string {
-	rand.Seed(time.Now().UnixNano())
+	if now.Before(start) || now.After(end) {
+		return DefaultPlans
+	}
 
-	// Generate a random number between [100, 999)
-	rn := 100 + rand.Intn(999-100+1)
-
-	return fmt.Sprintf("FT%03d%d%d", p.ID, rn, time.Now().Unix())
+	return DiscountPlans.Plans
 }
 
 // NewPlan creates a new Plan instance depending on the member tier and billing cycle chosen.
@@ -162,22 +175,22 @@ func CreateOrderID(p Plan) string {
 func NewPlan(tier MemberTier, cycle BillingCycle) (Plan, error) {
 	key := string(tier) + "_" + string(cycle)
 
-	now := time.Now()
-	start := util.ParseSQLDatetime(discountDuration.Start)
-	end := util.ParseSQLDatetime(discountDuration.End)
-
-	var p Plan
-	var ok bool
-
-	if now.Before(start) || now.After(end) {
-		p, ok = plans[key]
-	} else {
-		p, ok = discountPlans[key]
-	}
+	plans := GetCurrentPlans()
+	p, ok := plans[key]
 
 	if !ok {
 		return p, errors.New("subscription plan not found")
 	}
 
 	return p, nil
+}
+
+func parseISO8601(value string) time.Time {
+	t, err := time.Parse(time.RFC3339, value)
+
+	if err != nil {
+		return time.Now()
+	}
+
+	return t
 }

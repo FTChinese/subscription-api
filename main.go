@@ -73,6 +73,9 @@ func main() {
 	r.Use(controller.NoCache)
 
 	r.Get("/__version", controller.Version(version, build))
+	r.Get("/__plans", controller.DefaultPlans())
+	r.Get("/__discount", controller.DiscountPlans())
+	r.Get("/__current_plans", controller.CurrentPlans())
 
 	// Requires user id.
 	r.Route("/wxpay", func(r1 chi.Router) {
