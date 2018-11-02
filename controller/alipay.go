@@ -200,6 +200,7 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	// If err is not `not found`, tell ali to resend.
 	if err != nil {
 		if err == sql.ErrNoRows {
+			logger.WithField("location", "AliNotification").Info("Suscription order is not found")
 			w.Write([]byte(success))
 		} else {
 			w.Write([]byte(fail))
@@ -278,9 +279,12 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	logger.WithField("location", "VerifyAppPay").Infof("Ali app pay result: %s", body)
+
 	signedStr := extractAppPayResp(string(body), keyAppPayResp)
 
-	if err := json.Unmarshal(body, result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
+		logger.WithField("location", "VerifyAppPay").Error(err)
 		util.Render(w, util.NewBadRequest(err.Error()))
 
 		return
