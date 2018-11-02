@@ -45,6 +45,24 @@ func (s Subscription) DeduceExpireTime(t time.Time) time.Time {
 	return t
 }
 
+// RenewExpireDate extends member's expiration date depending on subscription
+func (s Subscription) RenewExpireDate(previous string) string {
+	expire, err := util.ParseSQLDate(previous)
+	if err != nil {
+		return previous
+	}
+
+	switch s.BillingCycle {
+	case Yearly:
+		expire = expire.AddDate(1, 0, 1)
+
+	case Monthly:
+		expire = expire.AddDate(0, 1, 1)
+	}
+
+	return util.SQLDateUTC.FromTime(expire)
+}
+
 // SaveSubscription saves a new order
 func (env Env) SaveSubscription(s Subscription, c util.RequestClient) error {
 	query := `
