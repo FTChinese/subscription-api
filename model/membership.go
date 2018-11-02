@@ -55,6 +55,7 @@ func (m Membership) IsExpired() bool {
 func (env Env) buildMembership(s Subscription, confirmTime time.Time) Membership {
 	// Calculate expiration time based the when this subscription is confirmed and the billing cycle.
 	expireTime := s.DeduceExpireTime(confirmTime)
+	logger.WithField("location", "buidlMembership").Infof("Decuced exppire time based on subsbription cofirmation time: %s", expireTime)
 
 	expireDate := util.SQLDateUTC.FromTime(expireTime)
 
@@ -88,8 +89,11 @@ func (env Env) buildMembership(s Subscription, confirmTime time.Time) Membership
 	// Membership exists, and it is not expired.
 	// It means user is renewing subscription.
 	// Just extend the expiration time.
-	logger.WithField("location", "Build membership").Infof("Membership for user %s found for renewal", s.UserID)
-	member.Expire = expireDate
+	logger.WithField("location", "Build membership").Infof("Membership for user %s found for renewal. Will expire: %s", s.UserID, member.Expire)
+
+	member.Expire = s.RenewExpireDate(member.Expire)
+
+	logger.WithField("location", "buildMembership").Infof("Membership extended: %s", member.Expire)
 
 	return member
 }
