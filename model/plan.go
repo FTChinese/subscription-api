@@ -1,11 +1,14 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
+
+	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // MemberTier represents membership tiers
@@ -155,6 +158,42 @@ var DiscountPlans = Discount{
 			Description: "FT中文网 - 高端会员",
 		},
 	},
+}
+
+// RetrieveSchedule finds a lastest discount schedule whose end time is still after now.
+func (env Env) RetrieveSchedule() (Discount, error) {
+	query := `
+	SELECT start_utc AS start,
+		end_utc AS end,
+		plans AS plans,
+	FROM premium.discount_schedule
+	WHERE end_utc >= UTC_TIMESTAMP() 
+	ORDER BY created_utc DESC
+	LIMIT 1`
+
+	var d Discount
+	var plans string
+	var start string
+	var end string
+
+	err := env.DB.QueryRow(query).Scan(
+		&start,
+		&end,
+		&plans,
+	)
+
+	if err != nil {
+		return d, err
+	}
+
+	if err := json.Unmarshal([]byte(plans), &d.Plans); err != nil {
+		return d, err
+	}
+
+	d.Start = util.ISO8601UTC.FromDatetime(start, nil)
+	d.End = util.ISO8601UTC.FromDatetime(end, nil)
+
+	return d, nil
 }
 
 // GetCurrentPlans get default plans or discount plans depending on current time.
