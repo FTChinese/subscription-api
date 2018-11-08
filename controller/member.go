@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"database/sql"
 	"net/http"
 
 	"gitlab.com/ftchinese/subscription-api/model"
@@ -14,9 +13,9 @@ type MemberRouter struct {
 }
 
 // NewMemberRouter creates a new istance of MemberRouter
-func NewMemberRouter(db *sql.DB) MemberRouter {
+func NewMemberRouter(m model.Env) MemberRouter {
 	return MemberRouter{
-		model: model.Env{DB: db},
+		model: m,
 	}
 }
 

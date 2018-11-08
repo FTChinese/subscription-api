@@ -31,7 +31,7 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(db *sql.DB, isProd bool) AliPayRouter {
+func NewAliRouter(m model.Env, isProd bool) AliPayRouter {
 	appID := os.Getenv("ALIPAY_APP_ID")
 
 	// Ali's public key is used to verify alipay's response.
@@ -54,7 +54,7 @@ func NewAliRouter(db *sql.DB, isProd bool) AliPayRouter {
 		appID:  appID,
 		isProd: isProd,
 		client: client,
-		model:  model.Env{DB: db},
+		model:  m,
 	}
 }
 
@@ -96,7 +96,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	plan, err := model.NewPlan(tier, cycle)
+	plan, err := ar.model.FindPlan(tier, cycle)
 
 	if err != nil {
 		logger.WithField("location", "AliAppOrder").Error(err)

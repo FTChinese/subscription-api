@@ -1,6 +1,10 @@
 package model
 
-import "database/sql"
+import (
+	"database/sql"
+
+	cache "github.com/patrickmn/go-cache"
+)
 
 func newDevEnv() Env {
 	db, err := sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
@@ -9,7 +13,9 @@ func newDevEnv() Env {
 		panic(err)
 	}
 
-	return Env{DB: db}
+	c := cache.New(cache.DefaultExpiration, 0)
+
+	return Env{DB: db, Cache: c}
 }
 
 var devEnv = newDevEnv()
