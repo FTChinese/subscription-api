@@ -73,11 +73,11 @@ func NewCycle(key string) (BillingCycle, error) {
 
 // Plan represents a subscription plan
 type Plan struct {
-	Tier        MemberTier
-	Cycle       BillingCycle
-	Price       float64
-	ID          int // 10 for standard and 100 for premium
-	Description string
+	Tier        MemberTier   `json:"tier"`
+	Cycle       BillingCycle `json:"cycle"`
+	Price       float64      `json:"price"`
+	ID          int          `json:"id"` // 10 for standard and 100 for premium
+	Description string       `json:"description"`
 }
 
 // GetPriceCent calculates price in cent to be used for Wechat pay.
