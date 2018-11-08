@@ -24,7 +24,7 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(db *sql.DB, isProd bool) WxPayRouter {
+func NewWxRouter(m model.Env, isProd bool) WxPayRouter {
 	config := WxConfig{
 		AppID:  os.Getenv("WXPAY_APPID"),
 		MchID:  os.Getenv("WXPAY_MCHID"),
@@ -36,7 +36,7 @@ func NewWxRouter(db *sql.DB, isProd bool) WxPayRouter {
 	account := wxpay.NewAccount(config.AppID, config.MchID, config.APIKey, false)
 
 	return WxPayRouter{
-		model:  model.Env{DB: db},
+		model:  m,
 		config: config,
 		client: wxpay.NewClient(account),
 	}
@@ -110,7 +110,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Plan if not found.
-	plan, err := model.NewPlan(tier, cycle)
+	plan, err := wr.model.FindPlan(tier, cycle)
 
 	if err != nil {
 		logger.WithField("location", "UnifiedOrder").Error(err)

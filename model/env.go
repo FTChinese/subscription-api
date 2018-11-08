@@ -3,15 +3,22 @@ package model
 import (
 	"database/sql"
 
+	"github.com/patrickmn/go-cache"
+
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 var logger = log.WithField("package", "subscription-api.model")
 
+const (
+	keySchedule = "discountSchedule"
+)
+
 // Env wraps database connection
 type Env struct {
-	DB *sql.DB
+	DB    *sql.DB
+	Cache *cache.Cache
 }
 
 func normalizeMemberTier(vipType int64) MemberTier {
