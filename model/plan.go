@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/patrickmn/go-cache"
+
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
@@ -98,12 +100,16 @@ func CreateOrderID(p Plan) string {
 	return fmt.Sprintf("FT%03d%d%d", p.ID, rn, time.Now().Unix())
 }
 
-// Discount contains discount plans and duration.
+// Schedule contains discount plans and duration.
 // Start and end are all formatted to ISO8601 in UTC: 2006-01-02T15:04:05Z
-type Discount struct {
-	Start string          `json:"startAt"`
-	End   string          `json:"endAt"`
-	Plans map[string]Plan `json:"plans"`
+type Schedule struct {
+	ID        int64           `json:"id"`
+	Name      string          `json:"name"`
+	Start     string          `json:"startAt"`
+	End       string          `json:"endAt"`
+	Plans     map[string]Plan `json:"plans"`
+	CreatedAt string          `json:"createdAt"`
+	createdBy string
 }
 
 // DefaultPlans is the default subscription. No discount.
@@ -113,14 +119,14 @@ var DefaultPlans = map[string]Plan{
 		Cycle:       Yearly,
 		Price:       198.00,
 		ID:          10,
-		Description: "FT中文网 - 标准会员",
+		Description: "FT中文网 - 年度标准会员",
 	},
 	"standard_month": Plan{
 		Tier:        TierStandard,
 		Cycle:       Monthly,
 		Price:       28.00,
 		ID:          5,
-		Description: "FT中文网 - 标准会员",
+		Description: "FT中文网 - 月度标准会员",
 	},
 	"premium_year": Plan{
 		Tier:        TierPremium,
@@ -131,8 +137,8 @@ var DefaultPlans = map[string]Plan{
 	},
 }
 
-// DiscountPlans and their duration.
-var DiscountPlans = Discount{
+// DiscountSchedule and their duration.
+var DiscountSchedule = Schedule{
 	Start: "2018-10-01T16:00:00Z",
 	End:   "2018-10-31T16:00:00Z",
 	Plans: map[string]Plan{
@@ -141,14 +147,14 @@ var DiscountPlans = Discount{
 			Cycle:       Yearly,
 			Price:       0.01,
 			ID:          10,
-			Description: "FT中文网 - 标准会员",
+			Description: "FT中文网 - 年度标准会员",
 		},
 		"standard_month": Plan{
 			Tier:        TierStandard,
 			Cycle:       Monthly,
 			Price:       0.01,
 			ID:          5,
-			Description: "FT中文网 - 标准会员",
+			Description: "FT中文网 - 月度标准会员",
 		},
 		"premium_year": Plan{
 			Tier:        TierPremium,
@@ -161,60 +167,107 @@ var DiscountPlans = Discount{
 }
 
 // RetrieveSchedule finds a lastest discount schedule whose end time is still after now.
-func (env Env) RetrieveSchedule() (Discount, error) {
+func (env Env) RetrieveSchedule() (Schedule, error) {
 	query := `
-	SELECT start_utc AS start,
+	SELECT
+		id AS id,
+		name AS name, 
+		start_utc AS start,
 		end_utc AS end,
 		plans AS plans,
+		created_utc AS createdUtc,
+		created_by AS createdBy
 	FROM premium.discount_schedule
 	WHERE end_utc >= UTC_TIMESTAMP() 
 	ORDER BY created_utc DESC
 	LIMIT 1`
 
-	var d Discount
+	var s Schedule
 	var plans string
 	var start string
 	var end string
 
 	err := env.DB.QueryRow(query).Scan(
+		&s.ID,
+		&s.Name,
 		&start,
 		&end,
 		&plans,
+		&s.CreatedAt,
+		&s.createdBy,
 	)
 
 	if err != nil {
-		return d, err
+		return s, err
 	}
 
-	if err := json.Unmarshal([]byte(plans), &d.Plans); err != nil {
-		return d, err
+	if err := json.Unmarshal([]byte(plans), &s.Plans); err != nil {
+		return s, err
 	}
 
-	d.Start = util.ISO8601UTC.FromDatetime(start, nil)
-	d.End = util.ISO8601UTC.FromDatetime(end, nil)
+	s.Start = util.ISO8601UTC.FromDatetime(start, nil)
+	s.End = util.ISO8601UTC.FromDatetime(end, nil)
+	s.CreatedAt = util.ISO8601UTC.FromDatetime(s.CreatedAt, nil)
 
-	return d, nil
+	// Cache it.
+	env.cacheSchedule(s)
+
+	return s, nil
+}
+
+func (env Env) cacheSchedule(s Schedule) {
+	env.Cache.Set(keySchedule, s, cache.NoExpiration)
+}
+
+// ScheduleFromCache gets schedule from cache.
+func (env Env) ScheduleFromCache() (Schedule, bool) {
+	if x, found := env.Cache.Get(keySchedule); found {
+		sch, ok := x.(Schedule)
+
+		if ok {
+			logger.WithField("location", "ScheduleFromCache").Infof("Cached schedule found %+v", sch)
+			return sch, true
+		}
+
+		return Schedule{}, false
+	}
+
+	return Schedule{}, false
 }
 
 // GetCurrentPlans get default plans or discount plans depending on current time.
-func GetCurrentPlans() map[string]Plan {
-	now := time.Now()
-	start := parseISO8601(DiscountPlans.Start)
-	end := parseISO8601(DiscountPlans.End)
+func (env Env) GetCurrentPlans() map[string]Plan {
 
-	if now.Before(start) || now.After(end) {
+	sch, found := env.ScheduleFromCache()
+
+	// If no cache is found, use default ones.
+	if !found {
+		logger.WithField("location", "GetCurrentPlans").Info("Cached discount schedule not found. Use defualt plans")
 		return DefaultPlans
 	}
 
-	return DiscountPlans.Plans
+	// If cache is found, compare time
+	now := time.Now()
+	start := parseISO8601(sch.Start)
+	end := parseISO8601(sch.End)
+
+	if now.Before(start) || now.After(end) {
+		logger.WithField("location", "GetCurrentPlans").Info("Cached plans duration not effective. Use default ones")
+		return DefaultPlans
+	}
+
+	logger.WithField("location", "GetCurrentPlans").Info("Using discount plans")
+
+	return sch.Plans
 }
 
-// NewPlan creates a new Plan instance depending on the member tier and billing cycle chosen.
+// FindPlan picks a Plan instance depending
+// on the member tier and billing cycle.
 // Returns error if member tier or billing cycyle are not the predefined ones.
-func NewPlan(tier MemberTier, cycle BillingCycle) (Plan, error) {
+func (env Env) FindPlan(tier MemberTier, cycle BillingCycle) (Plan, error) {
 	key := string(tier) + "_" + string(cycle)
 
-	plans := GetCurrentPlans()
+	plans := env.GetCurrentPlans()
 	p, ok := plans[key]
 
 	if !ok {

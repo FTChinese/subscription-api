@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/patrickmn/go-cache"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/controller"
+	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
@@ -57,9 +60,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	wxRouter := controller.NewWxRouter(db, isProd)
-	aliRouter := controller.NewAliRouter(db, isProd)
-	memberRouter := controller.NewMemberRouter(db)
+	c := cache.New(cache.DefaultExpiration, 0)
+	m := model.Env{DB: db, Cache: c}
+
+	wxRouter := controller.NewWxRouter(m, isProd)
+	aliRouter := controller.NewAliRouter(m, isProd)
+	memberRouter := controller.NewMemberRouter(m)
+	pricingRouter := controller.NewPricingRouter(m)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -74,8 +81,9 @@ func main() {
 
 	r.Get("/__version", controller.Version(version, build))
 	r.Get("/__plans", controller.DefaultPlans())
-	r.Get("/__discount", controller.DiscountPlans())
-	r.Get("/__current_plans", controller.CurrentPlans())
+	r.Get("/__discount", pricingRouter.DiscountSchedule)
+	r.Get("/__current_plans", pricingRouter.CurrentPlans)
+	r.Get("/__refresh", pricingRouter.RefreshSchedule)
 
 	// Requires user id.
 	r.Route("/wxpay", func(r1 chi.Router) {
