@@ -9,7 +9,7 @@ import (
 func TestPlan(t *testing.T) {
 	plan := DefaultPlans["standard_year"]
 
-	t.Log(plan.GetPriceAli())
+	t.Log(plan.GetPriceString())
 	t.Log(plan.GetPriceCent())
 }
 
