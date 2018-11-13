@@ -24,6 +24,13 @@ type aliAppPayResult struct {
 	SignType string         `json:"sign_type"`
 }
 
+// AliOrder is the response send to client which is requesting to pay by alipay.
+type AliOrder struct {
+	FtcOrderID string  `json:"ftcOrderId"`
+	Price      float64 `json:"price"` //
+	Param      string  `json:"param"`
+}
+
 // AliAppOrder responds to app pay verification
 type AliAppOrder struct {
 	FtcOrderID string `json:"ftcOrderId"`

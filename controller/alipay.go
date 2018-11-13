@@ -140,7 +140,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	param.NotifyURL = aliNotifyURL
 	param.Subject = plan.Description
 	param.OutTradeNo = orderID
-	param.TotalAmount = plan.GetPriceAli()
+	param.TotalAmount = plan.GetPriceString()
 	param.ProductCode = aliProductCode
 	param.GoodsType = "0"
 
@@ -154,10 +154,13 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	util.Render(w, util.NewResponse().SetBody(map[string]string{
-		"ftcOrderId": orderID,
-		"param":      values.Encode(),
-	}))
+	order := AliOrder{
+		FtcOrderID: orderID,
+		Price:      plan.Price,
+		Param:      values.Encode(),
+	}
+
+	util.Render(w, util.NewResponse().SetBody(order))
 }
 
 // Notification receives alipay callback

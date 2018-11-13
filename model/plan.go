@@ -85,8 +85,8 @@ func (p Plan) GetPriceCent() int64 {
 	return int64(p.Price * 100)
 }
 
-// GetPriceAli formats price for alipay
-func (p Plan) GetPriceAli() string {
+// GetPriceString formats price for alipay
+func (p Plan) GetPriceString() string {
 	return strconv.FormatFloat(p.Price, 'f', 2, 32)
 }
 
