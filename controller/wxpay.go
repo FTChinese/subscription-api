@@ -247,25 +247,54 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	prepayID := resp.GetString("prepay_id")
 
 	// Create prepay order according to https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_12&index=2
-	appParams := wr.createPrepayOrder(prepayID)
-	appParams.SetString("ftcOrderId", orderID)
+	// appParams := wr.createPrepayOrder(prepayID)
+	// appParams.SetString("ftcOrderId", orderID)
 
-	util.Render(w, util.NewResponse().SetBody(appParams))
-}
-
-func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
 	nonce, _ := util.RandomHex(10)
 
-	p := make(wxpay.Params)
-	p["appid"] = wr.config.AppID
-	p["partnerid"] = wr.config.MchID
-	p["prepayid"] = prepayID
-	p["package"] = "Sign=WXPay"
-	p["noncestr"] = nonce
-	p["timestamp"] = fmt.Sprintf("%d", time.Now().Unix())
-	p["sign"] = wr.client.Sign(p)
+	order := WxOrder{
+		FtcOrderID: orderID,
+		Price:      plan.Price,
+		AppID:      wr.config.AppID,
+		PartnerID:  wr.config.MchID,
+		PrepayID:   prepayID,
+		Package:    "Sign=WXPay",
+		Nonce:      nonce,
+		Timestamp:  fmt.Sprintf("%d", time.Now().Unix()),
+	}
 
-	return p
+	order.Signature = wr.signOrder(order)
+
+	// appParams.SetString("price", plan.GetPriceString())
+
+	util.Render(w, util.NewResponse().SetBody(order))
+}
+
+// func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
+// 	nonce, _ := util.RandomHex(10)
+
+// 	p := make(wxpay.Params)
+// 	p["appid"] = wr.config.AppID
+// 	p["partnerid"] = wr.config.MchID
+// 	p["prepayid"] = prepayID
+// 	p["package"] = "Sign=WXPay"
+// 	p["noncestr"] = nonce
+// 	p["timestamp"] = fmt.Sprintf("%d", time.Now().Unix())
+// 	p["sign"] = wr.client.Sign(p)
+
+// 	return p
+// }
+
+func (wr WxPayRouter) signOrder(order WxOrder) string {
+	p := make(wxpay.Params)
+	p["appid"] = order.AppID
+	p["partnerid"] = order.PartnerID
+	p["prepayid"] = order.PrepayID
+	p["package"] = order.Package
+	p["noncestr"] = order.Nonce
+	p["timestamp"] = order.Timestamp
+
+	return wr.client.Sign(p)
 }
 
 // Notification implements 支付结果通知
@@ -454,7 +483,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	// time_end: 20091225091010
 	// trade_state_desc
 	timeEnd := resp.GetString("time_end")
-	order := WxOrder{
+	order := WxQueryOrder{
 		OpenID:        resp.GetString("openid"),
 		TradeType:     resp.GetString("trade_type"),
 		PaymentState:  resp.GetString("trade_state"),
