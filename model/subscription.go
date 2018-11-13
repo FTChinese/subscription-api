@@ -18,6 +18,9 @@ type Subscription struct {
 	Currency      string
 	CreatedAt     string // Only for retrieval
 	ConfirmedAt   string
+	IsRenewal     bool   // If this order is used to renew membership
+	EffectiveDate string // Membership start date for this order
+	EndDate       string // Membership end date for this order
 	UserID        string
 }
 
@@ -63,7 +66,7 @@ func (s Subscription) RenewExpireDate(previous string) string {
 	return util.SQLDateUTC.FromTime(expire)
 }
 
-// SaveSubscription saves a new order
+// SaveSubscription saves a new subscription order
 func (env Env) SaveSubscription(s Subscription, c util.RequestClient) error {
 	query := `
 	INSERT INTO premium.ftc_trade
