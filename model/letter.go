@@ -1,14 +1,26 @@
 package model
 
 const letter = `
-FT中文网用户 你好，
-感谢订阅FT会员服务，以下是您本次订单详情：
+Dear FTC user {{.Name}},
 
-订单号：
-订单创建时间：
-确认收款时间：
-会员类型：
-本次订单购买的会员期限：
-支付方式：
-支付金额：
+{{if .IsReneal}}
+You have renewed your subcription to FTC membership.
+{{- else}}
+You have subscriped to FTC membership.
+{{- end}} Thanks.
+
+Here is your order details:
+
+Order ID: {{.OrderID}}
+Membership: {{.MemberTier}}/{{.BillingCycle}}
+Price: {{.TotalAmount}}
+Payment Method: {{.PaymentMethod}}
+Duration: {{.StartDate}} to {{.EndDate}}
+
+If you have any questions, please contact our customer service:
+
+Wechat: xxxx
+Phone: xxxxx
+
+Againt, we appriciate your support.
 `

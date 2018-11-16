@@ -120,8 +120,10 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 		IFNULL(billing_cycle, '') AS billingCycle,
 		IFNULL(payment_method, '') AS paymentMethod,
 		is_renewal AS isRenewal,
-		created_utc AS createdAt,
-		IFNULL(confirmed_utc, '') AS confirmedAt
+		IFNULL(created_utc, '') AS createdAt,
+		IFNULL(confirmed_utc, '') AS confirmedAt,
+		IFNULL(start_date, '') AS startDate,
+		IFNULL(end_date, '') AS endDate
 	FROM premium.ftc_trade
 	WHERE trade_no = ?
 	LIMIT 1`
@@ -143,6 +145,14 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 	if err != nil {
 		logger.WithField("location", "Find subscription").Error(err)
 		return s, err
+	}
+
+	if s.CreatedAt != "" {
+		s.CreatedAt = util.ISO8601UTC.FromDatetime(s.CreatedAt, nil)
+	}
+
+	if s.ConfirmedAt != "" {
+		s.ConfirmedAt = util.ISO8601UTC.FromDatetime(s.ConfirmedAt, nil)
 	}
 
 	return s, nil
