@@ -1,9 +1,33 @@
 package model
 
 const letter = `
-Dear FTC user {{.Name}},
+亲爱的FT中文网用户 {{.User.Name}},
 
-{{if .IsReneal}}
+您好！{{if .Subs.IsRenewal -}}
+感谢您续订FT中文网会员服务。
+{{- else -}}
+感谢您订阅FT中文网会员服务。
+{{- end}}
+
+您本次订单的详细信息如下：
+
+订单号: {{.Subs.OrderID}}
+会员类型: {{.Subs.TierToBuy.CN}}/{{.Subs.BillingCycle.CN}}
+支付金额: {{.Subs.TotalAmount}}
+支付方式: {{.Subs.PaymentMethod.CN}}
+订单日期: {{.Subs.CreatedAtCN}}
+本次订单购买的会员期限: {{.Subs.StartDate}} 至 {{.Subs.EndDate}}
+
+如有疑问，请联系客服：subscriber.service@ftchinese.com。
+
+再次感谢您对FT中文网的支持。
+
+FT中文网
+
+---------------------
+
+Dear FTC user {{.User.Name}},
+{{if .Subs.IsRenewal -}}
 You have renewed your subcription to FTC membership.
 {{- else}}
 You have subscriped to FTC membership.
@@ -11,16 +35,18 @@ You have subscriped to FTC membership.
 
 Here is your order details:
 
-Order ID: {{.OrderID}}
-Membership: {{.MemberTier}}/{{.BillingCycle}}
-Price: {{.TotalAmount}}
-Payment Method: {{.PaymentMethod}}
-Duration: {{.StartDate}} to {{.EndDate}}
+Order ID: {{.Subs.OrderID}}
+Membership: {{.Subs.TierToBuy.EN}}/{{.Subs.BillingCycle.EN}}
+Price: {{.Subs.TotalAmount}}
+Payment Method: {{.Subs.PaymentMethod.EN}}
+Created At: {{.Subs.CreatedAt}}
+Duration: {{.Subs.StartDate}} to {{.Subs.EndDate}}
 
-If you have any questions, please contact our customer service:
+If you have any questions, please contact our customer service: subscriber.service@ftchinese.com.
 
-Wechat: xxxx
-Phone: xxxxx
+Again, we appriciate your support.
 
-Againt, we appriciate your support.
+Yours faithfully,
+
+FTChinese
 `
