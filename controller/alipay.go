@@ -76,26 +76,6 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	// Get user id from request header
 	userID := req.Header.Get(userIDKey)
 
-	// Find if this user is already subscribed.
-	// If a membership is not found, sql.ErrNoRows will be returned.
-	// Discard the error.
-	member, err := ar.model.FindMember(userID)
-
-	// If membership for this user is found, and is not in the allowed renewal period.
-	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
-	if err != nil {
-		if err != sql.ErrNoRows {
-			util.Render(w, util.NewDBFailure(err))
-
-			return
-		}
-	}
-
-	if err == nil && !member.CanRenew(cycle) {
-		util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-		return
-	}
-
 	plan, err := ar.model.FindPlan(tier, cycle)
 
 	if err != nil {
@@ -105,31 +85,29 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !ar.isProd {
-		plan.Price = 0.01
-	}
-
 	logger.WithField("location", "AliAppOrder").Infof("Subscritpion plan: %+v", plan)
 
-	orderID := model.CreateOrderID(plan)
+	subs := plan.CreateOrder(userID, model.Alipay)
 
-	logger.WithField("location", "AliAppOrder").Infof("Created order: %s", orderID)
+	// Find if this user is already subscribed.
+	// If a membership is not found, sql.ErrNoRows will be returned.
+	// Discard the error.
+	member, err := ar.model.FindMember(userID)
+
+	// If membership for this user is found, and is not in the allowed renewal period.
+	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
+	if err == nil {
+		if !member.CanRenew(cycle) {
+			util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+			return
+		}
+		subs.IsRenewal = !member.IsExpired()
+	}
 
 	// Get request client metadata
 	c := util.NewRequestClient(req)
 
-	// Save this order to db.
-	ftcOrder := model.Subscription{
-		OrderID:       orderID,
-		TierToBuy:     plan.Tier,
-		BillingCycle:  plan.Cycle,
-		Price:         plan.Price,
-		TotalAmount:   plan.Price,
-		PaymentMethod: model.Alipay,
-		UserID:        userID,
-	}
-
-	err = ar.model.SaveSubscription(ftcOrder, c)
+	err = ar.model.SaveSubscription(subs, c)
 
 	if err != nil {
 		util.Render(w, util.NewDBFailure(err))
@@ -139,7 +117,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	param := alipay.AliPayTradeAppPay{}
 	param.NotifyURL = aliNotifyURL
 	param.Subject = plan.Description
-	param.OutTradeNo = orderID
+	param.OutTradeNo = subs.OrderID
 	param.TotalAmount = plan.GetPriceString()
 	param.ProductCode = aliProductCode
 	param.GoodsType = "0"
@@ -155,7 +133,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	}
 
 	order := AliOrder{
-		FtcOrderID: orderID,
+		FtcOrderID: subs.OrderID,
 		Price:      plan.Price,
 		Param:      values.Encode(),
 	}
@@ -258,7 +236,14 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 		confirmTime = time.Now()
 	}
 
-	err = ar.model.ConfirmSubscription(subs, confirmTime)
+	updatedSubs, err := ar.model.ConfirmSubscription(subs, confirmTime)
+
+	if err != nil {
+		w.Write([]byte(fail))
+		return
+	}
+
+	err = ar.model.CreateOrUpdateMember(updatedSubs)
 
 	if err != nil {
 		w.Write([]byte(fail))
