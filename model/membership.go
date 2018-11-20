@@ -50,54 +50,6 @@ func (m Membership) IsExpired() bool {
 	return t.Before(time.Now())
 }
 
-// buildMembership create a membership based on an subscripiton.
-// ConfirmedAt field must be empty at this step.
-// func (env Env) buildMembership(s Subscription, confirmTime time.Time) Membership {
-// 	// Calculate expiration time based the when this subscription is confirmed and the billing cycle.
-// 	expireTime := s.DeduceExpireTime(confirmTime)
-// 	logger.WithField("location", "buidlMembership").Infof("Decuced exppire time based on subsbription cofirmation time: %s", expireTime)
-
-// 	expireDate := util.SQLDateUTC.FromTime(expireTime)
-
-// 	// Try to find out if this subscription order's owner is already a member, or used to be a member.
-// 	member, err := env.FindMember(s.UserID)
-
-// 	// If there's any error (including sql.ErrNoRows), create a new mebership.
-// 	// Err here should not prevent user becoming a member.
-// 	if err != nil {
-// 		logger.WithField("location", "Build membership").Infof("Membership for user %s not found. Assuming this is a new member", s.UserID)
-
-// 		member.UserID = s.UserID
-// 		member.Tier = s.TierToBuy
-// 		member.Cycle = s.BillingCycle
-// 		member.Expire = expireDate
-
-// 		return member
-// 	}
-
-// 	// Membership exists. See if curent membership is expired. If expired, update startDate and expireDate.
-// 	if member.IsExpired() {
-// 		logger.WithField("location", "Build membership").Infof("Membership for user %s found but expired.", s.UserID)
-
-// 		member.Tier = s.TierToBuy
-// 		member.Cycle = s.BillingCycle
-// 		member.Expire = expireDate
-
-// 		return member
-// 	}
-
-// 	// Membership exists, and it is not expired.
-// 	// It means user is renewing subscription.
-// 	// Just extend the expiration time.
-// 	logger.WithField("location", "Build membership").Infof("Membership for user %s found for renewal. Will expire: %s", s.UserID, member.Expire)
-
-// 	member.Expire = s.RenewExpireDate(member.Expire)
-
-// 	logger.WithField("location", "buildMembership").Infof("Membership extended: %s", member.Expire)
-
-// 	return member
-// }
-
 // FindMember retrieves a user's membership
 func (env Env) FindMember(userID string) (Membership, error) {
 	query := `
@@ -127,7 +79,7 @@ func (env Env) FindMember(userID string) (Membership, error) {
 	)
 
 	if err != nil {
-		logger.WithField("location", "Retrieve membership").Error(err)
+		logger.WithField("location", "FindMember").Error(err)
 
 		return m, err
 	}
