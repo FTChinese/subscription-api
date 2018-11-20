@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/asaskevich/govalidator"
+  packages = ["."]
+  revision = "ccb8e960c48f04d6935e72476ae4a51028f9e22f"
+  version = "v9"
+
+[[projects]]
   branch = "master"
   name = "github.com/corpix/uarand"
   packages = ["."]
@@ -15,6 +21,12 @@
   ]
   revision = "b5294d10673813fac8558e7f47242bc9e61b4c25"
   version = "v3.3.3"
+
+[[projects]]
+  name = "github.com/go-mail/mail"
+  packages = ["."]
+  revision = "f59b9b83a4e522098e3d3eb94e6f81850ad6e973"
+  version = "v2.3.1"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -41,10 +53,22 @@
   version = "v1.0.1"
 
 [[projects]]
+  name = "github.com/mitchellh/go-homedir"
+  packages = ["."]
+  revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/objcoding/wxpay"
   packages = ["."]
   revision = "e92aab4648545228cc1dfd09e93d2d46bd13eeaf"
   version = "v1.0.3"
+
+[[projects]]
+  name = "github.com/patrickmn/go-cache"
+  packages = ["."]
+  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
+  version = "v2.1.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -92,9 +116,15 @@
   revision = "ae0ab99deb4dc413a2b4bd6c8bdd0eb67f1e4d06"
   version = "v1.2.0"
 
+[[projects]]
+  branch = "v3"
+  name = "gopkg.in/alexcesaro/quotedprintable.v3"
+  packages = ["."]
+  revision = "2caba252f4dc53eaf6b553000885530023f54623"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "561143bfe2d26f8e4e818d7f47fdbedc37c0e851c6c82cb119d8265aa47c247e"
+  inputs-digest = "e8cd4aed689e2357d004e163d6de80be9d8bc2724947df054313256ab3c3643c"
   solver-name = "gps-cdcl"
   solver-version = 1
