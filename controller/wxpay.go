@@ -9,8 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/icrowley/fake"
-
 	"github.com/objcoding/wxpay"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -89,26 +87,6 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	// Get user id from request header
 	userID := req.Header.Get(userIDKey)
 
-	// Find if this user is already subscribed.
-	// If a membership is not found, sql.ErrNoRows will be returned.
-	// Discard the error.
-	member, err := wr.model.FindMember(userID)
-
-	// If membership for this user is found, and is not in the allowed renewal period.
-	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
-	if err != nil {
-		if err != sql.ErrNoRows {
-			util.Render(w, util.NewDBFailure(err))
-
-			return
-		}
-	}
-
-	if err == nil && !member.CanRenew(cycle) {
-		util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-		return
-	}
-
 	// Plan if not found.
 	plan, err := wr.model.FindPlan(tier, cycle)
 
@@ -119,35 +97,29 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !wr.config.IsProd {
-		plan.Price = 0.01
-	}
-
 	logger.WithField("location", "UnifiedOrder").Infof("Subscritpion plan: %+v", plan)
 
-	// Order id will be used:
-	// 1. Save in our database;
-	// 2. Send to wx;
-	// 3. Send to app;
-	orderID := model.CreateOrderID(plan)
+	subs := plan.CreateOrder(userID, model.Wxpay)
 
-	logger.WithField("location", "UnifiedOrder").Infof("Created order: %s", orderID)
+	// Find if this user is already subscribed.
+	// If a membership is not found, sql.ErrNoRows will be returned.
+	// Discard the error.
+	member, err := wr.model.FindMember(userID)
+
+	// If membership for this user is found, and is not in the allowed renewal period.
+	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
+	if err == nil {
+		if !member.CanRenew(cycle) {
+			util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+			return
+		}
+		subs.IsRenewal = !member.IsExpired()
+	}
 
 	// Get request client required headers
 	c := util.NewRequestClient(req)
 
-	// Save this order to db.
-	ftcOrder := model.Subscription{
-		OrderID:       orderID,
-		TierToBuy:     plan.Tier,
-		BillingCycle:  plan.Cycle,
-		Price:         plan.Price,
-		TotalAmount:   plan.Price,
-		PaymentMethod: model.Wxpay,
-		UserID:        userID,
-	}
-
-	err = wr.model.SaveSubscription(ftcOrder, c)
+	err = wr.model.SaveSubscription(subs, c)
 
 	if err != nil {
 		util.Render(w, util.NewDBFailure(err))
@@ -158,15 +130,11 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	// Compose request parameters
 	params.SetString("body", plan.Description).
-		SetString("out_trade_no", orderID).
+		SetString("out_trade_no", subs.OrderID).
 		SetInt64("total_fee", plan.GetPriceCent()).
 		SetString("spbill_create_ip", c.UserIP).
 		SetString("notify_url", wxNotifyURL).
 		SetString("trade_type", "APP")
-
-	if !wr.config.IsProd {
-		params.SetString("spbill_create_ip", fake.IPv4())
-	}
 
 	logger.WithField("location", "UnifiedOrder").Infof("Order params: %+v", params)
 
@@ -253,7 +221,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	nonce, _ := util.RandomHex(10)
 
 	order := WxOrder{
-		FtcOrderID: orderID,
+		FtcOrderID: subs.OrderID,
 		Price:      plan.Price,
 		AppID:      wr.config.AppID,
 		PartnerID:  wr.config.MchID,
@@ -373,7 +341,15 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 		confirmTime = time.Now()
 	}
 
-	err = wr.model.ConfirmSubscription(subs, confirmTime)
+	updatedSubs, err := wr.model.ConfirmSubscription(subs, confirmTime)
+
+	if err != nil {
+		w.Write([]byte(resp.NotOK(err.Error())))
+
+		return
+	}
+
+	err = wr.model.CreateOrUpdateMember(updatedSubs)
 
 	if err != nil {
 		w.Write([]byte(resp.NotOK(err.Error())))
