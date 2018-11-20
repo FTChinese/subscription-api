@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"strconv"
 	"time"
 
@@ -34,9 +35,9 @@ func (s Subscription) AliTotalAmount() string {
 	return strconv.FormatFloat(s.TotalAmount, 'f', 2, 32)
 }
 
-// DeduceExpireTime deduces membership expiration time based on when it is confirmed and the billing cycle.
+// deduceExpireTime deduces membership expiration time based on when it is confirmed and the billing cycle.
 // Add one day more to accomodate timezone change
-func (s Subscription) DeduceExpireTime(t time.Time) time.Time {
+func (s Subscription) deduceExpireTime(t time.Time) time.Time {
 	switch s.BillingCycle {
 	case Yearly:
 		return t.AddDate(1, 0, 1)
@@ -48,23 +49,10 @@ func (s Subscription) DeduceExpireTime(t time.Time) time.Time {
 	return t
 }
 
-// RenewExpireDate extends member's expiration date depending on subscription
-// func (s Subscription) RenewExpireDate(previous string) string {
-// 	expire, err := util.ParseSQLDate(previous)
-// 	if err != nil {
-// 		return previous
-// 	}
-
-// 	switch s.BillingCycle {
-// 	case Yearly:
-// 		expire = expire.AddDate(1, 0, 1)
-
-// 	case Monthly:
-// 		expire = expire.AddDate(0, 1, 1)
-// 	}
-
-// 	return util.SQLDateUTC.FromTime(expire)
-// }
+// CreatedAtCN turns creation time into Chinese text and format.
+func (s Subscription) CreatedAtCN() string {
+	return util.FormatShanghai.FromISO8601(s.CreatedAt)
+}
 
 // SaveSubscription saves a new subscription order.
 // At this moment, you should already know if this subscription is
@@ -158,47 +146,76 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 	return s, nil
 }
 
+// Confirm updates a subscription order's ConfirmedAt, StartDate
+// and EndDate based on passed in confirmation time.
+// Fortunately StartDate and EndDate uses YYYY-MM-DD format, which
+// conforms to SQL DATE type. So we do not need to convert it.
+func (s Subscription) confirm(t time.Time) Subscription {
+	expireTime := s.deduceExpireTime(t)
+
+	s.ConfirmedAt = util.ISO8601UTC.FromTime(t)
+	s.StartDate = util.SQLDateUTC.FromTime(t)
+	s.EndDate = util.SQLDateUTC.FromTime(expireTime)
+
+	return s
+}
+
+// Renew extends a membership.
+func (s Subscription) renew(member Membership) (Subscription, error) {
+	willEnd, err := util.ParseSQLDate(member.Expire)
+
+	if err != nil {
+		return s, err
+	}
+
+	expireTime := s.deduceExpireTime(willEnd)
+
+	s.StartDate = util.SQLDateUTC.FromTime(willEnd)
+	s.EndDate = util.SQLDateUTC.FromTime(expireTime)
+
+	return s, nil
+}
+
 // ConfirmSubscription marks an order as completed and create a member or renew membership.
 // Confirm order and create/renew a new member should be an all-or-nothing operation.
 // Or update membership duration.
 // NOTE: The passed in Subscription must be one retrieved from database. Otherwise you should never call this method.
-func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) error {
-	// SQL DATETIME string for confirmation time.
-	confirmedUTC := util.SQLDatetimeUTC.FromTime(confirmTime)
+func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) (Subscription, error) {
+	subs := s.confirm(confirmTime)
 
-	// By default we assume this order will take effect from its
-	// confirmation time.
-	startTime := confirmTime
-
-	// If this order is used for renewal, copy current memership's
-	// expire_date directly to s.StartDate.
-	if s.IsRenewal {
-		member, err := env.FindMember(s.UserID)
-
-		// If membership is found. Use its Expire date as startTime
-		if err == nil {
-			expireTime, err := util.ParseSQLDate(member.Expire)
-			// If Expire date could be properly parsed.
-			if err != nil {
-				startTime = expireTime
-			}
-		}
+	if !s.IsRenewal {
+		return subs, nil
 	}
 
-	expireTime := s.DeduceExpireTime(startTime)
+	member, err := env.FindMember(s.UserID)
 
-	// SQL DATE string for start_date and end_date
-	startDate := util.SQLDateUTC.FromTime(startTime)
-	endDate := util.SQLDateUTC.FromTime(expireTime)
+	// If err is SqlNoRows error, do not use this subs.
+	if err != nil {
+		// If the error is sql.ErrNoRows, `subs` is valid.
+		if err == sql.ErrNoRows {
+			return subs, nil
+		}
+		return subs, err
+	}
 
-	// Build membership based on subscription.
-	// m := env.buildMembership(s, confirmTime)
+	// Membership already exists. This subscription is used for renewal.
+	renewalSubs, err := subs.renew(member)
 
+	if err != nil {
+		return subs, err
+	}
+
+	return renewalSubs, nil
+}
+
+// CreateOrUpdateMember updates subscription order and create/update membership in one transaction.
+func (env Env) CreateOrUpdateMember(subs Subscription) error {
 	tx, err := env.DB.Begin()
 	if err != nil {
-		logger.WithField("location", "Confirm subscripiton").Error(err)
+		logger.WithField("location", "CreateOrUpdateMember begin Transaction").Error(err)
 		return err
 	}
+
 	stmtUpdate := `
 	UPDATE premium.ftc_trade
 	SET confirmed_utc = ?,
@@ -207,16 +224,20 @@ func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) error 
 	WHERE trade_no = ?
 	LIMIT 1`
 
+	// IMPORTANT: Do not forget to convert ISO8601 string to SQL DATETIME!
+	// If you forgot to do so, MySQL won't given you error details.
+	confirmed := util.SQLDatetimeUTC.FromISO8601(subs.ConfirmedAt)
+
 	_, updateErr := tx.Exec(stmtUpdate,
-		confirmedUTC,
-		startDate,
-		endDate,
-		s.OrderID,
+		confirmed,
+		subs.StartDate,
+		subs.EndDate,
+		subs.OrderID,
 	)
 
 	if updateErr != nil {
 		_ = tx.Rollback()
-		logger.WithField("location", "Update subscription confirmation time").Error(err)
+		logger.WithField("location", "CreateOrUpdateMember update order").Error(err)
 	}
 
 	stmtCreate := `
@@ -231,23 +252,23 @@ func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) error 
 		expire_date = ?`
 
 	_, createErr := tx.Exec(stmtCreate,
-		s.UserID,
-		string(s.TierToBuy),
-		string(s.BillingCycle),
-		endDate,
-		string(s.TierToBuy),
-		string(s.BillingCycle),
-		endDate,
+		subs.UserID,
+		string(subs.TierToBuy),
+		string(subs.BillingCycle),
+		subs.StartDate,
+		string(subs.TierToBuy),
+		string(subs.BillingCycle),
+		subs.EndDate,
 	)
 
 	if createErr != nil {
 		_ = tx.Rollback()
 
-		logger.WithField("location", "Create or renew membership").Error(err)
+		logger.WithField("location", "CreateOrUpdateMember create or update membership").Error(err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		logger.WithField("location", "Commit transaction to commit and create/renew membership").Error(err)
+		logger.WithField("location", "CreateOrUpdateMember commit transaction`").Error(err)
 		return err
 	}
 
