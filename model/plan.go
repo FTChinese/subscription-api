@@ -16,11 +16,87 @@ import (
 // MemberTier represents membership tiers
 type MemberTier string
 
+// CN translates MemberTier into Chinese 标准会员 or 高级会员.
+func (t MemberTier) CN() string {
+	switch t {
+	case TierStandard:
+		return "标准会员"
+	case TierPremium:
+		return "高级会员"
+	default:
+		return ""
+	}
+}
+
+// EN translates MemberTier into English.
+func (t MemberTier) EN() string {
+	switch t {
+	case TierStandard:
+		return "Standard"
+	case TierPremium:
+		return "Premium"
+	default:
+		return ""
+	}
+}
+
 // BillingCycle is an enum of billing cycles.
 type BillingCycle string
 
+// CN translates BillingCycle into Chinese 年 or 月
+func (c BillingCycle) CN() string {
+	switch c {
+	case Yearly:
+		return "年"
+	case Monthly:
+		return "月"
+	default:
+		return ""
+	}
+}
+
+// EN translates BillingCycle into Chinese 年 or 月
+func (c BillingCycle) EN() string {
+	switch c {
+	case Yearly:
+		return "Year"
+	case Monthly:
+		return "Month"
+	default:
+		return ""
+	}
+}
+
 // PaymentMethod lists supported payment channels.
 type PaymentMethod string
+
+// CN translates PaymentMethod into Chinese text.
+func (m PaymentMethod) CN() string {
+	switch m {
+	case Alipay:
+		return "支付宝"
+	case Wxpay:
+		return "微信支付"
+	case Stripe:
+		return "Stripe"
+	default:
+		return ""
+	}
+}
+
+// EN translates PaymentMethod into English text.
+func (m PaymentMethod) EN() string {
+	switch m {
+	case Alipay:
+		return "Ali Pay"
+	case Wxpay:
+		return "Wechat Pay"
+	case Stripe:
+		return "Stripe"
+	default:
+		return ""
+	}
+}
 
 const (
 	// TierInvalid is a placeholder
@@ -88,6 +164,19 @@ func (p Plan) GetPriceCent() int64 {
 // GetPriceString formats price for alipay
 func (p Plan) GetPriceString() string {
 	return strconv.FormatFloat(p.Price, 'f', 2, 32)
+}
+
+// CreateOrder generates a new subscription order based on the plan chosen.
+func (p Plan) CreateOrder(userID string, method PaymentMethod) Subscription {
+	return Subscription{
+		OrderID:       CreateOrderID(p),
+		TierToBuy:     p.Tier,
+		BillingCycle:  p.Cycle,
+		Price:         p.Price,
+		TotalAmount:   p.Price,
+		PaymentMethod: method,
+		UserID:        userID,
+	}
 }
 
 // CreateOrderID creates the order number based on the plan selected.
@@ -169,8 +258,7 @@ var DiscountSchedule = Schedule{
 // RetrieveSchedule finds a lastest discount schedule whose end time is still after now.
 func (env Env) RetrieveSchedule() (Schedule, error) {
 	query := `
-	SELECT
-		id AS id,
+	SELECT id AS id,
 		name AS name, 
 		start_utc AS start,
 		end_utc AS end,
