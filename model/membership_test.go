@@ -2,7 +2,6 @@ package model
 
 import (
 	"testing"
-	"time"
 )
 
 func TestFindMember(t *testing.T) {
@@ -11,12 +10,6 @@ func TestFindMember(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
-	t.Log(m)
-}
-
-func TestBuildMembership(t *testing.T) {
-	m := devEnv.buildMembership(mockSubs, time.Now())
 
 	t.Log(m)
 }
