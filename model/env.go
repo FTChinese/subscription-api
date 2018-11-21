@@ -17,8 +17,9 @@ const (
 
 // Env wraps database connection
 type Env struct {
-	DB    *sql.DB
-	Cache *cache.Cache
+	DB         *sql.DB
+	Cache      *cache.Cache
+	PostOffice util.PostOffice
 }
 
 func normalizeMemberTier(vipType int64) MemberTier {
