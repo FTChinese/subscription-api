@@ -250,6 +250,8 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	go ar.model.SendConfirmationLetter(updatedSubs)
+
 	w.Write([]byte(success))
 }
 
