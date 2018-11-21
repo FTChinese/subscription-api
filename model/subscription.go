@@ -274,3 +274,24 @@ func (env Env) CreateOrUpdateMember(subs Subscription) error {
 
 	return nil
 }
+
+// SendConfirmationLetter sends an email to user that current
+// subscription order is confirmed, based on the order detials.
+func (env Env) SendConfirmationLetter(subs Subscription) error {
+	// 1. Find this user's personal data
+	user, err := env.FindUser(subs.UserID)
+
+	if err != nil {
+		return err
+	}
+
+	// 2. Compose email content
+	parcel, err := ComposeEmail(user, subs)
+	if err != nil {
+		return err
+	}
+
+	err = env.PostOffice.SendLetter(parcel)
+
+	return err
+}
