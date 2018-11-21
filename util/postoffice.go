@@ -3,13 +3,10 @@ package util
 import (
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/go-mail/mail"
 
 	log "github.com/sirupsen/logrus"
-
-	validate "github.com/asaskevich/govalidator"
 )
 
 var logger = log.WithField("package", "subscription-api.util").WithField("file", "postoffice")
@@ -44,7 +41,7 @@ func (o PostOffice) SendLetter(p Parcel) error {
 	m.SetBody("text/plain", p.Body)
 
 	if err := o.Dialer.DialAndSend(m); err != nil {
-		logger.WithField("func", "SendLetter").Error(err)
+		logger.WithField("location", "SendLetter").Error(err)
 
 		return err
 	}
@@ -60,13 +57,4 @@ type Parcel struct {
 	ToName      string
 	Subject     string
 	Body        string
-}
-
-// NormalizeToName extract the name part if Toname is an email address.
-func (p Parcel) NormalizeToName() string {
-	if validate.IsEmail(p.ToName) {
-		return strings.Split(p.ToName, "@")[0]
-	}
-
-	return p.ToName
 }
