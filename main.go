@@ -61,7 +61,8 @@ func main() {
 	}
 
 	c := cache.New(cache.DefaultExpiration, 0)
-	m := model.Env{DB: db, Cache: c}
+	p := util.NewPostOffice()
+	m := model.Env{DB: db, Cache: c, PostOffice: p}
 
 	wxRouter := controller.NewWxRouter(m, isProd)
 	aliRouter := controller.NewAliRouter(m, isProd)
