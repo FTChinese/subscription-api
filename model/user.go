@@ -70,6 +70,7 @@ func ComposeEmail(u User, s Subscription) (util.Parcel, error) {
 	err = tmpl.Execute(&body, data)
 
 	if err != nil {
+		logger.WithField("location", "ComposeEmail").Error(err)
 		return util.Parcel{}, err
 	}
 
