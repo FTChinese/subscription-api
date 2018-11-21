@@ -357,6 +357,9 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Send a letter to this user.
+	go wr.model.SendConfirmationLetter(subs)
+
 	w.Write([]byte(resp.OK()))
 }
 
