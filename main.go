@@ -66,8 +66,7 @@ func main() {
 
 	wxRouter := controller.NewWxRouter(m, isProd)
 	aliRouter := controller.NewAliRouter(m, isProd)
-	memberRouter := controller.NewMemberRouter(m)
-	pricingRouter := controller.NewPricingRouter(m)
+	paywalRouter := controller.NewPaywallRouter(m)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -81,10 +80,9 @@ func main() {
 	r.Use(controller.NoCache)
 
 	r.Get("/__version", controller.Version(version, build))
-	r.Get("/__plans", controller.DefaultPlans())
-	r.Get("/__discount", pricingRouter.DiscountSchedule)
-	r.Get("/__current_plans", pricingRouter.CurrentPlans)
-	r.Get("/__refresh", pricingRouter.RefreshSchedule)
+	r.Get("/__default_plans", controller.DefaultPlans())
+	r.Get("/__discount_plans", paywalRouter.DiscountSchedule)
+	r.Get("/__refresh", paywalRouter.RefreshSchedule)
 
 	// Requires user id.
 	r.Route("/wxpay", func(r1 chi.Router) {
@@ -106,14 +104,14 @@ func main() {
 		r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
 	})
 
-	r.Route("/membership", func(r1 chi.Router) {
-
-		r1.Get("/renewabel", memberRouter.IsRenewable)
-	})
-
 	r.Route("/callback", func(r1 chi.Router) {
 		r1.Post("/wxpay", wxRouter.Notification)
 		r1.Post("/alipay", aliRouter.Notification)
+	})
+
+	r.Route("/paywall", func(r1 chi.Router) {
+		r1.Get("/plans", paywalRouter.CurrentPlans)
+		// r1.Get("/paywall", )
 	})
 
 	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8200")
