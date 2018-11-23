@@ -2,6 +2,17 @@
 
 API for subscription service
 
+## Sitemap
+
+* `POST /wxpay/unified-order/{standard|premium}/{year|month}` Create a wxpay prepay order
+
+* `GET /wxpay/query/{orderId}` Query an order paid via wxpay
+
+* `POST /alipay/app-order/{tier}/{cycle}` Create a new order for alipay
+
+* `POST /callback/wxpay`
+* `POST /callback/alipay`
+
 ## Issues
 
 There's a problem with the wxpay sdk used here `github.com/objcoding/wxpay`. The `XmlToMap()` function this package provides does not take into account of indented or formatted XML. It requires that there's not space between each XML tag. If there are spaces and tabs, it cannot get the correct value.
