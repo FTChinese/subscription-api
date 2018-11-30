@@ -80,10 +80,9 @@ func main() {
 	r.Use(controller.NoCache)
 
 	r.Get("/__version", controller.Version(version, build))
-	r.Get("/__default_plans", controller.DefaultPlans())
+	// Inspect what pricing plans are in effect.
 	r.Get("/__current_plans", paywallRouter.CurrentPlans)
-	r.Get("/__discount_schedule", paywallRouter.DiscountSchedule)
-	r.Get("/__refresh", paywallRouter.RefreshSchedule)
+	r.Get("/__refresh", paywallRouter.RefreshPromo)
 
 	// Requires user id.
 	r.Route("/wxpay", func(r1 chi.Router) {
@@ -108,6 +107,19 @@ func main() {
 	r.Route("/callback", func(r1 chi.Router) {
 		r1.Post("/wxpay", wxRouter.Notification)
 		r1.Post("/alipay", aliRouter.Notification)
+	})
+
+	r.Route("/paywall", func(r1 chi.Router) {
+		// Get promotion schedule, pricing plans and banner content
+		r1.Get("/promo", paywallRouter.GetPromo)
+
+		// Get products list
+		// r1.Get("/products", )
+		// Get default pricing plans
+		r1.Get("/plans", controller.DefaultPlans)
+
+		// Get default banner
+		// r1.Get("/banner", )
 	})
 
 	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8200")
