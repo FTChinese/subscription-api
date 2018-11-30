@@ -13,6 +13,7 @@ var logger = log.WithField("package", "subscription-api.model")
 
 const (
 	keySchedule = "discountSchedule"
+	keyPromo    = "promotionSchedule"
 )
 
 // Env wraps database connection
