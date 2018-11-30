@@ -209,39 +209,10 @@ var DefaultPlans = map[string]Plan{
 	},
 }
 
-// DiscountSchedule and their duration.
-var DiscountSchedule = Schedule{
-	Start: "2018-10-01T16:00:00Z",
-	End:   "2018-10-31T16:00:00Z",
-	Plans: map[string]Plan{
-		"standard_year": Plan{
-			Tier:        TierStandard,
-			Cycle:       Yearly,
-			Price:       0.01,
-			ID:          10,
-			Description: "FT中文网 - 年度标准会员",
-		},
-		"standard_month": Plan{
-			Tier:        TierStandard,
-			Cycle:       Monthly,
-			Price:       0.01,
-			ID:          5,
-			Description: "FT中文网 - 月度标准会员",
-		},
-		"premium_year": Plan{
-			Tier:        TierPremium,
-			Cycle:       Yearly,
-			Price:       0.01,
-			ID:          100,
-			Description: "FT中文网 - 高端会员",
-		},
-	},
-}
-
 // GetCurrentPlans get default plans or discount plans depending on current time.
 func (env Env) GetCurrentPlans() map[string]Plan {
 
-	sch, found := env.ScheduleFromCache()
+	promo, found := env.PromoFromCache()
 
 	// If no cache is found, use default ones.
 	if !found {
@@ -251,8 +222,8 @@ func (env Env) GetCurrentPlans() map[string]Plan {
 
 	// If cache is found, compare time
 	now := time.Now()
-	start := parseISO8601(sch.Start)
-	end := parseISO8601(sch.End)
+	start := parseISO8601(promo.Start)
+	end := parseISO8601(promo.End)
 
 	if now.Before(start) || now.After(end) {
 		logger.WithField("location", "GetCurrentPlans").Info("Cached plans duration not effective. Use default ones")
@@ -261,7 +232,7 @@ func (env Env) GetCurrentPlans() map[string]Plan {
 
 	logger.WithField("location", "GetCurrentPlans").Info("Using discount plans")
 
-	return sch.Plans
+	return promo.Plans
 }
 
 // FindPlan picks a Plan instance depending
