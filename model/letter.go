@@ -12,9 +12,9 @@ const letter = `
 您本次订单的详细信息如下：
 
 订单号: {{.Subs.OrderID}}
-会员类型: {{.Subs.TierToBuy.CN}}/{{.Subs.BillingCycle.CN}}
+会员类型: {{.Subs.TierToBuy.ToCN}}/{{.Subs.BillingCycle.ToCN}}
 支付金额: {{.Subs.TotalAmount}}
-支付方式: {{.Subs.PaymentMethod.CN}}
+支付方式: {{.Subs.PaymentMethod.ToCN}}
 订单日期: {{.Subs.CreatedAtCN}}
 本次订单购买的会员期限: {{.Subs.StartDate}} 至 {{.Subs.EndDate}}
 
@@ -36,9 +36,9 @@ You have subscriped to FTC membership.
 Here is your order details:
 
 Order ID: {{.Subs.OrderID}}
-Membership: {{.Subs.TierToBuy.EN}}/{{.Subs.BillingCycle.EN}}
+Membership: {{.Subs.TierToBuy.ToEN}}/{{.Subs.BillingCycle.ToEN}}
 Price: {{.Subs.TotalAmount}}
-Payment Method: {{.Subs.PaymentMethod.EN}}
+Payment Method: {{.Subs.PaymentMethod.ToEN}}
 Created At: {{.Subs.CreatedAt}}
 Duration: {{.Subs.StartDate}} to {{.Subs.EndDate}}
 
