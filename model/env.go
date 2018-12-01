@@ -3,6 +3,8 @@ package model
 import (
 	"database/sql"
 
+	"gitlab.com/ftchinese/subscription-api/member"
+
 	"github.com/patrickmn/go-cache"
 
 	log "github.com/sirupsen/logrus"
@@ -23,17 +25,17 @@ type Env struct {
 	PostOffice util.PostOffice
 }
 
-func normalizeMemberTier(vipType int64) MemberTier {
+func normalizeMemberTier(vipType int64) member.Tier {
 	switch vipType {
 
 	case 10:
-		return TierStandard
+		return member.TierStandard
 
 	case 100:
-		return TierPremium
+		return member.TierPremium
 
 	default:
-		return TierInvalid
+		return member.TierFree
 	}
 }
 
