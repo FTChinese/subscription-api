@@ -4,8 +4,10 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 )
+
+// ErrIncompatible indicates a type cannot be scane from SQL to golang.
+var ErrIncompatible = errors.New("incompatible type to scan")
 
 const (
 	standard = "standard"
@@ -55,33 +57,33 @@ func (t Tier) MarshalJSON() ([]byte, error) {
 
 // Scan implements sql.Scanner interface to retrieve value from SQL.
 func (t *Tier) Scan(src interface{}) error {
-	var source string
-	switch src.(type) {
-	case string:
-		source = src.(string)
+	if src == nil {
+		*t = TierFree
+		return nil
+	}
+
+	switch s := src.(type) {
+	case []byte:
+		tier, err := NewTier(string(s))
+		if err != nil {
+			return err
+		}
+		*t = tier
+		return nil
 
 	default:
-		return errors.New("incompatible type for member tier")
+		return ErrIncompatible
 	}
-
-	tier, err := NewTier(source)
-	if err != nil {
-		return err
-	}
-
-	*t = tier
-
-	return nil
 }
 
 // Value implements driver.Valuer interface to save value into SQL.
 func (t Tier) Value() (driver.Value, error) {
 	s := t.String()
 	if s == "" {
-		return driver.Value(""), fmt.Errorf("member tier %d is not a valid member type", t)
+		return nil, nil
 	}
 
-	return driver.Value(s), nil
+	return s, nil
 }
 
 func (t Tier) String() string {
@@ -124,12 +126,13 @@ var tierEnum = map[string]Tier{
 }
 
 // NewTier converts a string into a MemberTier type.
-func NewTier(key string) (Tier, error) {
-	tier, ok := tierEnum[key]
-
-	if !ok {
+func NewTier(tier string) (Tier, error) {
+	switch tier {
+	case standard:
+		return TierStandard, nil
+	case premium:
+		return TierPremium, nil
+	default:
 		return TierFree, errors.New("Only standard and premium tier allowed")
 	}
-
-	return tier, nil
 }
