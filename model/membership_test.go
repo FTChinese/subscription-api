@@ -11,5 +11,5 @@ func TestFindMember(t *testing.T) {
 		t.Error(err)
 	}
 
-	t.Log(m)
+	t.Logf("%+v\n", m)
 }
