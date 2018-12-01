@@ -4,7 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"time"
 )
 
 const (
@@ -32,6 +32,18 @@ var cyclesEN = [...]string{
 // Cycle is an enum for billing cycles.
 type Cycle int
 
+// TimeAfterACycle adds one cycle to a time instance and returns the new time.
+func (c Cycle) TimeAfterACycle(t time.Time) (time.Time, error) {
+	switch c {
+	case CycleYear:
+		return t.AddDate(1, 0, 1), nil
+	case CycleMonth:
+		return t.AddDate(0, 1, 1), nil
+	default:
+		return t, errors.New("not a valid cycle type")
+	}
+}
+
 // UnmarshalJSON implements the Unmarshaler interface.
 func (c *Cycle) UnmarshalJSON(b []byte) error {
 	var s string
@@ -57,33 +69,33 @@ func (c Cycle) MarshalJSON() ([]byte, error) {
 
 // Scan implements sql.Scanner interface to retrieve value from SQL.
 func (c *Cycle) Scan(src interface{}) error {
-	var source string
-	switch src.(type) {
-	case string:
-		source = src.(string)
+	if src == nil {
+		*c = CycleInvalid
+		return nil
+	}
+
+	switch s := src.(type) {
+	case []byte:
+		cycle, err := NewCycle(string(s))
+		if err != nil {
+			return err
+		}
+		*c = cycle
+		return nil
 
 	default:
-		return errors.New("incompatible type for billing cycle")
+		return ErrIncompatible
 	}
-
-	cycle, err := NewCycle(source)
-	if err != nil {
-		return err
-	}
-
-	*c = cycle
-
-	return nil
 }
 
 // Value implements driver.Valuer interface to save value into SQL.
 func (c Cycle) Value() (driver.Value, error) {
 	s := c.String()
 	if s == "" {
-		return driver.Value(""), fmt.Errorf("member tier %d is not a valid member type", c)
+		return nil, nil
 	}
 
-	return driver.Value(s), nil
+	return s, nil
 }
 
 func (c Cycle) String() string {
