@@ -3,20 +3,26 @@ package model
 import (
 	"time"
 
+	"gitlab.com/ftchinese/subscription-api/member"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // Membership contains a user's membership details
 type Membership struct {
 	UserID string
-	Tier   MemberTier
-	Cycle  BillingCycle
+	Tier   member.Tier
+	Cycle  member.Cycle
 	Expire string // On which date the membership ends
 }
 
 // CanRenew tests if a membership is allowed to renuew subscription.
 // A member could only renew its subscripiton when remaining duration of a membership is shorter than a billing cycle.
-func (m Membership) CanRenew(cycle BillingCycle) bool {
+// Expire date - now > cycle  --- Renwal is not allowed
+// Expire date - now <= cycle --- Can renew
+//         now--------------------| Allow
+//      |-------- A cycle --------| Expires
+// now----------------------------| Deny
+func (m Membership) CanRenew(cycle member.Cycle) bool {
 	expireDate, err := util.ParseSQLDate(m.Expire)
 
 	if err != nil {
@@ -24,18 +30,13 @@ func (m Membership) CanRenew(cycle BillingCycle) bool {
 		return false
 	}
 
-	now := time.Now()
+	afterACycle, err := cycle.TimeAfterACycle(time.Now())
 
-	// Add one day more to accomodate timezone change.
-	switch cycle {
-	case Yearly:
-		// expiration time < today + cycle
-		return expireDate.Before(now.AddDate(1, 0, 1))
-	case Monthly:
-		return expireDate.Before(now.AddDate(0, 1, 1))
+	if err != nil {
+		return false
 	}
 
-	return false
+	return expireDate.Before(afterACycle)
 }
 
 // IsExpired tests is the membership saved in database is expired.
@@ -87,10 +88,10 @@ func (env Env) FindMember(userID string) (Membership, error) {
 	if tier == "" {
 		m.Tier = normalizeMemberTier(vipType)
 	} else {
-		m.Tier, _ = NewTier(tier)
+		m.Tier, _ = member.NewTier(tier)
 	}
 
-	m.Cycle, _ = NewCycle(cycle)
+	m.Cycle, _ = member.NewCycle(cycle)
 
 	if m.Expire == "" {
 		m.Expire = normalizeExpireDate(expireTime)
