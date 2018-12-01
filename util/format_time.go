@@ -12,7 +12,7 @@ const (
 	layoutISO9075     = "2006-01-02 15:04:05" // Layout for SQL DATETIME
 	layoutISO9075Date = "2006-01-02"          // Layout for SQL DATE
 	layoutWxTime      = "20060102150405"
-	layoutShanghai    = "2006年01月02日 15:04:05 亚洲/上海时间"
+	layoutCST         = "2006年01月02日 15:04:05 中国标准时间"
 	stmtUTC8Now       = "DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR)"
 )
 
@@ -28,7 +28,7 @@ var (
 	// SQLDateUTC8 turns time into SQL's DATE string set in UTC+8.
 	SQLDateUTC8 = timeForamtter{layoutISO9075Date, TZShanghai}
 	// FormatShanghai turns time into Chinese text set in Asia/Shanghai
-	FormatShanghai = timeForamtter{layoutShanghai, TZShanghai}
+	FormatShanghai = timeForamtter{layoutCST, TZShanghai}
 )
 
 // timeFormatter converts a time.Time instance to the specified layout in specified location
@@ -105,6 +105,12 @@ func ParseSQLDatetime(value string) time.Time {
 	}
 
 	return t
+}
+
+// ParseISO8601 parses ISO 8601 time string
+// into a time.Time instance, or returns error.
+func ParseISO8601(value string) (time.Time, error) {
+	return time.Parse(time.RFC3339, value)
 }
 
 // ParseWxTime is used to parse wxpay's time format.
