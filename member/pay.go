@@ -4,7 +4,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 )
 
 const (
@@ -59,33 +58,33 @@ func (m PayMethod) MarshalJSON() ([]byte, error) {
 
 // Scan implements sql.Scanner interface to retrieve value from SQL.
 func (m *PayMethod) Scan(src interface{}) error {
-	var source string
-	switch src.(type) {
-	case string:
-		source = src.(string)
+	if src == nil {
+		*m = InvalidPay
+		return nil
+	}
+
+	switch s := src.(type) {
+	case []byte:
+		method, err := NewPayMethod(string(s))
+		if err != nil {
+			return err
+		}
+		*m = method
+		return nil
 
 	default:
-		return errors.New("incompatible type for billing cycle")
+		return ErrIncompatible
 	}
-
-	method, err := NewPayMethod(source)
-	if err != nil {
-		return err
-	}
-
-	*m = method
-
-	return nil
 }
 
 // Value implements driver.Valuer interface to save value into SQL.
 func (m PayMethod) Value() (driver.Value, error) {
 	s := m.String()
 	if s == "" {
-		return driver.Value(""), fmt.Errorf("cycle %d is not a valid billing cycle type", m)
+		return nil, nil
 	}
 
-	return driver.Value(s), nil
+	return s, nil
 }
 
 func (m PayMethod) String() string {
