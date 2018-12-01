@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"gitlab.com/ftchinese/subscription-api/member"
+
 	"github.com/objcoding/wxpay"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -75,11 +77,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	tierKey := getURLParam(req, "tier").toString()
 	cycleKey := getURLParam(req, "cycle").toString()
 
-	tier, err := model.NewTier(tierKey)
-
-	cycle, err := model.NewCycle(cycleKey)
-
-	if err != nil {
+	if tierKey == "" || cycleKey == "" {
 		util.Render(w, util.NewBadRequest(msgInvalidURI))
 		return
 	}
@@ -87,9 +85,10 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	// Get user id from request header
 	userID := req.Header.Get(userIDKey)
 
-	// Plan if not found.
-	plan, err := wr.model.FindPlan(tier, cycle)
+	// Try to find a plan based on the tier and cycle.
+	plan, err := wr.model.FindPlan(tierKey, cycleKey)
 
+	// If pricing plan if not found.
 	if err != nil {
 		logger.WithField("location", "UnifiedOrder").Error(err)
 
@@ -99,29 +98,20 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	logger.WithField("location", "UnifiedOrder").Infof("Subscritpion plan: %+v", plan)
 
-	subs := plan.CreateOrder(userID, model.Wxpay)
-
-	// Find if this user is already subscribed.
-	// If a membership is not found, sql.ErrNoRows will be returned.
-	// Discard the error.
-	member, err := wr.model.FindMember(userID)
-
-	// If membership for this user is found, and is not in the allowed renewal period.
-	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
-	if err == nil {
-		if !member.CanRenew(cycle) {
-			util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-			return
-		}
-		subs.IsRenewal = !member.IsExpired()
-	}
+	// Use the pricing plan to create a subscription order
+	subs := plan.CreateSubs(userID, member.Wxpay)
 
 	// Get request client required headers
 	c := util.NewRequestClient(req)
 
-	err = wr.model.SaveSubscription(subs, c)
-
+	err = wr.model.PlaceOrder(subs, c)
 	if err != nil {
+
+		if err == util.ErrRenewalForbidden {
+			util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+			return
+		}
+
 		util.Render(w, util.NewDBFailure(err))
 		return
 	}
