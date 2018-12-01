@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/smartwalle/alipay"
+	"gitlab.com/ftchinese/subscription-api/member"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
@@ -64,11 +65,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	tierKey := getURLParam(req, "tier").toString()
 	cycleKey := getURLParam(req, "cycle").toString()
 
-	tier, err := model.NewTier(tierKey)
-
-	cycle, err := model.NewCycle(cycleKey)
-
-	if err != nil {
+	if tierKey == "" || cycleKey == "" {
 		util.Render(w, util.NewBadRequest(msgInvalidURI))
 		return
 	}
@@ -76,7 +73,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	// Get user id from request header
 	userID := req.Header.Get(userIDKey)
 
-	plan, err := ar.model.FindPlan(tier, cycle)
+	plan, err := ar.model.FindPlan(tierKey, cycleKey)
 
 	if err != nil {
 		logger.WithField("location", "AliAppOrder").Error(err)
@@ -87,29 +84,19 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 
 	logger.WithField("location", "AliAppOrder").Infof("Subscritpion plan: %+v", plan)
 
-	subs := plan.CreateOrder(userID, model.Alipay)
-
-	// Find if this user is already subscribed.
-	// If a membership is not found, sql.ErrNoRows will be returned.
-	// Discard the error.
-	member, err := ar.model.FindMember(userID)
-
-	// If membership for this user is found, and is not in the allowed renewal period.
-	// Allowed renewal period: current time is within the length of the expiration time minus the requested billing cycle.
-	if err == nil {
-		if !member.CanRenew(cycle) {
-			util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-			return
-		}
-		subs.IsRenewal = !member.IsExpired()
-	}
+	subs := plan.CreateSubs(userID, member.Alipay)
 
 	// Get request client metadata
 	c := util.NewRequestClient(req)
 
-	err = ar.model.SaveSubscription(subs, c)
+	err = ar.model.PlaceOrder(subs, c)
 
 	if err != nil {
+		if err == util.ErrRenewalForbidden {
+			util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+			return
+		}
+
 		util.Render(w, util.NewDBFailure(err))
 		return
 	}
