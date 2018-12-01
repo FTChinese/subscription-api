@@ -12,7 +12,7 @@ const (
 	premium  = "premium"
 )
 
-var tiers = [...]string{
+var tiersRaw = [...]string{
 	standard,
 	premium,
 }
@@ -27,11 +27,6 @@ var tiersEN = [...]string{
 	"Premium",
 }
 
-var tierMap = map[string]Tier{
-	standard: TierStandard,
-	premium:  TierPremium,
-}
-
 // Tier is an enum.
 type Tier int
 
@@ -42,7 +37,7 @@ func (t *Tier) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	tier, ok := tierMap[s]
+	tier, ok := tierEnum[s]
 
 	if !ok {
 		return errors.New("only standard and premium member tier allowed")
@@ -58,7 +53,7 @@ func (t Tier) MarshalJSON() ([]byte, error) {
 	return json.Marshal(t.String())
 }
 
-// Scan implements sql.Scanner interface
+// Scan implements sql.Scanner interface to retrieve value from SQL.
 func (t *Tier) Scan(src interface{}) error {
 	var source string
 	switch src.(type) {
@@ -79,7 +74,7 @@ func (t *Tier) Scan(src interface{}) error {
 	return nil
 }
 
-// Value implements driver.Valuer interface
+// Value implements driver.Valuer interface to save value into SQL.
 func (t Tier) Value() (driver.Value, error) {
 	s := t.String()
 	if s == "" {
@@ -94,7 +89,7 @@ func (t Tier) String() string {
 		return ""
 	}
 
-	return tiers[t]
+	return tiersRaw[t]
 }
 
 // ToCN output tier as Chinese text
@@ -122,9 +117,15 @@ const (
 	TierPremium  Tier = 1
 )
 
+// Maps raw value to Tier type.
+var tierEnum = map[string]Tier{
+	standard: TierStandard,
+	premium:  TierPremium,
+}
+
 // NewTier converts a string into a MemberTier type.
 func NewTier(key string) (Tier, error) {
-	tier, ok := tierMap[key]
+	tier, ok := tierEnum[key]
 
 	if !ok {
 		return TierFree, errors.New("Only standard and premium tier allowed")
