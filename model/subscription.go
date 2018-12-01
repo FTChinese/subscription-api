@@ -5,17 +5,19 @@ import (
 	"strconv"
 	"time"
 
+	"gitlab.com/ftchinese/subscription-api/member"
+
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // Subscription contains the details of a user's action to place an order.
 type Subscription struct {
 	OrderID       string
-	TierToBuy     MemberTier
-	BillingCycle  BillingCycle
+	TierToBuy     member.Tier
+	BillingCycle  member.Cycle
 	Price         float64
 	TotalAmount   float64
-	PaymentMethod PaymentMethod
+	PaymentMethod member.PayMethod
 	Currency      string
 	CreatedAt     string // When the order is created.
 	ConfirmedAt   string // When the payment is confirmed.
@@ -35,23 +37,83 @@ func (s Subscription) AliTotalAmount() string {
 	return strconv.FormatFloat(s.TotalAmount, 'f', 2, 32)
 }
 
-// deduceExpireTime deduces membership expiration time based on when it is confirmed and the billing cycle.
-// Add one day more to accomodate timezone change
-func (s Subscription) deduceExpireTime(t time.Time) time.Time {
-	switch s.BillingCycle {
-	case Yearly:
-		return t.AddDate(1, 0, 1)
-
-	case Monthly:
-		return t.AddDate(0, 1, 1)
-	}
-
-	return t
-}
-
 // CreatedAtCN turns creation time into Chinese text and format.
 func (s Subscription) CreatedAtCN() string {
 	return util.FormatShanghai.FromISO8601(s.CreatedAt)
+}
+
+// Confirm updates a subscription order's ConfirmedAt, StartDate
+// and EndDate based on passed in confirmation time.
+// Fortunately StartDate and EndDate uses YYYY-MM-DD format, which
+// conforms to SQL DATE type. So we do not need to convert it.
+func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
+	// expireTime := s.deduceExpireTime(t)
+	expireTime, err := s.BillingCycle.TimeAfterACycle(t)
+
+	if err != nil {
+		return s, err
+	}
+	s.ConfirmedAt = util.ISO8601UTC.FromTime(t)
+	s.StartDate = util.SQLDateUTC.FromTime(t)
+	s.EndDate = util.SQLDateUTC.FromTime(expireTime)
+
+	return s, nil
+}
+
+// update subscription's StartDate and EndDate based on
+// previous membership's expiration date
+// after the subscription is confirmed.
+func (s Subscription) withMembership(member Membership) (Subscription, error) {
+	expireTime, err := util.ParseSQLDate(member.Expire)
+
+	if err != nil {
+		return s, err
+	}
+
+	// Add a cycle to current membership's expiration time
+	// expireTime := s.deduceExpireTime(willEnd)
+	extendedTime, err := s.BillingCycle.TimeAfterACycle(expireTime)
+
+	if err != nil {
+		return s, err
+	}
+
+	s.StartDate = util.SQLDateUTC.FromTime(expireTime)
+	s.EndDate = util.SQLDateUTC.FromTime(extendedTime)
+
+	return s, nil
+}
+
+// PlaceOrder creates a new order for a user
+// and remembers if this order is used to
+// renew existing membership or simply
+// create a new one.
+func (env Env) PlaceOrder(subs Subscription, c util.RequestClient) error {
+	// Check if we could find the membership for this user.
+	member, err := env.FindMember(subs.UserID)
+
+	// If the membership if found.
+	if err == nil {
+		// If membership is not allowed to renew yet
+		if !member.CanRenew(subs.BillingCycle) {
+			return util.ErrRenewalForbidden
+		}
+
+		// If current membership is allowed to renew,
+		// and membership is not expired yet,
+		// we remember that this order is used for renewal.
+		if !member.IsExpired() {
+			subs.IsRenewal = true
+		}
+	}
+
+	err = env.SaveSubscription(subs, c)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // SaveSubscription saves a new subscription order.
@@ -79,9 +141,9 @@ func (env Env) SaveSubscription(s Subscription, c util.RequestClient) error {
 		s.Price,
 		s.TotalAmount,
 		s.UserID,
-		string(s.TierToBuy),
-		string(s.BillingCycle),
-		string(s.PaymentMethod),
+		s.TierToBuy,
+		s.BillingCycle,
+		s.PaymentMethod,
 		s.IsRenewal,
 		c.ClientType,
 		c.Version,
@@ -128,6 +190,8 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 		&s.IsRenewal,
 		&s.CreatedAt,
 		&s.ConfirmedAt,
+		&s.StartDate,
+		&s.EndDate,
 	)
 
 	if err != nil {
@@ -146,47 +210,25 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 	return s, nil
 }
 
-// Confirm updates a subscription order's ConfirmedAt, StartDate
-// and EndDate based on passed in confirmation time.
-// Fortunately StartDate and EndDate uses YYYY-MM-DD format, which
-// conforms to SQL DATE type. So we do not need to convert it.
-func (s Subscription) confirm(t time.Time) Subscription {
-	expireTime := s.deduceExpireTime(t)
-
-	s.ConfirmedAt = util.ISO8601UTC.FromTime(t)
-	s.StartDate = util.SQLDateUTC.FromTime(t)
-	s.EndDate = util.SQLDateUTC.FromTime(expireTime)
-
-	return s
-}
-
-// Renew extends a membership.
-func (s Subscription) renew(member Membership) (Subscription, error) {
-	willEnd, err := util.ParseSQLDate(member.Expire)
+// ConfirmSubscription retrieves a previously saved subscription order
+// and update its ConfirmedAt, StartDate, EndDate fields base on whether this order
+// is used for new member or renewal of existing one.
+// This step does not persist the updated subscription order since that operation
+// needs to be done together with membeship
+// persistent.
+func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) (Subscription, error) {
+	subs, err := s.withConfirmation(confirmTime)
 
 	if err != nil {
 		return s, err
 	}
 
-	expireTime := s.deduceExpireTime(willEnd)
-
-	s.StartDate = util.SQLDateUTC.FromTime(willEnd)
-	s.EndDate = util.SQLDateUTC.FromTime(expireTime)
-
-	return s, nil
-}
-
-// ConfirmSubscription marks an order as completed and create a member or renew membership.
-// Confirm order and create/renew a new member should be an all-or-nothing operation.
-// Or update membership duration.
-// NOTE: The passed in Subscription must be one retrieved from database. Otherwise you should never call this method.
-func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) (Subscription, error) {
-	subs := s.confirm(confirmTime)
-
+	// If this is a new member, the subscrition information is complete.
 	if !s.IsRenewal {
 		return subs, nil
 	}
 
+	// If this is a renewal, we need to find the current membership's expiration date.
 	member, err := env.FindMember(s.UserID)
 
 	// If err is SqlNoRows error, do not use this subs.
@@ -199,16 +241,19 @@ func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) (Subsc
 	}
 
 	// Membership already exists. This subscription is used for renewal.
-	renewalSubs, err := subs.renew(member)
+	subs, err = subs.withMembership(member)
 
 	if err != nil {
 		return subs, err
 	}
 
-	return renewalSubs, nil
+	return subs, nil
 }
 
 // CreateOrUpdateMember updates subscription order and create/update membership in one transaction.
+// Confirm order and create/renew a new member should be an all-or-nothing operation.
+// Or update membership duration.
+// NOTE: The passed in Subscription must be one retrieved from database. Otherwise you should never call this method.
 func (env Env) CreateOrUpdateMember(subs Subscription) error {
 	tx, err := env.DB.Begin()
 	if err != nil {
@@ -253,11 +298,11 @@ func (env Env) CreateOrUpdateMember(subs Subscription) error {
 
 	_, createErr := tx.Exec(stmtCreate,
 		subs.UserID,
-		string(subs.TierToBuy),
-		string(subs.BillingCycle),
+		subs.TierToBuy,
+		subs.BillingCycle,
 		subs.StartDate,
-		string(subs.TierToBuy),
-		string(subs.BillingCycle),
+		subs.TierToBuy,
+		subs.BillingCycle,
 		subs.EndDate,
 	)
 
