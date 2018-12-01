@@ -6,146 +6,15 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
+
+	"gitlab.com/ftchinese/subscription-api/member"
+	"gitlab.com/ftchinese/subscription-api/util"
 )
-
-// MemberTier represents membership tiers
-type MemberTier string
-
-// CN translates MemberTier into Chinese 标准会员 or 高级会员.
-func (t MemberTier) CN() string {
-	switch t {
-	case TierStandard:
-		return "标准会员"
-	case TierPremium:
-		return "高级会员"
-	default:
-		return ""
-	}
-}
-
-// EN translates MemberTier into English.
-func (t MemberTier) EN() string {
-	switch t {
-	case TierStandard:
-		return "Standard"
-	case TierPremium:
-		return "Premium"
-	default:
-		return ""
-	}
-}
-
-// BillingCycle is an enum of billing cycles.
-type BillingCycle string
-
-// CN translates BillingCycle into Chinese 年 or 月
-func (c BillingCycle) CN() string {
-	switch c {
-	case Yearly:
-		return "年"
-	case Monthly:
-		return "月"
-	default:
-		return ""
-	}
-}
-
-// EN translates BillingCycle into Chinese 年 or 月
-func (c BillingCycle) EN() string {
-	switch c {
-	case Yearly:
-		return "Year"
-	case Monthly:
-		return "Month"
-	default:
-		return ""
-	}
-}
-
-// PaymentMethod lists supported payment channels.
-type PaymentMethod string
-
-// CN translates PaymentMethod into Chinese text.
-func (m PaymentMethod) CN() string {
-	switch m {
-	case Alipay:
-		return "支付宝"
-	case Wxpay:
-		return "微信支付"
-	case Stripe:
-		return "Stripe"
-	default:
-		return ""
-	}
-}
-
-// EN translates PaymentMethod into English text.
-func (m PaymentMethod) EN() string {
-	switch m {
-	case Alipay:
-		return "Ali Pay"
-	case Wxpay:
-		return "Wechat Pay"
-	case Stripe:
-		return "Stripe"
-	default:
-		return ""
-	}
-}
-
-const (
-	// TierInvalid is a placeholder
-	TierInvalid MemberTier = ""
-	// TierStandard is the standard tier
-	TierStandard MemberTier = "standard"
-	// TierPremium is the premium tier
-	TierPremium MemberTier = "premium"
-	// CycleInvalid is a placeholder
-	CycleInvalid BillingCycle = ""
-	// Yearly bills every year
-	Yearly BillingCycle = "year"
-	// Monthly bills every month
-	Monthly BillingCycle = "month"
-	// Alipay supports taobao payment
-	Alipay PaymentMethod = "alipay"
-	// Wxpay supports wechat payment
-	Wxpay PaymentMethod = "tenpay"
-	// Stripe supports pay by stripe
-	Stripe PaymentMethod = "stripe"
-)
-
-// NewTier returns a MemberTier.
-// `key` either `standard` or `premium`
-func NewTier(key string) (MemberTier, error) {
-	switch key {
-	case "standard":
-		return TierStandard, nil
-
-	case "premium":
-		return TierPremium, nil
-
-	default:
-		return MemberTier(""), errors.New("Only standard and premium tier allowed")
-	}
-}
-
-// NewCycle returns a new BillingCycle.
-// `key` is either `year` or `month`.
-func NewCycle(key string) (BillingCycle, error) {
-	switch key {
-	case "year":
-		return Yearly, nil
-	case "month":
-		return Monthly, nil
-	default:
-		return CycleInvalid, errors.New("cycle must either be year or month")
-	}
-}
 
 // Plan represents a subscription plan
 type Plan struct {
-	Tier        MemberTier   `json:"tier"`
-	Cycle       BillingCycle `json:"cycle"`
+	Tier        member.Tier  `json:"tier"`
+	Cycle       member.Cycle `json:"cycle"`
 	Price       float64      `json:"price"`
 	ID          int          `json:"id"` // 10 for standard and 100 for premium
 	Description string       `json:"description"`
@@ -161,10 +30,22 @@ func (p Plan) GetPriceString() string {
 	return strconv.FormatFloat(p.Price, 'f', 2, 32)
 }
 
-// CreateOrder generates a new subscription order based on the plan chosen.
-func (p Plan) CreateOrder(userID string, method PaymentMethod) Subscription {
+// OrderID generates an FT order id based
+// on the plan's id, a random number between 100 to 999,
+// and unix timestamp.
+func (p Plan) OrderID() string {
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate a random number between [100, 999)
+	rn := 100 + rand.Intn(999-100+1)
+
+	return fmt.Sprintf("FT%03d%d%d", p.ID, rn, time.Now().Unix())
+}
+
+// CreateSubs generates a new subscription order based on the plan chosen.
+func (p Plan) CreateSubs(userID string, method member.PayMethod) Subscription {
 	return Subscription{
-		OrderID:       CreateOrderID(p),
+		OrderID:       p.OrderID(),
 		TierToBuy:     p.Tier,
 		BillingCycle:  p.Cycle,
 		Price:         p.Price,
@@ -174,44 +55,35 @@ func (p Plan) CreateOrder(userID string, method PaymentMethod) Subscription {
 	}
 }
 
-// CreateOrderID creates the order number based on the plan selected.
-func CreateOrderID(p Plan) string {
-	rand.Seed(time.Now().UnixNano())
-
-	// Generate a random number between [100, 999)
-	rn := 100 + rand.Intn(999-100+1)
-
-	return fmt.Sprintf("FT%03d%d%d", p.ID, rn, time.Now().Unix())
-}
-
 // DefaultPlans is the default subscription. No discount.
 var DefaultPlans = map[string]Plan{
 	"standard_year": Plan{
-		Tier:        TierStandard,
-		Cycle:       Yearly,
+		Tier:        member.TierStandard,
+		Cycle:       member.CycleYear,
 		Price:       198.00,
 		ID:          10,
 		Description: "FT中文网 - 年度标准会员",
 	},
 	"standard_month": Plan{
-		Tier:        TierStandard,
-		Cycle:       Monthly,
+		Tier:        member.TierStandard,
+		Cycle:       member.CycleMonth,
 		Price:       28.00,
 		ID:          5,
 		Description: "FT中文网 - 月度标准会员",
 	},
 	"premium_year": Plan{
-		Tier:        TierPremium,
-		Cycle:       Yearly,
+		Tier:        member.TierPremium,
+		Cycle:       member.CycleYear,
 		Price:       1998.00,
 		ID:          100,
 		Description: "FT中文网 - 高端会员",
 	},
 }
 
-// GetCurrentPlans get default plans or discount plans depending on current time.
+// GetCurrentPlans get default plans or promo plans depending on current time.
 func (env Env) GetCurrentPlans() map[string]Plan {
 
+	// First, check if cache has any promotion schedules
 	promo, found := env.PromoFromCache()
 
 	// If no cache is found, use default ones.
@@ -222,9 +94,19 @@ func (env Env) GetCurrentPlans() map[string]Plan {
 
 	// If cache is found, compare time
 	now := time.Now()
-	start := parseISO8601(promo.Start)
-	end := parseISO8601(promo.End)
+	start, err := util.ParseISO8601(promo.Start)
+	if err != nil {
+		return DefaultPlans
+	}
+	end, err := util.ParseISO8601(promo.End)
+	if err != nil {
+		return DefaultPlans
+	}
 
+	// Start ------ now ------- End
+	// Only use promotion schedule
+	// if current time falls within the range
+	// of promotion's start and end time.
 	if now.Before(start) || now.After(end) {
 		logger.WithField("location", "GetCurrentPlans").Info("Cached plans duration not effective. Use default ones")
 		return DefaultPlans
@@ -237,9 +119,11 @@ func (env Env) GetCurrentPlans() map[string]Plan {
 
 // FindPlan picks a Plan instance depending
 // on the member tier and billing cycle.
-// Returns error if member tier or billing cycyle are not the predefined ones.
-func (env Env) FindPlan(tier MemberTier, cycle BillingCycle) (Plan, error) {
-	key := string(tier) + "_" + string(cycle)
+// tier is an enum: standard | premium.
+// cycle is an enum: year | month
+// Returns error if member tier or billing cycyle are not in the predefined ones.
+func (env Env) FindPlan(tier, cycle string) (Plan, error) {
+	key := tier + "_" + cycle
 
 	plans := env.GetCurrentPlans()
 	p, ok := plans[key]
@@ -249,14 +133,4 @@ func (env Env) FindPlan(tier MemberTier, cycle BillingCycle) (Plan, error) {
 	}
 
 	return p, nil
-}
-
-func parseISO8601(value string) time.Time {
-	t, err := time.Parse(time.RFC3339, value)
-
-	if err != nil {
-		return time.Now()
-	}
-
-	return t
 }
