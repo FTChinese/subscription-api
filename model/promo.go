@@ -19,11 +19,11 @@ type Banner struct {
 // Promotion contains a promotion's scheduled begining and ending time,
 // pricing plans and barrier banner.
 type Promotion struct {
-	Start     string               `json:"startAt"`
-	End       string               `json:"endAt"`
-	Plans     map[string]PromoPlan `json:"plans"`
-	Banner    *Banner              `json:"banner"`
-	CreatedAt string               `json:"createdAt"`
+	Start     string          `json:"startAt"`
+	End       string          `json:"endAt"`
+	Plans     map[string]Plan `json:"plans"`
+	Banner    *Banner         `json:"banner"`
+	CreatedAt string          `json:"createdAt"`
 	createdBy string
 }
 

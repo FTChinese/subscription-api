@@ -10,8 +10,8 @@ import (
 	"gitlab.com/ftchinese/subscription-api/member"
 )
 
-// PromoPlan represents a subscription plan
-type PromoPlan struct {
+// Plan represents a subscription plan
+type Plan struct {
 	Tier        member.Tier  `json:"tier"`
 	Cycle       member.Cycle `json:"cycle"`
 	Price       float64      `json:"price"`
@@ -20,19 +20,19 @@ type PromoPlan struct {
 }
 
 // GetPriceCent calculates price in cent to be used for Wechat pay.
-func (p PromoPlan) GetPriceCent() int64 {
+func (p Plan) GetPriceCent() int64 {
 	return int64(p.Price * 100)
 }
 
 // GetPriceString formats price for alipay
-func (p PromoPlan) GetPriceString() string {
+func (p Plan) GetPriceString() string {
 	return strconv.FormatFloat(p.Price, 'f', 2, 32)
 }
 
 // OrderID generates an FT order id based
 // on the plan's id, a random number between 100 to 999,
 // and unix timestamp.
-func (p PromoPlan) OrderID() string {
+func (p Plan) OrderID() string {
 	rand.Seed(time.Now().UnixNano())
 
 	// Generate a random number between [100, 999)
@@ -42,7 +42,7 @@ func (p PromoPlan) OrderID() string {
 }
 
 // CreateSubs generates a new subscription order based on the plan chosen.
-func (p PromoPlan) CreateSubs(userID string, method member.PayMethod) Subscription {
+func (p Plan) CreateSubs(userID string, method member.PayMethod) Subscription {
 	return Subscription{
 		OrderID:       p.OrderID(),
 		TierToBuy:     p.Tier,
@@ -55,22 +55,22 @@ func (p PromoPlan) CreateSubs(userID string, method member.PayMethod) Subscripti
 }
 
 // DefaultPlans is the default subscription. No discount.
-var DefaultPlans = map[string]PromoPlan{
-	"standard_year": PromoPlan{
+var DefaultPlans = map[string]Plan{
+	"standard_year": Plan{
 		Tier:        member.TierStandard,
 		Cycle:       member.CycleYear,
 		Price:       198.00,
 		ID:          10,
 		Description: "FT中文网 - 年度标准会员",
 	},
-	"standard_month": PromoPlan{
+	"standard_month": Plan{
 		Tier:        member.TierStandard,
 		Cycle:       member.CycleMonth,
 		Price:       28.00,
 		ID:          5,
 		Description: "FT中文网 - 月度标准会员",
 	},
-	"premium_year": PromoPlan{
+	"premium_year": Plan{
 		Tier:        member.TierPremium,
 		Cycle:       member.CycleYear,
 		Price:       1998.00,
@@ -80,7 +80,7 @@ var DefaultPlans = map[string]PromoPlan{
 }
 
 // GetCurrentPlans get default plans or promo plans depending on current time.
-func (env Env) GetCurrentPlans() map[string]PromoPlan {
+func (env Env) GetCurrentPlans() map[string]Plan {
 
 	// First, check if cache has any promotion schedules
 	promo, found := env.PromoFromCache()
@@ -99,7 +99,7 @@ func (env Env) GetCurrentPlans() map[string]PromoPlan {
 // tier is an enum: standard | premium.
 // cycle is an enum: year | month
 // Returns error if member tier or billing cycyle are not in the predefined ones.
-func (env Env) FindPlan(tier, cycle string) (PromoPlan, error) {
+func (env Env) FindPlan(tier, cycle string) (Plan, error) {
 	key := tier + "_" + cycle
 
 	plans := env.GetCurrentPlans()
