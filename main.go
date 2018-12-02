@@ -81,8 +81,9 @@ func main() {
 
 	r.Get("/__version", controller.Version(version, build))
 	// Inspect what pricing plans are in effect.
-	r.Get("/__current_plans", paywallRouter.CurrentPlans)
 	r.Get("/__refresh", paywallRouter.RefreshPromo)
+
+	r.Get("/__current_plans", paywallRouter.CurrentPlans)
 
 	// Requires user id.
 	r.Route("/wxpay", func(r1 chi.Router) {
