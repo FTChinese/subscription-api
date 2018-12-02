@@ -17,6 +17,7 @@ type Plan struct {
 	Price       float64      `json:"price"`
 	ID          int          `json:"id"` // 10 for standard and 100 for premium
 	Description string       `json:"description"`
+	Ignore      bool         `json:"ignore,omitempty"`
 }
 
 // GetPriceCent calculates price in cent to be used for Wechat pay.
