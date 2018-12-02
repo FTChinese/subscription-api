@@ -19,7 +19,7 @@ func NewPaywallRouter(m model.Env) PaywallRouter {
 
 // GetPromo gets the current effective promotion schedule.
 func (pr PaywallRouter) GetPromo(w http.ResponseWriter, req *http.Request) {
-	sch, found := pr.model.PromoFromCache()
+	promo, found := pr.model.PromoFromCache()
 
 	if !found {
 		util.Render(w, util.NewNotFound())
@@ -27,7 +27,7 @@ func (pr PaywallRouter) GetPromo(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	util.Render(w, util.NewResponse().NoCache().SetBody(sch))
+	util.Render(w, util.NewResponse().NoCache().SetBody(promo))
 }
 
 // DefaultPlans shows what our subscription plans are.
