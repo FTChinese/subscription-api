@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"gitlab.com/ftchinese/subscription-api/member"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // Plan represents a subscription plan
@@ -87,32 +86,10 @@ func (env Env) GetCurrentPlans() map[string]Plan {
 	promo, found := env.PromoFromCache()
 
 	// If no cache is found, use default ones.
-	if !found {
-		logger.WithField("location", "GetCurrentPlans").Info("Cached discount schedule not found. Use defualt plans")
+	if !found || !promo.isInEffect() {
+		logger.WithField("location", "GetCurrentPlans").Info("Use defualt plans")
 		return DefaultPlans
 	}
-
-	// If cache is found, compare time
-	now := time.Now()
-	start, err := util.ParseISO8601(promo.Start)
-	if err != nil {
-		return DefaultPlans
-	}
-	end, err := util.ParseISO8601(promo.End)
-	if err != nil {
-		return DefaultPlans
-	}
-
-	// Start ------ now ------- End
-	// Only use promotion schedule
-	// if current time falls within the range
-	// of promotion's start and end time.
-	if now.Before(start) || now.After(end) {
-		logger.WithField("location", "GetCurrentPlans").Info("Cached plans duration not effective. Use default ones")
-		return DefaultPlans
-	}
-
-	logger.WithField("location", "GetCurrentPlans").Info("Using discount plans")
 
 	return promo.Plans
 }

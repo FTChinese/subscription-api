@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"time"
 
 	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -24,6 +25,26 @@ type Promotion struct {
 	Banner    *Banner         `json:"banner"`
 	CreatedAt string          `json:"createdAt"`
 	createdBy string
+}
+
+// Test if now falls within the range of
+// a promotion's start and end time.
+func (p Promotion) isInEffect() bool {
+	now := time.Now()
+	start, err := util.ParseISO8601(p.Start)
+	if err != nil {
+		return false
+	}
+	end, err := util.ParseISO8601(p.End)
+	if err != nil {
+		return false
+	}
+
+	// Start |------ now -------| End
+	if now.Before(start) || now.After(end) {
+		return false
+	}
+	return true
 }
 
 // RetrievePromo tries to retrieve a promotion schedule.
@@ -85,6 +106,8 @@ func (env Env) RetrievePromo() (Promotion, error) {
 	p.Start = util.ISO8601UTC.FromDatetime(p.Start, nil)
 	p.End = util.ISO8601UTC.FromDatetime(p.End, nil)
 	p.CreatedAt = util.ISO8601UTC.FromDatetime(p.CreatedAt, nil)
+
+	env.cachePromo(p)
 
 	return p, nil
 }
