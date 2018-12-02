@@ -18,7 +18,7 @@ func (pr PaywallRouter) CurrentPlans(w http.ResponseWriter, req *http.Request) {
 // RefreshPromo busts cache and retrieve a latest promotion schedule if exists.
 // The retrieved promotion is put into cache and also send back to the request.
 func (pr PaywallRouter) RefreshPromo(w http.ResponseWriter, req *http.Request) {
-	sch, err := pr.model.RetrievePromo()
+	promo, err := pr.model.RetrievePromo()
 
 	if err != nil {
 		util.Render(w, util.NewDBFailure(err))
@@ -26,5 +26,5 @@ func (pr PaywallRouter) RefreshPromo(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	util.Render(w, util.NewResponse().NoCache().SetBody(sch))
+	util.Render(w, util.NewResponse().NoCache().SetBody(promo))
 }
