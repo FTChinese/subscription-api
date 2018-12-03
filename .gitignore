@@ -19,3 +19,4 @@ _docs/**/*.png
 _docs/build
 .env
 *.pem
+_doc/*.pdf
