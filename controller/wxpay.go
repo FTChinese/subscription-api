@@ -316,7 +316,7 @@ func (wr WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 
 	// If order is found, and is already confirmed.
 	// Should we check membership data here?
-	if subs.ConfirmedAt != "" {
+	if !subs.ConfirmedAt.IsEmpty() {
 		logger.WithField("location", "WxPayNotification").Infof("Order %s already confirmed.", orderID)
 
 		w.Write([]byte(resp.OK()))
