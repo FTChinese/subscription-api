@@ -19,11 +19,11 @@ type Banner struct {
 // Promotion contains a promotion's scheduled begining and ending time,
 // pricing plans and barrier banner.
 type Promotion struct {
-	Start     string          `json:"startAt"`
-	End       string          `json:"endAt"`
-	Plans     map[string]Plan `json:"plans"`
-	Banner    *Banner         `json:"banner"`
-	CreatedAt string          `json:"createdAt"`
+	StartUTC  util.ISODateTime `json:"startAt"`
+	EndUTC    util.ISODateTime `json:"endAt"`
+	Plans     map[string]Plan  `json:"plans"`
+	Banner    *Banner          `json:"banner"`
+	CreatedAt string           `json:"createdAt"`
 	createdBy string
 }
 
@@ -31,11 +31,11 @@ type Promotion struct {
 // a promotion's start and end time.
 func (p Promotion) isInEffect() bool {
 	now := time.Now()
-	start, err := util.ParseISO8601(p.Start)
+	start, err := p.StartUTC.ToTime()
 	if err != nil {
 		return false
 	}
-	end, err := util.ParseISO8601(p.End)
+	end, err := p.EndUTC.ToTime()
 	if err != nil {
 		return false
 	}
@@ -77,8 +77,8 @@ func (env Env) RetrievePromo() (Promotion, error) {
 	var banner string
 
 	err := env.DB.QueryRow(query).Scan(
-		&p.Start,
-		&p.End,
+		&p.StartUTC,
+		&p.EndUTC,
 		&plans,
 		&banner,
 		&p.CreatedAt,
@@ -102,10 +102,6 @@ func (env Env) RetrievePromo() (Promotion, error) {
 			return p, err
 		}
 	}
-
-	p.Start = util.ISO8601UTC.FromDatetime(p.Start, nil)
-	p.End = util.ISO8601UTC.FromDatetime(p.End, nil)
-	p.CreatedAt = util.ISO8601UTC.FromDatetime(p.CreatedAt, nil)
 
 	env.cachePromo(p)
 
