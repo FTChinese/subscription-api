@@ -2,23 +2,6 @@
 
 API for subscription service
 
-## Sitemap
-
-### Internal Status
-* `/__version` See current program's build info
-* `/__refresh` Notify server to retrieve a promotion schedule
-* `/__current_plans` See what procing plans are being used.
-
-### Payment Order
-* `POST /wxpay/unified-order/{standard|premium}/{year|month}` Create a wxpay prepay order
-* `GET /wxpay/query/{orderId}` Query an order paid via wxpay
-
-* `POST /alipay/app-order/{tier}/{cycle}` Create a new order for alipay
-
-### Server to Server Notification
-* `POST /callback/wxpay`
-* `POST /callback/alipay`
-
 ## Issues
 
 There's a problem with the wxpay sdk used here `github.com/objcoding/wxpay`. The `XmlToMap()` function this package provides does not take into account of indented or formatted XML. It requires that there's not space between each XML tag. If there are spaces and tabs, it cannot get the correct value.
