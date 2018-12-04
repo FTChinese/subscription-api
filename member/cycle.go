@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+
+	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 const (
@@ -68,6 +70,7 @@ func (c Cycle) MarshalJSON() ([]byte, error) {
 }
 
 // Scan implements sql.Scanner interface to retrieve value from SQL.
+// SQL null will be turned into zero value CycleInvalid
 func (c *Cycle) Scan(src interface{}) error {
 	if src == nil {
 		*c = CycleInvalid
@@ -84,7 +87,7 @@ func (c *Cycle) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return ErrIncompatible
+		return util.ErrIncompatible
 	}
 }
 
