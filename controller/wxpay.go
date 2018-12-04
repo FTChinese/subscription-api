@@ -459,7 +459,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		TotalFee:      resp.GetString("total_fee"),
 		TransactionID: resp.GetString("transaction_id"),
 		FTCOrderID:    resp.GetString("out_trade_no"),
-		PaidAt:        util.ISO8601UTC.FromWx(timeEnd),
+		PaidAt:        util.ToISO8601UTC.FromWx(timeEnd),
 	}
 
 	util.Render(w, util.NewResponse().SetBody(order))
