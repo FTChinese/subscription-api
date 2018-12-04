@@ -38,7 +38,7 @@ var mockClient = util.RequestClient{
 
 var mockPlan = DefaultPlans["standard_year"]
 
-var tommorrow = util.SQLDateUTC.FromTime(time.Now().AddDate(0, 0, 1))
+var tommorrow = util.ToSQLDateUTC.FromTime(time.Now().AddDate(0, 0, 1))
 
 var mockMember = Membership{
 	UserID: mockUserID,
@@ -53,6 +53,9 @@ var mockUser = User{
 	Email: "weiguo.ni@ftchinese.com",
 }
 
+// Mock inserting a subscription order.
+// isRenew dtermines is this order is used to
+// renew a membership or not.
 func insertSubs(isRenew bool) (Subscription, error) {
 	subs := mockPlan.CreateSubs(mockUserID, member.Wxpay)
 
@@ -67,16 +70,14 @@ func insertSubs(isRenew bool) (Subscription, error) {
 	return subs, nil
 }
 
-func confirmSubs() (Subscription, error) {
-	subs, err := insertSubs(false)
+func createAndFindSubs(isRenew bool) (Subscription, error) {
+	subs, err := insertSubs(isRenew)
 
 	if err != nil {
 		return subs, err
 	}
 
-	now := time.Now()
-
-	subs, err = subs.withConfirmation(now)
+	subs, err = devEnv.FindSubscription(subs.OrderID)
 
 	if err != nil {
 		return subs, err
@@ -85,8 +86,8 @@ func confirmSubs() (Subscription, error) {
 	return subs, nil
 }
 
-func renewSubs() (Subscription, error) {
-	subs, err := insertSubs(true)
+func confirmSubs(isRenew bool) (Subscription, error) {
+	subs, err := createAndFindSubs(isRenew)
 
 	if err != nil {
 		return subs, err
@@ -100,10 +101,12 @@ func renewSubs() (Subscription, error) {
 		return subs, err
 	}
 
-	subs, err = subs.withMembership(mockMember)
+	if isRenew {
+		subs, err = subs.withMembership(mockMember)
 
-	if err != nil {
-		return subs, err
+		if err != nil {
+			return subs, err
+		}
 	}
 
 	return subs, nil

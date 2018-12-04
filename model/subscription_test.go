@@ -5,6 +5,33 @@ import (
 	"time"
 )
 
+// Test Subscription's withConfirmation method.
+func TestSubsConfirm(t *testing.T) {
+
+	subs, err := confirmSubs(false)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Subscritpion confirmed: %+v\n", subs)
+}
+
+// Test Subscription's withMembership method.
+func TestSubsRenew(t *testing.T) {
+
+	subs, err := confirmSubs(true)
+
+	if err != nil {
+		t.Error(err)
+
+		return
+	}
+
+	t.Logf("Renw membership with subscription: %+v\n", subs)
+}
+
+// Test create a new subscription order
 func TestSaveSubs(t *testing.T) {
 
 	subs, err := insertSubs(false)
@@ -17,48 +44,23 @@ func TestSaveSubs(t *testing.T) {
 }
 
 func TestRetrieveSubs(t *testing.T) {
-	subs, err := insertSubs(false)
-
-	s, err := devEnv.FindSubscription(subs.OrderID)
+	subs, err := createAndFindSubs(false)
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	t.Logf("%+v\n", s)
-}
-
-func TestWxTotalFee(t *testing.T) {
-	t.Log(int64(198.00*100) == 19800)
-}
-
-func TestSubsConfirm(t *testing.T) {
-
-	subs, err := confirmSubs()
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("Subscritpion confirmed: %+v\n", subs)
-}
-
-func TestSubsRenew(t *testing.T) {
-
-	subs, err := renewSubs()
-
-	if err != nil {
-		t.Error(err)
-
-		return
-	}
-
-	t.Logf("Renw membership with subscription: %+v\n", subs)
+	t.Logf("%+v\n", subs)
 }
 
 func TestConfirmSubs__new(t *testing.T) {
-	// Create a new subscription order.
-	subs, err := insertSubs(false)
+	// Create a new subscription order and retrieve it.
+	subs, err := createAndFindSubs(false)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
 	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
 
@@ -70,7 +72,12 @@ func TestConfirmSubs__new(t *testing.T) {
 }
 
 func TestConfirmSubs__renew(t *testing.T) {
-	subs, err := insertSubs(true)
+	subs, err := createAndFindSubs(true)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
 	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
 
@@ -80,8 +87,12 @@ func TestConfirmSubs__renew(t *testing.T) {
 
 	t.Logf("%+v\n", subs)
 }
+
+// Test create a new member.
+// Workflow as follows:
+// Client
 func TestCreateMember(t *testing.T) {
-	subs, err := insertSubs(false)
+	subs, err := createAndFindSubs(false)
 
 	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
 
@@ -97,11 +108,11 @@ func TestCreateMember(t *testing.T) {
 		return
 	}
 
-	t.Log(subs)
+	t.Logf("%+v\n", subs)
 }
 
 func TestRenewMember(t *testing.T) {
-	subs, err := insertSubs(true)
+	subs, err := createAndFindSubs(true)
 
 	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
 
@@ -114,7 +125,6 @@ func TestRenewMember(t *testing.T) {
 
 	if err != nil {
 		t.Error(err)
-		return
 	}
 
 	t.Log(subs)
