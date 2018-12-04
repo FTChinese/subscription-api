@@ -11,6 +11,24 @@ import (
 )
 
 // Subscription contains the details of a user's action to place an order.
+// This is the centrum of the whole subscription process.
+//
+// The worfolow is as follows:
+//
+// 1. Client send a request to create an order;
+// 2. API will get the user id from request header; therefore user id must be incluced in request header.
+// 3. Use the user id to query if a membership exists in database.
+// 4. If the membership exists, check the membership's expiration date to see whether this subscription order is used to renew membership duration. The IsRenwal field will be true is user is trying to renew hist current membership; otherwise it will be false (membership does not exist, membership already expired, etc.)
+// The subscription order creation process ends here. The PlaceOrder method incorporates those process in one place.
+//
+// The next step is confirmation process:
+//
+// 1. The payment provider notifies our server that an order is confirmed.
+// 2. Retrieve previously saved subscription order based the order id extracted from notification message.
+// 3. Update this subscription order's confirmation time, take the confirmation time as this order's start date and deduce the expiration date based on the confirmation time.
+// 4. If the subscription order is used to renew a membership (remember we have a IsRenewal field in the order creation process?),
+// go on to update the order's start date as membership expiration date and deduce end date based on this start date.
+// 5. After all field is updated, we begin to persist the data into database, using SQL's transacation so that subscription order's confirmation data and a user's membership data are saved in one shot, or fail together.
 type Subscription struct {
 	OrderID       string
 	TierToBuy     member.Tier
@@ -19,11 +37,11 @@ type Subscription struct {
 	TotalAmount   float64
 	PaymentMethod member.PayMethod
 	Currency      string
-	CreatedAt     string // When the order is created.
-	ConfirmedAt   string // When the payment is confirmed.
-	IsRenewal     bool   // If this order is used to renew membership
-	StartDate     string // Membership start date for this order
-	EndDate       string // Membership end date for this order
+	CreatedAt     util.ISODateTime // When the order is created.
+	ConfirmedAt   util.ISODateTime // When the payment is confirmed.
+	IsRenewal     bool             // If this order is used to renew membership
+	StartDate     string           // Membership start date for this order
+	EndDate       string           // Membership end date for this order
 	UserID        string
 }
 
@@ -37,9 +55,17 @@ func (s Subscription) AliTotalAmount() string {
 	return strconv.FormatFloat(s.TotalAmount, 'f', 2, 32)
 }
 
-// CreatedAtCN turns creation time into Chinese text and format.
+// CreatedAtCN turns creation time into China Stadnard Time in Chinese text.
 func (s Subscription) CreatedAtCN() string {
-	return util.FormatShanghai.FromISO8601(s.CreatedAt)
+	dtStr := string(s.CreatedAt)
+	cst, err := util.ToCST.FromISO8601(dtStr)
+
+	// If conversion failed, use the original date time string.
+	if err != nil {
+		return dtStr
+	}
+
+	return cst
 }
 
 // Confirm updates a subscription order's ConfirmedAt, StartDate
@@ -47,15 +73,23 @@ func (s Subscription) CreatedAtCN() string {
 // Fortunately StartDate and EndDate uses YYYY-MM-DD format, which
 // conforms to SQL DATE type. So we do not need to convert it.
 func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
-	// expireTime := s.deduceExpireTime(t)
+
+	// Calculate expiration time by adding one cycle to the confirmation time.
 	expireTime, err := s.BillingCycle.TimeAfterACycle(t)
 
+	// If expiration time cannot be deduced.
+	// (minght be caused by wrong billing cycle)
 	if err != nil {
 		return s, err
 	}
-	s.ConfirmedAt = util.ISO8601UTC.FromTime(t)
-	s.StartDate = util.SQLDateUTC.FromTime(t)
-	s.EndDate = util.SQLDateUTC.FromTime(expireTime)
+
+	// Convert the confirmation Time instance to ISO8601 string.
+	s.ConfirmedAt = util.ISODateTime(util.ToISO8601UTC.FromTime(t))
+
+	// Use confirmation time's year-month-date part as this order's subscriped beginning date.
+	s.StartDate = util.ToSQLDateUTC.FromTime(t)
+	// Use the expiration time's year-month-date part as this order's purchased ending date.
+	s.EndDate = util.ToSQLDateUTC.FromTime(expireTime)
 
 	return s, nil
 }
@@ -78,8 +112,8 @@ func (s Subscription) withMembership(member Membership) (Subscription, error) {
 		return s, err
 	}
 
-	s.StartDate = util.SQLDateUTC.FromTime(expireTime)
-	s.EndDate = util.SQLDateUTC.FromTime(extendedTime)
+	s.StartDate = util.ToSQLDateUTC.FromTime(expireTime)
+	s.EndDate = util.ToSQLDateUTC.FromTime(extendedTime)
 
 	return s, nil
 }
@@ -166,12 +200,12 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 		trade_price AS price,
 		trade_amount AS totalAmount,
 		user_id AS userId,
-		IFNULL(tier_to_buy, '') AS tierToBuy,
-		IFNULL(billing_cycle, '') AS billingCycle,
-		IFNULL(payment_method, '') AS paymentMethod,
+		tier_to_buy AS tierToBuy,
+		billing_cycle AS billingCycle,
+		payment_method AS paymentMethod,
 		is_renewal AS isRenewal,
-		IFNULL(created_utc, '') AS createdAt,
-		IFNULL(confirmed_utc, '') AS confirmedAt,
+		created_utc AS createdAt,
+		confirmed_utc AS confirmedAt,
 		IFNULL(start_date, '') AS startDate,
 		IFNULL(end_date, '') AS endDate
 	FROM premium.ftc_trade
@@ -197,14 +231,6 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 	if err != nil {
 		logger.WithField("location", "Find subscription").Error(err)
 		return s, err
-	}
-
-	if s.CreatedAt != "" {
-		s.CreatedAt = util.ISO8601UTC.FromDatetime(s.CreatedAt, nil)
-	}
-
-	if s.ConfirmedAt != "" {
-		s.ConfirmedAt = util.ISO8601UTC.FromDatetime(s.ConfirmedAt, nil)
 	}
 
 	return s, nil
@@ -269,12 +295,8 @@ func (env Env) CreateOrUpdateMember(subs Subscription) error {
 	WHERE trade_no = ?
 	LIMIT 1`
 
-	// IMPORTANT: Do not forget to convert ISO8601 string to SQL DATETIME!
-	// If you forgot to do so, MySQL won't given you error details.
-	confirmed := util.SQLDatetimeUTC.FromISO8601(subs.ConfirmedAt)
-
 	_, updateErr := tx.Exec(stmtUpdate,
-		confirmed,
+		subs.ConfirmedAt,
 		subs.StartDate,
 		subs.EndDate,
 		subs.OrderID,
