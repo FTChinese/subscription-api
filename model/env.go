@@ -44,5 +44,5 @@ func normalizeExpireDate(timestamp int64) string {
 		return ""
 	}
 
-	return util.SQLDateUTC.FromUnix(timestamp)
+	return util.ToSQLDateUTC.FromUnix(timestamp)
 }
