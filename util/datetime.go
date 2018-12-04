@@ -72,6 +72,11 @@ func (d ISODateTime) Value() (driver.Value, error) {
 	return dt, nil
 }
 
+// IsEmpty test if d is an empty string.
+func (d ISODateTime) IsEmpty() bool {
+	return string(d) == ""
+}
+
 // ToTime parses an instance.
 func (d ISODateTime) ToTime() (time.Time, error) {
 	return ParseISO8601(string(d))
