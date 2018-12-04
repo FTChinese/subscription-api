@@ -4,10 +4,9 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-)
 
-// ErrIncompatible indicates a type cannot be scane from SQL to golang.
-var ErrIncompatible = errors.New("incompatible type to scan")
+	"gitlab.com/ftchinese/subscription-api/util"
+)
 
 const (
 	standard = "standard"
@@ -56,6 +55,7 @@ func (t Tier) MarshalJSON() ([]byte, error) {
 }
 
 // Scan implements sql.Scanner interface to retrieve value from SQL.
+// SQL null will be turned into zero value TierFree.
 func (t *Tier) Scan(src interface{}) error {
 	if src == nil {
 		*t = TierFree
@@ -72,7 +72,7 @@ func (t *Tier) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return ErrIncompatible
+		return util.ErrIncompatible
 	}
 }
 

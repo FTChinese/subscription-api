@@ -4,6 +4,8 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+
+	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 const (
@@ -57,6 +59,7 @@ func (m PayMethod) MarshalJSON() ([]byte, error) {
 }
 
 // Scan implements sql.Scanner interface to retrieve value from SQL.
+// SQL null will be turned into zero value InvalidPay.
 func (m *PayMethod) Scan(src interface{}) error {
 	if src == nil {
 		*m = InvalidPay
@@ -73,7 +76,7 @@ func (m *PayMethod) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return ErrIncompatible
+		return util.ErrIncompatible
 	}
 }
 
