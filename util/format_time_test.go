@@ -7,7 +7,7 @@ func TestParseWxTime(t *testing.T) {
 
 	t.Log(time)
 
-	dt := SQLDatetimeUTC.FromTime(time)
+	dt := ToSQLDatetimeUTC.FromTime(time)
 
 	t.Log(dt)
 }
