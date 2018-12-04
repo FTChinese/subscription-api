@@ -191,7 +191,7 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	// 在上述验证通过后商户必须根据支付宝不同类型的业务通知，正确的进行不同的业务处理，并且过滤重复的通知结果数据。在支付宝的业务通知中，只有交易通知状态为TRADE_SUCCESS或TRADE_FINISHED时，支付宝才会认定为买家付款成功。
 
 	// If this order already confirmed.
-	if subs.ConfirmedAt != "" {
+	if !subs.ConfirmedAt.IsEmpty() {
 		w.Write([]byte(success))
 
 		return
