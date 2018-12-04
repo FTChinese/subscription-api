@@ -341,7 +341,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	paidAt := util.ISO8601UTC.
+	paidAt, _ := util.ToISO8601UTC.
 		FromDatetime(
 			result.Response.DateTime,
 			util.TZShanghai,
