@@ -16,7 +16,7 @@ Request header must contain:
 ```
 X-User-Id: user-uuid
 X-Client-Type: <web|ios|android>
-X-Client-Version: <major.minor.path>
+X-Client-Version: <major.minor.patch>
 ```
 
 If `X-Client-Type` is `web`, the request header must also contain
