@@ -2,6 +2,10 @@
 
 API for subscription service
 
+## Development
+
+All development happens in the `sandbox` branch. `master` is used to merge and publish stable release from `sandbox`. The `sandbox` branch should always be test again live data to ensure subscription will never stop or break down.
+
 ## Issues
 
 There's a problem with the wxpay sdk used here `github.com/objcoding/wxpay`. The `XmlToMap()` function this package provides does not take into account of indented or formatted XML. It requires that there's not space between each XML tag. If there are spaces and tabs, it cannot get the correct value.
