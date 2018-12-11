@@ -9,10 +9,10 @@ import (
 
 // Membership contains a user's membership details
 type Membership struct {
-	UserID string
-	Tier   enum.Tier
-	Cycle  enum.Cycle
-	Expire string // On which date the membership ends
+	UserID string     `json:"-"`
+	Tier   enum.Tier  `json:"tier"`
+	Cycle  enum.Cycle `json:"billingCycle"`
+	Expire string     `json:"expireDate"` // On which date the membership ends
 }
 
 // CanRenew tests if a membership is allowed to renuew subscription.
