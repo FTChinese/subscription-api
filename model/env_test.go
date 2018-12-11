@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"gitlab.com/ftchinese/subscription-api/member"
+	"gitlab.com/ftchinese/subscription-api/enum"
 
 	"github.com/icrowley/fake"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -30,7 +30,7 @@ const mockOrderID = "FT0102381539932302"
 const mockUserID = "e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae"
 
 var mockClient = util.RequestClient{
-	ClientType: "android",
+	ClientType: enum.PlatformAndroid,
 	Version:    "1.1.1",
 	UserIP:     fake.IPv4(),
 	UserAgent:  "golang mocker",
@@ -42,8 +42,8 @@ var tommorrow = util.ToSQLDateUTC.FromTime(time.Now().AddDate(0, 0, 1))
 
 var mockMember = Membership{
 	UserID: mockUserID,
-	Tier:   member.TierStandard,
-	Cycle:  member.CycleYear,
+	Tier:   enum.TierStandard,
+	Cycle:  enum.CycleYear,
 	Expire: tommorrow,
 }
 
@@ -57,7 +57,7 @@ var mockUser = User{
 // isRenew dtermines is this order is used to
 // renew a membership or not.
 func insertSubs(isRenew bool) (Subscription, error) {
-	subs := mockPlan.CreateSubs(mockUserID, member.Wxpay)
+	subs := mockPlan.CreateSubs(mockUserID, enum.Wxpay)
 
 	subs.IsRenewal = isRenew
 
