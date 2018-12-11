@@ -29,6 +29,11 @@ var tiersEN = [...]string{
 // Tier is an enum.
 type Tier int
 
+// IsValid tests if t is one of TierStandard or TierPremium
+func (t Tier) IsValid() bool {
+	return t != TierFree
+}
+
 // UnmarshalJSON implements the Unmarshaler interface.
 func (t *Tier) UnmarshalJSON(b []byte) error {
 	var s string
@@ -64,7 +69,8 @@ func (t *Tier) Scan(src interface{}) error {
 	case []byte:
 		tier, err := NewTier(string(s))
 		if err != nil {
-			return err
+			*t = TierFree
+			return nil
 		}
 		*t = tier
 		return nil
