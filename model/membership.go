@@ -3,15 +3,15 @@ package model
 import (
 	"time"
 
-	"gitlab.com/ftchinese/subscription-api/member"
+	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // Membership contains a user's membership details
 type Membership struct {
 	UserID string
-	Tier   member.Tier
-	Cycle  member.Cycle
+	Tier   enum.Tier
+	Cycle  enum.Cycle
 	Expire string // On which date the membership ends
 }
 
@@ -22,7 +22,7 @@ type Membership struct {
 //         now--------------------| Allow
 //      |-------- A cycle --------| Expires
 // now----------------------------| Deny
-func (m Membership) CanRenew(cycle member.Cycle) bool {
+func (m Membership) CanRenew(cycle enum.Cycle) bool {
 	expireDate, err := util.ParseSQLDate(m.Expire)
 
 	if err != nil {
@@ -88,10 +88,10 @@ func (env Env) FindMember(userID string) (Membership, error) {
 	if tier == "" {
 		m.Tier = normalizeMemberTier(vipType)
 	} else {
-		m.Tier, _ = member.NewTier(tier)
+		m.Tier, _ = enum.NewTier(tier)
 	}
 
-	m.Cycle, _ = member.NewCycle(cycle)
+	m.Cycle, _ = enum.NewCycle(cycle)
 
 	if m.Expire == "" {
 		m.Expire = normalizeExpireDate(expireTime)

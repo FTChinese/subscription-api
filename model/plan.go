@@ -7,17 +7,17 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.com/ftchinese/subscription-api/member"
+	"gitlab.com/ftchinese/subscription-api/enum"
 )
 
 // Plan represents a subscription plan
 type Plan struct {
-	Tier        member.Tier  `json:"tier"`
-	Cycle       member.Cycle `json:"cycle"`
-	Price       float64      `json:"price"`
-	ID          int          `json:"id"` // 10 for standard and 100 for premium
-	Description string       `json:"description"`
-	Ignore      bool         `json:"ignore,omitempty"`
+	Tier        enum.Tier  `json:"tier"`
+	Cycle       enum.Cycle `json:"cycle"`
+	Price       float64    `json:"price"`
+	ID          int        `json:"id"` // 10 for standard and 100 for premium
+	Description string     `json:"description"`
+	Ignore      bool       `json:"ignore,omitempty"`
 }
 
 // GetPriceCent calculates price in cent to be used for Wechat pay.
@@ -43,7 +43,7 @@ func (p Plan) OrderID() string {
 }
 
 // CreateSubs generates a new subscription order based on the plan chosen.
-func (p Plan) CreateSubs(userID string, method member.PayMethod) Subscription {
+func (p Plan) CreateSubs(userID string, method enum.PayMethod) Subscription {
 	return Subscription{
 		OrderID:       p.OrderID(),
 		TierToBuy:     p.Tier,
@@ -58,22 +58,22 @@ func (p Plan) CreateSubs(userID string, method member.PayMethod) Subscription {
 // DefaultPlans is the default subscription. No discount.
 var DefaultPlans = map[string]Plan{
 	"standard_year": Plan{
-		Tier:        member.TierStandard,
-		Cycle:       member.CycleYear,
+		Tier:        enum.TierStandard,
+		Cycle:       enum.CycleYear,
 		Price:       198.00,
 		ID:          10,
 		Description: "FT中文网 - 年度标准会员",
 	},
 	"standard_month": Plan{
-		Tier:        member.TierStandard,
-		Cycle:       member.CycleMonth,
+		Tier:        enum.TierStandard,
+		Cycle:       enum.CycleMonth,
 		Price:       28.00,
 		ID:          5,
 		Description: "FT中文网 - 月度标准会员",
 	},
 	"premium_year": Plan{
-		Tier:        member.TierPremium,
-		Cycle:       member.CycleYear,
+		Tier:        enum.TierPremium,
+		Cycle:       enum.CycleYear,
 		Price:       1998.00,
 		ID:          100,
 		Description: "FT中文网 - 高端会员",

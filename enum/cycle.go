@@ -1,12 +1,10 @@
-package member
+package enum
 
 import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"time"
-
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 const (
@@ -87,7 +85,7 @@ func (c *Cycle) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return util.ErrIncompatible
+		return ErrIncompatible
 	}
 }
 
