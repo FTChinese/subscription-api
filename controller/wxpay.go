@@ -9,9 +9,8 @@ import (
 	"os"
 	"time"
 
-	"gitlab.com/ftchinese/subscription-api/member"
-
 	"github.com/objcoding/wxpay"
+	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
@@ -99,7 +98,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	logger.WithField("location", "UnifiedOrder").Infof("Subscritpion plan: %+v", plan)
 
 	// Use the pricing plan to create a subscription order
-	subs := plan.CreateSubs(userID, member.Wxpay)
+	subs := plan.CreateSubs(userID, enum.Wxpay)
 
 	// Get request client required headers
 	c := util.NewRequestClient(req)
