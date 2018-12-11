@@ -1,4 +1,4 @@
-package member
+package enum
 
 import (
 	"database/sql"
