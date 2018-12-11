@@ -3,7 +3,7 @@ package model
 import (
 	"database/sql"
 
-	"gitlab.com/ftchinese/subscription-api/member"
+	"gitlab.com/ftchinese/subscription-api/enum"
 
 	"github.com/patrickmn/go-cache"
 
@@ -25,17 +25,17 @@ type Env struct {
 	PostOffice util.PostOffice
 }
 
-func normalizeMemberTier(vipType int64) member.Tier {
+func normalizeMemberTier(vipType int64) enum.Tier {
 	switch vipType {
 
 	case 10:
-		return member.TierStandard
+		return enum.TierStandard
 
 	case 100:
-		return member.TierPremium
+		return enum.TierPremium
 
 	default:
-		return member.TierFree
+		return enum.TierFree
 	}
 }
 

@@ -1,11 +1,9 @@
-package member
+package enum
 
 import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 const (
@@ -76,7 +74,7 @@ func (m *PayMethod) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return util.ErrIncompatible
+		return ErrIncompatible
 	}
 }
 

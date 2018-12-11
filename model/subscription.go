@@ -5,8 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.com/ftchinese/subscription-api/member"
-
+	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
@@ -31,11 +30,11 @@ import (
 // 5. After all field is updated, we begin to persist the data into database, using SQL's transacation so that subscription order's confirmation data and a user's membership data are saved in one shot, or fail together.
 type Subscription struct {
 	OrderID       string
-	TierToBuy     member.Tier
-	BillingCycle  member.Cycle
+	TierToBuy     enum.Tier
+	BillingCycle  enum.Cycle
 	Price         float64
 	TotalAmount   float64
-	PaymentMethod member.PayMethod
+	PaymentMethod enum.PayMethod
 	Currency      string
 	CreatedAt     util.ISODateTime // When the order is created.
 	ConfirmedAt   util.ISODateTime // When the payment is confirmed.
