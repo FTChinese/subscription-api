@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/member"
+	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
@@ -84,7 +84,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 
 	logger.WithField("location", "AliAppOrder").Infof("Subscritpion plan: %+v", plan)
 
-	subs := plan.CreateSubs(userID, member.Alipay)
+	subs := plan.CreateSubs(userID, enum.Alipay)
 
 	// Get request client metadata
 	c := util.NewRequestClient(req)
