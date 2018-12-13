@@ -26,6 +26,8 @@ type WxLoginRouter struct {
 // token, then save the access token.
 // After that, it uses the access token and open id to get user info from wechat,
 // send it back to client.
+// After getting a user's wechat data,
+// client should then retrieve the complete user data: FTC account + wechat userinfo + membership
 func (lr WxLoginRouter) Login(w http.ResponseWriter, req *http.Request) {
 	// Parse request body
 	code, err := util.GetJSONString(req.Body, "code")
@@ -61,22 +63,13 @@ func (lr WxLoginRouter) Login(w http.ResponseWriter, req *http.Request) {
 	user, err := lr.client.GetUserInfo(acc)
 
 	// Save userinfo
-	go lr.env.SaveUserInfo(user, reqClient)
+	err = lr.env.SaveUserInfo(user, reqClient)
 
-	// TODO: change to cucurrent retrieval later.
-	var acnt wxlogin.Account
-	acnt, _ = lr.env.FindAccount(acc.UnionID)
+	if err != nil {
+		view.Render(w, view.NewDBFailure(err))
 
-	member, err := lr.env.FindMembership(acc.UnionID)
-
-	acnt.Membership = member
-
-	acnt.Wechat = &wxlogin.WxAccount{
-		OpenID:    user.OpenID,
-		NickName:  user.NickName,
-		AvatarURL: user.HeadImgURL,
-		UnionID:   user.UnionID,
+		return
 	}
 
-	view.Render(w, view.NewResponse().NoCache().SetBody(acnt))
+	view.Render(w, view.NewResponse().NoCache().SetBody(user.WxAccount()))
 }

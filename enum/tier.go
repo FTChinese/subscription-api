@@ -7,21 +7,25 @@ import (
 )
 
 const (
+	tierFree = "free"
 	standard = "standard"
 	premium  = "premium"
 )
 
 var tiersRaw = [...]string{
+	tierFree,
 	standard,
 	premium,
 }
 
 var tiersCN = [...]string{
+	"免费会员",
 	"标准会员",
 	"高级会员",
 }
 
 var tiersEN = [...]string{
+	"Free",
 	"Standard",
 	"Premium",
 }
@@ -41,11 +45,7 @@ func (t *Tier) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	tier, ok := tierEnum[s]
-
-	if !ok {
-		return errors.New("only standard and premium member tier allowed")
-	}
+	tier, _ := NewTier(s)
 
 	*t = tier
 
@@ -118,16 +118,10 @@ func (t Tier) ToEN() string {
 
 // Values of MemberTier
 const (
-	TierFree     Tier = -1
-	TierStandard Tier = 0
-	TierPremium  Tier = 1
+	TierFree     Tier = 0
+	TierStandard Tier = 1
+	TierPremium  Tier = 2
 )
-
-// Maps raw value to Tier type.
-var tierEnum = map[string]Tier{
-	standard: TierStandard,
-	premium:  TierPremium,
-}
 
 // NewTier converts a string into a MemberTier type.
 func NewTier(tier string) (Tier, error) {

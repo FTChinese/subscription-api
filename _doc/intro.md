@@ -87,3 +87,11 @@ Here's an overview of all the endpoint provided by this API.
 * `GET /paywall/products` Get the products description
 * `GET /paywall/plans` Get the default pricing plans.
 * `GET /paywall/banner` Get the banner content used on subscription page.
+
+## Wechat Login
+
+* `POST /auth/wx` Login via wechat
+* `POST /auth/email` 
+* `PUT /wx/bind` Bind an FTC account to wechat.
+* `DELETE /wx/bind` Unbind an FTC account from wechat
+* `GET /wx/account` Get the the complete account: FTC + wechat + membership.
