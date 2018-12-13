@@ -34,3 +34,14 @@ func normalizeMemberTier(vipType int64) enum.Tier {
 		return enum.TierFree
 	}
 }
+
+// EmailLogin is used for email + password login.
+type EmailLogin struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// VerifyFTCAccount verifies if an email exists, and if password for this email is correct.
+func (env Env) VerifyFTCAccount(l EmailLogin) {
+
+}

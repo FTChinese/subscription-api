@@ -7,24 +7,28 @@ import (
 )
 
 const (
-	alipay = "alipay"
-	wxpay  = "tenpay"
-	stripe = "stripe"
+	payZero = ""
+	alipay  = "alipay"
+	wxpay   = "tenpay"
+	stripe  = "stripe"
 )
 
 var payRaw = [...]string{
+	payZero,
 	alipay,
 	wxpay,
 	stripe,
 }
 
 var payCN = [...]string{
+	"",
 	"支付宝",
 	"微信支付",
 	"Stripe",
 }
 
 var payEN = [...]string{
+	"",
 	"Zhifubao",
 	"Wechat Pay",
 	"Stripe",
@@ -116,10 +120,10 @@ func (m PayMethod) ToEN() string {
 
 // Supported payment methods
 const (
-	InvalidPay PayMethod = -1
-	Alipay     PayMethod = 0
-	Wxpay      PayMethod = 1
-	Stripe     PayMethod = 2
+	InvalidPay PayMethod = 0
+	Alipay     PayMethod = 1
+	Wxpay      PayMethod = 2
+	Stripe     PayMethod = 3
 )
 
 // NewPayMethod creates a new instance of PayMethod

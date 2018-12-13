@@ -8,23 +8,27 @@ import (
 )
 
 const (
-	year  = "year"
-	month = "month"
+	cycleZero = ""
+	year      = "year"
+	month     = "month"
 )
 
 var cyclesRaw = [...]string{
+	cycleZero,
 	year,
 	month,
 }
 
 // Chinese translation
 var cyclesCN = [...]string{
+	"",
 	"年",
 	"月",
 }
 
 // English translation
 var cyclesEN = [...]string{
+	"",
 	"Year",
 	"Month",
 }
@@ -127,9 +131,9 @@ func (c Cycle) ToEN() string {
 
 // Supported billing cycles
 const (
-	CycleInvalid Cycle = -1
-	CycleYear    Cycle = 0
-	CycleMonth   Cycle = 1
+	CycleInvalid Cycle = 0
+	CycleYear    Cycle = 1
+	CycleMonth   Cycle = 2
 )
 
 // NewCycle creates a new instance of Cycle.

@@ -18,6 +18,19 @@ const (
 	apiBaseURL = "https://api.weixin.qq.com/sns"
 )
 
+// RespStatus is used to parse wechat error response.
+type RespStatus struct {
+	Code    int64  `json:"errcode"`
+	Message string `json:"errmsg"`
+}
+
+// IsError tests if wechat api response is an error.
+// Wechat does not tell what error will returned exactly.
+// It does not use restful standards. You cannot rely on HTTP status codes.
+func (r RespStatus) IsError() bool {
+	return !(r.Code == 0 && (r.Message == "ok" || r.Message == ""))
+}
+
 // Client contains essential credentials to call Wecaht API.
 type Client struct {
 	AppID     string
@@ -50,6 +63,14 @@ func (c Client) userInfoURL(token, openID string) string {
 	q.Set("openid", openID)
 
 	return fmt.Sprintf("%s/userinfo?%s", apiBaseURL, q.Encode())
+}
+
+func (c Client) accessValidityURL(accessToken, openID string) string {
+	q := url.Values{}
+	q.Set("access_token", accessToken)
+	q.Set("openid", openID)
+
+	return fmt.Sprintf("%s/auth?%s", apiBaseURL, q.Encode())
 }
 
 // GetAccessToken request for access token with a code previsouly acquired from wechat.
@@ -96,4 +117,50 @@ func (c Client) GetUserInfo(acc OAuthAccess) (UserInfo, error) {
 	}
 
 	return info, nil
+}
+
+// RefreshAccess refresh access token.
+func (c Client) RefreshAccess(refreshToken string) (OAuthAccess, error) {
+	u := c.refreshTokeURL(refreshToken)
+
+	var acc OAuthAccess
+	_, body, errs := request.Get(u).End()
+
+	if errs != nil {
+		logger.WithField("trace", "RefreshAccess").Error(errs)
+
+		return acc, errs[0]
+	}
+
+	if err := json.Unmarshal([]byte(body), &acc); err != nil {
+		logger.WithField("trace", "RefreshAccess").Error(err)
+
+		return acc, err
+	}
+
+	return acc, nil
+}
+
+// IsValidAccess checks if an access token is valid.
+func (c Client) IsValidAccess(acc OAuthAccess) bool {
+	u := c.accessValidityURL(acc.AccessToken, acc.OpenID)
+
+	var resp RespStatus
+	_, body, errs := request.Get(u).End()
+
+	if errs != nil {
+		logger.WithField("trace", "IsInvalidAccess").Error(errs)
+		return false
+	}
+
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		logger.WithField("trace", "IsValidAccess")
+		return false
+	}
+
+	if resp.Code == 0 && resp.Message == "ok" {
+		return true
+	}
+
+	return false
 }
