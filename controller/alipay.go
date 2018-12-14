@@ -276,7 +276,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		reason := &view.Reason{
 			Field: "sign",
-			Code:  util.CodeInvalid,
+			Code:  view.CodeInvalid,
 		}
 		reason.SetMessage(err.Error())
 
@@ -288,7 +288,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	if !ok {
 		reason := &view.Reason{
 			Field: "sign",
-			Code:  util.CodeIncorrect,
+			Code:  view.CodeIncorrect,
 		}
 		reason.SetMessage(err.Error())
 
@@ -307,7 +307,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 
 		reason := &view.Reason{
 			Field: "app_id",
-			Code:  util.CodeIncorrect,
+			Code:  view.CodeIncorrect,
 		}
 		reason.SetMessage("APP ID mismatched.")
 
@@ -334,7 +334,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 
 		reason := &view.Reason{
 			Field: "total_amount",
-			Code:  util.CodeIncorrect,
+			Code:  view.CodeIncorrect,
 		}
 		reason.SetMessage("Total amount does not match.")
 		view.Render(w, view.NewUnprocessable(reason))
