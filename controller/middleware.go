@@ -11,6 +11,7 @@ import (
 )
 
 const userIDKey = "X-User-Id"
+const unionIDKey = "X-Union-Id"
 
 // NoCache set Cache-Control request header
 func NoCache(next http.Handler) http.Handler {
@@ -35,7 +36,7 @@ func CheckUserID(next http.Handler) http.Handler {
 
 		userID = strings.TrimSpace(userID)
 		if userID == "" {
-			log.WithField("location", "middleware: checkUserName").Info("Missing X-User-Id header")
+			log.WithField("location", "CheckUserID").Info("Missing X-User-Id header")
 
 			view.Render(w, view.NewUnauthorized(""))
 
@@ -43,6 +44,31 @@ func CheckUserID(next http.Handler) http.Handler {
 		}
 
 		req.Header.Set(userIDKey, userID)
+
+		next.ServeHTTP(w, req)
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+// CheckUnionID middleware makes sure all request header contains `X-Union-Id` field.
+//
+// - 401 Unauthorized if request header does not have `X-User-Name`,
+// or the value is empty.
+func CheckUnionID(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, req *http.Request) {
+		unionID := req.Header.Get(unionIDKey)
+
+		unionID = strings.TrimSpace(unionID)
+		if unionID == "" {
+			log.WithField("location", "CheckUnionID").Info("Missing X-Unioin-Id header")
+
+			view.Render(w, view.NewUnauthorized(""))
+
+			return
+		}
+
+		req.Header.Set(unionIDKey, unionID)
 
 		next.ServeHTTP(w, req)
 	}
