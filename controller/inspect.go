@@ -3,7 +3,7 @@ package controller
 import (
 	"net/http"
 
-	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 // CurrentPlans show what plans are being used after merging with discount plans.
@@ -12,7 +12,7 @@ import (
 func (pr PaywallRouter) CurrentPlans(w http.ResponseWriter, req *http.Request) {
 	plans := pr.model.GetCurrentPlans()
 
-	util.Render(w, util.NewResponse().NoCache().SetBody(plans))
+	view.Render(w, view.NewResponse().NoCache().SetBody(plans))
 }
 
 // RefreshPromo busts cache and retrieve a latest promotion schedule if exists.
@@ -21,10 +21,10 @@ func (pr PaywallRouter) RefreshPromo(w http.ResponseWriter, req *http.Request) {
 	promo, err := pr.model.RetrievePromo()
 
 	if err != nil {
-		util.Render(w, util.NewDBFailure(err))
+		view.Render(w, view.NewDBFailure(err))
 
 		return
 	}
 
-	util.Render(w, util.NewResponse().NoCache().SetBody(promo))
+	view.Render(w, view.NewResponse().NoCache().SetBody(promo))
 }

@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 // PaywallRouter handles pricing plans.
@@ -22,20 +22,20 @@ func (pr PaywallRouter) GetPromo(w http.ResponseWriter, req *http.Request) {
 	promo, found := pr.model.PromoFromCache()
 
 	if !found {
-		util.Render(w, util.NewNotFound())
+		view.Render(w, view.NewNotFound())
 
 		return
 	}
 
-	util.Render(w, util.NewResponse().NoCache().SetBody(promo))
+	view.Render(w, view.NewResponse().NoCache().SetBody(promo))
 }
 
 // DefaultPlans shows what our subscription plans are.
 func DefaultPlans(w http.ResponseWriter, req *http.Request) {
 
-	util.Render(
+	view.Render(
 		w,
-		util.NewResponse().
+		view.NewResponse().
 			NoCache().
 			SetBody(model.DefaultPlans))
 }
