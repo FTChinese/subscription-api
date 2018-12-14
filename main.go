@@ -68,6 +68,8 @@ func main() {
 	aliRouter := controller.NewAliRouter(m, isProd)
 	paywallRouter := controller.NewPaywallRouter(m)
 
+	wxAuth := controller.NewWxAuth(db)
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -121,6 +123,21 @@ func main() {
 
 		// Get default banner
 		// r1.Get("/banner", )
+	})
+
+	r.Route("/oauth", func(r1 chi.Router) {
+		r1.Post("/wx-access", wxAuth.Login)
+	})
+
+	r.Route("/user", func(r1 chi.Router) {
+		r1.Route("wx", func(r2 chi.Router) {
+			// All routers under this section should contain X-Union-Id header.
+			r2.Use(controller.CheckUnionID)
+
+			// r2.Put("/bind")
+			// r2.Delete("/bind")
+			r2.Get("/account", wxAuth.LoadAccount)
+		})
 	})
 
 	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8200")
