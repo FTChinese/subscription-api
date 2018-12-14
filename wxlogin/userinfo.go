@@ -8,15 +8,16 @@ import (
 
 // UserInfo is a wechat user's personal information.
 type UserInfo struct {
-	OpenID     string   `json:"openid"`
-	NickName   string   `json:"nickname"`
-	Gender     string   `json:"sex"`
+	UnionID    string `json:"unionid"`
+	OpenID     string `json:"openid"`
+	NickName   string `json:"nickname"`
+	HeadImgURL string `json:"headimgurl"`
+	// 1 for male, 2 for female, 0 for not set.
+	Gender     int64    `json:"sex"`
+	Country    string   `json:"country"`
 	Province   string   `json:"province"`
 	City       string   `json:"city"`
-	Country    string   `json:"country"`
-	HeadImgURL string   `json:"headimgurl"`
 	Privileges []string `json:"privilege"`
-	UnionID    string   `json:"unionid"`
 }
 
 // WxAccount returns a WxAccount type from UserInfo.
@@ -32,7 +33,7 @@ func (u UserInfo) WxAccount() WxAccount {
 // SaveUserInfo from wechat API.
 func (env Env) SaveUserInfo(u UserInfo, c util.RequestClient) error {
 	query := `INSERT INTO user_db.user_sns_info
-	SET client_type = ?
+	SET client_type = ?,
 		unionid = ?,
 		openid = ?,
 		nickname = ?,
@@ -41,7 +42,7 @@ func (env Env) SaveUserInfo(u UserInfo, c util.RequestClient) error {
 		province = ?,
 		city = ?,
 		headimgurl = ?,
-		privilege = ?
+		privilege = NULLIF(?, '')
 	ON DUPLICATE KEY UPDATE
 		openid = ?,
 		nickname = ?,
@@ -50,7 +51,7 @@ func (env Env) SaveUserInfo(u UserInfo, c util.RequestClient) error {
 		province = ?,
 		city = ?,
 		headimgurl = ?,
-		privilege = ?`
+		privilege = NULLIF(?, '')`
 
 	prvlg := strings.Join(u.Privileges, ",")
 	_, err := env.DB.Exec(query,
