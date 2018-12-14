@@ -2,6 +2,15 @@ package wxlogin
 
 import "gitlab.com/ftchinese/subscription-api/model"
 
+// WxAccount is a concise version of UserInfo,
+// containing only essential data to identify a wechat user.
+type WxAccount struct {
+	UnionID   string `json:"unionId"`
+	OpenID    string `json:"openId"`
+	NickName  string `json:"nickName"`
+	AvatarURL string `json:"avatarUrl"`
+}
+
 // Account is a user's FTC account.
 // If ID is empty, it means the Wechat account is not bound to FTC account.
 type Account struct {
@@ -61,8 +70,8 @@ func (env Env) BindAccount(userID, unionID string) error {
 	return nil
 }
 
-// FindAccountByWx retrieves a user's wechat account with membership
-func (env Env) FindAccountByWx(unionID string) (Account, error) {
+// LoadAccountByWx retrieves a user's wechat account with membership
+func (env Env) LoadAccountByWx(unionID string) (Account, error) {
 	query := `
 	SELECT unionid AS unionId,
 		openid AS openId,
