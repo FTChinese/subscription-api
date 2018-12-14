@@ -82,6 +82,10 @@ func (c Client) accessValidityURL(accessToken, openID string) string {
 }
 
 // GetAccessToken request for access token with a code previsouly acquired from wechat.
+// Possible error response:
+// errcode: 41002, errmsg: appid missing;
+// errcode: 40029, errmsg: invalid code;
+// Response without error: errcode: 0, errmsg: "";
 func (c Client) GetAccessToken(code string) (OAuthAccess, error) {
 	u := c.accessTokenURL(code)
 
