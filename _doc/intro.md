@@ -90,8 +90,10 @@ Here's an overview of all the endpoint provided by this API.
 
 ## Wechat Login
 
-* `POST /auth/wx` Login via wechat
-* `POST /auth/email` 
-* `PUT /wx/bind` Bind an FTC account to wechat.
-* `DELETE /wx/bind` Unbind an FTC account from wechat
-* `GET /wx/account` Get the the complete account: FTC + wechat + membership.
+* `POST /oauth/wx-access` Login via wechat
+
+The following routers should have request header `X-Union-Id` set to wechat union id.
+
+* `PUT /user/wx/bind` Bind an FTC account to wechat.
+* `DELETE /user/wx/bind` Unbind an FTC account from wechat
+* `GET /user/wx/account` Get the the complete account: FTC + wechat + membership.
