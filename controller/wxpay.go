@@ -102,7 +102,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	subs := plan.CreateSubs(userID, enum.Wxpay)
 
 	// Get request client required headers
-	c := util.NewRequestClient(req)
+	c := util.GetClient(req)
 
 	err = wr.model.PlaceOrder(subs, c)
 	if err != nil {
