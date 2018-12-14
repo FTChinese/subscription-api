@@ -12,6 +12,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 const (
@@ -66,7 +67,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	cycleKey := getURLParam(req, "cycle").toString()
 
 	if tierKey == "" || cycleKey == "" {
-		util.Render(w, util.NewBadRequest(msgInvalidURI))
+		view.Render(w, view.NewBadRequest(msgInvalidURI))
 		return
 	}
 
@@ -78,7 +79,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		logger.WithField("location", "AliAppOrder").Error(err)
 
-		util.Render(w, util.NewBadRequest(msgInvalidURI))
+		view.Render(w, view.NewBadRequest(msgInvalidURI))
 		return
 	}
 
@@ -93,11 +94,11 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		if err == util.ErrRenewalForbidden {
-			util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+			view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
 			return
 		}
 
-		util.Render(w, util.NewDBFailure(err))
+		view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
@@ -115,7 +116,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	logger.WithField("location", "AliAppOrder").Infof("App pay param: %+v\n", values)
 
 	if err != nil {
-		util.Render(w, util.NewBadRequest(err.Error()))
+		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
@@ -125,7 +126,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		Param:      values.Encode(),
 	}
 
-	util.Render(w, util.NewResponse().SetBody(order))
+	view.Render(w, view.NewResponse().SetBody(order))
 }
 
 // Notification receives alipay callback
@@ -251,7 +252,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	body, err := ioutil.ReadAll(req.Body)
 
 	if err != nil {
-		util.Render(w, util.NewBadRequest("Problems parsing JSON"))
+		view.Render(w, view.NewBadRequest("Problems parsing JSON"))
 
 		return
 	}
@@ -262,7 +263,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 
 	if err := json.Unmarshal(body, &result); err != nil {
 		logger.WithField("location", "VerifyAppPay").Error(err)
-		util.Render(w, util.NewBadRequest(err.Error()))
+		view.Render(w, view.NewBadRequest(err.Error()))
 
 		return
 	}
@@ -273,25 +274,25 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 
 	// 422
 	if err != nil {
-		reason := &util.Reason{
+		reason := &view.Reason{
 			Field: "sign",
 			Code:  util.CodeInvalid,
 		}
 		reason.SetMessage(err.Error())
 
-		util.Render(w, util.NewUnprocessable(reason))
+		view.Render(w, view.NewUnprocessable(reason))
 
 		return
 	}
 
 	if !ok {
-		reason := &util.Reason{
+		reason := &view.Reason{
 			Field: "sign",
 			Code:  util.CodeIncorrect,
 		}
 		reason.SetMessage(err.Error())
 
-		util.Render(w, util.NewUnprocessable(reason))
+		view.Render(w, view.NewUnprocessable(reason))
 
 		return
 	}
@@ -304,13 +305,13 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	if appID != ar.appID {
 		logger.WithField("location", "AliNotification").Info("AppID does not match")
 
-		reason := &util.Reason{
+		reason := &view.Reason{
 			Field: "app_id",
 			Code:  util.CodeIncorrect,
 		}
 		reason.SetMessage("APP ID mismatched.")
 
-		util.Render(w, util.NewUnprocessable(reason))
+		view.Render(w, view.NewUnprocessable(reason))
 		return
 	}
 
@@ -320,7 +321,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	// If the order does not exist, tell ali success;
 	// If err is not `not found`, tell ali to resend.
 	if err != nil {
-		util.Render(w, util.NewDBFailure(err))
+		view.Render(w, view.NewDBFailure(err))
 
 		return
 	}
@@ -331,12 +332,12 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 			WithField("location", "AliNotification").
 			Infof("Subscrition total amount: %s vs Notification total amount: %s", subs.AliTotalAmount(), totalAmount)
 
-		reason := &util.Reason{
+		reason := &view.Reason{
 			Field: "total_amount",
 			Code:  util.CodeIncorrect,
 		}
 		reason.SetMessage("Total amount does not match.")
-		util.Render(w, util.NewUnprocessable(reason))
+		view.Render(w, view.NewUnprocessable(reason))
 
 		return
 	}
@@ -353,5 +354,5 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 		PaidAt:     paidAt,
 	}
 
-	util.Render(w, util.NewResponse().SetBody(order))
+	view.Render(w, view.NewResponse().SetBody(order))
 }

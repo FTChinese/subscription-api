@@ -13,6 +13,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
@@ -77,7 +78,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	cycleKey := getURLParam(req, "cycle").toString()
 
 	if tierKey == "" || cycleKey == "" {
-		util.Render(w, util.NewBadRequest(msgInvalidURI))
+		view.Render(w, view.NewBadRequest(msgInvalidURI))
 		return
 	}
 
@@ -91,7 +92,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		logger.WithField("location", "UnifiedOrder").Error(err)
 
-		util.Render(w, util.NewBadRequest(msgInvalidURI))
+		view.Render(w, view.NewBadRequest(msgInvalidURI))
 		return
 	}
 
@@ -107,11 +108,11 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 
 		if err == util.ErrRenewalForbidden {
-			util.Render(w, util.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+			view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
 			return
 		}
 
-		util.Render(w, util.NewDBFailure(err))
+		view.Render(w, view.NewDBFailure(err))
 		return
 	}
 	// Prepare to send wx unified order.
@@ -133,7 +134,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		logger.WithField("location", "UnifiedOrder").Error(err)
 
-		util.Render(w, util.NewBadRequest(err.Error()))
+		view.Render(w, view.NewBadRequest(err.Error()))
 
 		return
 	}
@@ -171,13 +172,13 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 			WithField("location", "UnifiedOrder").
 			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
 
-		reason := &util.Reason{
+		reason := &view.Reason{
 			Field: "return_code",
 			Code:  "fail",
 		}
 		reason.SetMessage(returnMsg)
 
-		util.Render(w, util.NewUnprocessable(reason))
+		view.Render(w, view.NewUnprocessable(reason))
 		return
 	}
 
@@ -190,12 +191,12 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 			WithField("err_code_des", errCodeDes).
 			Error("Wx unified order result failed")
 
-		reason := &util.Reason{
+		reason := &view.Reason{
 			Field: "result_code",
 			Code:  errCode,
 		}
 		reason.SetMessage(errCodeDes)
-		util.Render(w, util.NewUnprocessable(reason))
+		view.Render(w, view.NewUnprocessable(reason))
 
 		return
 	}
@@ -224,7 +225,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	// appParams.SetString("price", plan.GetPriceString())
 
-	util.Render(w, util.NewResponse().SetBody(order))
+	view.Render(w, view.NewResponse().SetBody(order))
 }
 
 // func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
@@ -359,7 +360,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	orderID := getURLParam(req, "orderId").toString()
 
 	if orderID == "" {
-		util.Render(w, util.NewBadRequest(""))
+		view.Render(w, view.NewBadRequest(""))
 		return
 	}
 
@@ -373,7 +374,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		logger.WithField("location", "OrderQuery").Error(err)
 
-		util.Render(w, util.NewInternalError(err.Error()))
+		view.Render(w, view.NewInternalError(err.Error()))
 
 		return
 	}
@@ -396,13 +397,13 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 			WithField("location", "OrderQuery").
 			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
 
-		reason := &util.Reason{
+		reason := &view.Reason{
 			Field: "return_code",
 			Code:  "fail",
 		}
 		reason.SetMessage(returnMsg)
 
-		util.Render(w, util.NewUnprocessable(reason))
+		view.Render(w, view.NewUnprocessable(reason))
 
 		return
 	}
@@ -418,15 +419,15 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 
 		switch errCode {
 		case "ORDERNOTEXIST":
-			util.Render(w, util.NewNotFound())
+			view.Render(w, view.NewNotFound())
 
 		default:
-			reason := &util.Reason{
+			reason := &view.Reason{
 				Field: "result_code",
 				Code:  "fail",
 			}
 			reason.SetMessage(errCodeDes)
-			util.Render(w, util.NewUnprocessable(reason))
+			view.Render(w, view.NewUnprocessable(reason))
 		}
 
 		return
@@ -435,7 +436,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	if ok := wr.verifyRespIdentity(resp); !ok {
 		logger.WithField("location", "OrderQuery").Info("appid or mch_id mismatched")
 
-		util.Render(w, util.NewNotFound())
+		view.Render(w, view.NewNotFound())
 		return
 	}
 
@@ -461,7 +462,7 @@ func (wr WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		PaidAt:        util.ToISO8601UTC.FromWx(timeEnd),
 	}
 
-	util.Render(w, util.NewResponse().SetBody(order))
+	view.Render(w, view.NewResponse().SetBody(order))
 }
 
 func (wr WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
