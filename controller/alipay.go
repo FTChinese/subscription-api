@@ -88,7 +88,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	subs := plan.CreateSubs(userID, enum.Alipay)
 
 	// Get request client metadata
-	c := util.NewRequestClient(req)
+	c := util.GetClient(req)
 
 	err = ar.model.PlaceOrder(subs, c)
 
