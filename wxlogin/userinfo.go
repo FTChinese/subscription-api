@@ -6,15 +6,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
-// WxAccount is a concise version of UserInfo,
-// containing only essential data to identify a wechat user.
-type WxAccount struct {
-	UnionID   string `json:"unionId"`
-	OpenID    string `json:"openId"`
-	NickName  string `json:"nickName"`
-	AvatarURL string `json:"avatarUrl"`
-}
-
 // UserInfo is a wechat user's personal information.
 type UserInfo struct {
 	OpenID     string   `json:"openid"`
