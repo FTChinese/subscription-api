@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 // MemberRouter checks membership status
@@ -21,5 +21,5 @@ func NewMemberRouter(m model.Env) MemberRouter {
 
 // IsRenewable answers if user is allowed to renew membership.
 func (mr MemberRouter) IsRenewable(w http.ResponseWriter, req *http.Request) {
-	util.Render(w, util.NewNoContent())
+	view.Render(w, view.NewNoContent())
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 const userIDKey = "X-User-Id"
@@ -37,7 +37,7 @@ func CheckUserID(next http.Handler) http.Handler {
 		if userID == "" {
 			log.WithField("location", "middleware: checkUserName").Info("Missing X-User-Id header")
 
-			util.Render(w, util.NewUnauthorized(""))
+			view.Render(w, view.NewUnauthorized(""))
 
 			return
 		}
@@ -74,7 +74,7 @@ func Version(version, build string) func(http.ResponseWriter, *http.Request) {
 			"build":   build,
 		}
 
-		util.Render(w, util.NewResponse().NoCache().SetBody(b))
+		view.Render(w, view.NewResponse().NoCache().SetBody(b))
 	}
 }
 
