@@ -7,12 +7,19 @@ import (
 
 // OAuthAccess contains data returned by exchange access token with oauth code.
 type OAuthAccess struct {
-	AccessToken  string      `json:"access_token"`
-	ExpiresIn    int64       `json:"expires_in"`
-	RefreshToken string      `json:"refresh_token"`
-	OpenID       string      `json:"openid"`
-	Scope        string      `json:"scope"`
-	UnionID      null.String `json:"unionid"`
+	RespStatus
+	// Example: ***REMOVED***
+	AccessToken string `json:"access_token"`
+	// Example: 7200
+	ExpiresIn int64 `json:"expires_in"`
+	// Exmaple: ***REMOVED***
+	RefreshToken string `json:"refresh_token"`
+	// Example: ob7fA0h69OO0sTLyQQpYc55iF_P0
+	OpenID string `json:"openid"`
+	// Example: snsapi_userinfo
+	Scope string `json:"scope"`
+	// Example: String:ogfvwjk6bFqv2yQpOrac0J3PqA0o Valid:true
+	UnionID null.String `json:"unionid"`
 }
 
 // SaveAccess saves the access token related data after acquired from wechat api.
