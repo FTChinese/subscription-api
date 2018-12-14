@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"database/sql"
 	"net/http"
+	"os"
 	"strings"
 
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -9,10 +11,32 @@ import (
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 )
 
-// WxLoginRouter handles wechat login.
-type WxLoginRouter struct {
-	client wxlogin.Client
-	env    wxlogin.Env
+// WxAuthRouter handles wechat login.
+// Web apps and mobile apps should use their
+// respective app id + app secret combination.
+// Wechat never said you should do this.
+// But when combining their messy documentation, you must do it this way.
+type WxAuthRouter struct {
+	// wClient is used to handle web app login request
+	wClient wxlogin.Client
+	// mClient is used to handle mobile app login request.
+	mClient wxlogin.Client
+	env     wxlogin.Env
+}
+
+// NewWxAuth creates a new WxLoginRouter instance.
+func NewWxAuth(db *sql.DB) WxAuthRouter {
+	mAppID := os.Getenv("WX_MOBILE_APPID")
+	mAppScrt := os.Getenv("WX_MOBILE_APPSECRET")
+
+	wAppID := os.Getenv("WX_WEB_APPID")
+	wAppScrt := os.Getenv("WX_WEB_APPSECRET")
+
+	return WxAuthRouter{
+		wClient: wxlogin.NewClient(wAppID, wAppScrt),
+		mClient: wxlogin.NewClient(mAppID, mAppScrt),
+		env:     wxlogin.Env{DB: db},
+	}
 }
 
 // Login handles login via wechat.
@@ -28,7 +52,7 @@ type WxLoginRouter struct {
 // send it back to client.
 // After getting a user's wechat data,
 // client should then retrieve the complete user data: FTC account + wechat userinfo + membership
-func (lr WxLoginRouter) Login(w http.ResponseWriter, req *http.Request) {
+func (lr WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	// Parse request body
 	code, err := util.GetJSONString(req.Body, "code")
 
@@ -46,21 +70,22 @@ func (lr WxLoginRouter) Login(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// TODO: Use client type to determine which wechat app id will be used.
+	reqClient := util.GetClient(req)
+
 	// Request access token from wechat
-	acc, err := lr.client.GetAccessToken(code)
+	acc, err := lr.mClient.GetAccessToken(code)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 
 		return
 	}
 
-	reqClient := util.NewRequestClient(req)
-
 	// Save access token
 	go lr.env.SaveAccess(acc, reqClient)
 
 	// Get userinfo from wechat
-	user, err := lr.client.GetUserInfo(acc)
+	user, err := lr.mClient.GetUserInfo(acc)
 
 	// Save userinfo
 	err = lr.env.SaveUserInfo(user, reqClient)
@@ -72,4 +97,18 @@ func (lr WxLoginRouter) Login(w http.ResponseWriter, req *http.Request) {
 	}
 
 	view.Render(w, view.NewResponse().NoCache().SetBody(user.WxAccount()))
+}
+
+// LoadAccount gets a user's account data who logged in via wechat.
+func (lr WxAuthRouter) LoadAccount(w http.ResponseWriter, req *http.Request) {
+	unionID := req.Header.Get(unionIDKey)
+
+	account, err := lr.env.LoadAccountByWx(unionID)
+
+	if err != nil {
+		view.Render(w, view.NewDBFailure(err))
+		return
+	}
+
+	view.Render(w, view.NewResponse().NoCache().SetBody(account))
 }
