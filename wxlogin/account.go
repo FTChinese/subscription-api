@@ -25,6 +25,8 @@ type Account struct {
 }
 
 // BindAccount associate a wechat account with an FTC account.
+// The FTC account must not be bound to a wechat account,
+// And must not subscribed to any kind of membership.
 // It set the wx_union_id column to wechat unioin id and set the membership's vip_id column to user id.
 func (env Env) BindAccount(userID, unionID string) error {
 	tx, err := env.DB.Begin()
@@ -40,11 +42,12 @@ func (env Env) BindAccount(userID, unionID string) error {
 	WHERE user_id = ?
 	LIMIT 1`
 
-	_, errA := tx.Exec(stmtUnionID, userID)
+	_, errA := tx.Exec(stmtUnionID, unionID, userID)
 
+	// Error 1062: Duplicate entry 'ogfvwjk6bFqv2yQpOrac0J3PqA0o' for key 'wx_union_id'
 	if errA != nil {
 		_ = tx.Rollback()
-		logger.WithField("trace", "BindAccount set union id").Error(err)
+		logger.WithField("trace", "BindAccount set union id").Error(errA)
 	}
 
 	// Set the premium.ftc_vip table's vip_id columnd to user id.
@@ -54,11 +57,13 @@ func (env Env) BindAccount(userID, unionID string) error {
 	WHERE vip_id_alias = ?
 	LIMIT 1`
 
-	_, errB := tx.Exec(stmtMemberID, unionID)
+	_, errB := tx.Exec(stmtMemberID, userID, unionID)
 
+	// Error 1062: Duplicate entry 'e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae' for key 'PRIMARY'"
+	// If the `userID` is already a member.
 	if errB != nil {
 		_ = tx.Rollback()
-		logger.WithField("trace", "BindAccount set membership user id").Error(err)
+		logger.WithField("trace", "BindAccount set membership user id").Error(errB)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -69,6 +74,14 @@ func (env Env) BindAccount(userID, unionID string) error {
 
 	return nil
 }
+
+// IsBindingPermitted checks if an FTC account is allowed to be bound to a Wechat account.
+// There are two cases that you should deny this operation:
+// 1. The FTC account is already bound to a wechat account, that is, wx_union_id column is NOT NULL;
+// 2. The FTC account is not bound to a wechat account, but this FTC account has a valid membership.
+// func (env Env) IsBindingPermitted(userID, unionID string) (bool, error) {
+
+// }
 
 // LoadAccountByWx retrieves a user's wechat account with membership
 func (env Env) LoadAccountByWx(unionID string) (Account, error) {
@@ -113,6 +126,7 @@ func (env Env) LoadAccountByWx(unionID string) (Account, error) {
 		&m.Expire,
 		&a.ID,
 		&a.UserName,
+		&a.Email,
 		&a.IsVIP,
 		&a.IsVerified,
 	)
@@ -130,6 +144,9 @@ func (env Env) LoadAccountByWx(unionID string) (Account, error) {
 	if m.Expire == "" {
 		m.Expire = normalizeExpireDate(expireTime)
 	}
+
+	a.Wechat = &wx
+	a.Membership = m
 
 	return a, nil
 }
