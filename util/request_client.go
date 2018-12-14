@@ -17,8 +17,8 @@ type RequestClient struct {
 	UserAgent  string
 }
 
-// NewRequestClient extracts client data from a request.
-func NewRequestClient(req *http.Request) RequestClient {
+// GetClient extracts client data from a request.
+func GetClient(req *http.Request) RequestClient {
 	c := RequestClient{}
 
 	c.ClientType = enum.NewPlatform(req.Header.Get("X-Client-Type"))
@@ -32,7 +32,7 @@ func NewRequestClient(req *http.Request) RequestClient {
 		c.UserAgent = req.Header.Get("X-User-Agent")
 	} else {
 		c.UserIP = realip.FromRequest(req)
-		c.UserAgent = req.Header.Get("User-Agent")
+		c.UserAgent = req.UserAgent()
 	}
 
 	return c
