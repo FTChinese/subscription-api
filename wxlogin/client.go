@@ -37,6 +37,14 @@ type Client struct {
 	AppSecret string
 }
 
+// NewClient creates a new Wecaht client.
+func NewClient(id, secret string) Client {
+	return Client{
+		AppID:     id,
+		AppSecret: secret,
+	}
+}
+
 // Build url to get access token
 func (c Client) accessTokenURL(code string) string {
 	q := url.Values{}
