@@ -130,11 +130,11 @@ func main() {
 	})
 
 	r.Route("/user", func(r1 chi.Router) {
-		r1.Route("wx", func(r2 chi.Router) {
+		r1.Route("/wx", func(r2 chi.Router) {
 			// All routers under this section should contain X-Union-Id header.
 			r2.Use(controller.CheckUnionID)
 
-			// r2.Put("/bind")
+			r2.Put("/bind", wxAuth.BindFTC)
 			// r2.Delete("/bind")
 			r2.Get("/account", wxAuth.LoadAccount)
 		})
