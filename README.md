@@ -2,6 +2,11 @@
 
 API for subscription service
 
+## Base URL
+
+* Production: `http://www.ftacademy.cn/api/v1`
+* Sandbox: `http://www.ftacademy.cn/api/sandbox`
+
 ## Development
 
 All development happens in the `sandbox` branch. `master` is used to merge and publish stable release from `sandbox`. The `sandbox` branch should always be test again live data to ensure subscription will never stop or break down.
