@@ -20,9 +20,9 @@ type UserInfo struct {
 	Privileges []string `json:"privilege"`
 }
 
-// WxAccount returns a WxAccount type from UserInfo.
-func (u UserInfo) WxAccount() WxAccount {
-	return WxAccount{
+// ToWechat returns a ToWechat type from UserInfo.
+func (u UserInfo) ToWechat() Wechat {
+	return Wechat{
 		UnionID:   u.UnionID,
 		OpenID:    u.OpenID,
 		NickName:  u.NickName,
