@@ -39,7 +39,7 @@ func (m Membership) CanRenew(cycle enum.Cycle) bool {
 	return expireDate.Before(afterACycle)
 }
 
-// IsExpired tests is the membership saved in database is expired.
+// IsExpired tests if the membership saved in database is expired.
 func (m Membership) IsExpired() bool {
 	t, err := util.ParseSQLDate(m.Expire)
 
