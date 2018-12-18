@@ -96,14 +96,14 @@ func (lr WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	view.Render(w, view.NewResponse().NoCache().SetBody(user.WxAccount()))
+	view.Render(w, view.NewResponse().NoCache().SetBody(user.ToWechat()))
 }
 
 // LoadAccount gets a user's account data who logged in via wechat.
 func (lr WxAuthRouter) LoadAccount(w http.ResponseWriter, req *http.Request) {
 	unionID := req.Header.Get(unionIDKey)
 
-	account, err := lr.env.LoadAccountByWx(unionID)
+	account, err := lr.env.FindAccountByWx(unionID)
 
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -137,7 +137,7 @@ func (lr WxAuthRouter) BindFTC(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Find FTC account for this userID
-	ftcAcnt, err := lr.env.CheckFTCAccount(userID)
+	ftcAcnt, err := lr.env.FindAccountByFTC(userID)
 	// If the account if not found, deny the request -- you have nothing to bind.
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -146,91 +146,94 @@ func (lr WxAuthRouter) BindFTC(w http.ResponseWriter, req *http.Request) {
 
 	// Both ftcAcnt and wxAcnt should be found.
 	// Otherwise how do you bind them?
-	wxAcnt, err := lr.env.CheckWxAccount(unionID)
+	wxAcnt, err := lr.env.FindAccountByWx(unionID)
 	// If the wechat account if not found, deny the request -- you have nothing to bind to.
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
-	// If this ftc account is already bound to a wechat account
-	if ftcAcnt.UnionID.Valid {
-		// If the ftc account is already bound to another wechat account.
-		if ftcAcnt.UnionID.String != unionID {
-			view.Render(w, view.NewForbidden("The ftc acount is bound to another wechat account"))
-			return
-		}
-
-		// Check if membership is correctly bound.
-		// If none of the accounts have memberships, then we do not need to be borthered with ftc_vip table.
-		if !ftcAcnt.IsMember && !wxAcnt.IsMember {
-			view.Render(w, view.NewNoContent())
-			return
-		}
-
-		// Here it means, both accounts have membership, or one of them does.
-		// If both accounts have membership, their vip_id_alias should be the same.
-		if ftcAcnt.IsMember && wxAcnt.IsMember {
-			// If both ftc account and wx account have memberships,
-			// their MemberUnionID should be the same,
-			// otherwise there are problems.
-			if ftcAcnt.MemberUnionID.String != unionID {
-				view.Render(w, view.NewForbidden("The ftc acount membership is bound to another wechat account"))
-			}
-
-			view.Render(w, view.NewNoContent())
-			return
-		}
-
-		// If either ftc account or wechat account has membership.
-		bound := wxlogin.BoundAccount{
-			UserID:  userID,
-			UnionID: unionID,
-		}
-		if ftcAcnt.IsMember {
-			bound.Method = wxlogin.MethodEmail
-		} else if wxAcnt.IsMember {
-			bound.Method = wxlogin.MethodWx
-		} else {
-			bound.Method = wxlogin.MethodNone
-		}
-
-		err := lr.env.MergeMembership(bound)
-
-		if err != nil {
-			view.Render(w, view.NewDBFailure(err))
-			return
-		}
-
+	// The two account already bound.
+	if ftcAcnt.IsEqualTo(wxAcnt) {
 		view.Render(w, view.NewNoContent())
 		return
 	}
 
-	// If both the ftc account and wechat account has their membership, do nothing.
-	if ftcAcnt.IsMember && wxAcnt.IsMember {
-		// ftcAcnt and wxAcnt might retrieve the same membership due to legacy issues.
-		if ftcAcnt.MemberUnionID.Valid && wxAcnt.MemberUnionID.Valid {
-			// This means membership is bound but accounts are not.
-			if ftcAcnt.MemberUnionID.String == wxAcnt.MemberUnionID.String {
-				err := lr.env.BindAccount(userID, unionID)
-				if err != nil {
-					view.Render(w, view.NewDBFailure(err))
-					return
-				}
-				view.Render(w, view.NewNoContent())
-				return
-			}
-		}
-		view.Render(w, view.NewForbidden("Refuse to merge two accounts with subscribed memberships"))
+	// If ftc account is bound to another wechat account,
+	// or wechat account is bound to another ftc account,
+	// or they both bound to another account
+	if !ftcAcnt.IsBindingAllowed(wxAcnt) {
+		view.Render(w, view.NewForbidden("One of the requested accounts, or both, is/are bound to a 3rd account"))
 		return
 	}
 
-	// If none of ftc account nor wechat account has membership.
-	if !ftcAcnt.IsMember && !wxAcnt.IsMember {
+	// If both accounts have no memberships, simply set the userinfo.wx_union_id column to unionId.
+	if !ftcAcnt.IsMember() && !wxAcnt.IsMember() {
 		err := lr.env.BindAccount(userID, unionID)
 
 		if err != nil {
 			view.Render(w, view.NewDBFailure(err))
+
+			return
+		}
+
+		view.Render(w, view.NewNoContent())
+
+		return
+	}
+
+	// If both accounts have memberships.
+	if ftcAcnt.IsMember() && wxAcnt.IsMember() {
+		// If the two accounts' memberships point to the same one, just bind account and ignore membership binding.
+		if ftcAcnt.Membership.IsEqualTo(wxAcnt.Membership) {
+			err := lr.env.BindAccount(userID, unionID)
+
+			if err != nil {
+				view.Render(w, view.NewDBFailure(err))
+
+				return
+			}
+
+			view.Render(w, view.NewNoContent())
+
+			return
+		}
+
+		// The memberships of both accounts are different.
+
+		// If both membership are valid, deny request.
+		if !ftcAcnt.Membership.IsExpired() && !wxAcnt.Membership.IsExpired() {
+			view.Render(w, view.NewForbidden("The two accounts have different valid memberships!"))
+		}
+
+		// If both membership are invalid, bind account and merge membership
+		if ftcAcnt.Membership.IsExpired() && wxAcnt.Membership.IsExpired() {
+			// bind account
+			// delete wechat membership
+			// update ftc membership
+			merged := ftcAcnt.Membership.Merge(wxAcnt.Membership)
+
+			err := lr.env.BindAccountAndMember(merged)
+
+			if err != nil {
+				view.Render(w, view.NewDBFailure(err))
+				return
+			}
+
+			view.Render(w, view.NewNoContent())
+			return
+		}
+
+		// If only one of the membership is valid, delete the invalid one and keep the valid one.
+		// bind account
+		// delete wechat membership
+		// update ftc membership
+		merged := ftcAcnt.Membership.Merge(wxAcnt.Membership)
+
+		err := lr.env.BindAccountAndMember(merged)
+
+		if err != nil {
+			view.Render(w, view.NewDBFailure(err))
 			return
 		}
 
@@ -238,21 +241,14 @@ func (lr WxAuthRouter) BindFTC(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// If only one of wechat or ftc account has membership attached,
-	// bind two accounts and merge membership.
-	bound := wxlogin.BoundAccount{
-		UserID:  userID,
-		UnionID: unionID,
-	}
-	if ftcAcnt.IsMember {
-		bound.Method = wxlogin.MethodEmail
-	} else if wxAcnt.IsMember {
-		bound.Method = wxlogin.MethodWx
-	} else {
-		bound.Method = wxlogin.MethodNone
-	}
+	// Only one of the accounts has membership.
+	// Bind accounts.
+	// Create or update entry in ftc_vip
+	// Update the valid membership
 
-	err = lr.env.MergeAccount(bound)
+	merged := ftcAcnt.Membership.Merge(wxAcnt.Membership)
+
+	err = lr.env.BindAccountAndMember(merged)
 
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
