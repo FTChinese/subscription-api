@@ -9,28 +9,28 @@ import (
 
 const (
 	cycleZero = ""
-	year      = "year"
 	month     = "month"
+	year      = "year"
 )
 
 var cyclesRaw = [...]string{
 	cycleZero,
-	year,
 	month,
+	year,
 }
 
 // Chinese translation
 var cyclesCN = [...]string{
 	"",
-	"年",
 	"月",
+	"年",
 }
 
 // English translation
 var cyclesEN = [...]string{
 	"",
-	"Year",
 	"Month",
+	"Year",
 }
 
 // Cycle is an enum for billing cycles.
@@ -104,7 +104,7 @@ func (c Cycle) Value() (driver.Value, error) {
 }
 
 func (c Cycle) String() string {
-	if c < CycleYear || c > CycleMonth {
+	if c < CycleMonth || c > CycleYear {
 		return ""
 	}
 
@@ -113,7 +113,7 @@ func (c Cycle) String() string {
 
 // ToCN output cycle as Chinese text
 func (c Cycle) ToCN() string {
-	if c < CycleYear || c > CycleMonth {
+	if c < CycleMonth || c > CycleYear {
 		return ""
 	}
 
@@ -122,7 +122,7 @@ func (c Cycle) ToCN() string {
 
 // ToEN output cycle as English text
 func (c Cycle) ToEN() string {
-	if c < CycleYear || c > CycleMonth {
+	if c < CycleMonth || c > CycleYear {
 		return ""
 	}
 
@@ -132,8 +132,8 @@ func (c Cycle) ToEN() string {
 // Supported billing cycles
 const (
 	CycleInvalid Cycle = 0
-	CycleYear    Cycle = 1
-	CycleMonth   Cycle = 2
+	CycleMonth   Cycle = 1
+	CycleYear    Cycle = 2
 )
 
 // NewCycle creates a new instance of Cycle.
