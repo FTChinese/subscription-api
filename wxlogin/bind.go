@@ -17,6 +17,41 @@ func (env Env) BindAccount(userID, unionID string) error {
 	return nil
 }
 
+// SaveMergedMember saves a merged membership pior to deleting it.
+func (env Env) SaveMergedMember(userID string, wx Membership) error {
+	query := `
+	INSERT INTO premium.merged_member
+	SET user_id = ?,
+		wx_union_id = ?,
+		member_tier = ?,
+		billing_cycle = ?,
+		expire_date = ?
+	ON DUPLICATE KEY UPDATE
+		user_id = ?,
+		member_tier = ?,
+		billing_cycle = ?,
+		expire_date = ?`
+
+	_, err := env.DB.Exec(query,
+		userID,
+		wx.UnionID,
+		wx.Tier,
+		wx.Cycle,
+		wx.ExpireDate,
+		userID,
+		wx.Tier,
+		wx.Cycle,
+		wx.ExpireDate,
+	)
+
+	if err != nil {
+		logger.WithField("trace", "SaveMergedMember").Error(err)
+		return err
+	}
+
+	return nil
+}
+
 // BindAccountAndMember associate a wechat account with an FTC account.
 // The FTC account must not be bound to a wechat account,
 // And must not subscribed to any kind of membership.
