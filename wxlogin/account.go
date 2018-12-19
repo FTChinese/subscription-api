@@ -39,17 +39,16 @@ func (a Account) IsEqualTo(wx Account) bool {
 	return a.UserID == wx.UserID
 }
 
-// IsBindingAllowed tests is two a wechat account is allowed to bind to ftc account.
-// Conditions:
-// 1. FTC account's UnionID musts be NULL (wx_union_id column is empty);
-// 2. And Wechat account's UserID is empty ( not exist in userinfo table )
-func (a Account) IsBindingAllowed(wx Account) bool {
-	return a.Wechat == nil && wx.UserID == ""
+// IsCoupled tests if an ftc account is bound to a wechat account, or vice versus.
+// If an account is bound to another one, its UserID field must not be empty, and Wechat must not be nil.
+// Futhermore, its UserID must not be equal to Wechat.UnionID.
+func (a Account) IsCoupled() bool {
+	return (a.UserID != "") && (a.Wechat != nil)
 }
 
 // IsMember checks if an account is a paid member.
 func (a Account) IsMember() bool {
-	return a.Membership.UserID != ""
+	return !a.Membership.IsEmpty()
 }
 
 // FindAccountByWx retrieves a user account by wechat union id.
