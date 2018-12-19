@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/guregu/null"
+
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
@@ -65,7 +67,7 @@ func (lr WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	if code == "" {
 		reason := view.NewReason()
 		reason.Field = "code"
-		reason.Field = view.CodeMissingField
+		reason.Code = view.CodeMissingField
 		view.Render(w, view.NewUnprocessable(reason))
 		return
 	}
@@ -113,11 +115,11 @@ func (lr WxAuthRouter) LoadAccount(w http.ResponseWriter, req *http.Request) {
 	view.Render(w, view.NewResponse().NoCache().SetBody(account))
 }
 
-// BindFTC binds a FTC account to wechat.
+// BindAccount binds a FTC account to wechat.
 // Binding accounts could be split into two step:
 // 1. Add wechat union id to userinfo.wx_union_id.
 // 2. Fill ftc_vip.vip_id and ftc_vip.vip_id_alias with ftc's account id and wechat's account id, if user purchased membership via either ftc account of wechat account.
-func (lr WxAuthRouter) BindFTC(w http.ResponseWriter, req *http.Request) {
+func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 	unionID := req.Header.Get(unionIDKey)
 
 	userID, err := util.GetJSONString(req.Body, "userId")
@@ -159,13 +161,16 @@ func (lr WxAuthRouter) BindFTC(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// If ftc account is bound to another wechat account,
-	// or wechat account is bound to another ftc account,
-	// or they both bound to another account
-	if !ftcAcnt.IsBindingAllowed(wxAcnt) {
+	// If ftcAcnt is not equal to wxAcnt, the two accounts are separate accounts.
+	// They might be bound to a 3rd account, or might not.
+	// If any of them is bound to a 3rd account, deny the binding request.
+	if ftcAcnt.IsCoupled() || wxAcnt.IsCoupled() {
 		view.Render(w, view.NewForbidden("One of the requested accounts, or both, is/are bound to a 3rd account"))
 		return
 	}
+
+	// Both accounts are not bound to any 3rd account. They are clear and binding is allowed to continue.
+	// Next check memberships.
 
 	// If both accounts have no memberships, simply set the userinfo.wx_union_id column to unionId.
 	if !ftcAcnt.IsMember() && !wxAcnt.IsMember() {
@@ -199,36 +204,32 @@ func (lr WxAuthRouter) BindFTC(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		// The memberships of both accounts are different.
+		// The memberships of both accounts are separate ones.
+		// If any of two accounts is bound to a 3rd account, this 3rd account must be different from the two.
+		// You should not merge the membership.
+		if ftcAcnt.Membership.IsCoupled() || wxAcnt.Membership.IsCoupled() {
+			view.Render(w, view.NewForbidden("The membership of one of the requested accounts, or both, is/are bound to a 3rd account"))
+			return
+		}
 
+		// None of the two accounts' membership are bound to a 3rd accounts.
+		// You might be able to merge the memberships.
 		// If both membership are valid, deny request.
 		if !ftcAcnt.Membership.IsExpired() && !wxAcnt.Membership.IsExpired() {
 			view.Render(w, view.NewForbidden("The two accounts have different valid memberships!"))
 		}
 
-		// If both membership are invalid, bind account and merge membership
-		if ftcAcnt.Membership.IsExpired() && wxAcnt.Membership.IsExpired() {
-			// bind account
-			// delete wechat membership
-			// update ftc membership
-			merged := ftcAcnt.Membership.Merge(wxAcnt.Membership)
-
-			err := lr.env.BindAccountAndMember(merged)
-
-			if err != nil {
-				view.Render(w, view.NewDBFailure(err))
-				return
-			}
-
-			view.Render(w, view.NewNoContent())
-			return
-		}
-
-		// If only one of the membership is valid, delete the invalid one and keep the valid one.
-		// bind account
-		// delete wechat membership
-		// update ftc membership
+		// If both membership are invalid, or one of the memberships are invalid, you can merge them.
+		// First merge the two memberships.
+		// Then peroform db operation:
+		// save the membership to be deleted in another table;
+		// bind account;
+		// delete wechat membership;
+		// insert or update ftc membership
 		merged := ftcAcnt.Membership.Merge(wxAcnt.Membership)
+
+		// Save the wechat membership to another table.
+		go lr.env.SaveMergedMember(userID, wxAcnt.Membership)
 
 		err := lr.env.BindAccountAndMember(merged)
 
@@ -245,10 +246,11 @@ func (lr WxAuthRouter) BindFTC(w http.ResponseWriter, req *http.Request) {
 	// Bind accounts.
 	// Create or update entry in ftc_vip
 	// Update the valid membership
+	picked := ftcAcnt.Membership.Pick(wxAcnt.Membership)
+	picked.UserID = userID
+	picked.UnionID = null.StringFrom(unionID)
 
-	merged := ftcAcnt.Membership.Merge(wxAcnt.Membership)
-
-	err = lr.env.BindAccountAndMember(merged)
+	err = lr.env.BindAccountAndMember(picked)
 
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
