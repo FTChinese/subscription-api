@@ -134,7 +134,7 @@ func main() {
 			// All routers under this section should contain X-Union-Id header.
 			r2.Use(controller.CheckUnionID)
 
-			r2.Put("/bind", wxAuth.BindFTC)
+			r2.Put("/bind", wxAuth.BindAccount)
 			// r2.Delete("/bind")
 			r2.Get("/account", wxAuth.LoadAccount)
 		})
