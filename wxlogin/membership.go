@@ -8,6 +8,11 @@ import (
 )
 
 // Membership contains user's subscription data.
+// If membership is not bound to another account yet,
+// UserID should not be empty if membership is purcahsed with FTC account while UnionID must be null;
+// UserID should not be empty and UnionID should not be null, and their values are equal if membership is purchased with Wechat account;
+// UserID should not be empty and UnionID should not be null, and their values should be different if FTC account is already bound to Wechat account.
+// If membership is not bound to another account yet, either UserID or UnionID should be empty, if membership actually present.
 type Membership struct {
 	UserID     string      `json:"-"`
 	UnionID    null.String `json:"-"`
@@ -27,36 +32,86 @@ func (m Membership) IsExpired() bool {
 }
 
 // IsEqualTo tests if two memberships are the same one.
+// If return false, it indicates the two accounts are bound to 3rd accounts, or not bound to any account.
 func (m Membership) IsEqualTo(other Membership) bool {
 	return m.UserID == other.UserID
 }
 
+// IsCoupled tests if a membership is bound to another account.
+// Any membership that is coupled to another one should deny merge request.
+func (m Membership) IsCoupled() bool {
+	return m.UnionID.Valid && (m.UnionID.String != m.UserID)
+}
+
+// IsFromFTC tests if this membership is purchased by ftc account
+func (m Membership) IsFromFTC() bool {
+	return !m.UnionID.Valid
+}
+
+// IsFromWx tests if this membership is purchased by wechat account
+func (m Membership) IsFromWx() bool {
+	return m.UnionID.Valid && (m.UnionID.String == m.UserID)
+}
+
+// IsEmpty tests if a membership is empty.
+// Empty membership is defined as UserID == "" since the ftc_vip.vip_id column must have a value.
+func (m Membership) IsEmpty() bool {
+	return m.UserID == ""
+}
+
 // Merge merges wechat membership into ftc membership and returns a new Membership.
-func (m Membership) Merge(wx Membership) Membership {
-	merged := Membership{
-		UserID:  m.UserID,
-		UnionID: wx.UnionID,
+// Both m and other should not be an empty Membership.
+func (m Membership) Merge(other Membership) Membership {
+	merged := Membership{}
+
+	if m.IsFromFTC() {
+		merged.UserID = m.UserID
+	} else if other.IsFromFTC() {
+		merged.UserID = m.UserID
 	}
 
-	if m.Tier > wx.Tier {
+	if m.IsFromWx() {
+		merged.UnionID = m.UnionID
+	} else if other.IsFromWx() {
+		merged.UnionID = other.UnionID
+	}
+
+	if m.Tier > other.Tier {
 		merged.Tier = m.Tier
 	} else {
-		merged.Tier = wx.Tier
+		merged.Tier = other.Tier
 	}
 
-	if m.Cycle > wx.Cycle {
+	if m.Cycle > other.Cycle {
 		merged.Cycle = m.Cycle
 	} else {
-		merged.Cycle = wx.Cycle
+		merged.Cycle = other.Cycle
 	}
 
-	if m.ExpireTime.After(wx.ExpireTime) {
+	if m.ExpireTime.After(other.ExpireTime) {
 		merged.ExpireTime = m.ExpireTime
 	} else {
-		merged.ExpireTime = wx.ExpireTime
+		merged.ExpireTime = other.ExpireTime
 	}
 
 	return merged
+}
+
+// Pick picks from two membership the one that is not empty.
+func (m Membership) Pick(other Membership) Membership {
+	if m.IsEmpty() && other.IsEmpty() {
+		return m
+	}
+
+	if !m.IsEmpty() && !other.IsEmpty() {
+		return m.Merge(other)
+	}
+
+	if !m.IsEmpty() {
+		return m
+	}
+
+	return other
 }
 
 // func (env Env) FindMemberByFTC(userID string, c chan Membership) error {
