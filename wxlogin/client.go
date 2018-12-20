@@ -31,6 +31,8 @@ func (r RespStatus) IsError() bool {
 	return !(r.Code == 0 && (r.Message == "ok" || r.Message == ""))
 }
 
+var Clients = map[string]Client{}
+
 // Client contains essential credentials to call Wecaht API.
 type Client struct {
 	AppID     string
