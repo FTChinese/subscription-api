@@ -4,12 +4,14 @@ import (
 	"database/sql"
 
 	"gitlab.com/ftchinese/subscription-api/enum"
+	"gitlab.com/ftchinese/subscription-api/postoffice"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // Env wraps database operations.
 type Env struct {
-	DB *sql.DB
+	DB      *sql.DB
+	PostMan postoffice.PostMan
 }
 
 // Format Unix timestamp to a date string `2019-07-20`
