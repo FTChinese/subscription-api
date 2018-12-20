@@ -237,3 +237,34 @@ func (env Env) FindAccountByFTC(userID string) (Account, error) {
 // 	c <- w
 // 	return nil
 // }
+
+// func (env Env) FindAccountByFTC(userID string, c chan FTCAccount) error {
+// 	query := `
+// 	SELECT user_id AS id,
+// 		user_name AS userName,
+// 		email AS email,
+// 		isvip AS isVip,
+// 		active AS isVerified
+// 	FROM cmstmp01.userinfo
+// 	WHERE user_id = ?
+// 	LIMIT 1`
+
+// 	var a FTCAccount
+// 	err := env.DB.QueryRow(query, userID).Scan(
+// 		&a.UserID,
+// 		&a.UnionID,
+// 		&a.UserName,
+// 		&a.Email,
+// 		&a.IsVIP,
+// 		&a.IsVerified,
+// 	)
+
+// 	if err != nil {
+// 		logger.Error(err)
+// 		c <- a
+// 		return err
+// 	}
+
+// 	c <- a
+// 	return nil
+// }

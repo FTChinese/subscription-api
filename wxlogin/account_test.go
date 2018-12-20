@@ -34,26 +34,6 @@ func TestBindAccount(t *testing.T) {
 	}
 }
 
-func TestCheckFTCAccount(t *testing.T) {
-	s, err := devEnv.CheckFTCAccount(mockUserID)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("FTC Account status: %+v\n", s)
-}
-
-func TestCheckWxAccount(t *testing.T) {
-	s, err := devEnv.CheckWxAccount(mockUserInfo.UnionID)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("Wx account status: %+v\n", s)
-}
-
 // func TestSimpleQuery(t *testing.T) {
 // 	fChan := make(chan FTCAccount)
 // 	wChan := make(chan Wechat)
