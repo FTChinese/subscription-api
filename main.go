@@ -129,8 +129,13 @@ func main() {
 		r1.Post("/wx-access", wxAuth.Login)
 	})
 
-	r.Route("/user", func(r1 chi.Router) {
-		r1.Route("/wx", func(r2 chi.Router) {
+	r.Route("/wx", func(r1 chi.Router) {
+		r1.Route("/oauth", func(r2 chi.Router) {
+			r2.Post("/mobile", wxAuth.Login)
+			r2.Get("/callback", wxAuth.WebCallback)
+		})
+
+		r1.Route("/user", func(r2 chi.Router) {
 			// All routers under this section should contain X-Union-Id header.
 			r2.Use(controller.CheckUnionID)
 
