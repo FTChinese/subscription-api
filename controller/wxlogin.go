@@ -8,6 +8,7 @@ import (
 
 	"github.com/guregu/null"
 
+	"gitlab.com/ftchinese/subscription-api/postoffice"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
@@ -24,6 +25,7 @@ type WxAuthRouter struct {
 	// mClient is used to handle mobile app login request.
 	mClient wxlogin.Client
 	env     wxlogin.Env
+	postman postoffice.PostMan
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
@@ -221,7 +223,7 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 
 		// If both membership are invalid, or one of the memberships are invalid, you can merge them.
 		// First merge the two memberships.
-		// Then peroform db operation:
+		// Then perform db operation:
 		// save the membership to be deleted in another table;
 		// bind account;
 		// delete wechat membership;
@@ -237,6 +239,17 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 			view.Render(w, view.NewDBFailure(err))
 			return
 		}
+
+		emailBody := wxlogin.EmailBody{
+			UserName:   ftcAcnt.UserName.String,
+			Email:      ftcAcnt.Email,
+			NickName:   wxAcnt.Wechat.NickName,
+			MutexMerge: !ftcAcnt.Membership.IsExpired() || !wxAcnt.Membership.IsExpired(),
+			FTCMember:  ftcAcnt.Membership,
+			WxMember:   wxAcnt.Membership,
+		}
+
+		go lr.sendBoundLetter(emailBody)
 
 		view.Render(w, view.NewNoContent())
 		return
@@ -257,5 +270,24 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	emailBody := wxlogin.EmailBody{
+		UserName:   ftcAcnt.UserName.String,
+		Email:      ftcAcnt.Email,
+		NickName:   wxAcnt.Wechat.NickName,
+		MutexMerge: false,
+		FTCMember:  ftcAcnt.Membership,
+		WxMember:   wxAcnt.Membership,
+	}
+
+	go lr.sendBoundLetter(emailBody)
+
 	view.Render(w, view.NewNoContent())
+}
+
+func (lr WxAuthRouter) sendBoundLetter(e wxlogin.EmailBody) error {
+	p, err := e.ComposeParcel()
+	if err != nil {
+		return err
+	}
+	return lr.postman.Deliver(p)
 }
