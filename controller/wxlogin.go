@@ -284,10 +284,10 @@ func (router WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request)
 	view.Render(w, view.NewNoContent())
 }
 
-func (lr WxAuthRouter) sendBoundLetter(e wxlogin.EmailBody) error {
+func (router WxAuthRouter) sendBoundLetter(e wxlogin.EmailBody) error {
 	p, err := e.ComposeParcel()
 	if err != nil {
 		return err
 	}
-	return lr.postman.Deliver(p)
+	return router.postman.Deliver(p)
 }
