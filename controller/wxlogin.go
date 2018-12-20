@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -24,6 +25,7 @@ type WxAuthRouter struct {
 	wClient wxlogin.Client
 	// mClient is used to handle mobile app login request.
 	mClient wxlogin.Client
+	clients map[string]wxlogin.Client
 	env     wxlogin.Env
 	postman postoffice.PostMan
 }
@@ -43,7 +45,7 @@ func NewWxAuth(db *sql.DB) WxAuthRouter {
 	}
 }
 
-// Login handles login via wechat.
+// Login uses Wechat's OAuth code to exchange for access token, and then use access token to get user id.
 // Input {code: "oauth code"}.
 // Client send the oauth code it requested from
 // Wechat API.
@@ -101,6 +103,24 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	}
 
 	view.Render(w, view.NewResponse().NoCache().SetBody(user.ToWechat()))
+}
+
+// WebCallback is used to help web app to get OAuth 2.0 code.
+// The code and state is transferred back to next-user web app since Wechat only recognize the ftacacemy.cn URL.
+func (router WxAuthRouter) WebCallback(w http.ResponseWriter, req *http.Request) {
+	// The code returned by wechat
+	code := req.FormValue("code")
+	// The nonce code we send to wechat.
+	state := req.FormValue("state")
+
+	code = strings.TrimSpace(code)
+
+	if code == "" {
+		view.Render(w, view.NewForbidden("Authorization denied"))
+		return
+	}
+
+	http.Redirect(w, req, fmt.Sprintf("http://localhost:4100/callback?code=%s&code=%s", code, state), http.StatusSeeOther)
 }
 
 // LoadAccount gets a user's account data who logged in via wechat.
