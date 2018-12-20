@@ -56,7 +56,7 @@ func NewWxAuth(db *sql.DB) WxAuthRouter {
 // send it back to client.
 // After getting a user's wechat data,
 // client should then retrieve the complete user data: FTC account + wechat userinfo + membership
-func (lr WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
+func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	// Parse request body
 	code, err := util.GetJSONString(req.Body, "code")
 
@@ -78,7 +78,7 @@ func (lr WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	reqClient := util.GetClient(req)
 
 	// Request access token from wechat
-	acc, err := lr.mClient.GetAccessToken(code)
+	acc, err := router.mClient.GetAccessToken(code)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 
@@ -86,13 +86,13 @@ func (lr WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Save access token
-	go lr.env.SaveAccess(acc, reqClient)
+	go router.env.SaveAccess(acc, reqClient)
 
 	// Get userinfo from wechat
-	user, err := lr.mClient.GetUserInfo(acc)
+	user, err := router.mClient.GetUserInfo(acc)
 
 	// Save userinfo
-	err = lr.env.SaveUserInfo(user, reqClient)
+	err = router.env.SaveUserInfo(user, reqClient)
 
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -104,10 +104,10 @@ func (lr WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 }
 
 // LoadAccount gets a user's account data who logged in via wechat.
-func (lr WxAuthRouter) LoadAccount(w http.ResponseWriter, req *http.Request) {
+func (router WxAuthRouter) LoadAccount(w http.ResponseWriter, req *http.Request) {
 	unionID := req.Header.Get(unionIDKey)
 
-	account, err := lr.env.FindAccountByWx(unionID)
+	account, err := router.env.FindAccountByWx(unionID)
 
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -121,7 +121,7 @@ func (lr WxAuthRouter) LoadAccount(w http.ResponseWriter, req *http.Request) {
 // Binding accounts could be split into two step:
 // 1. Add wechat union id to userinfo.wx_union_id.
 // 2. Fill ftc_vip.vip_id and ftc_vip.vip_id_alias with ftc's account id and wechat's account id, if user purchased membership via either ftc account of wechat account.
-func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
+func (router WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 	unionID := req.Header.Get(unionIDKey)
 
 	userID, err := util.GetJSONString(req.Body, "userId")
@@ -141,7 +141,7 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Find FTC account for this userID
-	ftcAcnt, err := lr.env.FindAccountByFTC(userID)
+	ftcAcnt, err := router.env.FindAccountByFTC(userID)
 	// If the account if not found, deny the request -- you have nothing to bind.
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -150,7 +150,7 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 
 	// Both ftcAcnt and wxAcnt should be found.
 	// Otherwise how do you bind them?
-	wxAcnt, err := lr.env.FindAccountByWx(unionID)
+	wxAcnt, err := router.env.FindAccountByWx(unionID)
 	// If the wechat account if not found, deny the request -- you have nothing to bind to.
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -176,7 +176,7 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 
 	// If both accounts have no memberships, simply set the userinfo.wx_union_id column to unionId.
 	if !ftcAcnt.IsMember() && !wxAcnt.IsMember() {
-		err := lr.env.BindAccount(userID, unionID)
+		err := router.env.BindAccount(userID, unionID)
 
 		if err != nil {
 			view.Render(w, view.NewDBFailure(err))
@@ -193,7 +193,7 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 	if ftcAcnt.IsMember() && wxAcnt.IsMember() {
 		// If the two accounts' memberships point to the same one, just bind account and ignore membership binding.
 		if ftcAcnt.Membership.IsEqualTo(wxAcnt.Membership) {
-			err := lr.env.BindAccount(userID, unionID)
+			err := router.env.BindAccount(userID, unionID)
 
 			if err != nil {
 				view.Render(w, view.NewDBFailure(err))
@@ -231,9 +231,9 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 		merged := ftcAcnt.Membership.Merge(wxAcnt.Membership)
 
 		// Save the wechat membership to another table.
-		go lr.env.SaveMergedMember(userID, wxAcnt.Membership)
+		go router.env.SaveMergedMember(userID, wxAcnt.Membership)
 
-		err := lr.env.BindAccountAndMember(merged)
+		err := router.env.BindAccountAndMember(merged)
 
 		if err != nil {
 			view.Render(w, view.NewDBFailure(err))
@@ -249,7 +249,7 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 			WxMember:   wxAcnt.Membership,
 		}
 
-		go lr.sendBoundLetter(emailBody)
+		go router.sendBoundLetter(emailBody)
 
 		view.Render(w, view.NewNoContent())
 		return
@@ -263,7 +263,7 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 	picked.UserID = userID
 	picked.UnionID = null.StringFrom(unionID)
 
-	err = lr.env.BindAccountAndMember(picked)
+	err = router.env.BindAccountAndMember(picked)
 
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -279,7 +279,7 @@ func (lr WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
 		WxMember:   wxAcnt.Membership,
 	}
 
-	go lr.sendBoundLetter(emailBody)
+	go router.sendBoundLetter(emailBody)
 
 	view.Render(w, view.NewNoContent())
 }
