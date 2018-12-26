@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"strings"
 
-	validate "github.com/asaskevich/govalidator"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
@@ -17,11 +16,7 @@ type User struct {
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
 func (u User) NormalizeName() string {
-	if validate.IsEmail(u.Name) {
-		return strings.Split(u.Name, "@")[0]
-	}
-
-	return u.Name
+	return strings.Split(u.Name, "@")[0]
 }
 
 // FindUser retrieves user's name and email to be used in an email.
