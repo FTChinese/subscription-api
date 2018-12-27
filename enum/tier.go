@@ -3,11 +3,10 @@ package enum
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 )
 
 const (
-	tierFree = "free"
+	tierFree = ""
 	standard = "standard"
 	premium  = "premium"
 )
@@ -19,13 +18,13 @@ var tiersRaw = [...]string{
 }
 
 var tiersCN = [...]string{
-	"免费会员",
+	"",
 	"标准会员",
 	"高级会员",
 }
 
 var tiersEN = [...]string{
-	"Free",
+	"",
 	"Standard",
 	"Premium",
 }
@@ -45,9 +44,7 @@ func (t *Tier) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	tier, _ := NewTier(s)
-
-	*t = tier
+	*t = NewTier(s)
 
 	return nil
 }
@@ -67,12 +64,7 @@ func (t *Tier) Scan(src interface{}) error {
 
 	switch s := src.(type) {
 	case []byte:
-		tier, err := NewTier(string(s))
-		if err != nil {
-			*t = TierFree
-			return nil
-		}
-		*t = tier
+		*t = NewTier(string(s))
 		return nil
 
 	default:
@@ -124,13 +116,13 @@ const (
 )
 
 // NewTier converts a string into a MemberTier type.
-func NewTier(tier string) (Tier, error) {
+func NewTier(tier string) Tier {
 	switch tier {
 	case standard:
-		return TierStandard, nil
+		return TierStandard
 	case premium:
-		return TierPremium, nil
+		return TierPremium
 	default:
-		return TierFree, errors.New("Only standard and premium tier allowed")
+		return TierFree
 	}
 }
