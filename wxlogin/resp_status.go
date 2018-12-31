@@ -69,7 +69,7 @@ func (s RespStatus) BuildReason() *view.Reason {
 	}
 }
 
-// SaveWxError saves wecaht error response into database so that
+// SaveRespStatus saves wecaht error response into database so that
 // we could know  what kind of error code and message does Wechat
 // actually defined.
 func (env Env) SaveRespStatus(code int64, message string) error {
