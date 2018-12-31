@@ -3,7 +3,7 @@ package wxlogin
 import "testing"
 
 func TestLoadAccountByWx(t *testing.T) {
-	acnt, err := devEnv.FindAccountByWx(mockUserInfo.UnionID)
+	acnt, err := devEnv.FindAccountByWx(myUnionID)
 
 	if err != nil {
 		t.Error(err)
@@ -15,7 +15,7 @@ func TestLoadAccountByWx(t *testing.T) {
 }
 
 func TestLoadAccountByFTC(t *testing.T) {
-	acnt, err := devEnv.FindAccountByFTC(mockUserID)
+	acnt, err := devEnv.FindAccountByFTC(mockUUID)
 
 	if err != nil {
 		t.Error(err)
@@ -27,7 +27,7 @@ func TestLoadAccountByFTC(t *testing.T) {
 }
 
 func TestBindAccount(t *testing.T) {
-	err := devEnv.BindAccount("de6442b5-2e54-41a5-a33b-52473861855c", mockUserInfo.UnionID)
+	err := devEnv.BindAccount(mockUUID, myUnionID)
 
 	if err != nil {
 		t.Error(err)
