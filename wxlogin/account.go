@@ -11,7 +11,7 @@ import (
 // containing only essential data to identify a wechat user.
 type Wechat struct {
 	UnionID   string `json:"unionId"`
-	OpenID    string `json:"openId"`
+	OpenID    string `json:"openId"` // remove this filed.
 	NickName  string `json:"nickName"`
 	AvatarURL string `json:"avatarUrl"`
 }
