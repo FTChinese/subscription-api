@@ -1,13 +1,29 @@
 package wxlogin
 
 import (
+	"crypto/md5"
+	"fmt"
+	"time"
+
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
-// OAuthAccess contains data returned by exchange access token with oauth code.
+// Session records a Wechat login session.
+// A Wechat login session should expires in 30 days,
+// which is the duration of refresh token.
+type Session struct {
+	ID        string `json:"id"`
+	UnionID   string `json:"unionId"`
+	CreatedAt string `json:"createdAt"`
+}
+
+// OAuthAccess is the response of Wechat endpoint
+// /sns/oauth2/access_token?appid=APPID&secret=SECRET&code=CODE&grant_type=authorization_code
+// and
+// /sns/oauth2/refresh_token?appid=APPID&grant_type=refresh_token&refresh_token=REFRESH_TOKEN
 type OAuthAccess struct {
-	RespStatus
+	SessionID string
 	// Example: ***REMOVED***
 	AccessToken string `json:"access_token"`
 	// Example: 7200
@@ -19,30 +35,66 @@ type OAuthAccess struct {
 	// Example: snsapi_userinfo
 	Scope string `json:"scope"`
 	// Example: String:ogfvwjk6bFqv2yQpOrac0J3PqA0o Valid:true
-	UnionID null.String `json:"unionid"`
+	UnionID   null.String `json:"unionid"`
+	createdAt time.Time
+	updatedAt time.Time
+	RespStatus
+}
+
+// ToSession creates a Session instance.
+func (a *OAuthAccess) ToSession(unionID string) Session {
+	return Session{
+		ID:        a.SessionID,
+		UnionID:   unionID,
+		CreatedAt: util.ToISO8601UTC.FromTime(a.createdAt),
+	}
+}
+
+// generateSessionID generate an id used to identify this unique session.
+// Concatenate AccessToken, RefreshToken, OpenID by a colon and generate the MD5 sum of the string.
+// Returns the hexadecmial encoded string of the MD5 bytes.
+// Database should use VARBINARY(16) to store this value.
+func (a *OAuthAccess) generateSessionID() {
+	data := fmt.Sprintf("%s:%s:%s", a.AccessToken, a.RefreshToken, a.OpenID)
+	h := md5.Sum([]byte(data))
+	a.SessionID = fmt.Sprintf("%x", h)
+}
+
+// IsAccessExpired tests if access token is expired.
+func (a OAuthAccess) IsAccessExpired() bool {
+	after2Hours := a.updatedAt.Add(time.Second * time.Duration(a.ExpiresIn))
+	return after2Hours.Before(time.Now())
+}
+
+// IsRefreshExpired tests if refresh token is expired.
+func (a OAuthAccess) IsRefreshExpired() bool {
+	after30Days := a.createdAt.AddDate(0, 0, 30)
+	return after30Days.Before(time.Now())
 }
 
 // SaveAccess saves the access token related data after acquired from wechat api.
-// Or re-authorize if refresh token expired.
-func (env Env) SaveAccess(acc OAuthAccess, c util.RequestClient) error {
-	query := `INSERT INTO user_db.wechat_access
-	SET access_token = ?,
+// Or update access token by refresh token if it is expired.
+// For every authoriztion request, a new pair of access token and refresh token are generated, even on the same platform under single wechat app.
+// Returns a session id that uniquely identify this row.
+func (env Env) SaveAccess(appID string, acc OAuthAccess, c util.ClientApp) error {
+	query := `
+	INSERT INTO user_db.wechat_access
+	SET session_id = UNHEX(?),
+		app_id = ?,
+		access_token = ?,
 		expires_in = ?,
 		refresh_token = ?,
 		open_id = ?,
 		scope = ?,
 		union_id = ?,
 		client_type = ?,
-		client_version = NULLIF(?, ''),
-		user_ip = INET6_ATON(?)
-	ON DUPLICATE KEY UPDATE access_token = ?,
-		expires_in = ?,
-		refresh_token = ?,
-		client_type = ?,
-		client_version = NULLIF(?, ''),
-		user_ip = INET6_ATON(?)`
+		client_version = ?,
+		user_ip = INET6_ATON(?),
+		user_agent = ?`
 
 	_, err := env.DB.Exec(query,
+		acc.SessionID,
+		appID,
 		acc.AccessToken,
 		acc.ExpiresIn,
 		acc.RefreshToken,
@@ -52,12 +104,7 @@ func (env Env) SaveAccess(acc OAuthAccess, c util.RequestClient) error {
 		c.ClientType,
 		c.Version,
 		c.UserIP,
-		acc.AccessToken,
-		acc.ExpiresIn,
-		acc.RefreshToken,
-		c.ClientType,
-		c.Version,
-		c.UserIP,
+		c.UserAgent,
 	)
 
 	if err != nil {
@@ -69,28 +116,36 @@ func (env Env) SaveAccess(acc OAuthAccess, c util.RequestClient) error {
 }
 
 // LoadAccess retrieves previously saved access token by open id.
-func (env Env) LoadAccess(openID string, c util.RequestClient) (OAuthAccess, error) {
+// Is it possbile wechat generate different openID under the same app?
+// Or is it possible wechat generate same openID for different app?
+// What if iOS and Android used the same Wechat app? Will they use the same access token or different one?
+// Open ID is always the same for the under the same Wechat app.
+func (env Env) LoadAccess(appID, sessionID string) (OAuthAccess, error) {
 	query := `
 	SELECT access_token AS accessToken,
 		expires_in AS expiresIn,
 		refresh_token AS refreshToken,
 		open_id AS opendId,
 		scope AS scope,
-		union_id AS unionId
+		union_id AS unionId,
+		created_utc AS createdUtc,
+		updated_utc AS updatedUtc
 	FROM user_db.wechat_access
-	WHERE open_id = ?
-		AND client_type = ?
-	ORDER BY updated_utc DESC
+	WHERE session_id = UNHEX(?)
+		AND app_id = ?
 	LIMIT 1`
 
 	var acc OAuthAccess
-	err := env.DB.QueryRow(query, openID, c.ClientType).Scan(
+	var createdAt, updatedAt string
+	err := env.DB.QueryRow(query, sessionID, appID).Scan(
 		&acc.AccessToken,
 		&acc.ExpiresIn,
 		&acc.RefreshToken,
 		&acc.OpenID,
 		&acc.Scope,
 		&acc.UnionID,
+		&createdAt,
+		&updatedAt,
 	)
 
 	if err != nil {
@@ -98,30 +153,27 @@ func (env Env) LoadAccess(openID string, c util.RequestClient) (OAuthAccess, err
 		return acc, err
 	}
 
+	acc.createdAt, err = util.ParseDateTime(createdAt, time.UTC)
+	acc.updatedAt, err = util.ParseDateTime(updatedAt, time.UTC)
+
+	if err != nil {
+		return acc, err
+	}
+
 	return acc, nil
 }
 
 // UpdateAccess saves refreshed access token.
-func (env Env) UpdateAccess(openID, acc OAuthAccess, c util.RequestClient) error {
+func (env Env) UpdateAccess(sessionID, accessToken string) error {
 	query := `
 	UPDATE user_db.wechat_access
 	SET access_token = ?,
-		expires_in = ?,
-		open_id = ?,
-		scope = ?,
-		client_version = ?,
-		user_ip = INET6_ATON(?)
-	WHERE open_id = ?
+	WHERE session_id = UNHEX(?)
 	LIMIT 1`
 
 	_, err := env.DB.Exec(query,
-		acc.AccessToken,
-		acc.ExpiresIn,
-		acc.OpenID,
-		acc.Scope,
-		c.Version,
-		c.UserIP,
-		openID,
+		accessToken,
+		sessionID,
 	)
 
 	if err != nil {
