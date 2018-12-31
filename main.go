@@ -125,13 +125,10 @@ func main() {
 		// r1.Get("/banner", )
 	})
 
-	r.Route("/oauth", func(r1 chi.Router) {
-		r1.Post("/wx-access", wxAuth.Login)
-	})
-
 	r.Route("/wx", func(r1 chi.Router) {
 		r1.Route("/oauth", func(r2 chi.Router) {
-			r2.Post("/mobile", wxAuth.Login)
+			r2.Post("/login", wxAuth.Login)
+			r2.Put("/refresh", wxAuth.Refresh)
 			r2.Get("/callback", wxAuth.WebCallback)
 		})
 
