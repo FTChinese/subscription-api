@@ -88,7 +88,7 @@ func (env Env) FindMember(userID string) (Membership, error) {
 	if tier == "" {
 		m.Tier = normalizeMemberTier(vipType)
 	} else {
-		m.Tier, _ = enum.NewTier(tier)
+		m.Tier = enum.NewTier(tier)
 	}
 
 	m.Cycle, _ = enum.NewCycle(cycle)
