@@ -88,12 +88,17 @@ Here's an overview of all the endpoint provided by this API.
 * `GET /paywall/plans` Get the default pricing plans.
 * `GET /paywall/banner` Get the banner content used on subscription page.
 
-## Wechat Login
+## Wechat OAuth
 
-* `POST /oauth/wx-access` Login via wechat
+### Login
+
+* `POST /wx/oauth/mobile` Use `code` to exchange for wechat usreinfo.
+* `GET /wx/oauth/callback` Used to transfer `code` for web app.
+
+### Access Wechat Account after Login
 
 The following routers should have request header `X-Union-Id` set to wechat union id.
 
-* `PUT /user/wx/bind` Bind an FTC account to wechat.
-* `DELETE /user/wx/bind` Unbind an FTC account from wechat
-* `GET /user/wx/account` Get the the complete account: FTC + wechat + membership.
+* `PUT /wx/user/bind` Bind an FTC account to wechat.
+* `DELETE /wx/user/bind` Unbind an FTC account from wechat
+* `GET /wx/user/account` Get the the complete account: FTC + wechat + membership.
