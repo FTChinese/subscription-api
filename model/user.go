@@ -4,14 +4,16 @@ import (
 	"html/template"
 	"strings"
 
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // User contains the minimal information to identify a user.
 type User struct {
-	ID    string
-	Name  string
-	Email string
+	ID      string
+	UnionID null.String
+	Name    string
+	Email   string
 }
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
