@@ -273,8 +273,10 @@ func (router WxAuthRouter) LoadAccount(w http.ResponseWriter, req *http.Request)
 // 1. Add wechat union id to userinfo.wx_union_id.
 // 2. Fill ftc_vip.vip_id and ftc_vip.vip_id_alias with ftc's account id and wechat's account id, if user purchased membership via either ftc account of wechat account.
 func (router WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request) {
+	// Get union id from request header.
 	unionID := req.Header.Get(unionIDKey)
 
+	// Get user id from request body.
 	userID, err := util.GetJSONString(req.Body, "userId")
 
 	if err != nil {
@@ -291,6 +293,7 @@ func (router WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	// TODO: change to concurrency retrieval.
 	// Find FTC account for this userID
 	ftcAcnt, err := router.env.FindAccountByFTC(userID)
 	// If the account if not found, deny the request -- you have nothing to bind.
@@ -365,14 +368,15 @@ func (router WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request)
 			return
 		}
 
-		// None of the two accounts' membership are bound to a 3rd accounts.
-		// You might be able to merge the memberships.
-		// If both membership are valid, deny request.
+		// At this point, none of the two accounts' membership are bound to a 3rd accounts.
+		// If both memberships are not expired yet, deny merging
+		// request.
 		if !ftcAcnt.Membership.IsExpired() && !wxAcnt.Membership.IsExpired() {
 			view.Render(w, view.NewForbidden("The two accounts have different valid memberships!"))
 		}
 
-		// If both membership are invalid, or one of the memberships are invalid, you can merge them.
+		// To this point, both accounts' memberships could be expired,
+		// or one of the membership is expired.
 		// First merge the two memberships.
 		// Then perform db operation:
 		// save the membership to be deleted in another table;
@@ -391,13 +395,13 @@ func (router WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request)
 			return
 		}
 
-		emailBody := wxlogin.EmailBody{
-			UserName:   ftcAcnt.UserName.String,
-			Email:      ftcAcnt.Email,
-			NickName:   wxAcnt.Wechat.NickName,
-			MutexMerge: !ftcAcnt.Membership.IsExpired() || !wxAcnt.Membership.IsExpired(),
-			FTCMember:  ftcAcnt.Membership,
-			WxMember:   wxAcnt.Membership,
+		emailBody := wxlogin.EmailData{
+			UserName:             ftcAcnt.UserName.String,
+			Email:                ftcAcnt.Email,
+			NickName:             wxAcnt.Wechat.Nickname,
+			MergedOneValidMember: !ftcAcnt.Membership.IsExpired() || !wxAcnt.Membership.IsExpired(),
+			FTCMember:            ftcAcnt.Membership,
+			WxMember:             wxAcnt.Membership,
 		}
 
 		go router.sendBoundLetter(emailBody)
@@ -421,13 +425,13 @@ func (router WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	emailBody := wxlogin.EmailBody{
-		UserName:   ftcAcnt.UserName.String,
-		Email:      ftcAcnt.Email,
-		NickName:   wxAcnt.Wechat.NickName,
-		MutexMerge: false,
-		FTCMember:  ftcAcnt.Membership,
-		WxMember:   wxAcnt.Membership,
+	emailBody := wxlogin.EmailData{
+		UserName:             ftcAcnt.UserName.String,
+		Email:                ftcAcnt.Email,
+		NickName:             wxAcnt.Wechat.Nickname,
+		MergedOneValidMember: false,
+		FTCMember:            ftcAcnt.Membership,
+		WxMember:             wxAcnt.Membership,
 	}
 
 	go router.sendBoundLetter(emailBody)
@@ -435,7 +439,7 @@ func (router WxAuthRouter) BindAccount(w http.ResponseWriter, req *http.Request)
 	view.Render(w, view.NewNoContent())
 }
 
-func (router WxAuthRouter) sendBoundLetter(e wxlogin.EmailBody) error {
+func (router WxAuthRouter) sendBoundLetter(e wxlogin.EmailData) error {
 	p, err := e.ComposeParcel()
 	if err != nil {
 		return err

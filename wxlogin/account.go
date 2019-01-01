@@ -7,17 +7,22 @@ import (
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
-// Wechat is a concise version of UserInfo,
-// containing only essential data to identify a wechat user.
+// Wechat contains a user's Wechat account data.
 type Wechat struct {
 	UnionID   string `json:"unionId"`
-	OpenID    string `json:"openId"` // remove this filed.
-	NickName  string `json:"nickName"`
+	Nickname  string `json:"nickname"`
 	AvatarURL string `json:"avatarUrl"`
+}
+
+// exists tests if Wechat account exists.
+func (w Wechat) exists() bool {
+	return w.UnionID != ""
 }
 
 // Account is a user's FTC account.
 // If ID is empty, it means the Wechat account is not bound to FTC account.
+// Wechat field is alwasy not null for a user account retrieved from
+// subscription-api.
 type Account struct {
 	UserID     string      `json:"id"` // Will be empty is a wechat account is not bound to an ftc account.
 	UserName   null.String `json:"userName"`
@@ -25,7 +30,7 @@ type Account struct {
 	AvatarURL  null.String `json:"avatarUrl"`
 	IsVIP      bool        `json:"isVip"`
 	IsVerified bool        `json:"isVerified"`
-	Wechat     *Wechat     `json:"wechat"` // will be nil if ftc account is not bound to a wechat account
+	Wechat     Wechat      `json:"wechat"` // will be nil if ftc account is not bound to a wechat account
 	Membership Membership  `json:"membership"`
 }
 
@@ -43,7 +48,7 @@ func (a Account) IsEqualTo(wx Account) bool {
 // If an account is bound to another one, its UserID field must not be empty, and Wechat must not be nil.
 // Futhermore, its UserID must not be equal to Wechat.UnionID.
 func (a Account) IsCoupled() bool {
-	return (a.UserID != "") && (a.Wechat != nil)
+	return (a.UserID != "") && a.Wechat.exists()
 }
 
 // IsMember checks if an account is a paid member.
@@ -55,12 +60,11 @@ func (a Account) IsMember() bool {
 // Wechat account is essential piece in this SQL statement while FTC account and membership are optional.
 func (env Env) FindAccountByWx(unionID string) (Account, error) {
 	query := `
-	SELECT w.unionid AS unionId,
-		w.openid AS openId,
-		w.nickname AS nickName,
-		w.headimgurl AS avatarUrl,
-		IFNULL(v.vip_id, ''),
-		v.vip_id_alias,
+	SELECT w.union_id AS unionId,
+		w.nickname AS nickname,
+		w.avatar_utl AS avatarUrl,
+		IFNULL(v.vip_id, '') AS mUserID,
+		v.vip_id_alias AS mUnionId,
 		IFNULL(v.vip_type, 0) AS vipType,
 		IFNULL(v.expire_time, 0) AS expireTime,
 		v.member_tier AS memberTier,
@@ -71,12 +75,12 @@ func (env Env) FindAccountByWx(unionID string) (Account, error) {
 		IFNULL(u.email, '') AS email,
 		IFNULL(u.isvip, 0) AS isVip,
 		IFNULL(u.active, 0) AS isVerified
-	FROM user_db.user_sns_info AS w
+	FROM user_db.wechat_userinfo AS w
 		LEFT JOIN premium.ftc_vip AS v
-		ON w.unionid = v.vip_id_alias
+		ON w.union_id = v.vip_id_alias
 		LEFT JOIN cmstmp01.userinfo AS u
-		ON w.unionid = u.wx_union_id
-	WHERE w.unionid = ?
+		ON w.union_id = u.wx_union_id
+	WHERE w.union_id = ?
 	LIMIT 1`
 
 	var a Account
@@ -87,8 +91,7 @@ func (env Env) FindAccountByWx(unionID string) (Account, error) {
 
 	err := env.DB.QueryRow(query, unionID).Scan(
 		&wx.UnionID,
-		&wx.OpenID,
-		&wx.NickName,
+		&wx.Nickname,
 		&wx.AvatarURL,
 		&m.UserID,
 		&m.UnionID,
@@ -123,7 +126,7 @@ func (env Env) FindAccountByWx(unionID string) (Account, error) {
 	}
 
 	// wx is always not nil
-	a.Wechat = &wx
+	a.Wechat = wx
 	a.Membership = m
 
 	return a, nil
@@ -137,24 +140,23 @@ func (env Env) FindAccountByFTC(userID string) (Account, error) {
 	SELECT u.user_id AS id,
 		u.user_name AS userName,
 		u.email AS email,
-		u.isvip AS isVip,
-		u.active AS isVerified,
-		IFNULL(v.vip_id, ''),
-		v.vip_id_alias,
+		u.is_vip AS isVip,
+		u.email_verified AS isVerified,
+		IFNULL(v.vip_id, '') AS mUserId,
+		v.vip_id_alias AS mUnionId,
 		IFNULL(v.vip_type, 0) AS vipType,
 		IFNULL(v.expire_time, 0) AS expireTime,
 		member_tier AS memberTier,
 		v.billing_cycle AS billingCyce,
 		IFNULL(v.expire_date, '') AS expireDate,
-		IFNULL(unionid, '') AS unionId,
-		IFNULL(openid, '') AS openId,
-		IFNULL(nickname, '') AS nickName,
-		IFNULL(headimgurl, '') AS avatarUrl
+		IFNULL(w.union_id, '') AS unionId,
+		IFNULL(w.nickname, '') AS nickname,
+		IFNULL(w.avatar_url, '') AS avatarUrl
 	FROM cmstmp01.userinfo AS u
 		LEFT JOIN premium.ftc_vip AS v
 		ON u.user_id = v.vip_id
-		LEFT JOIN user_db.user_sns_info AS w
-		ON u.wx_union_id = w.unionid
+		LEFT JOIN user_db.wechat_userinfo AS w
+		ON u.wx_union_id = w.union_id
 	WHERE u.user_id = ?
 	LIMIT 1`
 
@@ -178,8 +180,7 @@ func (env Env) FindAccountByFTC(userID string) (Account, error) {
 		&m.Cycle,
 		&m.ExpireDate,
 		&wx.UnionID,
-		&wx.OpenID,
-		&wx.NickName,
+		&wx.Nickname,
 		&wx.AvatarURL,
 	)
 
@@ -201,70 +202,8 @@ func (env Env) FindAccountByFTC(userID string) (Account, error) {
 		m.ExpireTime, _ = util.ParseDateTime(m.ExpireDate, time.UTC)
 	}
 
-	if wx.UnionID != "" {
-		a.Wechat = &wx
-	}
-
+	a.Wechat = wx
 	a.Membership = m
 
 	return a, nil
 }
-
-// func (env Env) FindWxAccount(unionID string, c chan Wechat) error {
-// 	query := `
-// 	SELECT unionid AS unionId,
-// 		openid AS openid,
-// 		nickname AS nickName,
-// 		headimgurl AS avatarUrl
-// 	FROM user_db.user_sns_info
-// 	WHERE unionid = ?
-// 	LIMIT 1`
-
-// 	var w Wechat
-// 	err := env.DB.QueryRow(query, unionID).Scan(
-// 		&w.UnionID,
-// 		&w.OpenID,
-// 		&w.NickName,
-// 		&w.AvatarURL,
-// 	)
-
-// 	if err != nil {
-// 		logger.Error(err)
-// 		c <- w
-// 		return err
-// 	}
-
-// 	c <- w
-// 	return nil
-// }
-
-// func (env Env) FindAccountByFTC(userID string, c chan FTCAccount) error {
-// 	query := `
-// 	SELECT user_id AS id,
-// 		user_name AS userName,
-// 		email AS email,
-// 		isvip AS isVip,
-// 		active AS isVerified
-// 	FROM cmstmp01.userinfo
-// 	WHERE user_id = ?
-// 	LIMIT 1`
-
-// 	var a FTCAccount
-// 	err := env.DB.QueryRow(query, userID).Scan(
-// 		&a.UserID,
-// 		&a.UnionID,
-// 		&a.UserName,
-// 		&a.Email,
-// 		&a.IsVIP,
-// 		&a.IsVerified,
-// 	)
-
-// 	if err != nil {
-// 		logger.Error(err)
-// 		c <- a
-// 		return err
-// 	}
-
-// 	c <- a
-// 	return nil
-// }

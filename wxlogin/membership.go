@@ -59,10 +59,19 @@ func (m Membership) IsEmpty() bool {
 	return m.UserID == ""
 }
 
-// Merge merges wechat membership into ftc membership and returns a new Membership.
-// Both m and other should not be an empty Membership.
+// Merge merges two membership into one
+// This is used if both FTC account and Wechat account of a user
+// owns membership.
+// One of the membership should be already expired or both expired.
+// If both memberships are still valid, deny the request.
 func (m Membership) Merge(other Membership) Membership {
-	merged := Membership{}
+	var merged Membership
+
+	if m.ExpireTime.After(other.ExpireTime) {
+		merged = m
+	} else {
+		merged = other
+	}
 
 	if m.IsFromFTC() {
 		merged.UserID = m.UserID
@@ -76,28 +85,12 @@ func (m Membership) Merge(other Membership) Membership {
 		merged.UnionID = other.UnionID
 	}
 
-	if m.Tier > other.Tier {
-		merged.Tier = m.Tier
-	} else {
-		merged.Tier = other.Tier
-	}
-
-	if m.Cycle > other.Cycle {
-		merged.Cycle = m.Cycle
-	} else {
-		merged.Cycle = other.Cycle
-	}
-
-	if m.ExpireTime.After(other.ExpireTime) {
-		merged.ExpireTime = m.ExpireTime
-	} else {
-		merged.ExpireTime = other.ExpireTime
-	}
-
 	return merged
 }
 
 // Pick picks from two membership the one that is not empty.
+// The returned membership is missing either ftc user id or
+// wechat union id.
 func (m Membership) Pick(other Membership) Membership {
 	if m.IsEmpty() && other.IsEmpty() {
 		return m
@@ -113,55 +106,3 @@ func (m Membership) Pick(other Membership) Membership {
 
 	return other
 }
-
-// func (env Env) FindMemberByFTC(userID string, c chan Membership) error {
-// 	query := `
-// 	SELECT vip_id AS userId,
-// 		vip_id_alias AS unionId,
-// 		vip_type AS vipType,
-// 		expire_time AS expireTime,
-// 		member_tier AS memberTier,
-// 		billing_cycle AS billingCycle,
-// 		IFNULL(expire_date, '') AS expireDate
-// 	FROM premium.ftc_vip
-// 	WHERE vip_id = ?
-// 	LIMIT 1`
-
-// 	var m Membership
-// 	var vipType int64
-// 	var expireTime int64
-
-// 	err := env.DB.QueryRow(query, userID).Scan(
-// 		&m.UserID,
-// 		&m.UnionID,
-// 		&vipType,
-// 		&expireTime,
-// 		&m.Tier,
-// 		&m.Cycle,
-// 		&m.ExpireDate,
-// 	)
-
-// 	if err != nil {
-// 		logger.Error(err)
-// 		c <- m
-// 		return err
-// 	}
-
-// 	if !m.Tier.IsValid() {
-// 		m.Tier = normalizeMemberTier(vipType)
-// 	}
-
-// 	if m.ExpireDate == "" {
-// 		m.ExpireDate = normalizeExpireDate(expireTime)
-// 	}
-
-// 	m.ExpireTime, err = util.ParseDateTime(m.ExpireDate, time.UTC)
-
-// 	if err != nil {
-// 		c <- m
-// 		return err
-// 	}
-
-// 	c <- m
-// 	return nil
-// }
