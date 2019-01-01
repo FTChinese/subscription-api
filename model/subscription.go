@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
@@ -29,6 +30,8 @@ import (
 // go on to update the order's start date as membership expiration date and deduce end date based on this start date.
 // 5. After all field is updated, we begin to persist the data into database, using SQL's transacation so that subscription order's confirmation data and a user's membership data are saved in one shot, or fail together.
 type Subscription struct {
+	UserID        string
+	UnionID       null.String // If UnionID is valid, then UserID must be equal to it.
 	OrderID       string
 	TierToBuy     enum.Tier
 	BillingCycle  enum.Cycle
@@ -41,7 +44,6 @@ type Subscription struct {
 	IsRenewal     bool             // If this order is used to renew membership
 	StartDate     string           // Membership start date for this order
 	EndDate       string           // Membership end date for this order
-	UserID        string
 }
 
 // WxTotalFee converts TotalAmount to int64 in cent for comparison with wx notification.
