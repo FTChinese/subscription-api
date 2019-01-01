@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	randomdata "github.com/Pallinder/go-randomdata"
 	"github.com/guregu/null"
@@ -91,8 +90,8 @@ func (wx mockWxID) generateAccess() OAuthAccess {
 		UnionID:      null.StringFrom(wx.UnionID),
 	}
 	acc.generateSessionID()
-	acc.createdAt = time.Now()
-	acc.updatedAt = time.Now()
+	acc.createdAt = util.TimeNow()
+	acc.updatedAt = util.TimeNow()
 	return acc
 }
 

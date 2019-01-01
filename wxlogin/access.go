@@ -13,9 +13,9 @@ import (
 // A Wechat login session should expires in 30 days,
 // which is the duration of refresh token.
 type Session struct {
-	ID        string `json:"id"`
-	UnionID   string `json:"unionId"`
-	CreatedAt string `json:"createdAt"`
+	ID        string    `json:"id"`
+	UnionID   string    `json:"unionId"`
+	CreatedAt util.Time `json:"createdAt"`
 }
 
 // OAuthAccess is the response of Wechat endpoint
@@ -36,8 +36,8 @@ type OAuthAccess struct {
 	Scope string `json:"scope"`
 	// Example: String:ogfvwjk6bFqv2yQpOrac0J3PqA0o Valid:true
 	UnionID   null.String `json:"unionid"`
-	createdAt time.Time
-	updatedAt time.Time
+	createdAt util.Time
+	updatedAt util.Time
 	RespStatus
 }
 
@@ -46,7 +46,7 @@ func (a *OAuthAccess) ToSession(unionID string) Session {
 	return Session{
 		ID:        a.SessionID,
 		UnionID:   unionID,
-		CreatedAt: util.ToISO8601UTC.FromTime(a.createdAt),
+		CreatedAt: a.createdAt,
 	}
 }
 
@@ -90,7 +90,9 @@ func (env Env) SaveAccess(appID string, acc OAuthAccess, c util.ClientApp) error
 		client_type = ?,
 		client_version = ?,
 		user_ip = INET6_ATON(?),
-		user_agent = ?`
+		user_agent = ?,
+		created_utc = ?,
+		updated_utc = ?`
 
 	_, err := env.DB.Exec(query,
 		acc.SessionID,
@@ -105,6 +107,8 @@ func (env Env) SaveAccess(appID string, acc OAuthAccess, c util.ClientApp) error
 		c.Version,
 		c.UserIP,
 		c.UserAgent,
+		acc.createdAt,
+		acc.updatedAt,
 	)
 
 	if err != nil {
@@ -136,7 +140,6 @@ func (env Env) LoadAccess(appID, sessionID string) (OAuthAccess, error) {
 	LIMIT 1`
 
 	var acc OAuthAccess
-	var createdAt, updatedAt string
 	err := env.DB.QueryRow(query, sessionID, appID).Scan(
 		&acc.AccessToken,
 		&acc.ExpiresIn,
@@ -144,19 +147,12 @@ func (env Env) LoadAccess(appID, sessionID string) (OAuthAccess, error) {
 		&acc.OpenID,
 		&acc.Scope,
 		&acc.UnionID,
-		&createdAt,
-		&updatedAt,
+		&acc.createdAt,
+		&acc.updatedAt,
 	)
 
 	if err != nil {
 		logger.WithField("trace", "LoadAccess").Error(err)
-		return acc, err
-	}
-
-	acc.createdAt, err = util.ParseDateTime(createdAt, time.UTC)
-	acc.updatedAt, err = util.ParseDateTime(updatedAt, time.UTC)
-
-	if err != nil {
 		return acc, err
 	}
 
