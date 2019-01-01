@@ -46,6 +46,36 @@ type Subscription struct {
 	EndDate       string           // Membership end date for this order
 }
 
+func newSubs(userID, unionID string, p Plan, method enum.PayMethod) Subscription {
+	subs := Subscription{
+		OrderID:       p.OrderID(),
+		TierToBuy:     p.Tier,
+		BillingCycle:  p.Cycle,
+		Price:         p.Price,
+		TotalAmount:   p.Price,
+		PaymentMethod: method,
+	}
+
+	if userID != "" {
+		subs.UserID = userID
+		return subs
+	}
+
+	subs.UserID = unionID
+	subs.UnionID = null.StringFrom(unionID)
+	return subs
+}
+
+// NewWxSubs creates a new Subscription with payment method set to Wechat.
+func NewWxSubs(userID, unionID string, p Plan) Subscription {
+	return newSubs(userID, unionID, p, enum.Wxpay)
+}
+
+// NewAliSubs creates a new Subscription with payment method set to Alipay.
+func NewAliSubs(userID, unionID string, p Plan) Subscription {
+	return newSubs(userID, unionID, p, enum.Alipay)
+}
+
 // WxTotalFee converts TotalAmount to int64 in cent for comparison with wx notification.
 func (s Subscription) WxTotalFee() int64 {
 	return int64(s.TotalAmount * 100)
@@ -123,7 +153,7 @@ func (s Subscription) withMembership(member Membership) (Subscription, error) {
 // and remembers if this order is used to
 // renew existing membership or simply
 // create a new one.
-func (env Env) PlaceOrder(subs Subscription, c util.RequestClient) error {
+func (env Env) PlaceOrder(subs Subscription, c util.ClientApp) error {
 	// Check if we could find the membership for this user.
 	member, err := env.FindMember(subs.UserID)
 
@@ -154,7 +184,7 @@ func (env Env) PlaceOrder(subs Subscription, c util.RequestClient) error {
 // SaveSubscription saves a new subscription order.
 // At this moment, you should already know if this subscription is
 // a renewal of a new one, based on current Membership's expire_date.
-func (env Env) SaveSubscription(s Subscription, c util.RequestClient) error {
+func (env Env) SaveSubscription(s Subscription, c util.ClientApp) error {
 	query := `
 	INSERT INTO premium.ftc_trade
 	SET trade_no = ?,
@@ -169,7 +199,7 @@ func (env Env) SaveSubscription(s Subscription, c util.RequestClient) error {
 		client_type = ?,
 		client_version = ?,
 		user_ip_bin = INET6_ATON(?),
-		user_agent = NULLIF(?, '')`
+		user_agent = ?`
 
 	_, err := env.DB.Exec(query,
 		s.OrderID,
