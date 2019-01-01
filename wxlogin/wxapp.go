@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"time"
 
 	"github.com/parnurzeal/gorequest"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 var (
@@ -115,8 +115,8 @@ func (c WxApp) GetAccessToken(code string) (OAuthAccess, error) {
 	}
 
 	acc.generateSessionID()
-	acc.createdAt = time.Now()
-	acc.updatedAt = time.Now()
+	acc.createdAt = util.TimeNow()
+	acc.updatedAt = util.TimeNow()
 
 	return acc, nil
 }

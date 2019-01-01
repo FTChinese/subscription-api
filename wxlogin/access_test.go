@@ -2,18 +2,17 @@ package wxlogin
 
 import (
 	"testing"
-	"time"
 )
 
-func TestIsExpired(t *testing.T) {
-	accExpired := OAuthAccess{
-		createdAt: time.Now().AddDate(0, 0, -30),
-		updatedAt: time.Now().Add(-time.Second * 7200),
-	}
+// func TestIsExpired(t *testing.T) {
+// 	accExpired := OAuthAccess{
+// 		createdAt: time.Now().AddDate(0, 0, -30),
+// 		updatedAt: time.Now().Add(-time.Second * 7200),
+// 	}
 
-	t.Logf("Is access token expired: %t\n", accExpired.IsAccessExpired())
-	t.Logf("Is refresh token expired: %t\n", accExpired.IsRefreshExpired())
-}
+// 	t.Logf("Is access token expired: %t\n", accExpired.IsAccessExpired())
+// 	t.Logf("Is refresh token expired: %t\n", accExpired.IsRefreshExpired())
+// }
 
 func TestMD5(t *testing.T) {
 	wxID := newMockWxID()
