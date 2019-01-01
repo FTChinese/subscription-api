@@ -33,10 +33,12 @@ func NoCache(next http.Handler) http.Handler {
 func CheckUserID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		userID := req.Header.Get(userIDKey)
+		unionID := req.Header.Get(unionIDKey)
 
 		userID = strings.TrimSpace(userID)
-		if userID == "" {
-			log.WithField("location", "CheckUserID").Info("Missing X-User-Id header")
+		unionID = strings.TrimSpace(unionID)
+		if userID == "" && unionID == "" {
+			log.WithField("location", "CheckUserID").Info("Missing X-User-Id or X-Union-Id header")
 
 			view.Render(w, view.NewUnauthorized(""))
 
