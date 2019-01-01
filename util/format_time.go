@@ -38,7 +38,8 @@ type timeFormatter struct {
 	loc    *time.Location // target timezone
 }
 
-// ToLocation changes a timeFormatter instance's
+// ToLocation changes a timeFormatter instance's.
+// Returns a new instance of timeFormatter.
 func (f timeFormatter) ToLocation(loc *time.Location) timeFormatter {
 	f.loc = loc
 	return f
@@ -50,7 +51,7 @@ func (f timeFormatter) FromUnix(sec int64) string {
 }
 
 // FromISO8601 parses a ISO8601 time string and returns the
-// specified format, or returns the original string if parsing failed.
+// specified format.
 func (f timeFormatter) FromISO8601(value string) (string, error) {
 	t, err := time.Parse(time.RFC3339, value)
 
