@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
@@ -82,12 +81,8 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Get user id from request header
-	userID := req.Header.Get(userIDKey)
-
 	// Try to find a plan based on the tier and cycle.
 	plan, err := wr.model.FindPlan(tierKey, cycleKey)
-
 	// If pricing plan if not found.
 	if err != nil {
 		logger.WithField("location", "UnifiedOrder").Error(err)
@@ -98,13 +93,18 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 
 	logger.WithField("location", "UnifiedOrder").Infof("Subscritpion plan: %+v", plan)
 
-	// Use the pricing plan to create a subscription order
-	subs := plan.CreateSubs(userID, enum.Wxpay)
-
+	// Get user id from request header.
+	// If user id is found, it means user is subscribing with FTC account;
+	// if union id is found, it means user is subscribing with Wechat account;
+	userID := req.Header.Get(userIDKey)
+	unionID := req.Header.Get(unionIDKey)
 	// Get request client required headers
-	c := util.GetClient(req)
+	app := util.NewClientApp(req)
 
-	err = wr.model.PlaceOrder(subs, c)
+	// Use the pricing plan to create a subscription order
+	subs := model.NewWxSubs(userID, unionID, plan)
+
+	err = wr.model.PlaceOrder(subs, app)
 	if err != nil {
 
 		if err == util.ErrRenewalForbidden {
@@ -122,7 +122,7 @@ func (wr WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	params.SetString("body", plan.Description).
 		SetString("out_trade_no", subs.OrderID).
 		SetInt64("total_fee", plan.GetPriceCent()).
-		SetString("spbill_create_ip", c.UserIP).
+		SetString("spbill_create_ip", app.UserIP).
 		SetString("notify_url", wxNotifyURL).
 		SetString("trade_type", "APP")
 
