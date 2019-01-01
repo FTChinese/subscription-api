@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/guregu/null"
+
 	"gitlab.com/ftchinese/subscription-api/enum"
 
 	"github.com/icrowley/fake"
@@ -29,11 +31,11 @@ var devEnv = newDevEnv()
 const mockOrderID = "FT0102381539932302"
 const mockUserID = "e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae"
 
-var mockClient = util.RequestClient{
+var mockClient = util.ClientApp{
 	ClientType: enum.PlatformAndroid,
-	Version:    "1.1.1",
-	UserIP:     fake.IPv4(),
-	UserAgent:  "golang mocker",
+	Version:    null.StringFrom("1.1.1"),
+	UserIP:     null.StringFrom(fake.IPv4()),
+	UserAgent:  null.StringFrom(fake.UserAgent()),
 }
 
 var mockPlan = DefaultPlans["standard_year"]
