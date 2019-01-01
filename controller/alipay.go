@@ -88,9 +88,9 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	subs := plan.CreateSubs(userID, enum.Alipay)
 
 	// Get request client metadata
-	c := util.GetClient(req)
+	app := util.NewClientApp(req)
 
-	err = ar.model.PlaceOrder(subs, c)
+	err = ar.model.PlaceOrder(subs, app)
 
 	if err != nil {
 		if err == util.ErrRenewalForbidden {
