@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/guregu/null"
+
 	"gitlab.com/ftchinese/subscription-api/enum"
 
 	"github.com/icrowley/fake"
@@ -38,10 +40,11 @@ var mockClient = util.ClientApp{
 
 var mockPlan = DefaultPlans["standard_year"]
 
-var tommorrow = util.ToSQLDateUTC.FromTime(time.Now().AddDate(0, 0, 1))
+var tommorrow = util.DateFrom(time.Now().AddDate(0, 0, 1))
 
 var mockMember = Membership{
 	UserID:     mockUserID,
+	UnionID:    null.String{},
 	Tier:       enum.TierStandard,
 	Cycle:      enum.CycleYear,
 	ExpireDate: tommorrow,

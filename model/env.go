@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"time"
 
 	"gitlab.com/ftchinese/subscription-api/enum"
 
@@ -39,10 +40,6 @@ func normalizeMemberTier(vipType int64) enum.Tier {
 	}
 }
 
-func normalizeExpireDate(timestamp int64) string {
-	if timestamp == 0 {
-		return ""
-	}
-
-	return util.ToSQLDateUTC.FromUnix(timestamp)
+func normalizeExpireDate(timestamp int64) time.Time {
+	return time.Unix(timestamp, 0)
 }
