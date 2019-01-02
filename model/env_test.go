@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/guregu/null"
-
 	"gitlab.com/ftchinese/subscription-api/enum"
 
 	"github.com/icrowley/fake"
@@ -33,9 +31,9 @@ const mockUserID = "e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae"
 
 var mockClient = util.ClientApp{
 	ClientType: enum.PlatformAndroid,
-	Version:    null.StringFrom("1.1.1"),
-	UserIP:     null.StringFrom(fake.IPv4()),
-	UserAgent:  null.StringFrom(fake.UserAgent()),
+	Version:    "1.1.1",
+	UserIP:     fake.IPv4(),
+	UserAgent:  fake.UserAgent(),
 }
 
 var mockPlan = DefaultPlans["standard_year"]
@@ -43,10 +41,10 @@ var mockPlan = DefaultPlans["standard_year"]
 var tommorrow = util.ToSQLDateUTC.FromTime(time.Now().AddDate(0, 0, 1))
 
 var mockMember = Membership{
-	UserID: mockUserID,
-	Tier:   enum.TierStandard,
-	Cycle:  enum.CycleYear,
-	Expire: tommorrow,
+	UserID:     mockUserID,
+	Tier:       enum.TierStandard,
+	Cycle:      enum.CycleYear,
+	ExpireDate: tommorrow,
 }
 
 var mockUser = User{
@@ -63,7 +61,7 @@ func insertSubs(isRenew bool) (Subscription, error) {
 
 	subs.IsRenewal = isRenew
 
-	err := devEnv.SaveSubscription(subs, mockClient)
+	err := devEnv.saveSubscription(subs, mockClient)
 
 	if err != nil {
 		return subs, err
