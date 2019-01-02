@@ -9,10 +9,11 @@ import (
 
 // Membership contains a user's membership details
 type Membership struct {
-	UserID string     `json:"-"`
-	Tier   enum.Tier  `json:"tier"`
-	Cycle  enum.Cycle `json:"billingCycle"`
-	Expire string     `json:"expireDate"` // On which date the membership ends
+	UserID     string      `json:"-"`
+	UnionID    null.string `json:"-"`
+	Tier       enum.Tier   `json:"tier"`
+	Cycle      enum.Cycle  `json:"billingCycle"`
+	ExpireDate string      `json:"expireDate"` // On which date the membership ends
 }
 
 // CanRenew tests if a membership is allowed to renuew subscription.
@@ -23,7 +24,7 @@ type Membership struct {
 //      |-------- A cycle --------| Expires
 // now----------------------------| Deny
 func (m Membership) CanRenew(cycle enum.Cycle) bool {
-	expireDate, err := util.ParseSQLDate(m.Expire)
+	expireDate, err := util.ParseDateTime(m.ExpireDate)
 
 	if err != nil {
 		logger.WithField("location", "Parse expiration date")
@@ -41,7 +42,7 @@ func (m Membership) CanRenew(cycle enum.Cycle) bool {
 
 // IsExpired tests if the membership saved in database is expired.
 func (m Membership) IsExpired() bool {
-	t, err := util.ParseSQLDate(m.Expire)
+	t, err := util.ParseDateTime(m.ExpireDate)
 
 	if err != nil {
 		return true
@@ -76,7 +77,7 @@ func (env Env) FindMember(userID string) (Membership, error) {
 		&expireTime,
 		&tier,
 		&cycle,
-		&m.Expire,
+		&m.ExpireDate,
 	)
 
 	if err != nil {
@@ -93,8 +94,8 @@ func (env Env) FindMember(userID string) (Membership, error) {
 
 	m.Cycle, _ = enum.NewCycle(cycle)
 
-	if m.Expire == "" {
-		m.Expire = normalizeExpireDate(expireTime)
+	if m.ExpireDate == "" {
+		m.ExpireDate = normalizeExpireDate(expireTime)
 	}
 
 	return m, nil
