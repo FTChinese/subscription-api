@@ -40,10 +40,10 @@ type Subscription struct {
 	PaymentMethod enum.PayMethod
 	Currency      string
 	CreatedAt     util.ISODateTime // When the order is created.
-	ConfirmedAt   util.ISODateTime // When the payment is confirmed.
+	ConfirmedAt   util.Time        // When the payment is confirmed.
 	IsRenewal     bool             // If this order is used to renew membership
-	StartDate     string           // Membership start date for this order
-	EndDate       string           // Membership end date for this order
+	StartDate     util.Date        // Membership start date for this order
+	EndDate       util.Date        // Membership end date for this order
 }
 
 func newSubs(userID, unionID string, p Plan, method enum.PayMethod) Subscription {
@@ -111,7 +111,7 @@ func (s Subscription) CreatedAtCN() string {
 func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
 
 	// Calculate expiration time by adding one cycle to the confirmation time.
-	expireTime, err := s.BillingCycle.TimeAfterACycle(t)
+	endedAt, err := s.BillingCycle.EndingTime(t)
 
 	// If expiration time cannot be deduced.
 	// (minght be caused by wrong billing cycle)
@@ -120,12 +120,12 @@ func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
 	}
 
 	// Convert the confirmation Time instance to ISO8601 string.
-	s.ConfirmedAt = util.ISODateTime(util.ToISO8601UTC.FromTime(t))
+	s.ConfirmedAt = util.TimeFrom(t)
 
 	// Use confirmation time's year-month-date part as this order's subscriped beginning date.
-	s.StartDate = util.ToSQLDateUTC.FromTime(t)
+	s.StartDate = util.DateFrom(t)
 	// Use the expiration time's year-month-date part as this order's purchased ending date.
-	s.EndDate = util.ToSQLDateUTC.FromTime(expireTime)
+	s.EndDate = util.DateFrom(endedAt)
 
 	return s, nil
 }
@@ -134,22 +134,16 @@ func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
 // previous membership's expiration date
 // after the subscription is confirmed.
 func (s Subscription) withMembership(member Membership) (Subscription, error) {
-	expireTime, err := util.ParseDateTime(member.ExpireDate)
-
-	if err != nil {
-		return s, err
-	}
-
 	// Add a cycle to current membership's expiration time
 	// expireTime := s.deduceExpireTime(willEnd)
-	extendedTime, err := s.BillingCycle.TimeAfterACycle(expireTime)
+	endedAt, err := s.BillingCycle.EndingTime(member.ExpireDate.Time)
 
 	if err != nil {
 		return s, err
 	}
 
-	s.StartDate = util.ToSQLDateUTC.FromTime(expireTime)
-	s.EndDate = util.ToSQLDateUTC.FromTime(extendedTime)
+	s.StartDate = member.ExpireDate
+	s.EndDate = util.DateFrom(endedAt)
 
 	return s, nil
 }
@@ -160,7 +154,7 @@ func (s Subscription) withMembership(member Membership) (Subscription, error) {
 // create a new one.
 func (env Env) PlaceOrder(subs Subscription, c util.ClientApp) error {
 	// Check if we could find the membership for this user.
-	member, err := env.FindMember(subs.UserID)
+	member, err := env.findMember(subs)
 
 	// If the membership if found.
 	if err == nil {
@@ -291,7 +285,7 @@ func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) (Subsc
 	}
 
 	// If this is a renewal, we need to find the current membership's expiration date.
-	member, err := env.FindMember(s.UserID)
+	member, err := env.findMember(s)
 
 	// If err is SqlNoRows error, do not use this subs.
 	if err != nil {
