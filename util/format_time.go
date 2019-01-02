@@ -117,12 +117,6 @@ func ParseDateTime(str string, loc *time.Location) (t time.Time, err error) {
 	return
 }
 
-// ParseISO8601 parses ISO 8601 time string
-// into a time.Time instance, or returns error.
-func ParseISO8601(value string) (time.Time, error) {
-	return time.Parse(time.RFC3339, value)
-}
-
 // ParseWxTime is used to parse wxpay's time format.
 // If it cannot be parsed, default to current time.
 func ParseWxTime(value string) (time.Time, error) {
