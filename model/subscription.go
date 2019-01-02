@@ -76,6 +76,11 @@ func NewAliSubs(userID, unionID string, p Plan) Subscription {
 	return newSubs(userID, unionID, p, enum.Alipay)
 }
 
+// Check if user logged in by Wechat account.
+func (s Subscription) isWxLogin() bool {
+	return s.UnionID.Valid
+}
+
 // WxTotalFee converts TotalAmount to int64 in cent for comparison with wx notification.
 func (s Subscription) WxTotalFee() int64 {
 	return int64(s.TotalAmount * 100)
@@ -129,7 +134,7 @@ func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
 // previous membership's expiration date
 // after the subscription is confirmed.
 func (s Subscription) withMembership(member Membership) (Subscription, error) {
-	expireTime, err := util.ParseSQLDate(member.Expire)
+	expireTime, err := util.ParseDateTime(member.ExpireDate)
 
 	if err != nil {
 		return s, err
@@ -172,7 +177,7 @@ func (env Env) PlaceOrder(subs Subscription, c util.ClientApp) error {
 		}
 	}
 
-	err = env.SaveSubscription(subs, c)
+	err = env.saveSubscription(subs, c)
 
 	if err != nil {
 		return err
@@ -181,10 +186,10 @@ func (env Env) PlaceOrder(subs Subscription, c util.ClientApp) error {
 	return nil
 }
 
-// SaveSubscription saves a new subscription order.
+// saveSubscription saves a new subscription order.
 // At this moment, you should already know if this subscription is
 // a renewal of a new one, based on current Membership's expire_date.
-func (env Env) SaveSubscription(s Subscription, c util.ClientApp) error {
+func (env Env) saveSubscription(s Subscription, c util.ClientApp) error {
 	query := `
 	INSERT INTO premium.ftc_trade
 	SET trade_no = ?,
