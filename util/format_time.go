@@ -12,9 +12,9 @@ const (
 	secondsOfMinute = 60
 	secondsOfHour   = 60 * secondsOfMinute
 	layoutDateTime  = "2006-01-02 15:04:05.999999"
+	layoutDate      = "2006-01-02"
 	layoutWx        = "20060102150405"
 	layoutCST       = "2006年01月02日 15:04:05 中国标准时间"
-	stmtUTC8Now     = "DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR)"
 )
 
 var (
@@ -91,22 +91,6 @@ func (f timeFormatter) FromWx(value string) string {
 	}
 
 	return t.In(f.loc).Format(f.layout)
-}
-
-// ParseSQLDate parse string layout `2006-01-02`
-func ParseSQLDate(value string) (time.Time, error) {
-	return time.Parse(layoutDateTime[:len(value)], value)
-}
-
-// ParseSQLDatetime parse SQL DATETIME string in UTC.
-func ParseSQLDatetime(value string) time.Time {
-	t, err := time.ParseInLocation(layoutDateTime[:len(value)], value, time.UTC)
-
-	if err != nil {
-		return time.Now()
-	}
-
-	return t
 }
 
 // ParseDateTime parses SQL DATE or DATETIME string in specified location.
