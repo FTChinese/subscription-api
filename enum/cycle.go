@@ -36,16 +36,24 @@ var cyclesEN = [...]string{
 // Cycle is an enum for billing cycles.
 type Cycle int
 
-// TimeAfterACycle adds one cycle to a time instance and returns the new time.
-func (c Cycle) TimeAfterACycle(t time.Time) (time.Time, error) {
+// IsValid tests is a Cycle instance in one of the allowed values.
+func (c Cycle) IsValid() bool {
+	return c != CycleInvalid
+}
+
+// EndingTime caculates a Cycle's ending date based on the passed in Time.
+// Returns util.Date instance or error if the Cycle is not one the allowed enum values.
+func (c Cycle) EndingTime(t time.Time) (end time.Time, err error) {
 	switch c {
 	case CycleYear:
-		return t.AddDate(1, 0, 1), nil
+		end = t.AddDate(1, 0, 1)
+		return
 	case CycleMonth:
-		return t.AddDate(0, 1, 1), nil
-	default:
-		return t, errors.New("not a valid cycle type")
+		end = t.AddDate(0, 1, 1)
+		return
 	}
+
+	return t, errors.New("subscrition cycle only allows 'year' or 'month'")
 }
 
 // UnmarshalJSON implements the Unmarshaler interface.
