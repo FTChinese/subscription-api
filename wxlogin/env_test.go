@@ -39,9 +39,9 @@ const (
 
 var mockClient = util.ClientApp{
 	ClientType: enum.PlatformAndroid,
-	Version:    null.StringFrom("1.1.2"),
-	UserIP:     null.StringFrom(fake.IPv4()),
-	UserAgent:  null.StringFrom(fake.UserAgent()),
+	Version:    "1.1.2",
+	UserIP:     fake.IPv4(),
+	UserAgent:  fake.UserAgent(),
 }
 
 var mockWxApp = WxApp{
