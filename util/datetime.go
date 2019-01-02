@@ -79,5 +79,5 @@ func (d ISODateTime) IsEmpty() bool {
 
 // ToTime parses an instance.
 func (d ISODateTime) ToTime() (time.Time, error) {
-	return ParseISO8601(string(d))
+	return time.Parse(time.RFC3339, string(d))
 }
