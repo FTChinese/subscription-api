@@ -42,11 +42,9 @@ Payment Method: {{.Subs.PaymentMethod.ToEN}}
 Created At: {{.Subs.CreatedAt}}
 Duration: {{.Subs.StartDate}} to {{.Subs.EndDate}}
 
-If you have any questions, please contact our customer service: subscriber.service@ftchinese.com.
+To get help with subscription and purchases, please contact subscriber.service@ftchinese.com.
 
 Again, we appriciate your support.
-
-Yours faithfully,
 
 FTChinese
 `
