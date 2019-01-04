@@ -83,16 +83,16 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Try to find a plan based on the tier and cycle.
-	plan, err := router.model.FindPlan(tierKey, cycleKey)
+	plan, err := router.model.LoadCurrentPlans().FindPlan(tierKey, cycleKey)
 	// If pricing plan if not found.
 	if err != nil {
-		logger.WithField("location", "UnifiedOrder").Error(err)
+		logger.WithField("trace", "UnifiedOrder").Error(err)
 
 		view.Render(w, view.NewBadRequest(msgInvalidURI))
 		return
 	}
 
-	logger.WithField("location", "UnifiedOrder").Infof("Subscritpion plan: %+v", plan)
+	logger.WithField("trace", "UnifiedOrder").Infof("Subscritpion plan: %+v", plan)
 
 	// Get user id from request header.
 	// If user id is found, it means user is subscribing with FTC account;
@@ -138,13 +138,13 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 		SetString("notify_url", wxNotifyURL).
 		SetString("trade_type", "APP")
 
-	logger.WithField("location", "UnifiedOrder").Infof("Order params: %+v", params)
+	logger.WithField("trace", "UnifiedOrder").Infof("Order params: %+v", params)
 
 	// Send order to wx
 	resp, err := router.client.UnifiedOrder(params)
 
 	if err != nil {
-		logger.WithField("location", "UnifiedOrder").Error(err)
+		logger.WithField("trace", "UnifiedOrder").Error(err)
 
 		view.Render(w, view.NewBadRequest(err.Error()))
 
@@ -153,7 +153,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 
 	// Possible response:
 	//  map[return_code:FAIL return_msg:appid不存在]
-	logger.WithField("location", "UnifiedOrder").Infof("Wx unified order response: %+v", resp)
+	logger.WithField("trace", "UnifiedOrder").Infof("Wx unified order response: %+v", resp)
 
 	// Example response:
 	// return_code:SUCCESS|FAIL
@@ -239,21 +239,6 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 
 	view.Render(w, view.NewResponse().SetBody(order))
 }
-
-// func (wr WxPayRouter) createPrepayOrder(prepayID string) wxpay.Params {
-// 	nonce, _ := util.RandomHex(10)
-
-// 	p := make(wxpay.Params)
-// 	p["appid"] = wr.config.AppID
-// 	p["partnerid"] = wr.config.MchID
-// 	p["prepayid"] = prepayID
-// 	p["package"] = "Sign=WXPay"
-// 	p["noncestr"] = nonce
-// 	p["timestamp"] = fmt.Sprintf("%d", time.Now().Unix())
-// 	p["sign"] = wr.client.Sign(p)
-
-// 	return p
-// }
 
 func (router WxPayRouter) signOrder(order WxOrder) string {
 	p := make(wxpay.Params)

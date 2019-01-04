@@ -71,7 +71,7 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	plan, err := router.model.FindPlan(tierKey, cycleKey)
+	plan, err := router.model.LoadCurrentPlans().FindPlan(tierKey, cycleKey)
 
 	if err != nil {
 		logger.WithField("location", "AliAppOrder").Error(err)
