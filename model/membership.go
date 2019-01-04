@@ -43,14 +43,12 @@ func (m Membership) IsExpired() bool {
 
 // findMember retrieves a user's membership based on subscription information.
 func (env Env) findMember(subs Subscription) (Membership, error) {
-	var whereCol, val string
+	var whereCol string
 
 	if subs.isWxLogin() {
 		whereCol = "vip_id_alias"
-		val = subs.UnionID.String
 	} else {
 		whereCol = "vip_id"
-		val = subs.UserID
 	}
 
 	query := fmt.Sprintf(`
@@ -59,7 +57,7 @@ func (env Env) findMember(subs Subscription) (Membership, error) {
 		vip_type AS vipType,
 		expire_time AS expireTime,
 		member_tier AS memberTier,
-		billing_cycle, AS billingCyce,
+		billing_cycle AS billingCyce,
 		expire_date AS expireDate
 	FROM premium.ftc_vip
 	WHERE %s = ?
@@ -69,7 +67,7 @@ func (env Env) findMember(subs Subscription) (Membership, error) {
 	var vipType int64
 	var expireTime int64
 
-	err := env.DB.QueryRow(query, val).Scan(
+	err := env.DB.QueryRow(query, subs.UserID).Scan(
 		&m.UserID,
 		&m.UnionID,
 		&vipType,
