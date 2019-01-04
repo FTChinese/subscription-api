@@ -5,6 +5,7 @@ import (
 
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/enum"
+	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // Membership contains user's subscription data.
@@ -18,17 +19,12 @@ type Membership struct {
 	UnionID    null.String `json:"-"`
 	Tier       enum.Tier   `json:"tier"`
 	Cycle      enum.Cycle  `json:"billingCycle"`
-	ExpireDate string      `json:"expireDate"`
-	ExpireTime time.Time   `json:"-"`
+	ExpireDate util.Date   `json:"expireDate"`
 }
 
 // IsExpired test if a membership is expired.
 func (m Membership) IsExpired() bool {
-	if m.ExpireTime.IsZero() {
-		return true
-	}
-
-	return m.ExpireTime.Before(time.Now())
+	return m.ExpireDate.Before(time.Now())
 }
 
 // IsEqualTo tests if two memberships are the same one.
@@ -67,7 +63,7 @@ func (m Membership) IsEmpty() bool {
 func (m Membership) Merge(other Membership) Membership {
 	var merged Membership
 
-	if m.ExpireTime.After(other.ExpireTime) {
+	if m.ExpireDate.After(other.ExpireDate.Time) {
 		merged = m
 	} else {
 		merged = other
