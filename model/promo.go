@@ -19,11 +19,11 @@ type Banner struct {
 // Promotion contains a promotion's scheduled begining and ending time,
 // pricing plans and barrier banner.
 type Promotion struct {
-	StartUTC  util.ISODateTime `json:"startAt"`
-	EndUTC    util.ISODateTime `json:"endAt"`
-	Plans     map[string]Plan  `json:"plans"`
-	Banner    *Banner          `json:"banner"`
-	CreatedAt string           `json:"createdAt"`
+	StartUTC  util.Time       `json:"startAt"`
+	EndUTC    util.Time       `json:"endAt"`
+	Plans     map[string]Plan `json:"plans"`
+	Banner    *Banner         `json:"banner"`
+	CreatedAt util.Time       `json:"createdAt"`
 	createdBy string
 }
 
@@ -31,17 +31,9 @@ type Promotion struct {
 // a promotion's start and end time.
 func (p Promotion) isInEffect() bool {
 	now := time.Now()
-	start, err := p.StartUTC.ToTime()
-	if err != nil {
-		return false
-	}
-	end, err := p.EndUTC.ToTime()
-	if err != nil {
-		return false
-	}
 
 	// Start |------ now -------| End
-	if now.Before(start) || now.After(end) {
+	if now.Before(p.StartUTC.Time) || now.After(p.EndUTC.Time) {
 		return false
 	}
 	return true
