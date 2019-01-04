@@ -61,7 +61,7 @@ func TestSubsWithMembership(t *testing.T) {
 }
 
 func TestIsSubsAllowed(t *testing.T) {
-	subs, err := createMember()
+	subs, err := createMember(false)
 
 	subs = NewWxSubs(subs.UserID, mockPlan, enum.EmailLogin)
 
@@ -73,7 +73,7 @@ func TestIsSubsAllowed(t *testing.T) {
 
 	t.Logf("Is subscription allowed: %t\n", ok)
 }
-func TestCreateSubsNew(t *testing.T) {
+func TestCreateSubs(t *testing.T) {
 	subs := NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
 
 	err := devEnv.SaveSubscription(subs, mockClient)
@@ -85,22 +85,8 @@ func TestCreateSubsNew(t *testing.T) {
 	t.Logf("Saved subscription: %+v\n", subs)
 }
 
-func TestCreateSubsRenewal(t *testing.T) {
-	subs, err := createMember()
-
-	subs = NewWxSubs(subs.UserID, mockPlan, enum.EmailLogin)
-
-	err = devEnv.SaveSubscription(subs, mockClient)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("Create a renewal order: %+v\n", subs)
-}
-
 func TestFindSubs(t *testing.T) {
-	subs, err := createSubs()
+	subs, err := createSubs(false)
 
 	found, err := devEnv.FindSubscription(subs.OrderID)
 
@@ -112,7 +98,7 @@ func TestFindSubs(t *testing.T) {
 }
 
 func TestConfirmSubs(t *testing.T) {
-	subs, err := createSubs()
+	subs, err := createSubs(false)
 
 	if err != nil {
 		t.Error(err)
@@ -134,7 +120,7 @@ func TestConfirmSubs(t *testing.T) {
 }
 
 func TestCreateMember(t *testing.T) {
-	subs, err := createMember()
+	subs, err := createMember(false)
 
 	if err != nil {
 		t.Error(err)
@@ -145,41 +131,27 @@ func TestCreateMember(t *testing.T) {
 }
 
 func TestRenewMember(t *testing.T) {
+	// First iteration creates a new subscription,
+	// second iteration renew the membership.
+	for i := 0; i < 2; i++ {
+		subs, err := createMember(false)
+		if err != nil {
+			t.Error(err)
+			break
+		}
 
-	member, err := createAndFindMember()
-	if err != nil {
-		t.Error(err)
-		return
+		t.Logf("Subscripiton for a membership: %+v\n", subs)
 	}
+}
 
-	t.Logf("Created a member: %+v\n", member)
+func TestCreatemember_wxLogin(t *testing.T) {
+	for i := 0; i < 2; i++ {
+		subs, err := createMember(true)
+		if err != nil {
+			t.Error(err)
+			break
+		}
 
-	// Create a subscription order for an existing user.
-	newSubs := NewWxSubs(member.UserID, mockPlan, enum.EmailLogin)
-
-	// Save it.
-	err = devEnv.SaveSubscription(newSubs, mockClient)
-
-	t.Logf("Save a renewal subscription")
-
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	// Confirm it. This mocks payment provider's notification.
-	newSubs, err = devEnv.ConfirmSubscription(newSubs, time.Now())
-
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	t.Logf("Confirmed a renewal subscription: %+v\n", newSubs)
-
-	err = devEnv.CreateMembership(newSubs)
-
-	if err != nil {
-		t.Error(err)
+		t.Logf("Subscription for a membership: %+v\n", subs)
 	}
 }
