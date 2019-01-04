@@ -61,7 +61,7 @@ func NewAliRouter(m model.Env, isProd bool) AliPayRouter {
 }
 
 // AppOrder an alipay order for native app.
-func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
+func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	// Get member tier and billing cycle from url
 	tierKey := getURLParam(req, "tier").toString()
 	cycleKey := getURLParam(req, "cycle").toString()
@@ -71,10 +71,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Get user id from request header
-	userID := req.Header.Get(userIDKey)
-
-	plan, err := ar.model.FindPlan(tierKey, cycleKey)
+	plan, err := router.model.FindPlan(tierKey, cycleKey)
 
 	if err != nil {
 		logger.WithField("location", "AliAppOrder").Error(err)
@@ -85,19 +82,34 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 
 	logger.WithField("location", "AliAppOrder").Infof("Subscritpion plan: %+v", plan)
 
-	subs := plan.CreateSubs(userID, enum.Alipay)
+	// Get user id from request header
+	userID := req.Header.Get(userIDKey)
+	unionID := req.Header.Get(unionIDKey)
+	var loginMethod enum.LoginMethod
+	if userID != "" {
+		loginMethod = enum.EmailLogin
+	} else if unionID != "" {
+		loginMethod = enum.WechatLogin
+		userID = unionID
+	}
 
-	// Get request client metadata
-	app := util.NewClientApp(req)
+	subs := model.NewAliSubs(userID, plan, loginMethod)
 
-	err = ar.model.PlaceOrder(subs, app)
-
+	ok, err := router.model.IsSubsAllowed(subs)
+	// err = ar.model.PlaceOrder(subs, app)
 	if err != nil {
-		if err == util.ErrRenewalForbidden {
-			view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-			return
-		}
+		view.Render(w, view.NewDBFailure(err))
+		return
+	}
+	if !ok {
+		view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+		return
+	}
 
+	// Save the subscription
+	app := util.NewClientApp(req)
+	err = router.model.SaveSubscription(subs, app)
+	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
 	}
@@ -111,7 +123,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	param.GoodsType = "0"
 
 	// Call URLValues to generate alipay required data structure and sign it.
-	values, err := ar.client.URLValues(param)
+	values, err := router.client.URLValues(param)
 
 	logger.WithField("location", "AliAppOrder").Infof("App pay param: %+v\n", values)
 
@@ -130,7 +142,7 @@ func (ar AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 }
 
 // Notification receives alipay callback
-func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
+func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 
 	if err != nil {
@@ -141,7 +153,7 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If err is nil, then the signature is verified.
-	noti, err := ar.client.GetTradeNotification(req)
+	noti, err := router.client.GetTradeNotification(req)
 
 	if err != nil {
 		logger.WithField("location", "AliNotification").Error(err)
@@ -153,7 +165,7 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	logger.WithField("location", "AliNotification").Infof("Ali notification data: %+v", noti)
 
 	// 4、验证app_id是否为该商户本身
-	if noti.AppId != ar.appID {
+	if noti.AppId != router.appID {
 		logger.WithField("location", "AliNotification").Info("AppID does not match")
 
 		w.Write([]byte(fail))
@@ -163,7 +175,7 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 	orderID := noti.OutTradeNo
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
-	subs, err := ar.model.FindSubscription(orderID)
+	subs, err := router.model.FindSubscription(orderID)
 
 	// If the order does not exist, tell ali success;
 	// If err is not `not found`, tell ali to resend.
@@ -224,21 +236,21 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 		confirmTime = time.Now()
 	}
 
-	updatedSubs, err := ar.model.ConfirmSubscription(subs, confirmTime)
+	updatedSubs, err := router.model.ConfirmSubscription(subs, confirmTime)
 
 	if err != nil {
 		w.Write([]byte(fail))
 		return
 	}
 
-	err = ar.model.CreateOrUpdateMember(updatedSubs)
+	err = router.model.CreateMembership(updatedSubs)
 
 	if err != nil {
 		w.Write([]byte(fail))
 		return
 	}
 
-	go ar.model.SendConfirmationLetter(updatedSubs)
+	go router.model.SendConfirmationLetter(updatedSubs)
 
 	w.Write([]byte(success))
 }
@@ -246,7 +258,7 @@ func (ar AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 // VerifyAppPay verify the result of native app pay.
 // Implements https://docs.open.alipay.com/204/105301/
 // 一、同步通知参数说明
-func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
+func (router AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	var result aliAppPayResult
 
 	body, err := ioutil.ReadAll(req.Body)
@@ -270,7 +282,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 
 	sign := result.Sign
 	signType := result.SignType
-	ok, err := verifyAliResp([]byte(signedStr), sign, signType, ar.client.AliPayPublicKey)
+	ok, err := verifyAliResp([]byte(signedStr), sign, signType, router.client.AliPayPublicKey)
 
 	// 422
 	if err != nil {
@@ -302,7 +314,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	totalAmount := result.Response.TotalAmount
 
 	// 4、验证app_id是否为该商户本身
-	if appID != ar.appID {
+	if appID != router.appID {
 		logger.WithField("location", "AliNotification").Info("AppID does not match")
 
 		reason := &view.Reason{
@@ -316,7 +328,7 @@ func (ar AliPayRouter) VerifyAppPay(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
-	subs, err := ar.model.FindSubscription(orderID)
+	subs, err := router.model.FindSubscription(orderID)
 
 	// If the order does not exist, tell ali success;
 	// If err is not `not found`, tell ali to resend.
