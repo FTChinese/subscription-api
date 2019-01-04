@@ -1,8 +1,6 @@
 package wxlogin
 
 import (
-	"time"
-
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
@@ -117,12 +115,8 @@ func (env Env) FindAccountByWx(unionID string) (Account, error) {
 		m.Tier = normalizeMemberTier(vipType)
 	}
 
-	if m.ExpireDate == "" {
-		m.ExpireDate = normalizeExpireDate(expireTime)
-	}
-
-	if m.ExpireDate != "" {
-		m.ExpireTime, _ = util.ParseDateTime(m.ExpireDate, time.UTC)
+	if m.ExpireDate.IsZero() {
+		m.ExpireDate = util.DateFrom(normalizeExpireDate(expireTime))
 	}
 
 	// wx is always not nil
@@ -194,12 +188,8 @@ func (env Env) FindAccountByFTC(userID string) (Account, error) {
 		m.Tier = normalizeMemberTier(vipType)
 	}
 
-	if m.ExpireDate == "" {
-		m.ExpireDate = normalizeExpireDate(expireTime)
-	}
-
-	if m.ExpireDate != "" {
-		m.ExpireTime, _ = util.ParseDateTime(m.ExpireDate, time.UTC)
+	if m.ExpireDate.IsZero() {
+		m.ExpireDate = util.DateFrom(normalizeExpireDate(expireTime))
 	}
 
 	a.Wechat = wx
