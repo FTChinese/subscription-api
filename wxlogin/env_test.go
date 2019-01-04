@@ -9,6 +9,7 @@ import (
 
 	randomdata "github.com/Pallinder/go-randomdata"
 	"github.com/guregu/null"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/icrowley/fake"
 	"gitlab.com/ftchinese/subscription-api/enum"
@@ -28,7 +29,7 @@ func newDevEnv() Env {
 var devEnv = newDevEnv()
 
 const (
-	mockUUID       = "e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae"
+	myUUID         = "e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae"
 	mockEmail      = "weiguo.ni@ftchinese.com"
 	myUnionID      = "ogfvwjk6bFqv2yQpOrac0J3PqA0o"
 	myOpenID       = "ob7fA0h69OO0sTLyQQpYc55iF_P0"
@@ -49,6 +50,8 @@ var mockWxApp = WxApp{
 	AppSecret: os.Getenv("WXPAY_APPSECRET"),
 }
 
+var mockUUID = uuid.Must(uuid.NewV4()).String()
+
 func generateCode() string {
 	code, _ := util.RandomBase64(24)
 	return code
@@ -66,6 +69,36 @@ func generateWxID() string {
 
 func generateAvatarURL() string {
 	return fmt.Sprintf("http://thirdwx.qlogo.cn/mmopen/vi_32/%s/132", fake.CharactersN(90))
+}
+
+func newFTCMember() Membership {
+	return Membership{
+		UserID:     mockUUID,
+		Tier:       enum.TierStandard,
+		Cycle:      enum.CycleYear,
+		ExpireDate: util.DateNow(),
+	}
+}
+
+func newWxMember() Membership {
+	unionID := generateWxID()
+	return Membership{
+		UserID:     unionID,
+		UnionID:    null.StringFrom(unionID),
+		Tier:       enum.TierStandard,
+		Cycle:      enum.CycleYear,
+		ExpireDate: util.DateNow(),
+	}
+}
+
+func newBoundMember() Membership {
+	return Membership{
+		UserID:     mockUUID,
+		UnionID:    null.StringFrom(generateWxID()),
+		Tier:       enum.TierStandard,
+		Cycle:      enum.CycleYear,
+		ExpireDate: util.DateNow(),
+	}
 }
 
 type mockWxID struct {
