@@ -4,14 +4,12 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/guregu/null"
-
 	"gitlab.com/ftchinese/subscription-api/enum"
 
 	"github.com/icrowley/fake"
-	"gitlab.com/ftchinese/subscription-api/util"
-
 	cache "github.com/patrickmn/go-cache"
+	uuid "github.com/satori/go.uuid"
+	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 func newDevEnv() Env {
@@ -28,8 +26,9 @@ func newDevEnv() Env {
 
 var devEnv = newDevEnv()
 
-const mockOrderID = "FT0102381539932302"
-const mockUserID = "e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae"
+var mockUUID = uuid.Must(uuid.NewV4()).String()
+
+var mockUnionID, _ = util.RandomBase64(21)
 
 var mockClient = util.ClientApp{
 	ClientType: enum.PlatformAndroid,
@@ -40,31 +39,15 @@ var mockClient = util.ClientApp{
 
 var mockPlan = DefaultPlans["standard_year"]
 
-var tommorrow = util.DateFrom(time.Now().AddDate(0, 0, 1))
-
-var mockMember = Membership{
-	UserID:     mockUserID,
-	UnionID:    null.String{},
-	Tier:       enum.TierStandard,
-	Cycle:      enum.CycleYear,
-	ExpireDate: tommorrow,
-}
-
-var mockUser = User{
-	ID:    mockUserID,
-	Name:  "weiguo.ni",
-	Email: "weiguo.ni@ftchinese.com",
-}
+var tenDaysLater = time.Now().AddDate(0, 0, 10)
 
 // Mock inserting a subscription order.
 // isRenew dtermines is this order is used to
 // renew a membership or not.
-func insertSubs(isRenew bool) (Subscription, error) {
-	subs := mockPlan.CreateSubs(mockUserID, enum.Wxpay)
+func createSubs() (Subscription, error) {
+	subs := NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
 
-	subs.IsRenewal = isRenew
-
-	err := devEnv.saveSubscription(subs, mockClient)
+	err := devEnv.SaveSubscription(subs, mockClient)
 
 	if err != nil {
 		return subs, err
@@ -73,14 +56,22 @@ func insertSubs(isRenew bool) (Subscription, error) {
 	return subs, nil
 }
 
-func createAndFindSubs(isRenew bool) (Subscription, error) {
-	subs, err := insertSubs(isRenew)
+// Mock creating a new membership.
+// Return user id so that it could be used to generate a new subscription order for the same user.
+func createMember() (Subscription, error) {
+	subs, err := createSubs()
 
 	if err != nil {
 		return subs, err
 	}
 
-	subs, err = devEnv.FindSubscription(subs.OrderID)
+	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
+
+	if err != nil {
+		return subs, err
+	}
+
+	err = devEnv.CreateMembership(subs)
 
 	if err != nil {
 		return subs, err
@@ -89,28 +80,18 @@ func createAndFindSubs(isRenew bool) (Subscription, error) {
 	return subs, nil
 }
 
-func confirmSubs(isRenew bool) (Subscription, error) {
-	subs, err := createAndFindSubs(isRenew)
+func createAndFindMember() (Membership, error) {
+	subs, err := createMember()
 
 	if err != nil {
-		return subs, err
+		return Membership{}, err
 	}
 
-	now := time.Now()
-
-	subs, err = subs.withConfirmation(now)
+	m, err := devEnv.findMember(subs)
 
 	if err != nil {
-		return subs, err
+		return m, err
 	}
 
-	if isRenew {
-		subs, err = subs.withMembership(mockMember)
-
-		if err != nil {
-			return subs, err
-		}
-	}
-
-	return subs, nil
+	return m, nil
 }

@@ -1,11 +1,64 @@
 package model
 
-// func TestFindMember(t *testing.T) {
-// 	m, err := devEnv.FindMember("e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae")
+import (
+	"testing"
+	"time"
 
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
+	"gitlab.com/ftchinese/subscription-api/enum"
+	"gitlab.com/ftchinese/subscription-api/util"
+)
 
-// 	t.Logf("%+v\n", m)
-// }
+func TestCanRenew(t *testing.T) {
+	member := Membership{
+		ExpireDate: util.DateFrom(time.Now().AddDate(1, 0, 0)),
+	}
+
+	ok := member.CanRenew(enum.CycleYear)
+
+	t.Logf("Expire date: %s, can renew another year: %t\n", member.ExpireDate, ok)
+}
+
+func TestCannotRenew(t *testing.T) {
+	member := Membership{
+		ExpireDate: util.DateFrom(time.Now().AddDate(1, 1, 0)),
+	}
+
+	ok := member.CanRenew(enum.CycleYear)
+
+	t.Logf("Expire date: %s, can renew another year: %t\n", member.ExpireDate, ok)
+}
+func TestMemberNotFound(t *testing.T) {
+	subs := NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
+
+	m, err := devEnv.findMember(subs)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("%+v\n", m)
+}
+
+func TestFoundMember(t *testing.T) {
+	subs := NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
+
+	subs, err := subs.withConfirmation(time.Now())
+
+	err = devEnv.CreateMembership(subs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Created a member from subscripiton: %+v\n", subs)
+
+	m, err := devEnv.findMember(subs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Find membership: %+v\n", m)
+}
