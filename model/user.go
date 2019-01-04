@@ -6,7 +6,6 @@ import (
 
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/postoffice"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // User contains the minimal information to identify a user.
@@ -80,39 +79,4 @@ func (env Env) FindUser(id string) (User, error) {
 	}
 
 	return u, nil
-}
-
-// ComposeEmail compiles letter templates against data.
-func ComposeEmail(u User, s Subscription) (util.Parcel, error) {
-	tmpl, err := template.New("order").Parse(letter)
-
-	if err != nil {
-		logger.WithField("location", "ComposeEmail").Error(err)
-		return util.Parcel{}, err
-	}
-
-	data := struct {
-		User User
-		Subs Subscription
-	}{
-		u,
-		s,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
-	if err != nil {
-		logger.WithField("location", "ComposeEmail").Error(err)
-		return util.Parcel{}, err
-	}
-
-	return util.Parcel{
-		FromAddress: "no-reply@ftchinese.com",
-		FromName:    "FT中文网会员订阅",
-		ToAddress:   u.Email,
-		ToName:      u.NormalizeName(),
-		Subject:     "会员订阅",
-		Body:        body.String(),
-	}, nil
 }
