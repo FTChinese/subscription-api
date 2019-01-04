@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"gitlab.com/ftchinese/subscription-api/enum"
+	"gitlab.com/ftchinese/subscription-api/postoffice"
 
 	"github.com/patrickmn/go-cache"
 
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 var logger = log.WithField("package", "subscription-api.model")
@@ -21,9 +21,9 @@ const (
 
 // Env wraps database connection
 type Env struct {
-	DB         *sql.DB
-	Cache      *cache.Cache
-	PostOffice util.PostOffice
+	DB      *sql.DB
+	Cache   *cache.Cache
+	PostMan postoffice.PostMan
 }
 
 func normalizeMemberTier(vipType int64) enum.Tier {
