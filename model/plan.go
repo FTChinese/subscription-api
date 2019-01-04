@@ -42,19 +42,6 @@ func (p Plan) OrderID() string {
 	return fmt.Sprintf("FT%03d%d%d", p.ID, rn, time.Now().Unix())
 }
 
-// CreateSubs generates a new subscription order based on the plan chosen.
-func (p Plan) CreateSubs(userID string, method enum.PayMethod) Subscription {
-	return Subscription{
-		OrderID:       p.OrderID(),
-		TierToBuy:     p.Tier,
-		BillingCycle:  p.Cycle,
-		Price:         p.Price,
-		TotalAmount:   p.Price,
-		PaymentMethod: method,
-		UserID:        userID,
-	}
-}
-
 // DefaultPlans is the default subscription. No discount.
 var DefaultPlans = map[string]Plan{
 	"standard_year": Plan{
