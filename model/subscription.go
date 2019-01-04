@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/guregu/null"
+
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
@@ -31,7 +32,7 @@ import (
 // 5. After all field is updated, we begin to persist the data into database, using SQL's transacation so that subscription order's confirmation data and a user's membership data are saved in one shot, or fail together.
 type Subscription struct {
 	UserID        string
-	UnionID       null.String // If UnionID is valid, then UserID must be equal to it.
+	LoginMethod   enum.LoginMethod
 	OrderID       string
 	TierToBuy     enum.Tier
 	BillingCycle  enum.Cycle
@@ -39,46 +40,45 @@ type Subscription struct {
 	TotalAmount   float64
 	PaymentMethod enum.PayMethod
 	Currency      string
-	CreatedAt     util.ISODateTime // When the order is created.
-	ConfirmedAt   util.Time        // When the payment is confirmed.
-	IsRenewal     bool             // If this order is used to renew membership
-	StartDate     util.Date        // Membership start date for this order
-	EndDate       util.Date        // Membership end date for this order
+	CreatedAt     util.Time // When the order is created.
+	ConfirmedAt   util.Time // When the payment is confirmed.
+	IsRenewal     bool      // If this order is used to renew membership
+	StartDate     util.Date // Membership start date for this order
+	EndDate       util.Date // Membership end date for this order
 }
 
-func newSubs(userID, unionID string, p Plan, method enum.PayMethod) Subscription {
-	subs := Subscription{
+// NewWxSubs creates a new Subscription with payment method set to Wechat.
+// Note wechat login and wechat pay we talked here are two totally non-related things.
+func NewWxSubs(userID string, p Plan, login enum.LoginMethod) Subscription {
+	return Subscription{
+		UserID:        userID,
+		LoginMethod:   login,
 		OrderID:       p.OrderID(),
 		TierToBuy:     p.Tier,
 		BillingCycle:  p.Cycle,
 		Price:         p.Price,
 		TotalAmount:   p.Price,
-		PaymentMethod: method,
+		PaymentMethod: enum.Wxpay,
 	}
-
-	if userID != "" {
-		subs.UserID = userID
-		return subs
-	}
-
-	subs.UserID = unionID
-	subs.UnionID = null.StringFrom(unionID)
-	return subs
-}
-
-// NewWxSubs creates a new Subscription with payment method set to Wechat.
-func NewWxSubs(userID, unionID string, p Plan) Subscription {
-	return newSubs(userID, unionID, p, enum.Wxpay)
 }
 
 // NewAliSubs creates a new Subscription with payment method set to Alipay.
-func NewAliSubs(userID, unionID string, p Plan) Subscription {
-	return newSubs(userID, unionID, p, enum.Alipay)
+func NewAliSubs(userID string, p Plan, login enum.LoginMethod) Subscription {
+	return Subscription{
+		UserID:        userID,
+		LoginMethod:   login,
+		OrderID:       p.OrderID(),
+		TierToBuy:     p.Tier,
+		BillingCycle:  p.Cycle,
+		Price:         p.Price,
+		TotalAmount:   p.Price,
+		PaymentMethod: enum.Alipay,
+	}
 }
 
 // Check if user logged in by Wechat account.
 func (s Subscription) isWxLogin() bool {
-	return s.UnionID.Valid
+	return s.LoginMethod == enum.WechatLogin
 }
 
 // WxTotalFee converts TotalAmount to int64 in cent for comparison with wx notification.
@@ -92,17 +92,17 @@ func (s Subscription) AliTotalAmount() string {
 }
 
 // CreatedAtCN turns creation time into China Stadnard Time in Chinese text.
-func (s Subscription) CreatedAtCN() string {
-	dtStr := string(s.CreatedAt)
-	cst, err := util.ToCST.FromISO8601(dtStr)
+// func (s Subscription) CreatedAtCN() string {
+// 	dtStr := string(s.CreatedAt)
+// 	cst, err := util.ToCST.FromISO8601(dtStr)
 
-	// If conversion failed, use the original date time string.
-	if err != nil {
-		return dtStr
-	}
+// 	// If conversion failed, use the original date time string.
+// 	if err != nil {
+// 		return dtStr
+// 	}
 
-	return cst
-}
+// 	return cst
+// }
 
 // Confirm updates a subscription order's ConfirmedAt, StartDate
 // and EndDate based on passed in confirmation time.
@@ -110,8 +110,11 @@ func (s Subscription) CreatedAtCN() string {
 // conforms to SQL DATE type. So we do not need to convert it.
 func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
 
+	s.ConfirmedAt = util.TimeFrom(t)
+	s.StartDate = util.DateFrom(t)
+
 	// Calculate expiration time by adding one cycle to the confirmation time.
-	endedAt, err := s.BillingCycle.EndingTime(t)
+	expireTime, err := s.BillingCycle.EndingTime(t)
 
 	// If expiration time cannot be deduced.
 	// (minght be caused by wrong billing cycle)
@@ -119,13 +122,8 @@ func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
 		return s, err
 	}
 
-	// Convert the confirmation Time instance to ISO8601 string.
-	s.ConfirmedAt = util.TimeFrom(t)
-
-	// Use confirmation time's year-month-date part as this order's subscriped beginning date.
-	s.StartDate = util.DateFrom(t)
 	// Use the expiration time's year-month-date part as this order's purchased ending date.
-	s.EndDate = util.DateFrom(endedAt)
+	s.EndDate = util.DateFrom(expireTime)
 
 	return s, nil
 }
@@ -133,63 +131,57 @@ func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
 // update subscription's StartDate and EndDate based on
 // previous membership's expiration date
 // after the subscription is confirmed.
+// Can this method only if previous membership
+// is not expired yet.
 func (s Subscription) withMembership(member Membership) (Subscription, error) {
+	s.IsRenewal = !member.IsExpired()
+
+	s.StartDate = member.ExpireDate
+
 	// Add a cycle to current membership's expiration time
 	// expireTime := s.deduceExpireTime(willEnd)
-	endedAt, err := s.BillingCycle.EndingTime(member.ExpireDate.Time)
+	expireTime, err := s.BillingCycle.EndingTime(member.ExpireDate.Time)
 
 	if err != nil {
 		return s, err
 	}
 
-	s.StartDate = member.ExpireDate
-	s.EndDate = util.DateFrom(endedAt)
+	s.EndDate = util.DateFrom(expireTime)
 
 	return s, nil
 }
 
-// PlaceOrder creates a new order for a user
-// and remembers if this order is used to
-// renew existing membership or simply
-// create a new one.
-func (env Env) PlaceOrder(subs Subscription, c util.ClientApp) error {
-	// Check if we could find the membership for this user.
+// IsSubsAllowed checks if this user is allowed to purchase a subscritpion.
+// If a user is a valid member, and the membership is not expired, and not within the allowed renewal period, deny the request.
+func (env Env) IsSubsAllowed(subs Subscription) (bool, error) {
 	member, err := env.findMember(subs)
 
-	// If the membership if found.
-	if err == nil {
-		// If membership is not allowed to renew yet
-		if !member.CanRenew(subs.BillingCycle) {
-			return util.ErrRenewalForbidden
-		}
-
-		// If current membership is allowed to renew,
-		// and membership is not expired yet,
-		// we remember that this order is used for renewal.
-		if !member.IsExpired() {
-			subs.IsRenewal = true
-		}
-	}
-
-	err = env.saveSubscription(subs, c)
-
 	if err != nil {
-		return err
+		// If this user is not a member yet.
+		if err == sql.ErrNoRows {
+			return true, nil
+		}
+
+		logger.WithField("trace", "IsSubsAllowed").Error(err)
+		// If any other unkonw error occurred
+		return false, err
 	}
 
-	return nil
+	// This user is/was a member.
+	return member.CanRenew(subs.BillingCycle), nil
 }
 
-// saveSubscription saves a new subscription order.
+// SaveSubscription saves a new subscription order.
 // At this moment, you should already know if this subscription is
 // a renewal of a new one, based on current Membership's expire_date.
-func (env Env) saveSubscription(s Subscription, c util.ClientApp) error {
+func (env Env) SaveSubscription(s Subscription, c util.ClientApp) error {
 	query := `
 	INSERT INTO premium.ftc_trade
 	SET trade_no = ?,
 		trade_price = ?,
 		trade_amount = ?,
 		user_id = ?,
+		login_method = ?,
 		tier_to_buy = ?,
 		billing_cycle = ?,
 		payment_method = ?,
@@ -205,6 +197,7 @@ func (env Env) saveSubscription(s Subscription, c util.ClientApp) error {
 		s.Price,
 		s.TotalAmount,
 		s.UserID,
+		s.LoginMethod,
 		s.TierToBuy,
 		s.BillingCycle,
 		s.PaymentMethod,
@@ -230,14 +223,14 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 		trade_price AS price,
 		trade_amount AS totalAmount,
 		user_id AS userId,
+		login_method AS loginMethod,
 		tier_to_buy AS tierToBuy,
 		billing_cycle AS billingCycle,
 		payment_method AS paymentMethod,
-		is_renewal AS isRenewal,
 		created_utc AS createdAt,
 		confirmed_utc AS confirmedAt,
-		IFNULL(start_date, '') AS startDate,
-		IFNULL(end_date, '') AS endDate
+		start_date AS startDate,
+		end_date AS endDate
 	FROM premium.ftc_trade
 	WHERE trade_no = ?
 	LIMIT 1`
@@ -248,10 +241,10 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 		&s.Price,
 		&s.TotalAmount,
 		&s.UserID,
+		&s.LoginMethod,
 		&s.TierToBuy,
 		&s.BillingCycle,
 		&s.PaymentMethod,
-		&s.IsRenewal,
 		&s.CreatedAt,
 		&s.ConfirmedAt,
 		&s.StartDate,
@@ -259,7 +252,7 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 	)
 
 	if err != nil {
-		logger.WithField("location", "Find subscription").Error(err)
+		logger.WithField("trace", "FindSubscription").Error(err)
 		return s, err
 	}
 
@@ -279,17 +272,14 @@ func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) (Subsc
 		return s, err
 	}
 
-	// If this is a new member, the subscrition information is complete.
-	if !s.IsRenewal {
-		return subs, nil
-	}
-
-	// If this is a renewal, we need to find the current membership's expiration date.
+	// Try to find out if this subscription order is created by an existing member.
 	member, err := env.findMember(s)
 
 	// If err is SqlNoRows error, do not use this subs.
 	if err != nil {
 		// If the error is sql.ErrNoRows, `subs` is valid.
+		logger.WithField("trace", "ConfirmSubscription").Error(err)
+
 		if err == sql.ErrNoRows {
 			return subs, nil
 		}
@@ -306,11 +296,11 @@ func (env Env) ConfirmSubscription(s Subscription, confirmTime time.Time) (Subsc
 	return subs, nil
 }
 
-// CreateOrUpdateMember updates subscription order and create/update membership in one transaction.
+// CreateMembership updates subscription order and create/update membership in one transaction.
 // Confirm order and create/renew a new member should be an all-or-nothing operation.
 // Or update membership duration.
 // NOTE: The passed in Subscription must be one retrieved from database. Otherwise you should never call this method.
-func (env Env) CreateOrUpdateMember(subs Subscription) error {
+func (env Env) CreateMembership(subs Subscription) error {
 	tx, err := env.DB.Begin()
 	if err != nil {
 		logger.WithField("location", "CreateOrUpdateMember begin Transaction").Error(err)
@@ -319,13 +309,15 @@ func (env Env) CreateOrUpdateMember(subs Subscription) error {
 
 	stmtUpdate := `
 	UPDATE premium.ftc_trade
-	SET confirmed_utc = ?,
+	SET is_renewal = ?,
+		confirmed_utc = ?,
 		start_date = ?,
 		end_date = ?
 	WHERE trade_no = ?
 	LIMIT 1`
 
 	_, updateErr := tx.Exec(stmtUpdate,
+		subs.IsRenewal,
 		subs.ConfirmedAt,
 		subs.StartDate,
 		subs.EndDate,
@@ -340,6 +332,7 @@ func (env Env) CreateOrUpdateMember(subs Subscription) error {
 	stmtCreate := `
 	INSERT INTO premium.ftc_vip
 	SET vip_id = ?,
+		vip_id_alias = ?,
 		member_tier = ?,
 		billing_cycle = ?,
 		expire_date = ?
@@ -348,11 +341,17 @@ func (env Env) CreateOrUpdateMember(subs Subscription) error {
 		billing_cycle = ?,
 		expire_date = ?`
 
+	var unionID null.String
+	if subs.isWxLogin() {
+		unionID = null.StringFrom(subs.UserID)
+	}
+
 	_, createErr := tx.Exec(stmtCreate,
 		subs.UserID,
+		unionID,
 		subs.TierToBuy,
 		subs.BillingCycle,
-		subs.StartDate,
+		subs.EndDate,
 		subs.TierToBuy,
 		subs.BillingCycle,
 		subs.EndDate,
@@ -361,11 +360,11 @@ func (env Env) CreateOrUpdateMember(subs Subscription) error {
 	if createErr != nil {
 		_ = tx.Rollback()
 
-		logger.WithField("location", "CreateOrUpdateMember create or update membership").Error(err)
+		logger.WithField("trace", "CreateOrUpdateMember create or update membership").Error(err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		logger.WithField("location", "CreateOrUpdateMember commit transaction`").Error(err)
+		logger.WithField("trace", "CreateOrUpdateMember commit transaction`").Error(err)
 		return err
 	}
 
@@ -383,12 +382,12 @@ func (env Env) SendConfirmationLetter(subs Subscription) error {
 	}
 
 	// 2. Compose email content
-	parcel, err := ComposeEmail(user, subs)
+	parcel, err := user.ComposeParcel(subs)
 	if err != nil {
 		return err
 	}
 
-	err = env.PostOffice.SendLetter(parcel)
+	err = env.PostMan.Deliver(parcel)
 
 	return err
 }
