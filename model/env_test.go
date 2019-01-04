@@ -44,8 +44,13 @@ var tenDaysLater = time.Now().AddDate(0, 0, 10)
 // Mock inserting a subscription order.
 // isRenew dtermines is this order is used to
 // renew a membership or not.
-func createSubs() (Subscription, error) {
-	subs := NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
+func createSubs(isWxLogin bool) (Subscription, error) {
+	var subs Subscription
+	if isWxLogin {
+		subs = NewWxSubs(mockUnionID, mockPlan, enum.WechatLogin)
+	} else {
+		subs = NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
+	}
 
 	err := devEnv.SaveSubscription(subs, mockClient)
 
@@ -58,8 +63,8 @@ func createSubs() (Subscription, error) {
 
 // Mock creating a new membership.
 // Return user id so that it could be used to generate a new subscription order for the same user.
-func createMember() (Subscription, error) {
-	subs, err := createSubs()
+func createMember(isWxLogin bool) (Subscription, error) {
+	subs, err := createSubs(isWxLogin)
 
 	if err != nil {
 		return subs, err
@@ -78,20 +83,4 @@ func createMember() (Subscription, error) {
 	}
 
 	return subs, nil
-}
-
-func createAndFindMember() (Membership, error) {
-	subs, err := createMember()
-
-	if err != nil {
-		return Membership{}, err
-	}
-
-	m, err := devEnv.findMember(subs)
-
-	if err != nil {
-		return m, err
-	}
-
-	return m, nil
 }
