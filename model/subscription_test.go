@@ -3,129 +3,183 @@ package model
 import (
 	"testing"
 	"time"
+
+	"gitlab.com/ftchinese/subscription-api/enum"
+	"gitlab.com/ftchinese/subscription-api/util"
 )
 
-// Test Subscription's withConfirmation method.
-func TestSubsConfirm(t *testing.T) {
+func TestNewFTCSubs(t *testing.T) {
+	wxSubs := NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
 
-	subs, err := confirmSubs(false)
+	t.Logf("Created a Wechat subscription: %+v\n", wxSubs)
 
-	if err != nil {
-		t.Error(err)
-	}
+	aliSubs := NewAliSubs(mockUUID, mockPlan, enum.EmailLogin)
 
-	t.Logf("Subscritpion confirmed: %+v\n", subs)
+	t.Logf("Created a Ali subscription: %+v\n", aliSubs)
 }
 
-// Test Subscription's withMembership method.
-func TestSubsRenew(t *testing.T) {
+func TestSubsWithConfirmation(t *testing.T) {
+	subs := NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
 
-	subs, err := confirmSubs(true)
+	t.Logf("Initial subscription: %+v\n", subs)
 
-	if err != nil {
-		t.Error(err)
-
-		return
-	}
-
-	t.Logf("Renw membership with subscription: %+v\n", subs)
-}
-
-// Test create a new subscription order
-func TestSaveSubs(t *testing.T) {
-
-	subs, err := insertSubs(false)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Log(subs)
-}
-
-func TestRetrieveSubs(t *testing.T) {
-	subs, err := createAndFindSubs(false)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("%+v\n", subs)
-}
-
-func TestConfirmSubs__new(t *testing.T) {
-	// Create a new subscription order and retrieve it.
-	subs, err := createAndFindSubs(false)
+	subs, err := subs.withConfirmation(time.Now())
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
+
+	t.Logf("Confirmed subscripiton: %+v\n", subs)
+}
+
+func TestSubsWithMembership(t *testing.T) {
+	subs := NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
+	subs.IsRenewal = true
+
+	t.Logf("Initial subscription: %+v\n", subs)
+
+	subs, err := subs.withConfirmation(time.Now())
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	member := Membership{
+		ExpireDate: util.DateFrom(tenDaysLater),
+	}
+
+	subs, err = subs.withMembership(member)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Confirmed subscription for renewal: %+v\n", subs)
+}
+
+func TestIsSubsAllowed(t *testing.T) {
+	subs, err := createMember()
+
+	subs = NewWxSubs(subs.UserID, mockPlan, enum.EmailLogin)
+
+	ok, err := devEnv.IsSubsAllowed(subs)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Is subscription allowed: %t\n", ok)
+}
+func TestCreateSubsNew(t *testing.T) {
+	subs := NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
+
+	err := devEnv.SaveSubscription(subs, mockClient)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Saved subscription: %+v\n", subs)
+}
+
+func TestCreateSubsRenewal(t *testing.T) {
+	subs, err := createMember()
+
+	subs = NewWxSubs(subs.UserID, mockPlan, enum.EmailLogin)
+
+	err = devEnv.SaveSubscription(subs, mockClient)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Create a renewal order: %+v\n", subs)
+}
+
+func TestFindSubs(t *testing.T) {
+	subs, err := createSubs()
+
+	found, err := devEnv.FindSubscription(subs.OrderID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Found subscription: %+v\n", found)
+}
+
+func TestConfirmSubs(t *testing.T) {
+	subs, err := createSubs()
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Created subscription: %+v\n", subs)
+
+	// Omit the find subscription step.
 
 	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
 
 	if err != nil {
 		t.Error(err)
-	}
-
-	t.Logf("%+v\n", subs)
-}
-
-func TestConfirmSubs__renew(t *testing.T) {
-	subs, err := createAndFindSubs(true)
-
-	if err != nil {
-		t.Error(err)
 		return
 	}
 
-	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("%+v\n", subs)
+	t.Logf("Confirmed subscription: %+v\n", subs)
 }
 
-// Test create a new member.
-// Workflow as follows:
-// Client
 func TestCreateMember(t *testing.T) {
-	subs, err := createAndFindSubs(false)
-
-	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
+	subs, err := createMember()
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = devEnv.CreateOrUpdateMember(subs)
-
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	t.Logf("%+v\n", subs)
+	t.Logf("Subscritpion for a new member: %+v\n", subs)
 }
 
 func TestRenewMember(t *testing.T) {
-	subs, err := createAndFindSubs(true)
 
-	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
+	member, err := createAndFindMember()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Created a member: %+v\n", member)
+
+	// Create a subscription order for an existing user.
+	newSubs := NewWxSubs(member.UserID, mockPlan, enum.EmailLogin)
+
+	// Save it.
+	err = devEnv.SaveSubscription(newSubs, mockClient)
+
+	t.Logf("Save a renewal subscription")
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = devEnv.CreateOrUpdateMember(subs)
+	// Confirm it. This mocks payment provider's notification.
+	newSubs, err = devEnv.ConfirmSubscription(newSubs, time.Now())
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Confirmed a renewal subscription: %+v\n", newSubs)
+
+	err = devEnv.CreateMembership(newSubs)
 
 	if err != nil {
 		t.Error(err)
 	}
-
-	t.Log(subs)
 }

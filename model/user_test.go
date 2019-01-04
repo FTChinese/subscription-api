@@ -1,18 +1,14 @@
 package model
 
-import (
-	"testing"
-)
+// func TestFindUser(t *testing.T) {
+// 	u, err := devEnv.FindUser(mockUser.ID)
 
-func TestFindUser(t *testing.T) {
-	u, err := devEnv.FindUser(mockUser.ID)
+// 	if err != nil {
+// 		t.Error(nil)
+// 	}
 
-	if err != nil {
-		t.Error(nil)
-	}
-
-	t.Log(u)
-}
+// 	t.Log(u)
+// }
 
 // func TestTemplate(t *testing.T) {
 // 	tmpl, err := template.New("test").Parse(letter)
