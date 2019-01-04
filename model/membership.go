@@ -78,7 +78,7 @@ func (env Env) findMember(subs Subscription) (Membership, error) {
 	)
 
 	if err != nil {
-		logger.WithField("location", "FindMember").Error(err)
+		logger.WithField("trace", "findMember").Error(err)
 
 		return m, err
 	}
