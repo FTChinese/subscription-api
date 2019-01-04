@@ -9,7 +9,7 @@ import (
 
 // Send a notification email after user bound accounts.
 const notificationEmail = `
-尊敬的FT中文网用户 {{.UserName}},
+FT中文网用户 {{.UserName}},
 
 您好！您的FT中文网账号 {{.Email}} 已经绑定了微信账号 {{.NickName}}。
 
