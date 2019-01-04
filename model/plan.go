@@ -60,7 +60,7 @@ var DefaultPlans = map[string]Plan{
 	"standard_year": Plan{
 		Tier:        enum.TierStandard,
 		Cycle:       enum.CycleYear,
-		Price:       198.00,
+		Price:       258.00,
 		ID:          10,
 		Description: "FT中文网 - 年度标准会员",
 	},
