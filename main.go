@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/controller"
 	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/postoffice"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
@@ -61,8 +62,8 @@ func main() {
 	}
 
 	c := cache.New(cache.DefaultExpiration, 0)
-	p := util.NewPostOffice()
-	m := model.Env{DB: db, Cache: c, PostOffice: p}
+	p := postoffice.NewPostMan()
+	m := model.Env{DB: db, Cache: c, PostMan: p}
 
 	wxRouter := controller.NewWxRouter(m, isProd)
 	aliRouter := controller.NewAliRouter(m, isProd)
