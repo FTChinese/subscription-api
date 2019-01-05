@@ -2,7 +2,8 @@ package wxlogin
 
 // BindAccount binds a wechat account to ftc account.
 func (env Env) BindAccount(userID, unionID string) error {
-	query := `UPDATE cmstmp01.userinfo
+	query := `
+	UPDATE cmstmp01.userinfo
 	SET wx_union_id = ?
 	WHERE user_id = ?
 	LIMIT 1`
@@ -17,7 +18,7 @@ func (env Env) BindAccount(userID, unionID string) error {
 	return nil
 }
 
-// SaveMergedMember saves a merged membership pior to deleting it.
+// SaveMergedMember saves a merged membership prior to deleting it.
 func (env Env) SaveMergedMember(userID string, wx Membership) error {
 	query := `
 	INSERT INTO premium.merged_member
@@ -91,6 +92,7 @@ func (env Env) BindAccountAndMember(merged Membership) error {
 		logger.WithField("trace", "BindAccountAndMember delete wechat member").Error(errB)
 	}
 
+	// Re-insert the membership.
 	stmtUpdate := `
 	INSERT INTO premium.ftc_vip
 	SET vip_id = ?,
