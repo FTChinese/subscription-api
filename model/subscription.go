@@ -307,6 +307,7 @@ func (env Env) CreateMembership(subs Subscription) error {
 		return err
 	}
 
+	// Update subscription order.
 	stmtUpdate := `
 	UPDATE premium.ftc_trade
 	SET is_renewal = ?,
@@ -329,6 +330,7 @@ func (env Env) CreateMembership(subs Subscription) error {
 		logger.WithField("location", "CreateOrUpdateMember update order").Error(err)
 	}
 
+	// Create or extend membership.
 	stmtCreate := `
 	INSERT INTO premium.ftc_vip
 	SET vip_id = ?,
