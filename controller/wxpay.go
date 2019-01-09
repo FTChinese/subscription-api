@@ -261,7 +261,7 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	params, err := router.processWxResponse(req.Body)
 
 	if err != nil {
-		logger.WithField("location", "WxNotification").Error(err)
+		logger.WithField("trace", "WxNotification").Error(err)
 
 		w.Write([]byte(resp.NotOK(err.Error())))
 
@@ -466,7 +466,7 @@ func (router WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
 
 	var returnCode string
 	params := util.Decode(r)
-	logger.WithField("location", "processWxResponse").Infof("Resp params: %+v", params)
+	logger.WithField("trace", "processWxResponse").Infof("Resp params: %+v", params)
 
 	if params.ContainsKey("return_code") {
 		returnCode = params.GetString("return_code")
