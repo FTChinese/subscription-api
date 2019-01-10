@@ -18,14 +18,14 @@ type Membership struct {
 	ExpireDate util.Date   `json:"expireDate"` // On which date the membership ends
 }
 
-// CanRenew tests if a membership is allowed to renuew subscription.
+// canRenew tests if a membership is allowed to renuew subscription.
 // A member could only renew its subscripiton when remaining duration of a membership is shorter than a billing cycle.
 // Expire date - now > cycle  --- Renwal is not allowed
 // Expire date - now <= cycle --- Can renew
 //         now--------------------| Allow
 //      |-------- A cycle --------| Expires
 // now----------------------------| Deny
-func (m Membership) CanRenew(cycle enum.Cycle) bool {
+func (m Membership) canRenew(cycle enum.Cycle) bool {
 	cycleEnds, err := cycle.EndingTime(time.Now())
 
 	if err != nil {
@@ -35,8 +35,8 @@ func (m Membership) CanRenew(cycle enum.Cycle) bool {
 	return m.ExpireDate.Before(cycleEnds)
 }
 
-// IsExpired tests if the membership's expiration date is before now.
-func (m Membership) IsExpired() bool {
+// isExpired tests if the membership's expiration date is before now.
+func (m Membership) isExpired() bool {
 	// If expire is before now, it is expired.
 	return m.ExpireDate.Before(time.Now())
 }
