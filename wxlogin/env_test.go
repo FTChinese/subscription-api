@@ -72,36 +72,6 @@ func generateAvatarURL() string {
 	return fmt.Sprintf("http://thirdwx.qlogo.cn/mmopen/vi_32/%s/132", fake.CharactersN(90))
 }
 
-func newFTCMember() Membership {
-	return Membership{
-		UserID:     mockUUID,
-		Tier:       enum.TierStandard,
-		Cycle:      enum.CycleYear,
-		ExpireDate: util.DateNow(),
-	}
-}
-
-func newWxMember() Membership {
-	unionID := generateWxID()
-	return Membership{
-		UserID:     unionID,
-		UnionID:    null.StringFrom(unionID),
-		Tier:       enum.TierStandard,
-		Cycle:      enum.CycleYear,
-		ExpireDate: util.DateNow(),
-	}
-}
-
-func newBoundMember() Membership {
-	return Membership{
-		UserID:     mockUUID,
-		UnionID:    null.StringFrom(generateWxID()),
-		Tier:       enum.TierStandard,
-		Cycle:      enum.CycleYear,
-		ExpireDate: util.DateNow(),
-	}
-}
-
 type mockWxID struct {
 	OpenID  string // Same OpenID under one app.
 	UnionID string // Same user.
