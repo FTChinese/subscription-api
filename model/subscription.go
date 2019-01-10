@@ -134,7 +134,7 @@ func (s Subscription) withConfirmation(t time.Time) (Subscription, error) {
 // Can this method only if previous membership
 // is not expired yet.
 func (s Subscription) withMembership(member Membership) (Subscription, error) {
-	s.IsRenewal = !member.IsExpired()
+	s.IsRenewal = !member.isExpired()
 
 	s.StartDate = member.ExpireDate
 
@@ -167,8 +167,14 @@ func (env Env) IsSubsAllowed(subs Subscription) (bool, error) {
 		return false, err
 	}
 
+	// Do not allow a subscribed user to change tiers.
+	if subs.TierToBuy != member.Tier {
+		logger.WithField("trace", "IsSubsAllowed").Error("Changing subscription tier is not supported.")
+		return false, nil
+	}
+
 	// This user is/was a member.
-	return member.CanRenew(subs.BillingCycle), nil
+	return member.canRenew(subs.BillingCycle), nil
 }
 
 // SaveSubscription saves a new subscription order.
