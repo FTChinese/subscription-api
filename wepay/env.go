@@ -1,4 +1,4 @@
-package wechat
+package wepay
 
 import "database/sql"
 

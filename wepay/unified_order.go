@@ -1,4 +1,4 @@
-package wechat
+package wepay
 
 import (
 	"github.com/guregu/null"
