@@ -350,6 +350,34 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	w.Write([]byte(resp.OK()))
 }
 
+func (router WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
+
+	var returnCode string
+	params := util.Decode(r)
+	logger.WithField("trace", "processWxResponse").Infof("Resp params: %+v", params)
+
+	if params.ContainsKey("return_code") {
+		returnCode = params.GetString("return_code")
+	} else {
+		return nil, errors.New("no return_code in XML")
+	}
+
+	switch returnCode {
+	case wxpay.Fail:
+		return nil, errors.New("wx notification failed")
+
+	case wxpay.Success:
+		if router.client.ValidSign(params) {
+			logger.WithField("location", "processWxResponse").Info("Validating signature passed")
+			return params, nil
+		}
+		return nil, errors.New("invalid sign value in XML")
+
+	default:
+		return nil, errors.New("return_code value is invalid in XML")
+	}
+}
+
 // OrderQuery implements 查询订单
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 // Only transaction_id or out_trade_no is required.
@@ -460,34 +488,6 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	}
 
 	view.Render(w, view.NewResponse().SetBody(order))
-}
-
-func (router WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
-
-	var returnCode string
-	params := util.Decode(r)
-	logger.WithField("trace", "processWxResponse").Infof("Resp params: %+v", params)
-
-	if params.ContainsKey("return_code") {
-		returnCode = params.GetString("return_code")
-	} else {
-		return nil, errors.New("no return_code in XML")
-	}
-
-	switch returnCode {
-	case wxpay.Fail:
-		return nil, errors.New("wx notification failed")
-
-	case wxpay.Success:
-		if router.client.ValidSign(params) {
-			logger.WithField("location", "processWxResponse").Info("Validating signature passed")
-			return params, nil
-		}
-		return nil, errors.New("invalid sign value in XML")
-
-	default:
-		return nil, errors.New("return_code value is invalid in XML")
-	}
 }
 
 func (router WxPayRouter) verifyRespIdentity(params wxpay.Params) bool {
