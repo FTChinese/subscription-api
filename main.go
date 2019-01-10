@@ -132,15 +132,6 @@ func main() {
 			r2.Put("/refresh", wxAuth.Refresh)
 			r2.Get("/callback", wxAuth.WebCallback)
 		})
-
-		r1.Route("/user", func(r2 chi.Router) {
-			// All routers under this section should contain X-Union-Id header.
-			r2.Use(controller.CheckUnionID)
-
-			r2.Put("/bind", wxAuth.BindAccount)
-			// r2.Delete("/bind")
-			r2.Get("/account", wxAuth.LoadAccount)
-		})
 	})
 
 	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8200")
