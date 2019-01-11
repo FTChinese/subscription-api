@@ -18,8 +18,8 @@ type PrepayOrder struct {
 	Signature  string  `json:"sign"`
 }
 
-// PrePay contains the response data from Wechat unified order.
-type PrePay struct {
+// PrepayResp contains the response data from Wechat unified order.
+type PrepayResp struct {
 	StatusCode    string
 	StatusMessage string
 	AppID         null.String
@@ -33,9 +33,9 @@ type PrePay struct {
 	PrePayID      null.String
 }
 
-// NewPrePay creates converts PrePay from a wxpay.Params type.
-func NewPrePay(r wxpay.Params) PrePay {
-	p := PrePay{
+// NewPrepayResp creates converts PrePay from a wxpay.Params type.
+func NewPrepayResp(r wxpay.Params) PrepayResp {
+	p := PrepayResp{
 		StatusCode:    r.GetString("return_code"),
 		StatusMessage: r.GetString("return_msg"),
 		IsSuccess:     r.GetString("result_code") == "SUCCESS",
@@ -75,11 +75,12 @@ func NewPrePay(r wxpay.Params) PrePay {
 	return p
 }
 
-// SavePrePay saves Wechat prepay response for future analysis.
-func (env Env) SavePrePay(p PrePay) error {
+// SavePrepayResp saves Wechat prepay response for future analysis.
+func (env Env) SavePrepayResp(orderID string, p PrepayResp) error {
 	query := `
 	INSERT INTO premium.log_wx_prepay
-	SET status_code = ?,
+	SET order_id = ?,
+		status_code = ?,
 		status_message = ?,
 		app_id = ?,
 		merchant_id = ?,
@@ -92,6 +93,7 @@ func (env Env) SavePrePay(p PrePay) error {
 		prepay_id = ?`
 
 	_, err := env.DB.Exec(query,
+		orderID,
 		p.StatusCode,
 		p.StatusMessage,
 		p.AppID,
