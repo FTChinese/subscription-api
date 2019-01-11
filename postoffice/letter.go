@@ -1,8 +1,8 @@
 package postoffice
 
-// LetterSubscribed is the content of the email send to user when user sucessfully subscribed to membership.
-const LetterSubscribed = `
-尊敬的FT中文网用户 {{.User.Name}},
+// ConfirmationLetter is the content of the email send to user when user sucessfully subscribed to membership.
+const ConfirmationLetter = `
+FT中文网用户 {{.User.NormalizeName}},
 
 您好！{{if .Subs.IsRenewal -}}
 感谢您续订FT中文网会员服务。
@@ -14,9 +14,9 @@ const LetterSubscribed = `
 
 订单号: {{.Subs.OrderID}}
 会员类型: {{.Subs.TierToBuy.ToCN}}/{{.Subs.BillingCycle.ToCN}}
-支付金额: {{.Subs.TotalAmount}}
+支付金额: ¥{{.Subs.TotalAmount}}
 支付方式: {{.Subs.PaymentMethod.ToCN}}
-订单日期: {{.Subs.CreatedAtCN}}
+订单日期: {{.Subs.CreatedAt.StringCN}}
 本次订单购买的会员期限: {{.Subs.StartDate}} 至 {{.Subs.EndDate}}
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
@@ -27,7 +27,7 @@ FT中文网
 
 ---------------------
 
-Dear FTC user {{.User.Name}},
+Dear FTC user {{.User.NormalizeName}},
 {{if .Subs.IsRenewal -}}
 You have renewed your subcription to FTC membership.
 {{- else}}
@@ -38,16 +38,13 @@ Here is your order details:
 
 Order ID: {{.Subs.OrderID}}
 Membership: {{.Subs.TierToBuy.ToEN}}/{{.Subs.BillingCycle.ToEN}}
-Price: {{.Subs.TotalAmount}}
+Price: CNY {{.Subs.TotalAmount}}
 Payment Method: {{.Subs.PaymentMethod.ToEN}}
-Created At: {{.Subs.CreatedAt}}
+Created At: {{.Subs.CreatedAt.StringEN}}
 Duration: {{.Subs.StartDate}} to {{.Subs.EndDate}}
 
-If you have any questions, please contact our customer service: subscriber.service@ftchinese.com.
+To get help with subscription and purchases, please contact subscriber.service@ftchinese.com.
 
-Again, we appriciate your support.
+Again, we appreciate your support.
 
-Yours faithfully,
-
-FTChinese
-`
+FTChinese`

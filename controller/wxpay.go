@@ -1,26 +1,26 @@
 package controller
 
 import (
-	"database/sql"
-	"errors"
-	"fmt"
-	"io"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/objcoding/wxpay"
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/postoffice"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
+	"gitlab.com/ftchinese/subscription-api/wepay"
 )
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
 type WxPayRouter struct {
-	config WxConfig
-	client *wxpay.Client
-	model  model.Env
+	config   WxConfig
+	payApp   wepay.PayApp
+	client   *wxpay.Client
+	model    model.Env
+	wepayEnv wepay.Env
+	postman  postoffice.PostMan
 }
 
 // NewWxRouter creates a new instance or OrderRouter
@@ -107,7 +107,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 		userID = unionID
 	}
 
-	subs := model.NewWxSubs(userID, plan, loginMethod)
+	subs := model.NewWxpaySubs(userID, plan, loginMethod)
 
 	ok, err := router.model.IsSubsAllowed(subs)
 	// err = wr.model.PlaceOrder(subs, app)
@@ -127,6 +127,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 		view.Render(w, view.NewDBFailure(err))
 		return
 	}
+
 	// Prepare to send wx unified order.
 	params := make(wxpay.Params)
 
@@ -155,101 +156,18 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	//  map[return_code:FAIL return_msg:appid不存在]
 	logger.WithField("trace", "UnifiedOrder").Infof("Wx unified order response: %+v", resp)
 
-	// Example response:
-	// return_code:SUCCESS|FAIL
-	// return_msg:OK
-	//
-	// Present only if return_code == SUCCESS
-	// appid:wx......
-	// mch_id:........
-	// nonce_str:8p8ZlUBkLsFPxC6g
-	// sign:DB68F0D9F193D499DF9A2EDBFFEAF312
-	// result_code:SUCCESS|FAIL
-	// err_code
-	// err_code_des
-	//
-	// Present only if returnd_code == SUCCESS and result_code == SUCCCESS
-	// trade_type:APP
-	// prepay_id:wx20125006086590be8d9519f40090763508
-
-	// NOTE: this sdk treat return_code == FAIL as valid.
-	// Possible return_msg:
-	// appid不存在;
-	// 商户号mch_id与appid不匹配;
-	// invalid spbill_create_ip;
-	// spbill_create_ip参数长度有误; (Wx does not accept IPv6 like 9b5b:2ef9:6c9f:cf5:130e:984d:8958:75f9 :-<)
-	if resp.GetString("return_code") == wxpay.Fail {
-		returnMsg := resp.GetString("return_msg")
-		logger.
-			WithField("location", "UnifiedOrder").
-			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
-
-		reason := &view.Reason{
-			Field: "return_code",
-			Code:  "fail",
-		}
-		reason.SetMessage(returnMsg)
-
-		view.Render(w, view.NewUnprocessable(reason))
+	if ok := router.payApp.VerifyIdentity(resp); !ok {
+		view.Render(w, view.NewBadRequest("Wechat response contains mismatching IDs"))
 		return
 	}
 
-	if resp.GetString("result_code") == wxpay.Fail {
-		errCode := resp.GetString("err_code")
-		errCodeDes := resp.GetString("err_code_des")
-
-		logger.WithField("location", "UnifiedOrder").
-			WithField("err_code", errCode).
-			WithField("err_code_des", errCodeDes).
-			Error("Wx unified order result failed")
-
-		reason := &view.Reason{
-			Field: "result_code",
-			Code:  errCode,
-		}
-		reason.SetMessage(errCodeDes)
-		view.Render(w, view.NewUnprocessable(reason))
-
-		return
+	if r := wepay.ValidateResponse(resp); r != nil {
+		view.Render(w, view.NewUnprocessable(r))
 	}
 
-	// Get prepay id from response
-	prepayID := resp.GetString("prepay_id")
-
-	// Create prepay order according to https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_12&index=2
-	// appParams := wr.createPrepayOrder(prepayID)
-	// appParams.SetString("ftcOrderId", orderID)
-
-	nonce, _ := util.RandomHex(10)
-
-	order := WxOrder{
-		FtcOrderID: subs.OrderID,
-		Price:      plan.Price,
-		AppID:      router.config.AppID,
-		PartnerID:  router.config.MchID,
-		PrepayID:   prepayID,
-		Package:    "Sign=WXPay",
-		Nonce:      nonce,
-		Timestamp:  fmt.Sprintf("%d", time.Now().Unix()),
-	}
-
-	order.Signature = router.signOrder(order)
-
-	// appParams.SetString("price", plan.GetPriceString())
+	order := subs.PrepayOrder(router.client, resp)
 
 	view.Render(w, view.NewResponse().SetBody(order))
-}
-
-func (router WxPayRouter) signOrder(order WxOrder) string {
-	p := make(wxpay.Params)
-	p["appid"] = order.AppID
-	p["partnerid"] = order.PartnerID
-	p["prepayid"] = order.PrepayID
-	p["package"] = order.Package
-	p["noncestr"] = order.Nonce
-	p["timestamp"] = order.Timestamp
-
-	return router.client.Sign(p)
 }
 
 // Notification implements 支付结果通知
@@ -258,85 +176,39 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	resp := wxpay.Notifies{}
 
-	params, err := router.processWxResponse(req.Body)
+	params, err := wepay.ParseResponse(router.client, req.Body)
 
 	if err != nil {
-		logger.WithField("trace", "WxNotification").Error(err)
-
 		w.Write([]byte(resp.NotOK(err.Error())))
 
 		return
 	}
 
-	logger.WithField("location", "WxPayNotification").Infof("Successfully received wechat notification")
-
 	// Verify appid, mch_id, trade_type, total_fee.
+	if ok := router.payApp.VerifyIdentity(params); !ok {
+		w.Write([]byte(resp.OK()))
+
+		return
+	}
+
+	if err := router.model.VerifyWxNotification(params); err != nil {
+		w.Write([]byte(resp.OK()))
+	}
+
+	// For logging purpose.
+	go func() {
+		n := wepay.NewNotification(params)
+		router.wepayEnv.SaveNotification(n)
+	}()
+
 	// Get out_trade_no to retrieve order.
 	// Check the order's confirmed_utc field.
 	// If confirmed_utc is empty, get time_end from params and set confirmed_utc to it.
-
-	// If this notification does not belong to use, refuse wx's retry.
-	if ok := router.verifyRespIdentity(params); !ok {
-		logger.WithField("location", "WxPayNotification").Info("App idnetity verification not passed")
-
-		w.Write([]byte(resp.OK()))
-
-		return
-	}
-
 	orderID := params.GetString("out_trade_no")
-	totalFee := params.GetInt64("total_fee")
 	timeEnd := params.GetString("time_end")
 
-	// Find order
-	subs, err := router.model.FindSubscription(orderID)
-
-	// if order is not found
-	if err != nil {
-		if err == sql.ErrNoRows {
-			logger.WithField("location", "WxPayNotification").Infof("Order %s is not found", orderID)
-
-			w.Write([]byte(resp.OK()))
-		} else {
-			w.Write([]byte(resp.NotOK(err.Error())))
-		}
-		return
-	}
-
-	// Verify total amount
-	if totalFee != subs.WxTotalFee() {
-		logger.WithField("location", "WxPayNotification").Infof("Total fee does not match. Should be %d, actual %d", subs.WxTotalFee(), totalFee)
-
-		w.Write([]byte(resp.OK()))
-		return
-	}
-
-	// If order is found, and is already confirmed.
-	// Should we check membership data here?
-	if !subs.ConfirmedAt.IsZero() {
-		logger.WithField("location", "WxPayNotification").Infof("Order %s already confirmed.", orderID)
-
-		w.Write([]byte(resp.OK()))
-		return
-	}
-
-	// Convert this time end to SQL DATETIME
-	// The problem here is we record confirmation time always in UTC. This if fixed.
-	confirmTime, err := util.ParseWxTime(timeEnd)
-
-	if err != nil {
-		confirmTime = time.Now()
-	}
-
-	updatedSubs, err := router.model.ConfirmSubscription(subs, confirmTime)
-
-	if err != nil {
-		w.Write([]byte(resp.NotOK(err.Error())))
-
-		return
-	}
-
-	err = router.model.CreateMembership(updatedSubs)
+	// updatedSubs,
+	cofirmedSubs, err := router.model.ConfirmPayment(orderID, util.ParseWxTime(timeEnd))
 
 	if err != nil {
 		w.Write([]byte(resp.NotOK(err.Error())))
@@ -345,37 +217,9 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Send a letter to this user.
-	go router.model.SendConfirmationLetter(subs)
+	go router.model.SendConfirmationLetter(cofirmedSubs)
 
 	w.Write([]byte(resp.OK()))
-}
-
-func (router WxPayRouter) processWxResponse(r io.Reader) (wxpay.Params, error) {
-
-	var returnCode string
-	params := util.Decode(r)
-	logger.WithField("trace", "processWxResponse").Infof("Resp params: %+v", params)
-
-	if params.ContainsKey("return_code") {
-		returnCode = params.GetString("return_code")
-	} else {
-		return nil, errors.New("no return_code in XML")
-	}
-
-	switch returnCode {
-	case wxpay.Fail:
-		return nil, errors.New("wx notification failed")
-
-	case wxpay.Success:
-		if router.client.ValidSign(params) {
-			logger.WithField("location", "processWxResponse").Info("Validating signature passed")
-			return params, nil
-		}
-		return nil, errors.New("invalid sign value in XML")
-
-	default:
-		return nil, errors.New("return_code value is invalid in XML")
-	}
 }
 
 // OrderQuery implements 查询订单
@@ -458,9 +302,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if ok := router.verifyRespIdentity(resp); !ok {
-		logger.WithField("location", "OrderQuery").Info("appid or mch_id mismatched")
-
+	if ok := router.payApp.VerifyIdentity(resp); !ok {
 		view.Render(w, view.NewNotFound())
 		return
 	}
@@ -484,32 +326,8 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		TotalFee:      resp.GetString("total_fee"),
 		TransactionID: resp.GetString("transaction_id"),
 		FTCOrderID:    resp.GetString("out_trade_no"),
-		PaidAt:        util.ToISO8601UTC.FromWx(timeEnd),
+		PaidAt:        timeEnd,
 	}
 
 	view.Render(w, view.NewResponse().SetBody(order))
-}
-
-func (router WxPayRouter) verifyRespIdentity(params wxpay.Params) bool {
-	if !params.ContainsKey("appid") {
-		logger.WithField("location", "WxPay verifyRespIdentity").Error("Missing appid")
-		return false
-	}
-
-	if !params.ContainsKey("mch_id") {
-		logger.WithField("location", "WxPay verifyRespIdentity").Error("Missing mch_id")
-		return false
-	}
-
-	if params.GetString("appid") != router.config.AppID {
-		logger.WithField("location", "WxPay verifyRespIdentity").Error("appid does not match")
-		return false
-	}
-
-	if params.GetString("mch_id") != router.config.MchID {
-		logger.WithField("location", "WxPay verifyRespIdentity").Error("mch_id does not match")
-		return false
-	}
-
-	return true
 }

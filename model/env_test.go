@@ -4,7 +4,10 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/guregu/null"
+
 	"gitlab.com/ftchinese/subscription-api/enum"
+	"gitlab.com/ftchinese/subscription-api/postoffice"
 
 	"github.com/icrowley/fake"
 	cache "github.com/patrickmn/go-cache"
@@ -21,15 +24,15 @@ func newDevEnv() Env {
 
 	c := cache.New(cache.DefaultExpiration, 0)
 
-	return Env{DB: db, Cache: c}
+	return Env{
+		DB:      db,
+		Cache:   c,
+		PostMan: postoffice.NewPostMan(),
+	}
 }
 
 var devEnv = newDevEnv()
-
-var mockUUID = uuid.Must(uuid.NewV4()).String()
-
-var mockUnionID, _ = util.RandomBase64(21)
-
+var mockPlan = DefaultPlans["standard_year"]
 var mockClient = util.ClientApp{
 	ClientType: enum.PlatformAndroid,
 	Version:    "1.1.1",
@@ -37,20 +40,63 @@ var mockClient = util.ClientApp{
 	UserAgent:  fake.UserAgent(),
 }
 
-var mockPlan = DefaultPlans["standard_year"]
-
 var tenDaysLater = time.Now().AddDate(0, 0, 10)
 
-// Mock inserting a subscription order.
-// isRenew dtermines is this order is used to
-// renew a membership or not.
-func createSubs(isWxLogin bool) (Subscription, error) {
-	var subs Subscription
-	if isWxLogin {
-		subs = NewWxSubs(mockUnionID, mockPlan, enum.WechatLogin)
-	} else {
-		subs = NewWxSubs(mockUUID, mockPlan, enum.EmailLogin)
+func NewUser() User {
+	unionID, _ := util.RandomBase64(21)
+
+	return User{
+		UserID:   uuid.Must(uuid.NewV4()).String(),
+		UnionID:  null.StringFrom(unionID),
+		UserName: null.StringFrom(fake.UserName()),
+		Email:    fake.EmailAddress(),
 	}
+}
+
+func (u User) subs() Subscription {
+	subs := NewWxpaySubs(u.UserID, mockPlan, enum.EmailLogin)
+	subs.CreatedAt = util.TimeNow()
+	subs.ConfirmedAt = util.TimeNow()
+	subs.IsRenewal = false
+	subs.StartDate = util.DateNow()
+	subs.EndDate = util.DateFrom(time.Now().AddDate(1, 0, 0))
+
+	return subs
+}
+
+func (u User) createUser() error {
+	query := `
+	INSERT INTO cmstmp01.userinfo
+	SET user_id = ?,
+		wx_union_id = ?,
+		email = ?,
+		password = MD5(?),
+		user_name = ?,
+		client_type = ?,
+		client_version = ?,
+		user_ip = INET6_ATON(?),
+		user_agent = ?,
+		created_utc = UTC_TIMESTAMP()`
+
+	_, err := devEnv.DB.Exec(query,
+		u.UserID,
+		u.UnionID,
+		u.Email,
+		fake.Password(8, 20, false, true, false),
+		u.UserName,
+		mockClient.ClientType,
+		mockClient.Version,
+		mockClient.UserIP,
+		mockClient.UserAgent,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u User) CreateWxpaySubs() (Subscription, error) {
+	subs := NewWxpaySubs(u.UserID, mockPlan, enum.EmailLogin)
 
 	err := devEnv.SaveSubscription(subs, mockClient)
 
@@ -61,22 +107,26 @@ func createSubs(isWxLogin bool) (Subscription, error) {
 	return subs, nil
 }
 
-// Mock creating a new membership.
-// Return user id so that it could be used to generate a new subscription order for the same user.
-func createMember(isWxLogin bool) (Subscription, error) {
-	subs, err := createSubs(isWxLogin)
+func (u User) CreateAlipaySubs() (Subscription, error) {
+	subs := NewAlipaySubs(u.UserID, mockPlan, enum.EmailLogin)
+
+	err := devEnv.SaveSubscription(subs, mockClient)
 
 	if err != nil {
 		return subs, err
 	}
 
-	subs, err = devEnv.ConfirmSubscription(subs, time.Now())
+	return subs, nil
+}
+
+func (u User) CreateMember() (Subscription, error) {
+	subs, err := u.CreateWxpaySubs()
 
 	if err != nil {
 		return subs, err
 	}
 
-	err = devEnv.CreateMembership(subs)
+	subs, err = devEnv.ConfirmPayment(subs.OrderID, time.Now())
 
 	if err != nil {
 		return subs, err
