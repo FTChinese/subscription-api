@@ -2,6 +2,7 @@ package wxlogin
 
 import (
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -57,7 +58,7 @@ func (a *OAuthAccess) ToSession(unionID string) Session {
 func (a *OAuthAccess) generateSessionID() {
 	data := fmt.Sprintf("%s:%s:%s", a.AccessToken, a.RefreshToken, a.OpenID)
 	h := md5.Sum([]byte(data))
-	a.SessionID = fmt.Sprintf("%x", h)
+	a.SessionID = hex.EncodeToString(h[:])
 }
 
 // IsAccessExpired tests if access token is expired.

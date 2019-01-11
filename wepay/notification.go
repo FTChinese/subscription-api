@@ -3,7 +3,6 @@ package wepay
 import (
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // Notification contains wechat's notification data after payment finished.
@@ -25,7 +24,7 @@ type Notification struct {
 	Currency      null.String
 	TransactionID null.String
 	FTCOrderID    null.String
-	CreatedAt     util.Time
+	CreatedAt     null.String
 }
 
 // NewNotification converts wxpay.Params type to Notification type.
@@ -85,10 +84,7 @@ func NewNotification(r wxpay.Params) Notification {
 	}
 
 	if v, ok := r["time_end"]; ok {
-		t, err := util.ParseWxTime(v)
-		if err == nil {
-			n.CreatedAt = util.TimeFrom(t)
-		}
+		n.CreatedAt = null.StringFrom(v)
 	}
 
 	return n
