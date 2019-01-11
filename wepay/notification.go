@@ -24,7 +24,7 @@ type Notification struct {
 	Currency      null.String
 	TransactionID null.String
 	FTCOrderID    null.String
-	CreatedAt     null.String
+	TimeEnd       null.String
 }
 
 // NewNotification converts wxpay.Params type to Notification type.
@@ -84,7 +84,7 @@ func NewNotification(r wxpay.Params) Notification {
 	}
 
 	if v, ok := r["time_end"]; ok {
-		n.CreatedAt = null.StringFrom(v)
+		n.TimeEnd = null.StringFrom(v)
 	}
 
 	return n
@@ -111,7 +111,7 @@ func (env Env) SaveNotification(n Notification) error {
 		currency = ?,
 		transaction_id = ?,
 		ftc_order_id = ?,
-		created_utc = ?`
+		time_end = ?`
 
 	_, err := env.DB.Exec(query,
 		n.StatusCode,
@@ -131,7 +131,7 @@ func (env Env) SaveNotification(n Notification) error {
 		n.Currency,
 		n.TransactionID,
 		n.FTCOrderID,
-		n.CreatedAt,
+		n.TimeEnd,
 	)
 
 	if err != nil {
