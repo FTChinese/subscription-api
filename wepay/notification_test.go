@@ -25,7 +25,7 @@ func TestSaveNotification(t *testing.T) {
 		Currency:      null.StringFrom("CNY"),
 		TransactionID: null.StringFrom(fake.CharactersN(32)),
 		FTCOrderID:    null.StringFrom(fake.CharactersN(32)),
-		CreatedAt:     null.StringFrom("20091225091010"),
+		TimeEnd:       null.StringFrom("20091225091010"),
 	}
 
 	err := devEnv.SaveNotification(n)

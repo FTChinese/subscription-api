@@ -13,7 +13,7 @@ import (
 var mockSignature = fmt.Sprintf("%x", md5.Sum([]byte(fake.Sentence())))
 
 func TestSavePrePay(t *testing.T) {
-	p := PrePay{
+	p := PrepayResp{
 		StatusCode:    "SUCCESS",
 		StatusMessage: "OK",
 		AppID:         null.StringFrom("wx8888888888888888"),
@@ -26,7 +26,7 @@ func TestSavePrePay(t *testing.T) {
 		PrePayID:      null.StringFrom(fake.CharactersN(32)),
 	}
 
-	err := devEnv.SavePrePay(p)
+	err := devEnv.SavePrepayResp(fake.CharactersN(10), p)
 
 	if err != nil {
 		t.Error(err)
