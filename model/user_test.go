@@ -1,45 +1,43 @@
 package model
 
-// func TestFindUser(t *testing.T) {
-// 	u, err := devEnv.FindUser(mockUser.ID)
+import (
+	"testing"
 
-// 	if err != nil {
-// 		t.Error(nil)
-// 	}
+	"github.com/guregu/null"
+	"github.com/icrowley/fake"
+	"gitlab.com/ftchinese/subscription-api/util"
+)
 
-// 	t.Log(u)
-// }
+func TestConfirmationParcel(t *testing.T) {
+	user := NewUser()
+	subs := user.subs()
 
-// func TestTemplate(t *testing.T) {
-// 	tmpl, err := template.New("test").Parse(letter)
+	p, err := user.ComfirmationParcel(subs)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-// 	if err != nil {
-// 		t.Error(err)
+	t.Logf("Parcel: %+v\n", p)
+}
 
-// 		return
-// 	}
+func TestSendEmail(t *testing.T) {
+	user := User{
+		UserID:   "2ebb0cdb-dfa2-4169-af2f-4def525c612e",
+		UserName: null.StringFrom(fake.UserName()),
+		Email:    "neefrankie@163.com",
+	}
 
-// 	data := struct {
-// 		User User
-// 		Subs Subscription
-// 	}{
-// 		mockUser,
-// 		mockSubs,
-// 	}
+	err := user.createUser()
+	if err != nil && !util.IsAlreadyExists(err) {
+		t.Error(err)
+		return
+	}
 
-// 	err = tmpl.Execute(os.Stdout, data)
+	subs := user.subs()
 
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// }
-
-// func TestComposeEmail(t *testing.T) {
-// 	p, err := ComposeEmail(mockUser, mockSubs)
-
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-
-// 	t.Log(p)
-// }
+	err = devEnv.SendConfirmationLetter(subs)
+	if err != nil {
+		t.Error(err)
+	}
+}

@@ -2,7 +2,6 @@ package wepay
 
 import (
 	"crypto/md5"
-	"database/sql"
 	"fmt"
 	"testing"
 
@@ -10,18 +9,6 @@ import (
 
 	"github.com/icrowley/fake"
 )
-
-func newDevEnv() Env {
-	db, err := sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
-
-	if err != nil {
-		panic(err)
-	}
-
-	return Env{DB: db}
-}
-
-var devEnv = newDevEnv()
 
 var mockSignature = fmt.Sprintf("%x", md5.Sum([]byte(fake.Sentence())))
 

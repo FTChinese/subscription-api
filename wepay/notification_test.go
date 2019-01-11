@@ -5,7 +5,6 @@ import (
 
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 func TestSaveNotification(t *testing.T) {
@@ -26,7 +25,7 @@ func TestSaveNotification(t *testing.T) {
 		Currency:      null.StringFrom("CNY"),
 		TransactionID: null.StringFrom(fake.CharactersN(32)),
 		FTCOrderID:    null.StringFrom(fake.CharactersN(32)),
-		CreatedAt:     util.TimeNow(),
+		CreatedAt:     null.StringFrom("20091225091010"),
 	}
 
 	err := devEnv.SaveNotification(n)
