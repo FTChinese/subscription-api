@@ -9,9 +9,21 @@ import (
 	"time"
 )
 
+const layoutCST = "2006年01月02日 15:04:05 中国标准时间"
+
 // Time is used to save and output ISO8601 date time.
 type Time struct {
 	time.Time
+}
+
+// StringEN produces the string representation in English with locale set to UTC.
+func (t Time) StringEN() string {
+	return t.In(time.UTC).Format(time.RFC1123Z)
+}
+
+// StringCN produces the string representation in Chinese format with locale set to Asia/Shanghai.
+func (t Time) StringCN() string {
+	return t.In(TZShanghai).Format(layoutCST)
 }
 
 // MarshalJSON converts a Time struct to ISO8601 string.
