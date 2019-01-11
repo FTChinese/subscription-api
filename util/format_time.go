@@ -12,9 +12,7 @@ const (
 	secondsOfMinute = 60
 	secondsOfHour   = 60 * secondsOfMinute
 	layoutDateTime  = "2006-01-02 15:04:05.999999"
-	layoutDate      = "2006-01-02"
 	layoutWx        = "20060102150405"
-	layoutCST       = "2006年01月02日 15:04:05 中国标准时间"
 )
 
 var (
@@ -28,8 +26,6 @@ var (
 	ToSQLDateUTC = timeFormatter{layoutDateTime[:10], time.UTC}
 	// ToSQLDateUTC8 turns time into SQL's DATE string set in UTC+8.
 	ToSQLDateUTC8 = timeFormatter{layoutDateTime[:10], TZShanghai}
-	// ToCST turns time into Chinese text set in Asia/Shanghai
-	ToCST = timeFormatter{layoutCST, TZShanghai}
 )
 
 // timeFormatter converts a time.Time instance to the specified layout in specified location
@@ -83,16 +79,6 @@ func (f timeFormatter) FromTime(t time.Time) string {
 	return t.In(f.loc).Format(f.layout)
 }
 
-func (f timeFormatter) FromWx(value string) string {
-	t, err := ParseWxTime(value)
-
-	if err != nil {
-		return ""
-	}
-
-	return t.In(f.loc).Format(f.layout)
-}
-
 // ParseDateTime parses SQL DATE or DATETIME string in specified location.
 func ParseDateTime(str string, loc *time.Location) (t time.Time, err error) {
 	base := "0000-00-00 00:00:00.0000000"
@@ -119,8 +105,13 @@ func ParseDateTime(str string, loc *time.Location) (t time.Time, err error) {
 
 // ParseWxTime is used to parse wxpay's time format.
 // If it cannot be parsed, default to current time.
-func ParseWxTime(value string) (time.Time, error) {
-	return time.ParseInLocation(layoutWx, value, TZShanghai)
+func ParseWxTime(value string) time.Time {
+	t, err := time.ParseInLocation(layoutWx, value, TZShanghai)
+	if err != nil {
+		return time.Now()
+	}
+
+	return t
 }
 
 // ParseAliTime parses alipay time string.
