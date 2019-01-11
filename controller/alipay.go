@@ -93,7 +93,7 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		userID = unionID
 	}
 
-	subs := model.NewAliSubs(userID, plan, loginMethod)
+	subs := model.NewAlipaySubs(userID, plan, loginMethod)
 
 	ok, err := router.model.IsSubsAllowed(subs)
 	// err = ar.model.PlaceOrder(subs, app)
@@ -236,21 +236,15 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 		confirmTime = time.Now()
 	}
 
-	updatedSubs, err := router.model.ConfirmSubscription(subs, confirmTime)
+	// updatedSubs,
+	confimedSubs, err := router.model.ConfirmPayment(orderID, confirmTime)
 
 	if err != nil {
 		w.Write([]byte(fail))
 		return
 	}
 
-	err = router.model.CreateMembership(updatedSubs)
-
-	if err != nil {
-		w.Write([]byte(fail))
-		return
-	}
-
-	go router.model.SendConfirmationLetter(updatedSubs)
+	go router.model.SendConfirmationLetter(confimedSubs)
 
 	w.Write([]byte(success))
 }

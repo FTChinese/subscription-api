@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/guregu/null"
@@ -9,13 +8,17 @@ import (
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
-// Membership contains a user's membership details
-type Membership struct {
-	UserID     string      `json:"-"`
-	UnionID    null.String `json:"-"`
-	Tier       enum.Tier   `json:"tier"`
-	Cycle      enum.Cycle  `json:"billingCycle"`
-	ExpireDate util.Date   `json:"expireDate"` // On which date the membership ends
+// Duration contains a membership's expiration time.
+// This type exits for compatibility due to expiration time are saved into two columns.
+type Duration struct {
+	timestamp  int64
+	ExpireDate util.Date `json:"expireDate"`
+}
+
+func (d *Duration) normalizeDate() {
+	if d.ExpireDate.IsZero() && d.timestamp != 0 {
+		d.ExpireDate = util.DateFrom(time.Unix(d.timestamp, 0))
+	}
 }
 
 // canRenew tests if a membership is allowed to renuew subscription.
@@ -25,55 +28,45 @@ type Membership struct {
 //         now--------------------| Allow
 //      |-------- A cycle --------| Expires
 // now----------------------------| Deny
-func (m Membership) canRenew(cycle enum.Cycle) bool {
+func (d Duration) canRenew(cycle enum.Cycle) bool {
 	cycleEnds, err := cycle.EndingTime(time.Now())
 
 	if err != nil {
 		return false
 	}
 
-	return m.ExpireDate.Before(cycleEnds)
+	return d.ExpireDate.Before(cycleEnds)
 }
 
 // isExpired tests if the membership's expiration date is before now.
-func (m Membership) isExpired() bool {
+func (d Duration) isExpired() bool {
 	// If expire is before now, it is expired.
-	return m.ExpireDate.Before(time.Now())
+	return d.ExpireDate.Before(time.Now())
+}
+
+// Membership contains a user's membership details
+type Membership struct {
+	UserID   string      `json:"-"`
+	UnionID  null.String `json:"-"`
+	Tier     enum.Tier   `json:"tier"`
+	Cycle    enum.Cycle  `json:"billingCycle"`
+	Duration             // On which date the membership ends
 }
 
 // findMember retrieves a user's membership based on subscription information.
 func (env Env) findMember(subs Subscription) (Membership, error) {
-	var whereCol string
-
-	if subs.isWxLogin() {
-		whereCol = "vip_id_alias"
-	} else {
-		whereCol = "vip_id"
-	}
-
-	query := fmt.Sprintf(`
-	SELECT vip_id AS userId,
-		vip_id_alias AS unionId,
-		vip_type AS vipType,
-		expire_time AS expireTime,
-		member_tier AS memberTier,
-		billing_cycle AS billingCyce,
-		expire_date AS expireDate
-	FROM premium.ftc_vip
-	WHERE %s = ?
-	LIMIT 1`, whereCol)
+	query := subs.stmtMember()
 
 	var m Membership
 	var vipType int64
-	var expireTime int64
 
 	err := env.DB.QueryRow(query, subs.UserID).Scan(
 		&m.UserID,
 		&m.UnionID,
 		&vipType,
-		&expireTime,
 		&m.Tier,
 		&m.Cycle,
+		&m.timestamp,
 		&m.ExpireDate,
 	)
 
@@ -91,9 +84,7 @@ func (env Env) findMember(subs Subscription) (Membership, error) {
 		m.Cycle = enum.CycleYear
 	}
 
-	if m.ExpireDate.IsZero() {
-		m.ExpireDate = util.DateFrom(normalizeExpireDate(expireTime))
-	}
+	m.normalizeDate()
 
 	return m, nil
 }
