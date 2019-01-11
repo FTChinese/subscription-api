@@ -7,7 +7,6 @@ import (
 	"io"
 
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
 )
 
@@ -41,7 +40,7 @@ func DecodeXML(r io.Reader) wxpay.Params {
 // ParseResponse parses Wechat response data.
 func ParseResponse(client *wxpay.Client, r io.Reader) (wxpay.Params, error) {
 	var returnCode string
-	params := util.DecodeXML(r)
+	params := DecodeXML(r)
 
 	if params.ContainsKey("return_code") {
 		returnCode = params.GetString("return_code")
