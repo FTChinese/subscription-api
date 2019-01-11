@@ -9,9 +9,15 @@ import (
 	"time"
 )
 
+const layoutDate = "2006-01-02"
+
 // Date is used to save and output YYYY-MM-DD format date string.
 type Date struct {
 	time.Time
+}
+
+func (d Date) String() string {
+	return d.In(time.UTC).Format(layoutDate)
 }
 
 // MarshalJSON converts a Time struct to ISO8601 string.
