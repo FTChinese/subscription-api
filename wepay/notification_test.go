@@ -1,12 +1,26 @@
 package wepay
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
 )
 
+func TestNewNotification(t *testing.T) {
+	resp := createNotificationResponse()
+
+	p, err := ParseResponse(mockClient, strings.NewReader(resp))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	noti := NewNotification(p)
+
+	t.Logf("Notification; %+v\n", noti)
+}
 func TestSaveNotification(t *testing.T) {
 	n := Notification{
 		StatusCode:    "SUCCESS",
