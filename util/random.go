@@ -3,7 +3,7 @@ package util
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
+	"encoding/hex"
 )
 
 func randomBytes(len int) ([]byte, error) {
@@ -27,7 +27,7 @@ func RandomHex(len int) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("%x", b), nil
+	return hex.EncodeToString(b[:]), nil
 }
 
 // RandomBase64 returns a base64 url encoded, unpadded string of random bytes.
