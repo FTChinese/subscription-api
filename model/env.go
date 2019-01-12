@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/postoffice"
@@ -65,7 +64,7 @@ var (
 type Env struct {
 	DB      *sql.DB
 	Cache   *cache.Cache
-	PostMan postoffice.PostMan
+	Postman postoffice.Postman
 }
 
 func normalizeMemberTier(vipType int64) enum.Tier {
@@ -80,8 +79,4 @@ func normalizeMemberTier(vipType int64) enum.Tier {
 	default:
 		return enum.TierFree
 	}
-}
-
-func normalizeExpireDate(timestamp int64) time.Time {
-	return time.Unix(timestamp, 0)
 }
