@@ -15,8 +15,8 @@ type Postman struct {
 	Dialer *mail.Dialer
 }
 
-// NewPostMan creates a new instance of PostOffice
-func NewPostMan() Postman {
+// NewPostman creates a new instance of PostOffice
+func NewPostman() Postman {
 	host := os.Getenv("HANQI_SMTP_HOST")
 	user := os.Getenv("HANQI_SMTP_USER")
 	portStr := os.Getenv("HANQI_SMTP_PORT")
