@@ -27,13 +27,12 @@ const (
 // AliPayRouter handles alipay request
 type AliPayRouter struct {
 	appID  string
-	isProd bool
 	client *alipay.AliPay
 	model  model.Env
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(m model.Env, isProd bool) AliPayRouter {
+func NewAliRouter(env model.Env) AliPayRouter {
 	appID := os.Getenv("ALIPAY_APP_ID")
 
 	// Ali's public key is used to verify alipay's response.
@@ -50,13 +49,12 @@ func NewAliRouter(m model.Env, isProd bool) AliPayRouter {
 		os.Exit(1)
 	}
 
-	client := alipay.New(appID, string(publicKey), string(privateKey), isProd)
+	client := alipay.New(appID, string(publicKey), string(privateKey), true)
 
 	return AliPayRouter{
 		appID:  appID,
-		isProd: isProd,
 		client: client,
-		model:  m,
+		model:  env,
 	}
 }
 
@@ -71,7 +69,7 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	plan, err := router.model.LoadCurrentPlans().FindPlan(tierKey, cycleKey)
+	plan, err := router.model.GetCurrentPricing().FindPlan(tierKey, cycleKey)
 
 	if err != nil {
 		logger.WithField("location", "AliAppOrder").Error(err)
@@ -118,7 +116,7 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	param.NotifyURL = aliNotifyURL
 	param.Subject = plan.Description
 	param.OutTradeNo = subs.OrderID
-	param.TotalAmount = plan.GetPriceString()
+	param.TotalAmount = plan.PriceForAli()
 	param.ProductCode = aliProductCode
 	param.GoodsType = "0"
 

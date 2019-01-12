@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.com/ftchinese/next-api/enum"
+	"gitlab.com/ftchinese/subscription-api/enum"
 )
 
 // Plan is a pricing plan.

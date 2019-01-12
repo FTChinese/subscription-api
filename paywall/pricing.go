@@ -3,7 +3,7 @@ package paywall
 import (
 	"errors"
 
-	"gitlab.com/ftchinese/next-api/enum"
+	"gitlab.com/ftchinese/subscription-api/enum"
 )
 
 // Pricing defines a collection pricing plan.
@@ -73,16 +73,11 @@ var sandboxPlans = Pricing{
 }
 
 // GetDefaultPricing returns the default pricing plans.
-func (env Env) GetDefaultPricing() Pricing {
-	return defaultPlans
-}
-
-// GetCurrentPricing get current effective pricing plans.
-func (env Env) GetCurrentPricing() Pricing {
+func GetDefaultPricing() Pricing {
 	return defaultPlans
 }
 
 // GetSandboxPricing returns the pricing plans for sandbox.
-func (env Env) GetSandboxPricing() Pricing {
+func GetSandboxPricing() Pricing {
 	return sandboxPlans
 }

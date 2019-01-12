@@ -7,10 +7,16 @@ import (
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/postoffice"
 
-	"github.com/patrickmn/go-cache"
-
+	cache "github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 )
+
+// Env wraps database connection
+type Env struct {
+	DB      *sql.DB
+	Cache   *cache.Cache
+	Postman postoffice.Postman
+}
 
 var logger = log.WithField("package", "subscription-api.model")
 
@@ -59,13 +65,6 @@ var (
 	stmtSubsLock = fmt.Sprintf(`%s
 	FOR UPDATE`, stmtSubs)
 )
-
-// Env wraps database connection
-type Env struct {
-	DB      *sql.DB
-	Cache   *cache.Cache
-	Postman postoffice.Postman
-}
 
 func normalizeMemberTier(vipType int64) enum.Tier {
 	switch vipType {

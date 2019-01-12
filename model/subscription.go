@@ -11,8 +11,9 @@ import (
 	"github.com/guregu/null"
 
 	"gitlab.com/ftchinese/subscription-api/enum"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
-	"gitlab.com/ftchinese/subscription-api/wepay"
+	"gitlab.com/ftchinese/subscription-api/wechat"
 )
 
 // Subscription contains the details of a user's action to place an order.
@@ -35,7 +36,7 @@ type Subscription struct {
 
 // NewWxpaySubs creates a new Subscription with payment method set to Wechat.
 // Note wechat login and wechat pay we talked here are two totally non-related things.
-func NewWxpaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
+func NewWxpaySubs(userID string, p paywall.Plan, login enum.LoginMethod) Subscription {
 	return Subscription{
 		UserID:        userID,
 		OrderID:       p.OrderID(),
@@ -49,7 +50,7 @@ func NewWxpaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
 }
 
 // NewAlipaySubs creates a new Subscription with payment method set to Alipay.
-func NewAlipaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
+func NewAlipaySubs(userID string, p paywall.Plan, login enum.LoginMethod) Subscription {
 	return Subscription{
 		UserID:        userID,
 		OrderID:       p.OrderID(),
@@ -73,7 +74,7 @@ func (s Subscription) WxTotalFee() int64 {
 }
 
 // PrepayOrder creates a PrepayOrder from a subscription order for Wechat.
-func (s Subscription) PrepayOrder(client *wxpay.Client, resp wxpay.Params) wepay.PrepayOrder {
+func (s Subscription) PrepayOrder(client *wxpay.Client, resp wxpay.Params) wechat.PrepayOrder {
 	appID := resp.GetString("appid")
 	partnerID := resp.GetString("mch_id")
 	prepayID := resp.GetString("prepay_id")
@@ -91,7 +92,7 @@ func (s Subscription) PrepayOrder(client *wxpay.Client, resp wxpay.Params) wepay
 
 	h := client.Sign(p)
 
-	return wepay.PrepayOrder{
+	return wechat.PrepayOrder{
 		FtcOrderID: s.OrderID,
 		Price:      s.Price,
 		AppID:      appID,
