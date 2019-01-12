@@ -62,12 +62,17 @@ func main() {
 	}
 
 	c := cache.New(cache.DefaultExpiration, 0)
-	p := postoffice.NewPostMan()
-	m := model.Env{DB: db, Cache: c, Postman: p}
+	p := postoffice.NewPostman()
 
-	wxRouter := controller.NewWxRouter(m, isProd)
-	aliRouter := controller.NewAliRouter(m, isProd)
-	paywallRouter := controller.NewPaywallRouter(m)
+	env := model.Env{
+		DB:      db,
+		Cache:   c,
+		Postman: p,
+	}
+
+	wxRouter := controller.NewWxRouter(env)
+	aliRouter := controller.NewAliRouter(env)
+	paywallRouter := controller.NewPaywallRouter(env)
 
 	wxAuth := controller.NewWxAuth(db)
 
