@@ -27,7 +27,7 @@ func newDevEnv() Env {
 	return Env{
 		DB:      db,
 		Cache:   c,
-		PostMan: postoffice.NewPostMan(),
+		Postman: postoffice.NewPostMan(),
 	}
 }
 

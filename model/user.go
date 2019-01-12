@@ -104,7 +104,7 @@ func (env Env) SendConfirmationLetter(subs Subscription) error {
 		return err
 	}
 
-	err = env.PostMan.Deliver(parcel)
+	err = env.Postman.Deliver(parcel)
 
 	return err
 }

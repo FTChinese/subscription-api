@@ -20,7 +20,7 @@ type WxPayRouter struct {
 	client   *wxpay.Client
 	model    model.Env
 	wepayEnv wepay.Env
-	postman  postoffice.PostMan
+	postman  postoffice.Postman
 }
 
 // NewWxRouter creates a new instance or OrderRouter
