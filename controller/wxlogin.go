@@ -20,7 +20,7 @@ import (
 type WxAuthRouter struct {
 	apps    map[string]wxlogin.WxApp
 	env     wxlogin.Env
-	postman postoffice.PostMan
+	postman postoffice.Postman
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.

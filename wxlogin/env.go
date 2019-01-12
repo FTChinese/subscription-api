@@ -11,7 +11,7 @@ import (
 // Env wraps database operations.
 type Env struct {
 	DB      *sql.DB
-	PostMan postoffice.PostMan
+	PostMan postoffice.Postman
 }
 
 // Format Unix timestamp to a date string `2019-07-20`

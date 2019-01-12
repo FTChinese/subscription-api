@@ -10,13 +10,13 @@ import (
 
 var logger = log.WithField("package", "subscription-api.postoffice")
 
-// PostMan wraps mail dialer.
-type PostMan struct {
+// Postman wraps mail dialer.
+type Postman struct {
 	Dialer *mail.Dialer
 }
 
 // NewPostMan creates a new instance of PostOffice
-func NewPostMan() PostMan {
+func NewPostMan() Postman {
 	host := os.Getenv("HANQI_SMTP_HOST")
 	user := os.Getenv("HANQI_SMTP_USER")
 	portStr := os.Getenv("HANQI_SMTP_PORT")
@@ -25,13 +25,13 @@ func NewPostMan() PostMan {
 	port, _ := strconv.Atoi(portStr)
 	dialer := mail.NewDialer(host, port, user, pass)
 
-	return PostMan{
+	return Postman{
 		Dialer: dialer,
 	}
 }
 
 // Deliver asks the postman to deliver a parcel.
-func (o PostMan) Deliver(p Parcel) error {
+func (o Postman) Deliver(p Parcel) error {
 	m := mail.NewMessage()
 
 	m.SetAddressHeader("From", p.FromAddress, p.FromName)
