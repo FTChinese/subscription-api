@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"testing"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 func newDB() *sql.DB {
