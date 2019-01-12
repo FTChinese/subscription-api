@@ -72,7 +72,17 @@ var sandboxPlans = Pricing{
 	},
 }
 
-// LoadPricing get current effective pricing plans.
-func (env Env) LoadPricing() Pricing {
+// GetDefaultPricing returns the default pricing plans.
+func (env Env) GetDefaultPricing() Pricing {
 	return defaultPlans
+}
+
+// GetCurrentPricing get current effective pricing plans.
+func (env Env) GetCurrentPricing() Pricing {
+	return defaultPlans
+}
+
+// GetSandboxPricing returns the pricing plans for sandbox.
+func (env Env) GetSandboxPricing() Pricing {
+	return sandboxPlans
 }
