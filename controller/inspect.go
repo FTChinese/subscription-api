@@ -10,7 +10,7 @@ import (
 // This is used to inspect server internal status
 // so that you can see what pricing plans are being used when user begin to pay.
 func (router PaywallRouter) CurrentPlans(w http.ResponseWriter, req *http.Request) {
-	plans := router.model.LoadCurrentPlans()
+	plans := router.model.GetCurrentPricing()
 
 	view.Render(w, view.NewResponse().NoCache().SetBody(plans))
 }

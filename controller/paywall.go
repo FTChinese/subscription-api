@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/view"
 )
 
@@ -13,13 +14,15 @@ type PaywallRouter struct {
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(m model.Env) PaywallRouter {
-	return PaywallRouter{model: m}
+func NewPaywallRouter(env model.Env) PaywallRouter {
+	return PaywallRouter{
+		model: env,
+	}
 }
 
 // GetPromo gets the current effective promotion schedule.
 func (router PaywallRouter) GetPromo(w http.ResponseWriter, req *http.Request) {
-	promo, found := router.model.PromoFromCache()
+	promo, found := router.model.LoadCachedPromo()
 
 	if !found {
 		view.Render(w, view.NewNotFound())
@@ -37,5 +40,5 @@ func DefaultPlans(w http.ResponseWriter, req *http.Request) {
 		w,
 		view.NewResponse().
 			NoCache().
-			SetBody(model.DefaultPlans))
+			SetBody(paywall.GetDefaultPricing()))
 }

@@ -7,38 +7,29 @@ import (
 	"github.com/objcoding/wxpay"
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/postoffice"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
-	"gitlab.com/ftchinese/subscription-api/wepay"
+	"gitlab.com/ftchinese/subscription-api/wechat"
 )
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
 type WxPayRouter struct {
-	config   WxConfig
-	payApp   wepay.PayApp
-	client   *wxpay.Client
-	model    model.Env
-	wepayEnv wepay.Env
-	postman  postoffice.Postman
+	client wechat.Client
+	model  model.Env
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(m model.Env, isProd bool) WxPayRouter {
-	config := WxConfig{
-		AppID:  os.Getenv("WXPAY_APPID"),
-		MchID:  os.Getenv("WXPAY_MCHID"),
-		APIKey: os.Getenv("WXPAY_API_KEY"),
-		IsProd: isProd,
-	}
+func NewWxRouter(env model.Env) WxPayRouter {
+	appID := os.Getenv("WXPAY_APPID")
+	mchID := os.Getenv("WXPAY_MCHID")
+	apiKey := os.Getenv("WXPAY_API_KEY")
+
 	// Pay attention to the last parameter.
 	// It should always be false because Weixin's sandbox address does not work!
-	account := wxpay.NewAccount(config.AppID, config.MchID, config.APIKey, false)
 
 	return WxPayRouter{
-		model:  m,
-		config: config,
-		client: wxpay.NewClient(account),
+		client: wechat.NewClient(appID, mchID, apiKey),
+		model:  env,
 	}
 }
 
@@ -83,7 +74,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Try to find a plan based on the tier and cycle.
-	plan, err := router.model.LoadCurrentPlans().FindPlan(tierKey, cycleKey)
+	plan, err := router.model.GetCurrentPricing().FindPlan(tierKey, cycleKey)
 	// If pricing plan if not found.
 	if err != nil {
 		logger.WithField("trace", "UnifiedOrder").Error(err)
@@ -134,7 +125,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	// Compose request parameters
 	params.SetString("body", plan.Description).
 		SetString("out_trade_no", subs.OrderID).
-		SetInt64("total_fee", plan.GetPriceCent()).
+		SetInt64("total_fee", plan.PriceForWx()).
 		SetString("spbill_create_ip", app.UserIP).
 		SetString("notify_url", wxNotifyURL).
 		SetString("trade_type", "APP")
@@ -156,16 +147,16 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	//  map[return_code:FAIL return_msg:appid不存在]
 	logger.WithField("trace", "UnifiedOrder").Infof("Wx unified order response: %+v", resp)
 
-	if ok := router.payApp.VerifyIdentity(resp); !ok {
+	if ok := router.client.VerifyIdentity(resp); !ok {
 		view.Render(w, view.NewBadRequest("Wechat response contains mismatching IDs"))
 		return
 	}
 
-	if r := wepay.ValidateResponse(resp); r != nil {
+	if r := wechat.ValidateResponse(resp); r != nil {
 		view.Render(w, view.NewUnprocessable(r))
 	}
 
-	order := subs.PrepayOrder(router.client, resp)
+	order := router.client.BuildPrepayOrder(subs.OrderID, subs.Price, resp.GetString("prepay_id"))
 
 	view.Render(w, view.NewResponse().SetBody(order))
 }
@@ -176,7 +167,7 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	resp := wxpay.Notifies{}
 
-	params, err := wepay.ParseResponse(router.client, req.Body)
+	params, err := router.client.ParseResponse(req.Body)
 
 	if err != nil {
 		w.Write([]byte(resp.NotOK(err.Error())))
@@ -185,7 +176,7 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Verify appid, mch_id, trade_type, total_fee.
-	if ok := router.payApp.VerifyIdentity(params); !ok {
+	if ok := router.client.VerifyIdentity(params); !ok {
 		w.Write([]byte(resp.OK()))
 
 		return
@@ -197,8 +188,8 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	// For logging purpose.
 	go func() {
-		n := wepay.NewNotification(params)
-		router.wepayEnv.SaveNotification(n)
+		n := wechat.NewNotification(params)
+		router.model.SaveWxNotification(n)
 	}()
 
 	// Get out_trade_no to retrieve order.
@@ -302,7 +293,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if ok := router.payApp.VerifyIdentity(resp); !ok {
+	if ok := router.client.VerifyIdentity(resp); !ok {
 		view.Render(w, view.NewNotFound())
 		return
 	}

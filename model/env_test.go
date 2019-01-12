@@ -2,15 +2,16 @@ package model
 
 import (
 	"database/sql"
+	"testing"
 	"time"
 
 	"github.com/guregu/null"
 
 	"gitlab.com/ftchinese/subscription-api/enum"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/postoffice"
 
 	"github.com/icrowley/fake"
-	cache "github.com/patrickmn/go-cache"
 	uuid "github.com/satori/go.uuid"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
@@ -22,17 +23,14 @@ func newDevEnv() Env {
 		panic(err)
 	}
 
-	c := cache.New(cache.DefaultExpiration, 0)
-
 	return Env{
 		DB:      db,
-		Cache:   c,
-		Postman: postoffice.NewPostMan(),
+		Postman: postoffice.NewPostman(),
 	}
 }
 
 var devEnv = newDevEnv()
-var mockPlan = DefaultPlans["standard_year"]
+var mockPlan = paywall.GetDefaultPricing()["standard_year"]
 var mockClient = util.ClientApp{
 	ClientType: enum.PlatformAndroid,
 	Version:    "1.1.1",
@@ -133,4 +131,12 @@ func (u User) CreateMember() (Subscription, error) {
 	}
 
 	return subs, nil
+}
+
+func TestDBConn(t *testing.T) {
+	err := devEnv.DB.Ping()
+
+	if err != nil {
+		t.Error(err)
+	}
 }
