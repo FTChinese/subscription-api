@@ -2,183 +2,17 @@ package model
 
 import (
 	"database/sql"
-	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/objcoding/wxpay"
 
-	"github.com/guregu/null"
-
-	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
-	"gitlab.com/ftchinese/subscription-api/wechat"
 )
-
-// Subscription contains the details of a user's action to place an order.
-// This is the centrum of the whole subscription process.
-type Subscription struct {
-	UserID        string // Also used when creating member
-	OrderID       string
-	LoginMethod   enum.LoginMethod // Determine login method.
-	TierToBuy     enum.Tier
-	BillingCycle  enum.Cycle // Caculate expiration date
-	Price         float64
-	TotalAmount   float64
-	PaymentMethod enum.PayMethod
-	CreatedAt     util.Time // When the order is created.
-	ConfirmedAt   util.Time // When the payment is confirmed.
-	IsRenewal     bool      // If this order is used to renew membership. Determined the moment notification is received. Mostly used for data anaylsis and email.
-	StartDate     util.Date // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	EndDate       util.Date // Membership end date for this order. Depends on start date.
-}
-
-// NewWxpaySubs creates a new Subscription with payment method set to Wechat.
-// Note wechat login and wechat pay we talked here are two totally non-related things.
-func NewWxpaySubs(userID string, p paywall.Plan, login enum.LoginMethod) Subscription {
-	return Subscription{
-		UserID:        userID,
-		OrderID:       p.OrderID(),
-		LoginMethod:   login,
-		TierToBuy:     p.Tier,
-		BillingCycle:  p.Cycle,
-		Price:         p.Price,
-		TotalAmount:   p.Price,
-		PaymentMethod: enum.Wxpay,
-	}
-}
-
-// NewAlipaySubs creates a new Subscription with payment method set to Alipay.
-func NewAlipaySubs(userID string, p paywall.Plan, login enum.LoginMethod) Subscription {
-	return Subscription{
-		UserID:        userID,
-		OrderID:       p.OrderID(),
-		LoginMethod:   login,
-		TierToBuy:     p.Tier,
-		BillingCycle:  p.Cycle,
-		Price:         p.Price,
-		TotalAmount:   p.Price,
-		PaymentMethod: enum.Alipay,
-	}
-}
-
-// AliTotalAmount converts TotalAmount to ailpay format
-func (s Subscription) AliTotalAmount() string {
-	return strconv.FormatFloat(s.TotalAmount, 'f', 2, 32)
-}
-
-// WxTotalFee converts TotalAmount to int64 in cent for comparison with wx notification.
-func (s Subscription) WxTotalFee() int64 {
-	return int64(s.TotalAmount * 100)
-}
-
-// PrepayOrder creates a PrepayOrder from a subscription order for Wechat.
-func (s Subscription) PrepayOrder(client *wxpay.Client, resp wxpay.Params) wechat.PrepayOrder {
-	appID := resp.GetString("appid")
-	partnerID := resp.GetString("mch_id")
-	prepayID := resp.GetString("prepay_id")
-	nonce, _ := util.RandomHex(10)
-	pkg := "Sign=WXPay"
-	timestamp := fmt.Sprintf("%d", time.Now().Unix())
-
-	p := make(wxpay.Params)
-	p["appid"] = appID
-	p["partnerid"] = partnerID
-	p["prepayid"] = prepayID
-	p["package"] = pkg
-	p["noncestr"] = nonce
-	p["timestamp"] = timestamp
-
-	h := client.Sign(p)
-
-	return wechat.PrepayOrder{
-		FtcOrderID: s.OrderID,
-		Price:      s.Price,
-		AppID:      appID,
-		PartnerID:  partnerID,
-		PrepayID:   prepayID,
-		Package:    pkg,
-		Nonce:      nonce,
-		Timestamp:  timestamp,
-		Signature:  h,
-	}
-}
-
-// Check if user logged in by Wechat account.
-func (s Subscription) isWxLogin() bool {
-	return s.LoginMethod == enum.WechatLogin
-}
-
-func (s Subscription) isEmailLogin() bool {
-	return s.LoginMethod == enum.EmailLogin
-}
-
-func (s Subscription) getUnionID() null.String {
-	if s.isWxLogin() {
-		return null.StringFrom(s.UserID)
-	}
-
-	return null.String{}
-}
-
-// Build SQL query of membership depending on the login method; otherwise you cannot be sure the WHERE clause.
-func (s Subscription) stmtMemberDuration() string {
-	var whereCol string
-	if s.isWxLogin() {
-		whereCol = "vip_id_alias"
-	} else {
-		whereCol = "vip_id"
-	}
-
-	return fmt.Sprintf(`
-		SELECT expire_time AS expireTime,
-			expire_date AS expireDate
-		FROM premium.ftc_vip
-		WHERE %s = ?
-		LIMIT 1
-		FOR UPDATE`, whereCol)
-}
-
-func (s Subscription) stmtMember() string {
-	var whereCol string
-
-	if s.isWxLogin() {
-		whereCol = "vip_id_alias"
-	} else {
-		whereCol = "vip_id"
-	}
-
-	return fmt.Sprintf(`
-		SELECT vip_id AS userId,
-			vip_id_alias AS unionId,
-			vip_type AS vipType,
-			member_tier AS memberTier,
-			billing_cycle AS billingCyce,
-			expire_time AS expireTime,
-			expire_date AS expireDate
-		FROM premium.ftc_vip
-		WHERE %s = ?
-		LIMIT 1`, whereCol)
-}
-
-// withStartTime builds a subscription order's StartDate and EndDate based on the passed in starting time.
-func (s Subscription) withStartTime(t time.Time) (Subscription, error) {
-	s.StartDate = util.DateFrom(t)
-	expireTime, err := s.BillingCycle.EndingTime(t)
-
-	if err != nil {
-		return s, err
-	}
-
-	s.EndDate = util.DateFrom(expireTime)
-
-	return s, nil
-}
 
 // IsSubsAllowed checks if this user is allowed to purchase a subscritpion.
 // If a user is a valid member, and the membership is not expired, and not within the allowed renewal period, deny the request.
-func (env Env) IsSubsAllowed(subs Subscription) (bool, error) {
+func (env Env) IsSubsAllowed(subs paywall.Subscription) (bool, error) {
 	member, err := env.findMember(subs)
 
 	if err != nil {
@@ -199,13 +33,13 @@ func (env Env) IsSubsAllowed(subs Subscription) (bool, error) {
 	}
 
 	// This user is/was a member.
-	return member.canRenew(subs.BillingCycle), nil
+	return member.CanRenew(subs.BillingCycle), nil
 }
 
 // SaveSubscription saves a new subscription order.
 // At this moment, you should already know if this subscription is
 // a renewal of a new one, based on current Membership's expire_date.
-func (env Env) SaveSubscription(s Subscription, c util.ClientApp) error {
+func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error {
 	query := `
 	INSERT INTO premium.ftc_trade
 	SET trade_no = ?,
@@ -291,7 +125,7 @@ func (env Env) VerifyWxNotification(p wxpay.Params) error {
 }
 
 // FindSubscription tries to find an order to verify the authenticity of a subscription order.
-func (env Env) FindSubscription(orderID string) (Subscription, error) {
+func (env Env) FindSubscription(orderID string) (paywall.Subscription, error) {
 	query := `
 	SELECT trade_no AS orderId,
 		trade_price AS price,
@@ -309,7 +143,7 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 	WHERE trade_no = ?
 	LIMIT 1`
 
-	var s Subscription
+	var s paywall.Subscription
 	err := env.DB.QueryRow(query, orderID).Scan(
 		&s.OrderID,
 		&s.Price,
@@ -334,17 +168,17 @@ func (env Env) FindSubscription(orderID string) (Subscription, error) {
 }
 
 // ConfirmPayment handles payment notification with database locking.
-func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (Subscription, error) {
+func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Subscription, error) {
 
+	var subs paywall.Subscription
 	var startTime time.Time
 
 	tx, err := env.DB.Begin()
 	if err != nil {
 		logger.WithField("trace", "ConfirmPayment").Error(err)
-		return Subscription{}, err
+		return subs, err
 	}
 
-	var subs Subscription
 	errSubs := env.DB.QueryRow(stmtSubsLock, orderID).Scan(
 		&subs.UserID,
 		&subs.OrderID,
@@ -379,11 +213,11 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (Subscripti
 	subs.ConfirmedAt = util.TimeFrom(confirmedAt)
 
 	// Start query membership expiration time.
-	queryDuration := subs.stmtMemberDuration()
+	queryDuration := subs.StmtMemberDuration()
 
-	var dur Duration
+	var dur paywall.Duration
 	errDur := env.DB.QueryRow(queryDuration, orderID).Scan(
-		&dur.timestamp,
+		&dur.Timestamp,
 		&dur.ExpireDate,
 	)
 
@@ -400,9 +234,9 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (Subscripti
 		}
 	}
 
-	dur.normalizeDate()
+	dur.NormalizeDate()
 	// If membership is found, test if it is expired.
-	if dur.isExpired() {
+	if dur.IsExpired() {
 		subs.IsRenewal = false
 		startTime = confirmedAt
 	} else {
@@ -410,7 +244,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (Subscripti
 		startTime = dur.ExpireDate.Time
 	}
 
-	subs, err = subs.withStartTime(startTime)
+	subs, err = subs.WithStartTime(startTime)
 	if err != nil {
 		return subs, err
 	}
@@ -434,7 +268,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (Subscripti
 	// Create or extend membership.
 	_, createErr := tx.Exec(stmtCreateMember,
 		subs.UserID,
-		subs.getUnionID(),
+		subs.GetUnionID(),
 		subs.TierToBuy,
 		subs.BillingCycle,
 		subs.EndDate,

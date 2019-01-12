@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/postoffice"
 )
 
@@ -26,7 +27,7 @@ func (u User) NormalizeName() string {
 }
 
 // ComfirmationParcel create a parcel for email after subscription is confirmed.
-func (u User) ComfirmationParcel(s Subscription) (postoffice.Parcel, error) {
+func (u User) ComfirmationParcel(s paywall.Subscription) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(postoffice.ConfirmationLetter)
 
 	if err != nil {
@@ -36,7 +37,7 @@ func (u User) ComfirmationParcel(s Subscription) (postoffice.Parcel, error) {
 
 	data := struct {
 		User User
-		Subs Subscription
+		Subs paywall.Subscription
 	}{
 		u,
 		s,
@@ -88,8 +89,8 @@ func (env Env) findUser(id string) (User, error) {
 }
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
-func (env Env) SendConfirmationLetter(subs Subscription) error {
-	if subs.isWxLogin() {
+func (env Env) SendConfirmationLetter(subs paywall.Subscription) error {
+	if subs.IsWxLogin() {
 		return nil
 	}
 	// 1. Find this user's personal data
