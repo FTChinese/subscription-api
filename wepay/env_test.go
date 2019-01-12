@@ -36,7 +36,7 @@ var mockApp = PayApp{
 
 var mockClient = wxpay.NewClient(wxpay.NewAccount(appID, mchID, apiKey, false))
 
-var mockPlan = paywallEnv.LoadPricing()["standard_year"]
+var mockPlan = paywallEnv.GetCurrentPricing()["standard_year"]
 
 func generateWxID() string {
 	id, _ := util.RandomBase64(21)
