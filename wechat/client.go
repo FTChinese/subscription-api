@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/next-api/view"
 	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/view"
 
 	log "github.com/sirupsen/logrus"
 )
