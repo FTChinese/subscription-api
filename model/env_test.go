@@ -51,8 +51,8 @@ func NewUser() User {
 	}
 }
 
-func (u User) subs() Subscription {
-	subs := NewWxpaySubs(u.UserID, mockPlan, enum.EmailLogin)
+func (u User) subs() paywall.Subscription {
+	subs := paywall.NewWxpaySubs(u.UserID, mockPlan, enum.EmailLogin)
 	subs.CreatedAt = util.TimeNow()
 	subs.ConfirmedAt = util.TimeNow()
 	subs.IsRenewal = false
@@ -93,8 +93,8 @@ func (u User) createUser() error {
 	return nil
 }
 
-func (u User) CreateWxpaySubs() (Subscription, error) {
-	subs := NewWxpaySubs(u.UserID, mockPlan, enum.EmailLogin)
+func (u User) CreateWxpaySubs() (paywall.Subscription, error) {
+	subs := paywall.NewWxpaySubs(u.UserID, mockPlan, enum.EmailLogin)
 
 	err := devEnv.SaveSubscription(subs, mockClient)
 
@@ -105,8 +105,8 @@ func (u User) CreateWxpaySubs() (Subscription, error) {
 	return subs, nil
 }
 
-func (u User) CreateAlipaySubs() (Subscription, error) {
-	subs := NewAlipaySubs(u.UserID, mockPlan, enum.EmailLogin)
+func (u User) CreateAlipaySubs() (paywall.Subscription, error) {
+	subs := paywall.NewAlipaySubs(u.UserID, mockPlan, enum.EmailLogin)
 
 	err := devEnv.SaveSubscription(subs, mockClient)
 
@@ -117,7 +117,7 @@ func (u User) CreateAlipaySubs() (Subscription, error) {
 	return subs, nil
 }
 
-func (u User) CreateMember() (Subscription, error) {
+func (u User) CreateMember() (paywall.Subscription, error) {
 	subs, err := u.CreateWxpaySubs()
 
 	if err != nil {

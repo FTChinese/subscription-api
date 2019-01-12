@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/objcoding/wxpay"
+	"gitlab.com/ftchinese/next-api/view"
 	"gitlab.com/ftchinese/subscription-api/util"
 
 	log "github.com/sirupsen/logrus"
@@ -103,4 +104,65 @@ func (c Client) BuildPrepayOrder(orderID string, price float64, prepayID string)
 		Timestamp:  timestamp,
 		Signature:  h,
 	}
+}
+
+// ValidateResponse verifies if wechat response is valid.
+//
+// Example response:
+// return_code:SUCCESS|FAIL
+// return_msg:OK
+//
+// Present only if return_code == SUCCESS
+// appid:wx......
+// mch_id:........
+// nonce_str:8p8ZlUBkLsFPxC6g
+// sign:DB68F0D9F193D499DF9A2EDBFFEAF312
+// result_code:SUCCESS|FAIL
+// err_code
+// err_code_des
+//
+// Present only if returnd_code == SUCCESS and result_code == SUCCCESS
+// trade_type:APP
+// prepay_id:wx20125006086590be8d9519f40090763508
+// NOTE: this sdk treat return_code == FAIL as valid.
+// Possible return_msg:
+// appid不存在;
+// 商户号mch_id与appid不匹配;
+// invalid spbill_create_ip;
+// spbill_create_ip参数长度有误; (Wx does not accept IPv6 like 9b5b:2ef9:6c9f:cf5:130e:984d:8958:75f9 :-<)
+func ValidateResponse(resp wxpay.Params) *view.Reason {
+	if resp.GetString("return_code") == wxpay.Fail {
+		returnMsg := resp.GetString("return_msg")
+		logger.
+			WithField("trace", "ValidateResponse").
+			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
+
+		reason := &view.Reason{
+			Field: "return_code",
+			Code:  "fail",
+		}
+		reason.SetMessage(returnMsg)
+
+		return reason
+	}
+
+	if resp.GetString("result_code") == wxpay.Fail {
+		errCode := resp.GetString("err_code")
+		errCodeDes := resp.GetString("err_code_des")
+
+		logger.WithField("trace", "ValidateResponse").
+			WithField("err_code", errCode).
+			WithField("err_code_des", errCodeDes).
+			Error("Wx unified order result failed")
+
+		reason := &view.Reason{
+			Field: "result_code",
+			Code:  errCode,
+		}
+		reason.SetMessage(errCodeDes)
+
+		return reason
+	}
+
+	return nil
 }
