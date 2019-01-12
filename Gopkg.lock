@@ -19,8 +19,8 @@
     ".",
     "middleware"
   ]
-  revision = "b5294d10673813fac8558e7f47242bc9e61b4c25"
-  version = "v3.3.3"
+  revision = "e95203758b2a6ec24a8e97124d5719ffe5ec1374"
+  version = "v4.0.0"
 
 [[projects]]
   name = "github.com/go-mail/mail"
@@ -31,8 +31,8 @@
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
-  revision = "d523deb1b23d913de5bdada721a6071e71283618"
-  version = "v1.4.0"
+  revision = "72cd26f257d44c1114970e19afddcd812016007e"
+  version = "v1.4.1"
 
 [[projects]]
   name = "github.com/guregu/null"
@@ -73,8 +73,8 @@
 [[projects]]
   name = "github.com/objcoding/wxpay"
   packages = ["."]
-  revision = "e92aab4648545228cc1dfd09e93d2d46bd13eeaf"
-  version = "v1.0.3"
+  revision = "0dc738969b7c753e11b5dc62cf3e4083c95d80ca"
+  version = "v1.0.5"
 
 [[projects]]
   name = "github.com/parnurzeal/gorequest"
@@ -103,8 +103,8 @@
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "ad15b42461921f1fb3529b058c6786c6a45d5162"
-  version = "v1.1.1"
+  revision = "e1e72e9de974bd926e5c56f83753fba2df402ce5"
+  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -197,6 +197,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9b61ee2e319bfc4ea04799241e182646d6f3128d8bced92d6ff32c724a4d80f9"
+  inputs-digest = "81442a37cfb90c1874af277f4a262191d324bb48d9f79051615d8165d968c2d1"
   solver-name = "gps-cdcl"
   solver-version = 1
