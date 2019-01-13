@@ -102,7 +102,6 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	subs := paywall.NewWxpaySubs(userID, plan, loginMethod)
 
 	ok, err := router.model.IsSubsAllowed(subs)
-	// err = wr.model.PlaceOrder(subs, app)
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
@@ -121,20 +120,12 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Prepare to send wx unified order.
-	params := make(wxpay.Params)
+	uniOrder := wechat.GenerateUnifiedOrder(plan, app.UserIP, subs.OrderID)
 
-	// Compose request parameters
-	params.SetString("body", plan.Description).
-		SetString("out_trade_no", subs.OrderID).
-		SetInt64("total_fee", plan.PriceForWx()).
-		SetString("spbill_create_ip", app.UserIP).
-		SetString("notify_url", wxNotifyURL).
-		SetString("trade_type", "APP")
-
-	logger.WithField("trace", "UnifiedOrder").Infof("Order params: %+v", params)
+	logger.WithField("trace", "UnifiedOrder").Infof("Order params: %+v", uniOrder)
 
 	// Send order to wx
-	resp, err := router.client.UnifiedOrder(params)
+	resp, err := router.client.UnifiedOrder(uniOrder)
 
 	if err != nil {
 		logger.WithField("trace", "UnifiedOrder").Error(err)
@@ -144,22 +135,20 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// Possible response:
-	//  map[return_code:FAIL return_msg:appid不存在]
-	logger.WithField("trace", "UnifiedOrder").Infof("Wx unified order response: %+v", resp)
+	// Log the response.
+	go func() {
+		uor := wechat.NewUnifiedOrderResp(resp)
+		router.model.SavePrepayResp(subs.OrderID, uor)
+	}()
 
-	if ok := router.client.VerifyIdentity(resp); !ok {
-		view.Render(w, view.NewBadRequest("Wechat response contains mismatching IDs"))
+	if r := router.client.ValidateResponse(resp); r != nil {
+		view.Render(w, view.NewUnprocessable(r))
 		return
 	}
 
-	if r := wechat.ValidateResponse(resp); r != nil {
-		view.Render(w, view.NewUnprocessable(r))
-	}
+	prepay := router.client.BuildPrepayOrder(subs.OrderID, subs.Price, resp.GetString("prepay_id"))
 
-	order := router.client.BuildPrepayOrder(subs.OrderID, subs.Price, resp.GetString("prepay_id"))
-
-	view.Render(w, view.NewResponse().SetBody(order))
+	view.Render(w, view.NewResponse().SetBody(prepay))
 }
 
 // Notification implements 支付结果通知
@@ -171,27 +160,34 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	params, err := router.client.ParseResponse(req.Body)
 
 	if err != nil {
+		logger.WithField("trace", "Notification").Error(err)
+
 		w.Write([]byte(resp.NotOK(err.Error())))
 
 		return
 	}
 
+	// Log the response.
+	go func() {
+		noti := wechat.NewNotification(params)
+		router.model.SaveWxNotification(noti)
+	}()
+
 	// Verify appid, mch_id, trade_type, total_fee.
-	if ok := router.client.VerifyIdentity(params); !ok {
+	if r := router.client.ValidateResponse(params); r != nil {
+		logger.WithField("trace", "Notification").Error(r.GetMessage())
 		w.Write([]byte(resp.OK()))
 
 		return
 	}
 
+	// Ensure the order actually exists, and not confirmed yet, and price matches.
 	if err := router.model.VerifyWxNotification(params); err != nil {
-		w.Write([]byte(resp.OK()))
-	}
+		logger.WithField("trace", "Notification").Error(err)
 
-	// For logging purpose.
-	go func() {
-		n := wechat.NewNotification(params)
-		router.model.SaveWxNotification(n)
-	}()
+		w.Write([]byte(resp.OK()))
+		return
+	}
 
 	// Get out_trade_no to retrieve order.
 	// Check the order's confirmed_utc field.
@@ -200,16 +196,17 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	timeEnd := params.GetString("time_end")
 
 	// updatedSubs,
-	cofirmedSubs, err := router.model.ConfirmPayment(orderID, util.ParseWxTime(timeEnd))
+	subs, err := router.model.ConfirmPayment(orderID, util.ParseWxTime(timeEnd))
 
 	if err != nil {
-		w.Write([]byte(resp.NotOK(err.Error())))
+		logger.WithField("trace", "Notification").Error(err)
 
+		w.Write([]byte(resp.NotOK(err.Error())))
 		return
 	}
 
 	// Send a letter to this user.
-	go router.model.SendConfirmationLetter(cofirmedSubs)
+	go router.model.SendConfirmationLetter(subs)
 
 	w.Write([]byte(resp.OK()))
 }
@@ -217,109 +214,109 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 // OrderQuery implements 查询订单
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 // Only transaction_id or out_trade_no is required.
-func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
-	orderID := getURLParam(req, "orderId").toString()
+// func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
+// 	orderID := getURLParam(req, "orderId").toString()
 
-	if orderID == "" {
-		view.Render(w, view.NewBadRequest(""))
-		return
-	}
+// 	if orderID == "" {
+// 		view.Render(w, view.NewBadRequest(""))
+// 		return
+// 	}
 
-	params := make(wxpay.Params)
-	params.SetString("out_trade_no", orderID)
+// 	params := make(wxpay.Params)
+// 	params.SetString("out_trade_no", orderID)
 
-	// Send query to Wechat server
-	resp, err := router.client.OrderQuery(params)
+// 	// Send query to Wechat server
+// 	resp, err := router.client.OrderQuery(params)
 
-	// If there are any errors when querying order.
-	if err != nil {
-		logger.WithField("location", "OrderQuery").Error(err)
+// 	// If there are any errors when querying order.
+// 	if err != nil {
+// 		logger.WithField("location", "OrderQuery").Error(err)
 
-		view.Render(w, view.NewInternalError(err.Error()))
+// 		view.Render(w, view.NewInternalError(err.Error()))
 
-		return
-	}
+// 		return
+// 	}
 
-	logger.WithField("location", "OrderQuery").Infof("Order query result: %+v", resp)
+// 	logger.WithField("location", "OrderQuery").Infof("Order query result: %+v", resp)
 
-	// Reponse fields:
-	// return_code: SUCCESS|FAIL
-	// return_msg: string
-	// appid
-	// mch_id
-	// nonce_str
-	// sign
-	// result_code
-	// err_code
-	// err_code_des
-	if resp.GetString("return_code") == wxpay.Fail {
-		returnMsg := resp.GetString("return_msg")
-		logger.
-			WithField("location", "OrderQuery").
-			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
+// 	// Reponse fields:
+// 	// return_code: SUCCESS|FAIL
+// 	// return_msg: string
+// 	// appid
+// 	// mch_id
+// 	// nonce_str
+// 	// sign
+// 	// result_code
+// 	// err_code
+// 	// err_code_des
+// 	if resp.GetString("return_code") == wxpay.Fail {
+// 		returnMsg := resp.GetString("return_msg")
+// 		logger.
+// 			WithField("location", "OrderQuery").
+// 			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
 
-		reason := &view.Reason{
-			Field: "return_code",
-			Code:  "fail",
-		}
-		reason.SetMessage(returnMsg)
+// 		reason := &view.Reason{
+// 			Field: "return_code",
+// 			Code:  "fail",
+// 		}
+// 		reason.SetMessage(returnMsg)
 
-		view.Render(w, view.NewUnprocessable(reason))
+// 		view.Render(w, view.NewUnprocessable(reason))
 
-		return
-	}
+// 		return
+// 	}
 
-	if resp.GetString("result_code") == wxpay.Fail {
-		errCode := resp.GetString("err_code")
-		errCodeDes := resp.GetString("err_code_des")
+// 	if resp.GetString("result_code") == wxpay.Fail {
+// 		errCode := resp.GetString("err_code")
+// 		errCodeDes := resp.GetString("err_code_des")
 
-		logger.WithField("location", "OrderQuery").
-			WithField("err_code", errCode).
-			WithField("err_code_des", errCodeDes).
-			Error("Wx unified order result failed")
+// 		logger.WithField("location", "OrderQuery").
+// 			WithField("err_code", errCode).
+// 			WithField("err_code_des", errCodeDes).
+// 			Error("Wx unified order result failed")
 
-		switch errCode {
-		case "ORDERNOTEXIST":
-			view.Render(w, view.NewNotFound())
+// 		switch errCode {
+// 		case "ORDERNOTEXIST":
+// 			view.Render(w, view.NewNotFound())
 
-		default:
-			reason := &view.Reason{
-				Field: "result_code",
-				Code:  "fail",
-			}
-			reason.SetMessage(errCodeDes)
-			view.Render(w, view.NewUnprocessable(reason))
-		}
+// 		default:
+// 			reason := &view.Reason{
+// 				Field: "result_code",
+// 				Code:  "fail",
+// 			}
+// 			reason.SetMessage(errCodeDes)
+// 			view.Render(w, view.NewUnprocessable(reason))
+// 		}
 
-		return
-	}
+// 		return
+// 	}
 
-	if ok := router.client.VerifyIdentity(resp); !ok {
-		view.Render(w, view.NewNotFound())
-		return
-	}
+// 	if ok := router.client.VerifyIdentity(resp); !ok {
+// 		view.Render(w, view.NewNotFound())
+// 		return
+// 	}
 
-	// Response if return_code == SUCCESS and result_code == SUCCESS
-	// openid
-	// trade_type: APP
-	// trade_state: SUCCESS | REFUND | NOTPAY | CLOSED | REVOKED | USERPAYING | PAYERROR
-	// bank_type
-	// total_fee
-	// cash_fee
-	// transaction_id
-	// out_trade_no
-	// time_end: 20091225091010
-	// trade_state_desc
-	timeEnd := resp.GetString("time_end")
-	order := WxQueryOrder{
-		OpenID:        resp.GetString("openid"),
-		TradeType:     resp.GetString("trade_type"),
-		PaymentState:  resp.GetString("trade_state"),
-		TotalFee:      resp.GetString("total_fee"),
-		TransactionID: resp.GetString("transaction_id"),
-		FTCOrderID:    resp.GetString("out_trade_no"),
-		PaidAt:        timeEnd,
-	}
+// 	// Response if return_code == SUCCESS and result_code == SUCCESS
+// 	// openid
+// 	// trade_type: APP
+// 	// trade_state: SUCCESS | REFUND | NOTPAY | CLOSED | REVOKED | USERPAYING | PAYERROR
+// 	// bank_type
+// 	// total_fee
+// 	// cash_fee
+// 	// transaction_id
+// 	// out_trade_no
+// 	// time_end: 20091225091010
+// 	// trade_state_desc
+// 	timeEnd := resp.GetString("time_end")
+// 	order := WxQueryOrder{
+// 		OpenID:        resp.GetString("openid"),
+// 		TradeType:     resp.GetString("trade_type"),
+// 		PaymentState:  resp.GetString("trade_state"),
+// 		TotalFee:      resp.GetString("total_fee"),
+// 		TransactionID: resp.GetString("transaction_id"),
+// 		FTCOrderID:    resp.GetString("out_trade_no"),
+// 		PaidAt:        timeEnd,
+// 	}
 
-	view.Render(w, view.NewResponse().SetBody(order))
-}
+// 	view.Render(w, view.NewResponse().SetBody(order))
+// }
