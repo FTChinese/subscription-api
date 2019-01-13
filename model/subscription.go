@@ -82,12 +82,15 @@ func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error 
 }
 
 // VerifyWxNotification checks if price match, if already confirmed.
+// Returns error ErrAlreadyConfirmed or ErrPriceMismatch if any error occurred.
 func (env Env) VerifyWxNotification(p wxpay.Params) error {
 	orderID := p.GetString("out_trade_no")
 	totalFee := p.GetInt64("total_fee")
 
+	logger.Infof("OrderID: %s, paid: %d\n", orderID, totalFee)
+
 	query := `
-	SELECT trade_amount AS totalAmount
+	SELECT trade_amount AS totalAmount,
 		confirmed_utc AS confirmedAt
 	FROM premium.ftc_trade
 	WHERE trade_no = ?
@@ -99,6 +102,8 @@ func (env Env) VerifyWxNotification(p wxpay.Params) error {
 		&amount,
 		&confirmedAt,
 	)
+
+	logger.Infof("Amount: %f, confirmed at: %s\n", amount, confirmedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
