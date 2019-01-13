@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -100,7 +100,7 @@ func main() {
 		r1.Post("/unified-order/{tier}/{cycle}", wxRouter.UnifiedOrder)
 
 		// Query order
-		r1.Get("/query/{orderId}", wxRouter.OrderQuery)
+		// r1.Get("/query/{orderId}", wxRouter.OrderQuery)
 
 		// Cancel order
 	})
