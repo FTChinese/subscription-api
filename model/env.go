@@ -27,11 +27,11 @@ const (
 	stmtSubs = `
 	SELECT user_id AS userId,
 		trade_no AS orderId,
+		trade_price AS price,
+		trade_amount AS charged,
 		login_method AS loginMethod,
 		tier_to_buy AS tierToBuy,
 		billing_cycle AS billingCycle,
-		trade_price AS price,
-		trade_amount AS totalAmount,
 		payment_method AS paymentMethod,
 		created_utc AS createdAt,
 		confirmed_utc AS confirmedAt
