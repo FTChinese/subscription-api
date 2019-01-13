@@ -7,6 +7,7 @@ import (
 	"github.com/objcoding/wxpay"
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
 	"gitlab.com/ftchinese/subscription-api/wechat"
@@ -98,7 +99,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 		userID = unionID
 	}
 
-	subs := model.NewWxpaySubs(userID, plan, loginMethod)
+	subs := paywall.NewWxpaySubs(userID, plan, loginMethod)
 
 	ok, err := router.model.IsSubsAllowed(subs)
 	// err = wr.model.PlaceOrder(subs, app)
