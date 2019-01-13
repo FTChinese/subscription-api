@@ -52,28 +52,6 @@ func TestSaveSubs(t *testing.T) {
 	t.Logf("Created a Ali subscription: %+v\n", aliSubs)
 }
 
-func TestVerifyWxNoti(t *testing.T) {
-	m := NewMocker()
-	subs, err := m.CreateWxpaySubs()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Created a subscription order: %+v", subs)
-
-	p, err := WxParsedNoti(subs.OrderID)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Notification: %+v", p)
-
-	err = devEnv.VerifyWxNotification(p)
-	if err != nil {
-		t.Error(err)
-	}
-}
-
 func TestFindSubs(t *testing.T) {
 	m := NewMocker()
 

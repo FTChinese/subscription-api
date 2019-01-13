@@ -85,6 +85,16 @@ func (s Subscription) WxTotalFee() int64 {
 	return int64(s.TotalAmount * 100)
 }
 
+// IsWxChargeMatched tests if the order's charge matches the one from wechat response.
+func (s Subscription) IsWxChargeMatched(cent int64) bool {
+	return s.WxTotalFee() == cent
+}
+
+// IsConfirmed checks if the order is confirmed.
+func (s Subscription) IsConfirmed() bool {
+	return !s.ConfirmedAt.IsZero()
+}
+
 // IsWxLogin Check if user logged in by Wechat account.
 func (s Subscription) IsWxLogin() bool {
 	return s.LoginMethod == enum.WechatLogin

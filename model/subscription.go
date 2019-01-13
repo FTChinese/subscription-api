@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/objcoding/wxpay"
-
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
@@ -76,54 +74,6 @@ func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error 
 	if err != nil {
 		logger.WithField("location", "New subscription").Error(err)
 		return err
-	}
-
-	return nil
-}
-
-// VerifyWxNotification checks if price match, if already confirmed.
-// Returns error ErrAlreadyConfirmed or ErrPriceMismatch if any error occurred.
-func (env Env) VerifyWxNotification(p wxpay.Params) error {
-	orderID := p.GetString("out_trade_no")
-	totalFee := p.GetInt64("total_fee")
-
-	logger.Infof("OrderID: %s, paid: %d\n", orderID, totalFee)
-
-	query := `
-	SELECT trade_amount AS totalAmount,
-		confirmed_utc AS confirmedAt
-	FROM premium.ftc_trade
-	WHERE trade_no = ?
-	LIMIT 1`
-
-	var amount float64
-	var confirmedAt util.Time
-	err := env.DB.QueryRow(query, orderID).Scan(
-		&amount,
-		&confirmedAt,
-	)
-
-	logger.Infof("Amount: %f, confirmed at: %s\n", amount, confirmedAt)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return ErrOrderNotFound
-		}
-		return err
-	}
-
-	if !confirmedAt.IsZero() {
-		logger.WithField("trace", "VerifyWxNotification").Error(ErrAlreadyConfirmed)
-
-		return ErrAlreadyConfirmed
-	}
-
-	price := int64(amount * 100)
-
-	if price != totalFee {
-		logger.WithField("trace", "VerifyWxNotification").Infof("Paid price does not match. Should be %d, actual %d", price, totalFee)
-
-		return ErrPriceMismatch
 	}
 
 	return nil
