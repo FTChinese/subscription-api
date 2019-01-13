@@ -22,40 +22,38 @@ func GenerateUnifiedOrder(plan paywall.Plan, userIP, orderID string) wxpay.Param
 	return p
 }
 
-// PrepayOrder is the response send to client
-type PrepayOrder struct {
-	FtcOrderID string  `json:"ftcOrderId"`
-	Price      float64 `json:"price"`
-	AppID      string  `json:"appid"`
-	PartnerID  string  `json:"partnerid"`
-	PrepayID   string  `json:"prepayid"`
-	Package    string  `json:"package"`
-	Nonce      string  `json:"noncestr"`
-	Timestamp  string  `json:"timestamp"`
-	Signature  string  `json:"sign"`
+// UnifiedOrderResp contains the response data from Wechat unified order.
+type UnifiedOrderResp struct {
+	StatusCode       string
+	StatusMessage    string
+	AppID            null.String
+	MID              null.String
+	Nonce            null.String
+	Signature        null.String
+	ResultCode       null.String
+	ErrorCode        null.String
+	ErrorDescription null.String
+	TradeType        null.String
+	PrepayID         null.String
 }
 
-// PrepayResp contains the response data from Wechat unified order.
-type PrepayResp struct {
-	StatusCode    string
-	StatusMessage string
-	AppID         null.String
-	MID           null.String
-	Nonce         null.String
-	Signature     null.String
-	IsSuccess     bool
-	ResultCode    null.String
-	ResultMessage null.String
-	TradeType     null.String
-	PrePayID      null.String
-}
-
-// NewPrepayResp creates converts PrePay from a wxpay.Params type.
-func NewPrepayResp(r wxpay.Params) PrepayResp {
-	p := PrepayResp{
+// NewUnifiedOrderResp creates converts PrePay from a wxpay.Params type.
+// Example response from Wechat:
+// map[
+// result_code:SUCCESS
+// trade_type:APP
+// sign:C7493936018971251931EADC03FE0B46
+// prepay_id:wx131027225284604cf9f311763035575963
+// return_code:SUCCESS
+// return_msg:OK
+// appid:***REMOVED***
+// mch_id:1504993271
+// nonce_str:aOyCOfOvWZQZkRwp
+// ]
+func NewUnifiedOrderResp(r wxpay.Params) UnifiedOrderResp {
+	p := UnifiedOrderResp{
 		StatusCode:    r.GetString("return_code"),
 		StatusMessage: r.GetString("return_msg"),
-		IsSuccess:     r.GetString("result_code") == "SUCCESS",
 	}
 
 	if v, ok := r["appid"]; ok {
@@ -74,11 +72,16 @@ func NewPrepayResp(r wxpay.Params) PrepayResp {
 		p.Signature = null.StringFrom(v)
 	}
 
-	if v, ok := r["err_code"]; ok {
+	if v, ok := r["result_code"]; ok {
 		p.ResultCode = null.StringFrom(v)
 	}
+
+	if v, ok := r["err_code"]; ok {
+		p.ErrorCode = null.StringFrom(v)
+	}
+
 	if v, ok := r["err_code_des"]; ok {
-		p.ResultMessage = null.StringFrom(v)
+		p.ErrorDescription = null.StringFrom(v)
 	}
 
 	if v, ok := r["trade_type"]; ok {
@@ -86,7 +89,7 @@ func NewPrepayResp(r wxpay.Params) PrepayResp {
 	}
 
 	if v, ok := r["prepay_id"]; ok {
-		p.PrePayID = null.StringFrom(v)
+		p.PrepayID = null.StringFrom(v)
 	}
 
 	return p
