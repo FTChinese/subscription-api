@@ -15,13 +15,14 @@ type Duration struct {
 	ExpireDate util.Date
 }
 
+// NormalizeDate converts unix timestamp to util.Date.
 func (d *Duration) NormalizeDate() {
 	if d.ExpireDate.IsZero() && d.Timestamp != 0 {
 		d.ExpireDate = util.DateFrom(time.Unix(d.Timestamp, 0))
 	}
 }
 
-// canRenew tests if a membership is allowed to renuew subscription.
+// CanRenew tests if a membership is allowed to renuew subscription.
 // A member could only renew its subscripiton when remaining duration of a membership is shorter than a billing cycle.
 // Expire date - now > cycle  --- Renwal is not allowed
 // Expire date - now <= cycle --- Can renew
@@ -38,7 +39,7 @@ func (d Duration) CanRenew(cycle enum.Cycle) bool {
 	return d.ExpireDate.Before(cycleEnds)
 }
 
-// isExpired tests if the membership's expiration date is before now.
+// IsExpired tests if the membership's expiration date is before now.
 func (d Duration) IsExpired() bool {
 	// If expire is before now, it is expired.
 	return d.ExpireDate.Before(time.Now())
