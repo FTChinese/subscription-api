@@ -1,10 +1,7 @@
 package paywall
 
 import (
-	"fmt"
-	"math/rand"
 	"strconv"
-	"time"
 
 	"gitlab.com/ftchinese/subscription-api/enum"
 )
@@ -32,11 +29,11 @@ func (p Plan) PriceForAli() string {
 // OrderID generates an FT order id based
 // on the plan's id, a random number between 100 to 999,
 // and unix timestamp.
-func (p Plan) OrderID() string {
-	rand.Seed(time.Now().UnixNano())
+// func (p Plan) OrderID() string {
+// 	rand.Seed(time.Now().UnixNano())
 
-	// Generate a random number between [100, 999)
-	rn := 100 + rand.Intn(999-100+1)
+// 	// Generate a random number between [100, 999)
+// 	rn := 100 + rand.Intn(999-100+1)
 
-	return fmt.Sprintf("FT%03d%d%d", p.ID, rn, time.Now().Unix())
-}
+// 	return fmt.Sprintf("FT%03d%d%d", p.ID, rn, time.Now().Unix())
+// }

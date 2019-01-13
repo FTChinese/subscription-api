@@ -3,6 +3,7 @@ package paywall
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/guregu/null"
@@ -31,9 +32,8 @@ type Subscription struct {
 // NewWxpaySubs creates a new Subscription with payment method set to Wechat.
 // Note wechat login and wechat pay we talked here are two totally non-related things.
 func NewWxpaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
-	return Subscription{
+	s := Subscription{
 		UserID:        userID,
-		OrderID:       p.OrderID(),
 		LoginMethod:   login,
 		TierToBuy:     p.Tier,
 		BillingCycle:  p.Cycle,
@@ -41,13 +41,16 @@ func NewWxpaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
 		TotalAmount:   p.Price,
 		PaymentMethod: enum.Wxpay,
 	}
+
+	s.GenerateOrderID()
+
+	return s
 }
 
 // NewAlipaySubs creates a new Subscription with payment method set to Alipay.
 func NewAlipaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
-	return Subscription{
+	s := Subscription{
 		UserID:        userID,
-		OrderID:       p.OrderID(),
 		LoginMethod:   login,
 		TierToBuy:     p.Tier,
 		BillingCycle:  p.Cycle,
@@ -55,6 +58,21 @@ func NewAlipaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
 		TotalAmount:   p.Price,
 		PaymentMethod: enum.Alipay,
 	}
+
+	s.GenerateOrderID()
+
+	return s
+}
+
+// GenerateOrderID creates an id for this order. The order id is created only created upon the initial call of this method. Multiple calls won't change the this order's id.
+func (s *Subscription) GenerateOrderID() {
+	if s.OrderID != "" {
+		return
+	}
+
+	id, _ := util.RandomHex(8)
+
+	s.OrderID = "FT" + strings.ToUpper(id)
 }
 
 // AliTotalAmount converts TotalAmount to ailpay format
@@ -67,15 +85,17 @@ func (s Subscription) WxTotalFee() int64 {
 	return int64(s.TotalAmount * 100)
 }
 
-// Check if user logged in by Wechat account.
+// IsWxLogin Check if user logged in by Wechat account.
 func (s Subscription) IsWxLogin() bool {
 	return s.LoginMethod == enum.WechatLogin
 }
 
+// IsEmailLogin checks if user logged in by email.
 func (s Subscription) IsEmailLogin() bool {
 	return s.LoginMethod == enum.EmailLogin
 }
 
+// GetUnionID creates a nullable union id from user id if user logged in via wechat.
 func (s Subscription) GetUnionID() null.String {
 	if s.IsWxLogin() {
 		return null.StringFrom(s.UserID)
@@ -84,7 +104,7 @@ func (s Subscription) GetUnionID() null.String {
 	return null.String{}
 }
 
-// Build SQL query of membership depending on the login method; otherwise you cannot be sure the WHERE clause.
+// StmtMemberDuration Build SQL query of membership depending on the login method; otherwise you cannot be sure the WHERE clause.
 func (s Subscription) StmtMemberDuration() string {
 	var whereCol string
 	if s.IsWxLogin() {
@@ -102,6 +122,7 @@ func (s Subscription) StmtMemberDuration() string {
 		FOR UPDATE`, whereCol)
 }
 
+// StmtMember build SQL query of membership based on login method.
 func (s Subscription) StmtMember() string {
 	var whereCol string
 
@@ -124,7 +145,7 @@ func (s Subscription) StmtMember() string {
 		LIMIT 1`, whereCol)
 }
 
-// withStartTime builds a subscription order's StartDate and EndDate based on the passed in starting time.
+// WithStartTime builds a subscription order's StartDate and EndDate based on the passed in starting time.
 func (s Subscription) WithStartTime(t time.Time) (Subscription, error) {
 	s.StartDate = util.DateFrom(t)
 	expireTime, err := s.BillingCycle.EndingTime(t)
