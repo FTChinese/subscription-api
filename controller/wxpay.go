@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"database/sql"
 	"net/http"
 	"os"
 
@@ -181,22 +182,29 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// Ensure the order actually exists, and not confirmed yet, and price matches.
-	if err := router.model.VerifyWxNotification(params); err != nil {
-		logger.WithField("trace", "Notification").Error(err)
-
-		w.Write([]byte(resp.OK()))
-		return
-	}
-
 	// Get out_trade_no to retrieve order.
 	// Check the order's confirmed_utc field.
 	// If confirmed_utc is empty, get time_end from params and set confirmed_utc to it.
 	orderID := params.GetString("out_trade_no")
-	timeEnd := params.GetString("time_end")
+	subs, err := router.model.FindSubscription(orderID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.Write([]byte(resp.OK()))
+			return
+		}
+		w.Write([]byte(resp.NotOK(err.Error())))
+		return
+	}
 
-	// updatedSubs,
-	subs, err := router.model.ConfirmPayment(orderID, util.ParseWxTime(timeEnd))
+	charged := params.GetInt64("total_fee")
+	if !subs.IsWxChargeMatched(charged) {
+		w.Write([]byte(resp.OK()))
+		return
+	}
+
+	// updatedSubs
+	timeEnd := params.GetString("time_end")
+	confirmedSubs, err := router.model.ConfirmPayment(orderID, util.ParseWxTime(timeEnd))
 
 	if err != nil {
 		logger.WithField("trace", "Notification").Error(err)
@@ -206,7 +214,7 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Send a letter to this user.
-	go router.model.SendConfirmationLetter(subs)
+	go router.model.SendConfirmationLetter(confirmedSubs)
 
 	w.Write([]byte(resp.OK()))
 }
