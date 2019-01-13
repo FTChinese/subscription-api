@@ -11,6 +11,7 @@ import (
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
 )
@@ -91,7 +92,7 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		userID = unionID
 	}
 
-	subs := model.NewAlipaySubs(userID, plan, loginMethod)
+	subs := paywall.NewAlipaySubs(userID, plan, loginMethod)
 
 	ok, err := router.model.IsSubsAllowed(subs)
 	// err = ar.model.PlaceOrder(subs, app)
