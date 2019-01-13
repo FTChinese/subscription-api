@@ -5,7 +5,7 @@ import "gitlab.com/ftchinese/subscription-api/wechat"
 // SavePrepayResp saves Wechat prepay response for future analysis.
 func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {
 	query := `
-	INSERT INTO premium.log_wx_prepay
+	INSERT IGNORE INTO premium.log_wx_prepay
 	SET order_id = ?,
 		return_code = ?,
 		return_message = ?,
@@ -15,7 +15,7 @@ func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {
 		signature = ?,
 		result_code = ?,
 		error_code = ?,
-		error_message = ?,
+		error_description = ?,
 		trade_type = ?,
 		prepay_id = ?`
 
@@ -44,7 +44,7 @@ func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {
 // SaveWxNotification saves a wechat notification for logging purpose.
 func (env Env) SaveWxNotification(n wechat.Notification) error {
 	query := `
-	INSERT INTO premium.log_wx_notification
+	INSERT IGNORE INTO premium.log_wx_notification
 	SET return_code = ?,
 		return_message = ?,
 		app_id = ?,
@@ -53,7 +53,7 @@ func (env Env) SaveWxNotification(n wechat.Notification) error {
 		signature = ?,
 		result_code = ?,
 		error_code = ?,
-		error_message = ?,
+		error_description = ?,
 		open_id = ?,
 		is_subscribed = ?,
 		trade_type = ?,
