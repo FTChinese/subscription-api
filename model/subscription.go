@@ -81,37 +81,19 @@ func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error 
 
 // FindSubscription tries to find an order to verify the authenticity of a subscription order.
 func (env Env) FindSubscription(orderID string) (paywall.Subscription, error) {
-	query := `
-	SELECT trade_no AS orderId,
-		trade_price AS price,
-		trade_amount AS totalAmount,
-		user_id AS userId,
-		login_method AS loginMethod,
-		tier_to_buy AS tierToBuy,
-		billing_cycle AS billingCycle,
-		payment_method AS paymentMethod,
-		created_utc AS createdAt,
-		confirmed_utc AS confirmedAt,
-		start_date AS startDate,
-		end_date AS endDate
-	FROM premium.ftc_trade
-	WHERE trade_no = ?
-	LIMIT 1`
 
 	var s paywall.Subscription
-	err := env.DB.QueryRow(query, orderID).Scan(
+	err := env.DB.QueryRow(stmtSubs, orderID).Scan(
+		&s.UserID,
 		&s.OrderID,
 		&s.Price,
 		&s.TotalAmount,
-		&s.UserID,
 		&s.LoginMethod,
 		&s.TierToBuy,
 		&s.BillingCycle,
 		&s.PaymentMethod,
 		&s.CreatedAt,
 		&s.ConfirmedAt,
-		&s.StartDate,
-		&s.EndDate,
 	)
 
 	if err != nil {
@@ -137,11 +119,12 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	errSubs := env.DB.QueryRow(stmtSubsLock, orderID).Scan(
 		&subs.UserID,
 		&subs.OrderID,
+		&subs.Price,
+		&subs.TotalAmount,
 		&subs.LoginMethod,
 		&subs.TierToBuy,
 		&subs.BillingCycle,
-		&subs.Price,
-		&subs.TotalAmount,
+		&subs.PaymentMethod,
 		&subs.CreatedAt,
 		&subs.ConfirmedAt,
 	)
