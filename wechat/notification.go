@@ -13,9 +13,9 @@ type Notification struct {
 	MID           null.String
 	Nonce         null.String
 	Signature     null.String
-	IsSuccess     bool
 	ResultCode    null.String
-	ResultMessage null.String
+	ErrorCode     null.String
+	ErrorMessage  null.String
 	OpenID        null.String
 	IsSubscribed  bool
 	TradeType     null.String
@@ -32,7 +32,6 @@ func NewNotification(r wxpay.Params) Notification {
 	n := Notification{
 		StatusCode:    r.GetString("return_code"),
 		StatusMessage: r.GetString("return_msg"),
-		IsSuccess:     r.GetString("result_code") == "SUCCESS",
 		IsSubscribed:  r.GetString("is_subscribe") == "Y",
 	}
 
@@ -52,11 +51,15 @@ func NewNotification(r wxpay.Params) Notification {
 		n.Signature = null.StringFrom(v)
 	}
 
-	if v, ok := r["err_code"]; ok {
+	if v, ok := r["result_code"]; ok {
 		n.ResultCode = null.StringFrom(v)
 	}
+
+	if v, ok := r["err_code"]; ok {
+		n.ErrorCode = null.StringFrom(v)
+	}
 	if v, ok := r["err_code_des"]; ok {
-		n.ResultMessage = null.StringFrom(v)
+		n.ErrorMessage = null.StringFrom(v)
 	}
 
 	if v, ok := r["trade_type"]; ok {
