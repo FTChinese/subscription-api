@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-chi/chi"
 	log "github.com/sirupsen/logrus"
-	"github.com/tomasen/realip"
 )
 
 var logger = log.WithField("package", "subscription-api.controller")
@@ -68,36 +67,6 @@ func getURLParam(req *http.Request, key string) paramValue {
 	value := chi.URLParam(req, key)
 
 	return paramValue(value)
-}
-
-// Client represents the essential headers of a request.
-type client struct {
-	clientType string
-	version    string
-	userIP     string
-	userAgent  string
-}
-
-func getClientInfo(req *http.Request) client {
-	c := client{}
-	c.clientType = req.Header.Get("X-Client-Type")
-	if c.clientType == "" {
-		c.clientType = "unknown"
-	}
-
-	c.version = req.Header.Get("X-Client-Version")
-
-	// Web app must forward user ip and user agent
-	// For other client like Android and iOS, request comes from user's device, not our web app.
-	if c.clientType == "web" {
-		c.userIP = req.Header.Get("X-User-Ip")
-		c.userAgent = req.Header.Get("X-User-Agent")
-	} else {
-		c.userIP = realip.FromRequest(req)
-		c.userAgent = req.Header.Get("User-Agent")
-	}
-
-	return c
 }
 
 // Parse parses input data to struct
