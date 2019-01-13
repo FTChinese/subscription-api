@@ -2,14 +2,18 @@ package model
 
 import (
 	"database/sql"
-	"testing"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/guregu/null"
+	"github.com/objcoding/wxpay"
+	cache "github.com/patrickmn/go-cache"
 
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/postoffice"
+	"gitlab.com/ftchinese/subscription-api/wechat"
 
 	"github.com/icrowley/fake"
 	uuid "github.com/satori/go.uuid"
@@ -25,13 +29,19 @@ func newDevEnv() Env {
 
 	return Env{
 		DB:      db,
+		Cache:   cache.New(cache.DefaultExpiration, 0),
 		Postman: postoffice.NewPostman(),
 	}
 }
 
+var appID = os.Getenv("WXPAY_APPID")
+var mchID = os.Getenv("WXPAY_MCHID")
+var apiKey = os.Getenv("WXPAY_API_KEY")
+
+var mockClient = wechat.NewClient(appID, mchID, apiKey)
 var devEnv = newDevEnv()
 var mockPlan = paywall.GetDefaultPricing()["standard_year"]
-var mockClient = util.ClientApp{
+var mockApp = util.ClientApp{
 	ClientType: enum.PlatformAndroid,
 	Version:    "1.1.1",
 	UserIP:     fake.IPv4(),
@@ -40,26 +50,143 @@ var mockClient = util.ClientApp{
 
 var tenDaysLater = time.Now().AddDate(0, 0, 10)
 
-func NewUser() User {
-	unionID, _ := util.RandomBase64(21)
+type Mocker struct {
+	UserID   string
+	UnionID  string
+	OpenID   string
+	UserName string
+	Email    string
+	IP       string
+}
 
-	return User{
+func NewMocker() Mocker {
+	unionID, _ := util.RandomBase64(21)
+	openID, _ := util.RandomBase64(21)
+
+	return Mocker{
 		UserID:   uuid.Must(uuid.NewV4()).String(),
-		UnionID:  null.StringFrom(unionID),
-		UserName: null.StringFrom(fake.UserName()),
+		UnionID:  unionID,
+		OpenID:   openID,
+		UserName: fake.UserName(),
 		Email:    fake.EmailAddress(),
+		IP:       fake.IPv4(),
 	}
 }
 
-func (u User) subs() paywall.Subscription {
-	subs := paywall.NewWxpaySubs(u.UserID, mockPlan, enum.EmailLogin)
-	subs.CreatedAt = util.TimeNow()
-	subs.ConfirmedAt = util.TimeNow()
-	subs.IsRenewal = false
-	subs.StartDate = util.DateNow()
-	subs.EndDate = util.DateFrom(time.Now().AddDate(1, 0, 0))
+func (m Mocker) User() User {
+	return User{
+		UserID:   m.UserID,
+		UnionID:  null.StringFrom(m.UnionID),
+		UserName: null.StringFrom(m.UserName),
+		Email:    m.Email,
+	}
+}
 
-	return subs
+func (m Mocker) WxpaySubs() paywall.Subscription {
+	return paywall.NewWxpaySubs(m.UserID, mockPlan, enum.EmailLogin)
+}
+
+func (m Mocker) AlipaySubs() paywall.Subscription {
+	return paywall.NewWxpaySubs(m.UserID, mockPlan, enum.EmailLogin)
+}
+
+func (m Mocker) CreateWxpaySubs() (paywall.Subscription, error) {
+	subs := paywall.NewWxpaySubs(m.UserID, mockPlan, enum.EmailLogin)
+
+	err := devEnv.SaveSubscription(subs, mockApp)
+
+	if err != nil {
+		return subs, err
+	}
+
+	return subs, nil
+}
+
+func (m Mocker) CreateAlipaySubs() (paywall.Subscription, error) {
+	subs := paywall.NewAlipaySubs(m.UserID, mockPlan, enum.EmailLogin)
+
+	err := devEnv.SaveSubscription(subs, mockApp)
+
+	if err != nil {
+		return subs, err
+	}
+
+	return subs, nil
+}
+
+func (m Mocker) CreateMember() (paywall.Subscription, error) {
+	subs, err := m.CreateWxpaySubs()
+
+	if err != nil {
+		return subs, err
+	}
+
+	subs, err = devEnv.ConfirmPayment(subs.OrderID, time.Now())
+
+	if err != nil {
+		return subs, err
+	}
+
+	return subs, nil
+}
+
+func WxNotiResp(orderID string) string {
+	openID, _ := util.RandomBase64(21)
+	p := make(wxpay.Params)
+
+	p = fillResp(p)
+	p.SetString("openid", openID)
+	p.SetString("is_subscribe", "N")
+	p.SetString("bank_type", "CMC")
+	p.SetString("total_fee", "25800")
+	p.SetString("cash_fee", "25800")
+	p.SetString("transaction_id", fake.CharactersN(28))
+	p.SetString("out_trade_no", orderID)
+	p.SetString("time_end", time.Now().Format("20060102150405"))
+
+	s := mockClient.Sign(p)
+
+	p.SetString("sign", s)
+
+	return wxpay.MapToXml(p)
+}
+
+func WxParsedNoti(orderID string) (wxpay.Params, error) {
+	resp := WxNotiResp(orderID)
+	return mockClient.ParseResponse(strings.NewReader(resp))
+}
+
+func MockPrepay() string {
+	p := make(wxpay.Params)
+
+	p = fillResp(p)
+	p.SetString("prepay_id", fake.CharactersN(36))
+
+	s := mockClient.Sign(p)
+
+	p.SetString("sign", s)
+
+	return wxpay.MapToXml(p)
+}
+
+func MockParsedPrepay() (wxpay.Params, error) {
+	resp := MockPrepay()
+
+	return mockClient.ParseResponse(strings.NewReader(resp))
+}
+
+func fillResp(p wxpay.Params) wxpay.Params {
+	nonce, _ := util.RandomHex(16)
+
+	p.SetString("return_code", "SUCCESS")
+	p.SetString("return_msg", "OK")
+	p.SetString("appid", appID)
+	p.SetString("mch_id", mchID)
+	p.SetString("nonce_str", nonce)
+	p.SetString("result_code", "SUCCESS")
+	p.SetString("trade_type", "APP")
+
+	return p
 }
 
 func (u User) createUser() error {
@@ -82,10 +209,10 @@ func (u User) createUser() error {
 		u.Email,
 		fake.Password(8, 20, false, true, false),
 		u.UserName,
-		mockClient.ClientType,
-		mockClient.Version,
-		mockClient.UserIP,
-		mockClient.UserAgent,
+		mockApp.ClientType,
+		mockApp.Version,
+		mockApp.UserIP,
+		mockApp.UserAgent,
 	)
 	if err != nil {
 		return err
@@ -93,50 +220,14 @@ func (u User) createUser() error {
 	return nil
 }
 
-func (u User) CreateWxpaySubs() (paywall.Subscription, error) {
+// Generate a mock subscription that can be used to send a confirmation email.
+func (u User) subs() paywall.Subscription {
 	subs := paywall.NewWxpaySubs(u.UserID, mockPlan, enum.EmailLogin)
+	subs.CreatedAt = util.TimeNow()
+	subs.ConfirmedAt = util.TimeNow()
+	subs.IsRenewal = false
+	subs.StartDate = util.DateNow()
+	subs.EndDate = util.DateFrom(time.Now().AddDate(1, 0, 0))
 
-	err := devEnv.SaveSubscription(subs, mockClient)
-
-	if err != nil {
-		return subs, err
-	}
-
-	return subs, nil
-}
-
-func (u User) CreateAlipaySubs() (paywall.Subscription, error) {
-	subs := paywall.NewAlipaySubs(u.UserID, mockPlan, enum.EmailLogin)
-
-	err := devEnv.SaveSubscription(subs, mockClient)
-
-	if err != nil {
-		return subs, err
-	}
-
-	return subs, nil
-}
-
-func (u User) CreateMember() (paywall.Subscription, error) {
-	subs, err := u.CreateWxpaySubs()
-
-	if err != nil {
-		return subs, err
-	}
-
-	subs, err = devEnv.ConfirmPayment(subs.OrderID, time.Now())
-
-	if err != nil {
-		return subs, err
-	}
-
-	return subs, nil
-}
-
-func TestDBConn(t *testing.T) {
-	err := devEnv.DB.Ping()
-
-	if err != nil {
-		t.Error(err)
-	}
+	return subs
 }

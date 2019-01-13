@@ -8,30 +8,22 @@ import (
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
-func TestCreateSubs_emailLogin(t *testing.T) {
-	user := NewUser()
-	wxSubs, err := user.CreateWxpaySubs()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Created a Wechat subscription: %+v\n", wxSubs)
+func TestNewSubs(t *testing.T) {
+	m := NewMocker()
 
-	aliSubs, err := user.CreateAlipaySubs()
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	subs := m.WxpaySubs()
 
-	t.Logf("Created a Ali subscription: %+v\n", aliSubs)
+	t.Logf("An order: %+v\n", subs)
+
+	subs.GenerateOrderID()
+
+	t.Logf("After called GenerateOrderID again: %+v\n", subs)
 }
 
 func TestIsSubsAllowed(t *testing.T) {
-	user := NewUser()
+	m := NewMocker()
 
-	subs, err := user.CreateWxpaySubs()
-
-	subs = paywall.NewWxpaySubs(user.UserID, mockPlan, enum.EmailLogin)
+	subs := paywall.NewWxpaySubs(m.UserID, mockPlan, enum.EmailLogin)
 
 	ok, err := devEnv.IsSubsAllowed(subs)
 
@@ -41,11 +33,51 @@ func TestIsSubsAllowed(t *testing.T) {
 
 	t.Logf("Is subscription allowed: %t\n", ok)
 }
+func TestSaveSubs(t *testing.T) {
+	m := NewMocker()
+
+	wxSubs, err := m.CreateWxpaySubs()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Logf("Created a Wechat subscription: %+v\n", wxSubs)
+
+	aliSubs, err := m.CreateAlipaySubs()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Created a Ali subscription: %+v\n", aliSubs)
+}
+
+func TestVerifyWxNoti(t *testing.T) {
+	m := NewMocker()
+	subs, err := m.CreateWxpaySubs()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Logf("Created a subscription order: %+v", subs)
+
+	p, err := WxParsedNoti(subs.OrderID)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Logf("Notification: %+v", p)
+
+	err = devEnv.VerifyWxNotification(p)
+	if err != nil {
+		t.Error(err)
+	}
+}
 
 func TestFindSubs(t *testing.T) {
-	user := NewUser()
+	m := NewMocker()
 
-	subs, err := user.CreateWxpaySubs()
+	subs, err := m.CreateWxpaySubs()
 
 	found, err := devEnv.FindSubscription(subs.OrderID)
 
@@ -57,12 +89,12 @@ func TestFindSubs(t *testing.T) {
 }
 
 func TestRenewMember(t *testing.T) {
-	user := NewUser()
+	m := NewMocker()
 
 	// First iteration creates a new subscription,
 	// second iteration renew the membership.
 	for i := 0; i < 2; i++ {
-		subs, err := user.CreateMember()
+		subs, err := m.CreateMember()
 		if err != nil {
 			t.Error(err)
 			break
@@ -73,10 +105,10 @@ func TestRenewMember(t *testing.T) {
 }
 
 func TestCreatemember_wxLogin(t *testing.T) {
-	user := NewUser()
+	m := NewMocker()
 
 	for i := 0; i < 2; i++ {
-		subs, err := user.CreateMember()
+		subs, err := m.CreateMember()
 		if err != nil {
 			t.Error(err)
 			break
@@ -87,8 +119,9 @@ func TestCreatemember_wxLogin(t *testing.T) {
 }
 
 func TestConfirmPayment(t *testing.T) {
-	user := NewUser()
-	subs, err := user.CreateWxpaySubs()
+	m := NewMocker()
+
+	subs, err := m.CreateWxpaySubs()
 	if err != nil {
 		t.Error(err)
 		return

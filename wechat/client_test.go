@@ -2,6 +2,7 @@ package wechat
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -55,7 +56,7 @@ func fillResp(p wxpay.Params) wxpay.Params {
 	return p
 }
 
-func (m mocker) prepayResp() string {
+func (m mocker) uniOrderResp() string {
 	p := make(wxpay.Params)
 
 	p = fillResp(p)
@@ -107,16 +108,84 @@ func TestSignature(t *testing.T) {
 	t.Logf("Hash: %s\n", h)
 }
 
+func TestSendUnifiedOrder(t *testing.T) {
+	m := newMocker()
+	uo := m.unifiedOrder()
+
+	resp, err := mockClient.UnifiedOrder(uo)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Unified order response: %+v\n", resp)
+}
+
+func TestUnifiedOrderResp(t *testing.T) {
+	m := newMocker()
+	resp := m.uniOrderResp()
+
+	t.Logf("Mock unified order response: %+v\n", resp)
+}
+
+func TestVerifyIdentity(t *testing.T) {
+	m := newMocker()
+	resp := m.uniOrderResp()
+
+	p, err := mockClient.ParseResponse(strings.NewReader(resp))
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Response: %+v\n", p)
+
+	r := mockClient.ValidateResponse(p)
+
+	if r != nil {
+		t.Error("Identity not verified.")
+	}
+}
+
 func TestIsValidSign(t *testing.T) {
-	order := GenerateUnifiedOrder(mockPlan, fake.IPv4(), mockPlan.OrderID())
+	m := newMocker()
 
-	h := mockClient.Sign(order)
+	resp := m.uniOrderResp()
 
-	order.SetString(wxpay.Sign, h)
+	p, err := mockClient.ParseResponse(strings.NewReader(resp))
 
-	t.Logf("Unified order: %+v\n", order)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-	ok := mockClient.ValidSign(order)
+	t.Logf("Response: %+v\n", p)
+
+	ok := mockClient.ValidSign(p)
+
+	if !ok {
+		t.Error("Signature wrong")
+		return
+	}
 
 	t.Logf("Is signature valid: %t\n", ok)
+}
+
+func TestNotiResp(t *testing.T) {
+	m := newMocker()
+	resp := m.notiResp()
+
+	t.Logf("Mock notification: %+v\n", resp)
+
+	p, err := mockClient.ParseResponse(strings.NewReader(resp))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	noti := NewNotification(p)
+
+	t.Logf("Notification: %+v\n", noti)
 }

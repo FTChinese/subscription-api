@@ -9,7 +9,7 @@ import (
 )
 
 func TestConfirmationParcel(t *testing.T) {
-	user := NewUser()
+	user := NewMocker().User()
 	subs := user.subs()
 
 	p, err := user.ComfirmationParcel(subs)
