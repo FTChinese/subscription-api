@@ -3,19 +3,19 @@ package model
 import "gitlab.com/ftchinese/subscription-api/wechat"
 
 // SavePrepayResp saves Wechat prepay response for future analysis.
-func (env Env) SavePrepayResp(orderID string, p wechat.PrepayResp) error {
+func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {
 	query := `
 	INSERT INTO premium.log_wx_prepay
 	SET order_id = ?,
-		status_code = ?,
-		status_message = ?,
+		return_code = ?,
+		return_message = ?,
 		app_id = ?,
 		merchant_id = ?,
 		nonce = ?,
 		signature = ?,
-		is_success = ?,
 		result_code = ?,
-		result_message = ?,
+		error_code = ?,
+		error_message = ?,
 		trade_type = ?,
 		prepay_id = ?`
 
@@ -27,11 +27,11 @@ func (env Env) SavePrepayResp(orderID string, p wechat.PrepayResp) error {
 		p.MID,
 		p.Nonce,
 		p.Signature,
-		p.IsSuccess,
 		p.ResultCode,
-		p.ResultMessage,
+		p.ErrorCode,
+		p.ErrorDescription,
 		p.TradeType,
-		p.PrePayID,
+		p.PrepayID,
 	)
 
 	if err != nil {
@@ -45,15 +45,15 @@ func (env Env) SavePrepayResp(orderID string, p wechat.PrepayResp) error {
 func (env Env) SaveWxNotification(n wechat.Notification) error {
 	query := `
 	INSERT INTO premium.log_wx_notification
-	SET status_code = ?,
-		status_message = ?,
+	SET return_code = ?,
+		return_message = ?,
 		app_id = ?,
 		merchant_id = ?,
 		nonce = ?,
 		signature = ?,
-		is_success = ?,
 		result_code = ?,
-		result_message = ?,
+		error_code = ?,
+		error_message = ?,
 		open_id = ?,
 		is_subscribed = ?,
 		trade_type = ?,
@@ -71,9 +71,9 @@ func (env Env) SaveWxNotification(n wechat.Notification) error {
 		n.MID,
 		n.Nonce,
 		n.Signature,
-		n.IsSuccess,
 		n.ResultCode,
-		n.ResultMessage,
+		n.ErrorCode,
+		n.ErrorMessage,
 		n.OpenID,
 		n.IsSubscribed,
 		n.TradeType,
