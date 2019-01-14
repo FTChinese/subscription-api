@@ -18,7 +18,7 @@ type Env struct {
 	Postman postoffice.Postman
 }
 
-var logger = log.WithField("package", "subscription-api.model")
+var logger = log.WithField("package", "model")
 
 const (
 	keySchedule = "discountSchedule"
