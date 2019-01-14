@@ -74,7 +74,7 @@ func main() {
 	aliRouter := controller.NewAliRouter(env)
 	paywallRouter := controller.NewPaywallRouter(env)
 
-	wxAuth := controller.NewWxAuth(db)
+	wxAuth := controller.NewWxAuth(env)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
