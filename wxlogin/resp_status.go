@@ -68,26 +68,3 @@ func (s RespStatus) BuildReason() *view.Reason {
 		return r
 	}
 }
-
-// SaveRespStatus saves wecaht error response into database so that
-// we could know  what kind of error code and message does Wechat
-// actually defined.
-func (env Env) SaveRespStatus(code int64, message string) error {
-	query := `
-	INSERT INTO user_db.wechat_error_log
-	SET code = ?,
-		message = ?,
-		created_utc = UTC_TIMESTAMP()`
-
-	_, err := env.DB.Exec(query,
-		code,
-		message,
-	)
-
-	if err != nil {
-		logger.WithField("trace", "SaveWxError").Error(err)
-		return err
-	}
-
-	return nil
-}

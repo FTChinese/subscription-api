@@ -90,6 +90,8 @@ func (c WxApp) accessValidityURL(accessToken, openID string) string {
 }
 
 // GetAccessToken request for access token with a code previsouly acquired from wechat.
+// For every authoriztion request, a new pair of access token and refresh token are generated, even on the same platform under single wechat app.
+//
 // Possible error response:
 // errcode: 41002, errmsg: "appid missing";
 // errcode: 40029, errmsg: "invalid code";
@@ -114,9 +116,9 @@ func (c WxApp) GetAccessToken(code string) (OAuthAccess, error) {
 		return acc, err
 	}
 
-	acc.generateSessionID()
-	acc.createdAt = util.TimeNow()
-	acc.updatedAt = util.TimeNow()
+	acc.GenerateSessionID()
+	acc.CreatedAt = util.TimeNow()
+	acc.UpdatedAt = util.TimeNow()
 
 	return acc, nil
 }
