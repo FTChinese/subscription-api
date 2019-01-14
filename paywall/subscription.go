@@ -14,7 +14,7 @@ import (
 // Subscription contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 type Subscription struct {
-	UserID        string // Also used when creating member
+	UserID        string // It might be FTC UUID or Wechat union id, depnding on the login method.
 	OrderID       string
 	LoginMethod   enum.LoginMethod // Determine login method.
 	TierToBuy     enum.Tier
@@ -155,15 +155,28 @@ func (s Subscription) StmtMember() string {
 		LIMIT 1`, whereCol)
 }
 
-// WithStartTime builds a subscription order's StartDate and EndDate based on the passed in starting time.
-func (s Subscription) WithStartTime(t time.Time) (Subscription, error) {
-	s.StartDate = util.DateFrom(t)
-	expireTime, err := s.BillingCycle.EndingTime(t)
+// WithDuration populate a subscripiton's ConfirmedAt, StartDate, EndDate and IsRenewal based on a user's current membership duration.
+// Current membership might not exists, but the duration is still a valid value since the zero value can be treated as a non-existing membership.
+func (s Subscription) WithDuration(dur Duration, confirmedAt time.Time) (Subscription, error) {
+	s.ConfirmedAt = util.TimeFrom(confirmedAt)
 
+	dur.NormalizeDate()
+
+	s.IsRenewal = dur.ExpireDate.After(confirmedAt)
+
+	var startTime time.Time
+	if s.IsRenewal {
+		startTime = dur.ExpireDate.Time
+	} else {
+		startTime = confirmedAt
+	}
+
+	expireTime, err := s.BillingCycle.EndingTime(startTime)
 	if err != nil {
 		return s, err
 	}
 
+	s.StartDate = util.DateFrom(startTime)
 	s.EndDate = util.DateFrom(expireTime)
 
 	return s, nil
