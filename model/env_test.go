@@ -2,9 +2,13 @@ package model
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"strings"
 	"time"
+
+	randomdata "github.com/Pallinder/go-randomdata"
+	"gitlab.com/ftchinese/subscription-api/wxlogin"
 
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
@@ -36,6 +40,7 @@ func newDevEnv() Env {
 
 var appID = os.Getenv("WXPAY_APPID")
 var mchID = os.Getenv("WXPAY_MCHID")
+var appSecret = os.Getenv("WXPAY_APPSECRET")
 var apiKey = os.Getenv("WXPAY_API_KEY")
 
 var mockClient = wechat.NewClient(appID, mchID, apiKey)
@@ -50,48 +55,173 @@ var mockApp = util.ClientApp{
 
 var tenDaysLater = time.Now().AddDate(0, 0, 10)
 
-type Mocker struct {
-	UserID   string
-	UnionID  string
-	OpenID   string
-	UserName string
-	Email    string
-	IP       string
+func generateCode() string {
+	code, _ := util.RandomBase64(24)
+	return code
 }
 
-func NewMocker() Mocker {
-	unionID, _ := util.RandomBase64(21)
-	openID, _ := util.RandomBase64(21)
+func generateToken() string {
+	token, _ := util.RandomBase64(82)
+	return token
+}
 
-	return Mocker{
-		UserID:   uuid.Must(uuid.NewV4()).String(),
-		UnionID:  unionID,
-		OpenID:   openID,
-		UserName: fake.UserName(),
-		Email:    fake.EmailAddress(),
-		IP:       fake.IPv4(),
+func generateWxID() string {
+	id, _ := util.RandomBase64(21)
+	return id
+}
+
+func generateAvatarURL() string {
+	return fmt.Sprintf("http://thirdwx.qlogo.cn/mmopen/vi_32/%s/132", fake.CharactersN(90))
+}
+
+type mocker struct {
+	userID      string
+	unionID     string
+	openID      string
+	loginMethod enum.LoginMethod
+	userName    string
+	email       string
+	password    string
+	ip          string
+}
+
+func newMocker() mocker {
+	return mocker{
+		userID:      uuid.Must(uuid.NewV4()).String(),
+		unionID:     generateWxID(),
+		openID:      generateWxID(),
+		loginMethod: enum.EmailLogin,
+		userName:    fake.UserName(),
+		email:       fake.EmailAddress(),
+		password:    fake.Password(8, 20, false, true, false),
+		ip:          fake.IPv4(),
 	}
 }
 
-func (m Mocker) User() User {
-	return User{
-		UserID:   m.UserID,
-		UnionID:  null.StringFrom(m.UnionID),
-		UserName: null.StringFrom(m.UserName),
-		Email:    m.Email,
+func (m mocker) withEmail(email string) mocker {
+	m.email = email
+	return m
+}
+
+func (m mocker) withWxLogin() mocker {
+	m.loginMethod = enum.WechatLogin
+	return m
+}
+
+func (m mocker) user() paywall.User {
+	return paywall.User{
+		UserID:   m.userID,
+		UnionID:  null.StringFrom(m.unionID),
+		UserName: null.StringFrom(m.userName),
+		Email:    m.email,
 	}
 }
 
-func (m Mocker) WxpaySubs() paywall.Subscription {
-	return paywall.NewWxpaySubs(m.UserID, mockPlan, enum.EmailLogin)
+func (m mocker) wxAccess() wxlogin.OAuthAccess {
+	acc := wxlogin.OAuthAccess{
+		AccessToken:  generateToken(),
+		ExpiresIn:    7200,
+		RefreshToken: generateToken(),
+		OpenID:       m.openID,
+		Scope:        "snsapi_userinfo",
+		UnionID:      null.StringFrom(m.unionID),
+	}
+	acc.GenerateSessionID()
+	acc.CreatedAt = util.TimeNow()
+	acc.UpdatedAt = util.TimeNow()
+	return acc
 }
 
-func (m Mocker) AlipaySubs() paywall.Subscription {
-	return paywall.NewWxpaySubs(m.UserID, mockPlan, enum.EmailLogin)
+func (m mocker) wxUser() wxlogin.UserInfo {
+	return wxlogin.UserInfo{
+		UnionID:    m.unionID,
+		NickName:   fake.UserName(),
+		AvatarURL:  generateAvatarURL(),
+		Sex:        randomdata.Number(0, 3),
+		Country:    fake.Country(),
+		Province:   fake.State(),
+		City:       fake.City(),
+		Privileges: []string{},
+	}
 }
 
-func (m Mocker) CreateWxpaySubs() (paywall.Subscription, error) {
-	subs := paywall.NewWxpaySubs(m.UserID, mockPlan, enum.EmailLogin)
+func (m mocker) wxpaySubs() paywall.Subscription {
+	if m.loginMethod == enum.WechatLogin {
+		return paywall.NewWxpaySubs(m.unionID, mockPlan, enum.WechatLogin)
+	}
+	return paywall.NewWxpaySubs(m.userID, mockPlan, enum.EmailLogin)
+}
+
+func (m mocker) alipaySubs() paywall.Subscription {
+	if m.loginMethod == enum.WechatLogin {
+		return paywall.NewAlipaySubs(m.unionID, mockPlan, enum.WechatLogin)
+	}
+	return paywall.NewAlipaySubs(m.userID, mockPlan, enum.EmailLogin)
+}
+
+func (m mocker) confirmedSubs() paywall.Subscription {
+	subs := paywall.NewWxpaySubs(m.userID, mockPlan, enum.EmailLogin)
+	subs.CreatedAt = util.TimeNow()
+	subs.ConfirmedAt = util.TimeNow()
+	subs.IsRenewal = false
+	subs.StartDate = util.DateNow()
+	subs.EndDate = util.DateFrom(time.Now().AddDate(1, 0, 0))
+
+	return subs
+}
+
+func (m mocker) createUser() (paywall.User, error) {
+	user := m.user()
+
+	query := `
+	INSERT INTO cmstmp01.userinfo
+	SET user_id = ?,
+		email = ?,
+		password = MD5(?),
+		user_name = ?,
+		client_type = ?,
+		client_version = ?,
+		user_ip = INET6_ATON(?),
+		user_agent = ?,
+		created_utc = UTC_TIMESTAMP()
+	ON DUPLICATE KEY UPDATE
+		user_id = ?,
+		email = ?,
+		password = MD5(?),
+		user_name = ?`
+
+	_, err := devEnv.DB.Exec(query,
+		user.UserID,
+		user.Email,
+		m.password,
+		user.UserName,
+		mockApp.ClientType,
+		mockApp.Version,
+		mockApp.UserIP,
+		mockApp.UserAgent,
+		user.UserID,
+		user.Email,
+		m.password,
+		user.UserName,
+	)
+	if err != nil {
+		return user, err
+	}
+	return user, nil
+}
+
+func (m mocker) createWxUser() (wxlogin.UserInfo, error) {
+	userInfo := m.wxUser()
+
+	err := devEnv.SaveWxUser(userInfo)
+	if err != nil {
+		return userInfo, err
+	}
+	return userInfo, nil
+}
+
+func (m mocker) createWxpaySubs() (paywall.Subscription, error) {
+	subs := m.wxpaySubs()
 
 	err := devEnv.SaveSubscription(subs, mockApp)
 
@@ -102,8 +232,8 @@ func (m Mocker) CreateWxpaySubs() (paywall.Subscription, error) {
 	return subs, nil
 }
 
-func (m Mocker) CreateAlipaySubs() (paywall.Subscription, error) {
-	subs := paywall.NewAlipaySubs(m.UserID, mockPlan, enum.EmailLogin)
+func (m mocker) createAlipaySubs() (paywall.Subscription, error) {
+	subs := m.alipaySubs()
 
 	err := devEnv.SaveSubscription(subs, mockApp)
 
@@ -114,8 +244,8 @@ func (m Mocker) CreateAlipaySubs() (paywall.Subscription, error) {
 	return subs, nil
 }
 
-func (m Mocker) CreateMember() (paywall.Subscription, error) {
-	subs, err := m.CreateWxpaySubs()
+func (m mocker) createMember() (paywall.Subscription, error) {
+	subs, err := m.createWxpaySubs()
 
 	if err != nil {
 		return subs, err
@@ -130,7 +260,19 @@ func (m Mocker) CreateMember() (paywall.Subscription, error) {
 	return subs, nil
 }
 
-func WxNotiResp(orderID string) string {
+func (m mocker) createWxAccess() (wxlogin.OAuthAccess, error) {
+	acc := m.wxAccess()
+
+	err := devEnv.SaveWxAccess(appID, acc, mockApp)
+
+	if err != nil {
+		return acc, err
+	}
+
+	return acc, nil
+}
+
+func wxNotiResp(orderID string) string {
 	openID, _ := util.RandomBase64(21)
 	p := make(wxpay.Params)
 
@@ -151,12 +293,12 @@ func WxNotiResp(orderID string) string {
 	return wxpay.MapToXml(p)
 }
 
-func WxParsedNoti(orderID string) (wxpay.Params, error) {
-	resp := WxNotiResp(orderID)
+func wxParsedNoti(orderID string) (wxpay.Params, error) {
+	resp := wxNotiResp(orderID)
 	return mockClient.ParseResponse(strings.NewReader(resp))
 }
 
-func MockPrepay() string {
+func wxPrepayResp() string {
 	p := make(wxpay.Params)
 
 	p = fillResp(p)
@@ -169,8 +311,8 @@ func MockPrepay() string {
 	return wxpay.MapToXml(p)
 }
 
-func MockParsedPrepay() (wxpay.Params, error) {
-	resp := MockPrepay()
+func wxParsedPrepay() (wxpay.Params, error) {
+	resp := wxPrepayResp()
 
 	return mockClient.ParseResponse(strings.NewReader(resp))
 }
@@ -187,47 +329,4 @@ func fillResp(p wxpay.Params) wxpay.Params {
 	p.SetString("trade_type", "APP")
 
 	return p
-}
-
-func (u User) createUser() error {
-	query := `
-	INSERT INTO cmstmp01.userinfo
-	SET user_id = ?,
-		wx_union_id = ?,
-		email = ?,
-		password = MD5(?),
-		user_name = ?,
-		client_type = ?,
-		client_version = ?,
-		user_ip = INET6_ATON(?),
-		user_agent = ?,
-		created_utc = UTC_TIMESTAMP()`
-
-	_, err := devEnv.DB.Exec(query,
-		u.UserID,
-		u.UnionID,
-		u.Email,
-		fake.Password(8, 20, false, true, false),
-		u.UserName,
-		mockApp.ClientType,
-		mockApp.Version,
-		mockApp.UserIP,
-		mockApp.UserAgent,
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Generate a mock subscription that can be used to send a confirmation email.
-func (u User) subs() paywall.Subscription {
-	subs := paywall.NewWxpaySubs(u.UserID, mockPlan, enum.EmailLogin)
-	subs.CreatedAt = util.TimeNow()
-	subs.ConfirmedAt = util.TimeNow()
-	subs.IsRenewal = false
-	subs.StartDate = util.DateNow()
-	subs.EndDate = util.DateFrom(time.Now().AddDate(1, 0, 0))
-
-	return subs
 }

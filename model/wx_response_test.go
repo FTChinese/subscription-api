@@ -7,10 +7,10 @@ import (
 )
 
 func TestSavePrepayResp(t *testing.T) {
-	m := NewMocker()
-	subs := m.WxpaySubs()
+	m := newMocker()
+	subs := m.wxpaySubs()
 
-	p, err := MockParsedPrepay()
+	p, err := wxParsedPrepay()
 	if err != nil {
 		t.Error(err)
 		return
@@ -27,10 +27,10 @@ func TestSavePrepayResp(t *testing.T) {
 }
 
 func TestSaveWxNoti(t *testing.T) {
-	m := NewMocker()
-	subs := m.WxpaySubs()
+	m := newMocker()
+	subs := m.wxpaySubs()
 
-	p, err := WxParsedNoti(subs.OrderID)
+	p, err := wxParsedNoti(subs.OrderID)
 	if err != nil {
 		t.Error(err)
 		return
@@ -46,17 +46,25 @@ func TestSaveWxNoti(t *testing.T) {
 	}
 }
 
-// Use the data the test Wechat response URL.
+// Generate data to be used by Postman.
 func TestGenerateNoti(t *testing.T) {
-	m := NewMocker()
+	// User must exist in database and the email must be real; otherwise email cannot be sent.
+	m := newMocker().withEmail("neefrankie@163.com")
 
-	subs, err := m.CreateWxpaySubs()
+	user, err := m.createUser()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Logf("Created user: %+v\n", user)
+
+	subs, err := m.createWxpaySubs()
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	t.Logf("Generated an order: %+v\n", subs)
 
-	resp := WxNotiResp(subs.OrderID)
+	resp := wxNotiResp(subs.OrderID)
 	t.Logf("Mock response: %s\n", resp)
 }
