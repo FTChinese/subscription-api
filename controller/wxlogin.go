@@ -1,12 +1,11 @@
 package controller
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"gitlab.com/ftchinese/subscription-api/postoffice"
+	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
@@ -18,17 +17,16 @@ import (
 // Wechat never said you should do this.
 // But when combining their messy documentation, you must do it this way.
 type WxAuthRouter struct {
-	apps    map[string]wxlogin.WxApp
-	env     wxlogin.Env
-	postman postoffice.Postman
+	apps  map[string]wxlogin.WxApp
+	model model.Env
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
-func NewWxAuth(db *sql.DB) WxAuthRouter {
+func NewWxAuth(env model.Env) WxAuthRouter {
 
 	return WxAuthRouter{
-		apps: wxlogin.Apps,
-		env:  wxlogin.Env{DB: db},
+		apps:  wxlogin.Apps,
+		model: env,
 	}
 }
 
@@ -114,10 +112,10 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 	// Step 3:
 	// Save access token
-	go router.env.SaveAccess(app.AppID, acc, client)
+	go router.model.SaveWxAccess(app.AppID, acc, client)
 	// Step 4:
 	// Save userinfo
-	err = router.env.SaveUserInfo(user)
+	err = router.model.SaveWxUser(user)
 
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -143,7 +141,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	// Parse request body
 	sessionID, err := util.GetJSONString(req.Body, "sessionId")
 
-	acc, err := router.env.LoadAccess(appID, sessionID)
+	acc, err := router.model.LoadWxAccess(appID, sessionID)
 	// Access token for this openID + appID + clientType is not found
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -173,7 +171,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Update wechat userinfo for this union id.
-		err = router.env.UpdateUserInfo(user)
+		err = router.model.UpdateWxUser(user)
 
 		if err != nil {
 			view.Render(w, view.NewDBFailure(err))
@@ -220,10 +218,10 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Save access token
-	go router.env.UpdateAccess(sessionID, refreshedAcc.AccessToken)
+	go router.model.UpdateWxAccess(sessionID, refreshedAcc.AccessToken)
 
 	// Save userinfo
-	err = router.env.UpdateUserInfo(user)
+	err = router.model.UpdateWxUser(user)
 
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
