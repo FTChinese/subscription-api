@@ -209,8 +209,14 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	if err != nil {
 		logger.WithField("trace", "Notification").Error(err)
 
-		w.Write([]byte(resp.NotOK(err.Error())))
-		return
+		switch err {
+		case model.ErrOrderNotFound, model.ErrAlreadyConfirmed:
+			w.Write([]byte(resp.OK()))
+			return
+		default:
+			w.Write([]byte(resp.NotOK(err.Error())))
+			return
+		}
 	}
 
 	// Send a letter to this user.
