@@ -11,7 +11,6 @@ type Plan struct {
 	Tier        enum.Tier  `json:"tier"`
 	Cycle       enum.Cycle `json:"cycle"`
 	Price       float64    `json:"price"`
-	ID          int        `json:"id"` // 10 for standard and 100 for premium
 	Description string     `json:"description"`
 	Ignore      bool       `json:"ignore,omitempty"`
 }
