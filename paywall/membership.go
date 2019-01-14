@@ -41,6 +41,9 @@ func (d Duration) CanRenew(cycle enum.Cycle) bool {
 
 // IsExpired tests if the membership's expiration date is before now.
 func (d Duration) IsExpired() bool {
+	if d.ExpireDate.IsZero() {
+		return true
+	}
 	// If expire is before now, it is expired.
 	return d.ExpireDate.Before(time.Now())
 }
