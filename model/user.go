@@ -48,7 +48,12 @@ func (env Env) SendConfirmationLetter(subs paywall.Subscription) error {
 		return err
 	}
 
-	err = env.Postman.Deliver(parcel)
+	logger.WithField("trace", "SendConirmationLetter").Info("Send subscription confirmation letter")
 
-	return err
+	err = env.Postman.Deliver(parcel)
+	if err != nil {
+		logger.WithField("trace", "SendConfirmationLetter").Error(err)
+		return err
+	}
+	return nil
 }
