@@ -105,10 +105,12 @@ func (env Env) FindSubscription(orderID string) (paywall.Subscription, error) {
 }
 
 // ConfirmPayment handles payment notification with database locking.
+// Returns the a complete Subscription to be used to compose an email.
+// If returned error is ErrOrderNotFound or ErrAlreadyConfirmed, tell Wechat or Ali do not try any more; oterwise let them retry.
+// Only when error is nil should be send a confirmation email.
 func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Subscription, error) {
 
 	var subs paywall.Subscription
-	var startTime time.Time
 
 	tx, err := env.DB.Begin()
 	if err != nil {
@@ -116,6 +118,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		return subs, err
 	}
 
+	// Step 1: Find the subscription order by order id
 	errSubs := env.DB.QueryRow(stmtSubsLock, orderID).Scan(
 		&subs.UserID,
 		&subs.OrderID,
@@ -130,11 +133,13 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	)
 
 	if errSubs != nil {
+		logger.WithField("trace", "ConfirmPayment").Error(err)
+
 		_ = tx.Rollback()
+		// If this order does not exist, do not retry.
 		if errSubs == sql.ErrNoRows {
 			return subs, ErrOrderNotFound
 		}
-		return subs, errSubs
 	}
 
 	// Already confirmed.
@@ -142,54 +147,38 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		logger.WithField("trace", "ConfirmPayment").Infof("Order %s is already confirmed", orderID)
 
 		_ = tx.Rollback()
+		// Already confirmed, do not retry any more.
 		return subs, ErrAlreadyConfirmed
 	}
 
 	logger.WithField("trace", "ConfirmPayment").Infof("Found order: %+v", subs)
 
-	// Add confirmation time.
-	subs.ConfirmedAt = util.TimeFrom(confirmedAt)
-
-	// Start query membership expiration time.
-	queryDuration := subs.StmtMemberDuration()
-
+	// Step 2: query membership expiration time to determine the order's start date, and then user start date to calculate end date.
 	var dur paywall.Duration
-	errDur := env.DB.QueryRow(queryDuration, orderID).Scan(
+	errDur := env.DB.QueryRow(
+		subs.StmtMemberDuration(),
+		subs.UserID,
+	).Scan(
 		&dur.Timestamp,
 		&dur.ExpireDate,
 	)
 
-	if errDur != nil {
-		// If no current membership is found for this order, confirmation time is the membership's start time.
-		if errDur == sql.ErrNoRows {
-			logger.WithField("trace", "ConfirmPayment").Infof("Member duration for user %s is not found", subs.UserID)
+	// If any db error occurred, tell API provider to retry.
+	if errDur != nil && errDur != sql.ErrNoRows {
+		logger.WithField("trace", "ConfirmPayment").Error(errDur)
 
-			subs.IsRenewal = false
-			startTime = confirmedAt
-		} else {
-			_ = tx.Rollback()
-			return subs, err
-		}
+		_ = tx.Rollback()
 	}
 
-	dur.NormalizeDate()
-	// If membership is found, test if it is expired.
-	if dur.IsExpired() {
-		subs.IsRenewal = false
-		startTime = confirmedAt
-	} else {
-		subs.IsRenewal = true
-		startTime = dur.ExpireDate.Time
-	}
-
-	subs, err = subs.WithStartTime(startTime)
+	// For sql.ErrNoRows, `dur` is still a valid value.
+	subs, err = subs.WithDuration(dur, confirmedAt)
 	if err != nil {
 		return subs, err
 	}
 
 	logger.WithField("trace", "ConfirmPayment").Infof("Updated order: %+v", subs)
 
-	// Update subscription order.
+	// Step 3: Confirm the the subscription order.
 	_, updateErr := tx.Exec(stmtUpdateSubs,
 		subs.IsRenewal,
 		subs.ConfirmedAt,
@@ -198,12 +187,14 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		orderID,
 	)
 
+	// If any error occurred, retry.
 	if updateErr != nil {
 		_ = tx.Rollback()
-		logger.WithField("trace", "ConfirmPayment").Error(err)
+
+		logger.WithField("trace", "ConfirmPayment").Error(updateErr)
 	}
 
-	// Create or extend membership.
+	// Step 4: Create or extend membership.
 	_, createErr := tx.Exec(stmtCreateMember,
 		subs.UserID,
 		subs.GetUnionID(),
