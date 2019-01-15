@@ -7,22 +7,25 @@ import (
 )
 
 // Plan is a pricing plan.
+// The list price is the price that buyers pay for your product or service without any discounts.
+// The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
 	Tier        enum.Tier  `json:"tier"`
 	Cycle       enum.Cycle `json:"cycle"`
-	Price       float64    `json:"price"`
+	ListPrice   float64    `json:"listPrice"`
+	NetPrice    float64    `json:"netPrice"`
 	Description string     `json:"description"`
 	Ignore      bool       `json:"ignore,omitempty"`
 }
 
-// PriceForWx calculates price in cent to be used for Wechat pay.
-func (p Plan) PriceForWx() int64 {
-	return int64(p.Price * 100)
+// WxPrice converts price to Wechat pay format.
+func (p Plan) WxPrice() int64 {
+	return int64(p.ListPrice * 100)
 }
 
-// PriceForAli formats price for alipay
-func (p Plan) PriceForAli() string {
-	return strconv.FormatFloat(p.Price, 'f', 2, 32)
+// AliPrice converts price to Alipay format.
+func (p Plan) AliPrice() string {
+	return strconv.FormatFloat(p.ListPrice, 'f', 2, 32)
 }
 
 // OrderID generates an FT order id based
