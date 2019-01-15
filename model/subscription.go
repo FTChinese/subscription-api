@@ -57,8 +57,8 @@ func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error 
 
 	_, err := env.DB.Exec(query,
 		s.OrderID,
-		s.Price,
-		s.TotalAmount,
+		s.ListPrice,
+		s.NetPrice,
 		s.UserID,
 		s.LoginMethod,
 		s.TierToBuy,
@@ -86,8 +86,8 @@ func (env Env) FindSubscription(orderID string) (paywall.Subscription, error) {
 	err := env.DB.QueryRow(stmtSubs, orderID).Scan(
 		&s.UserID,
 		&s.OrderID,
-		&s.Price,
-		&s.TotalAmount,
+		&s.ListPrice,
+		&s.NetPrice,
 		&s.LoginMethod,
 		&s.TierToBuy,
 		&s.BillingCycle,
@@ -122,8 +122,8 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	errSubs := env.DB.QueryRow(stmtSubsLock, orderID).Scan(
 		&subs.UserID,
 		&subs.OrderID,
-		&subs.Price,
-		&subs.TotalAmount,
+		&subs.ListPrice,
+		&subs.NetPrice,
 		&subs.LoginMethod,
 		&subs.TierToBuy,
 		&subs.BillingCycle,
@@ -171,7 +171,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	}
 
 	// For sql.ErrNoRows, `dur` is still a valid value.
-	subs, err = subs.WithDuration(dur, confirmedAt)
+	subs, err = subs.ConfirmWithDuration(dur, confirmedAt)
 	if err != nil {
 		return subs, err
 	}
