@@ -6,6 +6,8 @@ import (
 	"io"
 	"time"
 
+	"gitlab.com/ftchinese/subscription-api/paywall"
+
 	"github.com/objcoding/wxpay"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
@@ -94,8 +96,8 @@ func (c Client) ValidateResponse(params wxpay.Params) *view.Reason {
 	return nil
 }
 
-// BuildPrepayOrder for client.
-func (c Client) BuildPrepayOrder(orderID string, price float64, prepayID string) PrepayOrder {
+// BuildPrepay for client.
+func (c Client) BuildPrepay(prepayID string, subs paywall.Subscription) Prepay {
 	nonce, _ := util.RandomHex(10)
 	pkg := "Sign=WXPay"
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
@@ -110,9 +112,11 @@ func (c Client) BuildPrepayOrder(orderID string, price float64, prepayID string)
 
 	h := c.Sign(p)
 
-	return PrepayOrder{
-		FtcOrderID: orderID,
-		Price:      price,
+	return Prepay{
+		FtcOrderID: subs.OrderID,
+		Price:      subs.ListPrice,
+		ListPrice:  subs.ListPrice,
+		NetPrice:   subs.NetPrice,
 		AppID:      c.appID,
 		PartnerID:  c.mchID,
 		PrepayID:   prepayID,
