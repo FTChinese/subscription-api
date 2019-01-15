@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/smartwalle/alipay"
+
 	randomdata "github.com/Pallinder/go-randomdata"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 
@@ -329,4 +331,21 @@ func fillResp(p wxpay.Params) wxpay.Params {
 	p.SetString("trade_type", "APP")
 
 	return p
+}
+
+func aliNoti() alipay.TradeNotification {
+	return alipay.TradeNotification{
+		NotifyTime: util.ToDatetime.FromTime(time.Now()),
+		NotifyType: "trade_status_sync",
+		NotifyId:   fake.CharactersN(36),
+		AppId:      os.Getenv("ALIPAY_APP_ID"),
+		Charset:    "utf-8",
+		Version:    "1.0",
+		SignType:   "RSA2",
+		Sign:       fake.CharactersN(256),
+		TradeNo:    fake.CharactersN(64),
+		OutTradeNo: fake.CharactersN(18),
+		GmtCreate:  util.ToDatetime.FromTime(time.Now()),
+		GmtPayment: util.ToDatetime.FromTime(time.Now()),
+	}
 }
