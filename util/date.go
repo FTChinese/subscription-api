@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-const layoutDate = "2006-01-02"
-
 // Date is used to save and output YYYY-MM-DD format date string.
 type Date struct {
 	time.Time
@@ -26,7 +24,7 @@ func (d Date) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 
-	return json.Marshal(ToSQLDateUTC.FromTime(d.Time))
+	return json.Marshal(d.In(time.UTC).Format(layoutDate))
 }
 
 // UnmarshalJSON converts ISO8601 data time into a Time struct.
@@ -89,7 +87,7 @@ func (d Date) Value() (driver.Value, error) {
 		return nil, nil
 	}
 
-	return ToSQLDateUTC.FromTime(d.Time), nil
+	return d.In(time.UTC).Format(layoutDate), nil
 }
 
 // DateNow creates current time.
