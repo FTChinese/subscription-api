@@ -110,7 +110,7 @@ func main() {
 		r1.Use(controller.CheckUserID)
 
 		r1.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
-		r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
+		// r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
 	})
 
 	r.Route("/callback", func(r1 chi.Router) {
