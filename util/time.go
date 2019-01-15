@@ -32,7 +32,7 @@ func (t Time) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 
-	return json.Marshal(ToISO8601UTC.FromTime(t.Time))
+	return json.Marshal(t.In(time.UTC).Format(time.RFC3339))
 }
 
 // UnmarshalJSON converts ISO8601 data time into a Time struct.
@@ -95,7 +95,7 @@ func (t Time) Value() (driver.Value, error) {
 		return nil, nil
 	}
 
-	return ToSQLDatetimeUTC.FromTime(t.Time), nil
+	return t.In(time.UTC).Format(layoutDateTime), nil
 }
 
 // TimeNow creates current time.
