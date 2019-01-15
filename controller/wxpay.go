@@ -121,12 +121,12 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Prepare to send wx unified order.
-	uniOrder := wechat.GenerateUnifiedOrder(plan, app.UserIP, subs.OrderID)
+	param := subs.WxUniOrderParam(plan.Description, app.UserIP)
 
-	logger.WithField("trace", "UnifiedOrder").Infof("Order params: %+v", uniOrder)
+	logger.WithField("trace", "UnifiedOrder").Infof("Unifed order params: %+v", param)
 
 	// Send order to wx
-	resp, err := router.client.UnifiedOrder(uniOrder)
+	resp, err := router.client.UnifiedOrder(param)
 
 	if err != nil {
 		logger.WithField("trace", "UnifiedOrder").Error(err)
@@ -147,7 +147,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	prepay := router.client.BuildPrepayOrder(subs.OrderID, subs.Price, resp.GetString("prepay_id"))
+	prepay := router.client.BuildPrepay(resp.GetString("prepay_id"), subs)
 
 	view.Render(w, view.NewResponse().SetBody(prepay))
 }
