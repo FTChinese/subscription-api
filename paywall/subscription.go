@@ -6,9 +6,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/objcoding/wxpay"
+
+	"github.com/smartwalle/alipay"
+
 	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/util"
+)
+
+const (
+	aliCallbackURL = "http://www.ftacademy.cn/api/v1/callback/alipay"
+	wxCallbackURL  = "http://www.ftacademy.cn/api/v1/callback/wxpay"
+	aliProductCode = "QUICK_MSECURITY_PAY"
 )
 
 // Subscription contains the details of a user's action to place an order.
@@ -19,8 +30,8 @@ type Subscription struct {
 	LoginMethod   enum.LoginMethod // Determine login method.
 	TierToBuy     enum.Tier
 	BillingCycle  enum.Cycle // Caculate expiration date
-	Price         float64
-	TotalAmount   float64
+	ListPrice     float64
+	NetPrice      float64
 	PaymentMethod enum.PayMethod
 	CreatedAt     util.Time // When the order is created.
 	ConfirmedAt   util.Time // When the payment is confirmed.
@@ -37,8 +48,8 @@ func NewWxpaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
 		LoginMethod:   login,
 		TierToBuy:     p.Tier,
 		BillingCycle:  p.Cycle,
-		Price:         p.Price,
-		TotalAmount:   p.Price,
+		ListPrice:     p.ListPrice,
+		NetPrice:      p.NetPrice,
 		PaymentMethod: enum.Wxpay,
 	}
 
@@ -54,8 +65,8 @@ func NewAlipaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
 		LoginMethod:   login,
 		TierToBuy:     p.Tier,
 		BillingCycle:  p.Cycle,
-		Price:         p.Price,
-		TotalAmount:   p.Price,
+		ListPrice:     p.ListPrice,
+		NetPrice:      p.NetPrice,
 		PaymentMethod: enum.Alipay,
 	}
 
@@ -75,19 +86,56 @@ func (s *Subscription) GenerateOrderID() {
 	s.OrderID = "FT" + strings.ToUpper(id)
 }
 
-// AliTotalAmount converts TotalAmount to ailpay format
-func (s Subscription) AliTotalAmount() string {
-	return strconv.FormatFloat(s.TotalAmount, 'f', 2, 32)
+// AliNetPrice converts Charged price to ailpay format
+func (s Subscription) AliNetPrice() string {
+	return strconv.FormatFloat(s.NetPrice, 'f', 2, 32)
 }
 
-// WxTotalFee converts TotalAmount to int64 in cent for comparison with wx notification.
-func (s Subscription) WxTotalFee() int64 {
-	return int64(s.TotalAmount * 100)
+// AliAppPayParam builds parameters for ali app pay based on current subscription order.
+func (s Subscription) AliAppPayParam(title string) alipay.AliPayParam {
+	p := alipay.AliPayTradeAppPay{}
+	p.NotifyURL = aliCallbackURL
+	p.Subject = title
+	p.OutTradeNo = s.OrderID
+	p.TotalAmount = s.AliNetPrice()
+	p.ProductCode = aliProductCode
+	p.GoodsType = "0"
+
+	return p
+}
+
+// AliAppPayResp builds the reponse for an app's request to pay by ali.
+func (s Subscription) AliAppPayResp(param string) ali.AppPayResp {
+	return ali.AppPayResp{
+		FtcOrderID: s.OrderID,
+		Price:      s.ListPrice,
+		ListPrice:  s.ListPrice,
+		NetPrice:   s.NetPrice,
+		Param:      param,
+	}
+}
+
+// WxNetPrice converts Charged price to int64 in cent for comparison with wx notification.
+func (s Subscription) WxNetPrice() int64 {
+	return int64(s.NetPrice * 100)
+}
+
+// WxUniOrderParam build the parameters to request for prepay id.
+func (s Subscription) WxUniOrderParam(title, ip string) wxpay.Params {
+	p := make(wxpay.Params)
+	p.SetString("body", title)
+	p.SetString("out_trade_no", s.OrderID)
+	p.SetInt64("total_fee", s.WxNetPrice())
+	p.SetString("spbill_create_ip", ip)
+	p.SetString("notify_url", wxCallbackURL)
+	p.SetString("trade_type", "APP")
+
+	return p
 }
 
 // IsWxChargeMatched tests if the order's charge matches the one from wechat response.
 func (s Subscription) IsWxChargeMatched(cent int64) bool {
-	return s.WxTotalFee() == cent
+	return s.WxNetPrice() == cent
 }
 
 // IsConfirmed checks if the order is confirmed.
@@ -155,9 +203,9 @@ func (s Subscription) StmtMember() string {
 		LIMIT 1`, whereCol)
 }
 
-// WithDuration populate a subscripiton's ConfirmedAt, StartDate, EndDate and IsRenewal based on a user's current membership duration.
+// ConfirmWithDuration populate a subscripiton's ConfirmedAt, StartDate, EndDate and IsRenewal based on a user's current membership duration.
 // Current membership might not exists, but the duration is still a valid value since the zero value can be treated as a non-existing membership.
-func (s Subscription) WithDuration(dur Duration, confirmedAt time.Time) (Subscription, error) {
+func (s Subscription) ConfirmWithDuration(dur Duration, confirmedAt time.Time) (Subscription, error) {
 	s.ConfirmedAt = util.TimeFrom(confirmedAt)
 
 	dur.NormalizeDate()
