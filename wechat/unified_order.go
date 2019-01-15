@@ -3,24 +3,7 @@ package wechat
 import (
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/paywall"
 )
-
-const wxNotifyURL = "http://www.ftacademy.cn/api/v1/callback/wxpay"
-
-// GenerateUnifiedOrder to be used to request for prepay id.
-func GenerateUnifiedOrder(plan paywall.Plan, userIP, orderID string) wxpay.Params {
-
-	p := make(wxpay.Params)
-	p.SetString("body", plan.Description)
-	p.SetString("out_trade_no", orderID)
-	p.SetInt64("total_fee", plan.PriceForWx())
-	p.SetString("spbill_create_ip", userIP)
-	p.SetString("notify_url", wxNotifyURL)
-	p.SetString("trade_type", "APP")
-
-	return p
-}
 
 // UnifiedOrderResp contains the response data from Wechat unified order.
 type UnifiedOrderResp struct {
