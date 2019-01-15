@@ -11,21 +11,22 @@ import (
 const (
 	secondsOfMinute = 60
 	secondsOfHour   = 60 * secondsOfMinute
-	layoutDateTime  = "2006-01-02 15:04:05.999999"
+	layoutDateTime  = "2006-01-02 15:04:05"
+	layoutDate      = "2006-01-02"
 	layoutWx        = "20060102150405"
 )
 
 var (
 	// TZShanghai is a fixed timezone in UTC+8
 	TZShanghai = time.FixedZone("UTC+8", 8*secondsOfHour)
-	// ToISO8601UTC turns time into ISO 8601 string in UTC.
-	ToISO8601UTC = timeFormatter{time.RFC3339, time.UTC}
-	// ToSQLDatetimeUTC turns time into SQL's DATETIME string in UTC.
-	ToSQLDatetimeUTC = timeFormatter{layoutDateTime[:19], time.UTC}
-	// ToSQLDateUTC turns time into SQL's DATE string in UTC.
-	ToSQLDateUTC = timeFormatter{layoutDateTime[:10], time.UTC}
-	// ToSQLDateUTC8 turns time into SQL's DATE string set in UTC+8.
-	ToSQLDateUTC8 = timeFormatter{layoutDateTime[:10], TZShanghai}
+	// ToISO8601 turns time into ISO 8601 string in UTC.
+	ToISO8601 = timeFormatter{time.RFC3339, time.UTC}
+	// ToDatetime turns time into SQL's DATETIME string in UTC.
+	ToDatetime = timeFormatter{layoutDateTime, time.UTC}
+	// ToDate turns time into SQL's DATE string in UTC.
+	ToDate = timeFormatter{layoutDate, time.UTC}
+	// ToDate8 turns time into SQL's DATE string set in UTC+8.
+	ToDate8 = timeFormatter{layoutDate, TZShanghai}
 )
 
 // timeFormatter converts a time.Time instance to the specified layout in specified location
@@ -116,6 +117,11 @@ func ParseWxTime(value string) time.Time {
 
 // ParseAliTime parses alipay time string.
 // Not clear what timezone it uses. Assming Shanghai time.
-func ParseAliTime(value string) (time.Time, error) {
-	return ParseDateTime(value, TZShanghai)
+func ParseAliTime(value string) time.Time {
+	t, err := ParseDateTime(value, TZShanghai)
+	if err != nil {
+		return time.Now()
+	}
+
+	return t
 }
