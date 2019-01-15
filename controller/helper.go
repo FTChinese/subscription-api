@@ -20,13 +20,6 @@ const (
 	aliProductCode = "QUICK_MSECURITY_PAY"
 )
 
-const (
-	keySignNodeName = "sign"
-	keyAppPayResp   = "alipay_trade_app_pay_response"
-	signTypeRSA2    = "RSA2"
-	signTypeRSA     = "RSA"
-)
-
 type paramValue string
 
 func (v paramValue) isEmpty() bool {
