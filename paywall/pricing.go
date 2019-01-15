@@ -27,19 +27,22 @@ var defaultPlans = Pricing{
 	"standard_year": Plan{
 		Tier:        enum.TierStandard,
 		Cycle:       enum.CycleYear,
-		Price:       258.00,
+		ListPrice:   258.00,
+		NetPrice:    258.00,
 		Description: "FT中文网 - 年度标准会员",
 	},
 	"standard_month": Plan{
 		Tier:        enum.TierStandard,
 		Cycle:       enum.CycleMonth,
-		Price:       28.00,
+		ListPrice:   28.00,
+		NetPrice:    28.00,
 		Description: "FT中文网 - 月度标准会员",
 	},
 	"premium_year": Plan{
 		Tier:        enum.TierPremium,
 		Cycle:       enum.CycleYear,
-		Price:       1998.00,
+		ListPrice:   1998.00,
+		NetPrice:    1998.00,
 		Description: "FT中文网 - 高端会员",
 	},
 }
@@ -49,19 +52,22 @@ var sandboxPlans = Pricing{
 	"standard_year": Plan{
 		Tier:        enum.TierStandard,
 		Cycle:       enum.CycleYear,
-		Price:       0.01,
+		ListPrice:   258.00,
+		NetPrice:    0.01,
 		Description: "FT中文网 - 年度标准会员",
 	},
 	"standard_month": Plan{
 		Tier:        enum.TierStandard,
 		Cycle:       enum.CycleMonth,
-		Price:       0.01,
+		ListPrice:   28.00,
+		NetPrice:    0.01,
 		Description: "FT中文网 - 月度标准会员",
 	},
 	"premium_year": Plan{
 		Tier:        enum.TierPremium,
 		Cycle:       enum.CycleYear,
-		Price:       0.01,
+		ListPrice:   1998.00,
+		NetPrice:    0.01,
 		Description: "FT中文网 - 高端会员",
 	},
 }
