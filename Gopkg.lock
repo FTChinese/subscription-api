@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/FTChinese/go-rest"
+  packages = ["postoffice"]
+  revision = "fc0a61dbed075d4f3e307b66127bd07cc96e2dbb"
+  version = "v0.0.7"
+
+[[projects]]
   name = "github.com/Pallinder/go-randomdata"
   packages = ["."]
   revision = "97a2356fcab20708fb8ae46cbbf69a5bc9feca63"
@@ -57,12 +63,6 @@
   packages = ["."]
   revision = "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242"
   version = "v1.0.1"
-
-[[projects]]
-  name = "github.com/mitchellh/go-homedir"
-  packages = ["."]
-  revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
-  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/moul/http2curl"
@@ -197,6 +197,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "81442a37cfb90c1874af277f4a262191d324bb48d9f79051615d8165d968c2d1"
+  inputs-digest = "a83a467f5ba67e2dad43b7aae0e29ee33d00205733e9272b15471ff0037deebf"
   solver-name = "gps-cdcl"
   solver-version = 1

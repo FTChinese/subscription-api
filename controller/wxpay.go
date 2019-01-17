@@ -4,8 +4,11 @@ import (
 	"database/sql"
 	"net/http"
 	"os"
+	"strconv"
 
+	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/objcoding/wxpay"
+	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
@@ -21,17 +24,28 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(env model.Env) WxPayRouter {
+func NewWxRouter(db *sql.DB, c *cache.Cache) WxPayRouter {
 	appID := os.Getenv("WXPAY_APPID")
 	mchID := os.Getenv("WXPAY_MCHID")
 	apiKey := os.Getenv("WXPAY_API_KEY")
+
+	host := os.Getenv("HANQI_SMTP_HOST")
+	user := os.Getenv("HANQI_SMTP_USER")
+	portStr := os.Getenv("HANQI_SMTP_PORT")
+	pass := os.Getenv("HANQI_SMTP_PASS")
+
+	port, _ := strconv.Atoi(portStr)
 
 	// Pay attention to the last parameter.
 	// It should always be false because Weixin's sandbox address does not work!
 
 	return WxPayRouter{
 		client: wechat.NewClient(appID, mchID, apiKey),
-		model:  env,
+		model: model.Env{
+			DB:      db,
+			Cache:   c,
+			Postman: postoffice.NewPostman(host, port, user, pass),
+		},
 	}
 }
 
