@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/FTChinese/go-rest/postoffice"
 	"gitlab.com/ftchinese/subscription-api/enum"
-	"gitlab.com/ftchinese/subscription-api/postoffice"
 
 	cache "github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"

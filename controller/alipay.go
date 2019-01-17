@@ -5,7 +5,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 
+	"github.com/FTChinese/go-rest/postoffice"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
@@ -31,8 +34,15 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(env model.Env) AliPayRouter {
+func NewAliRouter(db *sql.DB, c *cache.Cache) AliPayRouter {
 	appID := os.Getenv("ALIPAY_APP_ID")
+
+	host := os.Getenv("HANQI_SMTP_HOST")
+	user := os.Getenv("HANQI_SMTP_USER")
+	portStr := os.Getenv("HANQI_SMTP_PORT")
+	pass := os.Getenv("HANQI_SMTP_PASS")
+
+	port, _ := strconv.Atoi(portStr)
 
 	// Ali's public key is used to verify alipay's response.
 	publicKey, err := ioutil.ReadFile("alipay_public_key.pem")
@@ -53,7 +63,11 @@ func NewAliRouter(env model.Env) AliPayRouter {
 	return AliPayRouter{
 		appID:  appID,
 		client: client,
-		model:  env,
+		model: model.Env{
+			DB:      db,
+			Cache:   c,
+			Postman: postoffice.NewPostman(host, port, user, pass),
+		},
 	}
 }
 

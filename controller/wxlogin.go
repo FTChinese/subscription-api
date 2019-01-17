@@ -1,10 +1,12 @@
 package controller
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
+	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/view"
@@ -22,11 +24,14 @@ type WxAuthRouter struct {
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
-func NewWxAuth(env model.Env) WxAuthRouter {
+func NewWxAuth(db *sql.DB, c *cache.Cache) WxAuthRouter {
 
 	return WxAuthRouter{
-		apps:  wxlogin.Apps,
-		model: env,
+		apps: wxlogin.Apps,
+		model: model.Env{
+			DB:    db,
+			Cache: c,
+		},
 	}
 }
 
