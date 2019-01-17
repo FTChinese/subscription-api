@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"database/sql"
 	"net/http"
 
+	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/view"
@@ -14,9 +16,12 @@ type PaywallRouter struct {
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(env model.Env) PaywallRouter {
+func NewPaywallRouter(db *sql.DB, c *cache.Cache) PaywallRouter {
 	return PaywallRouter{
-		model: env,
+		model: model.Env{
+			DB:    db,
+			Cache: c,
+		},
 	}
 }
 

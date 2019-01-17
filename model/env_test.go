@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/smartwalle/alipay"
 
 	randomdata "github.com/Pallinder/go-randomdata"
@@ -18,7 +20,7 @@ import (
 
 	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/paywall"
-	"gitlab.com/ftchinese/subscription-api/postoffice"
+
 	"gitlab.com/ftchinese/subscription-api/wechat"
 
 	"github.com/icrowley/fake"
@@ -33,10 +35,17 @@ func newDevEnv() Env {
 		panic(err)
 	}
 
+	host := os.Getenv("HANQI_SMTP_HOST")
+	user := os.Getenv("HANQI_SMTP_USER")
+	portStr := os.Getenv("HANQI_SMTP_PORT")
+	pass := os.Getenv("HANQI_SMTP_PASS")
+
+	port, _ := strconv.Atoi(portStr)
+
 	return Env{
 		DB:      db,
 		Cache:   cache.New(cache.DefaultExpiration, 0),
-		Postman: postoffice.NewPostman(),
+		Postman: postoffice.NewPostman(host, port, user, pass),
 	}
 }
 

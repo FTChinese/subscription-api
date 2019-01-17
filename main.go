@@ -13,8 +13,6 @@ import (
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/controller"
-	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/postoffice"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
@@ -62,19 +60,12 @@ func main() {
 	}
 
 	c := cache.New(cache.DefaultExpiration, 0)
-	p := postoffice.NewPostman()
 
-	env := model.Env{
-		DB:      db,
-		Cache:   c,
-		Postman: p,
-	}
+	wxRouter := controller.NewWxRouter(db, c)
+	aliRouter := controller.NewAliRouter(db, c)
+	paywallRouter := controller.NewPaywallRouter(db, c)
 
-	wxRouter := controller.NewWxRouter(env)
-	aliRouter := controller.NewAliRouter(env)
-	paywallRouter := controller.NewPaywallRouter(env)
-
-	wxAuth := controller.NewWxAuth(env)
+	wxAuth := controller.NewWxAuth(db, c)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

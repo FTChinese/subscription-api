@@ -4,8 +4,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/postoffice"
 )
 
 // User contains the minimal information to identify a user.
