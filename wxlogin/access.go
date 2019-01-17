@@ -14,7 +14,7 @@ import (
 // A Wechat login session should expires in 30 days,
 // which is the duration of refresh token.
 type Session struct {
-	ID        string    `json:"id"`
+	ID        string    `json:"sessionId"`
 	UnionID   string    `json:"unionId"`
 	CreatedAt util.Time `json:"createdAt"`
 }
