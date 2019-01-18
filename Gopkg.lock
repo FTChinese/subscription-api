@@ -3,7 +3,12 @@
 
 [[projects]]
   name = "github.com/FTChinese/go-rest"
-  packages = ["postoffice"]
+  packages = [
+    ".",
+    "enum",
+    "postoffice",
+    "view"
+  ]
   revision = "fc0a61dbed075d4f3e307b66127bd07cc96e2dbb"
   version = "v0.0.7"
 
@@ -79,20 +84,14 @@
 [[projects]]
   name = "github.com/parnurzeal/gorequest"
   packages = ["."]
-  revision = "a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3"
-  version = "v0.2.15"
+  revision = "cd34fd7e00b115d19135028caa03bc00f5b4b561"
+  version = "v0.2.12"
 
 [[projects]]
   name = "github.com/patrickmn/go-cache"
   packages = ["."]
   revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
   version = "v2.1.0"
-
-[[projects]]
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
 
 [[projects]]
   branch = "master"
@@ -144,13 +143,13 @@
   revision = "0c41d7ab0a0ee717d4590a44bcb987dfd9e183eb"
 
 [[projects]]
-  branch = "master"
+  branch = "release-branch.go1.6"
   name = "golang.org/x/net"
   packages = [
     "idna",
     "publicsuffix"
   ]
-  revision = "927f97764cc334a6575f4b7a1584a147864d5723"
+  revision = "62685c2d7ca23c807425dca88b11a3e2323dab41"
 
 [[projects]]
   branch = "master"
@@ -160,27 +159,6 @@
     "windows"
   ]
   revision = "fa43e7bc11baaae89f3f902b2b4d832b68234844"
-
-[[projects]]
-  name = "golang.org/x/text"
-  packages = [
-    "collate",
-    "collate/build",
-    "internal/colltab",
-    "internal/gen",
-    "internal/tag",
-    "internal/triegen",
-    "internal/ucd",
-    "language",
-    "secure/bidirule",
-    "transform",
-    "unicode/bidi",
-    "unicode/cldr",
-    "unicode/norm",
-    "unicode/rangetable"
-  ]
-  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
-  version = "v0.3.0"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -197,6 +175,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "17719371723c8fb9f8a94e6d6fda8b59ab4bd121566504e187a9bdeeddfbb110"
+  inputs-digest = "ffb433421b3156f96f659c3488a72759a98603d41b16a814042a620e212444b0"
   solver-name = "gps-cdcl"
   solver-version = 1
