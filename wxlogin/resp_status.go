@@ -3,7 +3,7 @@ package wxlogin
 import (
 	"fmt"
 
-	"gitlab.com/ftchinese/subscription-api/view"
+	"github.com/FTChinese/go-rest/view"
 )
 
 // RespStatus is used to parse wechat error response.

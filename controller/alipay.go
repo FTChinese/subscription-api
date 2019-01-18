@@ -7,14 +7,15 @@ import (
 	"os"
 	"strconv"
 
+	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/go-rest/view"
 	cache "github.com/patrickmn/go-cache"
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
-	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 const (
@@ -98,9 +99,9 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	unionID := req.Header.Get(unionIDKey)
 	var loginMethod enum.LoginMethod
 	if userID != "" {
-		loginMethod = enum.EmailLogin
+		loginMethod = enum.LoginMethodEmail
 	} else if unionID != "" {
-		loginMethod = enum.WechatLogin
+		loginMethod = enum.LoginMethodWx
 		userID = unionID
 	}
 
@@ -118,7 +119,7 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Save the subscription
-	app := util.NewClientApp(req)
+	app := gorest.NewClientApp(req)
 	err = router.model.SaveSubscription(subs, app)
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))

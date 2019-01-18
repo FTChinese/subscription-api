@@ -4,14 +4,14 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.com/ftchinese/subscription-api/enum"
-	"gitlab.com/ftchinese/subscription-api/util"
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/enum"
 )
 
 func TestCanRenew(t *testing.T) {
 	member := Membership{}
 
-	member.ExpireDate = util.DateFrom(time.Now().AddDate(1, 0, 0))
+	member.ExpireDate = chrono.DateFrom(time.Now().AddDate(1, 0, 0))
 
 	ok := member.CanRenew(enum.CycleYear)
 
@@ -20,7 +20,7 @@ func TestCanRenew(t *testing.T) {
 
 func TestCannotRenew(t *testing.T) {
 	member := Membership{}
-	member.ExpireDate = util.DateFrom(time.Now().AddDate(1, 1, 0))
+	member.ExpireDate = chrono.DateFrom(time.Now().AddDate(1, 1, 0))
 
 	ok := member.CanRenew(enum.CycleYear)
 

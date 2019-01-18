@@ -8,9 +8,9 @@ import (
 
 	"gitlab.com/ftchinese/subscription-api/paywall"
 
+	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/view"
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/util"
-	"gitlab.com/ftchinese/subscription-api/view"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -98,7 +98,7 @@ func (c Client) ValidateResponse(params wxpay.Params) *view.Reason {
 
 // BuildPrepay for client.
 func (c Client) BuildPrepay(prepayID string, subs paywall.Subscription) Prepay {
-	nonce, _ := util.RandomHex(10)
+	nonce, _ := gorest.RandomHex(10)
 	pkg := "Sign=WXPay"
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 

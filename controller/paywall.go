@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/FTChinese/go-rest/view"
 	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
-	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 // PaywallRouter handles pricing plans.

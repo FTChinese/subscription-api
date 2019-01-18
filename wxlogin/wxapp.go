@@ -6,9 +6,10 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/FTChinese/go-rest/chrono"
+
 	"github.com/parnurzeal/gorequest"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 var (
@@ -117,8 +118,8 @@ func (c WxApp) GetAccessToken(code string) (OAuthAccess, error) {
 	}
 
 	acc.GenerateSessionID()
-	acc.CreatedAt = util.TimeNow()
-	acc.UpdatedAt = util.TimeNow()
+	acc.CreatedAt = chrono.TimeNow()
+	acc.UpdatedAt = chrono.TimeNow()
 
 	return acc, nil
 }

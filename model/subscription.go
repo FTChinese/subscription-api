@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	gorest "github.com/FTChinese/go-rest"
 	"gitlab.com/ftchinese/subscription-api/paywall"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // IsSubsAllowed checks if this user is allowed to purchase a subscritpion.
@@ -37,7 +37,7 @@ func (env Env) IsSubsAllowed(subs paywall.Subscription) (bool, error) {
 // SaveSubscription saves a new subscription order.
 // At this moment, you should already know if this subscription is
 // a renewal of a new one, based on current Membership's expire_date.
-func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error {
+func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) error {
 	query := `
 	INSERT INTO premium.ftc_trade
 	SET trade_no = ?,
