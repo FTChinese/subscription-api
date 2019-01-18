@@ -10,10 +10,11 @@ import (
 
 	"github.com/smartwalle/alipay"
 
+	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/ali"
-	"gitlab.com/ftchinese/subscription-api/enum"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 const (
@@ -33,11 +34,11 @@ type Subscription struct {
 	ListPrice     float64
 	NetPrice      float64
 	PaymentMethod enum.PayMethod
-	CreatedAt     util.Time // When the order is created.
-	ConfirmedAt   util.Time // When the payment is confirmed.
-	IsRenewal     bool      // If this order is used to renew membership. Determined the moment notification is received. Mostly used for data anaylsis and email.
-	StartDate     util.Date // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	EndDate       util.Date // Membership end date for this order. Depends on start date.
+	CreatedAt     chrono.Time // When the order is created.
+	ConfirmedAt   chrono.Time // When the payment is confirmed.
+	IsRenewal     bool        // If this order is used to renew membership. Determined the moment notification is received. Mostly used for data anaylsis and email.
+	StartDate     chrono.Date // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
+	EndDate       chrono.Date // Membership end date for this order. Depends on start date.
 }
 
 // NewWxpaySubs creates a new Subscription with payment method set to Wechat.
@@ -50,7 +51,7 @@ func NewWxpaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
 		BillingCycle:  p.Cycle,
 		ListPrice:     p.ListPrice,
 		NetPrice:      p.NetPrice,
-		PaymentMethod: enum.Wxpay,
+		PaymentMethod: enum.PayMethodWx,
 	}
 
 	s.GenerateOrderID()
@@ -67,7 +68,7 @@ func NewAlipaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
 		BillingCycle:  p.Cycle,
 		ListPrice:     p.ListPrice,
 		NetPrice:      p.NetPrice,
-		PaymentMethod: enum.Alipay,
+		PaymentMethod: enum.PayMethodAli,
 	}
 
 	s.GenerateOrderID()
@@ -81,7 +82,7 @@ func (s *Subscription) GenerateOrderID() {
 		return
 	}
 
-	id, _ := util.RandomHex(8)
+	id, _ := gorest.RandomHex(8)
 
 	s.OrderID = "FT" + strings.ToUpper(id)
 }
@@ -145,12 +146,12 @@ func (s Subscription) IsConfirmed() bool {
 
 // IsWxLogin Check if user logged in by Wechat account.
 func (s Subscription) IsWxLogin() bool {
-	return s.LoginMethod == enum.WechatLogin
+	return s.LoginMethod == enum.LoginMethodWx
 }
 
 // IsEmailLogin checks if user logged in by email.
 func (s Subscription) IsEmailLogin() bool {
-	return s.LoginMethod == enum.EmailLogin
+	return s.LoginMethod == enum.LoginMethodEmail
 }
 
 // GetUnionID creates a nullable union id from user id if user logged in via wechat.
@@ -206,7 +207,7 @@ func (s Subscription) StmtMember() string {
 // ConfirmWithDuration populate a subscripiton's ConfirmedAt, StartDate, EndDate and IsRenewal based on a user's current membership duration.
 // Current membership might not exists, but the duration is still a valid value since the zero value can be treated as a non-existing membership.
 func (s Subscription) ConfirmWithDuration(dur Duration, confirmedAt time.Time) (Subscription, error) {
-	s.ConfirmedAt = util.TimeFrom(confirmedAt)
+	s.ConfirmedAt = chrono.TimeFrom(confirmedAt)
 
 	dur.NormalizeDate()
 
@@ -219,13 +220,13 @@ func (s Subscription) ConfirmWithDuration(dur Duration, confirmedAt time.Time) (
 		startTime = confirmedAt
 	}
 
-	expireTime, err := s.BillingCycle.EndingTime(startTime)
+	expireTime, err := s.BillingCycle.TimeAfterACycle(startTime)
 	if err != nil {
 		return s, err
 	}
 
-	s.StartDate = util.DateFrom(startTime)
-	s.EndDate = util.DateFrom(expireTime)
+	s.StartDate = chrono.DateFrom(startTime)
+	s.EndDate = chrono.DateFrom(expireTime)
 
 	return s, nil
 }

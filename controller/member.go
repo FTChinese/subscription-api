@@ -3,8 +3,8 @@ package controller
 import (
 	"net/http"
 
+	"github.com/FTChinese/go-rest/view"
 	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 // MemberRouter checks membership status

@@ -3,22 +3,22 @@ package paywall
 import (
 	"time"
 
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/enum"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // Duration contains a membership's expiration time.
 // This type exits for compatibility due to expiration time are saved into two columns.
 type Duration struct {
 	Timestamp  int64
-	ExpireDate util.Date
+	ExpireDate chrono.Date
 }
 
 // NormalizeDate converts unix timestamp to util.Date.
 func (d *Duration) NormalizeDate() {
 	if d.ExpireDate.IsZero() && d.Timestamp != 0 {
-		d.ExpireDate = util.DateFrom(time.Unix(d.Timestamp, 0))
+		d.ExpireDate = chrono.DateFrom(time.Unix(d.Timestamp, 0))
 	}
 }
 
@@ -30,7 +30,7 @@ func (d *Duration) NormalizeDate() {
 //      |-------- A cycle --------| Expires
 // now----------------------------| Deny
 func (d Duration) CanRenew(cycle enum.Cycle) bool {
-	cycleEnds, err := cycle.EndingTime(time.Now())
+	cycleEnds, err := cycle.TimeAfterACycle(time.Now())
 
 	if err != nil {
 		return false

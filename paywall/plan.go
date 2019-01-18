@@ -3,7 +3,7 @@ package paywall
 import (
 	"strconv"
 
-	"gitlab.com/ftchinese/subscription-api/enum"
+	"github.com/FTChinese/go-rest/enum"
 )
 
 // Plan is a pricing plan.

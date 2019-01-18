@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 // Session records a Wechat login session.
 // A Wechat login session should expires in 30 days,
 // which is the duration of refresh token.
 type Session struct {
-	ID        string    `json:"sessionId"`
-	UnionID   string    `json:"unionId"`
-	CreatedAt util.Time `json:"createdAt"`
+	ID        string      `json:"sessionId"`
+	UnionID   string      `json:"unionId"`
+	CreatedAt chrono.Time `json:"createdAt"`
 }
 
 // OAuthAccess is the response of Wechat endpoint
@@ -37,8 +37,8 @@ type OAuthAccess struct {
 	Scope string `json:"scope"`
 	// Example: String:ogfvwjk6bFqv2yQpOrac0J3PqA0o Valid:true
 	UnionID   null.String `json:"unionid"`
-	CreatedAt util.Time
-	UpdatedAt util.Time
+	CreatedAt chrono.Time
+	UpdatedAt chrono.Time
 	RespStatus
 }
 
