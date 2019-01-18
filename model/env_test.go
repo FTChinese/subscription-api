@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/smartwalle/alipay"
 
@@ -18,14 +20,13 @@ import (
 	"github.com/objcoding/wxpay"
 	cache "github.com/patrickmn/go-cache"
 
-	"gitlab.com/ftchinese/subscription-api/enum"
+	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 
 	"gitlab.com/ftchinese/subscription-api/wechat"
 
 	"github.com/icrowley/fake"
 	uuid "github.com/satori/go.uuid"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 func newDevEnv() Env {
@@ -57,7 +58,7 @@ var apiKey = os.Getenv("WXPAY_API_KEY")
 var mockClient = wechat.NewClient(appID, mchID, apiKey)
 var devEnv = newDevEnv()
 var mockPlan = paywall.GetDefaultPricing()["standard_year"]
-var mockApp = util.ClientApp{
+var mockApp = gorest.ClientApp{
 	ClientType: enum.PlatformAndroid,
 	Version:    "1.1.1",
 	UserIP:     fake.IPv4(),
@@ -67,17 +68,17 @@ var mockApp = util.ClientApp{
 var tenDaysLater = time.Now().AddDate(0, 0, 10)
 
 func generateCode() string {
-	code, _ := util.RandomBase64(24)
+	code, _ := gorest.RandomBase64(24)
 	return code
 }
 
 func generateToken() string {
-	token, _ := util.RandomBase64(82)
+	token, _ := gorest.RandomBase64(82)
 	return token
 }
 
 func generateWxID() string {
-	id, _ := util.RandomBase64(21)
+	id, _ := gorest.RandomBase64(21)
 	return id
 }
 
@@ -101,7 +102,7 @@ func newMocker() mocker {
 		userID:      uuid.Must(uuid.NewV4()).String(),
 		unionID:     generateWxID(),
 		openID:      generateWxID(),
-		loginMethod: enum.EmailLogin,
+		loginMethod: enum.LoginMethodEmail,
 		userName:    fake.UserName(),
 		email:       fake.EmailAddress(),
 		password:    fake.Password(8, 20, false, true, false),
@@ -115,7 +116,7 @@ func (m mocker) withEmail(email string) mocker {
 }
 
 func (m mocker) withWxLogin() mocker {
-	m.loginMethod = enum.WechatLogin
+	m.loginMethod = enum.LoginMethodWx
 	return m
 }
 
@@ -138,8 +139,8 @@ func (m mocker) wxAccess() wxlogin.OAuthAccess {
 		UnionID:      null.StringFrom(m.unionID),
 	}
 	acc.GenerateSessionID()
-	acc.CreatedAt = util.TimeNow()
-	acc.UpdatedAt = util.TimeNow()
+	acc.CreatedAt = chrono.TimeNow()
+	acc.UpdatedAt = chrono.TimeNow()
 	return acc
 }
 
@@ -157,26 +158,26 @@ func (m mocker) wxUser() wxlogin.UserInfo {
 }
 
 func (m mocker) wxpaySubs() paywall.Subscription {
-	if m.loginMethod == enum.WechatLogin {
-		return paywall.NewWxpaySubs(m.unionID, mockPlan, enum.WechatLogin)
+	if m.loginMethod == enum.LoginMethodWx {
+		return paywall.NewWxpaySubs(m.unionID, mockPlan, enum.LoginMethodWx)
 	}
-	return paywall.NewWxpaySubs(m.userID, mockPlan, enum.EmailLogin)
+	return paywall.NewWxpaySubs(m.userID, mockPlan, enum.LoginMethodWx)
 }
 
 func (m mocker) alipaySubs() paywall.Subscription {
-	if m.loginMethod == enum.WechatLogin {
-		return paywall.NewAlipaySubs(m.unionID, mockPlan, enum.WechatLogin)
+	if m.loginMethod == enum.LoginMethodWx {
+		return paywall.NewAlipaySubs(m.unionID, mockPlan, enum.LoginMethodWx)
 	}
-	return paywall.NewAlipaySubs(m.userID, mockPlan, enum.EmailLogin)
+	return paywall.NewAlipaySubs(m.userID, mockPlan, enum.LoginMethodWx)
 }
 
 func (m mocker) confirmedSubs() paywall.Subscription {
-	subs := paywall.NewWxpaySubs(m.userID, mockPlan, enum.EmailLogin)
-	subs.CreatedAt = util.TimeNow()
-	subs.ConfirmedAt = util.TimeNow()
+	subs := paywall.NewWxpaySubs(m.userID, mockPlan, enum.LoginMethodWx)
+	subs.CreatedAt = chrono.TimeNow()
+	subs.ConfirmedAt = chrono.TimeNow()
 	subs.IsRenewal = false
-	subs.StartDate = util.DateNow()
-	subs.EndDate = util.DateFrom(time.Now().AddDate(1, 0, 0))
+	subs.StartDate = chrono.DateNow()
+	subs.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 0))
 
 	return subs
 }
@@ -284,7 +285,7 @@ func (m mocker) createWxAccess() (wxlogin.OAuthAccess, error) {
 }
 
 func wxNotiResp(orderID string) string {
-	openID, _ := util.RandomBase64(21)
+	openID, _ := gorest.RandomBase64(21)
 	p := make(wxpay.Params)
 
 	p = fillResp(p)
@@ -329,7 +330,7 @@ func wxParsedPrepay() (wxpay.Params, error) {
 }
 
 func fillResp(p wxpay.Params) wxpay.Params {
-	nonce, _ := util.RandomHex(16)
+	nonce, _ := gorest.RandomHex(16)
 
 	p.SetString("return_code", "SUCCESS")
 	p.SetString("return_msg", "OK")
@@ -344,7 +345,7 @@ func fillResp(p wxpay.Params) wxpay.Params {
 
 func aliNoti() alipay.TradeNotification {
 	return alipay.TradeNotification{
-		NotifyTime: util.ToDatetime.FromTime(time.Now()),
+		NotifyTime: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
 		NotifyType: "trade_status_sync",
 		NotifyId:   fake.CharactersN(36),
 		AppId:      os.Getenv("ALIPAY_APP_ID"),
@@ -354,7 +355,7 @@ func aliNoti() alipay.TradeNotification {
 		Sign:       fake.CharactersN(256),
 		TradeNo:    fake.CharactersN(64),
 		OutTradeNo: fake.CharactersN(18),
-		GmtCreate:  util.ToDatetime.FromTime(time.Now()),
-		GmtPayment: util.ToDatetime.FromTime(time.Now()),
+		GmtCreate:  time.Now().In(time.UTC).Format(chrono.SQLDateTime),
+		GmtPayment: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
 	}
 }

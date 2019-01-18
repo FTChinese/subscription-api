@@ -3,7 +3,7 @@ package controller
 import (
 	"net/http"
 
-	"gitlab.com/ftchinese/subscription-api/view"
+	"github.com/FTChinese/go-rest/view"
 )
 
 // CurrentPlans show what plans are being used after merging with discount plans.

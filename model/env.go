@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
-	"gitlab.com/ftchinese/subscription-api/enum"
 
 	cache "github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
@@ -76,6 +76,6 @@ func normalizeMemberTier(vipType int64) enum.Tier {
 		return enum.TierPremium
 
 	default:
-		return enum.TierFree
+		return enum.InvalidTier
 	}
 }

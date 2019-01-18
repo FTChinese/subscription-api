@@ -1,7 +1,7 @@
 package model
 
 import (
-	"gitlab.com/ftchinese/subscription-api/enum"
+	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
@@ -28,11 +28,11 @@ func (env Env) findMember(subs paywall.Subscription) (paywall.Membership, error)
 		return m, err
 	}
 
-	if !m.Tier.IsValid() {
+	if m.Tier == enum.InvalidTier {
 		m.Tier = normalizeMemberTier(vipType)
 	}
 
-	if !m.Cycle.IsValid() {
+	if m.Cycle == enum.InvalidCycle {
 		m.Cycle = enum.CycleYear
 	}
 

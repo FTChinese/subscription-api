@@ -6,8 +6,8 @@ import (
 	"net/http/httputil"
 	"strings"
 
+	"github.com/FTChinese/go-rest/view"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/view"
 )
 
 const userIDKey = "X-User-Id"

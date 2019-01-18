@@ -6,14 +6,15 @@ import (
 	"os"
 	"strconv"
 
+	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/go-rest/view"
 	"github.com/objcoding/wxpay"
 	cache "github.com/patrickmn/go-cache"
-	"gitlab.com/ftchinese/subscription-api/enum"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
-	"gitlab.com/ftchinese/subscription-api/view"
 	"gitlab.com/ftchinese/subscription-api/wechat"
 )
 
@@ -108,9 +109,9 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	unionID := req.Header.Get(unionIDKey)
 	var loginMethod enum.LoginMethod
 	if userID != "" {
-		loginMethod = enum.EmailLogin
+		loginMethod = enum.LoginMethodEmail
 	} else if unionID != "" {
-		loginMethod = enum.WechatLogin
+		loginMethod = enum.LoginMethodWx
 		userID = unionID
 	}
 
@@ -127,7 +128,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Save this subscription order.
-	app := util.NewClientApp(req)
+	app := gorest.NewClientApp(req)
 	err = router.model.SaveSubscription(subs, app)
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))

@@ -3,7 +3,7 @@ package paywall
 import (
 	"errors"
 
-	"gitlab.com/ftchinese/subscription-api/enum"
+	"github.com/FTChinese/go-rest/enum"
 )
 
 // Pricing defines a collection pricing plan.

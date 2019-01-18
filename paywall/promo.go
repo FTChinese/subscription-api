@@ -3,7 +3,7 @@ package paywall
 import (
 	"time"
 
-	"gitlab.com/ftchinese/subscription-api/util"
+	"github.com/FTChinese/go-rest/chrono"
 )
 
 // Banner is the banner used on the barrier page
@@ -16,11 +16,11 @@ type Banner struct {
 
 // Promotion is a scheduled promotion event.
 type Promotion struct {
-	StartUTC  util.Time `json:"startAt"`
-	EndUTC    util.Time `json:"endAt"`
-	Plans     Pricing   `json:"plans"`
-	Banner    Banner    `json:"banner"`
-	CreatedAt util.Time `json:"createdAt"`
+	StartUTC  chrono.Time `json:"startAt"`
+	EndUTC    chrono.Time `json:"endAt"`
+	Plans     Pricing     `json:"plans"`
+	Banner    Banner      `json:"banner"`
+	CreatedAt chrono.Time `json:"createdAt"`
 }
 
 // IsInEffect tests if now falls within the range of

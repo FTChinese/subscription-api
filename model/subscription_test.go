@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.com/ftchinese/subscription-api/enum"
+	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
@@ -39,7 +39,7 @@ func TestNewSubs(t *testing.T) {
 func TestIsSubsAllowed(t *testing.T) {
 	m := newMocker()
 
-	subs := paywall.NewWxpaySubs(m.userID, mockPlan, enum.EmailLogin)
+	subs := paywall.NewWxpaySubs(m.userID, mockPlan, enum.LoginMethodWx)
 
 	ok, err := devEnv.IsSubsAllowed(subs)
 
