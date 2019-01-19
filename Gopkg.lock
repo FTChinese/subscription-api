@@ -5,6 +5,7 @@
   name = "github.com/FTChinese/go-rest"
   packages = [
     ".",
+    "chrono",
     "enum",
     "postoffice",
     "view"
@@ -175,6 +176,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ffb433421b3156f96f659c3488a72759a98603d41b16a814042a620e212444b0"
+  inputs-digest = "09686d99cb3f143e1a4d0c7dd43c1aa1c3600dd31255fedceb8a1809d5ed7f94"
   solver-name = "gps-cdcl"
   solver-version = 1
