@@ -32,7 +32,14 @@ func TestSendEmail(t *testing.T) {
 	subs := m.confirmedSubs()
 	t.Logf("A confimed subscription: %+v\n", subs)
 
-	err = devEnv.SendConfirmationLetter(subs)
+	parcel, err := user.ComfirmationParcel(subs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = postman.Deliver(parcel)
 	if err != nil {
 		t.Error(err)
 	}
