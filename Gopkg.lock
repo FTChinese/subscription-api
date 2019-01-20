@@ -10,8 +10,8 @@
     "postoffice",
     "view"
   ]
-  revision = "fc0a61dbed075d4f3e307b66127bd07cc96e2dbb"
-  version = "v0.0.7"
+  revision = "66c9ed94599870b5ea5c6164834562df2af910f6"
+  version = "v0.0.8"
 
 [[projects]]
   name = "github.com/Pallinder/go-randomdata"
@@ -176,6 +176,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "09686d99cb3f143e1a4d0c7dd43c1aa1c3600dd31255fedceb8a1809d5ed7f94"
+  inputs-digest = "3727df4e58a1dfcf09a7b4b6a82221f71b12bd659b56e74d57a0c15db7c2fdcb"
   solver-name = "gps-cdcl"
   solver-version = 1
