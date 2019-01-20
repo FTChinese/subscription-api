@@ -30,30 +30,3 @@ func (env Env) FindUser(id string) (paywall.User, error) {
 
 	return u, nil
 }
-
-// SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
-func (env Env) SendConfirmationLetter(subs paywall.Subscription) error {
-	if subs.IsWxLogin() {
-		return nil
-	}
-	// 1. Find this user's personal data
-	user, err := env.FindUser(subs.UserID)
-
-	if err != nil {
-		return err
-	}
-
-	parcel, err := user.ComfirmationParcel(subs)
-	if err != nil {
-		return err
-	}
-
-	logger.WithField("trace", "SendConirmationLetter").Info("Send subscription confirmation letter")
-
-	err = env.Postman.Deliver(parcel)
-	if err != nil {
-		logger.WithField("trace", "SendConfirmationLetter").Error(err)
-		return err
-	}
-	return nil
-}
