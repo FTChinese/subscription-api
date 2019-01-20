@@ -17,7 +17,7 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 	if subs.IsWxLogin() {
 		return nil
 	}
-	// 1. Find this user's personal data
+	// Find this user's personal data
 	user, err := router.model.FindUser(subs.UserID)
 
 	if err != nil {
