@@ -21,7 +21,9 @@ import (
 // WxPayRouter wraps wxpay and alipay sdk instances.
 type WxPayRouter struct {
 	client wechat.Client
-	model  model.Env
+	// model   model.Env
+	// postman postoffice.Postman
+	PayRouter
 }
 
 // NewWxRouter creates a new instance or OrderRouter
@@ -39,15 +41,16 @@ func NewWxRouter(db *sql.DB, c *cache.Cache) WxPayRouter {
 
 	// Pay attention to the last parameter.
 	// It should always be false because Weixin's sandbox address does not work!
-
-	return WxPayRouter{
+	r := WxPayRouter{
 		client: wechat.NewClient(appID, mchID, apiKey),
-		model: model.Env{
-			DB:      db,
-			Cache:   c,
-			Postman: postoffice.NewPostman(host, port, user, pass),
-		},
 	}
+	r.model = model.Env{
+		DB:    db,
+		Cache: c,
+	}
+	r.postman = postoffice.New(host, port, user, pass)
+
+	return r
 }
 
 // UnifiedOrder implements 统一下单.
@@ -235,7 +238,7 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Send a letter to this user.
-	go router.model.SendConfirmationLetter(confirmedSubs)
+	go router.sendConfirmationEmail(confirmedSubs)
 
 	w.Write([]byte(resp.OK()))
 }
