@@ -29,6 +29,30 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+func newDevDB() *sql.DB {
+	db, err := sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
+
+	if err != nil {
+		panic(err)
+	}
+
+	return db
+}
+
+func newDevPostman() postoffice.Postman {
+	mailHost := os.Getenv("HANQI_SMTP_HOST")
+	mailUser := os.Getenv("HANQI_SMTP_USER")
+	portStr := os.Getenv("HANQI_SMTP_PORT")
+	mailPass := os.Getenv("HANQI_SMTP_PASS")
+
+	mailPort, _ := strconv.Atoi(portStr)
+
+	return postoffice.NewPostman(mailHost, mailPort, mailUser, mailPass)
+}
+
+var db = newDevDB()
+var postman = newDevPostman()
+
 func newDevEnv() Env {
 	db, err := sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
 
@@ -36,17 +60,9 @@ func newDevEnv() Env {
 		panic(err)
 	}
 
-	host := os.Getenv("HANQI_SMTP_HOST")
-	user := os.Getenv("HANQI_SMTP_USER")
-	portStr := os.Getenv("HANQI_SMTP_PORT")
-	pass := os.Getenv("HANQI_SMTP_PASS")
-
-	port, _ := strconv.Atoi(portStr)
-
 	return Env{
-		DB:      db,
-		Cache:   cache.New(cache.DefaultExpiration, 0),
-		Postman: postoffice.NewPostman(host, port, user, pass),
+		DB:    db,
+		Cache: cache.New(cache.DefaultExpiration, 0),
 	}
 }
 
