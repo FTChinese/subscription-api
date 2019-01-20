@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/postoffice"
 
 	cache "github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
@@ -13,9 +12,8 @@ import (
 
 // Env wraps database connection
 type Env struct {
-	DB      *sql.DB
-	Cache   *cache.Cache
-	Postman postoffice.Postman
+	DB    *sql.DB
+	Cache *cache.Cache
 }
 
 var logger = log.WithField("package", "model")
