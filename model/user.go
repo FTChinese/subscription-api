@@ -4,8 +4,8 @@ import (
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
-// findUser retrieves user's name and email to be used in an email.
-func (env Env) findUser(id string) (paywall.User, error) {
+// FindUser retrieves user's name and email to be used in an email.
+func (env Env) FindUser(id string) (paywall.User, error) {
 	query := `
 	SELECT user_id AS userId,
 		wx_union_id AS unionId,
@@ -37,7 +37,7 @@ func (env Env) SendConfirmationLetter(subs paywall.Subscription) error {
 		return nil
 	}
 	// 1. Find this user's personal data
-	user, err := env.findUser(subs.UserID)
+	user, err := env.FindUser(subs.UserID)
 
 	if err != nil {
 		return err
