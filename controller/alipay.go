@@ -31,7 +31,7 @@ const (
 type AliPayRouter struct {
 	appID  string
 	client *alipay.AliPay
-	model  model.Env
+	PayRouter
 }
 
 // NewAliRouter create a new instance of AliPayRouter
@@ -61,15 +61,18 @@ func NewAliRouter(db *sql.DB, c *cache.Cache) AliPayRouter {
 
 	client := alipay.New(appID, string(publicKey), string(privateKey), true)
 
-	return AliPayRouter{
+	r := AliPayRouter{
 		appID:  appID,
 		client: client,
-		model: model.Env{
-			DB:      db,
-			Cache:   c,
-			Postman: postoffice.NewPostman(host, port, user, pass),
-		},
 	}
+
+	r.model = model.Env{
+		DB:    db,
+		Cache: c,
+	}
+	r.postman = postoffice.NewPostman(host, port, user, pass)
+
+	return r
 }
 
 // AppOrder creates an alipay order for native app.
@@ -240,7 +243,7 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 		}
 	}
 
-	go router.model.SendConfirmationLetter(confirmedSubs)
+	go router.sendConfirmationEmail(confirmedSubs)
 
 	w.Write([]byte(success))
 }
