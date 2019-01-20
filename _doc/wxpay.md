@@ -12,9 +12,10 @@ Request server to create wxpay's unified order.
 
 `cycle` must be one of `year` or `month`.
 
-Request header must contain:
+Request header must contain `X-User-Id: <uuid>` if user logged in with FTC account or `X-Union-Id: <wechat union id>` if used logged in with Wechat OAuth. If an FTC account is already bound to a Wechat account, and user logged in via Wechat OAuth, you **MUST** always use `X-User-Id: <uuid>` and should never use `X-Union-Id`.
+
+Request header should also contain:
 ```
-X-User-Id: user-uuid
 X-Client-Type: <web|ios|android>
 X-Client-Version: <major.minor.patch>
 ```
@@ -80,66 +81,16 @@ All fields except `ftcOrderId` is required by https://pay.weixin.qq.com/wiki/doc
 
 ```json
 {
+    "ftcOrderId": "string",
+    "listPrice": 258,
+    "netPrice": 258,
     "appid": "wx app id",
     "partnerid": "wx mch id",
     "prepayid": "wx created prepay id",
     "package": "Sign=WXPay",
     "noncestr": "string",
     "timestamp": "unix timestamp",
-    "sign": "string",
-    "ftcOrderId": "custom field"
-}
-```
-
-## Wx Query Order
-
-    GET /wxpay/query/{orderId}
-
-### Response
-
-* `401 Unauthorized` if request header does not contain `X-User-Id`.
-
-* `400 Bad Request` if orderId is empty;
-
-* `404 Not Found` if the orderId is not found, or if this order's `appid` and `mchid` is not us.
-
-* `422 Unprocessable Entity`
-
-if wechat's `return_code` is `FAIL`:
-```json
-{
-    "message": "签名失败",
-    "error": {
-        "field": "return_code",
-        "code": "fail"
-    }
-}
-```
-
-if wechat's `result_code` is `FAIL`:
-```json
-{
-    "message": "系统错误",
-    "error": {
-        "field": "result_code",
-        "code": "fail"
-    }
-}
-```
-
-* `500 Internal Server Error` if errors occurred while contacting wechat server.
-
-* `200 OK`
-```json
-{
-    "openId": "string",
-    "tradeType": "APP",
-    "paymentState": "SUCCESS | REFUND | NOTPAY | CLOSED | REVOKED | USERPAYING | PAYERROR",
-    "totalFee": "in cent",
-    "transactionId": "string",
-    "ftcOrderId": "string",
-    "paidAt": "iso8601 time string",
-    "paymentStateDesc": "支付失败，请重新下单支付"
+    "sign": "string"
 }
 ```
 
@@ -165,31 +116,5 @@ Example wx notification data as described on https://pay.weixin.qq.com/wiki/doc/
     "appid":"***REMOVED***",
     "openid":"ob7fA0h69OO0sTLyQQpYc55iF_P0",
     "trade_type":"APP"
-}
-```
-
-Order query response:
-```json
-{
-    "return_msg":"OK",
-    "total_fee":1,
-    "fee_type":"CNY", 
-    "transaction_id":"4200000192201810276298895392",
-    "out_trade_no":"FT0059051540637408",
-    "mch_id":"1504993271",
-    "is_subscribe":"N",
-    "trade_state_desc":"支付成功",
-    "return_code":"SUCCESS",
-    "openid":"ob7fA0h69OO0sTLyQQpYc55iF_P0",
-    "trade_type":"APP",
-    "bank_type":"CFT",
-    "trade_state":"SUCCESS",
-    "time_end":"20181027185023",
-    "cash_fee":1,
-    "appid":"***REMOVED***",
-    "nonce_str":"iP1joB3m1zqDAzUL",
-    "sign":"2C5F0583127CE3D975DEC5EF2E4A8C45",
-    "result_code":"SUCCESS",
-    "attach":""
 }
 ```
