@@ -13,6 +13,7 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	cache "github.com/patrickmn/go-cache"
 	"github.com/smartwalle/alipay"
+	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -65,7 +66,7 @@ func NewAliRouter(db *sql.DB, c *cache.Cache, sandbox bool) AliPayRouter {
 		appID:  appID,
 		client: client,
 	}
-
+	r.sandbox = sandbox
 	r.model = model.New(db, c, sandbox)
 	r.postman = postoffice.NewPostman(host, port, user, pass)
 
@@ -138,7 +139,7 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp := subs.AliAppPayResp(values.Encode())
+	resp := ali.NewAppPayResp(subs, values.Encode())
 
 	view.Render(w, view.NewResponse().SetBody(resp))
 }

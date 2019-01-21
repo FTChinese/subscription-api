@@ -16,7 +16,6 @@ const (
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
 	sandbox bool
-	builder ParamBuilder
 	model   model.Env
 	postman postoffice.Postman
 }

@@ -43,7 +43,7 @@ func NewWxRouter(db *sql.DB, c *cache.Cache, sandbox bool) WxPayRouter {
 	r := WxPayRouter{
 		client: wechat.NewClient(appID, mchID, apiKey),
 	}
-	r.builder = ParamBuilder{sandbox: sandbox}
+	r.sandbox = sandbox
 	r.model = model.New(db, c, sandbox)
 	r.postman = postoffice.New(host, port, user, pass)
 
