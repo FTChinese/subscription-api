@@ -38,24 +38,8 @@ func (env Env) IsSubsAllowed(subs paywall.Subscription) (bool, error) {
 // At this moment, you should already know if this subscription is
 // a renewal of a new one, based on current Membership's expire_date.
 func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) error {
-	query := `
-	INSERT INTO premium.ftc_trade
-	SET trade_no = ?,
-		trade_price = ?,
-		trade_amount = ?,
-		user_id = ?,
-		login_method = ?,
-		tier_to_buy = ?,
-		billing_cycle = ?,
-		payment_method = ?,
-		is_renewal = ?,
-		created_utc = UTC_TIMESTAMP(),
-		client_type = ?,
-		client_version = ?,
-		user_ip_bin = INET6_ATON(?),
-		user_agent = ?`
 
-	_, err := env.DB.Exec(query,
+	_, err := env.DB.Exec(insertSubs,
 		s.OrderID,
 		s.ListPrice,
 		s.NetPrice,
@@ -72,7 +56,7 @@ func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) erro
 	)
 
 	if err != nil {
-		logger.WithField("location", "New subscription").Error(err)
+		logger.WithField("trace", "SaveSubscription").Error(err)
 		return err
 	}
 
@@ -83,7 +67,7 @@ func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) erro
 func (env Env) FindSubscription(orderID string) (paywall.Subscription, error) {
 
 	var s paywall.Subscription
-	err := env.DB.QueryRow(stmtSubs, orderID).Scan(
+	err := env.DB.QueryRow(selectSubs, orderID).Scan(
 		&s.UserID,
 		&s.OrderID,
 		&s.ListPrice,
@@ -119,7 +103,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	}
 
 	// Step 1: Find the subscription order by order id
-	errSubs := env.DB.QueryRow(stmtSubsLock, orderID).Scan(
+	errSubs := env.DB.QueryRow(selectSubsLock, orderID).Scan(
 		&subs.UserID,
 		&subs.OrderID,
 		&subs.ListPrice,
@@ -179,7 +163,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	logger.WithField("trace", "ConfirmPayment").Infof("Updated order: %+v", subs)
 
 	// Step 3: Confirm the the subscription order.
-	_, updateErr := tx.Exec(stmtUpdateSubs,
+	_, updateErr := tx.Exec(updateSubs,
 		subs.IsRenewal,
 		subs.ConfirmedAt,
 		subs.StartDate,
@@ -195,7 +179,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	}
 
 	// Step 4: Create or extend membership.
-	_, createErr := tx.Exec(stmtCreateMember,
+	_, createErr := tx.Exec(insertMember,
 		subs.UserID,
 		subs.GetUnionID(),
 		subs.TierToBuy,
