@@ -207,7 +207,7 @@ func TestFindDuration(t *testing.T) {
 
 	var dur paywall.Duration
 	err = devEnv.db.QueryRow(
-		subs.StmtMemberDuration(),
+		devEnv.stmtSelectExpLock(subs.IsWxLogin()),
 		subs.UserID,
 	).Scan(
 		&dur.Timestamp,

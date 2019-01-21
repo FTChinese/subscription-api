@@ -1,28 +1,14 @@
 package paywall
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/objcoding/wxpay"
-
-	"github.com/smartwalle/alipay"
 
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/ali"
-)
-
-const (
-	aliCallbackURL  = "http://www.ftacademy.cn/api/v1/callback/alipay"
-	sandboxAliCbURL = "http://www.ftacademy.cn/api/callback/alipay"
-	wxCallbackURL   = "http://www.ftacademy.cn/api/v1/callback/wxpay"
-	sandboxWxCbURL  = "http://www.ftacademy.cn/api/callback/wxpay"
-	aliProductCode  = "QUICK_MSECURITY_PAY"
 )
 
 // Subscription contains the details of a user's action to place an order.
@@ -94,46 +80,9 @@ func (s Subscription) AliNetPrice() string {
 	return strconv.FormatFloat(s.NetPrice, 'f', 2, 32)
 }
 
-// AliAppPayParam builds parameters for ali app pay based on current subscription order.
-func (s Subscription) AliAppPayParam(title string) alipay.AliPayParam {
-	p := alipay.AliPayTradeAppPay{}
-	p.NotifyURL = aliCallbackURL
-	p.Subject = title
-	p.OutTradeNo = s.OrderID
-	p.TotalAmount = s.AliNetPrice()
-	p.ProductCode = aliProductCode
-	p.GoodsType = "0"
-
-	return p
-}
-
-// AliAppPayResp builds the reponse for an app's request to pay by ali.
-func (s Subscription) AliAppPayResp(param string) ali.AppPayResp {
-	return ali.AppPayResp{
-		FtcOrderID: s.OrderID,
-		Price:      s.ListPrice,
-		ListPrice:  s.ListPrice,
-		NetPrice:   s.NetPrice,
-		Param:      param,
-	}
-}
-
 // WxNetPrice converts Charged price to int64 in cent for comparison with wx notification.
 func (s Subscription) WxNetPrice() int64 {
 	return int64(s.NetPrice * 100)
-}
-
-// WxUniOrderParam build the parameters to request for prepay id.
-func (s Subscription) WxUniOrderParam(title, ip string) wxpay.Params {
-	p := make(wxpay.Params)
-	p.SetString("body", title)
-	p.SetString("out_trade_no", s.OrderID)
-	p.SetInt64("total_fee", s.WxNetPrice())
-	p.SetString("spbill_create_ip", ip)
-	p.SetString("notify_url", wxCallbackURL)
-	p.SetString("trade_type", "APP")
-
-	return p
 }
 
 // IsWxChargeMatched tests if the order's charge matches the one from wechat response.
@@ -163,48 +112,6 @@ func (s Subscription) GetUnionID() null.String {
 	}
 
 	return null.String{}
-}
-
-// StmtMemberDuration Build SQL query of membership depending on the login method; otherwise you cannot be sure the WHERE clause.
-func (s Subscription) StmtMemberDuration() string {
-	var whereCol string
-	if s.IsWxLogin() {
-		whereCol = "vip_id_alias"
-	} else {
-		whereCol = "vip_id"
-	}
-
-	return fmt.Sprintf(`
-	SELECT expire_time AS expireTime,
-		expire_date AS expireDate
-	FROM premium.ftc_vip
-	WHERE %s = ?
-	LIMIT 1
-	FOR UPDATE`, whereCol)
-}
-
-// StmtMember build SQL query of membership based on login method.
-// Used to check if a subscription is allowed to subscribe.
-func (s Subscription) StmtMember() string {
-	var whereCol string
-
-	if s.IsWxLogin() {
-		whereCol = "vip_id_alias"
-	} else {
-		whereCol = "vip_id"
-	}
-
-	return fmt.Sprintf(`
-		SELECT vip_id AS userId,
-			vip_id_alias AS unionId,
-			vip_type AS vipType,
-			member_tier AS memberTier,
-			billing_cycle AS billingCyce,
-			expire_time AS expireTime,
-			expire_date AS expireDate
-		FROM premium.ftc_vip
-		WHERE %s = ?
-		LIMIT 1`, whereCol)
 }
 
 // ConfirmWithDuration populate a subscripiton's ConfirmedAt, StartDate, EndDate and IsRenewal based on a user's current membership duration.

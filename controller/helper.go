@@ -14,10 +14,9 @@ import (
 var logger = log.WithField("package", "controller")
 
 const (
-	msgInvalidURI  = "Invalid request URI"
-	wxNotifyURL    = "http://www.ftacademy.cn/api/v1/callback/wxpay"
-	aliNotifyURL   = "http://www.ftacademy.cn/api/v1/callback/alipay"
-	aliProductCode = "QUICK_MSECURITY_PAY"
+	msgInvalidURI = "Invalid request URI"
+	wxNotifyURL   = "http://www.ftacademy.cn/api/v1/callback/wxpay"
+	aliNotifyURL  = "http://www.ftacademy.cn/api/v1/callback/alipay"
 )
 
 type paramValue string
