@@ -126,7 +126,7 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	param := subs.AliAppPayParam(plan.Description)
+	param := router.aliAppPayParam(plan.Description, subs)
 
 	// Call URLValues to generate alipay required data structure and sign it.
 	values, err := router.client.URLValues(param)

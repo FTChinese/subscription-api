@@ -43,6 +43,7 @@ func NewWxRouter(db *sql.DB, c *cache.Cache, sandbox bool) WxPayRouter {
 	r := WxPayRouter{
 		client: wechat.NewClient(appID, mchID, apiKey),
 	}
+	r.builder = ParamBuilder{sandbox: sandbox}
 	r.model = model.New(db, c, sandbox)
 	r.postman = postoffice.New(host, port, user, pass)
 
@@ -107,7 +108,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Build Wechat pay parameters.
-	param := subs.WxUniOrderParam(plan.Description, app.UserIP)
+	param := router.wxUniOrderParam(plan.Description, app.UserIP, subs)
 
 	logger.WithField("trace", "UnifiedOrder").Infof("Unifed order params: %+v", param)
 
@@ -133,9 +134,11 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	prepay := router.client.BuildPrepay(resp.GetString("prepay_id"), subs)
+	prepay := router.client.NewPrepay(resp.GetString("prepay_id"), subs)
 
-	view.Render(w, view.NewResponse().SetBody(prepay))
+	sign := router.client.Sign(prepay.Param())
+
+	view.Render(w, view.NewResponse().SetBody(prepay.WithHash(sign)))
 }
 
 // Notification implements 支付结果通知

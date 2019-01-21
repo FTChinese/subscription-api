@@ -3,23 +3,6 @@ package model
 import "fmt"
 
 const (
-	// Statement to create a new subscription order.
-	insertSubs = `
-	INSERT INTO %s.ftc_trade
-	SET trade_no = ?,
-		trade_price = ?,
-		trade_amount = ?,
-		user_id = ?,
-		login_method = ?,
-		tier_to_buy = ?,
-		billing_cycle = ?,
-		payment_method = ?,
-		is_renewal = ?,
-		created_utc = UTC_TIMESTAMP(),
-		client_type = ?,
-		client_version = ?,
-		user_ip_bin = INET6_ATON(?),
-		user_agent = ?`
 
 	// Statement to select a row from ftc_trade table.
 	selectSubs = `
@@ -40,19 +23,51 @@ const (
 	// Statement to select a row from ftc_trade table used in a transaction, for row-level table locking.
 	selectSubsLock = selectSubs + `
 	FOR UPDATE`
+)
 
-	// Statement to update a subscription order after received notification from payment provider.
-	updateSubs = `
+// Statement to create a new subscription order.
+func (env Env) stmtInsertSubs() string {
+	return fmt.Sprintf(`
+	INSERT INTO %s.ftc_trade
+	SET trade_no = ?,
+		trade_price = ?,
+		trade_amount = ?,
+		user_id = ?,
+		login_method = ?,
+		tier_to_buy = ?,
+		billing_cycle = ?,
+		payment_method = ?,
+		is_renewal = ?,
+		created_utc = UTC_TIMESTAMP(),
+		client_type = ?,
+		client_version = ?,
+		user_ip_bin = INET6_ATON(?),
+		user_agent = ?`, env.memberTable)
+}
+
+func (env Env) stmtSelectSubs() string {
+	return fmt.Sprintf(selectSubs, env.memberTable)
+}
+
+func (env Env) stmtSelectSubsLock() string {
+	return fmt.Sprintf(selectSubsLock, env.memberTable)
+}
+
+// Statement to update a subscription order after received notification from payment provider.
+func (env Env) stmtUpdateSubs() string {
+	return fmt.Sprintf(`
 	UPDATE %s.ftc_trade
 	SET is_renewal = ?,
 		confirmed_utc = ?,
 		start_date = ?,
 		end_date = ?
 	WHERE trade_no = ?
-	LIMIT 1`
+	LIMIT 1`, env.memberTable)
+}
 
-	// Statement to insert a new member or update an existing one after subscription order is confirmed.
-	insertMember = `
+// Statement to insert a new member or update an existing one after subscription order is confirmed.
+func (env Env) stmtInsertMember() string {
+	return fmt.Sprintf(`
 	INSERT INTO %s.ftc_vip
 	SET vip_id = ?,
 		vip_id_alias = ?,
@@ -62,11 +77,11 @@ const (
 	ON DUPLICATE KEY UPDATE
 		member_tier = ?,
 		billing_cycle = ?,
-		expire_date = ?`
-)
+		expire_date = ?`, env.memberTable)
+}
 
 // Build statement select a row from ftc_vip by different criteria depending on whether user is logged-in with Wechat or not.
-func selectDuration(table string, isWxLogin bool) string {
+func (env Env) stmtSelectExpLock(isWxLogin bool) string {
 	whereCol := "vip_id"
 
 	if isWxLogin {
@@ -79,11 +94,11 @@ func selectDuration(table string, isWxLogin bool) string {
 	FROM %s.ftc_vip
 	WHERE %s = ?
 	LIMIT 1
-	FOR UPDATE`, table, whereCol)
+	FOR UPDATE`, env.memberTable, whereCol)
 }
 
 // Save as the above one, with more data retrieved.
-func selectMember(table string, isWxLogin bool) string {
+func (env Env) stmtSelectMember(isWxLogin bool) string {
 	whereCol := "vip_id"
 
 	if isWxLogin {
@@ -100,5 +115,5 @@ func selectMember(table string, isWxLogin bool) string {
 		expire_date AS expireDate
 	FROM %s.ftc_vip
 	WHERE %s = ?
-	LIMIT 1`, table, whereCol)
+	LIMIT 1`, env.memberTable, whereCol)
 }
