@@ -206,7 +206,7 @@ func TestFindDuration(t *testing.T) {
 	t.Logf("Subscription: %+v\n", subs)
 
 	var dur paywall.Duration
-	err = devEnv.DB.QueryRow(
+	err = devEnv.db.QueryRow(
 		subs.StmtMemberDuration(),
 		subs.UserID,
 	).Scan(

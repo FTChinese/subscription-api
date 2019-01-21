@@ -19,7 +19,7 @@ func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {
 		trade_type = ?,
 		prepay_id = ?`
 
-	_, err := env.DB.Exec(query,
+	_, err := env.db.Exec(query,
 		orderID,
 		p.StatusCode,
 		p.StatusMessage,
@@ -64,7 +64,7 @@ func (env Env) SaveWxNotification(n wechat.Notification) error {
 		ftc_order_id = ?,
 		time_end = ?`
 
-	_, err := env.DB.Exec(query,
+	_, err := env.db.Exec(query,
 		n.StatusCode,
 		n.StatusMessage,
 		n.AppID,

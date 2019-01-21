@@ -35,7 +35,7 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(db *sql.DB, c *cache.Cache) AliPayRouter {
+func NewAliRouter(db *sql.DB, c *cache.Cache, sandbox bool) AliPayRouter {
 	appID := os.Getenv("ALIPAY_APP_ID")
 
 	host := os.Getenv("HANQI_SMTP_HOST")
@@ -66,10 +66,7 @@ func NewAliRouter(db *sql.DB, c *cache.Cache) AliPayRouter {
 		client: client,
 	}
 
-	r.model = model.Env{
-		DB:    db,
-		Cache: c,
-	}
+	r.model = model.New(db, c, sandbox)
 	r.postman = postoffice.NewPostman(host, port, user, pass)
 
 	return r

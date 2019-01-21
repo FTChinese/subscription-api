@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var logger = log.WithField("package", "subscription-api.controller")
+var logger = log.WithField("package", "controller")
 
 const (
 	msgInvalidURI  = "Invalid request URI"

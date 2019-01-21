@@ -28,11 +28,8 @@ type WxAuthRouter struct {
 func NewWxAuth(db *sql.DB, c *cache.Cache) WxAuthRouter {
 
 	return WxAuthRouter{
-		apps: wxlogin.Apps,
-		model: model.Env{
-			DB:    db,
-			Cache: c,
-		},
+		apps:  wxlogin.Apps,
+		model: model.New(db, c, false),
 	}
 }
 

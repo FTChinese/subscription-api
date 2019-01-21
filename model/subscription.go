@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	gorest "github.com/FTChinese/go-rest"
@@ -39,7 +40,10 @@ func (env Env) IsSubsAllowed(subs paywall.Subscription) (bool, error) {
 // a renewal of a new one, based on current Membership's expire_date.
 func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) error {
 
-	_, err := env.DB.Exec(insertSubs,
+	query := fmt.Sprintf(insertSubs, env.memberTable)
+
+	_, err := env.db.Exec(
+		query,
 		s.OrderID,
 		s.ListPrice,
 		s.NetPrice,
@@ -66,8 +70,13 @@ func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) erro
 // FindSubscription tries to find an order to verify the authenticity of a subscription order.
 func (env Env) FindSubscription(orderID string) (paywall.Subscription, error) {
 
+	query := fmt.Sprintf(selectSubs, env.memberTable)
+
 	var s paywall.Subscription
-	err := env.DB.QueryRow(selectSubs, orderID).Scan(
+	err := env.db.QueryRow(
+		query,
+		orderID,
+	).Scan(
 		&s.UserID,
 		&s.OrderID,
 		&s.ListPrice,
@@ -96,14 +105,17 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	var subs paywall.Subscription
 
-	tx, err := env.DB.Begin()
+	tx, err := env.db.Begin()
 	if err != nil {
 		logger.WithField("trace", "ConfirmPayment").Error(err)
 		return subs, err
 	}
 
 	// Step 1: Find the subscription order by order id
-	errSubs := env.DB.QueryRow(selectSubsLock, orderID).Scan(
+	errSubs := env.db.QueryRow(
+		fmt.Sprintf(selectSubsLock, env.memberTable),
+		orderID,
+	).Scan(
 		&subs.UserID,
 		&subs.OrderID,
 		&subs.ListPrice,
@@ -139,8 +151,8 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// Step 2: query membership expiration time to determine the order's start date, and then user start date to calculate end date.
 	var dur paywall.Duration
-	errDur := env.DB.QueryRow(
-		subs.StmtMemberDuration(),
+	errDur := env.db.QueryRow(
+		selectDuration(env.memberTable, subs.IsWxLogin()),
 		subs.UserID,
 	).Scan(
 		&dur.Timestamp,
@@ -162,8 +174,9 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	logger.WithField("trace", "ConfirmPayment").Infof("Updated order: %+v", subs)
 
-	// Step 3: Confirm the the subscription order.
-	_, updateErr := tx.Exec(updateSubs,
+	// Step 3: Update subscription order with confirmation time, membership start date and end date.
+	_, updateErr := tx.Exec(
+		fmt.Sprintf(updateSubs, env.memberTable),
 		subs.IsRenewal,
 		subs.ConfirmedAt,
 		subs.StartDate,
@@ -178,8 +191,9 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		logger.WithField("trace", "ConfirmPayment").Error(updateErr)
 	}
 
-	// Step 4: Create or extend membership.
-	_, createErr := tx.Exec(insertMember,
+	// Step 4: Insert a membership or update it in case of duplicacy.
+	_, createErr := tx.Exec(
+		fmt.Sprintf(insertMember, env.memberTable),
 		subs.UserID,
 		subs.GetUnionID(),
 		subs.TierToBuy,
