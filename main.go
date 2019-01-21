@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/FTChinese/go-rest/view"
 	cache "github.com/patrickmn/go-cache"
 
 	"github.com/go-chi/chi"
@@ -17,13 +18,13 @@ import (
 )
 
 var (
-	isProd  bool
+	sandbox bool
 	version string
 	build   string
 )
 
 func init() {
-	flag.BoolVar(&isProd, "production", false, "Indicate productions environment if present")
+	flag.BoolVar(&sandbox, "sandbox", false, "Indicate production environment if present")
 	var v = flag.Bool("v", false, "print current version")
 
 	flag.Parse()
@@ -36,33 +37,35 @@ func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
 
-	log.WithField("package", "subscription-api.main").Infof("Is production: %t", isProd)
+	log.WithField("project", "subscription-api").Infof("Is sandbox: %t", sandbox)
 
 	// NOTE: godotenv load .env file from current working directory, not where the program is located.
 	err := godotenv.Load()
 	if err != nil {
-		log.WithField("package", "subscription-api.main").Error(err)
+		log.Error(err)
 		os.Exit(1)
 	}
 }
 func main() {
+	logger := log.WithField("project", "subscription-api").WithField("package", "main")
+
 	host := os.Getenv("MYSQL_HOST")
 	port := os.Getenv("MYSQL_PORT")
 	user := os.Getenv("MYSQL_USER")
 	pass := os.Getenv("MYSQL_PASS")
 
-	log.WithField("package", "subscription-api.main").Infof("Connecting to MySQL: %s", host)
+	logger.Infof("Connecting to MySQL: %s", host)
 
 	db, err := util.NewDB(host, port, user, pass)
 	if err != nil {
-		log.WithField("package", "subscription-api.main").Error(err)
+		logger.WithField("trace", "main").Error(err)
 		os.Exit(1)
 	}
 
 	c := cache.New(cache.DefaultExpiration, 0)
 
-	wxRouter := controller.NewWxRouter(db, c)
-	aliRouter := controller.NewAliRouter(db, c)
+	wxRouter := controller.NewWxRouter(db, c, sandbox)
+	aliRouter := controller.NewAliRouter(db, c, sandbox)
 	paywallRouter := controller.NewPaywallRouter(db, c)
 
 	wxAuth := controller.NewWxAuth(db, c)
@@ -70,15 +73,10 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	if !isProd {
-		r.Use(controller.LogRequest)
-	}
-
-	// r.Use(controller.CheckUserID)
-
+	r.Use(controller.LogRequest)
 	r.Use(controller.NoCache)
 
-	r.Get("/__version", controller.Version(version, build))
+	r.Get("/__version", status)
 	// Inspect what pricing plans are in effect.
 	r.Get("/__refresh", paywallRouter.RefreshPromo)
 
@@ -130,6 +128,20 @@ func main() {
 		})
 	})
 
-	log.WithField("package", "subscription-api.main").Infof("subscription-api is running on port 8200")
+	logger.WithField("trace", "main").Infof("subscription-api is running on port 8200")
 	log.Fatal(http.ListenAndServe(":8200", r))
+}
+
+func status(w http.ResponseWriter, req *http.Request) {
+
+	data := struct {
+		Version string `json:"version"`
+		Build   string `json:"build"`
+		Sandbox bool   `json:"sandbox"`
+	}{
+		Version: version,
+		Build:   build,
+	}
+
+	view.Render(w, view.NewResponse().NoCache().SetBody(data))
 }
