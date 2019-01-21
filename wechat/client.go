@@ -96,21 +96,13 @@ func (c Client) ValidateResponse(params wxpay.Params) *view.Reason {
 	return nil
 }
 
-// BuildPrepay for client.
-func (c Client) BuildPrepay(prepayID string, subs paywall.Subscription) Prepay {
+// NewPrepay creates a new Prepay instance from client appID, mchID,
+// prepayID and subscription id and price.
+// Signature required by wechat is not calculated at this point.
+func (c Client) NewPrepay(prepayID string, subs paywall.Subscription) Prepay {
 	nonce, _ := gorest.RandomHex(10)
 	pkg := "Sign=WXPay"
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
-
-	p := make(wxpay.Params)
-	p["appid"] = c.appID
-	p["partnerid"] = c.mchID
-	p["prepayid"] = prepayID
-	p["package"] = pkg
-	p["noncestr"] = nonce
-	p["timestamp"] = timestamp
-
-	h := c.Sign(p)
 
 	return Prepay{
 		FtcOrderID: subs.OrderID,
@@ -123,7 +115,6 @@ func (c Client) BuildPrepay(prepayID string, subs paywall.Subscription) Prepay {
 		Package:    pkg,
 		Nonce:      nonce,
 		Timestamp:  timestamp,
-		Signature:  h,
 	}
 }
 
