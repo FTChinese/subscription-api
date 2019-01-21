@@ -18,9 +18,11 @@ import (
 )
 
 const (
-	aliCallbackURL = "http://www.ftacademy.cn/api/v1/callback/alipay"
-	wxCallbackURL  = "http://www.ftacademy.cn/api/v1/callback/wxpay"
-	aliProductCode = "QUICK_MSECURITY_PAY"
+	aliCallbackURL  = "http://www.ftacademy.cn/api/v1/callback/alipay"
+	sandboxAliCbURL = "http://www.ftacademy.cn/api/callback/alipay"
+	wxCallbackURL   = "http://www.ftacademy.cn/api/v1/callback/wxpay"
+	sandboxWxCbURL  = "http://www.ftacademy.cn/api/callback/wxpay"
+	aliProductCode  = "QUICK_MSECURITY_PAY"
 )
 
 // Subscription contains the details of a user's action to place an order.
@@ -173,15 +175,16 @@ func (s Subscription) StmtMemberDuration() string {
 	}
 
 	return fmt.Sprintf(`
-		SELECT expire_time AS expireTime,
-			expire_date AS expireDate
-		FROM premium.ftc_vip
-		WHERE %s = ?
-		LIMIT 1
-		FOR UPDATE`, whereCol)
+	SELECT expire_time AS expireTime,
+		expire_date AS expireDate
+	FROM premium.ftc_vip
+	WHERE %s = ?
+	LIMIT 1
+	FOR UPDATE`, whereCol)
 }
 
 // StmtMember build SQL query of membership based on login method.
+// Used to check if a subscription is allowed to subscribe.
 func (s Subscription) StmtMember() string {
 	var whereCol string
 

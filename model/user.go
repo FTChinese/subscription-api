@@ -15,7 +15,7 @@ func (env Env) FindUser(id string) (paywall.User, error) {
 	WHERE user_id = ?`
 
 	var u paywall.User
-	err := env.DB.QueryRow(query, id).Scan(
+	err := env.db.QueryRow(query, id).Scan(
 		&u.UserID,
 		&u.UnionID,
 		&u.UserName,

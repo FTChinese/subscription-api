@@ -61,8 +61,8 @@ func newDevEnv() Env {
 	}
 
 	return Env{
-		DB:    db,
-		Cache: cache.New(cache.DefaultExpiration, 0),
+		db:    db,
+		cache: cache.New(cache.DefaultExpiration, 0),
 	}
 }
 
@@ -218,7 +218,7 @@ func (m mocker) createUser() (paywall.User, error) {
 		password = MD5(?),
 		user_name = ?`
 
-	_, err := devEnv.DB.Exec(query,
+	_, err := devEnv.db.Exec(query,
 		user.UserID,
 		user.Email,
 		m.password,
