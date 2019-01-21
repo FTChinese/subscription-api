@@ -35,7 +35,7 @@ func (env Env) RetrievePromo() (paywall.Promotion, error) {
 	var plans string
 	var banner string
 
-	err := env.DB.QueryRow(query).Scan(
+	err := env.db.QueryRow(query).Scan(
 		&p.StartUTC,
 		&p.EndUTC,
 		&plans,
@@ -67,12 +67,12 @@ func (env Env) RetrievePromo() (paywall.Promotion, error) {
 }
 
 func (env Env) cachePromo(p paywall.Promotion) {
-	env.Cache.Set(keyPromo, p, cache.NoExpiration)
+	env.cache.Set(keyPromo, p, cache.NoExpiration)
 }
 
 // LoadCachedPromo gets promo from cache.
 func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
-	x, found := env.Cache.Get(keyPromo)
+	x, found := env.cache.Get(keyPromo)
 
 	if !found {
 		return paywall.Promotion{}, false
@@ -89,6 +89,10 @@ func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
 
 // GetCurrentPricing get current effective pricing plans.
 func (env Env) GetCurrentPricing() paywall.Pricing {
+	if env.sandbox {
+		return paywall.GetSandboxPricing()
+	}
+
 	promo, found := env.LoadCachedPromo()
 	if !found {
 		logger.WithField("trace", "GetCurrentPricing").Info("Promo not found. Use default plans")

@@ -2,10 +2,9 @@ package model
 
 import "fmt"
 
-var memberTable = "premium"
-
-var (
-	insertSubs = fmt.Sprintf(`
+const (
+	// Statement to create a new subscription order.
+	insertSubs = `
 	INSERT INTO %s.ftc_trade
 	SET trade_no = ?,
 		trade_price = ?,
@@ -20,9 +19,10 @@ var (
 		client_type = ?,
 		client_version = ?,
 		user_ip_bin = INET6_ATON(?),
-		user_agent = ?`, memberTable)
+		user_agent = ?`
 
-	selectSubs = fmt.Sprintf(`
+	// Statement to select a row from ftc_trade table.
+	selectSubs = `
 	SELECT user_id AS userId,
 		trade_no AS orderId,
 		trade_price AS price,
@@ -35,21 +35,24 @@ var (
 		confirmed_utc AS confirmedAt
 	FROM %s.ftc_trade
 	WHERE trade_no = ?
-	LIMIT 1`, memberTable)
+	LIMIT 1`
 
-	selectSubsLock = fmt.Sprintf(`%s
-	FOR UPDATE`, selectSubs)
+	// Statement to select a row from ftc_trade table used in a transaction, for row-level table locking.
+	selectSubsLock = selectSubs + `
+	FOR UPDATE`
 
-	updateSubs = fmt.Sprintf(`
+	// Statement to update a subscription order after received notification from payment provider.
+	updateSubs = `
 	UPDATE %s.ftc_trade
 	SET is_renewal = ?,
 		confirmed_utc = ?,
 		start_date = ?,
 		end_date = ?
 	WHERE trade_no = ?
-	LIMIT 1`, memberTable)
+	LIMIT 1`
 
-	insertMember = fmt.Sprintf(`
+	// Statement to insert a new member or update an existing one after subscription order is confirmed.
+	insertMember = `
 	INSERT INTO %s.ftc_vip
 	SET vip_id = ?,
 		vip_id_alias = ?,
@@ -59,5 +62,43 @@ var (
 	ON DUPLICATE KEY UPDATE
 		member_tier = ?,
 		billing_cycle = ?,
-		expire_date = ?`, memberTable)
+		expire_date = ?`
 )
+
+// Build statement select a row from ftc_vip by different criteria depending on whether user is logged-in with Wechat or not.
+func selectDuration(table string, isWxLogin bool) string {
+	whereCol := "vip_id"
+
+	if isWxLogin {
+		whereCol = "vip_id_alias"
+	}
+
+	return fmt.Sprintf(`
+	SELECT expire_time AS expireTime,
+		expire_date AS expireDate
+	FROM %s.ftc_vip
+	WHERE %s = ?
+	LIMIT 1
+	FOR UPDATE`, table, whereCol)
+}
+
+// Save as the above one, with more data retrieved.
+func selectMember(table string, isWxLogin bool) string {
+	whereCol := "vip_id"
+
+	if isWxLogin {
+		whereCol = "vip_id_alias"
+	}
+
+	return fmt.Sprintf(`
+	SELECT vip_id AS userId,
+		vip_id_alias AS unionId,
+		vip_type AS vipType,
+		member_tier AS memberTier,
+		billing_cycle AS billingCyce,
+		expire_time AS expireTime,
+		expire_date AS expireDate
+	FROM %s.ftc_vip
+	WHERE %s = ?
+	LIMIT 1`, table, whereCol)
+}

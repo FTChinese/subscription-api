@@ -38,7 +38,7 @@ func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
 		passback_param = NULLIF(?, ''),
 		voucher_detail_list = NULLIF(?, '')`
 
-	_, err := env.DB.Exec(query,
+	_, err := env.db.Exec(query,
 		n.NotifyTime,
 		n.NotifyType,
 		n.NotifyId,

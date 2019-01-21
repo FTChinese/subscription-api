@@ -11,11 +11,30 @@ import (
 
 // Env wraps database connection
 type Env struct {
-	DB    *sql.DB
-	Cache *cache.Cache
+	sandbox     bool
+	memberTable string
+	db          *sql.DB
+	cache       *cache.Cache
 }
 
-var logger = log.WithField("project", "subscription-api").WithField("package", "model")
+// New creates a new instance of Env.
+// `sandbox` is used to determine which table to write subscription data.
+func New(db *sql.DB, c *cache.Cache, sandbox bool) Env {
+	table := "premium"
+	if sandbox {
+		table = "sandbox"
+	}
+	return Env{
+		sandbox:     sandbox,
+		memberTable: table,
+		db:          db,
+		cache:       c,
+	}
+}
+
+var logger = log.
+	WithField("project", "subscription-api").
+	WithField("package", "model")
 
 const (
 	keySchedule = "discountSchedule"

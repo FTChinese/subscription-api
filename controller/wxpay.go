@@ -20,14 +20,13 @@ import (
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
 type WxPayRouter struct {
-	client wechat.Client
-	// model   model.Env
-	// postman postoffice.Postman
+	sandbox bool
+	client  wechat.Client
 	PayRouter
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(db *sql.DB, c *cache.Cache) WxPayRouter {
+func NewWxRouter(db *sql.DB, c *cache.Cache, sandbox bool) WxPayRouter {
 	appID := os.Getenv("WXPAY_APPID")
 	mchID := os.Getenv("WXPAY_MCHID")
 	apiKey := os.Getenv("WXPAY_API_KEY")
@@ -44,10 +43,7 @@ func NewWxRouter(db *sql.DB, c *cache.Cache) WxPayRouter {
 	r := WxPayRouter{
 		client: wechat.NewClient(appID, mchID, apiKey),
 	}
-	r.model = model.Env{
-		DB:    db,
-		Cache: c,
-	}
+	r.model = model.New(db, c, sandbox)
 	r.postman = postoffice.New(host, port, user, pass)
 
 	return r
@@ -55,34 +51,6 @@ func NewWxRouter(db *sql.DB, c *cache.Cache) WxPayRouter {
 
 // UnifiedOrder implements 统一下单.
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_1
-//
-// Workflow
-//
-// 1. First extract userID from request header;
-//
-// 2. Use this userID to retrieve this user's membership from `premium.ftc_vip` table;
-//
-// 3. If the membership is not found, proceed to order creation;
-//
-// 4. If the membership is found, compare the membership's expiration date:
-// If the difference between now and expire_time is less than billing_cycle, then the user is allowed to subscribe to next billing cycle;
-// If the difference between now and expire_time is greater than billing_cycle, it means user has already pre-subscribed to next billing cycle, refuse this request.
-//
-// 5. Generate order.
-//
-// After order is confirmed by payment providers:
-//
-// 1. Use response message to find order, and then find the userID;
-//
-// 2. Try to find if membership for this userID exists;
-//
-// 3. If not exists, this is a new subscription, simply add a new record with start_utc and expire_utc columns set to current time and current time + billing cycle respectively;
-//
-// 4. If the membership already exists, then check whether expire_utc is before now;
-//
-// 5. If the expire_utc is before now, it means this user's membership has already expired, he is re-subscribing now, so treat it as a new subscription: update member_tier, billing_cycle, start_utc and expire_utc;
-//
-// 6. If the expire_utc is after now, it means this user is renewing subscription, the expire_utc should be the the current value + next billing cycle. `start_utc` remain unchanged.
 func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
 	// Get member tier and billing cycle from url
 	tierKey := getURLParam(req, "tier").toString()
@@ -138,7 +106,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// Prepare to send wx unified order.
+	// Build Wechat pay parameters.
 	param := subs.WxUniOrderParam(plan.Description, app.UserIP)
 
 	logger.WithField("trace", "UnifiedOrder").Infof("Unifed order params: %+v", param)

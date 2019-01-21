@@ -26,7 +26,7 @@ func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c gorest.Clie
 		created_utc = ?,
 		updated_utc = ?`
 
-	_, err := env.DB.Exec(query,
+	_, err := env.db.Exec(query,
 		acc.SessionID,
 		appID,
 		acc.AccessToken,
@@ -72,7 +72,7 @@ func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error
 	LIMIT 1`
 
 	var acc wxlogin.OAuthAccess
-	err := env.DB.QueryRow(query, sessionID, appID).Scan(
+	err := env.db.QueryRow(query, sessionID, appID).Scan(
 		&acc.AccessToken,
 		&acc.ExpiresIn,
 		&acc.RefreshToken,
@@ -99,7 +99,7 @@ func (env Env) UpdateWxAccess(sessionID, accessToken string) error {
 	WHERE session_id = UNHEX(?)
 	LIMIT 1`
 
-	_, err := env.DB.Exec(query,
+	_, err := env.db.Exec(query,
 		accessToken,
 		sessionID,
 	)
@@ -136,7 +136,7 @@ func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
 
 	prvlg := strings.Join(u.Privileges, ",")
 
-	_, err := env.DB.Exec(query,
+	_, err := env.db.Exec(query,
 		u.UnionID,
 		u.NickName,
 		u.AvatarURL,
@@ -177,7 +177,7 @@ func (env Env) UpdateWxUser(u wxlogin.UserInfo) error {
 
 	prvl := strings.Join(u.Privileges, ",")
 
-	_, err := env.DB.Exec(query,
+	_, err := env.db.Exec(query,
 		u.NickName,
 		u.GetGender(),
 		u.Country,
@@ -204,7 +204,7 @@ func (env Env) SaveWxStatus(code int64, message string) error {
 		message = ?,
 		created_utc = UTC_TIMESTAMP()`
 
-	_, err := env.DB.Exec(query,
+	_, err := env.db.Exec(query,
 		code,
 		message,
 	)
