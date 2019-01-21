@@ -5,9 +5,7 @@ VERSION := `git describe --tags`
 BUILD := `date +%FT%T%z`
 COMMIT := `git log --max-count=1 --pretty=format:%aI_%h`
 
-LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD} -X main.lastCommit=${COMMIT}"
-
-SANDBOX_FLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD} -X main.lastCommit=${COMMIT} -X gitlab.com/ftchinese/subscription-api/model.memberTable=sandbox"
+LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD}"
 
 .PHONY: build run linux deploy cofig clean
 build :
@@ -17,10 +15,7 @@ run :
 	./$(build_dir)/mac/${BINARY}
 
 sandbox :
-	go build $(SANDBOX_FLAGS) -o $(build_dir)/sandbox/$(BINARY) -v .
-
-runsandbox :
-	./$(build_dir)/sandbox/$(BINARY)
+	./$(build_dir)/mac/$(BINARY) -sandbox
 
 deploy : linux
 	rsync -v $(build_dir)/linux/$(BINARY) nodeserver:/home/node/go/bin/
