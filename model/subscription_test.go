@@ -1,235 +1,279 @@
 package model
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
-	"github.com/FTChinese/go-rest/enum"
+	gorest "github.com/FTChinese/go-rest"
+	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
-func TestCreateUser(t *testing.T) {
+func TestSaveMembership(t *testing.T) {
 	m := newMocker()
+	mm := m.member()
+	t.Logf("Membershp: %+v\n", mm)
 
-	user, err := m.createUser()
+	err := saveMembership(mm)
 	if err != nil {
 		t.Error(err)
-		return
 	}
+}
+func TestEnv_IsSubsAllowed(t *testing.T) {
+	// A membership that can be renewed.
+	m1 := newMocker()
+	mm1 := m1.createMember()
+	t.Logf("Membership: %+v\n", mm1)
 
-	t.Logf("Created user: %+v\n", user)
+	// A membership that's not allowed to renew.
+	m2 := newMocker()
+	mm2 := m2.withExpireDate(time.Now().AddDate(2, 0, 0)).createMember()
+	t.Logf("Membership: %+v\n", mm2)
+
+	// A membership that is expired
+	m3 := newMocker()
+	mm3 := m3.withExpireDate(time.Now().AddDate(0, -1, 0)).createMember()
+	t.Logf("Membership: %+v\n", mm3)
+
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
+	}
+	type args struct {
+		subs paywall.Subscription
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name:    "Allow New Subscription",
+			fields:  fields{db: db, cache: devCache},
+			args:    args{subs: newMocker().wxpaySubs()},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:    "Member in Allowed Renewal Period",
+			fields:  fields{db: db, cache: devCache},
+			args:    args{subs: m1.wxpaySubs()},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:    "Member beyond Allowed Renwal Period",
+			fields:  fields{db: db, cache: devCache},
+			args:    args{subs: m2.wxpaySubs()},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name:    "Expired Member Is Allowed to Renew",
+			fields:  fields{db: db, cache: devCache},
+			args:    args{subs: m3.wxpaySubs()},
+			want:    true,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			got, err := env.IsSubsAllowed(tt.args.subs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Env.IsSubsAllowed() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Env.IsSubsAllowed() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
-func TestNewSubs(t *testing.T) {
+func TestEnv_SaveSubscription(t *testing.T) {
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
+	}
+	type args struct {
+		s paywall.Subscription
+		c gorest.ClientApp
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "Wxpay Subscription with Email Login",
+			fields: fields{db: db},
+			args: args{
+				s: newMocker().wxpaySubs(),
+				c: clientApp(),
+			},
+		},
+		{
+			name:   "Wxpay Subscription with Wechat Login",
+			fields: fields{db: db},
+			args: args{
+				s: newMocker().withWxLogin().wxpaySubs(),
+				c: clientApp(),
+			},
+		},
+		{
+			name:   "Alipay Subscription with Email Login",
+			fields: fields{db: db},
+			args: args{
+				s: newMocker().alipaySubs(),
+				c: clientApp(),
+			},
+		},
+		{
+			name:   "Alipay Subscription with Wechat Login",
+			fields: fields{db: db},
+			args: args{
+				s: newMocker().withWxLogin().alipaySubs(),
+				c: clientApp(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			if err := env.SaveSubscription(tt.args.s, tt.args.c); (err != nil) != tt.wantErr {
+				t.Errorf("Env.SaveSubscription() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnv_FindSubscription(t *testing.T) {
 	m := newMocker()
-	wxSubs := m.wxpaySubs()
-	t.Logf("Wxpay subscription with email login: %+v\n", wxSubs)
+	subs := m.createWxpaySubs()
 
-	aliSubs := m.alipaySubs()
-	t.Logf("Alipay subscription with email login: %+v\n", aliSubs)
+	subs2 := m.withWxLogin().createWxpaySubs()
 
-	m = m.withWxLogin()
-	wxSubs = m.wxpaySubs()
-	t.Logf("Wxpay subscription with wechat login: %+v\n", wxSubs)
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
+	}
+	type args struct {
+		orderID string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		// want    paywall.Subscription
+		wantErr bool
+	}{
+		{
+			name:    "Find Subscription with Email Login",
+			fields:  fields{db: db},
+			args:    args{orderID: subs.OrderID},
+			wantErr: false,
+		},
+		{
+			name:    "Find Subscription with Wechat Login",
+			fields:  fields{db: db},
+			args:    args{orderID: subs2.OrderID},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			got, err := env.FindSubscription(tt.args.orderID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Env.FindSubscription() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 
-	aliSubs = m.alipaySubs()
-	t.Logf("Alipay subscription with wechat login: %+v\n", aliSubs)
+			t.Logf("%+v\n", got)
+			// Comparsion is useless.
+			// if !reflect.DeepEqual(got, tt.want) {
+			// 	t.Errorf("Env.FindSubscription() = %v, want %v", got, tt.want)
+			// }
+		})
+	}
 }
 
-func TestIsSubsAllowed(t *testing.T) {
+func TestEnv_ConfirmPayment(t *testing.T) {
 	m := newMocker()
+	subs1 := m.createWxpaySubs()
+	subs2 := m.createWxpaySubs()
 
-	subs := paywall.NewWxpaySubs(m.userID, mockPlan, enum.LoginMethodWx)
-
-	ok, err := devEnv.IsSubsAllowed(subs)
-
-	if err != nil {
-		t.Error(err)
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
 	}
-
-	t.Logf("Is subscription allowed: %t\n", ok)
-}
-func TestSaveSubs_emailLogin(t *testing.T) {
-	m := newMocker()
-
-	wxSubs, err := m.createWxpaySubs()
-	if err != nil {
-		t.Error(err)
-		return
+	type args struct {
+		orderID     string
+		confirmedAt time.Time
 	}
-	t.Logf("Created a Wechat subscription: %+v\n", wxSubs)
-
-	aliSubs, err := m.createAlipaySubs()
-	if err != nil {
-		t.Error(err)
-		return
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "New Subscription",
+			fields: fields{db: db},
+			args: args{
+				orderID:     subs1.OrderID,
+				confirmedAt: time.Now(),
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Renew Subscription",
+			fields: fields{db: db},
+			args: args{
+				orderID:     subs2.OrderID,
+				confirmedAt: time.Now(),
+			},
+			wantErr: false,
+		},
 	}
-	t.Logf("Created a Ali subscription: %+v\n", aliSubs)
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			got, err := env.ConfirmPayment(tt.args.orderID, tt.args.confirmedAt)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Env.ConfirmPayment() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 
-func TestSaveSubs_wxLogin(t *testing.T) {
-	m := newMocker().withWxLogin()
-
-	wxSubs, err := m.createWxpaySubs()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Created wxpay subscription with wechat login: %+v\n", wxSubs)
-
-	aliSubs, err := m.createAlipaySubs()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Created alipay subscription with wechat login: %+v\n", aliSubs)
-}
-
-func TestFindSubs(t *testing.T) {
-	m := newMocker()
-
-	subs, err := m.createWxpaySubs()
-
-	found, err := devEnv.FindSubscription(subs.OrderID)
-
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	t.Logf("Found subscription: %+v\n", found)
-}
-
-func TestConfirmPayment(t *testing.T) {
-	m := newMocker()
-
-	subs, err := m.createWxpaySubs()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Wxpay subscription with email login: %+v\n", subs)
-
-	subs, err = devEnv.ConfirmPayment(subs.OrderID, time.Now())
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Confirmed subscription: %+v\n", subs)
-}
-
-func TestMultiConfirmPayment(t *testing.T) {
-	m := newMocker()
-
-	subs, err := m.createMember()
-
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Confirmed subscription: %+v\n", subs)
-
-	t.Log("Confirm again")
-
-	subs, err = devEnv.ConfirmPayment(subs.OrderID, time.Now())
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Re-confirmed: %+v\n", subs)
-}
-
-func TestCreateMember_emailLogin(t *testing.T) {
-	m := newMocker()
-
-	user, err := m.createUser()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Created an FTC user: %+v\n", user)
-
-	subs, err := m.createMember()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	t.Logf("Created a member with email login: %+v\n", subs)
-}
-func TestCreateMember_wxLogin(t *testing.T) {
-	m := newMocker().withWxLogin()
-
-	wxUser, err := m.createWxUser()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Created a wechat user: %+v\n", wxUser)
-
-	subs, err := m.createMember()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	t.Logf("Created a member with wechat login: %+v\n", subs)
-}
-
-func TestFindMember(t *testing.T) {
-	m := newMocker()
-
-	subs, err := m.createMember()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Subscription: %+v\n", subs)
-
-	member, err := devEnv.findMember(subs)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	t.Logf("Found membership: %+v\n", member)
-}
-
-func TestFindDuration(t *testing.T) {
-	m := newMocker()
-
-	subs, err := m.createMember()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Subscription: %+v\n", subs)
-
-	var dur paywall.Duration
-	err = devEnv.db.QueryRow(
-		devEnv.stmtSelectExpLock(subs.IsWxLogin()),
-		subs.UserID,
-	).Scan(
-		&dur.Timestamp,
-		&dur.ExpireDate,
-	)
-
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Logf("Found membership duration: %+v\n", dur)
-}
-
-func TestRenewMember(t *testing.T) {
-	m := newMocker()
-
-	for i := 0; i < 2; i++ {
-		subs, err := m.createMember()
-		if err != nil {
-			t.Error(err)
-			break
-		}
-		t.Logf("Subscritpion %d: %+v\n", i, subs)
+			t.Logf("%+v\n", got)
+			// if !reflect.DeepEqual(got, tt.want) {
+			// 	t.Errorf("Env.ConfirmPayment() = %v, want %v", got, tt.want)
+			// }
+		})
 	}
 }

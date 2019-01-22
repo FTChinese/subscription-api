@@ -27,7 +27,34 @@ import (
 
 	"github.com/icrowley/fake"
 	uuid "github.com/satori/go.uuid"
+
+	_ "github.com/go-sql-driver/mysql"
 )
+
+// Directly insert a row into ftc_vip for mocking.
+func saveMembership(m paywall.Membership) error {
+	query := `
+	INSERT INTO premium.ftc_vip
+	SET vip_id = ?,
+		vip_id_alias = ?,
+		member_tier = ?,
+		billing_cycle = ?,
+		expire_date = ?`
+
+	_, err := devEnv.db.Exec(query,
+		m.UserID,
+		m.UnionID,
+		m.Tier,
+		m.Cycle,
+		m.ExpireDate,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func newDevDB() *sql.DB {
 	db, err := sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
@@ -47,24 +74,13 @@ func newDevPostman() postoffice.Postman {
 
 	mailPort, _ := strconv.Atoi(portStr)
 
-	return postoffice.NewPostman(mailHost, mailPort, mailUser, mailPass)
+	return postoffice.New(mailHost, mailPort, mailUser, mailPass)
 }
 
 var db = newDevDB()
 var postman = newDevPostman()
-
-func newDevEnv() Env {
-	db, err := sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
-
-	if err != nil {
-		panic(err)
-	}
-
-	return Env{
-		db:    db,
-		cache: cache.New(cache.DefaultExpiration, 0),
-	}
-}
+var devCache = cache.New(cache.DefaultExpiration, 0)
+var devEnv = New(db, devCache, false)
 
 var appID = os.Getenv("WXPAY_APPID")
 var mchID = os.Getenv("WXPAY_MCHID")
@@ -72,13 +88,22 @@ var appSecret = os.Getenv("WXPAY_APPSECRET")
 var apiKey = os.Getenv("WXPAY_API_KEY")
 
 var mockClient = wechat.NewClient(appID, mchID, apiKey)
-var devEnv = newDevEnv()
+
 var mockPlan = paywall.GetDefaultPricing()["standard_year"]
 var mockApp = gorest.ClientApp{
 	ClientType: enum.PlatformAndroid,
 	Version:    "1.1.1",
 	UserIP:     fake.IPv4(),
 	UserAgent:  fake.UserAgent(),
+}
+
+func clientApp() gorest.ClientApp {
+	return gorest.ClientApp{
+		ClientType: enum.PlatformAndroid,
+		Version:    "1.1.1",
+		UserIP:     fake.IPv4(),
+		UserAgent:  fake.UserAgent(),
+	}
 }
 
 var tenDaysLater = time.Now().AddDate(0, 0, 10)
@@ -105,11 +130,12 @@ func generateAvatarURL() string {
 type mocker struct {
 	userID      string
 	unionID     string
-	openID      string
-	loginMethod enum.LoginMethod
-	userName    string
 	email       string
 	password    string
+	userName    string
+	openID      string
+	loginMethod enum.LoginMethod
+	expireDate  chrono.Date
 	ip          string
 }
 
@@ -117,17 +143,23 @@ func newMocker() mocker {
 	return mocker{
 		userID:      uuid.Must(uuid.NewV4()).String(),
 		unionID:     generateWxID(),
-		openID:      generateWxID(),
-		loginMethod: enum.LoginMethodEmail,
-		userName:    fake.UserName(),
 		email:       fake.EmailAddress(),
 		password:    fake.Password(8, 20, false, true, false),
+		userName:    fake.UserName(),
+		openID:      generateWxID(),
+		loginMethod: enum.LoginMethodEmail,
+		expireDate:  chrono.DateNow(),
 		ip:          fake.IPv4(),
 	}
 }
 
 func (m mocker) withEmail(email string) mocker {
 	m.email = email
+	return m
+}
+
+func (m mocker) withExpireDate(t time.Time) mocker {
+	m.expireDate = chrono.DateFrom(t)
 	return m
 }
 
@@ -177,14 +209,14 @@ func (m mocker) wxpaySubs() paywall.Subscription {
 	if m.loginMethod == enum.LoginMethodWx {
 		return paywall.NewWxpaySubs(m.unionID, mockPlan, enum.LoginMethodWx)
 	}
-	return paywall.NewWxpaySubs(m.userID, mockPlan, enum.LoginMethodWx)
+	return paywall.NewWxpaySubs(m.userID, mockPlan, enum.LoginMethodEmail)
 }
 
 func (m mocker) alipaySubs() paywall.Subscription {
 	if m.loginMethod == enum.LoginMethodWx {
 		return paywall.NewAlipaySubs(m.unionID, mockPlan, enum.LoginMethodWx)
 	}
-	return paywall.NewAlipaySubs(m.userID, mockPlan, enum.LoginMethodWx)
+	return paywall.NewAlipaySubs(m.userID, mockPlan, enum.LoginMethodEmail)
 }
 
 func (m mocker) confirmedSubs() paywall.Subscription {
@@ -196,6 +228,22 @@ func (m mocker) confirmedSubs() paywall.Subscription {
 	subs.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 0))
 
 	return subs
+}
+
+func (m mocker) member() paywall.Membership {
+	mm := paywall.Membership{
+		UserID: m.userID,
+		Tier:   enum.TierStandard,
+		Cycle:  enum.CycleYear,
+	}
+
+	if m.loginMethod == enum.LoginMethodWx {
+		mm.UnionID = null.StringFrom(m.unionID)
+	}
+
+	mm.ExpireDate = m.expireDate
+
+	return mm
 }
 
 func (m mocker) createUser() (paywall.User, error) {
@@ -238,66 +286,61 @@ func (m mocker) createUser() (paywall.User, error) {
 	return user, nil
 }
 
-func (m mocker) createWxUser() (wxlogin.UserInfo, error) {
+func (m mocker) createWxUser() wxlogin.UserInfo {
 	userInfo := m.wxUser()
 
 	err := devEnv.SaveWxUser(userInfo)
 	if err != nil {
-		return userInfo, err
+		panic(err)
 	}
-	return userInfo, nil
+	return userInfo
 }
 
-func (m mocker) createWxpaySubs() (paywall.Subscription, error) {
+func (m mocker) createWxpaySubs() paywall.Subscription {
 	subs := m.wxpaySubs()
 
 	err := devEnv.SaveSubscription(subs, mockApp)
 
 	if err != nil {
-		return subs, err
+		panic(err)
 	}
 
-	return subs, nil
+	return subs
 }
 
-func (m mocker) createAlipaySubs() (paywall.Subscription, error) {
+func (m mocker) createAlipaySubs() paywall.Subscription {
 	subs := m.alipaySubs()
 
 	err := devEnv.SaveSubscription(subs, mockApp)
 
 	if err != nil {
-		return subs, err
+		panic(err)
 	}
 
-	return subs, nil
+	return subs
 }
 
-func (m mocker) createMember() (paywall.Subscription, error) {
-	subs, err := m.createWxpaySubs()
+func (m mocker) createMember() paywall.Membership {
+	mm := m.member()
+	err := saveMembership(mm)
 
 	if err != nil {
-		return subs, err
+		panic(err)
 	}
 
-	subs, err = devEnv.ConfirmPayment(subs.OrderID, time.Now())
-
-	if err != nil {
-		return subs, err
-	}
-
-	return subs, nil
+	return mm
 }
 
-func (m mocker) createWxAccess() (wxlogin.OAuthAccess, error) {
+func (m mocker) createWxAccess() wxlogin.OAuthAccess {
 	acc := m.wxAccess()
 
 	err := devEnv.SaveWxAccess(appID, acc, mockApp)
 
 	if err != nil {
-		return acc, err
+		panic(err)
 	}
 
-	return acc, nil
+	return acc
 }
 
 func wxNotiResp(orderID string) string {
@@ -321,11 +364,6 @@ func wxNotiResp(orderID string) string {
 	return wxpay.MapToXml(p)
 }
 
-func wxParsedNoti(orderID string) (wxpay.Params, error) {
-	resp := wxNotiResp(orderID)
-	return mockClient.ParseResponse(strings.NewReader(resp))
-}
-
 func wxPrepayResp() string {
 	p := make(wxpay.Params)
 
@@ -339,10 +377,25 @@ func wxPrepayResp() string {
 	return wxpay.MapToXml(p)
 }
 
-func wxParsedPrepay() (wxpay.Params, error) {
+func wxParsedPrepay() wxpay.Params {
 	resp := wxPrepayResp()
 
-	return mockClient.ParseResponse(strings.NewReader(resp))
+	p, err := mockClient.ParseResponse(strings.NewReader(resp))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return p
+}
+func wxParsedNoti(orderID string) wxpay.Params {
+	resp := wxNotiResp(orderID)
+	p, err := mockClient.ParseResponse(strings.NewReader(resp))
+	if err != nil {
+		panic(err)
+	}
+
+	return p
 }
 
 func fillResp(p wxpay.Params) wxpay.Params {
