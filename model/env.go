@@ -20,16 +20,20 @@ type Env struct {
 // New creates a new instance of Env.
 // `sandbox` is used to determine which table to write subscription data.
 func New(db *sql.DB, c *cache.Cache, sandbox bool) Env {
-	table := "premium"
-	if sandbox {
-		table = "sandbox"
-	}
 	return Env{
-		sandbox:     sandbox,
-		memberTable: table,
-		db:          db,
-		cache:       c,
+		sandbox: sandbox,
+		db:      db,
+		cache:   c,
 	}
+}
+
+// Get the database name used to store subscription and membership tables depending on the whether it is run in sandbox.
+func (env Env) vipDBName() string {
+	if env.sandbox {
+		return "sandbox"
+	}
+
+	return "premium"
 }
 
 var logger = log.
