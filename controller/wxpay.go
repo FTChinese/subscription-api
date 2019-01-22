@@ -20,8 +20,7 @@ import (
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
 type WxPayRouter struct {
-	sandbox bool
-	client  wechat.Client
+	client wechat.Client
 	PayRouter
 }
 
