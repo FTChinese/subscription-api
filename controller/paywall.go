@@ -16,9 +16,9 @@ type PaywallRouter struct {
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(db *sql.DB, c *cache.Cache) PaywallRouter {
+func NewPaywallRouter(db *sql.DB, c *cache.Cache, sandbox bool) PaywallRouter {
 	return PaywallRouter{
-		model: model.New(db, c, false),
+		model: model.New(db, c, sandbox),
 	}
 }
 

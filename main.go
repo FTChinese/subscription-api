@@ -66,7 +66,7 @@ func main() {
 
 	wxRouter := controller.NewWxRouter(db, c, sandbox)
 	aliRouter := controller.NewAliRouter(db, c, sandbox)
-	paywallRouter := controller.NewPaywallRouter(db, c)
+	paywallRouter := controller.NewPaywallRouter(db, c, sandbox)
 
 	wxAuth := controller.NewWxAuth(db, c)
 
@@ -141,6 +141,7 @@ func status(w http.ResponseWriter, req *http.Request) {
 	}{
 		Version: version,
 		Build:   build,
+		Sandbox: sandbox,
 	}
 
 	view.Render(w, view.NewResponse().NoCache().SetBody(data))
