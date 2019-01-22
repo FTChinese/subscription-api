@@ -1,87 +1,276 @@
 package model
 
-import "testing"
+import (
+	"database/sql"
+	"reflect"
+	"testing"
 
-func TestSaveAccess(t *testing.T) {
+	gorest "github.com/FTChinese/go-rest"
+	cache "github.com/patrickmn/go-cache"
+	"gitlab.com/ftchinese/subscription-api/wxlogin"
+)
+
+func TestEnv_SaveWxAccess(t *testing.T) {
 	m := newMocker()
 	acc := m.wxAccess()
 	t.Logf("OAuth Access: %+v\n", acc)
 
-	err := devEnv.SaveWxAccess(appID, acc, mockApp)
-
-	if err != nil {
-		t.Error(err)
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
 	}
-
-	t.Logf("Saved OAuth Access: %+v\n", acc)
+	type args struct {
+		appID string
+		acc   wxlogin.OAuthAccess
+		c     gorest.ClientApp
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "Save Wecaht OAuth Access",
+			fields: fields{db: db},
+			args: args{
+				appID: appID,
+				acc:   acc,
+				c:     clientApp(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			if err := env.SaveWxAccess(tt.args.appID, tt.args.acc, tt.args.c); (err != nil) != tt.wantErr {
+				t.Errorf("Env.SaveWxAccess() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
 
-func TestLoadAccess(t *testing.T) {
+func TestEnv_LoadWxAccess(t *testing.T) {
 	m := newMocker()
+	acc := m.createWxAccess()
 
-	acc, err := m.createWxAccess()
-	if err != nil {
-		t.Error(err)
-		return
-	}
 	t.Logf("Created access token: %+v\n", acc)
 
-	dbAcc, err := devEnv.LoadWxAccess(appID, acc.SessionID)
-
-	if err != nil {
-		t.Error(err)
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
 	}
-
-	t.Logf("Loaded access: %+v\n", dbAcc)
+	type args struct {
+		appID     string
+		sessionID string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    wxlogin.OAuthAccess
+		wantErr bool
+	}{
+		{
+			name:   "Load Wechat OAuth Access",
+			fields: fields{db: db},
+			args: args{
+				appID:     appID,
+				sessionID: acc.SessionID,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			got, err := env.LoadWxAccess(tt.args.appID, tt.args.sessionID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Env.LoadWxAccess() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Env.LoadWxAccess() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
-func TestUpdateAccess(t *testing.T) {
+func TestEnv_UpdateWxAccess(t *testing.T) {
 	m := newMocker()
+	acc := m.createWxAccess()
 
-	acc, err := m.createWxAccess()
-	if err != nil {
-		t.Error(err)
-		return
-	}
 	t.Logf("Original access: %+v\n", acc)
 
-	accessToken := generateToken()
-	err = devEnv.UpdateWxAccess(acc.SessionID, accessToken)
-
-	if err != nil {
-		t.Error(err)
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
 	}
-	t.Logf("New access token: %+s\n", accessToken)
+	type args struct {
+		sessionID   string
+		accessToken string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "Update Wechat OAuth Access",
+			fields: fields{db: db},
+			args: args{
+				sessionID:   acc.SessionID,
+				accessToken: generateToken(),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			if err := env.UpdateWxAccess(tt.args.sessionID, tt.args.accessToken); (err != nil) != tt.wantErr {
+				t.Errorf("Env.UpdateWxAccess() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
 
-func TestSaveUserInfo(t *testing.T) {
+func TestEnv_SaveWxUser(t *testing.T) {
 	m := newMocker()
 	userInfo := m.wxUser()
 
-	err := devEnv.SaveWxUser(userInfo)
-	if err != nil {
-		t.Error(err)
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
+	}
+	type args struct {
+		u wxlogin.UserInfo
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "Save Wechat User Info",
+			fields: fields{db: db},
+			args: args{
+				u: userInfo,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			if err := env.SaveWxUser(tt.args.u); (err != nil) != tt.wantErr {
+				t.Errorf("Env.SaveWxUser() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }
 
-func TestUpdateUserInfo(t *testing.T) {
+func TestEnv_UpdateWxUser(t *testing.T) {
 	m := newMocker()
-
-	userInfo, err := m.createWxUser()
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	userInfo := m.createWxUser()
 	t.Logf("Created wechat user: %+v\n", userInfo)
 
-	newInfo := m.wxUser()
-	err = devEnv.UpdateWxUser(newInfo)
-
-	if err != nil {
-		t.Error(err)
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
 	}
+	type args struct {
+		u wxlogin.UserInfo
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "Update Wechat User Info",
+			fields: fields{db: db},
+			args: args{
+				u: m.wxUser(),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			if err := env.UpdateWxUser(tt.args.u); (err != nil) != tt.wantErr {
+				t.Errorf("Env.UpdateWxUser() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
 
-	t.Logf("Updated wechat user: %+v\n", newInfo)
+func TestEnv_SaveWxStatus(t *testing.T) {
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
+	}
+	type args struct {
+		code    int64
+		message string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "Save Wechat OAuth Response Status",
+			fields: fields{db: db},
+			args: args{
+				code:    40029,
+				message: "invalid code",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			if err := env.SaveWxStatus(tt.args.code, tt.args.message); (err != nil) != tt.wantErr {
+				t.Errorf("Env.SaveWxStatus() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
 
 // Generate multiple OAuthAccess with same OpenID,
@@ -90,18 +279,11 @@ func TestMultiLogin(t *testing.T) {
 	m := newMocker()
 
 	for i := 0; i < 5; i++ {
-		acc, err := m.createWxAccess()
-		if err != nil {
-			t.Error(err)
-			break
-		}
+		acc := m.createWxAccess()
 		t.Logf("A new login: %+v\n", acc)
 
-		userInfo, err := m.createWxUser()
-		if err != nil {
-			t.Error(err)
-			break
-		}
+		userInfo := m.createWxUser()
+
 		t.Logf("Save/Update userinfo: %+v\n", userInfo)
 	}
 }

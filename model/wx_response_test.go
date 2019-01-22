@@ -1,70 +1,95 @@
 package model
 
 import (
+	"database/sql"
 	"testing"
 
+	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/wechat"
 )
 
-func TestSavePrepayResp(t *testing.T) {
+func TestEnv_SavePrepayResp(t *testing.T) {
 	m := newMocker()
 	subs := m.wxpaySubs()
 
-	p, err := wxParsedPrepay()
-	if err != nil {
-		t.Error(err)
-		return
+	p := wxParsedPrepay()
+
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
 	}
-	t.Logf("Parsed response: %+v\n", p)
-
-	uor := wechat.NewUnifiedOrderResp(p)
-	t.Logf("UnifiedOrderResp: %+v\n", uor)
-
-	err = devEnv.SavePrepayResp(subs.OrderID, uor)
-	if err != nil {
-		t.Error(err)
+	type args struct {
+		orderID string
+		p       wechat.UnifiedOrderResp
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "Save Prepay Response",
+			fields: fields{db: db},
+			args: args{
+				orderID: subs.OrderID,
+				p:       wechat.NewUnifiedOrderResp(p),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			if err := env.SavePrepayResp(tt.args.orderID, tt.args.p); (err != nil) != tt.wantErr {
+				t.Errorf("Env.SavePrepayResp() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }
 
-func TestSaveWxNoti(t *testing.T) {
+func TestEnv_SaveWxNotification(t *testing.T) {
 	m := newMocker()
 	subs := m.wxpaySubs()
 
-	p, err := wxParsedNoti(subs.OrderID)
-	if err != nil {
-		t.Error(err)
-		return
+	p := wxParsedNoti(subs.OrderID)
+
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		cache   *cache.Cache
 	}
-	t.Logf("Parsed notification: %+v\n", p)
-
-	noti := wechat.NewNotification(p)
-	t.Logf("Notification: %+v\n", noti)
-
-	err = devEnv.SaveWxNotification(noti)
-	if err != nil {
-		t.Error(err)
+	type args struct {
+		n wechat.Notification
 	}
-}
-
-// Generate data to be used by Postman.
-func TestGenerateNoti(t *testing.T) {
-	// User must exist in database and the email must be real; otherwise email cannot be sent.
-	m := newMocker().withEmail("neefrankie@163.com")
-
-	user, err := m.createUser()
-	if err != nil {
-		t.Error(err)
-		return
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "Save Wxpay Notification",
+			fields:  fields{db: db},
+			args:    args{n: wechat.NewNotification(p)},
+			wantErr: false,
+		},
 	}
-	t.Logf("Created user: %+v\n", user)
-
-	subs, err := m.createWxpaySubs()
-	if err != nil {
-		t.Error(err)
-		return
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				cache:   tt.fields.cache,
+			}
+			if err := env.SaveWxNotification(tt.args.n); (err != nil) != tt.wantErr {
+				t.Errorf("Env.SaveWxNotification() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
-	t.Logf("Generated an order: %+v\n", subs)
-
-	resp := wxNotiResp(subs.OrderID)
-	t.Logf("Mock response: %s\n", resp)
 }
