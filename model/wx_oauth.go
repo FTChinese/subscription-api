@@ -95,7 +95,7 @@ func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error
 func (env Env) UpdateWxAccess(sessionID, accessToken string) error {
 	query := `
 	UPDATE user_db.wechat_access
-	SET access_token = ?,
+	SET access_token = ?
 	WHERE session_id = UNHEX(?)
 	LIMIT 1`
 
