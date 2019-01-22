@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	gorest "github.com/FTChinese/go-rest"
@@ -27,8 +28,40 @@ type WxAuthRouter struct {
 // NewWxAuth creates a new WxLoginRouter instance.
 func NewWxAuth(db *sql.DB, c *cache.Cache) WxAuthRouter {
 
+	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
+	mSubs, err := wxlogin.NewWxApp(
+		os.Getenv("WXPAY_APPID"),
+		os.Getenv("WXPAY_APPSECRET"),
+	)
+	if err != nil {
+		os.Exit(1)
+	}
+	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
+	mFTC, err := wxlogin.NewWxApp(
+		os.Getenv("WX_MOBILE_APPID"),
+		os.Getenv("WX_MOBILE_APPSECRET"),
+	)
+	if err != nil {
+		os.Exit(1)
+	}
+	// 网站应用 -> FT中文网. This is used for web login
+	wFTC, err := wxlogin.NewWxApp(
+		os.Getenv("wxc7233549ca6bc86a"),
+		os.Getenv("098330adf494c46d368868a799320a4e"),
+	)
+	if err != nil {
+		os.Exit(1)
+	}
+
 	return WxAuthRouter{
-		apps:  wxlogin.Apps,
+		apps: map[string]wxlogin.WxApp{
+			// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
+			"wxacddf1c20516eb69": mSubs,
+			// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
+			"wxc1bc20ee7478536a": mFTC,
+			// 网站应用 -> FT中文网. This is used for web login
+			"wxc7233549ca6bc86a": wFTC,
+		},
 		model: model.New(db, c, false),
 	}
 }
@@ -56,6 +89,8 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		view.Render(w, view.NewBadRequest("Unknown app"))
 		return
 	}
+
+	logger.WithField("trace", "Login").Infof("Wechat app: %+v", app)
 
 	// Get `code` from request body
 	code, err := util.GetJSONString(req.Body, "code")
@@ -88,9 +123,9 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	// Handle wechat response error.
 	if acc.HasError() {
 		logger.WithField("trace", "Login GetAccessToken").Error(acc.Message)
-		go func() {
-			router.model.SaveWxStatus(acc.Code, acc.Message)
-		}()
+
+		// Log Wechat error response
+		go router.model.SaveWxStatus(acc.Code, acc.Message)
 
 		r := acc.BuildReason()
 		view.Render(w, view.NewUnprocessable(r))
@@ -113,6 +148,9 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	// Cause by: invalid access token, invalid open id.
 	// Just ask user to retry.
 	if user.HasError() {
+		// Log error response.
+		go router.model.SaveWxStatus(user.Code, user.Message)
+
 		r := user.BuildReason()
 		view.Render(w, view.NewUnprocessable(r))
 		return
@@ -120,7 +158,8 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 	// Step 3:
 	// Save access token
-	go router.model.SaveWxAccess(app.AppID, acc, client)
+	go router.model.SaveWxAccess(appID, acc, client)
+
 	// Step 4:
 	// Save userinfo
 	err = router.model.SaveWxUser(user)
@@ -173,6 +212,8 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 		// Cause by: invalid access token, invalid open id.
 		// Just ask user to retry.
 		if user.HasError() {
+			go router.model.SaveWxStatus(user.Code, user.Message)
+
 			r := user.BuildReason()
 			view.Render(w, view.NewUnprocessable(r))
 			return
@@ -190,6 +231,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 		// 204 indicates user info is updated successfully.
 		// Client can now request the updated account.
 		view.Render(w, view.NewNoContent())
+		return
 	}
 
 	// Access token is no longer valid. Refresh access token
@@ -202,6 +244,8 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	// Handle wechat response error.
 	// Caused by: invalid refresh token.
 	if acc.HasError() {
+		go router.model.SaveWxStatus(acc.Code, acc.Message)
+
 		r := acc.BuildReason()
 		view.Render(w, view.NewUnprocessable(r))
 		return
@@ -220,6 +264,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	// Cause by: invalid access token, invalid open id.
 	// Just ask user to retry.
 	if user.HasError() {
+		go router.model.SaveWxStatus(user.Code, user.Message)
 		r := user.BuildReason()
 		view.Render(w, view.NewUnprocessable(r))
 		return
