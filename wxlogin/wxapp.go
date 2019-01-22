@@ -2,11 +2,10 @@ package wxlogin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net/url"
-	"os"
-
 	"github.com/FTChinese/go-rest/chrono"
+	"net/url"
 
 	"github.com/parnurzeal/gorequest"
 	"github.com/sirupsen/logrus"
@@ -21,44 +20,28 @@ const (
 	apiBaseURL = "https://api.weixin.qq.com/sns"
 )
 
-// Apps includes all wechat apps used for login.
-var Apps = map[string]WxApp{
-	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
-	"***REMOVED***": WxApp{
-		AppID:     os.Getenv("WXPAY_APPID"),
-		AppSecret: os.Getenv("WXPAY_APPSECRET"),
-	},
-	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-	"***REMOVED***": WxApp{
-		AppID:     os.Getenv("WX_MOBILE_APPID"),
-		AppSecret: os.Getenv("WX_MOBILE_APPSECRET"),
-	},
-	// 网站应用 -> FT中文网. This is used for web login
-	"wxc7233549ca6bc86a": WxApp{
-		AppID:     os.Getenv("wxc7233549ca6bc86a"),
-		AppSecret: os.Getenv("***REMOVED***"),
-	},
-}
-
 // WxApp contains essential credentials to call Wecaht API.
 type WxApp struct {
-	AppID     string
-	AppSecret string
+	appID     string
+	appSecret string
 }
 
-// NewClient creates a new Wecaht client.
-func NewClient(id, secret string) WxApp {
-	return WxApp{
-		AppID:     id,
-		AppSecret: secret,
+// NewWxApp creates a new Wecaht client.
+func NewWxApp(id, secret string) (WxApp, error) {
+	if id == "" || secret == "" {
+		return WxApp{}, errors.New("app id and secret must not be empty")
 	}
+	return WxApp{
+		appID:     id,
+		appSecret: secret,
+	}, nil
 }
 
 // Build url to get access token
 func (c WxApp) accessTokenURL(code string) string {
 	q := url.Values{}
-	q.Set("appid", c.AppID)
-	q.Set("secret", c.AppSecret)
+	q.Set("appid", c.appID)
+	q.Set("secret", c.appSecret)
 	q.Set("code", code)
 	q.Set("grant_type", "authorization_code")
 
@@ -75,7 +58,7 @@ func (c WxApp) userInfoURL(accessToken, openID string) string {
 
 func (c WxApp) refreshTokeURL(token string) string {
 	q := url.Values{}
-	q.Set("appid", c.AppID)
+	q.Set("appid", c.appID)
 	q.Set("grant_type", "refresh_token")
 	q.Set("refresh_token", token)
 

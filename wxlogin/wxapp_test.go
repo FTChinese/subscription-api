@@ -17,8 +17,8 @@ const (
 )
 
 var mockWxApp = WxApp{
-	AppID:     os.Getenv("WXPAY_APPID"),
-	AppSecret: os.Getenv("WXPAY_APPSECRET"),
+	appID:     os.Getenv("WXPAY_APPID"),
+	appSecret: os.Getenv("WXPAY_APPSECRET"),
 }
 
 // Group A: Code: 0, Message: , AccessToken: ***REMOVED***
