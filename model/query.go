@@ -3,7 +3,6 @@ package model
 import "fmt"
 
 const (
-
 	// Statement to select a row from ftc_trade table.
 	selectSubs = `
 	SELECT user_id AS userId,
@@ -42,15 +41,15 @@ func (env Env) stmtInsertSubs() string {
 		client_type = ?,
 		client_version = ?,
 		user_ip_bin = INET6_ATON(?),
-		user_agent = ?`, env.memberTable)
+		user_agent = ?`, env.vipDBName())
 }
 
 func (env Env) stmtSelectSubs() string {
-	return fmt.Sprintf(selectSubs, env.memberTable)
+	return fmt.Sprintf(selectSubs, env.vipDBName())
 }
 
 func (env Env) stmtSelectSubsLock() string {
-	return fmt.Sprintf(selectSubsLock, env.memberTable)
+	return fmt.Sprintf(selectSubsLock, env.vipDBName())
 }
 
 // Statement to update a subscription order after received notification from payment provider.
@@ -62,7 +61,7 @@ func (env Env) stmtUpdateSubs() string {
 		start_date = ?,
 		end_date = ?
 	WHERE trade_no = ?
-	LIMIT 1`, env.memberTable)
+	LIMIT 1`, env.vipDBName())
 }
 
 // Statement to insert a new member or update an existing one after subscription order is confirmed.
@@ -77,24 +76,7 @@ func (env Env) stmtInsertMember() string {
 	ON DUPLICATE KEY UPDATE
 		member_tier = ?,
 		billing_cycle = ?,
-		expire_date = ?`, env.memberTable)
-}
-
-// Build statement select a row from ftc_vip by different criteria depending on whether user is logged-in with Wechat or not.
-func (env Env) stmtSelectExpLock(isWxLogin bool) string {
-	whereCol := "vip_id"
-
-	if isWxLogin {
-		whereCol = "vip_id_alias"
-	}
-
-	return fmt.Sprintf(`
-	SELECT expire_time AS expireTime,
-		expire_date AS expireDate
-	FROM %s.ftc_vip
-	WHERE %s = ?
-	LIMIT 1
-	FOR UPDATE`, env.memberTable, whereCol)
+		expire_date = ?`, env.vipDBName())
 }
 
 // Save as the above one, with more data retrieved.
@@ -115,5 +97,22 @@ func (env Env) stmtSelectMember(isWxLogin bool) string {
 		expire_date AS expireDate
 	FROM %s.ftc_vip
 	WHERE %s = ?
-	LIMIT 1`, env.memberTable, whereCol)
+	LIMIT 1`, env.vipDBName(), whereCol)
+}
+
+// Build statement select a row from ftc_vip by different criteria depending on whether user is logged-in with Wechat or not.
+func (env Env) stmtSelectExpLock(isWxLogin bool) string {
+	whereCol := "vip_id"
+
+	if isWxLogin {
+		whereCol = "vip_id_alias"
+	}
+
+	return fmt.Sprintf(`
+	SELECT expire_time AS expireTime,
+		expire_date AS expireDate
+	FROM %s.ftc_vip
+	WHERE %s = ?
+	LIMIT 1
+	FOR UPDATE`, env.vipDBName(), whereCol)
 }
