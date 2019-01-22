@@ -43,7 +43,7 @@ type OAuthAccess struct {
 }
 
 // ToSession creates a Session instance.
-func (a *OAuthAccess) ToSession(unionID string) Session {
+func (a OAuthAccess) ToSession(unionID string) Session {
 	return Session{
 		ID:        a.SessionID,
 		UnionID:   unionID,
@@ -56,9 +56,6 @@ func (a *OAuthAccess) ToSession(unionID string) Session {
 // Returns the hexadecmial encoded string of the MD5 bytes.
 // Database should use VARBINARY(16) to store this value.
 func (a *OAuthAccess) GenerateSessionID() {
-	if a.SessionID != "" {
-		return
-	}
 	data := fmt.Sprintf("%s:%s:%s", a.AccessToken, a.RefreshToken, a.OpenID)
 	h := md5.Sum([]byte(data))
 	a.SessionID = hex.EncodeToString(h[:])
