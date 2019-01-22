@@ -87,6 +87,11 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 	// Handle wechat response error.
 	if acc.HasError() {
+		logger.WithField("trace", "Login GetAccessToken").Error(acc.Message)
+		go func() {
+			router.model.SaveWxStatus(acc.Code, acc.Message)
+		}()
+
 		r := acc.BuildReason()
 		view.Render(w, view.NewUnprocessable(r))
 		return
