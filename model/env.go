@@ -11,10 +11,9 @@ import (
 
 // Env wraps database connection
 type Env struct {
-	sandbox     bool
-	memberTable string
-	db          *sql.DB
-	cache       *cache.Cache
+	sandbox bool
+	db      *sql.DB
+	cache   *cache.Cache
 }
 
 // New creates a new instance of Env.
