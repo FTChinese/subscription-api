@@ -3,22 +3,23 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"github.com/spf13/viper"
+	"gitlab.com/ftchinese/subscription-api/util"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/smartwalle/alipay"
 
-	randomdata "github.com/Pallinder/go-randomdata"
+	"github.com/Pallinder/go-randomdata"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 
 	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/paywall"
@@ -26,11 +27,15 @@ import (
 	"gitlab.com/ftchinese/subscription-api/wechat"
 
 	"github.com/icrowley/fake"
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
+func init()  {
+	viper.SetConfigName("api")
+	viper.AddConfigPath("$HOME/config")
+}
 // Directly insert a row into ftc_vip for mocking.
 func saveMembership(m paywall.Membership) error {
 	query := `
@@ -67,14 +72,30 @@ func newDevDB() *sql.DB {
 }
 
 func newDevPostman() postoffice.Postman {
-	mailHost := os.Getenv("HANQI_SMTP_HOST")
-	mailUser := os.Getenv("HANQI_SMTP_USER")
-	portStr := os.Getenv("HANQI_SMTP_PORT")
-	mailPass := os.Getenv("HANQI_SMTP_PASS")
+	//mailHost := os.Getenv("HANQI_SMTP_HOST")
+	//mailUser := os.Getenv("HANQI_SMTP_USER")
+	//portStr := os.Getenv("HANQI_SMTP_PORT")
+	//mailPass := os.Getenv("HANQI_SMTP_PASS")
+	//
+	//mailPort, _ := strconv.Atoi(portStr)
 
-	mailPort, _ := strconv.Atoi(portStr)
+	var conn util.Conn
+	err := viper.UnmarshalKey("hanqi", &conn)
+	if err != nil {
+		panic(err)
+	}
+	return postoffice.New(conn.Host, conn.Port, conn.User, conn.Pass)
+}
 
-	return postoffice.New(mailHost, mailPort, mailUser, mailPass)
+func newWxOAuthApp() wxlogin.WxApp {
+	var app wxlogin.WxApp
+
+	err := viper.UnmarshalKey("wxapp.m_subs", &app)
+	if err != nil {
+		panic(err)
+	}
+
+	return app
 }
 
 var db = newDevDB()
@@ -87,15 +108,9 @@ var mchID = os.Getenv("WXPAY_MCHID")
 var appSecret = os.Getenv("WXPAY_APPSECRET")
 var apiKey = os.Getenv("WXPAY_API_KEY")
 
-var mockClient = wechat.NewClient(appID, mchID, apiKey)
+var mockClient = wechat.NewClient()
 
 var mockPlan = paywall.GetDefaultPricing()["standard_year"]
-var mockApp = gorest.ClientApp{
-	ClientType: enum.PlatformAndroid,
-	Version:    "1.1.1",
-	UserIP:     fake.IPv4(),
-	UserAgent:  fake.UserAgent(),
-}
 
 func clientApp() gorest.ClientApp {
 	return gorest.ClientApp{
@@ -248,6 +263,7 @@ func (m mocker) member() paywall.Membership {
 
 func (m mocker) createUser() (paywall.User, error) {
 	user := m.user()
+	app := clientApp()
 
 	query := `
 	INSERT INTO cmstmp01.userinfo
@@ -271,10 +287,10 @@ func (m mocker) createUser() (paywall.User, error) {
 		user.Email,
 		m.password,
 		user.UserName,
-		mockApp.ClientType,
-		mockApp.Version,
-		mockApp.UserIP,
-		mockApp.UserAgent,
+		app.ClientType,
+		app.Version,
+		app.UserIP,
+		app.UserAgent,
 		user.UserID,
 		user.Email,
 		m.password,
@@ -299,7 +315,7 @@ func (m mocker) createWxUser() wxlogin.UserInfo {
 func (m mocker) createWxpaySubs() paywall.Subscription {
 	subs := m.wxpaySubs()
 
-	err := devEnv.SaveSubscription(subs, mockApp)
+	err := devEnv.SaveSubscription(subs, clientApp())
 
 	if err != nil {
 		panic(err)
@@ -311,7 +327,7 @@ func (m mocker) createWxpaySubs() paywall.Subscription {
 func (m mocker) createAlipaySubs() paywall.Subscription {
 	subs := m.alipaySubs()
 
-	err := devEnv.SaveSubscription(subs, mockApp)
+	err := devEnv.SaveSubscription(subs, clientApp())
 
 	if err != nil {
 		panic(err)
@@ -334,7 +350,7 @@ func (m mocker) createMember() paywall.Membership {
 func (m mocker) createWxAccess() wxlogin.OAuthAccess {
 	acc := m.wxAccess()
 
-	err := devEnv.SaveWxAccess(appID, acc, mockApp)
+	err := devEnv.SaveWxAccess(appID, acc, clientApp())
 
 	if err != nil {
 		panic(err)
