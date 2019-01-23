@@ -2,21 +2,18 @@ package controller
 
 import (
 	"database/sql"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"strconv"
-
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
-	cache "github.com/patrickmn/go-cache"
 	"github.com/smartwalle/alipay"
+	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
+	"net/http"
+	"os"
 )
 
 const (
@@ -36,39 +33,43 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(db *sql.DB, c *cache.Cache, sandbox bool) AliPayRouter {
-	appID := os.Getenv("ALIPAY_APP_ID")
+func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter {
+	var app ali.App
 
-	host := os.Getenv("HANQI_SMTP_HOST")
-	user := os.Getenv("HANQI_SMTP_USER")
-	portStr := os.Getenv("HANQI_SMTP_PORT")
-	pass := os.Getenv("HANQI_SMTP_PASS")
-
-	port, _ := strconv.Atoi(portStr)
-
-	// Ali's public key is used to verify alipay's response.
-	publicKey, err := ioutil.ReadFile("alipay_public_key.pem")
-	if err != nil {
+	if err := viper.UnmarshalKey("alipay", &app); err != nil {
 		logger.WithField("trace", "NewAliRouter").Error(err)
 		os.Exit(1)
 	}
 
-	// Private key is used to sign our data that will be sent to alipay.
-	privateKey, err := ioutil.ReadFile("ftc_private_key.pem")
-	if err != nil {
-		logger.WithField("location", "NewAliRouter").Error(err)
+	if err := app.Ensure(); err != nil {
+		logger.WithField("trace", "NewAliRouter").Error(err)
 		os.Exit(1)
 	}
+	//appID := viper.GetString("alipay.app_id")
 
-	client := alipay.New(appID, string(publicKey), string(privateKey), true)
+	// Ali's public key is used to verify alipay's response.
+	//publicKey, err := ioutil.ReadFile("alipay_public_key.pem")
+	//if err != nil {
+	//	logger.WithField("trace", "NewAliRouter").Error(err)
+	//	os.Exit(1)
+	//}
+
+	// Private key is used to sign our data that will be sent to alipay.
+	//privateKey, err := ioutil.ReadFile("ftc_private_key.pem")
+	//if err != nil {
+	//	logger.WithField("location", "NewAliRouter").Error(err)
+	//	os.Exit(1)
+	//}
+
+	client := alipay.New(app.ID, app.PublicKey, app.PrivateKey, true)
 
 	r := AliPayRouter{
-		appID:  appID,
+		appID:  app.ID,
 		client: client,
 	}
 	r.sandbox = sandbox
-	r.model = model.New(db, c, sandbox)
-	r.postman = postoffice.NewPostman(host, port, user, pass)
+	r.model = m
+	r.postman = p
 
 	return r
 }

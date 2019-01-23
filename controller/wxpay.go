@@ -2,20 +2,18 @@ package controller
 
 import (
 	"database/sql"
-	"net/http"
-	"os"
-	"strconv"
-
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/objcoding/wxpay"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wechat"
+	"net/http"
+	"os"
 )
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
@@ -25,26 +23,22 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(db *sql.DB, c *cache.Cache, sandbox bool) WxPayRouter {
-	appID := os.Getenv("WXPAY_APPID")
-	mchID := os.Getenv("WXPAY_MCHID")
-	apiKey := os.Getenv("WXPAY_API_KEY")
+func NewWxRouter(m model.Env, p postoffice.Postman, sandbox bool) WxPayRouter {
 
-	host := os.Getenv("HANQI_SMTP_HOST")
-	user := os.Getenv("HANQI_SMTP_USER")
-	portStr := os.Getenv("HANQI_SMTP_PORT")
-	pass := os.Getenv("HANQI_SMTP_PASS")
-
-	port, _ := strconv.Atoi(portStr)
+	var app wechat.PayApp
+	if err := viper.UnmarshalKey("wxapp.m_subs", &app); err != nil {
+		logger.WithField("trace", "NewWxRouter").Error(err)
+		os.Exit(1)
+	}
 
 	// Pay attention to the last parameter.
 	// It should always be false because Weixin's sandbox address does not work!
 	r := WxPayRouter{
-		client: wechat.NewClient(appID, mchID, apiKey),
+		client: wechat.NewClient(app),
 	}
 	r.sandbox = sandbox
-	r.model = model.New(db, c, sandbox)
-	r.postman = postoffice.New(host, port, user, pass)
+	r.model = m
+	r.postman = p
 
 	return r
 }
