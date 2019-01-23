@@ -3,28 +3,33 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/go-rest/view"
+	"github.com/patrickmn/go-cache"
+	"github.com/spf13/viper"
+	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/wxlogin"
 	"net/http"
 	"os"
 
-	"github.com/FTChinese/go-rest/view"
-	cache "github.com/patrickmn/go-cache"
-
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/controller"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 var (
+	isProd bool
 	sandbox bool
 	version string
 	build   string
+	logger = log.WithField("project", "subscription-api").WithField("package", "main")
 )
 
 func init() {
-	flag.BoolVar(&sandbox, "sandbox", false, "Indicate production environment if present")
+	flag.BoolVar(&isProd, "production", false, "Connect to production MySQL database if present. Default to localhost.")
+	flag.BoolVar(&sandbox, "sandbox", false, "Use sandbox database to save subscription data if present.")
 	var v = flag.Bool("v", false, "print current version")
 
 	flag.Parse()
@@ -36,39 +41,106 @@ func init() {
 
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
+	logger.Infof("Is sandbox: %t. Is production: %t", sandbox, isProd)
 
-	log.WithField("project", "subscription-api").Infof("Is sandbox: %t", sandbox)
-
-	// NOTE: godotenv load .env file from current working directory, not where the program is located.
-	err := godotenv.Load()
+	viper.SetConfigName("api")
+	viper.AddConfigPath("$HOME/config")
+	err := viper.ReadInConfig()
 	if err != nil {
-		log.Error(err)
 		os.Exit(1)
 	}
 }
+
+func wxOAuthApps() map[string]wxlogin.WxApp {
+	var mSubs, mFTC, wFTC wxlogin.WxApp
+
+	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
+	err := viper.UnmarshalKey("wxapp.m_subs", &mSubs)
+	if err != nil {
+		logger.WithField("trace", "wxOAuthApps").Error(err)
+		os.Exit(1)
+	}
+	if mSubs.Ensure() != nil {
+		logger.WithField("trace", "wxOAuthApps").Error("Mobile app Member subscription has empty fields")
+		os.Exit(1)
+	}
+	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
+	err = viper.UnmarshalKey("wxapp.m_ftc", &mFTC)
+	if err != nil {
+		logger.WithField("trace", "wxOAuthApps").Error(err)
+		os.Exit(1)
+	}
+	if mFTC.Ensure() != nil {
+		logger.WithField("trace", "wxOAuthApps").Error("Mobile app FTC has empty fields")
+		os.Exit(1)
+	}
+	// 网站应用 -> FT中文网. This is used for web login
+	err = viper.UnmarshalKey("wxapp.w_ftc", &wFTC)
+	if err != nil {
+		logger.WithField("trace", "wxOAuthApps").Error(err)
+		os.Exit(1)
+	}
+	if wFTC.Ensure() != nil {
+		logger.WithField("trace", "wxOAuthApps").Error("Web app FTC has empty fields")
+		os.Exit(1)
+	}
+
+	return map[string]wxlogin.WxApp{
+		// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
+		"wxacddf1c20516eb69": mSubs,
+		// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
+		"wxc1bc20ee7478536a": mFTC,
+		// 网站应用 -> FT中文网. This is used for web login
+		"wxc7233549ca6bc86a": wFTC,
+	}
+}
+
 func main() {
-	logger := log.WithField("project", "subscription-api").WithField("package", "main")
+	// Get DB connection config.
+	var dbConn util.Conn
+	var err error
+	if isProd {
+		err = viper.UnmarshalKey("mysql.dev", &dbConn)
+	} else {
+		err = viper.UnmarshalKey("mysql.master", &dbConn)
+	}
 
-	host := os.Getenv("MYSQL_HOST")
-	port := os.Getenv("MYSQL_PORT")
-	user := os.Getenv("MYSQL_USER")
-	pass := os.Getenv("MYSQL_PASS")
+	if err != nil {
+		logger.WithField("trace", "main").Error((err))
+		os.Exit(1)
+	}
 
-	logger.Infof("Connecting to MySQL: %s", host)
-
-	db, err := util.NewDB(host, port, user, pass)
+	// Get email server config.
+	var emailConn util.Conn
+	err = viper.UnmarshalKey("hanqi", &emailConn)
 	if err != nil {
 		logger.WithField("trace", "main").Error(err)
 		os.Exit(1)
 	}
 
+	db, err := util.NewDB(dbConn)
+	if err != nil {
+		logger.WithField("trace", "main").Error(err)
+		os.Exit(1)
+	}
+	logger.
+		WithField("trace", "main").
+		Infof("Connected to MySQL server %s", dbConn.Host)
+
 	c := cache.New(cache.DefaultExpiration, 0)
+	post := postoffice.NewPostman(
+		emailConn.Host,
+		emailConn.Port,
+		emailConn.User,
+		emailConn.Pass)
 
-	wxRouter := controller.NewWxRouter(db, c, sandbox)
-	aliRouter := controller.NewAliRouter(db, c, sandbox)
-	paywallRouter := controller.NewPaywallRouter(db, c, sandbox)
+	m := model.New(db, c, sandbox)
 
-	wxAuth := controller.NewWxAuth(db, c)
+	wxRouter := controller.NewWxRouter(m, post, sandbox)
+	aliRouter := controller.NewAliRouter(m, post, sandbox)
+	paywallRouter := controller.NewPaywallRouter(m)
+
+	wxAuth := controller.NewWxAuth(m, wxOAuthApps())
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -94,7 +166,7 @@ func main() {
 		// Cancel order
 	})
 
-	// Requries user id.
+	// Require user id.
 	r.Route("/alipay", func(r1 chi.Router) {
 		r1.Use(controller.CheckUserID)
 

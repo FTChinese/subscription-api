@@ -17,6 +17,12 @@ import (
 
 var logger = log.WithField("package", "wechat")
 
+type PayApp struct {
+	AppID  string `mapstructure:"app_id"`
+	MchID  string `mapstructure:"mch_id"`
+	APIKey string `mapstructure:"api_key"`
+}
+
 // Client extends wxpay.Client
 type Client struct {
 	appID  string
@@ -26,14 +32,14 @@ type Client struct {
 }
 
 // NewClient creats a new instance of Client.
-func NewClient(appID, mchID, apiKey string) Client {
-	account := wxpay.NewAccount(appID, mchID, apiKey, false)
+func NewClient(app PayApp) Client {
+	account := wxpay.NewAccount(app.AppID, app.MchID, app.APIKey, false)
 	c := wxpay.NewClient(account)
 
 	return Client{
-		appID,
-		mchID,
-		apiKey,
+		app.AppID,
+		app.MchID,
+		app.APIKey,
 		c,
 	}
 }
