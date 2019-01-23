@@ -10,9 +10,7 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/guregu/null v3.4.0+incompatible
 	github.com/icrowley/fake v0.0.0-20180203215853-4178557ae428
-	github.com/joho/godotenv v1.3.0
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
-	github.com/kr/pretty v0.1.0 // indirect
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/objcoding/wxpay v1.0.5
 	github.com/parnurzeal/gorequest v0.2.12
@@ -25,6 +23,5 @@ require (
 	github.com/spf13/viper v1.3.1
 	github.com/tidwall/gjson v1.1.3
 	github.com/tidwall/match v1.0.1 // indirect
-	google.golang.org/appengine v1.2.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	golang.org/x/net v0.0.0-20180724234803-3673e40ba225 // indirect
 )
