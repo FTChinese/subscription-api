@@ -1,11 +1,9 @@
 package controller
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/FTChinese/go-rest/view"
-	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
@@ -16,9 +14,9 @@ type PaywallRouter struct {
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(db *sql.DB, c *cache.Cache, sandbox bool) PaywallRouter {
+func NewPaywallRouter(m model.Env) PaywallRouter {
 	return PaywallRouter{
-		model: model.New(db, c, sandbox),
+		model: m,
 	}
 }
 
