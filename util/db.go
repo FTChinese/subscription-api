@@ -13,7 +13,7 @@ type Conn struct {
 	Host string `mapstructure:"host"`
 	Port int    `mapstructure:"port"`
 	User string `mapstructure:"user"`
-	Pass string `mapstructure:pass`
+	Pass string `mapstructure:"pass"`
 }
 
 // NewDB creates a db connection
