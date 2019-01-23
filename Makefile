@@ -22,7 +22,7 @@ deploy : linux
 
 # Copy env varaible to server
 config :
-	rsync -v ../.env nodeserver:/home/node/go
+	rsync -v $(HOME)/config/api.toml nodeserver:/home/node/config
 
 linux : 
 	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(build_dir)/linux/$(BINARY) -v .
