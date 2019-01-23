@@ -1,15 +1,12 @@
 package controller
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/view"
-	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
@@ -26,43 +23,10 @@ type WxAuthRouter struct {
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
-func NewWxAuth(db *sql.DB, c *cache.Cache) WxAuthRouter {
-
-	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
-	mSubs, err := wxlogin.NewWxApp(
-		os.Getenv("WXPAY_APPID"),
-		os.Getenv("WXPAY_APPSECRET"),
-	)
-	if err != nil {
-		os.Exit(1)
-	}
-	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-	mFTC, err := wxlogin.NewWxApp(
-		os.Getenv("WX_MOBILE_APPID"),
-		os.Getenv("WX_MOBILE_APPSECRET"),
-	)
-	if err != nil {
-		os.Exit(1)
-	}
-	// 网站应用 -> FT中文网. This is used for web login
-	wFTC, err := wxlogin.NewWxApp(
-		os.Getenv("wxc7233549ca6bc86a"),
-		os.Getenv("***REMOVED***"),
-	)
-	if err != nil {
-		os.Exit(1)
-	}
-
+func NewWxAuth(m model.Env, apps map[string]wxlogin.WxApp) WxAuthRouter {
 	return WxAuthRouter{
-		apps: map[string]wxlogin.WxApp{
-			// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
-			"***REMOVED***": mSubs,
-			// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-			"***REMOVED***": mFTC,
-			// 网站应用 -> FT中文网. This is used for web login
-			"wxc7233549ca6bc86a": wFTC,
-		},
-		model: model.New(db, c, false),
+		apps: apps,
+		model: m,
 	}
 }
 
