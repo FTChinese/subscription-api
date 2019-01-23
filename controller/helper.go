@@ -11,12 +11,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var logger = log.WithField("package", "controller")
+var logger = log.WithField("project", "subscription-api").
+	WithField("package", "controller")
 
 const (
 	msgInvalidURI = "Invalid request URI"
-	wxNotifyURL   = "http://www.ftacademy.cn/api/v1/callback/wxpay"
-	aliNotifyURL  = "http://www.ftacademy.cn/api/v1/callback/alipay"
 )
 
 type paramValue string
