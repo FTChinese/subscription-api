@@ -17,8 +17,8 @@ const (
 )
 
 var mockWxApp = WxApp{
-	appID:     os.Getenv("WXPAY_APPID"),
-	appSecret: os.Getenv("WXPAY_APPSECRET"),
+	AppID:     os.Getenv("WXPAY_APPID"),
+	AppSecret: os.Getenv("WXPAY_APPSECRET"),
 }
 
 // Group A: Code: 0, Message: , AccessToken: 17_-q6w7gMSMnaITBvEBw4_ify_qHYDtZv9YUv9D1jNWe_NTxKhRAoBVg1eU2-l9W-ReWNFzTYJMB0LRzgVWB5uVmvJeAp1MBQPWp_GOt2sJYc, RefreshToken: 17_HEwO2O_Zw9cmCJQ0uI_65V3K09wJ7tfuHeXPRjOH4qmGTtxj_lkajlGi_ytVCG33ddsJ-37kGgonmR9NOdxrtmDnVZ7EfocNRyj15uCKNB8, OpenID: ob7fA0h69OO0sTLyQQpYc55iF_P0
