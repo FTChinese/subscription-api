@@ -2,18 +2,27 @@ package util
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
 )
 
+// Conn represents a connection to a server or database.
+type Conn struct {
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
+	User string `mapstructure:"user"`
+	Pass string `mapstructure:pass`
+}
+
 // NewDB creates a db connection
-func NewDB(host, port, user, pass string) (*sql.DB, error) {
+func NewDB(c Conn) (*sql.DB, error) {
 	cfg := &mysql.Config{
-		User:                 user,
-		Passwd:               pass,
+		User:                 c.User,
+		Passwd:               c.Pass,
 		Net:                  "tcp",
-		Addr:                 host + ":" + port,
+		Addr:                 fmt.Sprintf("%s:%d", c.Host, c.Port),
 		AllowNativePasswords: true,
 	}
 
