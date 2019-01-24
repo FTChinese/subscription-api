@@ -20,11 +20,11 @@ import (
 )
 
 var (
-	isProd bool
+	isProd  bool
 	sandbox bool
 	version string
 	build   string
-	logger = log.WithField("project", "subscription-api").WithField("package", "main")
+	logger  = log.WithField("project", "subscription-api").WithField("package", "main")
 )
 
 func init() {
@@ -100,9 +100,9 @@ func main() {
 	var dbConn util.Conn
 	var err error
 	if isProd {
-		err = viper.UnmarshalKey("mysql.dev", &dbConn)
-	} else {
 		err = viper.UnmarshalKey("mysql.master", &dbConn)
+	} else {
+		err = viper.UnmarshalKey("mysql.dev", &dbConn)
 	}
 
 	if err != nil {
