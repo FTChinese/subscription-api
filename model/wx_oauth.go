@@ -1,9 +1,7 @@
 package model
 
 import (
-	"strings"
-
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 )
 
@@ -134,8 +132,6 @@ func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
 		city = ?,
 		privilege = NULLIF(?, '')`
 
-	prvlg := strings.Join(u.Privileges, ",")
-
 	_, err := env.db.Exec(query,
 		u.UnionID,
 		u.NickName,
@@ -144,14 +140,14 @@ func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
 		u.Country,
 		u.Province,
 		u.City,
-		prvlg,
+		u.GetPrivilege(),
 		u.NickName,
 		u.AvatarURL,
 		u.GetGender(),
 		u.Country,
 		u.Province,
 		u.City,
-		prvlg,
+		u.GetPrivilege(),
 	)
 
 	if err != nil {
@@ -175,8 +171,6 @@ func (env Env) UpdateWxUser(u wxlogin.UserInfo) error {
 		privilege = NULLIF(?, '')
 	WHERE union_id = ?`
 
-	prvl := strings.Join(u.Privileges, ",")
-
 	_, err := env.db.Exec(query,
 		u.NickName,
 		u.GetGender(),
@@ -184,7 +178,7 @@ func (env Env) UpdateWxUser(u wxlogin.UserInfo) error {
 		u.Province,
 		u.City,
 		u.AvatarURL,
-		prvl,
+		u.GetPrivilege(),
 		u.UnionID,
 	)
 

@@ -2,6 +2,7 @@ package wxlogin
 
 import (
 	"github.com/guregu/null"
+	"strings"
 )
 
 // UserInfo is the response of Wechat endpoint
@@ -31,4 +32,16 @@ func (u UserInfo) GetGender() null.String {
 	}
 
 	return g
+}
+
+func (u UserInfo) GetPrivilege() null.String {
+	var p null.String
+	str := strings.Join(u.Privileges, ",")
+	if str == "" {
+		return p
+	}
+
+	p = null.StringFrom(str)
+
+	return p
 }
