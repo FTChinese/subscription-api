@@ -72,6 +72,12 @@ Since refresh token has an expiration period of 30 days, client should also cacu
 
     PUT `/wx/oauth/refresh`
 
+Request header must include `X-App-Id` which is the wechat app you use to perform Wechat login, and `X-Session-Id`.
+
+### Response
+
+* `400 Bad Request`
+* `204 No Content` if user info is refreshed and client should retrieve user account data again.
 
 ## Forward `code` for Web Client
 
