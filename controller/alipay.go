@@ -45,21 +45,6 @@ func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter 
 		logger.WithField("trace", "NewAliRouter").Error(err)
 		os.Exit(1)
 	}
-	//appID := viper.GetString("alipay.app_id")
-
-	// Ali's public key is used to verify alipay's response.
-	//publicKey, err := ioutil.ReadFile("alipay_public_key.pem")
-	//if err != nil {
-	//	logger.WithField("trace", "NewAliRouter").Error(err)
-	//	os.Exit(1)
-	//}
-
-	// Private key is used to sign our data that will be sent to alipay.
-	//privateKey, err := ioutil.ReadFile("ftc_private_key.pem")
-	//if err != nil {
-	//	logger.WithField("location", "NewAliRouter").Error(err)
-	//	os.Exit(1)
-	//}
 
 	client := alipay.New(app.ID, app.PublicKey, app.PrivateKey, true)
 
