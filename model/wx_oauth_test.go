@@ -35,7 +35,7 @@ func TestEnv_SaveWxAccess(t *testing.T) {
 			name:   "Save Wecaht OAuth Access",
 			fields: fields{db: db},
 			args: args{
-				appID: appID,
+				appID: oauthApp.AppID,
 				acc:   acc,
 				c:     clientApp(),
 			},
@@ -81,7 +81,7 @@ func TestEnv_LoadWxAccess(t *testing.T) {
 			name:   "Load Wechat OAuth Access",
 			fields: fields{db: db},
 			args: args{
-				appID:     appID,
+				appID:     oauthApp.AppID,
 				sessionID: acc.SessionID,
 			},
 		},
