@@ -32,10 +32,11 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func init()  {
+func init() {
 	viper.SetConfigName("api")
 	viper.AddConfigPath("$HOME/config")
 }
+
 // Directly insert a row into ftc_vip for mocking.
 func saveMembership(m paywall.Membership) error {
 	query := `
@@ -72,13 +73,6 @@ func newDevDB() *sql.DB {
 }
 
 func newDevPostman() postoffice.Postman {
-	//mailHost := os.Getenv("HANQI_SMTP_HOST")
-	//mailUser := os.Getenv("HANQI_SMTP_USER")
-	//portStr := os.Getenv("HANQI_SMTP_PORT")
-	//mailPass := os.Getenv("HANQI_SMTP_PASS")
-	//
-	//mailPort, _ := strconv.Atoi(portStr)
-
 	var conn util.Conn
 	err := viper.UnmarshalKey("hanqi", &conn)
 	if err != nil {
@@ -98,17 +92,25 @@ func newWxOAuthApp() wxlogin.WxApp {
 	return app
 }
 
+func newWxPayApp() wechat.PayApp {
+	var app wechat.PayApp
+
+	err := viper.UnmarshalKey("wxapp.m_subs", &app)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return app
+}
+
 var db = newDevDB()
 var postman = newDevPostman()
 var devCache = cache.New(cache.DefaultExpiration, 0)
 var devEnv = New(db, devCache, false)
-
-var appID = os.Getenv("WXPAY_APPID")
-var mchID = os.Getenv("WXPAY_MCHID")
-var appSecret = os.Getenv("WXPAY_APPSECRET")
-var apiKey = os.Getenv("WXPAY_API_KEY")
-
-var mockClient = wechat.NewClient()
+var oauthApp = newWxOAuthApp()
+var wxpayApp = newWxPayApp()
+var mockClient = wechat.NewClient(wxpayApp)
 
 var mockPlan = paywall.GetDefaultPricing()["standard_year"]
 
@@ -120,8 +122,6 @@ func clientApp() gorest.ClientApp {
 		UserAgent:  fake.UserAgent(),
 	}
 }
-
-var tenDaysLater = time.Now().AddDate(0, 0, 10)
 
 func generateCode() string {
 	code, _ := gorest.RandomBase64(24)
@@ -350,7 +350,7 @@ func (m mocker) createMember() paywall.Membership {
 func (m mocker) createWxAccess() wxlogin.OAuthAccess {
 	acc := m.wxAccess()
 
-	err := devEnv.SaveWxAccess(appID, acc, clientApp())
+	err := devEnv.SaveWxAccess(oauthApp.AppID, acc, clientApp())
 
 	if err != nil {
 		panic(err)
@@ -419,8 +419,8 @@ func fillResp(p wxpay.Params) wxpay.Params {
 
 	p.SetString("return_code", "SUCCESS")
 	p.SetString("return_msg", "OK")
-	p.SetString("appid", appID)
-	p.SetString("mch_id", mchID)
+	p.SetString("appid", wxpayApp.AppID)
+	p.SetString("mch_id", wxpayApp.MchID)
 	p.SetString("nonce_str", nonce)
 	p.SetString("result_code", "SUCCESS")
 	p.SetString("trade_type", "APP")
