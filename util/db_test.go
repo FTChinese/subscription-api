@@ -48,7 +48,7 @@ func TestDBConn(t *testing.T) {
 		Net:    "tcp",
 		Addr:   fmt.Sprintf("%s:%d", c.Host, c.Port),
 		Params: map[string]string{
-			"time_zone": "+00:00",
+			"time_zone": `'+00:00'`,
 		},
 		AllowNativePasswords: true,
 	}
