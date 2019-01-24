@@ -19,10 +19,14 @@ type Conn struct {
 // NewDB creates a db connection
 func NewDB(c Conn) (*sql.DB, error) {
 	cfg := &mysql.Config{
-		User:                 c.User,
-		Passwd:               c.Pass,
-		Net:                  "tcp",
-		Addr:                 fmt.Sprintf("%s:%d", c.Host, c.Port),
+		User:   c.User,
+		Passwd: c.Pass,
+		Net:    "tcp",
+		Addr:   fmt.Sprintf("%s:%d", c.Host, c.Port),
+		// Always use UTC time.
+		Params: map[string]string{
+			"time_zone": "+00:00",
+		},
 		AllowNativePasswords: true,
 	}
 
