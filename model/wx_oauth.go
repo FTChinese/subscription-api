@@ -130,7 +130,8 @@ func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
 		country = ?,
 		province = ?,
 		city = ?,
-		privilege = NULLIF(?, '')`
+		privilege = NULLIF(?, ''),
+		updated_utc = UTC_TIMESTAMP()`
 
 	_, err := env.db.Exec(query,
 		u.UnionID,

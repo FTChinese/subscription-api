@@ -156,7 +156,7 @@ func main() {
 
 	// Requires user id.
 	r.Route("/wxpay", func(r1 chi.Router) {
-		r1.Use(controller.CheckUserID)
+		r1.Use(controller.UserOrUnionID)
 
 		r1.Post("/unified-order/{tier}/{cycle}", wxRouter.UnifiedOrder)
 
@@ -168,7 +168,7 @@ func main() {
 
 	// Require user id.
 	r.Route("/alipay", func(r1 chi.Router) {
-		r1.Use(controller.CheckUserID)
+		r1.Use(controller.UserOrUnionID)
 
 		r1.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
 		// r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
@@ -192,11 +192,11 @@ func main() {
 		// r1.Get("/banner", )
 	})
 
-	r.Route("/wx", func(r1 chi.Router) {
-		r1.Route("/oauth", func(r2 chi.Router) {
-			r2.Post("/login", wxAuth.Login)
-			r2.Put("/refresh", wxAuth.Refresh)
-			r2.Get("/callback", wxAuth.WebCallback)
+	r.Route("/wx", func(r chi.Router) {
+		r.Route("/oauth", func(r chi.Router) {
+			r.With(controller.RequireAppID).Post("/login", wxAuth.Login)
+			r.With(controller.RequireAppID).Put("/refresh", wxAuth.Refresh)
+			r.Get("/callback", wxAuth.WebCallback)
 		})
 	})
 
