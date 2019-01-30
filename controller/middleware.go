@@ -10,8 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const userIDKey = "X-User-Id"
-const unionIDKey = "X-Union-Id"
+const (
+	userIDKey  = "X-User-Id"
+	unionIDKey = "X-Union-Id"
+	appIDKey   = "X-App-Id"
+)
 
 // NoCache set Cache-Control request header
 func NoCache(next http.Handler) http.Handler {
@@ -30,7 +33,7 @@ func NoCache(next http.Handler) http.Handler {
 //
 // - 401 Unauthorized if request header does not have `X-User-Name`,
 // or the value is empty.
-func CheckUserID(next http.Handler) http.Handler {
+func UserOrUnionID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		userID := req.Header.Get(userIDKey)
 		unionID := req.Header.Get(unionIDKey)
@@ -38,9 +41,9 @@ func CheckUserID(next http.Handler) http.Handler {
 		userID = strings.TrimSpace(userID)
 		unionID = strings.TrimSpace(unionID)
 		if userID == "" && unionID == "" {
-			log.WithField("location", "CheckUserID").Info("Missing X-User-Id or X-Union-Id header")
+			log.WithField("trace", "CheckUserID").Info("Missing X-User-Id or X-Union-Id header")
 
-			view.Render(w, view.NewUnauthorized(""))
+			view.Render(w, view.NewUnauthorized("Missing X-User-Id or X-Union-Id header"))
 
 			return
 		}
@@ -57,20 +60,41 @@ func CheckUserID(next http.Handler) http.Handler {
 //
 // - 401 Unauthorized if request header does not have `X-User-Name`,
 // or the value is empty.
-func CheckUnionID(next http.Handler) http.Handler {
+func UnionID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		unionID := req.Header.Get(unionIDKey)
 
 		unionID = strings.TrimSpace(unionID)
 		if unionID == "" {
-			log.WithField("location", "CheckUnionID").Info("Missing X-Unioin-Id header")
+			log.WithField("trace", "UnionID").Info("Missing X-Union-Id header")
 
-			view.Render(w, view.NewUnauthorized(""))
+			view.Render(w, view.NewUnauthorized("Missing X-Union-Id header"))
 
 			return
 		}
 
 		req.Header.Set(unionIDKey, unionID)
+
+		next.ServeHTTP(w, req)
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+func RequireAppID(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, req *http.Request) {
+		appID := req.Header.Get(appIDKey)
+
+		appID = strings.TrimSpace(appID)
+		if appID == "" {
+			log.WithField("trace", "RequireAppID").Info("Missing X-App-Id header")
+
+			view.Render(w, view.NewUnauthorized("Missing X-App-Id header"))
+
+			return
+		}
+
+		req.Header.Set(unionIDKey, appID)
 
 		next.ServeHTTP(w, req)
 	}
