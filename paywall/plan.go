@@ -15,7 +15,6 @@ type Plan struct {
 	ListPrice   float64    `json:"listPrice"`
 	NetPrice    float64    `json:"netPrice"`
 	Description string     `json:"description"`
-	Ignore      bool       `json:"ignore,omitempty"`
 }
 
 // WxPrice converts price to Wechat pay format.
