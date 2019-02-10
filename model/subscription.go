@@ -8,7 +8,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
-// IsSubsAllowed checks if this user is allowed to purchase a subscritpion.
+// IsSubsAllowed checks if this user is allowed to purchase a subscription.
 // If a user is a valid member, and the membership is not expired, and not within the allowed renewal period, deny the request.
 func (env Env) IsSubsAllowed(subs paywall.Subscription) (bool, error) {
 	member, err := env.findMember(subs)
@@ -20,7 +20,7 @@ func (env Env) IsSubsAllowed(subs paywall.Subscription) (bool, error) {
 		}
 
 		logger.WithField("trace", "IsSubsAllowed").Error(err)
-		// If any other unkonw error occurred
+		// If any other unknown error occurred
 		return false, err
 	}
 
@@ -53,8 +53,7 @@ func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) erro
 		c.ClientType,
 		c.Version,
 		c.UserIP,
-		c.UserAgent,
-	)
+		c.UserAgent)
 
 	if err != nil {
 		logger.WithField("trace", "SaveSubscription").Error(err)
