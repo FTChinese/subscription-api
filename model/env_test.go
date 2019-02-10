@@ -3,13 +3,14 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"github.com/spf13/viper"
-	"gitlab.com/ftchinese/subscription-api/util"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/FTChinese/go-rest"
+	"github.com/spf13/viper"
+	"gitlab.com/ftchinese/subscription-api/util"
+
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/smartwalle/alipay"
@@ -27,7 +28,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/wechat"
 
 	"github.com/icrowley/fake"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -404,6 +405,7 @@ func wxParsedPrepay() wxpay.Params {
 
 	return p
 }
+
 func wxParsedNoti(orderID string) wxpay.Params {
 	resp := wxNotiResp(orderID)
 	p, err := mockClient.ParseResponse(strings.NewReader(resp))
