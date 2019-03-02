@@ -7,12 +7,16 @@ import (
 
 // findMember retrieves a user's membership based on subscription information.
 func (env Env) findMember(subs paywall.Subscription) (paywall.Membership, error) {
-	query := env.stmtSelectMember(subs.IsWxLogin())
+	query := env.stmtSelectMember()
 
 	var m paywall.Membership
 	var vipType int64
 
-	err := env.db.QueryRow(query, subs.UserID).Scan(
+	err := env.db.QueryRow(
+		query,
+		subs.UserID,
+		subs.UnionID,
+	).Scan(
 		&m.UserID,
 		&m.UnionID,
 		&vipType,

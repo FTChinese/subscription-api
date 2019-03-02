@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
@@ -42,14 +42,14 @@ func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) erro
 	_, err := env.db.Exec(
 		env.stmtInsertSubs(),
 		s.OrderID,
+		s.UserID,
+		s.FTCUserID,
+		s.UnionID,
 		s.ListPrice,
 		s.NetPrice,
-		s.UserID,
-		s.LoginMethod,
 		s.TierToBuy,
 		s.BillingCycle,
 		s.PaymentMethod,
-		s.IsRenewal,
 		c.ClientType,
 		c.Version,
 		c.UserIP,
@@ -71,13 +71,14 @@ func (env Env) FindSubscription(orderID string) (paywall.Subscription, error) {
 		env.stmtSelectSubs(),
 		orderID,
 	).Scan(
-		&s.UserID,
 		&s.OrderID,
-		&s.ListPrice,
-		&s.NetPrice,
-		&s.LoginMethod,
+		&s.UserID,
+		&s.FTCUserID,
+		&s.UnionID,
 		&s.TierToBuy,
 		&s.BillingCycle,
+		&s.ListPrice,
+		&s.NetPrice,
 		&s.PaymentMethod,
 		&s.CreatedAt,
 		&s.ConfirmedAt,
@@ -111,13 +112,14 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		env.stmtSelectSubsLock(),
 		orderID,
 	).Scan(
-		&subs.UserID,
 		&subs.OrderID,
-		&subs.ListPrice,
-		&subs.NetPrice,
-		&subs.LoginMethod,
+		&subs.UserID,
+		&subs.FTCUserID,
+		&subs.UnionID,
 		&subs.TierToBuy,
 		&subs.BillingCycle,
+		&subs.ListPrice,
+		&subs.NetPrice,
 		&subs.PaymentMethod,
 		&subs.CreatedAt,
 		&subs.ConfirmedAt,
@@ -127,11 +129,13 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		logger.WithField("trace", "ConfirmPayment").Error(err)
 
 		_ = tx.Rollback()
-		// If this order does not exist, do not retry.
+
 		if errSubs == sql.ErrNoRows {
 			return subs, ErrOrderNotFound
 		}
 	}
+
+	logger.Infof("Found order %s", subs.OrderID)
 
 	// Already confirmed.
 	if !subs.ConfirmedAt.IsZero() {
@@ -142,33 +146,40 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		return subs, ErrAlreadyConfirmed
 	}
 
-	logger.WithField("trace", "ConfirmPayment").Infof("Found order: %+v", subs)
-
+	// A flag to determine insert a new member
+	// or update an existing one.
+	memberExists := true
 	// Step 2: query membership expiration time to determine the order's start date, and then user start date to calculate end date.
 	// The row is locked for update.
 	var dur paywall.Duration
 	errDur := env.db.QueryRow(
-		env.stmtSelectExpLock(subs.IsWxLogin()),
+		env.stmtSelectExpireDate(),
 		subs.UserID,
+		subs.UnionID,
 	).Scan(
 		&dur.Timestamp,
 		&dur.ExpireDate,
 	)
 
-	// If any db error occurred, tell API provider to retry.
-	if errDur != nil && errDur != sql.ErrNoRows {
-		logger.WithField("trace", "ConfirmPayment").Error(errDur)
+	if errDur != nil {
+		if errDur == sql.ErrNoRows {
+			memberExists = false
+		} else {
+			logger.WithField("trace", "ConfirmPayment").Error(errDur)
 
-		_ = tx.Rollback()
+			_ = tx.Rollback()
+		}
 	}
 
-	// For sql.ErrNoRows, `dur` is still a valid value.
+	logger.Infof("Membership for %s: %t", subs.UserID, memberExists)
+
+	// For sql.ErrNoRows, the zero value of Duration
+	// is still a valid value.
 	subs, err = subs.ConfirmWithDuration(dur, confirmedAt)
 	if err != nil {
 		return subs, err
 	}
-
-	logger.WithField("trace", "ConfirmPayment").Infof("Updated order: %+v", subs)
+	logger.Infof("Order confirmed: %s - %s", subs.StartDate, subs.EndDate)
 
 	// Step 3: Update subscription order with confirmation time, membership start date and end date.
 	_, updateErr := tx.Exec(
@@ -187,23 +198,43 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		logger.WithField("trace", "ConfirmPayment").Error(updateErr)
 	}
 
-	// Step 4: Insert a membership or update it in case of duplicacy.
-	_, createErr := tx.Exec(
-		env.stmtInsertMember(),
-		subs.UserID,
-		subs.GetUnionID(),
-		subs.TierToBuy,
-		subs.BillingCycle,
-		subs.EndDate,
-		subs.TierToBuy,
-		subs.BillingCycle,
-		subs.EndDate,
-	)
+	logger.Infof("Order updated")
 
-	if createErr != nil {
-		_ = tx.Rollback()
+	// Step 4: Insert a membership or update it in case of duplicate.
+	if memberExists {
+		logger.Infof("Extend an existing member")
+		_, err := tx.Exec(env.stmtUpdateMember(),
+			subs.FTCUserID,
+			subs.UnionID,
+			subs.TierToBuy,
+			subs.BillingCycle,
+			subs.EndDate,
+			subs.UserID,
+			subs.UnionID,
+		)
 
-		logger.WithField("trace", "ConfirmPayment").Error(err)
+		if err != nil {
+			_ = tx.Rollback()
+
+			logger.WithField("trace", "ConfirmPayment").Error(err)
+		}
+	} else {
+		logger.Info("Create a new member")
+
+		_, err := tx.Exec(env.stmtInsertMember(),
+			subs.UserID,
+			subs.UnionID,
+			subs.FTCUserID,
+			subs.UnionID,
+			subs.TierToBuy,
+			subs.BillingCycle,
+			subs.EndDate,
+		)
+		if err != nil {
+			_ = tx.Rollback()
+
+			logger.WithField("trace", "ConfirmPayment").Error(err)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -211,5 +242,6 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		return subs, err
 	}
 
+	logger.Info("Confirm order finished")
 	return subs, nil
 }

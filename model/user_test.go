@@ -10,7 +10,7 @@ func TestConfirmationParcel(t *testing.T) {
 	user := m.user()
 	subs := m.confirmedSubs()
 
-	p, err := user.ComfirmationParcel(subs)
+	p, err := user.ConfirmationParcel(subs)
 	if err != nil {
 		t.Error(err)
 		return
@@ -32,7 +32,7 @@ func TestSendEmail(t *testing.T) {
 	subs := m.confirmedSubs()
 	t.Logf("A confimed subscription: %+v\n", subs)
 
-	parcel, err := user.ComfirmationParcel(subs)
+	parcel, err := user.ConfirmationParcel(subs)
 
 	if err != nil {
 		t.Error(err)

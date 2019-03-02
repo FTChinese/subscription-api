@@ -17,7 +17,7 @@ require (
 	github.com/objcoding/wxpay v1.0.6
 	github.com/parnurzeal/gorequest v0.2.15
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v0.0.0-20181028125025-b2ce2384e17b
 	github.com/sirupsen/logrus v1.3.0
 	github.com/smartwalle/alipay v0.0.0-20190125062115-fa003253fa03

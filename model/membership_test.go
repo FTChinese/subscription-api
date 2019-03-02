@@ -4,22 +4,45 @@ import (
 	"database/sql"
 	"testing"
 
-	cache "github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
+func TestSaveMembership(t *testing.T) {
+	tests := []struct {
+		name string
+		m    mocker
+	}{
+		{
+			name: "FTC only",
+			m:    newMocker().ftcOnly(),
+		},
+		{
+			name: "Wechat only",
+			m:    newMocker().wxOnly(),
+		},
+		{
+			name: "Bound",
+			m:    newMocker().bound(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.m.createMember()
+		})
+	}
+}
+
 func TestEnv_findMember(t *testing.T) {
-	m := newMocker()
+	m := newMocker().ftcOnly()
 	mm := m.createMember()
 	t.Logf("Created membership: %+v\n", mm)
 
 	subs := m.wxpaySubs()
-	t.Logf("Subscription: %+v\n", subs)
 
 	type fields struct {
 		sandbox bool
 		db      *sql.DB
-		cache   *cache.Cache
 	}
 	type args struct {
 		subs paywall.Subscription
@@ -28,23 +51,19 @@ func TestEnv_findMember(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    paywall.Membership
 		wantErr bool
 	}{
 		{
 			name:    "Find Member",
 			fields:  fields{db: db},
-			args:    args{subs},
-			want:    mm,
+			args:    args{subs: subs},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				sandbox: tt.fields.sandbox,
-				db:      tt.fields.db,
-				cache:   tt.fields.cache,
+				db: tt.fields.db,
 			}
 			got, err := env.findMember(tt.args.subs)
 			if (err != nil) != tt.wantErr {
@@ -53,10 +72,6 @@ func TestEnv_findMember(t *testing.T) {
 			}
 
 			t.Logf("Got: %+v\n", got)
-			// The comparison cound never be equal. Do not use this test.
-			// if !reflect.DeepEqual(got, tt.want) {
-			// 	t.Errorf("Env.findMember() = %v, want %v", got, tt.want)
-			// }
 		})
 	}
 }
