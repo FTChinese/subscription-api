@@ -3,9 +3,9 @@ package controller
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/ali"
@@ -62,37 +62,49 @@ func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter 
 // AppOrder creates an alipay order for native app.
 func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	// Get member tier and billing cycle from url
-	tierKey := getURLParam(req, "tier").toString()
-	cycleKey := getURLParam(req, "cycle").toString()
+	//tierKey := getURLParam(req, "tier").toString()
+	//cycleKey := getURLParam(req, "cycle").toString()
+	//
+	//if tierKey == "" || cycleKey == "" {
+	//	view.Render(w, view.NewBadRequest(msgInvalidURI))
+	//	return
+	//}
 
-	if tierKey == "" || cycleKey == "" {
-		view.Render(w, view.NewBadRequest(msgInvalidURI))
+	tier, err := GetURLParam(req, "tier").ToString()
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	plan, err := router.model.GetCurrentPricing().FindPlan(tierKey, cycleKey)
+	cycle, err := GetURLParam(req, "cycle").ToString()
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
 
 	if err != nil {
 		logger.WithField("trace", "AliAppOrder").Error(err)
 
-		view.Render(w, view.NewBadRequest(msgInvalidURI))
+		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	logger.WithField("trace", "AliAppOrder").Infof("Subscritpion plan: %+v", plan)
+	logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
 
 	// Get user id from request header
-	userID := req.Header.Get(userIDKey)
-	unionID := req.Header.Get(unionIDKey)
-	var loginMethod enum.LoginMethod
-	if userID != "" {
-		loginMethod = enum.LoginMethodEmail
-	} else if unionID != "" {
-		loginMethod = enum.LoginMethodWx
-		userID = unionID
-	}
+	uID := req.Header.Get(userIDKey)
+	wID := req.Header.Get(unionIDKey)
 
-	subs := paywall.NewAlipaySubs(userID, plan, loginMethod)
+	userID := null.NewString(uID, uID != "")
+	unionID := null.NewString(wID, wID != "")
+
+	subs, err := paywall.NewAlipaySubs(userID, unionID, plan)
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
 
 	ok, err := router.model.IsSubsAllowed(subs)
 	// err = ar.model.PlaceOrder(subs, app)

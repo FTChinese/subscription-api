@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"strings"
 	"time"
@@ -36,31 +37,6 @@ import (
 func init() {
 	viper.SetConfigName("api")
 	viper.AddConfigPath("$HOME/config")
-}
-
-// Directly insert a row into ftc_vip for mocking.
-func saveMembership(m paywall.Membership) error {
-	query := `
-	INSERT INTO premium.ftc_vip
-	SET vip_id = ?,
-		vip_id_alias = ?,
-		member_tier = ?,
-		billing_cycle = ?,
-		expire_date = ?`
-
-	_, err := devEnv.db.Exec(query,
-		m.UserID,
-		m.UnionID,
-		m.Tier,
-		m.Cycle,
-		m.ExpireDate,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func newDevDB() *sql.DB {
@@ -144,29 +120,42 @@ func generateAvatarURL() string {
 }
 
 type mocker struct {
-	userID      string
-	unionID     string
-	email       string
-	password    string
-	userName    string
-	openID      string
-	loginMethod enum.LoginMethod
-	expireDate  chrono.Date
-	ip          string
+	userID     null.String
+	unionID    null.String
+	email      string
+	password   string
+	userName   string
+	openID     string
+	expireDate chrono.Date
+	ip         string
 }
 
 func newMocker() mocker {
 	return mocker{
-		userID:      uuid.Must(uuid.NewV4()).String(),
-		unionID:     generateWxID(),
-		email:       fake.EmailAddress(),
-		password:    fake.Password(8, 20, false, true, false),
-		userName:    fake.UserName(),
-		openID:      generateWxID(),
-		loginMethod: enum.LoginMethodEmail,
-		expireDate:  chrono.DateNow(),
-		ip:          fake.IPv4(),
+		email:      fake.EmailAddress(),
+		password:   fake.Password(8, 20, false, true, false),
+		userName:   fake.UserName(),
+		openID:     generateWxID(),
+		expireDate: chrono.DateNow(),
+		ip:         fake.IPv4(),
 	}
+}
+
+func (m mocker) ftcOnly() mocker {
+	m.userID = null.StringFrom(uuid.Must(uuid.NewV4()).String())
+	return m
+}
+
+func (m mocker) wxOnly() mocker {
+	m.unionID = null.StringFrom(generateWxID())
+	return m
+}
+
+func (m mocker) bound() mocker {
+	m.userID = null.StringFrom(uuid.Must(uuid.NewV4()).String())
+	m.unionID = null.StringFrom(generateWxID())
+
+	return m
 }
 
 func (m mocker) withEmail(email string) mocker {
@@ -179,15 +168,20 @@ func (m mocker) withExpireDate(t time.Time) mocker {
 	return m
 }
 
-func (m mocker) withWxLogin() mocker {
-	m.loginMethod = enum.LoginMethodWx
-	return m
+func (m mocker) compoundID() string {
+	if m.userID.Valid {
+		return m.userID.String
+	} else if m.unionID.Valid {
+		return m.unionID.String
+	} else {
+		panic(errors.New("Both user id and union id are empty"))
+	}
 }
 
 func (m mocker) user() paywall.User {
 	return paywall.User{
-		UserID:   m.userID,
-		UnionID:  null.StringFrom(m.unionID),
+		UserID:   m.userID.String,
+		UnionID:  m.unionID,
 		UserName: null.StringFrom(m.userName),
 		Email:    m.email,
 	}
@@ -200,7 +194,7 @@ func (m mocker) wxAccess() wxlogin.OAuthAccess {
 		RefreshToken: generateToken(),
 		OpenID:       m.openID,
 		Scope:        "snsapi_userinfo",
-		UnionID:      null.StringFrom(m.unionID),
+		UnionID:      m.unionID,
 	}
 	acc.GenerateSessionID()
 	acc.CreatedAt = chrono.TimeNow()
@@ -210,7 +204,7 @@ func (m mocker) wxAccess() wxlogin.OAuthAccess {
 
 func (m mocker) wxUser() wxlogin.UserInfo {
 	return wxlogin.UserInfo{
-		UnionID:    m.unionID,
+		UnionID:    m.unionID.String,
 		NickName:   fake.UserName(),
 		AvatarURL:  generateAvatarURL(),
 		Sex:        randomdata.Number(0, 3),
@@ -222,21 +216,20 @@ func (m mocker) wxUser() wxlogin.UserInfo {
 }
 
 func (m mocker) wxpaySubs() paywall.Subscription {
-	if m.loginMethod == enum.LoginMethodWx {
-		return paywall.NewWxpaySubs(m.unionID, mockPlan, enum.LoginMethodWx)
-	}
-	return paywall.NewWxpaySubs(m.userID, mockPlan, enum.LoginMethodEmail)
+	s, _ := paywall.NewWxpaySubs(m.userID, m.unionID, mockPlan)
+	return s
 }
 
 func (m mocker) alipaySubs() paywall.Subscription {
-	if m.loginMethod == enum.LoginMethodWx {
-		return paywall.NewAlipaySubs(m.unionID, mockPlan, enum.LoginMethodWx)
-	}
-	return paywall.NewAlipaySubs(m.userID, mockPlan, enum.LoginMethodEmail)
+	s, _ := paywall.NewAlipaySubs(m.userID, m.unionID, mockPlan)
+	return s
 }
 
 func (m mocker) confirmedSubs() paywall.Subscription {
-	subs := paywall.NewWxpaySubs(m.userID, mockPlan, enum.LoginMethodWx)
+	subs, err := paywall.NewWxpaySubs(m.userID, m.unionID, mockPlan)
+	if err != nil {
+		panic(err)
+	}
 	subs.CreatedAt = chrono.TimeNow()
 	subs.ConfirmedAt = chrono.TimeNow()
 	subs.IsRenewal = false
@@ -248,13 +241,10 @@ func (m mocker) confirmedSubs() paywall.Subscription {
 
 func (m mocker) member() paywall.Membership {
 	mm := paywall.Membership{
-		UserID: m.userID,
-		Tier:   enum.TierStandard,
-		Cycle:  enum.CycleYear,
-	}
-
-	if m.loginMethod == enum.LoginMethodWx {
-		mm.UnionID = null.StringFrom(m.unionID)
+		UserID:  m.compoundID(),
+		UnionID: m.unionID,
+		Tier:    enum.TierStandard,
+		Cycle:   enum.CycleYear,
 	}
 
 	mm.ExpireDate = m.expireDate
@@ -338,8 +328,22 @@ func (m mocker) createAlipaySubs() paywall.Subscription {
 }
 
 func (m mocker) createMember() paywall.Membership {
-	mm := m.member()
-	err := saveMembership(mm)
+
+	mm := paywall.Membership{
+		UserID:  m.compoundID(),
+		UnionID: m.unionID,
+		Tier:    enum.TierStandard,
+		Cycle:   enum.CycleYear,
+	}
+	_, err := db.Exec(devEnv.stmtInsertMember(),
+		mm.UserID,
+		mm.UnionID,
+		m.userID,
+		mm.UnionID,
+		mm.Tier,
+		mm.Cycle,
+		m.expireDate,
+	)
 
 	if err != nil {
 		panic(err)

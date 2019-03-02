@@ -1,7 +1,7 @@
 package paywall
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/FTChinese/go-rest/enum"
 )
@@ -16,7 +16,7 @@ func (plans Pricing) FindPlan(tier, cycle string) (Plan, error) {
 	p, ok := plans[key]
 
 	if !ok {
-		return p, errors.New("subscription plan not found")
+		return p, fmt.Errorf("pricing plan for %s not found", key)
 	}
 
 	return p, nil

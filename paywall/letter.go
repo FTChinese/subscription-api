@@ -1,6 +1,6 @@
 package paywall
 
-// ConfirmationLetter is the content of the email send to user when user sucessfully subscribed to membership.
+// ConfirmationLetter is the content of the email send to user when user successfully subscribed to membership.
 const confirmationLetter = `
 FT中文网用户 {{.User.NormalizeName}},
 
@@ -14,7 +14,7 @@ FT中文网用户 {{.User.NormalizeName}},
 
 订单号: {{.Subs.OrderID}}
 会员类型: {{.Subs.TierToBuy.ToCN}}/{{.Subs.BillingCycle.ToCN}}
-支付金额: ¥{{.Subs.TotalAmount}}
+支付金额: ¥{{.Subs.NetPrice}}
 支付方式: {{.Subs.PaymentMethod.ToCN}}
 订单日期: {{.Subs.CreatedAt.StringCN}}
 本次订单购买的会员期限: {{.Subs.StartDate}} 至 {{.Subs.EndDate}}

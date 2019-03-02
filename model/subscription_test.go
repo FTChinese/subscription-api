@@ -5,36 +5,26 @@ import (
 	"testing"
 	"time"
 
-	gorest "github.com/FTChinese/go-rest"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/FTChinese/go-rest"
+	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
-func TestSaveMembership(t *testing.T) {
-	m := newMocker()
-	mm := m.member()
-	t.Logf("Membershp: %+v\n", mm)
-
-	err := saveMembership(mm)
-	if err != nil {
-		t.Error(err)
-	}
-}
 func TestEnv_IsSubsAllowed(t *testing.T) {
 	// A membership that can be renewed.
-	m1 := newMocker()
+	m1 := newMocker().ftcOnly()
 	mm1 := m1.createMember()
-	t.Logf("Membership: %+v\n", mm1)
+	t.Logf("Membership renewable: %+v\n", mm1)
 
 	// A membership that's not allowed to renew.
-	m2 := newMocker()
+	m2 := newMocker().ftcOnly()
 	mm2 := m2.withExpireDate(time.Now().AddDate(2, 0, 0)).createMember()
-	t.Logf("Membership: %+v\n", mm2)
+	t.Logf("Membership not renwable: %+v\n", mm2)
 
 	// A membership that is expired
-	m3 := newMocker()
+	m3 := newMocker().ftcOnly()
 	mm3 := m3.withExpireDate(time.Now().AddDate(0, -1, 0)).createMember()
-	t.Logf("Membership: %+v\n", mm3)
+	t.Logf("Membership expired: %+v\n", mm3)
 
 	type fields struct {
 		sandbox bool
@@ -52,9 +42,13 @@ func TestEnv_IsSubsAllowed(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Allow New Subscription",
-			fields:  fields{db: db, cache: devCache},
-			args:    args{subs: newMocker().wxpaySubs()},
+			name:   "Allow New Subscription",
+			fields: fields{db: db, cache: devCache},
+			args: args{
+				subs: newMocker().
+					ftcOnly().
+					wxpaySubs(),
+			},
 			want:    true,
 			wantErr: false,
 		},
@@ -66,7 +60,7 @@ func TestEnv_IsSubsAllowed(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Member beyond Allowed Renwal Period",
+			name:    "Member beyond Allowed Renewal Period",
 			fields:  fields{db: db, cache: devCache},
 			args:    args{subs: m2.wxpaySubs()},
 			want:    false,
@@ -116,34 +110,42 @@ func TestEnv_SaveSubscription(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "Wxpay Subscription with Email Login",
+			name:   "Email Only User for Wechat Pay",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().wxpaySubs(),
+				s: newMocker().ftcOnly().wxpaySubs(),
 				c: clientApp(),
 			},
 		},
 		{
-			name:   "Wxpay Subscription with Wechat Login",
+			name:   "Wechat Only User for Wechat Pay",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().withWxLogin().wxpaySubs(),
+				s: newMocker().wxOnly().wxpaySubs(),
 				c: clientApp(),
 			},
 		},
 		{
-			name:   "Alipay Subscription with Email Login",
+			name:   "Email Only User for Alipay",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().alipaySubs(),
+				s: newMocker().ftcOnly().alipaySubs(),
 				c: clientApp(),
 			},
 		},
 		{
-			name:   "Alipay Subscription with Wechat Login",
+			name:   "Wechat Only User for Alipay",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().withWxLogin().alipaySubs(),
+				s: newMocker().wxOnly().alipaySubs(),
+				c: clientApp(),
+			},
+		},
+		{
+			name:   "User with bound accounts",
+			fields: fields{db: db},
+			args: args{
+				s: newMocker().bound().wxpaySubs(),
 				c: clientApp(),
 			},
 		},
@@ -163,10 +165,14 @@ func TestEnv_SaveSubscription(t *testing.T) {
 }
 
 func TestEnv_FindSubscription(t *testing.T) {
-	m := newMocker()
-	subs := m.createWxpaySubs()
+	m1 := newMocker().ftcOnly()
+	subs1 := m1.createWxpaySubs()
 
-	subs2 := m.withWxLogin().createWxpaySubs()
+	m2 := newMocker().wxOnly()
+	subs2 := m2.createWxpaySubs()
+
+	m3 := newMocker().bound()
+	subs3 := m3.createWxpaySubs()
 
 	type fields struct {
 		sandbox bool
@@ -177,22 +183,27 @@ func TestEnv_FindSubscription(t *testing.T) {
 		orderID string
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		// want    paywall.Subscription
+		name    string
+		fields  fields
+		args    args
 		wantErr bool
 	}{
 		{
-			name:    "Find Subscription with Email Login",
+			name:    "Find Subscription FTC only user",
 			fields:  fields{db: db},
-			args:    args{orderID: subs.OrderID},
+			args:    args{orderID: subs1.OrderID},
 			wantErr: false,
 		},
 		{
-			name:    "Find Subscription with Wechat Login",
+			name:    "Find Subscription Wechat only user",
 			fields:  fields{db: db},
 			args:    args{orderID: subs2.OrderID},
+			wantErr: false,
+		},
+		{
+			name:    "Find Subscription for bound user",
+			fields:  fields{db: db},
+			args:    args{orderID: subs3.OrderID},
 			wantErr: false,
 		},
 	}
@@ -210,18 +221,33 @@ func TestEnv_FindSubscription(t *testing.T) {
 			}
 
 			t.Logf("%+v\n", got)
-			// Comparsion is useless.
-			// if !reflect.DeepEqual(got, tt.want) {
-			// 	t.Errorf("Env.FindSubscription() = %v, want %v", got, tt.want)
-			// }
 		})
 	}
 }
 
+func TestNewMember(t *testing.T) {
+	m := newMocker().ftcOnly()
+	subs := m.createWxpaySubs()
+
+	got, err := devEnv.ConfirmPayment(subs.OrderID, time.Now())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("%+v\n", got)
+}
+
 func TestEnv_ConfirmPayment(t *testing.T) {
-	m := newMocker()
+	m := newMocker().ftcOnly()
+	// The first order creates a member.
 	subs1 := m.createWxpaySubs()
+	// The second order renew this member.
 	subs2 := m.createWxpaySubs()
+
+	m2 := newMocker().bound()
+	subs3 := m2.createWxpaySubs()
+	subs4 := m2.createWxpaySubs()
 
 	type fields struct {
 		sandbox bool
@@ -256,6 +282,23 @@ func TestEnv_ConfirmPayment(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:   "New subscription for bound user",
+			fields: fields{db: db},
+			args: args{
+				orderID:     subs3.OrderID,
+				confirmedAt: time.Now(),
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Renew subscription for bound user",
+			fields: fields{db: db},
+			args: args{
+				orderID:     subs4.OrderID,
+				confirmedAt: time.Now(),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -271,9 +314,6 @@ func TestEnv_ConfirmPayment(t *testing.T) {
 			}
 
 			t.Logf("%+v\n", got)
-			// if !reflect.DeepEqual(got, tt.want) {
-			// 	t.Errorf("Env.ConfirmPayment() = %v, want %v", got, tt.want)
-			// }
 		})
 	}
 }

@@ -3,9 +3,9 @@ package controller
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/model"
@@ -46,41 +46,45 @@ func NewWxRouter(m model.Env, p postoffice.Postman, sandbox bool) WxPayRouter {
 // UnifiedOrder implements 统一下单.
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_1
 func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request) {
-	// Get member tier and billing cycle from url
-	tierKey := getURLParam(req, "tier").toString()
-	cycleKey := getURLParam(req, "cycle").toString()
 
-	if tierKey == "" || cycleKey == "" {
-		view.Render(w, view.NewBadRequest(msgInvalidURI))
+	tier, err := GetURLParam(req, "tier").ToString()
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	cycle, err := GetURLParam(req, "cycle").ToString()
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
 	// Try to find a plan based on the tier and cycle.
-	plan, err := router.model.GetCurrentPricing().FindPlan(tierKey, cycleKey)
-	// If pricing plan if not found.
+	plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
+
+	// If pricing plan is not found.
 	if err != nil {
 		logger.WithField("trace", "UnifiedOrder").Error(err)
-
-		view.Render(w, view.NewBadRequest(msgInvalidURI))
+		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	logger.WithField("trace", "UnifiedOrder").Infof("Subscritpion plan: %+v", plan)
+	logger.WithField("trace", "UnifiedOrder").Infof("Subscription plan: %+v", plan)
 
 	// Get user id from request header.
 	// If user id is found, it means user is subscribing with FTC account;
 	// if union id is found, it means user is subscribing with Wechat account;
-	userID := req.Header.Get(userIDKey)
-	unionID := req.Header.Get(unionIDKey)
-	var loginMethod enum.LoginMethod
-	if userID != "" {
-		loginMethod = enum.LoginMethodEmail
-	} else if unionID != "" {
-		loginMethod = enum.LoginMethodWx
-		userID = unionID
-	}
+	uID := req.Header.Get(userIDKey)
+	wID := req.Header.Get(unionIDKey)
 
-	subs := paywall.NewWxpaySubs(userID, plan, loginMethod)
+	userID := null.NewString(uID, uID != "")
+	unionID := null.NewString(wID, wID != "")
+
+	subs, err := paywall.NewWxpaySubs(userID, unionID, plan)
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
 
 	ok, err := router.model.IsSubsAllowed(subs)
 	if err != nil {
