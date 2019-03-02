@@ -65,7 +65,10 @@ func (router PayRouter) wxUniOrderParam(title, ip string, s paywall.Subscription
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
 func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
-	if subs.IsWxLogin() {
+	// If the FTCUserID field is null, it indicates this user
+	// does not have an FTC account bound. You cannot find out
+	// its email address.
+	if !subs.FTCUserID.Valid {
 		return nil
 	}
 	// Find this user's personal data
@@ -75,7 +78,7 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 		return err
 	}
 
-	parcel, err := user.ComfirmationParcel(subs)
+	parcel, err := user.ConfirmationParcel(subs)
 	if err != nil {
 		return err
 	}

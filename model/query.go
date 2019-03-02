@@ -5,13 +5,14 @@ import "fmt"
 const (
 	// Statement to select a row from ftc_trade table.
 	selectSubs = `
-	SELECT user_id AS userId,
-		trade_no AS orderId,
-		trade_price AS price,
-		trade_amount AS charged,
-		login_method AS loginMethod,
+	SELECT trade_no AS orderId,
+		user_id AS userId,
+		ftc_user_id AS ftcUserId,
+		wx_union_id AS unionId,
 		tier_to_buy AS tierToBuy,
 		billing_cycle AS billingCycle,
+		trade_price AS listPrice,
+		trade_amount AS netPrice,
 		payment_method AS paymentMethod,
 		created_utc AS createdAt,
 		confirmed_utc AS confirmedAt
@@ -29,14 +30,14 @@ func (env Env) stmtInsertSubs() string {
 	return fmt.Sprintf(`
 	INSERT INTO %s.ftc_trade
 	SET trade_no = ?,
+		user_id = ?,
+		ftc_user_id = ?,
+		wx_union_id = ?,
 		trade_price = ?,
 		trade_amount = ?,
-		user_id = ?,
-		login_method = ?,
 		tier_to_buy = ?,
 		billing_cycle = ?,
 		payment_method = ?,
-		is_renewal = ?,
 		created_utc = UTC_TIMESTAMP(),
 		client_type = ?,
 		client_version = ?,
@@ -70,23 +71,28 @@ func (env Env) stmtInsertMember() string {
 	INSERT INTO %s.ftc_vip
 	SET vip_id = ?,
 		vip_id_alias = ?,
-		member_tier = ?,
-		billing_cycle = ?,
-		expire_date = ?
-	ON DUPLICATE KEY UPDATE
+		ftc_user_id = ?,
+		wx_union_id = ?,
 		member_tier = ?,
 		billing_cycle = ?,
 		expire_date = ?`, env.vipDBName())
 }
 
+func (env Env) stmtUpdateMember() string {
+	return fmt.Sprintf(`
+	UPDATE %s.ftc_vip
+	SET ftc_user_id = ?,
+		wx_union_id = ?,
+		member_tier = ?,
+		billing_cycle = ?,
+		expire_date = ?
+	WHERE vip_id = ?
+		OR vip_id_alias = ?
+	LIMIT 1`, env.vipDBName())
+}
+
 // Save as the above one, with more data retrieved.
-func (env Env) stmtSelectMember(isWxLogin bool) string {
-	whereCol := "vip_id"
-
-	if isWxLogin {
-		whereCol = "vip_id_alias"
-	}
-
+func (env Env) stmtSelectMember() string {
 	return fmt.Sprintf(`
 	SELECT vip_id AS userId,
 		vip_id_alias AS unionId,
@@ -96,23 +102,20 @@ func (env Env) stmtSelectMember(isWxLogin bool) string {
 		expire_time AS expireTime,
 		expire_date AS expireDate
 	FROM %s.ftc_vip
-	WHERE %s = ?
-	LIMIT 1`, env.vipDBName(), whereCol)
+	WHERE vip_id = ? 
+		OR vip_id_alias = ?
+	LIMIT 1`, env.vipDBName())
 }
 
 // Build statement select a row from ftc_vip by different criteria depending on whether user is logged-in with Wechat or not.
-func (env Env) stmtSelectExpLock(isWxLogin bool) string {
-	whereCol := "vip_id"
-
-	if isWxLogin {
-		whereCol = "vip_id_alias"
-	}
+func (env Env) stmtSelectExpireDate() string {
 
 	return fmt.Sprintf(`
 	SELECT expire_time AS expireTime,
 		expire_date AS expireDate
 	FROM %s.ftc_vip
-	WHERE %s = ?
+	WHERE vip_id = ? 
+		OR vip_id_alias = ?
 	LIMIT 1
-	FOR UPDATE`, env.vipDBName(), whereCol)
+	FOR UPDATE`, env.vipDBName())
 }

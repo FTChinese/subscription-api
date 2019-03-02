@@ -1,11 +1,12 @@
 package paywall
 
 import (
+	"github.com/FTChinese/go-rest"
+	"github.com/pkg/errors"
 	"strconv"
 	"strings"
 	"time"
 
-	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
@@ -14,27 +15,28 @@ import (
 // Subscription contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 type Subscription struct {
-	UserID        string // It might be FTC UUID or Wechat union id, depnding on the login method.
 	OrderID       string
-	LoginMethod   enum.LoginMethod // Determine login method.
+	UserID        string // Use FTCUserID if it is valid, then use UnionID if it is valid, then throw error. This column is acting only as non-null constraint.
+	FTCUserID     null.String
+	UnionID       null.String
 	TierToBuy     enum.Tier
-	BillingCycle  enum.Cycle // Caculate expiration date
+	BillingCycle  enum.Cycle // Calculate expiration date
 	ListPrice     float64
 	NetPrice      float64
 	PaymentMethod enum.PayMethod
 	CreatedAt     chrono.Time // When the order is created.
 	ConfirmedAt   chrono.Time // When the payment is confirmed.
-	IsRenewal     bool        // If this order is used to renew membership. Determined the moment notification is received. Mostly used for data anaylsis and email.
+	IsRenewal     bool        // If this order is used to renew membership. Determined the moment notification is received. Mostly used for data analysis and email.
 	StartDate     chrono.Date // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
 	EndDate       chrono.Date // Membership end date for this order. Depends on start date.
 }
 
 // NewWxpaySubs creates a new Subscription with payment method set to Wechat.
 // Note wechat login and wechat pay we talked here are two totally non-related things.
-func NewWxpaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
+func NewWxpaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription, error) {
 	s := Subscription{
-		UserID:        userID,
-		LoginMethod:   login,
+		FTCUserID:     ftcID,
+		UnionID:       unionID,
 		TierToBuy:     p.Tier,
 		BillingCycle:  p.Cycle,
 		ListPrice:     p.ListPrice,
@@ -42,16 +44,26 @@ func NewWxpaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
 		PaymentMethod: enum.PayMethodWx,
 	}
 
-	s.GenerateOrderID()
+	if ftcID.Valid {
+		s.UserID = ftcID.String
+	} else if unionID.Valid {
+		s.UserID = unionID.String
+	} else {
+		return s, errors.New("ftc user id and union id should not both be null")
+	}
 
-	return s
+	if err := s.GenerateOrderID(); err != nil {
+		return s, err
+	}
+
+	return s, nil
 }
 
 // NewAlipaySubs creates a new Subscription with payment method set to Alipay.
-func NewAlipaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
+func NewAlipaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription, error) {
 	s := Subscription{
-		UserID:        userID,
-		LoginMethod:   login,
+		FTCUserID:     ftcID,
+		UnionID:       unionID,
 		TierToBuy:     p.Tier,
 		BillingCycle:  p.Cycle,
 		ListPrice:     p.ListPrice,
@@ -59,20 +71,33 @@ func NewAlipaySubs(userID string, p Plan, login enum.LoginMethod) Subscription {
 		PaymentMethod: enum.PayMethodAli,
 	}
 
-	s.GenerateOrderID()
+	if ftcID.Valid {
+		s.UserID = ftcID.String
+	} else if unionID.Valid {
+		s.UserID = unionID.String
+	} else {
+		return s, errors.New("ftc user id and union id should not both be null")
+	}
 
-	return s
+	err := s.GenerateOrderID()
+	if err != nil {
+		return s, err
+	}
+
+	return s, nil
 }
 
 // GenerateOrderID creates an id for this order. The order id is created only created upon the initial call of this method. Multiple calls won't change the this order's id.
-func (s *Subscription) GenerateOrderID() {
-	if s.OrderID != "" {
-		return
+func (s *Subscription) GenerateOrderID() error {
+
+	id, err := gorest.RandomHex(8)
+	if err != nil {
+		return err
 	}
 
-	id, _ := gorest.RandomHex(8)
-
 	s.OrderID = "FT" + strings.ToUpper(id)
+
+	return nil
 }
 
 // AliNetPrice converts Charged price to ailpay format
@@ -95,27 +120,9 @@ func (s Subscription) IsConfirmed() bool {
 	return !s.ConfirmedAt.IsZero()
 }
 
-// IsWxLogin Check if user logged in by Wechat account.
-func (s Subscription) IsWxLogin() bool {
-	return s.LoginMethod == enum.LoginMethodWx
-}
-
-// IsEmailLogin checks if user logged in by email.
-func (s Subscription) IsEmailLogin() bool {
-	return s.LoginMethod == enum.LoginMethodEmail
-}
-
-// GetUnionID creates a nullable union id from user id if user logged in via wechat.
-func (s Subscription) GetUnionID() null.String {
-	if s.IsWxLogin() {
-		return null.StringFrom(s.UserID)
-	}
-
-	return null.String{}
-}
-
-// ConfirmWithDuration populate a subscripiton's ConfirmedAt, StartDate, EndDate and IsRenewal based on a user's current membership duration.
-// Current membership might not exists, but the duration is still a valid value since the zero value can be treated as a non-existing membership.
+// ConfirmWithDuration populate a subscription's ConfirmedAt, StartDate, EndDate and IsRenewal based on a user's current membership duration.
+// It picks whichever comes last from Duration.ExpireDate
+// or confirmedAt.
 func (s Subscription) ConfirmWithDuration(dur Duration, confirmedAt time.Time) (Subscription, error) {
 	s.ConfirmedAt = chrono.TimeFrom(confirmedAt)
 
@@ -124,6 +131,11 @@ func (s Subscription) ConfirmWithDuration(dur Duration, confirmedAt time.Time) (
 	s.IsRenewal = dur.ExpireDate.After(confirmedAt)
 
 	var startTime time.Time
+	// If a membership's ExpireDate is after confirmedAt,
+	// use expireDate as new subscription's startTime;
+	// otherwise use the confirmedAt as startTime.
+	// Since the zero value of ExpireDate is always before
+	// confirmedAt, the `else` branch always wins.
 	if s.IsRenewal {
 		startTime = dur.ExpireDate.Time
 	} else {
