@@ -25,8 +25,8 @@ func (u User) NormalizeName() string {
 	return strings.Split(u.Email, "@")[0]
 }
 
-// ComfirmationParcel create a parcel for email after subscription is confirmed.
-func (u User) ComfirmationParcel(s Subscription) (postoffice.Parcel, error) {
+// ConfirmationParcel create a parcel for email after subscription is confirmed.
+func (u User) ConfirmationParcel(s Subscription) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(confirmationLetter)
 
 	if err != nil {
