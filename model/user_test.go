@@ -1,7 +1,11 @@
 package model
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"testing"
+	"time"
 )
 
 func TestConfirmationParcel(t *testing.T) {
@@ -20,17 +24,24 @@ func TestConfirmationParcel(t *testing.T) {
 }
 
 func TestSendEmail(t *testing.T) {
-	m := newMocker().withEmail("neefrankie@163.com")
 
-	user, err := m.createUser()
-	if err != nil {
-		t.Error(err)
-		return
+	user := paywall.User{
+		UserID: myFtcID,
+		UserName: null.StringFrom("ToddDay"),
+		Email: myFtcEmail,
 	}
-	t.Logf("Created or updated a mock user: %+v\n", user)
 
-	subs := m.confirmedSubs()
-	t.Logf("A confimed subscription: %+v\n", subs)
+	subs, _ := paywall.NewWxpaySubs(
+		null.StringFrom(user.UserID),
+		null.String{},
+		mockPlan)
+
+	subs.ConfirmedAt = chrono.TimeNow()
+	subs.IsRenewal = false
+	subs.StartDate = chrono.DateNow()
+
+	endDate, _ := subs.BillingCycle.TimeAfterACycle(time.Now())
+	subs.EndDate = chrono.DateFrom(endDate)
 
 	parcel, err := user.ConfirmationParcel(subs)
 
