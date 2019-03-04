@@ -42,7 +42,7 @@ func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) erro
 	_, err := env.db.Exec(
 		env.stmtInsertSubs(),
 		s.OrderID,
-		s.UserID,
+		s.CompoundID,
 		s.FTCUserID,
 		s.UnionID,
 		s.ListPrice,
@@ -72,7 +72,7 @@ func (env Env) FindSubscription(orderID string) (paywall.Subscription, error) {
 		orderID,
 	).Scan(
 		&s.OrderID,
-		&s.UserID,
+		&s.CompoundID,
 		&s.FTCUserID,
 		&s.UnionID,
 		&s.TierToBuy,
@@ -113,7 +113,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		orderID,
 	).Scan(
 		&subs.OrderID,
-		&subs.UserID,
+		&subs.CompoundID,
 		&subs.FTCUserID,
 		&subs.UnionID,
 		&subs.TierToBuy,
@@ -154,7 +154,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	var dur paywall.Duration
 	errDur := env.db.QueryRow(
 		env.stmtSelectExpireDate(),
-		subs.UserID,
+		subs.CompoundID,
 		subs.UnionID,
 	).Scan(
 		&dur.Timestamp,
@@ -171,7 +171,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		}
 	}
 
-	logger.Infof("Membership for %s: %t", subs.UserID, memberExists)
+	logger.Infof("Membership for %s: %t", subs.CompoundID, memberExists)
 
 	// For sql.ErrNoRows, the zero value of Duration
 	// is still a valid value.
@@ -209,7 +209,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 			subs.TierToBuy,
 			subs.BillingCycle,
 			subs.EndDate,
-			subs.UserID,
+			subs.CompoundID,
 			subs.UnionID,
 		)
 
@@ -222,7 +222,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		logger.Info("Create a new member")
 
 		_, err := tx.Exec(env.stmtInsertMember(),
-			subs.UserID,
+			subs.CompoundID,
 			subs.UnionID,
 			subs.FTCUserID,
 			subs.UnionID,
