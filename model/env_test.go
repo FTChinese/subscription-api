@@ -39,6 +39,12 @@ func init() {
 	viper.AddConfigPath("$HOME/config")
 }
 
+const (
+	myFtcID = "03d1073c-67a2-4380-9ed0-bfc60e0e2701"
+	myFtcEmail = "neefrankie@163.com"
+	myUnionID = "ogfvwjk6bFqv2yQpOrac0J3PqA0o"
+)
+
 func newDevDB() *sql.DB {
 	db, err := sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
 
@@ -105,6 +111,10 @@ func generateCode() string {
 	return code
 }
 
+func genUUID() string {
+	return uuid.Must(uuid.NewV4()).String()
+}
+
 func generateToken() string {
 	token, _ := gorest.RandomBase64(82)
 	return token
@@ -155,11 +165,6 @@ func (m mocker) bound() mocker {
 	m.userID = null.StringFrom(uuid.Must(uuid.NewV4()).String())
 	m.unionID = null.StringFrom(generateWxID())
 
-	return m
-}
-
-func (m mocker) withEmail(email string) mocker {
-	m.email = email
 	return m
 }
 
@@ -241,56 +246,15 @@ func (m mocker) confirmedSubs() paywall.Subscription {
 
 func (m mocker) member() paywall.Membership {
 	mm := paywall.Membership{
-		UserID:  m.compoundID(),
-		UnionID: m.unionID,
-		Tier:    enum.TierStandard,
-		Cycle:   enum.CycleYear,
+		CompoundID: m.compoundID(),
+		UnionID:    m.unionID,
+		Tier:       enum.TierStandard,
+		Cycle:      enum.CycleYear,
 	}
 
 	mm.ExpireDate = m.expireDate
 
 	return mm
-}
-
-func (m mocker) createUser() (paywall.User, error) {
-	user := m.user()
-	app := clientApp()
-
-	query := `
-	INSERT INTO cmstmp01.userinfo
-	SET user_id = ?,
-		email = ?,
-		password = MD5(?),
-		user_name = ?,
-		client_type = ?,
-		client_version = ?,
-		user_ip = INET6_ATON(?),
-		user_agent = ?,
-		created_utc = UTC_TIMESTAMP()
-	ON DUPLICATE KEY UPDATE
-		user_id = ?,
-		email = ?,
-		password = MD5(?),
-		user_name = ?`
-
-	_, err := devEnv.db.Exec(query,
-		user.UserID,
-		user.Email,
-		m.password,
-		user.UserName,
-		app.ClientType,
-		app.Version,
-		app.UserIP,
-		app.UserAgent,
-		user.UserID,
-		user.Email,
-		m.password,
-		user.UserName,
-	)
-	if err != nil {
-		return user, err
-	}
-	return user, nil
 }
 
 func (m mocker) createWxUser() wxlogin.UserInfo {
@@ -330,13 +294,13 @@ func (m mocker) createAlipaySubs() paywall.Subscription {
 func (m mocker) createMember() paywall.Membership {
 
 	mm := paywall.Membership{
-		UserID:  m.compoundID(),
-		UnionID: m.unionID,
-		Tier:    enum.TierStandard,
-		Cycle:   enum.CycleYear,
+		CompoundID: m.compoundID(),
+		UnionID:    m.unionID,
+		Tier:       enum.TierStandard,
+		Cycle:      enum.CycleYear,
 	}
 	_, err := db.Exec(devEnv.stmtInsertMember(),
-		mm.UserID,
+		mm.CompoundID,
 		mm.UnionID,
 		m.userID,
 		mm.UnionID,
