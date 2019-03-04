@@ -50,9 +50,10 @@ func (d Duration) IsExpired() bool {
 
 // Membership contains a user's membership details
 type Membership struct {
-	CompoundID string      `json:"-"`
-	UnionID    null.String `json:"-"`
+	CompoundID string      `json:"-"` // Either FTCUserID or UnionID
+	FTCUserID  null.String `json:"-"`
+	UnionID    null.String `json:"-"` // For both vip_id_alias and wx_union_id columns.
 	Tier       enum.Tier   `json:"tier"`
 	Cycle      enum.Cycle  `json:"billingCycle"`
-	Duration             // On which date the membership ends
+	Duration               // On which date the membership ends
 }
