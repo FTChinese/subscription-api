@@ -14,10 +14,10 @@ func (env Env) findMember(subs paywall.Subscription) (paywall.Membership, error)
 
 	err := env.db.QueryRow(
 		query,
-		subs.UserID,
+		subs.CompoundID,
 		subs.UnionID,
 	).Scan(
-		&m.UserID,
+		&m.CompoundID,
 		&m.UnionID,
 		&vipType,
 		&m.Tier,

@@ -15,8 +15,8 @@ import (
 // Subscription contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 type Subscription struct {
-	OrderID       string
-	UserID        string // Use FTCUserID if it is valid, then use UnionID if it is valid, then throw error. This column is acting only as non-null constraint.
+	OrderID       string // At first I mean to unexport it, but it is a scan target so must be exported.
+	CompoundID    string // Use FTCUserID if it is valid, then use UnionID if it is valid, then throw error. This column is acting only as non-null constraint.
 	FTCUserID     null.String
 	UnionID       null.String
 	TierToBuy     enum.Tier
@@ -44,15 +44,14 @@ func NewWxpaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription,
 		PaymentMethod: enum.PayMethodWx,
 	}
 
-	if ftcID.Valid {
-		s.UserID = ftcID.String
-	} else if unionID.Valid {
-		s.UserID = unionID.String
-	} else {
-		return s, errors.New("ftc user id and union id should not both be null")
+	compoundID, err := s.PickCompoundID()
+	if err != nil {
+		return s, err
 	}
 
-	if err := s.GenerateOrderID(); err != nil {
+	s.CompoundID = compoundID
+
+	if err := s.generateOrderID(); err != nil {
 		return s, err
 	}
 
@@ -72,14 +71,21 @@ func NewAlipaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription
 	}
 
 	if ftcID.Valid {
-		s.UserID = ftcID.String
+		s.CompoundID = ftcID.String
 	} else if unionID.Valid {
-		s.UserID = unionID.String
+		s.CompoundID = unionID.String
 	} else {
 		return s, errors.New("ftc user id and union id should not both be null")
 	}
 
-	err := s.GenerateOrderID()
+	compoundID, err := s.PickCompoundID()
+	if err != nil {
+		return s, err
+	}
+
+	s.CompoundID = compoundID
+
+	err = s.generateOrderID()
 	if err != nil {
 		return s, err
 	}
@@ -87,8 +93,17 @@ func NewAlipaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription
 	return s, nil
 }
 
+func (s Subscription) PickCompoundID () (string, error) {
+	if s.FTCUserID.Valid {
+		return s.FTCUserID.String, nil
+	} else if s.UnionID.Valid {
+		return s.UnionID.String, nil
+	} else {
+		return "", errors.New("ftc user id and union id should not both be null")
+	}
+}
 // GenerateOrderID creates an id for this order. The order id is created only created upon the initial call of this method. Multiple calls won't change the this order's id.
-func (s *Subscription) GenerateOrderID() error {
+func (s *Subscription) generateOrderID() error {
 
 	id, err := gorest.RandomHex(8)
 	if err != nil {
