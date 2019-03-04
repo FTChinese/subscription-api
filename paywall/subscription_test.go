@@ -28,8 +28,8 @@ func TestNewSubs(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if subs.UserID != ftcID.String {
-		t.Errorf("Expected user id %s, got %s", ftcID.String, subs.UserID)
+	if subs.CompoundID != ftcID.String {
+		t.Errorf("Expected user id %s, got %s", ftcID.String, subs.CompoundID)
 	}
 
 	t.Logf("Wxpay order: %+v\n", subs)
@@ -39,15 +39,15 @@ func TestNewSubs(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if subs.UserID != ftcID.String {
-		t.Errorf("Expected user id %s, got %s", ftcID.String, subs.UserID)
+	if subs.CompoundID != ftcID.String {
+		t.Errorf("Expected user id %s, got %s", ftcID.String, subs.CompoundID)
 	}
 	t.Logf("Alipay order: %+v\n", subs)
 }
 
 func TestSubscription_Methods(t *testing.T) {
 	subs := Subscription{}
-	err := subs.GenerateOrderID()
+	err := subs.generateOrderID()
 	if err != nil {
 		t.Error(err)
 		return

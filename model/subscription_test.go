@@ -225,19 +225,6 @@ func TestEnv_FindSubscription(t *testing.T) {
 	}
 }
 
-func TestNewMember(t *testing.T) {
-	m := newMocker().ftcOnly()
-	subs := m.createWxpaySubs()
-
-	got, err := devEnv.ConfirmPayment(subs.OrderID, time.Now())
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	t.Logf("%+v\n", got)
-}
-
 func TestEnv_ConfirmPayment(t *testing.T) {
 	m := newMocker().ftcOnly()
 	// The first order creates a member.
