@@ -12,8 +12,8 @@ import (
 type User struct {
 	UserID   string
 	UnionID  null.String
-	UserName null.String
 	Email    string
+	UserName null.String
 }
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
