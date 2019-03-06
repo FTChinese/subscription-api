@@ -260,6 +260,7 @@ func TestCreateUser_bound(t *testing.T)  {
 	createUser(u, clientApp())
 }
 
+// Create neefrankie@gmail that is bound to my union id.
 func TestCreateUser_boundMyWx(t *testing.T)  {
 	clearEmail("neefrankie@gmail.com")
 
