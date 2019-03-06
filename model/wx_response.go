@@ -29,7 +29,7 @@ func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {
 		p.Signature,
 		p.ResultCode,
 		p.ErrorCode,
-		p.ErrorDescription,
+		p.ErrorMessage,
 		p.TradeType,
 		p.PrepayID,
 	)
@@ -83,6 +83,58 @@ func (env Env) SaveWxNotification(n wechat.Notification) error {
 		n.TransactionID,
 		n.FTCOrderID,
 		n.TimeEnd,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (env Env) SaveWxQueryResp(q wechat.OrderQueryResp) error {
+	query := `
+	INSERT IGNORE INTO premium.log_wx_order_query
+	SET return_code = ?,
+		return_message = ?,
+		app_id = ?,
+		merchant_id = ?,
+		nonce = ?,
+		signature = ?,
+		result_code = ?,
+		error_code = ?,
+		error_description = ?,
+		open_id = ?,
+		trade_type = ?,
+	    trade_state = ?,
+		bank_type = ?,
+		total_fee = ?,
+		currency = ?,
+		transaction_id = ?,
+		ftc_order_id = ?,
+		time_end = ?,
+	    trade_state_desc = ?`
+
+	_, err := env.db.Exec(query,
+		q.StatusCode,
+		q.StatusMessage,
+		q.AppID,
+		q.MID,
+		q.Nonce,
+		q.Signature,
+		q.ResultCode,
+		q.ErrorCode,
+		q.ErrorMessage,
+		q.OpenID,
+		q.TradeType,
+		q.TradeState,
+		q.BankType,
+		q.TotalFee,
+		q.Currency,
+		q.TransactionID,
+		q.FTCOrderID,
+		q.TimeEnd,
+		q.TradeStateDesc,
 	)
 
 	if err != nil {
