@@ -7,17 +7,9 @@ import (
 
 // UnifiedOrderResp contains the response data from Wechat unified order.
 type UnifiedOrderResp struct {
-	StatusCode       string
-	StatusMessage    string
-	AppID            null.String
-	MID              null.String
-	Nonce            null.String
-	Signature        null.String
-	ResultCode       null.String
-	ErrorCode        null.String
-	ErrorDescription null.String
-	TradeType        null.String
-	PrepayID         null.String
+	WxResp
+	TradeType     null.String
+	PrepayID      null.String
 }
 
 // NewUnifiedOrderResp creates converts PrePay from a wxpay.Params type.
@@ -33,47 +25,18 @@ type UnifiedOrderResp struct {
 // mch_id:1504993271
 // nonce_str:aOyCOfOvWZQZkRwp
 // ]
-func NewUnifiedOrderResp(r wxpay.Params) UnifiedOrderResp {
-	p := UnifiedOrderResp{
-		StatusCode:    r.GetString("return_code"),
-		StatusMessage: r.GetString("return_msg"),
+func NewUnifiedOrderResp(p wxpay.Params) UnifiedOrderResp {
+	r := UnifiedOrderResp{}
+
+	r.Populate(p)
+
+	if v, ok := p["trade_type"]; ok {
+		r.TradeType = null.StringFrom(v)
 	}
 
-	if v, ok := r["appid"]; ok {
-		p.AppID = null.StringFrom(v)
+	if v, ok := p["prepay_id"]; ok {
+		r.PrepayID = null.StringFrom(v)
 	}
 
-	if v, ok := r["mch_id"]; ok {
-		p.MID = null.StringFrom(v)
-	}
-
-	if v, ok := r["nonce_str"]; ok {
-		p.Nonce = null.StringFrom(v)
-	}
-
-	if v, ok := r["sign"]; ok {
-		p.Signature = null.StringFrom(v)
-	}
-
-	if v, ok := r["result_code"]; ok {
-		p.ResultCode = null.StringFrom(v)
-	}
-
-	if v, ok := r["err_code"]; ok {
-		p.ErrorCode = null.StringFrom(v)
-	}
-
-	if v, ok := r["err_code_des"]; ok {
-		p.ErrorDescription = null.StringFrom(v)
-	}
-
-	if v, ok := r["trade_type"]; ok {
-		p.TradeType = null.StringFrom(v)
-	}
-
-	if v, ok := r["prepay_id"]; ok {
-		p.PrepayID = null.StringFrom(v)
-	}
-
-	return p
+	return r
 }
