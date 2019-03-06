@@ -14,6 +14,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/wechat"
 	"net/http"
 	"os"
+	"time"
 )
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
@@ -190,7 +191,12 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	// updatedSubs
 	timeEnd := params.GetString("time_end")
-	confirmedSubs, err := router.model.ConfirmPayment(orderID, util.ParseWxTime(timeEnd))
+
+	confirmedAt, err := util.ParseWxTime(timeEnd)
+	if err != nil {
+		confirmedAt = time.Now()
+	}
+	confirmedSubs, err := router.model.ConfirmPayment(orderID, confirmedAt)
 
 	if err != nil {
 		logger.WithField("trace", "Notification").Error(err)
@@ -214,109 +220,51 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 // OrderQuery implements 查询订单
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 // Only transaction_id or out_trade_no is required.
-// func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
-// 	orderID := getURLParam(req, "orderId").toString()
+func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
+	orderID, err := GetURLParam(req, "orderId").ToString()
 
-// 	if orderID == "" {
-// 		view.Render(w, view.NewBadRequest(""))
-// 		return
-// 	}
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
 
-// 	params := make(wxpay.Params)
-// 	params.SetString("out_trade_no", orderID)
+	params := make(wxpay.Params)
+	params.SetString("out_trade_no", orderID)
 
-// 	// Send query to Wechat server
-// 	resp, err := router.client.OrderQuery(params)
+	// Send query to Wechat server
+	// Returns the parsed response as a map.
+	// It checks if the response contains `return_code` key.
+	// If return_code == FAIL, it does not returns error.
+	// If return_code == SUCCESS, it verifies the signature.
+	resp, err := router.client.OrderQuery(params)
 
-// 	// If there are any errors when querying order.
-// 	if err != nil {
-// 		logger.WithField("location", "OrderQuery").Error(err)
+	// If there are any errors when querying order.
+	if err != nil {
+		logger.WithField("trace", "OrderQuery").Error(err)
 
-// 		view.Render(w, view.NewInternalError(err.Error()))
+		view.Render(w, view.NewInternalError(err.Error()))
 
-// 		return
-// 	}
+		return
+	}
 
-// 	logger.WithField("location", "OrderQuery").Infof("Order query result: %+v", resp)
+	logger.WithField("trace", "OrderQuery").Infof("Order query result: %+v", resp)
 
-// 	// Reponse fields:
-// 	// return_code: SUCCESS|FAIL
-// 	// return_msg: string
-// 	// appid
-// 	// mch_id
-// 	// nonce_str
-// 	// sign
-// 	// result_code
-// 	// err_code
-// 	// err_code_des
-// 	if resp.GetString("return_code") == wxpay.Fail {
-// 		returnMsg := resp.GetString("return_msg")
-// 		logger.
-// 			WithField("location", "OrderQuery").
-// 			Errorf("return_code is FAIL. return_msg: %s", returnMsg)
+	// Response:
+	// {message: "", {field: status, code: fail} }
+	// {message: "", {field: result, code: "ORDERNOTEXIST" | "SYSTEMERROR"} }
+	if r := router.client.ValidateResponse(resp); r != nil {
+		if r.Field == "result" && r.Code == "ORDERNOTEXIST" {
+			view.Render(w, view.NewNotFound())
+			return
+		}
 
-// 		reason := &view.Reason{
-// 			Field: "return_code",
-// 			Code:  "fail",
-// 		}
-// 		reason.SetMessage(returnMsg)
+		view.Render(w, view.NewUnprocessable(r))
+		return
+	}
 
-// 		view.Render(w, view.NewUnprocessable(reason))
+	orderQuery := wechat.NewOrderQueryResp(resp)
 
-// 		return
-// 	}
+	go router.model.SaveWxQueryResp(orderQuery)
 
-// 	if resp.GetString("result_code") == wxpay.Fail {
-// 		errCode := resp.GetString("err_code")
-// 		errCodeDes := resp.GetString("err_code_des")
-
-// 		logger.WithField("location", "OrderQuery").
-// 			WithField("err_code", errCode).
-// 			WithField("err_code_des", errCodeDes).
-// 			Error("Wx unified order result failed")
-
-// 		switch errCode {
-// 		case "ORDERNOTEXIST":
-// 			view.Render(w, view.NewNotFound())
-
-// 		default:
-// 			reason := &view.Reason{
-// 				Field: "result_code",
-// 				Code:  "fail",
-// 			}
-// 			reason.SetMessage(errCodeDes)
-// 			view.Render(w, view.NewUnprocessable(reason))
-// 		}
-
-// 		return
-// 	}
-
-// 	if ok := router.client.VerifyIdentity(resp); !ok {
-// 		view.Render(w, view.NewNotFound())
-// 		return
-// 	}
-
-// 	// Response if return_code == SUCCESS and result_code == SUCCESS
-// 	// openid
-// 	// trade_type: APP
-// 	// trade_state: SUCCESS | REFUND | NOTPAY | CLOSED | REVOKED | USERPAYING | PAYERROR
-// 	// bank_type
-// 	// total_fee
-// 	// cash_fee
-// 	// transaction_id
-// 	// out_trade_no
-// 	// time_end: 20091225091010
-// 	// trade_state_desc
-// 	timeEnd := resp.GetString("time_end")
-// 	order := WxQueryOrder{
-// 		OpenID:        resp.GetString("openid"),
-// 		TradeType:     resp.GetString("trade_type"),
-// 		PaymentState:  resp.GetString("trade_state"),
-// 		TotalFee:      resp.GetString("total_fee"),
-// 		TransactionID: resp.GetString("transaction_id"),
-// 		FTCOrderID:    resp.GetString("out_trade_no"),
-// 		PaidAt:        timeEnd,
-// 	}
-
-// 	view.Render(w, view.NewResponse().SetBody(order))
-// }
+	view.Render(w, view.NewResponse().SetBody(orderQuery.ToResult()))
+}
