@@ -7,15 +7,7 @@ import (
 
 // Notification contains wechat's notification data after payment finished.
 type Notification struct {
-	StatusCode    string
-	StatusMessage string
-	AppID         null.String
-	MID           null.String
-	Nonce         null.String
-	Signature     null.String
-	ResultCode    null.String
-	ErrorCode     null.String
-	ErrorMessage  null.String
+	WxResp
 	OpenID        null.String
 	IsSubscribed  bool
 	TradeType     null.String
@@ -28,65 +20,44 @@ type Notification struct {
 }
 
 // NewNotification converts wxpay.Params type to Notification type.
-func NewNotification(r wxpay.Params) Notification {
+func NewNotification(p wxpay.Params) Notification {
 	n := Notification{
-		StatusCode:    r.GetString("return_code"),
-		StatusMessage: r.GetString("return_msg"),
-		IsSubscribed:  r.GetString("is_subscribe") == "Y",
+
 	}
 
-	if v, ok := r["appid"]; ok {
-		n.AppID = null.StringFrom(v)
+	n.Populate(p)
+
+	if v, ok := p["openid"]; ok {
+		n.OpenID = null.StringFrom(v)
 	}
 
-	if v, ok := r["mch_id"]; ok {
-		n.MID = null.StringFrom(v)
-	}
+	n.IsSubscribed = p.GetString("is_subscribe") == "Y"
 
-	if v, ok := r["nonce_str"]; ok {
-		n.Nonce = null.StringFrom(v)
-	}
-
-	if v, ok := r["sign"]; ok {
-		n.Signature = null.StringFrom(v)
-	}
-
-	if v, ok := r["result_code"]; ok {
-		n.ResultCode = null.StringFrom(v)
-	}
-
-	if v, ok := r["err_code"]; ok {
-		n.ErrorCode = null.StringFrom(v)
-	}
-	if v, ok := r["err_code_des"]; ok {
-		n.ErrorMessage = null.StringFrom(v)
-	}
-
-	if v, ok := r["trade_type"]; ok {
+	if v, ok := p["trade_type"]; ok {
 		n.TradeType = null.StringFrom(v)
 	}
 
-	if v, ok := r["bank_type"]; ok {
+	if v, ok := p["bank_type"]; ok {
 		n.BankType = null.StringFrom(v)
 	}
 
-	if v := r.GetInt64("total_fee"); v != 0 {
+	if v := p.GetInt64("total_fee"); v != 0 {
 		n.TotalFee = null.IntFrom(v)
 	}
 
-	if v, ok := r["fee_type"]; ok {
+	if v, ok := p["fee_type"]; ok {
 		n.Currency = null.StringFrom(v)
 	}
 
-	if v, ok := r["transaction_id"]; ok {
+	if v, ok := p["transaction_id"]; ok {
 		n.TransactionID = null.StringFrom(v)
 	}
 
-	if v, ok := r["out_trade_no"]; ok {
+	if v, ok := p["out_trade_no"]; ok {
 		n.FTCOrderID = null.StringFrom(v)
 	}
 
-	if v, ok := r["time_end"]; ok {
+	if v, ok := p["time_end"]; ok {
 		n.TimeEnd = null.StringFrom(v)
 	}
 
