@@ -50,13 +50,14 @@ func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c gorest.Clie
 }
 
 // LoadWxAccess retrieves previously saved access token by open id.
-// Is it possbile wechat generate different openID under the same app?
+// Is it possible wechat generate different openID under the same app?
 // Or is it possible wechat generate same openID for different app?
 // What if iOS and Android used the same Wechat app? Will they use the same access token or different one?
 // Open ID is always the same the under the same Wechat app.
 func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error) {
 	query := `
-	SELECT access_token AS accessToken,
+	SELECT LOWER(HEX(session_id)) AS sessionId, 
+	    access_token AS accessToken,
 		expires_in AS expiresIn,
 		refresh_token AS refreshToken,
 		open_id AS opendId,
@@ -71,6 +72,7 @@ func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error
 
 	var acc wxlogin.OAuthAccess
 	err := env.db.QueryRow(query, sessionID, appID).Scan(
+		&acc.SessionID,
 		&acc.AccessToken,
 		&acc.ExpiresIn,
 		&acc.RefreshToken,
@@ -155,7 +157,7 @@ func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "SaveUserInfo").Error(err)
+		logger.WithField("trace", "SaveWxUser").Error(err)
 		return err
 	}
 
