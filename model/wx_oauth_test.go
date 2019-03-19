@@ -2,11 +2,10 @@ package model
 
 import (
 	"database/sql"
-	"reflect"
 	"testing"
 
-	gorest "github.com/FTChinese/go-rest"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/FTChinese/go-rest"
+	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 )
 
@@ -74,7 +73,7 @@ func TestEnv_LoadWxAccess(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    wxlogin.OAuthAccess
+		want    string
 		wantErr bool
 	}{
 		{
@@ -84,6 +83,7 @@ func TestEnv_LoadWxAccess(t *testing.T) {
 				appID:     oauthApp.AppID,
 				sessionID: acc.SessionID,
 			},
+			want: acc.SessionID,
 		},
 	}
 	for _, tt := range tests {
@@ -98,8 +98,9 @@ func TestEnv_LoadWxAccess(t *testing.T) {
 				t.Errorf("Env.LoadWxAccess() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Env.LoadWxAccess() = %v, want %v", got, tt.want)
+
+			if got.SessionID != acc.SessionID {
+				t.Errorf("Env.LoadWxAccess() expected %s, got %s", acc.SessionID, got.SessionID)
 			}
 		})
 	}
@@ -151,8 +152,8 @@ func TestEnv_UpdateWxAccess(t *testing.T) {
 }
 
 func TestEnv_SaveWxUser(t *testing.T) {
-	m := newMocker()
-	userInfo := m.wxUser()
+	m := newMocker().withUnionID()
+	userInfo := m.wxUserInfo()
 
 	type fields struct {
 		sandbox bool
@@ -176,6 +177,14 @@ func TestEnv_SaveWxUser(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:   "Save Existing Wechat User",
+			fields: fields{db: db},
+			args: args{
+				u: m.wxUserInfo(),
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -192,7 +201,7 @@ func TestEnv_SaveWxUser(t *testing.T) {
 }
 
 func TestEnv_UpdateWxUser(t *testing.T) {
-	m := newMocker()
+	m := newMocker().withUnionID()
 	userInfo := m.createWxUser()
 	t.Logf("Created wechat user: %+v\n", userInfo)
 
@@ -214,7 +223,7 @@ func TestEnv_UpdateWxUser(t *testing.T) {
 			name:   "Update Wechat User Info",
 			fields: fields{db: db},
 			args: args{
-				u: m.wxUser(),
+				u: m.wxUserInfo(),
 			},
 			wantErr: false,
 		},
@@ -274,7 +283,7 @@ func TestEnv_SaveWxStatus(t *testing.T) {
 }
 
 // Generate multiple OAuthAccess with same OpenID,
-// and multipe UserInfo with same OpenID and UnionID.
+// and multiple UserInfo with same OpenID and UnionID.
 func TestMultiLogin(t *testing.T) {
 	m := newMocker()
 

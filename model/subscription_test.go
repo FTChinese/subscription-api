@@ -12,17 +12,17 @@ import (
 
 func TestEnv_IsSubsAllowed(t *testing.T) {
 	// A membership that can be renewed.
-	m1 := newMocker().ftcOnly()
+	m1 := newMocker().withUserID()
 	mm1 := m1.createMember()
 	t.Logf("Membership renewable: %+v\n", mm1)
 
 	// A membership that's not allowed to renew.
-	m2 := newMocker().ftcOnly()
+	m2 := newMocker().withUserID()
 	mm2 := m2.withExpireDate(time.Now().AddDate(2, 0, 0)).createMember()
 	t.Logf("Membership not renwable: %+v\n", mm2)
 
 	// A membership that is expired
-	m3 := newMocker().ftcOnly()
+	m3 := newMocker().withUserID()
 	mm3 := m3.withExpireDate(time.Now().AddDate(0, -1, 0)).createMember()
 	t.Logf("Membership expired: %+v\n", mm3)
 
@@ -46,7 +46,7 @@ func TestEnv_IsSubsAllowed(t *testing.T) {
 			fields: fields{db: db, cache: devCache},
 			args: args{
 				subs: newMocker().
-					ftcOnly().
+					withUserID().
 					wxpaySubs(),
 			},
 			want:    true,
@@ -113,7 +113,7 @@ func TestEnv_SaveSubscription(t *testing.T) {
 			name:   "Email Only User for Wechat Pay",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().ftcOnly().wxpaySubs(),
+				s: newMocker().withUserID().wxpaySubs(),
 				c: clientApp(),
 			},
 		},
@@ -121,7 +121,7 @@ func TestEnv_SaveSubscription(t *testing.T) {
 			name:   "Wechat Only User for Wechat Pay",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().wxOnly().wxpaySubs(),
+				s: newMocker().withUnionID().wxpaySubs(),
 				c: clientApp(),
 			},
 		},
@@ -129,7 +129,7 @@ func TestEnv_SaveSubscription(t *testing.T) {
 			name:   "Email Only User for Alipay",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().ftcOnly().alipaySubs(),
+				s: newMocker().withUserID().alipaySubs(),
 				c: clientApp(),
 			},
 		},
@@ -137,7 +137,7 @@ func TestEnv_SaveSubscription(t *testing.T) {
 			name:   "Wechat Only User for Alipay",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().wxOnly().alipaySubs(),
+				s: newMocker().withUnionID().alipaySubs(),
 				c: clientApp(),
 			},
 		},
@@ -165,10 +165,10 @@ func TestEnv_SaveSubscription(t *testing.T) {
 }
 
 func TestEnv_FindSubscription(t *testing.T) {
-	m1 := newMocker().ftcOnly()
+	m1 := newMocker().withUserID()
 	subs1 := m1.createWxpaySubs()
 
-	m2 := newMocker().wxOnly()
+	m2 := newMocker().withUnionID()
 	subs2 := m2.createWxpaySubs()
 
 	m3 := newMocker().bound()
@@ -226,7 +226,7 @@ func TestEnv_FindSubscription(t *testing.T) {
 }
 
 func TestEnv_ConfirmPayment(t *testing.T) {
-	m := newMocker().ftcOnly()
+	m := newMocker().withUserID()
 	// The first order creates a member.
 	subs1 := m.createWxpaySubs()
 	// The second order renew this member.
