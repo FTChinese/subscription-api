@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/util"
 
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/smartwalle/alipay"
@@ -29,73 +29,60 @@ import (
 	"gitlab.com/ftchinese/subscription-api/wechat"
 
 	"github.com/icrowley/fake"
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
+const (
+	myFtcID    = "e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae"
+	myFtcEmail = "neefrankie@163.com"
+	myUnionID  = "ogfvwjk6bFqv2yQpOrac0J3PqA0o"
+)
+
+var db *sql.DB
+var postman postoffice.Postman
+var devCache *cache.Cache
+var oauthApp wxlogin.WxApp
+var wxpayApp wechat.PayApp
+var mockClient wechat.Client
+
+var mockPlan = paywall.GetDefaultPricing()["standard_year"]
+
 func init() {
 	viper.SetConfigName("api")
 	viper.AddConfigPath("$HOME/config")
-}
-
-const (
-	myFtcID = "03d1073c-67a2-4380-9ed0-bfc60e0e2701"
-	myFtcEmail = "neefrankie@163.com"
-	myUnionID = "ogfvwjk6bFqv2yQpOrac0J3PqA0o"
-)
-
-func newDevDB() *sql.DB {
-	db, err := sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
-
+	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	return db
-}
+	db, err = sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
+	if err != nil {
+		panic(err)
+	}
 
-func newDevPostman() postoffice.Postman {
 	var conn util.Conn
-	err := viper.UnmarshalKey("hanqi", &conn)
+	err = viper.UnmarshalKey("hanqi", &conn)
 	if err != nil {
 		panic(err)
 	}
-	return postoffice.New(conn.Host, conn.Port, conn.User, conn.Pass)
-}
+	postman = postoffice.New(conn.Host, conn.Port, conn.User, conn.Pass)
 
-func newWxOAuthApp() wxlogin.WxApp {
-	var app wxlogin.WxApp
+	devCache = cache.New(cache.DefaultExpiration, 0)
 
-	err := viper.UnmarshalKey("wxapp.m_subs", &app)
-	if err != nil {
-		panic(err)
-	}
-
-	return app
-}
-
-func newWxPayApp() wechat.PayApp {
-	var app wechat.PayApp
-
-	err := viper.UnmarshalKey("wxapp.m_subs", &app)
-
+	err = viper.UnmarshalKey("wxapp.m_subs", &oauthApp)
 	if err != nil {
 		panic(err)
 	}
 
-	return app
+	err = viper.UnmarshalKey("wxapp.m_subs", &wxpayApp)
+	if err != nil {
+		panic(err)
+	}
+
+	mockClient = wechat.NewClient(wxpayApp)
 }
-
-var db = newDevDB()
-var postman = newDevPostman()
-var devCache = cache.New(cache.DefaultExpiration, 0)
-var devEnv = New(db, devCache, false)
-var oauthApp = newWxOAuthApp()
-var wxpayApp = newWxPayApp()
-var mockClient = wechat.NewClient(wxpayApp)
-
-var mockPlan = paywall.GetDefaultPricing()["standard_year"]
 
 func clientApp() gorest.ClientApp {
 	return gorest.ClientApp{
@@ -151,12 +138,12 @@ func newMocker() mocker {
 	}
 }
 
-func (m mocker) ftcOnly() mocker {
+func (m mocker) withUserID() mocker {
 	m.userID = null.StringFrom(uuid.Must(uuid.NewV4()).String())
 	return m
 }
 
-func (m mocker) wxOnly() mocker {
+func (m mocker) withUnionID() mocker {
 	m.unionID = null.StringFrom(generateWxID())
 	return m
 }
@@ -207,7 +194,7 @@ func (m mocker) wxAccess() wxlogin.OAuthAccess {
 	return acc
 }
 
-func (m mocker) wxUser() wxlogin.UserInfo {
+func (m mocker) wxUserInfo() wxlogin.UserInfo {
 	return wxlogin.UserInfo{
 		UnionID:    m.unionID.String,
 		NickName:   fake.UserName(),
@@ -258,9 +245,10 @@ func (m mocker) member() paywall.Membership {
 }
 
 func (m mocker) createWxUser() wxlogin.UserInfo {
-	userInfo := m.wxUser()
+	userInfo := m.wxUserInfo()
 
-	err := devEnv.SaveWxUser(userInfo)
+	env := Env{db: db}
+	err := env.SaveWxUser(userInfo)
 	if err != nil {
 		panic(err)
 	}
@@ -270,7 +258,8 @@ func (m mocker) createWxUser() wxlogin.UserInfo {
 func (m mocker) createWxpaySubs() paywall.Subscription {
 	subs := m.wxpaySubs()
 
-	err := devEnv.SaveSubscription(subs, clientApp())
+	env := Env{db: db}
+	err := env.SaveSubscription(subs, clientApp())
 
 	if err != nil {
 		panic(err)
@@ -282,7 +271,8 @@ func (m mocker) createWxpaySubs() paywall.Subscription {
 func (m mocker) createAlipaySubs() paywall.Subscription {
 	subs := m.alipaySubs()
 
-	err := devEnv.SaveSubscription(subs, clientApp())
+	env := Env{db: db}
+	err := env.SaveSubscription(subs, clientApp())
 
 	if err != nil {
 		panic(err)
@@ -299,7 +289,9 @@ func (m mocker) createMember() paywall.Membership {
 		Tier:       enum.TierStandard,
 		Cycle:      enum.CycleYear,
 	}
-	_, err := db.Exec(devEnv.stmtInsertMember(),
+
+	env := Env{db: db}
+	_, err := db.Exec(env.stmtInsertMember(),
 		mm.CompoundID,
 		mm.UnionID,
 		m.userID,
@@ -319,7 +311,8 @@ func (m mocker) createMember() paywall.Membership {
 func (m mocker) createWxAccess() wxlogin.OAuthAccess {
 	acc := m.wxAccess()
 
-	err := devEnv.SaveWxAccess(oauthApp.AppID, acc, clientApp())
+	env := Env{db: db}
+	err := env.SaveWxAccess(oauthApp.AppID, acc, clientApp())
 
 	if err != nil {
 		panic(err)

@@ -14,11 +14,11 @@ func TestSaveMembership(t *testing.T) {
 	}{
 		{
 			name: "FTC only",
-			m:    newMocker().ftcOnly(),
+			m:    newMocker().withUserID(),
 		},
 		{
 			name: "Wechat only",
-			m:    newMocker().wxOnly(),
+			m:    newMocker().withUnionID(),
 		},
 		{
 			name: "Bound",
@@ -34,7 +34,7 @@ func TestSaveMembership(t *testing.T) {
 }
 
 func TestEnv_findMember(t *testing.T) {
-	m := newMocker().ftcOnly()
+	m := newMocker().withUserID()
 	mm := m.createMember()
 	t.Logf("Created membership: %+v\n", mm)
 
