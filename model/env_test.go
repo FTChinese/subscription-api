@@ -208,7 +208,10 @@ func (m mocker) wxUserInfo() wxlogin.UserInfo {
 }
 
 func (m mocker) wxpaySubs() paywall.Subscription {
-	s, _ := paywall.NewWxpaySubs(m.userID, m.unionID, mockPlan)
+	s, err := paywall.NewWxpaySubs(m.userID, m.unionID, mockPlan)
+	if err != nil {
+		panic(err)
+	}
 	return s
 }
 
