@@ -9,8 +9,10 @@ import (
 )
 
 func TestEnv_SavePrepayResp(t *testing.T) {
-	m := newMocker()
+	m := newMocker().withUserID()
 	subs := m.wxpaySubs()
+
+	t.Logf("Subs: %+v", subs)
 
 	p := wxParsedPrepay()
 
@@ -54,7 +56,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 }
 
 func TestEnv_SaveWxNotification(t *testing.T) {
-	m := newMocker()
+	m := newMocker().withUserID()
 	subs := m.wxpaySubs()
 
 	p := wxParsedNoti(subs.OrderID)
