@@ -93,7 +93,8 @@ func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error
 func (env Env) UpdateWxAccess(sessionID, accessToken string) error {
 	query := `
 	UPDATE user_db.wechat_access
-	SET access_token = ?
+	SET access_token = ?,
+	    updated_utc = UTC_TIMESTAMP()
 	WHERE session_id = UNHEX(?)
 	LIMIT 1`
 
@@ -122,7 +123,9 @@ func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
 		country = ?,
 		province = ?,
 		city = ?,
-		privilege = NULLIF(?, '')
+		privilege = NULLIF(?, ''),
+	    created_utc = UTC_TIMESTAMP(),
+	    updated_utc = UTC_TIMESTAMP()
 	ON DUPLICATE KEY UPDATE
 		nickname = ?,
 		avatar_url = ?,
@@ -169,7 +172,8 @@ func (env Env) UpdateWxUser(u wxlogin.UserInfo) error {
 		province = ?,
 		city = ?,
 		avatar_url = ?,
-		privilege = NULLIF(?, '')
+		privilege = NULLIF(?, ''),
+	    updated_utc = UTC_TIMESTAMP()
 	WHERE union_id = ?`
 
 	_, err := env.db.Exec(query,
