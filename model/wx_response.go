@@ -5,7 +5,7 @@ import "gitlab.com/ftchinese/subscription-api/wechat"
 // SavePrepayResp saves Wechat prepay response for future analysis.
 func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {
 	query := `
-	INSERT IGNORE INTO premium.log_wx_prepay
+	INSERT INTO premium.log_wx_prepay
 	SET order_id = ?,
 		return_code = ?,
 		return_message = ?,
