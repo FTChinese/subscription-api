@@ -70,14 +70,6 @@ func NewAlipaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription
 		PaymentMethod: enum.PayMethodAli,
 	}
 
-	if ftcID.Valid {
-		s.CompoundID = ftcID.String
-	} else if unionID.Valid {
-		s.CompoundID = unionID.String
-	} else {
-		return s, errors.New("ftc user id and union id should not both be null")
-	}
-
 	compoundID, err := s.PickCompoundID()
 	if err != nil {
 		return s, err
@@ -93,7 +85,7 @@ func NewAlipaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription
 	return s, nil
 }
 
-func (s Subscription) PickCompoundID () (string, error) {
+func (s Subscription) PickCompoundID() (string, error) {
 	if s.FTCUserID.Valid {
 		return s.FTCUserID.String, nil
 	} else if s.UnionID.Valid {
@@ -102,6 +94,7 @@ func (s Subscription) PickCompoundID () (string, error) {
 		return "", errors.New("ftc user id and union id should not both be null")
 	}
 }
+
 // GenerateOrderID creates an id for this order. The order id is created only created upon the initial call of this method. Multiple calls won't change the this order's id.
 func (s *Subscription) generateOrderID() error {
 
