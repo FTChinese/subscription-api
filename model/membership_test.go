@@ -7,32 +7,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
-func TestSaveMembership(t *testing.T) {
-	tests := []struct {
-		name string
-		m    mocker
-	}{
-		{
-			name: "FTC only",
-			m:    newMocker().withUserID(),
-		},
-		{
-			name: "Wechat only",
-			m:    newMocker().withUnionID(),
-		},
-		{
-			name: "Bound",
-			m:    newMocker().bound(),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.m.createMember()
-		})
-	}
-}
-
 func TestEnv_findMember(t *testing.T) {
 	m := newMocker().withUserID()
 	mm := m.createMember()
