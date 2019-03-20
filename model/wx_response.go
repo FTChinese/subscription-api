@@ -93,6 +93,7 @@ func (env Env) SaveWxNotification(n wechat.Notification) error {
 	return nil
 }
 
+// SaveWxQueryResp stores wechat pay query result to DB.
 func (env Env) SaveWxQueryResp(q wechat.OrderQueryResp) error {
 	query := `
 	INSERT IGNORE INTO premium.log_wx_order_query
