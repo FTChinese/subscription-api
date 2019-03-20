@@ -10,11 +10,15 @@ import (
 
 func TestConfirmationParcel(t *testing.T) {
 	m := newMocker()
+	subs, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.String{},
+		mockPlan)
+	m.createSubs(subs)
+	confirmedSubs := m.confirmSubs(subs, time.Now())
 
 	user := m.user()
-	subs := m.confirmedSubs()
-
-	p, err := user.ConfirmationParcel(subs)
+	p, err := user.ConfirmationParcel(confirmedSubs)
 	if err != nil {
 		t.Error(err)
 		return
@@ -26,9 +30,9 @@ func TestConfirmationParcel(t *testing.T) {
 func TestSendEmail(t *testing.T) {
 
 	user := paywall.User{
-		UserID: myFtcID,
+		UserID:   myFtcID,
 		UserName: null.StringFrom("ToddDay"),
-		Email: myFtcEmail,
+		Email:    myFtcEmail,
 	}
 
 	subs, _ := paywall.NewWxpaySubs(
