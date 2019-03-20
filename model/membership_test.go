@@ -2,21 +2,24 @@ package model
 
 import (
 	"database/sql"
+	"github.com/guregu/null"
 	"testing"
+	"time"
 
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
 func TestEnv_findMember(t *testing.T) {
-	m := newMocker().withUserID()
-	mm := m.createMember()
-	t.Logf("Created membership: %+v\n", mm)
-
-	subs := m.wxpaySubs()
+	m := newMocker()
+	subs, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.String{},
+		mockPlan)
+	m.createSubs(subs)
+	m.confirmSubs(subs, time.Now())
 
 	type fields struct {
-		sandbox bool
-		db      *sql.DB
+		db *sql.DB
 	}
 	type args struct {
 		subs paywall.Subscription

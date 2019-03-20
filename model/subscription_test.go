@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"github.com/guregu/null"
 	"testing"
 	"time"
 
@@ -12,24 +13,57 @@ import (
 
 func TestEnv_IsSubsAllowed(t *testing.T) {
 	// A membership that can be renewed.
-	m1 := newMocker().withUserID()
-	mm1 := m1.createMember()
-	t.Logf("Membership renewable: %+v\n", mm1)
+	m1 := newMocker()
+	subsWxpayFtcUser, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m1.userID),
+		null.String{},
+		mockPlan)
+	m1.createSubs(subsWxpayFtcUser)
+	subs1 := m1.confirmSubs(subsWxpayFtcUser, time.Now())
+	t.Logf("Renewable: %+v\n", subs1)
+
+	subsRenew, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m1.userID),
+		null.String{},
+		mockPlan)
 
 	// A membership that's not allowed to renew.
-	m2 := newMocker().withUserID()
-	mm2 := m2.withExpireDate(time.Now().AddDate(2, 0, 0)).createMember()
-	t.Logf("Membership not renwable: %+v\n", mm2)
+	m2 := newMocker()
+	subsAlipayFtcUser, _ := paywall.NewAlipaySubs(
+		null.StringFrom(m2.userID),
+		null.String{},
+		mockPlan)
+	m2.createSubs(subsAlipayFtcUser)
+	subs2 := m2.confirmSubs(
+		subsAlipayFtcUser,
+		time.Now().AddDate(2, 0, 0))
+
+	subsCannotRenew, _ := paywall.NewAlipaySubs(
+		null.StringFrom(m2.userID),
+		null.String{},
+		mockPlan)
+
+	t.Logf("Not renwable: %+v\n", subs2)
 
 	// A membership that is expired
-	m3 := newMocker().withUserID()
-	mm3 := m3.withExpireDate(time.Now().AddDate(0, -1, 0)).createMember()
-	t.Logf("Membership expired: %+v\n", mm3)
+	m3 := newMocker()
+	subsWxpayWxUser, _ := paywall.NewWxpaySubs(
+		null.String{},
+		null.StringFrom(m3.unionID),
+		mockPlan)
+	m3.createSubs(subsWxpayWxUser)
+	subs3 := m3.confirmSubs(
+		subsWxpayWxUser,
+		time.Now().AddDate(-2, 0, 0))
+	t.Logf("Membership expired: %+v\n", subs3)
+
+	subsForExpired, _ := paywall.NewWxpaySubs(
+		null.String{},
+		null.StringFrom(m3.unionID),
+		mockPlan)
 
 	type fields struct {
-		sandbox bool
-		db      *sql.DB
-		cache   *cache.Cache
+		db *sql.DB
 	}
 	type args struct {
 		subs paywall.Subscription
@@ -42,34 +76,23 @@ func TestEnv_IsSubsAllowed(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "Allow New Subscription",
-			fields: fields{db: db, cache: devCache},
-			args: args{
-				subs: newMocker().
-					withUserID().
-					wxpaySubs(),
-			},
-			want:    true,
-			wantErr: false,
-		},
-		{
 			name:    "Member in Allowed Renewal Period",
-			fields:  fields{db: db, cache: devCache},
-			args:    args{subs: m1.wxpaySubs()},
+			fields:  fields{db: db},
+			args:    args{subs: subsRenew},
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name:    "Member beyond Allowed Renewal Period",
-			fields:  fields{db: db, cache: devCache},
-			args:    args{subs: m2.wxpaySubs()},
+			fields:  fields{db: db},
+			args:    args{subs: subsCannotRenew},
 			want:    false,
 			wantErr: false,
 		},
 		{
 			name:    "Expired Member Is Allowed to Renew",
-			fields:  fields{db: db, cache: devCache},
-			args:    args{subs: m3.wxpaySubs()},
+			fields:  fields{db: db},
+			args:    args{subs: subsForExpired},
 			want:    true,
 			wantErr: false,
 		},
@@ -77,9 +100,7 @@ func TestEnv_IsSubsAllowed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				sandbox: tt.fields.sandbox,
-				db:      tt.fields.db,
-				cache:   tt.fields.cache,
+				db: tt.fields.db,
 			}
 			got, err := env.IsSubsAllowed(tt.args.subs)
 			if (err != nil) != tt.wantErr {
@@ -94,6 +115,31 @@ func TestEnv_IsSubsAllowed(t *testing.T) {
 }
 
 func TestEnv_SaveSubscription(t *testing.T) {
+	m := newMocker()
+	subsWxpayFtcUser, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.String{},
+		mockPlan)
+	subsAlipayFtcUser, _ := paywall.NewAlipaySubs(
+		null.StringFrom(m.userID),
+		null.String{},
+		mockPlan)
+	subsWxpayWxUser, _ := paywall.NewWxpaySubs(
+		null.String{},
+		null.StringFrom(m.unionID),
+		mockPlan)
+	subsAlipayWxUser, _ := paywall.NewAlipaySubs(
+		null.String{},
+		null.StringFrom(m.unionID),
+		mockPlan)
+	subsWxpayBoundUser, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.StringFrom(m.unionID),
+		mockPlan)
+	subsAlipayBoundUser, _ := paywall.NewAlipaySubs(
+		null.StringFrom(m.userID),
+		null.StringFrom(m.unionID),
+		mockPlan)
 	type fields struct {
 		sandbox bool
 		db      *sql.DB
@@ -110,42 +156,50 @@ func TestEnv_SaveSubscription(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "Email Only User for Wechat Pay",
+			name:   "Wechat Pay for FTC User",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().withUserID().wxpaySubs(),
+				s: subsWxpayFtcUser,
 				c: clientApp(),
 			},
 		},
 		{
-			name:   "Wechat Only User for Wechat Pay",
+			name:   "Wechat Pay for Wechat user",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().withUnionID().wxpaySubs(),
+				s: subsAlipayFtcUser,
 				c: clientApp(),
 			},
 		},
 		{
-			name:   "Email Only User for Alipay",
+			name:   "Alipay for FTC User",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().withUserID().alipaySubs(),
+				s: subsWxpayWxUser,
 				c: clientApp(),
 			},
 		},
 		{
-			name:   "Wechat Only User for Alipay",
+			name:   "Alipay for Wechat User",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().withUnionID().alipaySubs(),
+				s: subsAlipayWxUser,
 				c: clientApp(),
 			},
 		},
 		{
-			name:   "User with bound accounts",
+			name:   "Wechat Pay for Bound User",
 			fields: fields{db: db},
 			args: args{
-				s: newMocker().bound().wxpaySubs(),
+				s: subsWxpayBoundUser,
+				c: clientApp(),
+			},
+		},
+		{
+			name:   "Alipay for Bound User",
+			fields: fields{db: db},
+			args: args{
+				s: subsAlipayBoundUser,
 				c: clientApp(),
 			},
 		},
@@ -165,14 +219,23 @@ func TestEnv_SaveSubscription(t *testing.T) {
 }
 
 func TestEnv_FindSubscription(t *testing.T) {
-	m1 := newMocker().withUserID()
-	subs1 := m1.createWxpaySubs()
+	m := newMocker()
+	subsWxpayFtcUser, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.String{},
+		mockPlan)
+	subsWxpayWxUser, _ := paywall.NewWxpaySubs(
+		null.String{},
+		null.StringFrom(m.unionID),
+		mockPlan)
+	subsWxpayBoundUser, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.StringFrom(m.unionID),
+		mockPlan)
 
-	m2 := newMocker().withUnionID()
-	subs2 := m2.createWxpaySubs()
-
-	m3 := newMocker().bound()
-	subs3 := m3.createWxpaySubs()
+	m.createSubs(subsWxpayFtcUser)
+	m.createSubs(subsWxpayWxUser)
+	m.createSubs(subsWxpayBoundUser)
 
 	type fields struct {
 		sandbox bool
@@ -191,19 +254,19 @@ func TestEnv_FindSubscription(t *testing.T) {
 		{
 			name:    "Find Subscription FTC only user",
 			fields:  fields{db: db},
-			args:    args{orderID: subs1.OrderID},
+			args:    args{orderID: subsWxpayFtcUser.OrderID},
 			wantErr: false,
 		},
 		{
 			name:    "Find Subscription Wechat only user",
 			fields:  fields{db: db},
-			args:    args{orderID: subs2.OrderID},
+			args:    args{orderID: subsWxpayWxUser.OrderID},
 			wantErr: false,
 		},
 		{
 			name:    "Find Subscription for bound user",
 			fields:  fields{db: db},
-			args:    args{orderID: subs3.OrderID},
+			args:    args{orderID: subsWxpayBoundUser.OrderID},
 			wantErr: false,
 		},
 	}
@@ -226,15 +289,25 @@ func TestEnv_FindSubscription(t *testing.T) {
 }
 
 func TestEnv_ConfirmPayment(t *testing.T) {
-	m := newMocker().withUserID()
+	m := newMocker()
 	// The first order creates a member.
-	subs1 := m.createWxpaySubs()
+	subsWxpayFtcUser, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.String{},
+		mockPlan)
 	// The second order renew this member.
-	subs2 := m.createWxpaySubs()
+	subsAlipayFtcUser, _ := paywall.NewAlipaySubs(
+		null.StringFrom(m.userID),
+		null.String{},
+		mockPlan)
+	subsWxpayBoundUser, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.StringFrom(m.unionID),
+		mockPlan)
 
-	m2 := newMocker().bound()
-	subs3 := m2.createWxpaySubs()
-	subs4 := m2.createWxpaySubs()
+	m.createSubs(subsWxpayFtcUser)
+	m.createSubs(subsAlipayFtcUser)
+	m.createSubs(subsWxpayBoundUser)
 
 	type fields struct {
 		sandbox bool
@@ -255,7 +328,7 @@ func TestEnv_ConfirmPayment(t *testing.T) {
 			name:   "New Subscription",
 			fields: fields{db: db},
 			args: args{
-				orderID:     subs1.OrderID,
+				orderID:     subsWxpayFtcUser.OrderID,
 				confirmedAt: time.Now(),
 			},
 			wantErr: false,
@@ -264,16 +337,7 @@ func TestEnv_ConfirmPayment(t *testing.T) {
 			name:   "Renew Subscription",
 			fields: fields{db: db},
 			args: args{
-				orderID:     subs2.OrderID,
-				confirmedAt: time.Now(),
-			},
-			wantErr: false,
-		},
-		{
-			name:   "New subscription for bound user",
-			fields: fields{db: db},
-			args: args{
-				orderID:     subs3.OrderID,
+				orderID:     subsAlipayFtcUser.OrderID,
 				confirmedAt: time.Now(),
 			},
 			wantErr: false,
@@ -282,9 +346,10 @@ func TestEnv_ConfirmPayment(t *testing.T) {
 			name:   "Renew subscription for bound user",
 			fields: fields{db: db},
 			args: args{
-				orderID:     subs4.OrderID,
+				orderID:     subsWxpayBoundUser.OrderID,
 				confirmedAt: time.Now(),
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

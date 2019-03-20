@@ -152,7 +152,7 @@ func TestEnv_UpdateWxAccess(t *testing.T) {
 }
 
 func TestEnv_SaveWxUser(t *testing.T) {
-	m := newMocker().withUnionID()
+	m := newMocker()
 	userInfo := m.wxUserInfo()
 
 	type fields struct {
@@ -201,7 +201,7 @@ func TestEnv_SaveWxUser(t *testing.T) {
 }
 
 func TestEnv_UpdateWxUser(t *testing.T) {
-	m := newMocker().withUnionID()
+	m := newMocker()
 	userInfo := m.createWxUser()
 	t.Logf("Created wechat user: %+v\n", userInfo)
 

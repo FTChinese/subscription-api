@@ -2,6 +2,8 @@ package model
 
 import (
 	"database/sql"
+	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"testing"
 
 	cache "github.com/patrickmn/go-cache"
@@ -9,8 +11,11 @@ import (
 )
 
 func TestEnv_SavePrepayResp(t *testing.T) {
-	m := newMocker().withUserID()
-	subs := m.wxpaySubs()
+	m := newMocker()
+	subs, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.String{},
+		mockPlan)
 
 	t.Logf("Subs: %+v", subs)
 
@@ -56,8 +61,11 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 }
 
 func TestEnv_SaveWxNotification(t *testing.T) {
-	m := newMocker().withUserID()
-	subs := m.wxpaySubs()
+	m := newMocker()
+	subs, _ := paywall.NewWxpaySubs(
+		null.StringFrom(m.userID),
+		null.String{},
+		mockPlan)
 
 	p := wxParsedNoti(subs.OrderID)
 
