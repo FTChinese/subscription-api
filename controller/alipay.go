@@ -100,11 +100,15 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	userID := null.NewString(uID, uID != "")
 	unionID := null.NewString(wID, wID != "")
 
+	logger.WithField("trace", "AliAppOrder").Infof("FTC id: %+v, wechat id: %+v", userID, unionID)
+
 	subs, err := paywall.NewAlipaySubs(userID, unionID, plan)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
+
+	logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
 
 	ok, err := router.model.IsSubsAllowed(subs)
 	// err = ar.model.PlaceOrder(subs, app)
@@ -156,6 +160,8 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	// If err is nil, then the signature is verified.
 	noti, err := router.client.GetTradeNotification(req)
 
+	logger.WithField("trace", "AliNotification").Infof("%+v", noti)
+
 	if err != nil {
 		logger.WithField("trace", "AliNotification").Error(err)
 
@@ -178,7 +184,7 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	// 在支付宝的业务通知中，只有交易通知状态为TRADE_SUCCESS或TRADE_FINISHED时，支付宝才会认定为买家付款成功。
 	switch noti.TradeStatus {
 	case tradeSuccess, tradeFinished:
-		logger.WithField("location", "AliNotification").Infof("Order %s paid", noti.OutTradeNo)
+		logger.WithField("trace", "AliNotification").Infof("Order %s paid", noti.OutTradeNo)
 
 	case tradePending:
 		logger.WithField("trace", "AliNotification").Info("Payment pending")
@@ -204,7 +210,7 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	// If err is not `not found`, tell ali to resend.
 	if err != nil {
 		if err == sql.ErrNoRows {
-			logger.WithField("trace", "AliNotification").Info("Suscription order is not found")
+			logger.WithField("trace", "AliNotification").Info("Subscription order is not found")
 			w.Write([]byte(success))
 		}
 		w.Write([]byte(fail))

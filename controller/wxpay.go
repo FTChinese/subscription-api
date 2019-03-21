@@ -147,6 +147,8 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	params, err := router.client.ParseResponse(req.Body)
 
+	logger.WithField("trace", "WxpayNotification").Infof("%+v", params)
+
 	if err != nil {
 		logger.WithField("trace", "Notification").Error(err)
 
