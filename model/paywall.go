@@ -50,7 +50,7 @@ func (env Env) RetrievePromo() (paywall.Promotion, error) {
 	}
 
 	if plans != "" {
-		if err := json.Unmarshal([]byte(plans), &p.Plans); err != nil {
+		if err := json.Unmarshal([]byte(plans), &p.Pricing); err != nil {
 			return p, err
 		}
 	}
@@ -100,12 +100,28 @@ func (env Env) GetCurrentPricing() paywall.Pricing {
 		return paywall.GetDefaultPricing()
 	}
 	if !promo.IsInEffect() {
-		logger.WithField("trace", "GetCurrentPricing").Info("Promo is not in effetive time range. Use default plans")
+		logger.WithField("trace", "GetCurrentPricing").Info("Promo is not in effective time range. Use default plans")
 
 		return paywall.GetDefaultPricing()
 	}
 
 	logger.WithField("trace", "GetCurrentPricing").Info("Use promotion pricing plans")
 
-	return promo.Plans
+	return promo.Pricing
+}
+
+func (env Env) GetPayWall() (paywall.PayWall, error) {
+	promo, found := env.LoadCachedPromo()
+
+	// If promo is not found, or is found but not in effective
+	// time range.
+	if !found || !promo.IsInEffect() {
+		return paywall.BuildPayWall(
+			paywall.GetDefaultBanner(),
+			paywall.GetDefaultPricing())
+	}
+
+	return paywall.BuildPayWall(
+		promo.Banner,
+		promo.Pricing)
 }

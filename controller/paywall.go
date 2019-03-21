@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"net/http"
 
 	"github.com/FTChinese/go-rest/view"
 	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
 // PaywallRouter handles pricing plans.
@@ -18,6 +18,48 @@ func NewPaywallRouter(m model.Env) PaywallRouter {
 	return PaywallRouter{
 		model: m,
 	}
+}
+
+// GetPaywall loads current paywall in effect.
+func (router PaywallRouter) GetPaywall(w http.ResponseWriter, req *http.Request) {
+	pw, err := router.model.GetPayWall()
+	if err != nil {
+		view.Render(w, view.NewInternalError(err.Error()))
+		return
+	}
+
+	view.Render(w, view.NewResponse().SetBody(pw))
+}
+
+// DefaultPaywall loads default paywall data.
+func DefaultPaywall(w http.ResponseWriter, req *http.Request) {
+	pw, err := paywall.BuildPayWall(
+		paywall.GetDefaultBanner(),
+		paywall.GetDefaultPricing())
+
+	if err != nil {
+		view.Render(w, view.NewInternalError(err.Error()))
+		return
+	}
+
+	view.Render(w, view.NewResponse().SetBody(pw))
+}
+
+// GetPricing loads current pricing plans in effect.
+func (router PaywallRouter) GetPricing(w http.ResponseWriter, req *http.Request) {
+	p := router.model.GetCurrentPricing()
+
+	view.Render(w, view.NewResponse().SetBody(p))
+}
+
+// DefaultPlans shows what our subscription plans are.
+func DefaultPricing(w http.ResponseWriter, req *http.Request) {
+
+	view.Render(
+		w,
+		view.NewResponse().
+			NoCache().
+			SetBody(paywall.GetDefaultPricing()))
 }
 
 // GetPromo gets the current effective promotion schedule.
@@ -33,12 +75,16 @@ func (router PaywallRouter) GetPromo(w http.ResponseWriter, req *http.Request) {
 	view.Render(w, view.NewResponse().NoCache().SetBody(promo))
 }
 
-// DefaultPlans shows what our subscription plans are.
-func DefaultPlans(w http.ResponseWriter, req *http.Request) {
+// RefreshPromo busts cache and retrieve a latest promotion schedule if exists.
+// The retrieved promotion is put into cache and also send back to the request.
+func (router PaywallRouter) RefreshPromo(w http.ResponseWriter, req *http.Request) {
+	promo, err := router.model.RetrievePromo()
 
-	view.Render(
-		w,
-		view.NewResponse().
-			NoCache().
-			SetBody(paywall.GetDefaultPricing()))
+	if err != nil {
+		view.Render(w, view.NewDBFailure(err))
+
+		return
+	}
+
+	view.Render(w, view.NewResponse().SetBody(promo))
 }
