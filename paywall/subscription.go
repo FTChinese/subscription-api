@@ -44,7 +44,7 @@ func NewWxpaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription,
 		PaymentMethod: enum.PayMethodWx,
 	}
 
-	compoundID, err := s.PickCompoundID()
+	compoundID, err := s.pickCompoundID()
 	if err != nil {
 		return s, err
 	}
@@ -70,7 +70,7 @@ func NewAlipaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription
 		PaymentMethod: enum.PayMethodAli,
 	}
 
-	compoundID, err := s.PickCompoundID()
+	compoundID, err := s.pickCompoundID()
 	if err != nil {
 		return s, err
 	}
@@ -85,7 +85,9 @@ func NewAlipaySubs(ftcID null.String, unionID null.String, p Plan) (Subscription
 	return s, nil
 }
 
-func (s Subscription) PickCompoundID() (string, error) {
+// Use ftc user id for the value of column user_id if it exists;
+// otherwise fallback to wechat union id.
+func (s Subscription) pickCompoundID() (string, error) {
 	if s.FTCUserID.Valid {
 		return s.FTCUserID.String, nil
 	} else if s.UnionID.Valid {
