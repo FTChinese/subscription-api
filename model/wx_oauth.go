@@ -17,10 +17,10 @@ func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c gorest.Clie
 		open_id = ?,
 		scope = ?,
 		union_id = ?,
-		client_type = ?,
-		client_version = ?,
-		user_ip = INET6_ATON(?),
-		user_agent = ?,
+		client_type = NULLIF(?, ''),
+		client_version = NULLIF(?, ''),
+		user_ip = INET6_ATON(NULLIF(?, '')),
+		user_agent = NULLIF(?, ''),
 		created_utc = ?,
 		updated_utc = ?`
 
