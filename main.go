@@ -3,14 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/patrickmn/go-cache"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
-	"net/http"
-	"os"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -112,7 +113,7 @@ func main() {
 
 	// Get email server config.
 	var emailConn util.Conn
-	err = viper.UnmarshalKey("hanqi", &emailConn)
+	err = viper.UnmarshalKey("email.hanqi", &emailConn)
 	if err != nil {
 		logger.WithField("trace", "main").Error(err)
 		os.Exit(1)
