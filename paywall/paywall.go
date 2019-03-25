@@ -8,8 +8,8 @@ import (
 // Banner is the banner used on the barrier page
 type Banner struct {
 	Heading    string   `json:"heading"`
-	CoverURL   string   `json:"coverUrl"`
 	SubHeading string   `json:"subHeading"`
+	CoverURL   string   `json:"coverUrl"`
 	Content    []string `json:"content"`
 }
 
