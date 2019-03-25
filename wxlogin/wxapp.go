@@ -83,7 +83,7 @@ func (a WxApp) GetAccessToken(code string) (OAuthAccess, error) {
 	u := a.accessTokenURL(code)
 
 	var acc OAuthAccess
-	_, body, errs := request.Get(u).End()
+	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
 	if errs != nil {
 		logger.WithField("trace", "GetAccessToken").Error(errs)
@@ -111,7 +111,7 @@ func (a WxApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 
 	var info UserInfo
 
-	_, body, errs := request.Get(u).End()
+	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
 	if errs != nil {
 		logger.WithField("trace", "GetUserInfo").Error(errs)
@@ -132,7 +132,7 @@ func (a WxApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
 	u := a.refreshTokeURL(refreshToken)
 
 	var acc OAuthAccess
-	_, body, errs := request.Get(u).End()
+	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
 	if errs != nil {
 		logger.WithField("trace", "RefreshAccess").Error(errs)
@@ -155,7 +155,7 @@ func (a WxApp) IsValidAccess(accessToken, openID string) bool {
 
 	var resp RespStatus
 
-	_, body, errs := request.Get(u).End()
+	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
 	if errs != nil {
 		logger.WithField("trace", "IsInvalidAccess").Error(errs)
