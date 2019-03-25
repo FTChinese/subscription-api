@@ -113,6 +113,8 @@ func (a WxApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 
 	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
+	logger.WithField("trace", "GetUserInfo").Infof("Wechat user info: %s", body)
+
 	if errs != nil {
 		logger.WithField("trace", "GetUserInfo").Error(errs)
 
