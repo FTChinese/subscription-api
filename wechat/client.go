@@ -102,6 +102,50 @@ func (c Client) ValidateResponse(params wxpay.Params) *view.Reason {
 	return nil
 }
 
+func (c Client) ValidateUnifiedOrder(resp UnifiedOrderResp) *view.Reason {
+	if resp.StatusCode == wxpay.Fail {
+		reason := &view.Reason{
+			Field: "status",
+			Code:  "fail",
+		}
+		reason.SetMessage(resp.StatusMessage)
+
+		return reason
+	}
+
+	if resp.ResultCode.String == wxpay.Fail {
+		reason := &view.Reason{
+			Field: "result",
+			Code:  resp.ErrorCode.String,
+		}
+		reason.SetMessage(resp.ErrorMessage.String)
+
+		return reason
+	}
+
+	if resp.AppID.IsZero() || resp.AppID.String != c.appID {
+		reason := &view.Reason{
+			Field: "app_id",
+			Code:  view.CodeInvalid,
+		}
+		reason.SetMessage("Missing or wrong app id")
+
+		return reason
+	}
+
+	if resp.MID.IsZero() || resp.MID.String != c.mchID {
+		reason := &view.Reason{
+			Field: "mch_id",
+			Code:  view.CodeInvalid,
+		}
+		reason.SetMessage("Missing or wrong merchant id")
+
+		return reason
+	}
+
+	return nil
+}
+
 // NewPrepay creates a new Prepay instance from client appID, mchID,
 // prepayID and subscription id and price.
 // Signature required by wechat is not calculated at this point.
