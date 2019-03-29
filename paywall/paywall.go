@@ -1,6 +1,7 @@
 package paywall
 
 import (
+	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 )
@@ -22,6 +23,26 @@ type Plan struct {
 	ListPrice   float64    `json:"listPrice"`
 	NetPrice    float64    `json:"netPrice"`
 	Description string     `json:"description"`
+}
+
+func (p Plan) ProductID() string {
+	return p.Tier.String() + "_" + p.Cycle.String()
+}
+
+// Pricing defines a collection pricing plan.
+type Pricing map[string]Plan
+
+// FindPlan picks a pricing plan from a group a pre-defined plans.
+func (plans Pricing) FindPlan(tier, cycle string) (Plan, error) {
+	key := tier + "_" + cycle
+
+	p, ok := plans[key]
+
+	if !ok {
+		return p, fmt.Errorf("pricing plan for %s not found", key)
+	}
+
+	return p, nil
 }
 
 // Product contains data to show the description of a subscription product.
@@ -50,7 +71,7 @@ func BuildPayWall(banner Banner, pricing Pricing) (PayWall, error) {
 
 	planStdMonth, err := pricing.FindPlan(
 		enum.TierStandard.String(),
-		enum.CycleYear.String())
+		enum.CycleMonth.String())
 	if err != nil {
 		return PayWall{}, err
 	}
