@@ -29,6 +29,14 @@ func (router PayRouter) aliCallbackURL() string {
 	return apiBaseURL + "/v1/callback/alipay"
 }
 
+func (router PayRouter) aliReturnURL() string {
+	if router.sandbox {
+		return apiBaseURL + "/sandbox/redirect/alipay/next-user"
+	}
+
+	return apiBaseURL + "/v1/redirect/alipay/next-user"
+}
+
 func (router PayRouter) wxCallbackURL() string {
 	if router.sandbox {
 		return apiBaseURL + "/sandbox/callback/wxpay"
@@ -38,13 +46,26 @@ func (router PayRouter) wxCallbackURL() string {
 }
 
 // AliAppPayParam builds parameters for ali app pay based on current subscription order.
-func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) alipay.AliPayParam {
+func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) alipay.AliPayTradeAppPay {
 	p := alipay.AliPayTradeAppPay{}
 	p.NotifyURL = router.aliCallbackURL()
 	p.Subject = title
 	p.OutTradeNo = s.OrderID
 	p.TotalAmount = s.AliNetPrice()
 	p.ProductCode = aliProductCode
+	p.GoodsType = "0"
+
+	return p
+}
+
+func (router PayRouter) aliWebPayParam(title string, s paywall.Subscription) alipay.AliPayTradePagePay {
+	p := alipay.AliPayTradePagePay{}
+	p.NotifyURL = router.aliCallbackURL()
+	p.ReturnURL = router.aliReturnURL()
+	p.Subject = title
+	p.OutTradeNo = s.OrderID
+	p.TotalAmount = s.AliNetPrice()
+	p.ProductCode = "FAST_INSTANT_TRADE_PAY"
 	p.GoodsType = "0"
 
 	return p
@@ -58,6 +79,9 @@ func (router PayRouter) wxUniOrderParam(title, ip string, s paywall.Subscription
 	p.SetInt64("total_fee", s.WxNetPrice())
 	p.SetString("spbill_create_ip", ip)
 	p.SetString("notify_url", router.wxCallbackURL())
+	// APP for native app
+	// NATIVE for web site
+	// JSAPI for web page opend inside wechat browser
 	p.SetString("trade_type", "APP")
 
 	return p
