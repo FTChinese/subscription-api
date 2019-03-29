@@ -25,7 +25,7 @@ type WxAuthRouter struct {
 // NewWxAuth creates a new WxLoginRouter instance.
 func NewWxAuth(m model.Env, apps map[string]wxlogin.WxApp) WxAuthRouter {
 	return WxAuthRouter{
-		apps: apps,
+		apps:  apps,
 		model: m,
 	}
 }
@@ -264,5 +264,5 @@ func (router WxAuthRouter) WebCallback(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	http.Redirect(w, req, fmt.Sprintf("http://localhost:4100/callback?code=%s&state=%s", code, state), http.StatusSeeOther)
+	http.Redirect(w, req, fmt.Sprintf("http://localhost:4100/callback?code=%s&state=%s", code, state), http.StatusFound)
 }
