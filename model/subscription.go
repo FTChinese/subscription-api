@@ -2,9 +2,9 @@ package model
 
 import (
 	"database/sql"
+	"gitlab.com/ftchinese/subscription-api/util"
 	"time"
 
-	"github.com/FTChinese/go-rest"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
@@ -37,7 +37,7 @@ func (env Env) IsSubsAllowed(subs paywall.Subscription) (bool, error) {
 // SaveSubscription saves a new subscription order.
 // At this moment, you should already know if this subscription is
 // a renewal of a new one, based on current Membership's expire_date.
-func (env Env) SaveSubscription(s paywall.Subscription, c gorest.ClientApp) error {
+func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error {
 
 	_, err := env.db.Exec(
 		env.stmtInsertSubs(),
