@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/guregu/null"
@@ -13,6 +12,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -57,6 +57,71 @@ func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter 
 	r.postman = p
 
 	return r
+}
+
+func (router AliPayRouter) PlaceOrder(w http.ResponseWriter, req *http.Request) {
+	tier, err := GetURLParam(req, "tier").ToString()
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	cycle, err := GetURLParam(req, "cycle").ToString()
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
+
+	if err != nil {
+		logger.WithField("trace", "AliAppOrder").Error(err)
+
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
+
+	// Get user id from request header
+	uID := req.Header.Get(userIDKey)
+	wID := req.Header.Get(unionIDKey)
+
+	userID := null.NewString(uID, uID != "")
+	unionID := null.NewString(wID, wID != "")
+
+	logger.WithField("trace", "AliAppOrder").Infof("FTC id: %+v, wechat id: %+v", userID, unionID)
+
+	subs, err := paywall.NewAlipaySubs(userID, unionID, plan)
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
+
+	// Save the subscription
+	app := util.NewClientApp(req)
+	err = router.model.SaveSubscription(subs, app)
+	if err != nil {
+		view.Render(w, view.NewDBFailure(err))
+		return
+	}
+
+	param := router.aliWebPayParam(plan.Description, subs)
+
+	payURL, err := router.client.TradePagePay(param)
+
+	logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", payURL)
+
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	resp := ali.NewDesktopWebPay(subs, payURL)
+
+	view.Render(w, view.NewResponse().SetBody(resp))
 }
 
 // AppOrder creates an alipay order for native app.
@@ -122,7 +187,7 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Save the subscription
-	app := gorest.NewClientApp(req)
+	app := util.NewClientApp(req)
 	err = router.model.SaveSubscription(subs, app)
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -132,16 +197,18 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	param := router.aliAppPayParam(plan.Description, subs)
 
 	// Call URLValues to generate alipay required data structure and sign it.
-	values, err := router.client.URLValues(param)
+	//values, err := router.client.URLValues(param)
 
-	logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", values)
+	payURL, err := router.client.TradeAppPay(param)
+
+	logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", payURL)
 
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	resp := ali.NewAppPayResp(subs, values.Encode())
+	resp := ali.NewAppPayResp(subs, payURL)
 
 	view.Render(w, view.NewResponse().SetBody(resp))
 }
@@ -248,4 +315,87 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	go router.sendConfirmationEmail(confirmedSubs)
 
 	w.Write([]byte(success))
+}
+
+// RedirectNextUser redirect alipay result to next-user app.
+// {
+//  "app_id": [
+//    "2018053060263354"
+//  ],
+//  "auth_app_id": [
+//    "2018053060263354"
+//  ],
+//  "charset": [
+//    "utf-8"
+//  ],
+//  "method": [
+//    "alipay.trade.page.pay.return"
+//  ],
+//  "out_trade_no": [
+//    "FT99a55d609736c4fa"
+//  ],
+//  "seller_id": [
+//    "2088521304936335"
+//  ],
+//  "sign": [
+//    "CFOT1unSWR5tenWbfOndNQbgfgeql5QyJqdZzVFCMIw2KERb1jjV3lqqPPB9stc8A8yvyLZnyncSqzyoD0Ss3bfvnUuxSEpNHyANXgNn+uBTa4Niqc/bRBlH4k2RhE2SjkYDRpQ1rFEcM0/92rAdfZ35QSPquirrQNut5C7Tnt97A2nuw+YKuUubZ+tixKLWOMy9ADJAW+1ZDJNjX4bJs2RpIEyVHD8XViQ1M2e8LsV4C+lG011cGTGQe4QmSA/AeS5FPSeMaAKVvvfP/S9N+Ddhctv54+orxBisQ1YNM+Wn22IpJ4Ra5G6FVm+AWLjTC0yAeEugKm9ed7Mgw2XMRQ=="
+//  ],
+//  "sign_type": [
+//    "RSA2"
+//  ],
+//  "timestamp": [
+//    "2019-03-29 14:06:58"
+//  ],
+//  "total_amount": [
+//    "0.01"
+//  ],
+//  "trade_no": [
+//    "2019032922001440031023691208"
+//  ],
+//  "version": [
+//    "1.0"
+//  ]
+//}
+func (router AliPayRouter) RedirectNextUser(w http.ResponseWriter, req *http.Request) {
+	err := req.ParseForm()
+	logger.WithField("trace", "RedirectNextUser").Infof("Query parameters: %s", req.Form)
+
+	baseUrl := "http://next.ftchinese.com/user/subscription/alipay/callback?"
+
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	ok, err := router.client.VerifySign(req.Form)
+	if err != nil {
+		query := url.Values{}
+		query.Set("error", "invalid_signature")
+		query.Set("error_description", err.Error())
+
+		http.Redirect(
+			w,
+			req,
+			baseUrl+query.Encode(),
+			http.StatusFound)
+		return
+	}
+
+	if !ok {
+		query := url.Values{}
+		query.Set("error", "invalid_signature")
+
+		http.Redirect(
+			w,
+			req,
+			baseUrl+query.Encode(),
+			http.StatusFound)
+		return
+	}
+
+	http.Redirect(
+		w,
+		req,
+		baseUrl+req.Form.Encode(),
+		http.StatusFound)
 }
