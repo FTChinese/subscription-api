@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/guregu/null"
@@ -42,6 +41,108 @@ func NewWxRouter(m model.Env, p postoffice.Postman, sandbox bool) WxPayRouter {
 	r.postman = p
 
 	return r
+}
+
+// PlaceOrder creates order for wechat pay.
+func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		tier, err := GetURLParam(req, "tier").ToString()
+		if err != nil {
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
+		cycle, err := GetURLParam(req, "cycle").ToString()
+		if err != nil {
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
+		// Try to find a plan based on the tier and cycle.
+		plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
+
+		// If pricing plan is not found.
+		if err != nil {
+			logger.WithField("trace", "UnifiedOrder").Error(err)
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
+		logger.WithField("trace", "UnifiedOrder").Infof("Subscription plan: %+v", plan)
+
+		// Get user id from request header.
+		// If user id is found, it means user is subscribing with FTC account;
+		// if union id is found, it means user is subscribing with Wechat account;
+		uID := req.Header.Get(userIDKey)
+		wID := req.Header.Get(unionIDKey)
+
+		userID := null.NewString(uID, uID != "")
+		unionID := null.NewString(wID, wID != "")
+
+		subs, err := paywall.NewWxpaySubs(userID, unionID, plan)
+		if err != nil {
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
+		// Save this subscription order.
+		app := util.NewClientApp(req)
+		err = router.model.SaveSubscription(subs, app)
+		if err != nil {
+			view.Render(w, view.NewDBFailure(err))
+			return
+		}
+
+		unifiedOrder := wechat.UnifiedOrder{
+			Body:        plan.Description,
+			OrderID:     subs.OrderID,
+			Price:       subs.WxNetPrice(),
+			IP:          app.UserIP.String,
+			CallbackURL: router.wxCallbackURL(),
+			TradeType:   tradeType,
+			ProductID:   plan.ProductID(),
+			OpenID:      "",
+		}
+		// Build Wechat pay parameters.
+		param := unifiedOrder.ToParam()
+
+		logger.WithField("trace", "UnifiedOrder").Infof("Unifed order params: %+v", param)
+
+		// Send order to wx
+		resp, err := router.client.UnifiedOrder(param)
+
+		if err != nil {
+			logger.WithField("trace", "UnifiedOrder").Error(err)
+
+			view.Render(w, view.NewBadRequest(err.Error()))
+
+			return
+		}
+
+		// Convert wxpay's map to struct for easy manipulation.
+		uor := wechat.NewUnifiedOrderResp(resp)
+
+		go router.model.SavePrepayResp(subs.OrderID, uor)
+
+		if r := router.client.ValidateUnifiedOrder(uor); r != nil {
+			view.Render(w, view.NewUnprocessable(r))
+			return
+		}
+
+		switch tradeType {
+		case wechat.TradeTypeWeb:
+			view.Render(w, view.NewResponse().SetBody(map[string]string{
+				"codeUrl": uor.CodeURL.String,
+			}))
+
+		case wechat.TradeTypeApp:
+			prepay := uor.ToPrepay(subs)
+
+			sign := router.client.Sign(prepay.Param())
+
+			view.Render(w, view.NewResponse().SetBody(prepay.WithHash(sign)))
+		}
+	}
 }
 
 // UnifiedOrder implements 统一下单.
@@ -98,7 +199,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Save this subscription order.
-	app := gorest.NewClientApp(req)
+	app := util.NewClientApp(req)
 	err = router.model.SaveSubscription(subs, app)
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -106,7 +207,7 @@ func (router WxPayRouter) UnifiedOrder(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Build Wechat pay parameters.
-	param := router.wxUniOrderParam(plan.Description, app.UserIP, subs)
+	param := router.wxUniOrderParam(plan.Description, app.UserIP.String, subs)
 
 	logger.WithField("trace", "UnifiedOrder").Infof("Unifed order params: %+v", param)
 
