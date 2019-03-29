@@ -7,18 +7,27 @@ import (
 
 // WxResp contains the shared fields all wechat pay endpoints contains.
 type WxResp struct {
-	StatusCode    string // SUCCESS/FAIL
+	// return_code: SUCCESS/FAIL
+	StatusCode string
+	// return_msg
 	StatusMessage string
-	AppID         null.String
-	MID           null.String
-	Nonce         null.String
-	Signature     null.String
-	ResultCode    null.String // SUCCESS/FAIL
-	ErrorCode     null.String
-	ErrorMessage  null.String
+	// appid
+	AppID null.String
+	// mch_id
+	MID null.String
+	// nonce_str
+	Nonce null.String
+	// sign
+	Signature null.String
+	// result_code: SUCCESS/FAIL
+	ResultCode null.String
+	// err_code
+	ErrorCode null.String
+	// err_code_des
+	ErrorMessage null.String
 }
 
-func (r *WxResp) Populate(p wxpay.Params)  {
+func (r *WxResp) Populate(p wxpay.Params) {
 	r.StatusCode = p.GetString("return_code")
 	r.StatusMessage = p.GetString("return_msg")
 
