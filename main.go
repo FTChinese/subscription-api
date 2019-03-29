@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"gitlab.com/ftchinese/subscription-api/wechat"
 	"net/http"
 	"os"
 
@@ -156,28 +157,38 @@ func main() {
 	r.Get("/__promo", paywallRouter.GetPromo)
 
 	// Requires user id.
-	r.Route("/wxpay", func(r1 chi.Router) {
-		r1.Use(controller.UserOrUnionID)
+	r.Route("/wxpay", func(r chi.Router) {
+		r.Use(controller.UserOrUnionID)
 
-		r1.Post("/unified-order/{tier}/{cycle}", wxRouter.UnifiedOrder)
+		r.Post("/web/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeWeb))
+		r.Post("/app/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeApp))
+		r.Post("/jsapi/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeJSAPI))
+
+		r.Post("/unified-order/{tier}/{cycle}", wxRouter.UnifiedOrder)
 
 		// Query order
-		r1.Get("/query/{orderId}", wxRouter.OrderQuery)
+		r.Get("/query/{orderId}", wxRouter.OrderQuery)
 
 		// Cancel order
 	})
 
 	// Require user id.
-	r.Route("/alipay", func(r1 chi.Router) {
-		r1.Use(controller.UserOrUnionID)
+	r.Route("/alipay", func(r chi.Router) {
+		r.Use(controller.UserOrUnionID)
 
-		r1.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
+		r.Post("/web/{tier}/{cycle}", aliRouter.PlaceOrder)
+
+		r.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
 		// r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
 	})
 
 	r.Route("/callback", func(r1 chi.Router) {
 		r1.Post("/wxpay", wxRouter.Notification)
 		r1.Post("/alipay", aliRouter.Notification)
+	})
+
+	r.Route("/redirect", func(r chi.Router) {
+		r.Get("/alipay/next-user", aliRouter.RedirectNextUser)
 	})
 
 	r.Route("/paywall", func(r chi.Router) {
