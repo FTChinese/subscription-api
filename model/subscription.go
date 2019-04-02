@@ -50,6 +50,7 @@ func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error 
 		s.TierToBuy,
 		s.BillingCycle,
 		s.PaymentMethod,
+		s.WxAppID,
 		c.ClientType,
 		c.Version,
 		c.UserIP,
