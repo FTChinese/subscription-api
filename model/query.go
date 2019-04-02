@@ -38,11 +38,12 @@ func (env Env) stmtInsertSubs() string {
 		tier_to_buy = ?,
 		billing_cycle = ?,
 		payment_method = ?,
+		wx_app_id = ?,
 		created_utc = UTC_TIMESTAMP(),
-		client_type = NULLIF(?, ''),
-		client_version = NULLIF(?, ''),
-		user_ip_bin = INET6_ATON(NULLIF(?, '')),
-		user_agent = NULLIF(?, '')`, env.vipDBName())
+		client_type = ?,
+		client_version = ?,
+		user_ip_bin = INET6_ATON(?),
+		user_agent = ?`, env.vipDBName())
 }
 
 func (env Env) stmtSelectSubs() string {
