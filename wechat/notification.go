@@ -7,7 +7,7 @@ import (
 
 // Notification contains wechat's notification data after payment finished.
 type Notification struct {
-	WxResp
+	Resp
 	OpenID        null.String
 	IsSubscribed  bool
 	TradeType     null.String
@@ -17,13 +17,12 @@ type Notification struct {
 	TransactionID null.String
 	FTCOrderID    null.String
 	TimeEnd       null.String
+	params        wxpay.Params
 }
 
 // NewNotification converts wxpay.Params type to Notification type.
 func NewNotification(p wxpay.Params) Notification {
-	n := Notification{
-
-	}
+	n := Notification{}
 
 	n.Populate(p)
 
@@ -61,5 +60,15 @@ func NewNotification(p wxpay.Params) Notification {
 		n.TimeEnd = null.StringFrom(v)
 	}
 
+	n.params = p
+
 	return n
+}
+
+func (n Notification) IsPriceMatched(cent int64) bool {
+	if n.TotalFee.IsZero() {
+		return false
+	}
+
+	return n.TotalFee.Int64 == cent
 }
