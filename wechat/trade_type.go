@@ -3,19 +3,21 @@ package wechat
 type TradeType int
 
 const (
-	TradeTypeWeb TradeType = iota
-	TradeTypeApp
+	TradeTypeDesktop TradeType = iota
+	TradeTypeMobile
 	TradeTypeJSAPI
+	TradeTypeApp
 )
 
 func (x TradeType) String() string {
 	names := [...]string{
 		"NATIVE",
-		"APP",
+		"MWEB",
 		"JSAPI",
+		"APP",
 	}
 
-	if x < TradeTypeWeb || x > TradeTypeJSAPI {
+	if x < TradeTypeDesktop || x > TradeTypeApp {
 		return ""
 	}
 
