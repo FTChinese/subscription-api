@@ -3,21 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/wechat"
 	"net/http"
 	"os"
 
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
-	"github.com/patrickmn/go-cache"
-	"github.com/spf13/viper"
-	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/wxlogin"
-
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/controller"
+	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
@@ -53,50 +52,6 @@ func init() {
 	}
 }
 
-func wxOAuthApps() map[string]wxlogin.WxApp {
-	var mSubs, mFTC, wFTC wxlogin.WxApp
-
-	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
-	err := viper.UnmarshalKey("wxapp.m_subs", &mSubs)
-	if err != nil {
-		logger.WithField("trace", "wxOAuthApps").Error(err)
-		os.Exit(1)
-	}
-	if mSubs.Ensure() != nil {
-		logger.WithField("trace", "wxOAuthApps").Error("Mobile app Member subscription has empty fields")
-		os.Exit(1)
-	}
-	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-	err = viper.UnmarshalKey("wxapp.m_ftc", &mFTC)
-	if err != nil {
-		logger.WithField("trace", "wxOAuthApps").Error(err)
-		os.Exit(1)
-	}
-	if mFTC.Ensure() != nil {
-		logger.WithField("trace", "wxOAuthApps").Error("Mobile app FTC has empty fields")
-		os.Exit(1)
-	}
-	// 网站应用 -> FT中文网. This is used for web login
-	err = viper.UnmarshalKey("wxapp.w_ftc", &wFTC)
-	if err != nil {
-		logger.WithField("trace", "wxOAuthApps").Error(err)
-		os.Exit(1)
-	}
-	if wFTC.Ensure() != nil {
-		logger.WithField("trace", "wxOAuthApps").Error("Web app FTC has empty fields")
-		os.Exit(1)
-	}
-
-	return map[string]wxlogin.WxApp{
-		// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
-		"wxacddf1c20516eb69": mSubs,
-		// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-		"wxc1bc20ee7478536a": mFTC,
-		// 网站应用 -> FT中文网. This is used for web login
-		"wxc7233549ca6bc86a": wFTC,
-	}
-}
-
 func main() {
 	// Get DB connection config.
 	var dbConn util.Conn
@@ -108,7 +63,7 @@ func main() {
 	}
 
 	if err != nil {
-		logger.WithField("trace", "main").Error((err))
+		logger.WithField("trace", "main").Error(err)
 		os.Exit(1)
 	}
 
@@ -142,7 +97,7 @@ func main() {
 	aliRouter := controller.NewAliRouter(m, post, sandbox)
 	paywallRouter := controller.NewPaywallRouter(m)
 
-	wxAuth := controller.NewWxAuth(m, wxOAuthApps())
+	wxAuth := controller.NewWxAuth(m)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -160,13 +115,19 @@ func main() {
 	r.Route("/wxpay", func(r chi.Router) {
 		r.Use(controller.UserOrUnionID)
 
-		r.Post("/web/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeWeb))
-		r.Post("/app/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeApp))
+		r.Post("/desktop/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeDesktop))
+
+		r.Post("/mobile/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeMobile))
+
+		// {code: string}
 		r.Post("/jsapi/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeJSAPI))
 
-		r.Post("/unified-order/{tier}/{cycle}", wxRouter.UnifiedOrder)
+		r.Post("/app/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeApp))
+
+		r.Post("/unified-order/{tier}/{cycle}", wxRouter.AppOrder)
 
 		// Query order
+		// X-App-Id
 		r.Get("/query/{orderId}", wxRouter.OrderQuery)
 
 		// Cancel order
@@ -176,7 +137,11 @@ func main() {
 	r.Route("/alipay", func(r chi.Router) {
 		r.Use(controller.UserOrUnionID)
 
-		r.Post("/web/{tier}/{cycle}", aliRouter.PlaceOrder)
+		r.Post("/desktop/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryDesktopWeb))
+
+		r.Post("/mobile/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryMobileWeb))
+
+		r.Post("/app/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryApp))
 
 		r.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
 		// r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
