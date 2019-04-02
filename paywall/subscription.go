@@ -24,6 +24,7 @@ type Subscription struct {
 	ListPrice     float64
 	NetPrice      float64
 	PaymentMethod enum.PayMethod
+	WxAppID       null.String
 	CreatedAt     chrono.Time // When the order is created.
 	ConfirmedAt   chrono.Time // When the payment is confirmed.
 	IsRenewal     bool        // If this order is used to renew membership. Determined the moment notification is received. Mostly used for data analysis and email.
