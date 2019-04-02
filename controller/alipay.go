@@ -6,14 +6,12 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
-	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 	"net/url"
-	"os"
 )
 
 const (
@@ -34,17 +32,8 @@ type AliPayRouter struct {
 
 // NewAliRouter create a new instance of AliPayRouter
 func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter {
-	var app ali.App
 
-	if err := viper.UnmarshalKey("alipay", &app); err != nil {
-		logger.WithField("trace", "NewAliRouter").Error(err)
-		os.Exit(1)
-	}
-
-	if err := app.Ensure(); err != nil {
-		logger.WithField("trace", "NewAliRouter").Error(err)
-		os.Exit(1)
-	}
+	app := getAliPayApp()
 
 	client := alipay.New(app.ID, app.PublicKey, app.PrivateKey, true)
 
@@ -374,6 +363,7 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 //    "1.0"
 //  ]
 //}
+// /redirect/alipay/next-user?charset=utf-8&out_trade_no=FTD94BB6AB13EE1DA3&method=alipay.trade.page.pay.return&total_amount=0.01&sign=P1acUcD4jMduPDI6Qn%2FJVAinAmxJlMz%2BdAiIrfBQnUJXSzsm4gFZtpwaPok2ar9Gg7imjkaTP2FpqqN0ISk3LaTbU%2BVS%2BhI%2B2yRBQylQRwnDexV9dMD848y8PF%2BQji7Qr3e5qXiXHgG4E%2B6VzNewHyTGKuDlEkXTtQULbqyOhCv3HmU%2FFopemb7JQ3C9BtA%2BsHPoZ68jxkTNvtyIf3Fi8iFTXe9rsuAzZStxBbAxBxXD2TxuxReAO6roCCxjeFiC7HsYhWPIRgia9atH9gS3LmyZ8szy7c3rn14c9QV13MXyTKEA9t8j4Lhydn%2Bs0XOnVVqJjZlBuRfxLZndtl2Yww%3D%3D&trade_no=2019040222001440031024509039&auth_app_id=2018053060263354&version=1.0&app_id=2018053060263354&sign_type=RSA2&seller_id=2088521304936335&timestamp=2019-04-02+17%3A08%3A14
 func (router AliPayRouter) RedirectNextUser(w http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	logger.WithField("trace", "RedirectNextUser").Infof("Query parameters: %s", req.Form)
