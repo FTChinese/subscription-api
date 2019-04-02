@@ -4,8 +4,8 @@ import (
 	"github.com/objcoding/wxpay"
 )
 
-// Prepay is the response send to client
-type Prepay struct {
+// AppPay is used by native app.
+type AppPay struct {
 	FtcOrderID string  `json:"ftcOrderId"`
 	Price      float64 `json:"price"`
 	ListPrice  float64 `json:"listPrice"`
@@ -19,7 +19,7 @@ type Prepay struct {
 	Signature  string  `json:"sign"`
 }
 
-func (p Prepay) Param() wxpay.Params {
+func (p AppPay) Param() wxpay.Params {
 	param := make(wxpay.Params)
 	param["appid"] = p.AppID
 	param["partnerid"] = p.PartnerID
@@ -31,7 +31,7 @@ func (p Prepay) Param() wxpay.Params {
 	return param
 }
 
-func (p Prepay) WithHash(sign string) Prepay {
+func (p AppPay) WithHash(sign string) AppPay {
 	p.Signature = sign
 	return p
 }
