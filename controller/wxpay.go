@@ -16,7 +16,7 @@ import (
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
 type WxPayRouter struct {
-	clients     wechat.Clients
+	clients wechat.Clients
 	PayRouter
 }
 
@@ -24,7 +24,7 @@ type WxPayRouter struct {
 func NewWxRouter(m model.Env, p postoffice.Postman, sandbox bool) WxPayRouter {
 
 	r := WxPayRouter{
-		clients:     wechat.CreateClients(getWxPayApps()),
+		clients: wechat.CreateClients(getWxPayApps()),
 	}
 	r.sandbox = sandbox
 	r.model = m
@@ -40,12 +40,12 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		var appID string
 
 		switch tradeType {
-		case wechat.TradeTypeDesktop,
-		wechat.TradeTypeMobile,
-		wechat.TradeTypeJSAPI:
+		case wechat.TradeTypeMobile,
+			wechat.TradeTypeJSAPI:
 			appID = wxAppMobileFTC
 
-		case wechat.TradeTypeApp:
+		case wechat.TradeTypeDesktop,
+			wechat.TradeTypeApp:
 			appID = wxAppMobileSubs
 		}
 
@@ -240,13 +240,13 @@ func (router WxPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	}
 
 	unifiedOrder := wechat.UnifiedOrder{
-		Body: plan.Description,
-		OrderID: subs.OrderID,
-		Price: subs.WxNetPrice(),
-		IP: clientApp.UserIP.String,
+		Body:        plan.Description,
+		OrderID:     subs.OrderID,
+		Price:       subs.WxNetPrice(),
+		IP:          clientApp.UserIP.String,
 		CallbackURL: router.wxCallbackURL(),
-		TradeType: wechat.TradeTypeApp,
-		ProductID: plan.ProductID(),
+		TradeType:   wechat.TradeTypeApp,
+		ProductID:   plan.ProductID(),
 	}
 	// Build Wechat pay parameters.
 	//param := router.wxUniOrderParam(plan.Description, clientApp.UserIP.String, subs)
