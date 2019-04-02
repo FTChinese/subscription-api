@@ -23,9 +23,9 @@ type WxAuthRouter struct {
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
-func NewWxAuth(m model.Env, apps map[string]wxlogin.WxApp) WxAuthRouter {
+func NewWxAuth(m model.Env) WxAuthRouter {
 	return WxAuthRouter{
-		apps:  apps,
+		apps:  getWxOAuthApps(),
 		model: m,
 	}
 }
