@@ -5,7 +5,7 @@ import (
 	"net/url"
 )
 
-type DesktopWebPay struct {
+type WebPay struct {
 	FtcOrderID string  `json:"ftcOrderId"`
 	ListPrice  float64 `json:"listPrice"`
 	NetPrice   float64 `json:"netPrice"`
@@ -14,8 +14,8 @@ type DesktopWebPay struct {
 	PayURL string `json:"payUrl"`
 }
 
-func NewDesktopWebPay(s paywall.Subscription, payURL *url.URL) DesktopWebPay {
-	return DesktopWebPay{
+func NewWebPay(s paywall.Subscription, payURL *url.URL) WebPay {
+	return WebPay{
 		FtcOrderID: s.OrderID,
 		ListPrice:  s.ListPrice,
 		NetPrice:   s.NetPrice,
