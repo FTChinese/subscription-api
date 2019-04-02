@@ -19,6 +19,7 @@ func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {
 		trade_type = ?,
 		prepay_id = ?,
 	    code_url = ?,
+	    mweb_url = ?,
 	    created_utc = UTC_TIMESTAMP()`
 
 	_, err := env.db.Exec(query,
@@ -35,6 +36,7 @@ func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {
 		p.TradeType,
 		p.PrepayID,
 		p.CodeURL,
+		p.MWebURL,
 	)
 
 	if err != nil {
