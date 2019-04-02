@@ -8,7 +8,7 @@ import (
 )
 
 type OrderQueryResp struct {
-	WxResp
+	Resp
 	OpenID    null.String
 	TradeType null.String // APP
 	// SUCCESS
@@ -87,12 +87,12 @@ func (r *OrderQueryResp) ToResult() OrderQueryResult {
 	}
 
 	return OrderQueryResult{
-		PaymentState: r.TradeState.String,
+		PaymentState:     r.TradeState.String,
 		PaymentStateDesc: r.TradeStateDesc.String,
-		TotalFee: r.TotalFee.Int64,
-		TransactionID: r.TransactionID.String,
-		FTCOrderID: r.FTCOrderID.String,
-		PaidAt: paidAt,
+		TotalFee:         r.TotalFee.Int64,
+		TransactionID:    r.TransactionID.String,
+		FTCOrderID:       r.FTCOrderID.String,
+		PaidAt:           paidAt,
 	}
 }
 
@@ -100,7 +100,7 @@ func (r *OrderQueryResp) ToResult() OrderQueryResult {
 type OrderQueryResult struct {
 	PaymentState     string      `json:"paymentState"` // SUCCESS, REFUND, NOTPAY, CLOSED, REVOKED, USERPAYING, PAYERROR
 	PaymentStateDesc string      `json:"paymentStateDesc"`
-	TotalFee         int64      `json:"totalFee"`
+	TotalFee         int64       `json:"totalFee"`
 	TransactionID    string      `json:"transactionId"`
 	FTCOrderID       string      `json:"ftcOrderId"`
 	PaidAt           chrono.Time `json:"paidAt"`
