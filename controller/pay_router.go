@@ -2,15 +2,15 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/postoffice"
-	"github.com/objcoding/wxpay"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
 const (
-	apiBaseURL     = "http://www.ftacademy.cn/api"
-	aliProductCode = "QUICK_MSECURITY_PAY"
+	apiBaseURL        = "http://www.ftacademy.cn/api"
+	aliAppProductCode = "QUICK_MSECURITY_PAY"
+	aliWebProductCode = "FAST_INSTANT_TRADE_PAY"
 )
 
 // PayRouter is the base type used to handle shared payment operations.
@@ -52,40 +52,53 @@ func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) ali
 	p.Subject = title
 	p.OutTradeNo = s.OrderID
 	p.TotalAmount = s.AliNetPrice()
-	p.ProductCode = aliProductCode
+	p.ProductCode = aliAppProductCode
 	p.GoodsType = "0"
 
 	return p
 }
 
-func (router PayRouter) aliWebPayParam(title string, s paywall.Subscription) alipay.AliPayTradePagePay {
+func (router PayRouter) aliDesktopPayParam(title string, s paywall.Subscription) alipay.AliPayTradePagePay {
 	p := alipay.AliPayTradePagePay{}
 	p.NotifyURL = router.aliCallbackURL()
 	p.ReturnURL = router.aliReturnURL()
 	p.Subject = title
 	p.OutTradeNo = s.OrderID
 	p.TotalAmount = s.AliNetPrice()
-	p.ProductCode = "FAST_INSTANT_TRADE_PAY"
+	p.ProductCode = aliWebProductCode
+	p.GoodsType = "0"
+
+	return p
+}
+
+func (router PayRouter) aliWapPayParam(title string, s paywall.Subscription) alipay.AliPayTradeWapPay {
+	p := alipay.AliPayTradeWapPay{}
+	p.NotifyURL = router.aliCallbackURL()
+	p.ReturnURL = router.aliReturnURL()
+	p.Subject = title
+	p.OutTradeNo = s.OrderID
+	p.TotalAmount = s.AliNetPrice()
+	p.ProductCode = aliWebProductCode
 	p.GoodsType = "0"
 
 	return p
 }
 
 // WxUniOrderParam build the parameters to request for prepay id.
-func (router PayRouter) wxUniOrderParam(title, ip string, s paywall.Subscription) wxpay.Params {
-	p := make(wxpay.Params)
-	p.SetString("body", title)
-	p.SetString("out_trade_no", s.OrderID)
-	p.SetInt64("total_fee", s.WxNetPrice())
-	p.SetString("spbill_create_ip", ip)
-	p.SetString("notify_url", router.wxCallbackURL())
-	// APP for native app
-	// NATIVE for web site
-	// JSAPI for web page opend inside wechat browser
-	p.SetString("trade_type", "APP")
-
-	return p
-}
+//func (router PayRouter) wxUniOrderParam(title, ip string, s paywall.Subscription) wxpay.Params {
+//	p := make(wxpay.Params)
+//	p.SetString("body", title)
+//	p.SetString("out_trade_no", s.OrderID)
+//	p.SetInt64("total_fee", s.WxNetPrice())
+//	p.SetString("spbill_create_ip", ip)
+//	p.SetString("notify_url", router.wxCallbackURL())
+//	// APP for native app
+//	// NATIVE for web site
+//	// JSAPI for web page opend inside wechat browser
+//	p.SetString("trade_type", "APP")
+//
+//	return p
+//}
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
 func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
