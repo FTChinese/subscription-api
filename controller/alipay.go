@@ -59,81 +59,99 @@ func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter 
 	return r
 }
 
-func (router AliPayRouter) PlaceOrder(w http.ResponseWriter, req *http.Request) {
-	tier, err := GetURLParam(req, "tier").ToString()
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
+func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		tier, err := GetURLParam(req, "tier").ToString()
+		if err != nil {
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
+		cycle, err := GetURLParam(req, "cycle").ToString()
+		if err != nil {
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
+		plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
+
+		if err != nil {
+			logger.WithField("trace", "AliAppOrder").Error(err)
+
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
+		logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
+
+		// Get user id from request header
+		uID := req.Header.Get(userIDKey)
+		wID := req.Header.Get(unionIDKey)
+
+		userID := null.NewString(uID, uID != "")
+		unionID := null.NewString(wID, wID != "")
+
+		logger.WithField("trace", "AliAppOrder").Infof("FTC id: %+v, wechat id: %+v", userID, unionID)
+
+		subs, err := paywall.NewAlipaySubs(userID, unionID, plan)
+		if err != nil {
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
+		logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
+
+		// Save the subscription
+		app := util.NewClientApp(req)
+		err = router.model.SaveSubscription(subs, app)
+		if err != nil {
+			view.Render(w, view.NewDBFailure(err))
+			return
+		}
+
+		var payURL = &url.URL{}
+
+		switch kind {
+		case ali.EntryApp:
+			param := router.aliAppPayParam(plan.Description, subs)
+			queryStr, err := router.client.TradeAppPay(param)
+
+			logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", queryStr)
+
+			if err != nil {
+				view.Render(w, view.NewBadRequest(err.Error()))
+				return
+			}
+
+			resp := ali.NewAppPayResp(subs, queryStr)
+			view.Render(w, view.NewResponse().SetBody(resp))
+			// For pay from app you should stop here.
+			return
+
+		case ali.EntryDesktopWeb:
+			param := router.aliDesktopPayParam(plan.Description, subs)
+			payURL, err = router.client.TradePagePay(param)
+
+		case ali.EntryMobileWeb:
+			param := router.aliWapPayParam(plan.Description, subs)
+			payURL, err = router.client.TradeWapPay(param)
+		}
+
+		// Following handles pay from browser, both desktop and mobile.
+		logger.WithField("trace", "PlaceOrder").Infof("Ali Web pay param: %+v\n", payURL)
+
+		if err != nil {
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
+		resp := ali.NewWebPay(subs, payURL)
+		view.Render(w, view.NewResponse().SetBody(resp))
 	}
-
-	cycle, err := GetURLParam(req, "cycle").ToString()
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
-
-	if err != nil {
-		logger.WithField("trace", "AliAppOrder").Error(err)
-
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
-
-	// Get user id from request header
-	uID := req.Header.Get(userIDKey)
-	wID := req.Header.Get(unionIDKey)
-
-	userID := null.NewString(uID, uID != "")
-	unionID := null.NewString(wID, wID != "")
-
-	logger.WithField("trace", "AliAppOrder").Infof("FTC id: %+v, wechat id: %+v", userID, unionID)
-
-	subs, err := paywall.NewAlipaySubs(userID, unionID, plan)
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
-
-	// Save the subscription
-	app := util.NewClientApp(req)
-	err = router.model.SaveSubscription(subs, app)
-	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
-
-	param := router.aliWebPayParam(plan.Description, subs)
-
-	payURL, err := router.client.TradePagePay(param)
-
-	logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", payURL)
-
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	resp := ali.NewDesktopWebPay(subs, payURL)
-
-	view.Render(w, view.NewResponse().SetBody(resp))
 }
 
 // AppOrder creates an alipay order for native app.
 func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
-	// Get member tier and billing cycle from url
-	//tierKey := getURLParam(req, "tier").toString()
-	//cycleKey := getURLParam(req, "cycle").toString()
-	//
-	//if tierKey == "" || cycleKey == "" {
-	//	view.Render(w, view.NewBadRequest(msgInvalidURI))
-	//	return
-	//}
 
 	tier, err := GetURLParam(req, "tier").ToString()
 	if err != nil {
@@ -199,16 +217,16 @@ func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	// Call URLValues to generate alipay required data structure and sign it.
 	//values, err := router.client.URLValues(param)
 
-	payURL, err := router.client.TradeAppPay(param)
+	queryStr, err := router.client.TradeAppPay(param)
 
-	logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", payURL)
+	logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", queryStr)
 
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	resp := ali.NewAppPayResp(subs, payURL)
+	resp := ali.NewAppPayResp(subs, queryStr)
 
 	view.Render(w, view.NewResponse().SetBody(resp))
 }
