@@ -52,22 +52,18 @@ func (clients Clients) Find(appID string) (Client, error) {
 
 // Client extends wxpay.Client
 type Client struct {
-	//appID  string
-	//mchID  string
-	//apiKey string
 	*wxpay.Client
 	app PayApp
 }
 
 // NewClient creats a new instance of Client.
 func NewClient(app PayApp) Client {
+	// Pay attention to the last parameter.
+	// It should always be false because Weixin's sandbox address does not work!
 	account := wxpay.NewAccount(app.AppID, app.MchID, app.APIKey, false)
 	c := wxpay.NewClient(account)
 
 	return Client{
-		//app.AppID,
-		//app.MchID,
-		//app.APIKey,
 		c,
 		app,
 	}
