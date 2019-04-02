@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/spf13/viper"
+	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/wechat"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 	"os"
@@ -87,4 +88,20 @@ func getWxPayApps() map[string]wechat.PayApp {
 		// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
 		wxAppMobileFTC: mFTC,
 	}
+}
+
+func getAliPayApp() ali.App {
+	var app ali.App
+
+	if err := viper.UnmarshalKey("alipay", &app); err != nil {
+		logger.WithField("trace", "NewAliRouter").Error(err)
+		os.Exit(1)
+	}
+
+	if err := app.Ensure(); err != nil {
+		logger.WithField("trace", "NewAliRouter").Error(err)
+		os.Exit(1)
+	}
+
+	return app
 }
