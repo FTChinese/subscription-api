@@ -37,11 +37,11 @@ func (o UnifiedOrder) ToParam() wxpay.Params {
 	p.SetString("trade_type", o.TradeType.String())
 
 	switch o.TradeType {
-	case TradeTypeWeb:
+	case TradeTypeDesktop:
 		p.SetString("product_id", o.ProductID)
 
 	case TradeTypeJSAPI:
-		p.SetString("opendid", o.OpenID)
+		p.SetString("openid", o.OpenID)
 	}
 
 	return p
@@ -49,10 +49,11 @@ func (o UnifiedOrder) ToParam() wxpay.Params {
 
 // UnifiedOrderResp contains the response data from Wechat unified order.
 type UnifiedOrderResp struct {
-	WxResp
+	Resp
 	TradeType null.String
 	PrepayID  null.String
 	CodeURL   null.String
+	MWebURL   null.String
 }
 
 // NewUnifiedOrderResp creates converts PrePay from a wxpay.Params type.
@@ -86,24 +87,47 @@ func NewUnifiedOrderResp(p wxpay.Params) UnifiedOrderResp {
 		r.CodeURL = null.StringFrom(v)
 	}
 
+	if v, ok := p["mweb_url"]; ok {
+		r.MWebURL = null.StringFrom(v)
+	}
+
 	return r
 }
 
 // ToPrepay creates a Preapay from unified order response
 // and subscription order.
-func (o UnifiedOrderResp) ToPrepay(subs paywall.Subscription) Prepay {
+func (o UnifiedOrderResp) ToAppPay(subs paywall.Subscription) AppPay {
 	nonce, _ := gorest.RandomHex(10)
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 
-	return Prepay{
+	return AppPay{
 		FtcOrderID: subs.OrderID,
 		Price:      subs.ListPrice,
 		ListPrice:  subs.ListPrice,
 		NetPrice:   subs.NetPrice,
 		AppID:      o.AppID.String,
 		PartnerID:  o.MID.String,
+		PrepayID:   o.PrepayID.String,
 		Package:    "Sign=WXPay",
 		Nonce:      nonce,
 		Timestamp:  timestamp,
+	}
+}
+
+// ToWxBrowserPay turns unified order response to data
+// required by JSAPI.
+func (o UnifiedOrderResp) ToWxBrowserPay(subs paywall.Subscription) WxBrowserPay {
+	nonce, _ := gorest.RandomHex(10)
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+
+	return WxBrowserPay{
+		FtcOrderID: subs.OrderID,
+		ListPrice:  subs.ListPrice,
+		NetPrice:   subs.NetPrice,
+		AppID:      o.AppID.String,
+		Timestamp:  timestamp,
+		Nonce:      nonce,
+		Package:    "prepay_id" + o.PrepayID.String,
+		SignType:   "MD5",
 	}
 }
