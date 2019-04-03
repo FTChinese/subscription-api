@@ -78,7 +78,7 @@ func NewOrderQueryResp(p wxpay.Params) OrderQueryResp {
 	return r
 }
 
-func (r *OrderQueryResp) ToResult() OrderQueryResult {
+func (r *OrderQueryResp) ToQueryResult() OrderQueryResult {
 	timeEnd, err := util.ParseWxTime(r.TimeEnd.String)
 
 	var paidAt chrono.Time
