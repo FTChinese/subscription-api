@@ -4,15 +4,12 @@ import "github.com/objcoding/wxpay"
 
 // WxBrowserPay is used inside wechat browser
 type WxBrowserPay struct {
-	FtcOrderID string  `json:"ftcOrderId"`
-	ListPrice  float64 `json:"listPrice"`
-	NetPrice   float64 `json:"netPrice"`
-	AppID      string  `json:"appId"`
-	Timestamp  string  `json:"timestamp"`
-	Nonce      string  `json:"nonce"`
-	Package    string  `json:"package"`
-	SignType   string  `json:"signType"`
-	Signature  string  `json:"signature"`
+	Pay
+	Timestamp string `json:"timestamp"`
+	Nonce     string `json:"nonce"`
+	Package   string `json:"pkg"`
+	Signature string `json:"signature"`
+	SignType  string `json:"signType"`
 }
 
 func (p WxBrowserPay) Params() wxpay.Params {
