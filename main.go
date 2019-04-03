@@ -124,6 +124,7 @@ func main() {
 
 		r.Post("/app/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeApp))
 
+		// Deprecate
 		r.Post("/unified-order/{tier}/{cycle}", wxRouter.AppOrder)
 
 		// Query order
@@ -143,6 +144,7 @@ func main() {
 
 		r.Post("/app/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryApp))
 
+		// Deprecate
 		r.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
 		// r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
 	})
