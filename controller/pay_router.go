@@ -58,6 +58,9 @@ func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) ali
 	return p
 }
 
+// The used by this one is exactly the same as `aliWapPayParam` except the return types are different.
+// They are created separately because `alipay` package
+// requires different data types.
 func (router PayRouter) aliDesktopPayParam(title string, s paywall.Subscription) alipay.AliPayTradePagePay {
 	p := alipay.AliPayTradePagePay{}
 	p.NotifyURL = router.aliCallbackURL()
