@@ -1,97 +1,136 @@
 # Paywall
 
-## Promotion Schedule
+## Default Paywall Data
 
-    GET /paywall/promo
+    GET /paywall/default
 
-Get a promotion schedule from cache.
-
-You must hit the `/__refresh` endpoint before having this one to take effect.
+The data is used to render web page for subscripiton
 
 ### Response
-`200 OK`
+
+It should have not other state other than `200 OK`
+
 ```json
 {
-    "startAt": "2018-12-31T16:00:00Z",
-    "endAt": "2019-01-01T16:00:00Z",
-    "plans": {
-        "standard_month": {
-            "tier": "standard",
-            "cycle": "month",
-            "price": 28,
-            "id": 5,
-            "description": "FT中文网 - 标准会员"
-        },
-        "standard_year": {
-            "tier": "standard",
-            "cycle": "year",
-            "price": 168,
-            "id": 10,
-            "description": "FT中文网 - 标准会员"
-        },
-        "premium_year": {
-            "tier": "premium",
-            "cycle": "year",
-            "price": 1698,
-            "id": 100,
-            "description": "FT中文网 - 高端会员"
-        }
-    },
     "banner": {
-        "coverUrl": "https://cn.bing.com/az/hprichbg/rb/FrankfurtXmas_ZH-CN9289866662_1920x1080.jpg",
         "heading": "FT中文网会员订阅服务",
         "subHeading": "欢迎您",
+        "coverUrl": "http://www.ftacademy.cn/subscription.jpg",
         "content": [
-            "希望全球视野的FT中文网，能够带您站在高海拔的地方俯瞰世界，引发您的思考，从不同的角度看到不一样的事物，见他人之未见！",
-            "If you need to display multiple paragraphs, press Enter at the end of each paragraph.",
-            "Do not add empty lines between paragraphs; otherwise the empty paragraph will also be displayed."
+            "希望全球视野的FT中文网，能够带您站在高海拔的地方俯瞰世界，引发您的思考，从不同的角度看到不一样的事物，见他人之未见！"
         ]
     },
-    "createdAt": "2018-11-29T08:53:00Z"
+    "products": [
+        {
+            "heading": "标准会员",
+            "benefits": [
+                "专享订阅内容每日仅需0.7元(或按月订阅每日0.9元)",
+                "精选深度分析",
+                "中英双语内容",
+                "金融英语速读训练",
+                "英语原声电台",
+                "无限浏览7日前所有历史文章（近8万篇）"
+            ],
+            "smallPrint": null,
+            "tier": "standard",
+            "currency": "CNY",
+            "pricing": [
+                {
+                    "tier": "standard",
+                    "cycle": "year",
+                    "listPrice": 258,
+                    "netPrice": 258,
+                    "description": "FT中文网 - 年度标准会员"
+                },
+                {
+                    "tier": "standard",
+                    "cycle": "month",
+                    "listPrice": 28,
+                    "netPrice": 28,
+                    "description": "FT中文网 - 月度标准会员"
+                }
+            ]
+        },
+        {
+            "heading": "高端会员",
+            "benefits": [
+                "专享订阅内容每日仅需5.5元",
+                "享受“标准会员”所有权益",
+                "编辑精选，总编/各版块主编每周五为您推荐本周必读资讯，分享他们的思考与观点",
+                "FT中文网2018年度论坛门票2张，价值3999元/张 （不含差旅与食宿）"
+            ],
+            "smallPrint": "注：所有活动门票不可折算现金、不能转让、不含差旅与食宿",
+            "tier": "premium",
+            "currency": "CNY",
+            "pricing": [
+                {
+                    "tier": "premium",
+                    "cycle": "year",
+                    "listPrice": 1998,
+                    "netPrice": 1998,
+                    "description": "FT中文网 - 高端会员"
+                }
+            ]
+        }
+    ]
 }
 ```
 
-`404 Not Found` if no promotion is scheduled, e.g., you never hit the `/__refresh` endpoint.
-
-## Default Products Description
-
-    GET /paywall/products
-
-Not implemented yet.
-
-## Default Banner on Barrier Page
-
-    GET /paywall/banner
-
-Not implemented yet.
-
 ## Default Pricing Plans
 
-    GET /paywall/plans
-
-This is the canonical pricing plans you would use on a daily basis. If the promotion endpoint is in effect (depending on the start and end date), use the promotion schedule's `plans` field; otherwise use this one.
+    GET /paywall/pricing/default
 
 ```json
 {
     "premium_year": {
         "tier": "premium",
         "cycle": "year",
-        "price": 1998,
-        "id": 100,
+        "listPrice": 1998,
+        "netPrice": 1998,
         "description": "FT中文网 - 高端会员"
     },
     "standard_month": {
         "tier": "standard",
         "cycle": "month",
-        "price": 28,
-        "id": 5,
+        "listPrice": 28,
+        "netPrice": 28,
         "description": "FT中文网 - 月度标准会员"
     },
     "standard_year": {
         "tier": "standard",
         "cycle": "year",
-        "price": 198,
-        "id": 10,
+        "listPrice": 258,
+        "netPrice": 258,
+        "description": "FT中文网 - 年度标准会员"
+    }
+}
+```
+
+## Pricing Plan for Promotion
+
+The data are similar to `/paywall/pricing/default` except the `netPrice` field, which is the actual price user will pay. If a promotion plan exist, it will be set to promotion's net price; if the API is run in `sandbox` mode, `netPrice` is always `0.01`.
+
+```json
+{
+    "premium_year": {
+        "tier": "premium",
+        "cycle": "year",
+        "listPrice": 1998,
+        "netPrice": 0.01,
+        "description": "FT中文网 - 高端会员"
+    },
+    "standard_month": {
+        "tier": "standard",
+        "cycle": "month",
+        "listPrice": 28,
+        "netPrice": 0.01,
+        "description": "FT中文网 - 月度标准会员"
+    },
+    "standard_year": {
+        "tier": "standard",
+        "cycle": "year",
+        "listPrice": 258,
+        "netPrice": 0.01,
         "description": "FT中文网 - 年度标准会员"
     }
 }
