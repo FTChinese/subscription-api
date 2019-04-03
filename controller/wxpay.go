@@ -146,15 +146,13 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		switch tradeType {
 		// Desktop returns a url that can be turned to QR code
 		case wechat.TradeTypeDesktop:
-			view.Render(w, view.NewResponse().SetBody(map[string]string{
-				"codeUrl": uor.CodeURL.String,
-			}))
+			desktopPay := uor.ToDesktopPay(subs)
+			view.Render(w, view.NewResponse().SetBody(desktopPay))
 
 		// Mobile returns a url which is redirect in browser
 		case wechat.TradeTypeMobile:
-			view.Render(w, view.NewResponse().SetBody(map[string]string{
-				"mWebUrl": uor.MWebURL.String,
-			}))
+			mobilePay := uor.ToMobilePay(subs)
+			view.Render(w, view.NewResponse().SetBody(mobilePay))
 
 		// Create the json data used by js api
 		case wechat.TradeTypeJSAPI:
@@ -165,7 +163,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Create the json data used by native app.
 		case wechat.TradeTypeApp:
 			appPay := uor.ToAppPay(subs)
-			sign := payClient.Sign(appPay.Param())
+			sign := payClient.Sign(appPay.Params())
 			view.Render(w, view.NewResponse().SetBody(appPay.WithHash(sign)))
 		}
 	}
@@ -281,7 +279,7 @@ func (router WxPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
 	}
 
 	//prepay := router.mSubsClient.NewPrepay(resp.GetString("prepay_id"), subs)
-	appPay := uor.ToAppPay(subs)
+	appPay := uor.ToLegacyAppPay(subs)
 
 	sign := payClient.Sign(appPay.Param())
 
@@ -452,17 +450,5 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//if r := router.mSubsClient.ValidateResponse(respParams); r != nil {
-	//	if r.Field == "result" && r.Code == "ORDERNOTEXIST" {
-	//		view.Render(w, view.NewNotFound())
-	//		return
-	//	}
-	//
-	//	view.Render(w, view.NewUnprocessable(r))
-	//	return
-	//}
-
-	//orderQuery := wechat.NewOrderQueryResp(respParams)
-
-	view.Render(w, view.NewResponse().SetBody(resp.ToResult()))
+	view.Render(w, view.NewResponse().SetBody(resp.ToQueryResult()))
 }
