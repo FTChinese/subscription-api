@@ -96,11 +96,11 @@ func NewUnifiedOrderResp(p wxpay.Params) UnifiedOrderResp {
 
 // ToPrepay creates a Preapay from unified order response
 // and subscription order.
-func (o UnifiedOrderResp) ToAppPay(subs paywall.Subscription) AppPay {
+func (o UnifiedOrderResp) ToLegacyAppPay(subs paywall.Subscription) LegacyAppPay {
 	nonce, _ := gorest.RandomHex(10)
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 
-	return AppPay{
+	return LegacyAppPay{
 		FtcOrderID: subs.OrderID,
 		Price:      subs.ListPrice,
 		ListPrice:  subs.ListPrice,
@@ -114,20 +114,67 @@ func (o UnifiedOrderResp) ToAppPay(subs paywall.Subscription) AppPay {
 	}
 }
 
+func (o UnifiedOrderResp) ToAppPay(subs paywall.Subscription) AppPay {
+	p := AppPay{
+		PartnerID: o.MID.String,
+		PrepayID:  o.PrepayID.String,
+		Package:   "Sign=WXPay",
+		Nonce:     GenerateNonce(),
+		Timestamp: GenerateTimestamp(),
+	}
+
+	p.FtcOrderID = subs.OrderID
+	p.ListPrice = subs.ListPrice
+	p.NetPrice = subs.NetPrice
+	p.AppID = o.AppID.String
+
+	return p
+}
+
 // ToWxBrowserPay turns unified order response to data
 // required by JSAPI.
 func (o UnifiedOrderResp) ToWxBrowserPay(subs paywall.Subscription) WxBrowserPay {
 	nonce, _ := gorest.RandomHex(10)
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 
-	return WxBrowserPay{
-		FtcOrderID: subs.OrderID,
-		ListPrice:  subs.ListPrice,
-		NetPrice:   subs.NetPrice,
-		AppID:      o.AppID.String,
-		Timestamp:  timestamp,
-		Nonce:      nonce,
-		Package:    "prepay_id" + o.PrepayID.String,
-		SignType:   "MD5",
+	p := WxBrowserPay{
+
+		Timestamp: timestamp,
+		Nonce:     nonce,
+		Package:   "prepay_id" + o.PrepayID.String,
+		SignType:  "MD5",
 	}
+
+	p.FtcOrderID = subs.OrderID
+	p.ListPrice = subs.ListPrice
+	p.NetPrice = subs.NetPrice
+	p.AppID = o.AppID.String
+
+	return p
+}
+
+func (o UnifiedOrderResp) ToDesktopPay(subs paywall.Subscription) DesktopPay {
+	p := DesktopPay{
+		CodeURL: o.CodeURL.String,
+	}
+
+	p.FtcOrderID = subs.OrderID
+	p.ListPrice = subs.ListPrice
+	p.NetPrice = subs.NetPrice
+	p.AppID = o.AppID.String
+
+	return p
+}
+
+func (o UnifiedOrderResp) ToMobilePay(subs paywall.Subscription) MobilePay {
+	p := MobilePay{
+		MWebURL: o.MWebURL.String,
+	}
+
+	p.FtcOrderID = subs.OrderID
+	p.ListPrice = subs.ListPrice
+	p.NetPrice = subs.NetPrice
+	p.AppID = o.AppID.String
+
+	return p
 }
