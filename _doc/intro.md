@@ -6,7 +6,7 @@
 * 付费墙信息展示
 * 微信登录
 
-## 订阅支付
+## 订阅支付 [Deprecate]
 
 处理订阅的流程中最重要的数据类型是`Subscription`，包含了订单的ID、购买的会员类型、会员周期、支付价格、支付方式、订单创建时间、订单确认时间、订单是否用于续订、订单购买的会员的开始时间和到期时间，以及该用户的UUID。参见`model/subscripiton.go`文件。
 
@@ -59,33 +59,53 @@ Expiration date - now < billing cycle
 
 至此，全部购买流程结束。
 
-## 付费墙信息展示
-
-见Paywall部分。
-
 # Endpoints
 
 Here's an overview of all the endpoint provided by this API.
 
 ## Internal Status
+
 * `/__version` See current program's build info
 * `/__refresh` Notify server to retrieve a promotion schedule
-* `/__current_plans` See what procing plans are being used.
 
 ## Subscription Order
-* `POST /wxpay/unified-order/{standard|premium}/{year|month}` Create a wxpay prepay order
+
+* `POST /wxpay/desktop/{standard|premium}/{year|month}` Create an order for wechat pay inside desktop browser.
+
+* `POST /wxpay/mobile/{standard|premium}/{year|month}` Create an order for wechat pay inside mobile browser. 
+
+* `POST /wxpay/jsapi/{standard|premium}/{year|month}` Create an order for wechat pay inside wechat browser
+
+* `POST /wxpay/app/{standard|premium}/{year|month}` Creat an order for wechat pay in native app.
+
+* `POST /wxpay/unified-order/{standard|premium}/{year|month}` Create a wxpay for native app. [Deprecated]
+
 * `GET /wxpay/query/{orderId}` Query an order paid via wxpay
 
-* `POST /alipay/app-order/{tier}/{cycle}` Create a new order for alipay
+* `POST /alipay/desktop/{standard|premium}/{year|month}` Create an order for alipay inside desktop browser.
+
+* `POST /alipay/mobile/{standard|premium}/{year|month}` Create an order for alipay inside mobile browser
+
+* `POST /alipay/app/{standard|premium}/{year|month}` Create an order for alipay in native app.
+
+* `POST /alipay/app-order/{tier}/{cycle}` Create a new order for alipay in native app. [Deprecated]
 
 ## Server to Server Notification
-* `POST /callback/wxpay`
-* `POST /callback/alipay`
+
+* `POST /callback/wxpay` Receive wechat pay notification
+* `POST /callback/alipay` Receive alipay notification
+
+## Redirect
+
+* `GET /redirect/alipay/next-user` Redirect user to next-user app after paid in browser.
 
 ## Paywall
-* `GET /paywall/promo` Get the promotion schedule
-* `GET /paywall/plans` Get the default pricing plans.
-* `GET /paywall/banner` Get the banner content used on subscription page.
+
+* `GET /paywall/default` Get the default paywall data.
+* `GET /paywall/current` Get the current paywall data.
+* `GET /paywall/pricing/default` Get the default pricing plans.
+* `GET /paywall/pricing/current` Get the current pricing plans in effect.
+* `GET /paywall/promo` Get the promotion plan if any.
 
 ## Wechat OAuth
 
