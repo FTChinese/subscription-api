@@ -106,7 +106,9 @@ It should have not other state other than `200 OK`
 }
 ```
 
-## Pricing Plan for Promotion
+## Current Pricing Plan in Effect
+
+    GET /paywall/pricing/current
 
 The data are similar to `/paywall/pricing/default` except the `netPrice` field, which is the actual price user will pay. If a promotion plan exist, it will be set to promotion's net price; if the API is run in `sandbox` mode, `netPrice` is always `0.01`.
 
@@ -133,5 +135,52 @@ The data are similar to `/paywall/pricing/default` except the `netPrice` field, 
         "netPrice": 0.01,
         "description": "FT中文网 - 年度标准会员"
     }
+}
+```
+
+## Promotion
+
+    GET /paywall/promo
+    
+Show what the promotion plan is in cache currently.
+
+```json
+{
+    "startAt": "2019-04-01T16:00:00Z",
+    "endAt": "2019-04-06T16:00:00Z",
+    "banner": {
+        "heading": "FT中文网会员订阅服务",
+        "subHeading": "欢迎您",
+        "coverUrl": "http://www.ftacademy.cn/subscription.jpg",
+        "content": [
+            "希望全球视野的FT中文网，能够带您站在高海拔的地方俯瞰世界，引发您的思考，从不同的角度看到不一样的事物，见他人之未见！",
+            "If you need to display multiple paragraphs, press Enter at the end of each paragraph.",
+            "Do not add empty lines between paragraphs; otherwise the empty paragraph will also be displayed."
+        ]
+    },
+    "plans": {
+        "premium_year": {
+            "tier": "premium",
+            "cycle": "year",
+            "listPrice": 1998,
+            "netPrice": 1698,
+            "description": "FT中文网 - 高端会员"
+        },
+        "standard_month": {
+            "tier": "standard",
+            "cycle": "month",
+            "listPrice": 28,
+            "netPrice": 28,
+            "description": "FT中文网 - 标准会员"
+        },
+        "standard_year": {
+            "tier": "standard",
+            "cycle": "year",
+            "listPrice": 258,
+            "netPrice": 198,
+            "description": "FT中文网 - 标准会员"
+        }
+    },
+    "createdAt": "2019-04-04T09:27:54Z"
 }
 ```
