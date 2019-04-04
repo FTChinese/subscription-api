@@ -109,8 +109,6 @@ func main() {
 	// Inspect what pricing plans are in effect.
 	r.Get("/__refresh", paywallRouter.RefreshPromo)
 
-	r.Get("/__promo", paywallRouter.GetPromo)
-
 	// Requires user id.
 	r.Route("/wxpay", func(r chi.Router) {
 		r.Use(controller.UserOrUnionID)
@@ -166,6 +164,8 @@ func main() {
 		// Get default pricing plans
 		r.Get("/pricing/default", controller.DefaultPricing)
 		r.Get("/pricing/current", paywallRouter.GetPricing)
+
+		r.Get("/promo", paywallRouter.GetPromo)
 	})
 
 	r.Route("/wx", func(r chi.Router) {
