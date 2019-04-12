@@ -170,8 +170,11 @@ func main() {
 
 	r.Route("/wx", func(r chi.Router) {
 		r.Route("/oauth", func(r chi.Router) {
+
 			r.With(controller.RequireAppID).Post("/login", wxAuth.Login)
+
 			r.With(controller.RequireAppID).Put("/refresh", wxAuth.Refresh)
+
 			r.Get("/callback", wxAuth.WebCallback)
 		})
 	})
