@@ -2,7 +2,7 @@
 author: weiguo.ni
 title: Subscription API Documentation
 geometry: margin=0.5in
-fontsize: 14pt
+fontsize: 12pt
 documentclass: extarticle
 mainfont: "Noto Serif"
 sansfont: "Noto Sans"
