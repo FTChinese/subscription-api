@@ -67,6 +67,8 @@ func (env Env) RetrievePromo() (paywall.Promotion, error) {
 }
 
 func (env Env) cachePromo(p paywall.Promotion) {
+	logger.WithField("trace", "cachePromo").Infof("Caching promo %+v", p)
+
 	env.cache.Set(keyPromo, p, cache.NoExpiration)
 }
 
@@ -75,6 +77,7 @@ func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
 	x, found := env.cache.Get(keyPromo)
 
 	if !found {
+		logger.WithField("trace", "LoadCachedPromo").Info("No cached promo found")
 		return paywall.Promotion{}, false
 	}
 

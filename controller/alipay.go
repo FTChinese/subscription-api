@@ -368,8 +368,6 @@ func (router AliPayRouter) RedirectNextUser(w http.ResponseWriter, req *http.Req
 	err := req.ParseForm()
 	logger.WithField("trace", "RedirectNextUser").Infof("Query parameters: %s", req.Form)
 
-	baseUrl := "http://next.ftchinese.com/user/subscription/alipay/callback?"
-
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -384,7 +382,7 @@ func (router AliPayRouter) RedirectNextUser(w http.ResponseWriter, req *http.Req
 		http.Redirect(
 			w,
 			req,
-			baseUrl+query.Encode(),
+			alipayCallback+query.Encode(),
 			http.StatusFound)
 		return
 	}
@@ -396,7 +394,7 @@ func (router AliPayRouter) RedirectNextUser(w http.ResponseWriter, req *http.Req
 		http.Redirect(
 			w,
 			req,
-			baseUrl+query.Encode(),
+			alipayCallback+query.Encode(),
 			http.StatusFound)
 		return
 	}
@@ -404,6 +402,6 @@ func (router AliPayRouter) RedirectNextUser(w http.ResponseWriter, req *http.Req
 	http.Redirect(
 		w,
 		req,
-		baseUrl+req.Form.Encode(),
+		alipayCallback+req.Form.Encode(),
 		http.StatusFound)
 }
