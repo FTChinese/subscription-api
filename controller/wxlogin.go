@@ -257,6 +257,7 @@ func (router WxAuthRouter) WebCallback(w http.ResponseWriter, req *http.Request)
 	err := req.ParseForm()
 	if err != nil {
 		query := url.Values{}
+		query.Set("error", "invalid_request")
 
 		http.Redirect(
 			w,
