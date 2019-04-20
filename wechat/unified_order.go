@@ -141,7 +141,7 @@ func (o UnifiedOrderResp) ToWxBrowserPay(subs paywall.Subscription) WxBrowserPay
 
 		Timestamp: timestamp,
 		Nonce:     nonce,
-		Package:   "prepay_id" + o.PrepayID.String,
+		Package:   "prepay_id=" + o.PrepayID.String,
 		SignType:  "MD5",
 	}
 
