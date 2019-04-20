@@ -9,7 +9,7 @@ import (
 
 const (
 	alipayCallback  = "http://next.ftchinese.com/user/subscription/alipay/callback?"
-	wxOAuthCallback = "http://next.ftchinese.com/user/login/callback?"
+	wxOAuthCallback = "http://next.ftchinese.com/user/login/wechat/callback?"
 )
 
 var logger = log.WithField("project", "subscription-api").
