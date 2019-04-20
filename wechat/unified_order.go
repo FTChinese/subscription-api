@@ -137,6 +137,8 @@ func (o UnifiedOrderResp) ToWxBrowserPay(subs paywall.Subscription) WxBrowserPay
 	nonce, _ := gorest.RandomHex(10)
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 
+	// The default signature type is `MD5` used by package `wxpay`.
+	// It provide Client.SetSignType(signType string) to change the default value, but no way to get it.
 	p := WxBrowserPay{
 
 		Timestamp: timestamp,
