@@ -14,7 +14,7 @@ type WxBrowserPay struct {
 
 func (p WxBrowserPay) Params() wxpay.Params {
 	param := make(wxpay.Params)
-	param["appid"] = p.AppID
+	param["appId"] = p.AppID
 	param["timeStamp"] = p.Timestamp
 	param["nonceStr"] = p.Nonce
 	param["package"] = p.Package
