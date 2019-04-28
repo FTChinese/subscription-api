@@ -153,7 +153,7 @@ func main() {
 	})
 
 	r.Route("/redirect", func(r chi.Router) {
-		r.Get("/alipay/next-user", aliRouter.RedirectNextUser)
+		r.Get("/alipay/done", aliRouter.RedirectNextUser)
 	})
 
 	r.Route("/paywall", func(r chi.Router) {
