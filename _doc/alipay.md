@@ -15,7 +15,7 @@ If the combination of `tier` and `cycle` is not one of `standard_month`, `standa
 
 ## In Desktop Browser
 
-    POST /alipay/desktop/{standard|premium}/{year|month}
+    POST /alipay/desktop/{standard|premium}/{year|month}<?return_url=xxxx>
 
 ### Headers
 
@@ -27,6 +27,10 @@ X-Client-Version: 0.3.0
 X-User-Ip: 248.250.115.148
 X-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36
 ```
+
+The query parameter `return_url` is optional. It specifies to where user should be redirected after payment. If omitted, it defaults to `http://www.ftacademy.cn/api/v1/redirect/alipay/done` (see `PayRouter.aliReturnURL()`), which will perform a redirection again to `http://next.ftchinese.com/user/subscription/alipay/callback`, which will again redirect to `http://next.ftchinese.com/user/subscription` if everything works fine.
+
+Such complex redirection strategy is used to circumvent Alipay's restriction that the redirected-to url must be under the registered domain in Alipay.
 
 ### Input
 
@@ -45,15 +49,11 @@ None
 }
 ```
 
-Client should redirect to the `payUrl`.
-
-After payment finished, Alipay will redirect user to the `return_url` when creating this order. The redirected url is `http://www.ftacademy.cn/api/sandbox/redirect/alipay/next-user` or `http://www.ftacademy.cn/api/v1/redirect/alipay/next-user`, which will perform a redirection again to `http://next.ftchinese.com/user/subscription/alipay/callback`, which will again redirect to `http://next.ftchinese.com/user/subscription` if everything works fine.
-
-Such complex redirection strategy is used to circumvent Alipay's restriction that the redirected-to url must be under the registered domain in Alipay.
+Client should redirect user to the `payUrl`.
 
 ## In Mobile Browser
     
-    POST /alipay/mobile/{standard|premium}/{year|month}
+    POST /alipay/mobile/{standard|premium}/{year|month}<?return_url=xxx>
 
 ### Headers
 
