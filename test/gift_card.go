@@ -42,7 +42,7 @@ func CreateGiftCard() paywall.GiftCard {
 			cycle_unit = ?,
 			cycle_value = ?`
 
-	now := time.Now()
+	now := time.Now().AddDate(1, 0, 0)
 
 	_, err := DB.Exec(query,
 		GenCardSerial(),
