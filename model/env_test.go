@@ -3,8 +3,10 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"github.com/objcoding/wxpay"
 	"os"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/spf13/viper"
@@ -19,7 +21,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 
 	"github.com/guregu/null"
-	"github.com/objcoding/wxpay"
 	"github.com/patrickmn/go-cache"
 
 	"github.com/FTChinese/go-rest/enum"
@@ -83,12 +84,12 @@ func init() {
 	mockClient = wechat.NewClient(wxpayApp)
 }
 
-func clientApp() gorest.ClientApp {
-	return gorest.ClientApp{
+func clientApp() util.ClientApp {
+	return util.ClientApp{
 		ClientType: enum.PlatformAndroid,
-		Version:    "1.1.1",
-		UserIP:     fake.IPv4(),
-		UserAgent:  fake.UserAgent(),
+		Version:    null.StringFrom("1.1.1"),
+		UserIP:     null.StringFrom(randomdata.IpV4Address()),
+		UserAgent:  null.StringFrom(randomdata.UserAgentString()),
 	}
 }
 
@@ -113,6 +114,60 @@ func generateWxID() string {
 
 func generateAvatarURL() string {
 	return fmt.Sprintf("http://thirdwx.qlogo.cn/mmopen/vi_32/%s/132", fake.CharactersN(90))
+}
+
+func genSerialNumber() string {
+	now := time.Now()
+	anni := now.Year() - 2005
+	suffix := randomdata.Number(0, 9999)
+
+	return fmt.Sprintf("%d%02d%04d", anni, now.Month(), suffix)
+}
+
+func TestSerialNumber(t *testing.T)  {
+	t.Log(genSerialNumber())
+}
+
+func createGiftCard() paywall.GiftCard {
+	code, _ := gorest.RandomHex(8)
+
+	c := paywall.GiftCard{
+		Code: strings.ToUpper(code),
+		Tier: enum.TierStandard,
+		CycleUnit: enum.CycleYear,
+		CycleValue: null.IntFrom(1),
+	}
+
+	query := `
+	INSERT INTO premium.scratch_card
+		SET serial_number = ?,
+			auth_code = ?,
+			tier = ?,
+			cycle_unit = ?,
+			cycle_value = ?`
+
+	_, err := db.Exec(query, genSerialNumber(), c.Code, c.Tier, c.CycleUnit, c.CycleValue)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return c
+}
+
+func TestCreateCard(t *testing.T)  {
+	c := createGiftCard()
+
+	t.Logf("Gift card: %+v", c)
+}
+
+func TestUnixDate(t *testing.T)  {
+	now := time.Now()
+
+	date := now.Truncate(24 * time.Hour)
+
+	t.Logf("%s\n", date.In(time.UTC).Format(time.RFC3339))
+	t.Logf("%d\n", date.Unix())
 }
 
 type mocker struct {
@@ -260,7 +315,7 @@ func wxPrepayResp() string {
 func wxParsedPrepay() wxpay.Params {
 	resp := wxPrepayResp()
 
-	p, err := mockClient.ParseResponse(strings.NewReader(resp))
+	p, err := wechat.DecodeXML(strings.NewReader(resp))
 
 	if err != nil {
 		panic(err)
@@ -271,7 +326,8 @@ func wxParsedPrepay() wxpay.Params {
 
 func wxParsedNoti(orderID string) wxpay.Params {
 	resp := wxNotiResp(orderID)
-	p, err := mockClient.ParseResponse(strings.NewReader(resp))
+	p, err := wechat.DecodeXML(strings.NewReader(resp))
+
 	if err != nil {
 		panic(err)
 	}
