@@ -37,11 +37,20 @@ func CreateGiftCard() paywall.GiftCard {
 	INSERT INTO premium.scratch_card
 		SET serial_number = ?,
 			auth_code = ?,
+		    expire_time = UNIX_TIMESTAMP(?),
 			tier = ?,
 			cycle_unit = ?,
 			cycle_value = ?`
 
-	_, err := DB.Exec(query, GenCardSerial(), c.Code, c.Tier, c.CycleUnit, c.CycleValue)
+	now := time.Now()
+
+	_, err := DB.Exec(query,
+		GenCardSerial(),
+		c.Code,
+		now.Truncate(24*time.Hour),
+		c.Tier,
+		c.CycleUnit,
+		c.CycleValue)
 
 	if err != nil {
 		panic(err)
