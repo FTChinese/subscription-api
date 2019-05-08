@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 
 	"github.com/google/uuid"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestEnv_FindGiftCard(t *testing.T) {
-	c := createGiftCard()
+	c := test.CreateGiftCard()
 
 	type fields struct {
 		sandbox bool
@@ -22,14 +23,14 @@ func TestEnv_FindGiftCard(t *testing.T) {
 		code string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
+		name   string
+		fields fields
+		args   args
 		//want    paywall.GiftCard
 		wantErr bool
 	}{
 		{
-			name: "Find Gift Card",
+			name:   "Find Gift Card",
 			fields: fields{db: db},
 			args: args{
 				code: c.Code,
@@ -68,7 +69,7 @@ func TestEnv_RedeemGiftCard(t *testing.T) {
 
 	t.Logf("FTC ID: %s", ftcID)
 
-	c := createGiftCard()
+	c := test.CreateGiftCard()
 
 	m, _ = m.FromGiftCard(c)
 
@@ -109,5 +110,3 @@ func TestEnv_RedeemGiftCard(t *testing.T) {
 		})
 	}
 }
-
-

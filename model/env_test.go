@@ -3,10 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"github.com/objcoding/wxpay"
 	"os"
-	"strings"
-	"testing"
 	"time"
 
 	"github.com/spf13/viper"
@@ -28,8 +25,8 @@ import (
 
 	"gitlab.com/ftchinese/subscription-api/wechat"
 
+	"github.com/google/uuid"
 	"github.com/icrowley/fake"
-	"github.com/satori/go.uuid"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -99,7 +96,7 @@ func generateCode() string {
 }
 
 func genUUID() string {
-	return uuid.Must(uuid.NewV4()).String()
+	return uuid.New().String()
 }
 
 func generateToken() string {
@@ -116,60 +113,6 @@ func generateAvatarURL() string {
 	return fmt.Sprintf("http://thirdwx.qlogo.cn/mmopen/vi_32/%s/132", fake.CharactersN(90))
 }
 
-func genSerialNumber() string {
-	now := time.Now()
-	anni := now.Year() - 2005
-	suffix := randomdata.Number(0, 9999)
-
-	return fmt.Sprintf("%d%02d%04d", anni, now.Month(), suffix)
-}
-
-func TestSerialNumber(t *testing.T)  {
-	t.Log(genSerialNumber())
-}
-
-func createGiftCard() paywall.GiftCard {
-	code, _ := gorest.RandomHex(8)
-
-	c := paywall.GiftCard{
-		Code: strings.ToUpper(code),
-		Tier: enum.TierStandard,
-		CycleUnit: enum.CycleYear,
-		CycleValue: null.IntFrom(1),
-	}
-
-	query := `
-	INSERT INTO premium.scratch_card
-		SET serial_number = ?,
-			auth_code = ?,
-			tier = ?,
-			cycle_unit = ?,
-			cycle_value = ?`
-
-	_, err := db.Exec(query, genSerialNumber(), c.Code, c.Tier, c.CycleUnit, c.CycleValue)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return c
-}
-
-func TestCreateCard(t *testing.T)  {
-	c := createGiftCard()
-
-	t.Logf("Gift card: %+v", c)
-}
-
-func TestUnixDate(t *testing.T)  {
-	now := time.Now()
-
-	date := now.Truncate(24 * time.Hour)
-
-	t.Logf("%s\n", date.In(time.UTC).Format(time.RFC3339))
-	t.Logf("%d\n", date.Unix())
-}
-
 type mocker struct {
 	userID     string
 	unionID    string
@@ -183,7 +126,7 @@ type mocker struct {
 
 func newMocker() mocker {
 	return mocker{
-		userID:     uuid.Must(uuid.NewV4()).String(),
+		userID:     genUUID(),
 		unionID:    generateWxID(),
 		email:      fake.EmailAddress(),
 		password:   fake.Password(8, 20, false, true, false),
@@ -276,77 +219,6 @@ func (m mocker) createWxAccess() wxlogin.OAuthAccess {
 	}
 
 	return acc
-}
-
-func wxNotiResp(orderID string) string {
-	openID, _ := gorest.RandomBase64(21)
-	p := make(wxpay.Params)
-
-	p = fillResp(p)
-	p.SetString("openid", openID)
-	p.SetString("is_subscribe", "N")
-	p.SetString("bank_type", "CMC")
-	p.SetString("total_fee", "25800")
-	p.SetString("cash_fee", "25800")
-	p.SetString("transaction_id", fake.CharactersN(28))
-	p.SetString("out_trade_no", orderID)
-	p.SetString("time_end", time.Now().Format("20060102150405"))
-
-	s := mockClient.Sign(p)
-
-	p.SetString("sign", s)
-
-	return wxpay.MapToXml(p)
-}
-
-func wxPrepayResp() string {
-	p := make(wxpay.Params)
-
-	p = fillResp(p)
-	p.SetString("prepay_id", fake.CharactersN(36))
-
-	s := mockClient.Sign(p)
-
-	p.SetString("sign", s)
-
-	return wxpay.MapToXml(p)
-}
-
-func wxParsedPrepay() wxpay.Params {
-	resp := wxPrepayResp()
-
-	p, err := wechat.DecodeXML(strings.NewReader(resp))
-
-	if err != nil {
-		panic(err)
-	}
-
-	return p
-}
-
-func wxParsedNoti(orderID string) wxpay.Params {
-	resp := wxNotiResp(orderID)
-	p, err := wechat.DecodeXML(strings.NewReader(resp))
-
-	if err != nil {
-		panic(err)
-	}
-
-	return p
-}
-
-func fillResp(p wxpay.Params) wxpay.Params {
-	nonce, _ := gorest.RandomHex(16)
-
-	p.SetString("return_code", "SUCCESS")
-	p.SetString("return_msg", "OK")
-	p.SetString("appid", wxpayApp.AppID)
-	p.SetString("mch_id", wxpayApp.MchID)
-	p.SetString("nonce_str", nonce)
-	p.SetString("result_code", "SUCCESS")
-	p.SetString("trade_type", "APP")
-
-	return p
 }
 
 func aliNoti() alipay.TradeNotification {
