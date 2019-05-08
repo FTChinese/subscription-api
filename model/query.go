@@ -120,3 +120,11 @@ func (env Env) stmtSelectExpireDate() string {
 	LIMIT 1
 	FOR UPDATE`, env.vipDBName())
 }
+
+func (env Env) stmtUseGiftCard() string {
+	return fmt.Sprintf(`
+	UPDATE %s.scratch_card
+		SET active_time = UNIX_TIMESTAMP()
+	WHERE auth_code = ?
+	LIMIT 1`, env.vipDBName())
+}
