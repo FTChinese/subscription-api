@@ -8,6 +8,7 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a // indirect
 	github.com/go-chi/chi v4.0.1+incompatible
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/guregu/null v3.4.0+incompatible
 	github.com/icrowley/fake v0.0.0-20180203215853-4178557ae428
