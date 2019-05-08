@@ -2,9 +2,9 @@ package model
 
 import (
 	"database/sql"
+	"gitlab.com/ftchinese/subscription-api/util"
 	"testing"
 
-	"github.com/FTChinese/go-rest"
 	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 )
@@ -22,7 +22,7 @@ func TestEnv_SaveWxAccess(t *testing.T) {
 	type args struct {
 		appID string
 		acc   wxlogin.OAuthAccess
-		c     gorest.ClientApp
+		c     util.ClientApp
 	}
 	tests := []struct {
 		name    string
