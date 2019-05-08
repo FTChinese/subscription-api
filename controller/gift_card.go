@@ -24,7 +24,7 @@ func NewGiftCardRouter(m model.Env) GiftCardRouter {
 //	PUT /gift-card/redeem
 //
 // Input {code: string}
-func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request)  {
+func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 	ftcID, unionID := GetUserOrUnionID(req.Header)
 
 	code, err := util.GetJSONString(req.Body, "code")
@@ -32,7 +32,7 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request)  {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
-	if code != "" {
+	if code == "" {
 		r := view.NewReason()
 		r.Field = "code"
 		r.Code = view.CodeMissingField
