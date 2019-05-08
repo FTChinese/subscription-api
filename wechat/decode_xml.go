@@ -21,7 +21,7 @@ func DecodeXML(r io.Reader) (wxpay.Params, error) {
 	for {
 		tok, err := d.Token()
 		if err != nil {
-			return params, err
+			break
 		}
 		switch t := tok.(type) {
 		case xml.StartElement:
