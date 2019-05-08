@@ -300,12 +300,20 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	resp := wxpay.Notifies{}
 
-	params := wechat.DecodeXML(req.Body)
+	params, err := wechat.DecodeXML(req.Body)
+	if err != nil {
+		logger.WithField("trace", "Notification").Error(err)
+
+		w.Write([]byte(resp.NotOK(err.Error())))
+
+		return
+	}
+
 	logger.WithField("trace", "WxpayNotification").Infof("%+v", params)
 
 	noti := wechat.NewNotification(params)
 
-	err := noti.IsStatusValid()
+	err = noti.IsStatusValid()
 	if err != nil {
 		logger.WithField("trace", "WxpayNotification").Error(err)
 		w.Write([]byte(resp.OK()))
