@@ -12,7 +12,7 @@ func (env Env) FindGiftCard(code string) (paywall.GiftCard, error) {
 		cycle_value AS cycleValue
 	FROM premium.scratch_card
 	WHERE auth_code = ?
-		AND expire_time = 0
+		AND expire_time > UNIX_TIMESTAMP()
 		AND active_time = 0
 	LIMIT 1`
 
@@ -44,7 +44,7 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 		c.Code)
 
 	if updateErr != nil {
-		_ =tx.Rollback()
+		_ = tx.Rollback()
 
 		logger.WithField("trace", "RedeemGiftCard").Error(updateErr)
 	}
