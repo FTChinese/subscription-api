@@ -146,24 +146,25 @@ X-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36
    
 ### Input
 
-None
+```json
+{
+  "openId": "xxxxxxx"
+}
+```
 
 ### Output
 
 ```json
 {
     "ftcOrderId": "FT4E74602E64ABFB89",
-    "price": 258,
     "listPrice": 258,
     "netPrice": 0.01,
     "appId": "***REMOVED***",
-    "partnerId": "1504993271",
-    "prepayId": "wx031232545688382c03e2adf71451785619",
-    "pkg": "Sign=WXPay",
-    "nonce": "91dd2e4b9a92f730ea95",
     "timestamp": "1554265974",
-    "signature": "1EFFFCDF30CCB94B10AADD69615C222D",
-    "signType": "MD5"
+    "nonce": "91dd2e4b9a92f730ea95",
+    "pkg": "Sign=WXPay",
+    "signType": "MD5",
+    "signature": "1EFFFCDF30CCB94B10AADD69615C222D"
 }
 ```
 

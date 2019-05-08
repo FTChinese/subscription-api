@@ -38,14 +38,22 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 	return func(w http.ResponseWriter, req *http.Request) {
 		// Find the client to user for wxpay
 		var appID string
+		// openID is required for JSAPI pay.
+		var openID string
 
 		switch tradeType {
-		case wechat.TradeTypeMobile,
-			wechat.TradeTypeJSAPI:
+		// Desktop and mobile browser
+		case wechat.TradeTypeDesktop,
+			wechat.TradeTypeMobile:
 			appID = wxAppMobileFTC
 
-		case wechat.TradeTypeDesktop,
-			wechat.TradeTypeApp:
+		// Wechat in-house browser
+		case wechat.TradeTypeJSAPI:
+			appID = wxAppFTCSupport
+			openID, _ = util.GetJSONString(req.Body, "openId")
+
+		// Native app.
+		case wechat.TradeTypeApp:
 			appID = wxAppMobileSubs
 		}
 
@@ -112,7 +120,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			CallbackURL: router.wxCallbackURL(),
 			TradeType:   tradeType,
 			ProductID:   plan.ProductID(),
-			OpenID:      "",
+			OpenID:      openID,
 		}
 		// Build Wechat pay parameters.
 		param := unifiedOrder.ToParam()
@@ -292,12 +300,20 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	resp := wxpay.Notifies{}
 
-	params := wechat.DecodeXML(req.Body)
+	params, err := wechat.DecodeXML(req.Body)
+	if err != nil {
+		logger.WithField("trace", "Notification").Error(err)
+
+		w.Write([]byte(resp.NotOK(err.Error())))
+
+		return
+	}
+
 	logger.WithField("trace", "WxpayNotification").Infof("%+v", params)
 
 	noti := wechat.NewNotification(params)
 
-	err := noti.IsStatusValid()
+	err = noti.IsStatusValid()
 	if err != nil {
 		logger.WithField("trace", "WxpayNotification").Error(err)
 		w.Write([]byte(resp.OK()))

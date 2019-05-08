@@ -10,7 +10,7 @@ import (
 
 // DecodeXML parses wxpay's weird response XML data.
 // See https://github.com/objcoding/wxpay/issues/10
-func DecodeXML(r io.Reader) wxpay.Params {
+func DecodeXML(r io.Reader) (wxpay.Params, error) {
 	var (
 		d      *xml.Decoder
 		start  *xml.StartElement
@@ -32,5 +32,5 @@ func DecodeXML(r io.Reader) wxpay.Params {
 			}
 		}
 	}
-	return params
+	return params, nil
 }

@@ -12,6 +12,16 @@ import (
 	"github.com/guregu/null"
 )
 
+func GenerateOrderID() (string, error) {
+
+	id, err := gorest.RandomHex(8)
+	if err != nil {
+		return "", err
+	}
+
+	return "FT" + strings.ToUpper(id), nil
+}
+
 // Subscription contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 type Subscription struct {

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -19,7 +18,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 
 	"github.com/guregu/null"
-	"github.com/objcoding/wxpay"
 	"github.com/patrickmn/go-cache"
 
 	"github.com/FTChinese/go-rest/enum"
@@ -27,8 +25,8 @@ import (
 
 	"gitlab.com/ftchinese/subscription-api/wechat"
 
+	"github.com/google/uuid"
 	"github.com/icrowley/fake"
-	"github.com/satori/go.uuid"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -83,12 +81,12 @@ func init() {
 	mockClient = wechat.NewClient(wxpayApp)
 }
 
-func clientApp() gorest.ClientApp {
-	return gorest.ClientApp{
+func clientApp() util.ClientApp {
+	return util.ClientApp{
 		ClientType: enum.PlatformAndroid,
-		Version:    "1.1.1",
-		UserIP:     fake.IPv4(),
-		UserAgent:  fake.UserAgent(),
+		Version:    null.StringFrom("1.1.1"),
+		UserIP:     null.StringFrom(randomdata.IpV4Address()),
+		UserAgent:  null.StringFrom(randomdata.UserAgentString()),
 	}
 }
 
@@ -98,7 +96,7 @@ func generateCode() string {
 }
 
 func genUUID() string {
-	return uuid.Must(uuid.NewV4()).String()
+	return uuid.New().String()
 }
 
 func generateToken() string {
@@ -128,7 +126,7 @@ type mocker struct {
 
 func newMocker() mocker {
 	return mocker{
-		userID:     uuid.Must(uuid.NewV4()).String(),
+		userID:     genUUID(),
 		unionID:    generateWxID(),
 		email:      fake.EmailAddress(),
 		password:   fake.Password(8, 20, false, true, false),
@@ -221,76 +219,6 @@ func (m mocker) createWxAccess() wxlogin.OAuthAccess {
 	}
 
 	return acc
-}
-
-func wxNotiResp(orderID string) string {
-	openID, _ := gorest.RandomBase64(21)
-	p := make(wxpay.Params)
-
-	p = fillResp(p)
-	p.SetString("openid", openID)
-	p.SetString("is_subscribe", "N")
-	p.SetString("bank_type", "CMC")
-	p.SetString("total_fee", "25800")
-	p.SetString("cash_fee", "25800")
-	p.SetString("transaction_id", fake.CharactersN(28))
-	p.SetString("out_trade_no", orderID)
-	p.SetString("time_end", time.Now().Format("20060102150405"))
-
-	s := mockClient.Sign(p)
-
-	p.SetString("sign", s)
-
-	return wxpay.MapToXml(p)
-}
-
-func wxPrepayResp() string {
-	p := make(wxpay.Params)
-
-	p = fillResp(p)
-	p.SetString("prepay_id", fake.CharactersN(36))
-
-	s := mockClient.Sign(p)
-
-	p.SetString("sign", s)
-
-	return wxpay.MapToXml(p)
-}
-
-func wxParsedPrepay() wxpay.Params {
-	resp := wxPrepayResp()
-
-	p, err := mockClient.ParseResponse(strings.NewReader(resp))
-
-	if err != nil {
-		panic(err)
-	}
-
-	return p
-}
-
-func wxParsedNoti(orderID string) wxpay.Params {
-	resp := wxNotiResp(orderID)
-	p, err := mockClient.ParseResponse(strings.NewReader(resp))
-	if err != nil {
-		panic(err)
-	}
-
-	return p
-}
-
-func fillResp(p wxpay.Params) wxpay.Params {
-	nonce, _ := gorest.RandomHex(16)
-
-	p.SetString("return_code", "SUCCESS")
-	p.SetString("return_msg", "OK")
-	p.SetString("appid", wxpayApp.AppID)
-	p.SetString("mch_id", wxpayApp.MchID)
-	p.SetString("nonce_str", nonce)
-	p.SetString("result_code", "SUCCESS")
-	p.SetString("trade_type", "APP")
-
-	return p
 }
 
 func aliNoti() alipay.TradeNotification {

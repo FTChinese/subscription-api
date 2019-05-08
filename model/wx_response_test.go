@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/wechat"
 )
 
@@ -18,8 +19,6 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 		mockPlan)
 
 	t.Logf("Subs: %+v", subs)
-
-	p := wxParsedPrepay()
 
 	type fields struct {
 		sandbox bool
@@ -41,7 +40,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 			fields: fields{db: db},
 			args: args{
 				orderID: subs.OrderID,
-				p:       wechat.NewUnifiedOrderResp(p),
+				p:       test.MockWxPrepay(),
 			},
 			wantErr: false,
 		},
@@ -67,8 +66,6 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		null.String{},
 		mockPlan)
 
-	p := wxParsedNoti(subs.OrderID)
-
 	type fields struct {
 		sandbox bool
 		db      *sql.DB
@@ -86,7 +83,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		{
 			name:    "Save Wxpay Notification",
 			fields:  fields{db: db},
-			args:    args{n: wechat.NewNotification(p)},
+			args:    args{n: test.MockWxNotification(subs.OrderID)},
 			wantErr: false,
 		},
 	}

@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	wxAppMobileSubs = "***REMOVED***"
-	wxAppMobileFTC  = "***REMOVED***"
-	wxAppWebFTC     = "wxc7233549ca6bc86a"
+	wxAppMobileSubs = "***REMOVED***" // Used by native app to pay and log in.
+	wxAppMobileFTC  = "***REMOVED***" // Used by desktop and mobile browser to pay.
+	wxAppWebFTC     = "wxc7233549ca6bc86a" // Used for web page OAuth
+	wxAppFTCSupport = "***REMOVED***" // Used for wechat in-house browser to pay.
 )
 
 func getWxOAuthApps() map[string]wxlogin.WxApp {
@@ -59,26 +60,35 @@ func getWxOAuthApps() map[string]wxlogin.WxApp {
 }
 
 func getWxPayApps() map[string]wechat.PayApp {
-	var mSubs, mFTC wechat.PayApp
+	var mSubs, mFTC, oSupport wechat.PayApp
 
 	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
 	err := viper.UnmarshalKey("wxapp.m_subs", &mSubs)
 	if err != nil {
-		logger.WithField("trace", "wxOAuthApps").Error(err)
+		logger.WithField("trace", "getWxPayApps").Error(err)
 		os.Exit(1)
 	}
 	if mSubs.Ensure() != nil {
-		logger.WithField("trace", "wxOAuthApps").Error("Mobile app Member subscription has empty fields")
+		logger.WithField("trace", "getWxPayApps").Error("Mobile app Member subscription has empty fields")
 		os.Exit(1)
 	}
 	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
 	err = viper.UnmarshalKey("wxapp.m_ftc", &mFTC)
 	if err != nil {
-		logger.WithField("trace", "wxOAuthApps").Error(err)
+		logger.WithField("trace", "getWxPayApps").Error(err)
 		os.Exit(1)
 	}
 	if mFTC.Ensure() != nil {
-		logger.WithField("trace", "wxOAuthApps").Error("Mobile app FTC has empty fields")
+		logger.WithField("trace", "getWxPayApps").Error("Mobile app FTC has empty fields")
+		os.Exit(1)
+	}
+
+	err = viper.UnmarshalKey("wxapp.o_ftcsupport", &oSupport)
+	if err != nil {
+		logger.WithField("trace", "getWxPayApps").Error(err)
+	}
+	if oSupport.Ensure() != nil {
+		logger.WithField("trace", "getWxPayApps").Error("Official account app has empty fields")
 		os.Exit(1)
 	}
 
@@ -86,7 +96,8 @@ func getWxPayApps() map[string]wechat.PayApp {
 		// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
 		wxAppMobileSubs: mSubs,
 		// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-		wxAppMobileFTC: mFTC,
+		wxAppMobileFTC:  mFTC,
+		wxAppFTCSupport: oSupport,
 	}
 }
 

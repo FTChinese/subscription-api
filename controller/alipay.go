@@ -48,8 +48,19 @@ func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter 
 	return r
 }
 
+// PlaceOrder creates an http handler function depending
+// on the device platform.
+//
+// 	POST /<desktop|mobile|app>/{tier}/{cycle}?<return_url=xxx>
+// `return_url` parameter is only required for apps running on ftacademy.cn
 func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		err := req.ParseForm()
+		if err != nil {
+			view.Render(w, view.NewBadRequest(err.Error()))
+			return
+		}
+
 		tier, err := GetURLParam(req, "tier").ToString()
 		if err != nil {
 			view.Render(w, view.NewBadRequest(err.Error()))
@@ -98,11 +109,22 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
+		returnURL := req.FormValue("return_url")
+
+		tradePay := alipay.TradePay{
+			NotifyURL:   router.aliCallbackURL(),
+			ReturnURL:   router.aliReturnURL(returnURL),
+			Subject:     plan.Description,
+			OutTradeNo:  subs.OrderID,
+			TotalAmount: subs.AliNetPrice(),
+		}
+
 		var payURL = &url.URL{}
 
 		switch kind {
 		case ali.EntryApp:
-			param := router.aliAppPayParam(plan.Description, subs)
+			//param := router.aliAppPayParam(plan.Description, subs)
+			param := ali.BuildAppPay(tradePay)
 			queryStr, err := router.client.TradeAppPay(param)
 
 			logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", queryStr)
@@ -118,11 +140,13 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 
 		case ali.EntryDesktopWeb:
-			param := router.aliDesktopPayParam(plan.Description, subs)
+			//param := router.aliDesktopPayParam(plan.Description, subs)
+			param := ali.BuildDesktopPay(tradePay)
 			payURL, err = router.client.TradePagePay(param)
 
 		case ali.EntryMobileWeb:
-			param := router.aliWapPayParam(plan.Description, subs)
+			//param := router.aliWapPayParam(plan.Description, subs)
+			param := ali.BuildWapPay(tradePay)
 			payURL, err = router.client.TradeWapPay(param)
 		}
 

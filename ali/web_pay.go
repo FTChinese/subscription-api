@@ -5,6 +5,8 @@ import (
 	"net/url"
 )
 
+// WebPay is the response send to client requesting to pay
+// in desktop browser.
 type WebPay struct {
 	FtcOrderID string  `json:"ftcOrderId"`
 	ListPrice  float64 `json:"listPrice"`
@@ -14,6 +16,7 @@ type WebPay struct {
 	PayURL string `json:"payUrl"`
 }
 
+// NewWebPay creates new instance of WebPay.
 func NewWebPay(s paywall.Subscription, payURL *url.URL) WebPay {
 	return WebPay{
 		FtcOrderID: s.OrderID,

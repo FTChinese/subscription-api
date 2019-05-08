@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Pay is a base struct for the response of wechat payment.
+// Pay is a base struct embedded into the response from API to client.
 type Pay struct {
 	FtcOrderID string  `json:"ftcOrderId"`
 	ListPrice  float64 `json:"listPrice"`

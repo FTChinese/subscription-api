@@ -81,7 +81,7 @@ Request header must include `X-App-Id` which is the wechat app you use to perfor
 
 ## Forward `code` for Web Client
 
-    GET `/wx/oauth/callback?code=<code>&status=<random string>`
+    GET `/wx/oauth/callback?code=<code>&state=<random string>`
 
 This endpoint is used to received Wechat response, not used by us directly. Upon receiving the OAuth `code`, it will redirect the back to web application. This is a way to circumvent Wechat retriction on authorized callback URL.
 
