@@ -95,6 +95,7 @@ func main() {
 
 	wxRouter := controller.NewWxRouter(m, post, sandbox)
 	aliRouter := controller.NewAliRouter(m, post, sandbox)
+	giftCardRouter := controller.NewGiftCardRouter(m)
 	paywallRouter := controller.NewPaywallRouter(m)
 
 	wxAuth := controller.NewWxAuth(m)
@@ -145,6 +146,12 @@ func main() {
 		// Deprecate
 		r.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
 		// r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
+	})
+
+	r.Route("/gift-card", func(r chi.Router) {
+		r.Use(controller.UserOrUnionID)
+
+		r.Put("/redeem", giftCardRouter.Redeem)
 	})
 
 	r.Route("/callback", func(r1 chi.Router) {
