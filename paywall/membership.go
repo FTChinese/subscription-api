@@ -1,6 +1,7 @@
 package paywall
 
 import (
+	"github.com/pkg/errors"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -56,4 +57,43 @@ type Membership struct {
 	Tier       enum.Tier   `json:"tier"`
 	Cycle      enum.Cycle  `json:"billingCycle"`
 	Duration               // On which date the membership ends
+}
+
+// NewMember creates a membership directly for a user.
+// This is currently used by activating gift cards.
+// If membership is purchased via direct payment channel,
+// membership is created from subscription order.
+func NewMember(ftcID null.String, unionID null.String) (Membership, error) {
+	m := Membership{
+		FTCUserID: ftcID,
+		UnionID: unionID,
+	}
+
+	if ftcID.Valid {
+		m.CompoundID = ftcID.String
+	} else if unionID.Valid {
+		m.CompoundID = unionID.String
+	} else {
+		return m, errors.New("ftcID and unionID should not both be null")
+	}
+
+	return m, nil
+}
+
+// FromGiftCard creates a new instance based on a gift card.
+func (m Membership) FromGiftCard(c GiftCard) (Membership, error) {
+
+	var expTime time.Time
+
+	expTime, err := c.ExpireTime()
+
+	if err != nil {
+		return m, err
+	}
+
+	m.Tier = c.Tier
+	m.Cycle = c.CycleUnit
+	m.ExpireDate = chrono.DateFrom(expTime)
+
+	return m, nil
 }
