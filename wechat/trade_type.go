@@ -1,5 +1,7 @@
 package wechat
 
+// TradeType is an enum for wechat's various nuance payment
+// channel.
 type TradeType int
 
 const (
@@ -9,6 +11,7 @@ const (
 	TradeTypeApp
 )
 
+// String produces values that can be used in request to wechat.
 func (x TradeType) String() string {
 	names := [...]string{
 		"NATIVE",

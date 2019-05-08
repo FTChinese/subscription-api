@@ -1,12 +1,12 @@
 package model
 
 import (
-	"github.com/FTChinese/go-rest"
+	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 )
 
 // SaveWxAccess saves the access token related data after acquired from wechat api.
-func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c gorest.ClientApp) error {
+func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c util.ClientApp) error {
 	query := `
 	INSERT INTO user_db.wechat_access
 	SET session_id = UNHEX(?),
@@ -17,10 +17,10 @@ func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c gorest.Clie
 		open_id = ?,
 		scope = ?,
 		union_id = ?,
-		client_type = NULLIF(?, ''),
-		client_version = NULLIF(?, ''),
-		user_ip = INET6_ATON(NULLIF(?, '')),
-		user_agent = NULLIF(?, ''),
+		client_type = ?,
+		client_version = ?,
+		user_ip = INET6_ATON(?),
+		user_agent = ?,
 		created_utc = ?,
 		updated_utc = ?`
 

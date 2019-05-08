@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/smartwalle/alipay"
+	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
@@ -29,12 +30,16 @@ func (router PayRouter) aliCallbackURL() string {
 	return apiBaseURL + "/v1/callback/alipay"
 }
 
-func (router PayRouter) aliReturnURL() string {
-	if router.sandbox {
-		return apiBaseURL + "/sandbox/redirect/alipay/next-user"
+func (router PayRouter) aliReturnURL(override string) string {
+	if override != "" {
+		return override
 	}
 
-	return apiBaseURL + "/v1/redirect/alipay/next-user"
+	if router.sandbox {
+		return apiBaseURL + "/sandbox/redirect/alipay/done"
+	}
+
+	return apiBaseURL + "/v1/redirect/alipay/done"
 }
 
 func (router PayRouter) wxCallbackURL() string {
@@ -52,7 +57,7 @@ func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) ali
 	p.Subject = title
 	p.OutTradeNo = s.OrderID
 	p.TotalAmount = s.AliNetPrice()
-	p.ProductCode = aliAppProductCode
+	p.ProductCode = ali.ProductCodeApp.String()
 	p.GoodsType = "0"
 
 	return p
@@ -61,44 +66,28 @@ func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) ali
 // The used by this one is exactly the same as `aliWapPayParam` except the return types are different.
 // They are created separately because `alipay` package
 // requires different data types.
-func (router PayRouter) aliDesktopPayParam(title string, s paywall.Subscription) alipay.AliPayTradePagePay {
-	p := alipay.AliPayTradePagePay{}
-	p.NotifyURL = router.aliCallbackURL()
-	p.ReturnURL = router.aliReturnURL()
-	p.Subject = title
-	p.OutTradeNo = s.OrderID
-	p.TotalAmount = s.AliNetPrice()
-	p.ProductCode = aliWebProductCode
-	p.GoodsType = "0"
+//func (router PayRouter) aliDesktopPayParam(title string, s paywall.Subscription) alipay.AliPayTradePagePay {
+//	p := alipay.AliPayTradePagePay{}
+//	p.NotifyURL = router.aliCallbackURL()
+//	p.ReturnURL = router.aliReturnURL()
+//	p.Subject = title
+//	p.OutTradeNo = s.OrderID
+//	p.TotalAmount = s.AliNetPrice()
+//	p.ProductCode = ali.ProductCodeWeb.String()
+//	p.GoodsType = "0"
+//
+//	return p
+//}
 
-	return p
-}
-
-func (router PayRouter) aliWapPayParam(title string, s paywall.Subscription) alipay.AliPayTradeWapPay {
-	p := alipay.AliPayTradeWapPay{}
-	p.NotifyURL = router.aliCallbackURL()
-	p.ReturnURL = router.aliReturnURL()
-	p.Subject = title
-	p.OutTradeNo = s.OrderID
-	p.TotalAmount = s.AliNetPrice()
-	p.ProductCode = aliWebProductCode
-	p.GoodsType = "0"
-
-	return p
-}
-
-// WxUniOrderParam build the parameters to request for prepay id.
-//func (router PayRouter) wxUniOrderParam(title, ip string, s paywall.Subscription) wxpay.Params {
-//	p := make(wxpay.Params)
-//	p.SetString("body", title)
-//	p.SetString("out_trade_no", s.OrderID)
-//	p.SetInt64("total_fee", s.WxNetPrice())
-//	p.SetString("spbill_create_ip", ip)
-//	p.SetString("notify_url", router.wxCallbackURL())
-//	// APP for native app
-//	// NATIVE for web site
-//	// JSAPI for web page opend inside wechat browser
-//	p.SetString("trade_type", "APP")
+//func (router PayRouter) aliWapPayParam(title string, s paywall.Subscription) alipay.AliPayTradeWapPay {
+//	p := alipay.AliPayTradeWapPay{}
+//	p.NotifyURL = router.aliCallbackURL()
+//	p.ReturnURL = router.aliReturnURL()
+//	p.Subject = title
+//	p.OutTradeNo = s.OrderID
+//	p.TotalAmount = s.AliNetPrice()
+//	p.ProductCode = ali.ProductCodeWeb.String()
+//	p.GoodsType = "0"
 //
 //	return p
 //}
