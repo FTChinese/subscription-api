@@ -3,10 +3,10 @@ package model
 import (
 	"database/sql"
 	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/util"
 	"testing"
 	"time"
 
-	"github.com/FTChinese/go-rest"
 	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
@@ -147,7 +147,7 @@ func TestEnv_SaveSubscription(t *testing.T) {
 	}
 	type args struct {
 		s paywall.Subscription
-		c gorest.ClientApp
+		c util.ClientApp
 	}
 	tests := []struct {
 		name    string

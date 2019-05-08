@@ -2,12 +2,12 @@ package model
 
 import (
 	"database/sql"
-	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 	"testing"
 	"time"
@@ -37,7 +37,7 @@ func clearWxMember(unionID string) {
 	}
 }
 
-func createUser(u paywall.User, app gorest.ClientApp) {
+func createUser(u paywall.User, app util.ClientApp) {
 	query := `
 	INSERT INTO cmstmp01.userinfo
 	SET user_id = ?,
@@ -295,7 +295,7 @@ func TestData_orders(t *testing.T) {
 	}
 	type args struct {
 		s paywall.Subscription
-		c gorest.ClientApp
+		c util.ClientApp
 	}
 	tests := []struct {
 		name   string

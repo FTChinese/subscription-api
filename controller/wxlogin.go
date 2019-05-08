@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/view"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -97,7 +96,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client := gorest.NewClientApp(req)
+	client := util.NewClientApp(req)
 
 	// Step 2:
 	// Use access token to get userinfo from wechat
