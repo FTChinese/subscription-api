@@ -5,7 +5,9 @@ import (
 	"github.com/objcoding/wxpay"
 )
 
-// Notification contains wechat's notification data after payment finished.
+// Notification is the data sent by wechat after payment
+// finished.
+// It is parsed from wechat's raw xml string.
 type Notification struct {
 	Resp
 	OpenID        null.String
@@ -18,6 +20,30 @@ type Notification struct {
 	FTCOrderID    null.String
 	TimeEnd       null.String
 	params        wxpay.Params
+}
+
+// Params turns the struct into wxpay.Param so that we
+// could generate a signature.
+// This is used for mocking only.
+func (n Notification) Params() wxpay.Params {
+	p := n.BaseParams()
+
+	var subscribed string
+	if n.IsSubscribed {
+		subscribed = "Y"
+	} else {
+		subscribed = "N"
+	}
+
+	p.SetString("openid", n.OpenID.String)
+	p.SetString("is_subscribe", subscribed)
+	p.SetString("bank_type", n.BankType.String)
+	p.SetInt64("total_fee", n.TotalFee.Int64)
+	p.SetString("transaction_id", n.TransactionID.String)
+	p.SetString("out_trade_no", n.FTCOrderID.String)
+	p.SetString("time_end", n.TimeEnd.String)
+
+	return p
 }
 
 // NewNotification converts wxpay.Params type to Notification type.

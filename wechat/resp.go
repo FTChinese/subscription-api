@@ -29,6 +29,23 @@ type Resp struct {
 	ErrorMessage null.String
 }
 
+// BaseParams turns Resp to a wxpay.Params.
+// This is used to mock wechat pay's response.
+// Used only for testing.
+func (r Resp) BaseParams() wxpay.Params {
+	p := make(wxpay.Params)
+
+	p.SetString("return_code", r.StatusCode)
+	p.SetString("return_msg", r.StatusMessage)
+	p.SetString("appid", r.AppID.String)
+	p.SetString("mch_id", r.MID.String)
+	p.SetString("nonce_str", r.Nonce.String)
+	p.SetString("result_code", r.ResultCode.String)
+
+	return p
+}
+
+// Populate fills the fields of Resp from wxpay.Params
 func (r *Resp) Populate(p wxpay.Params) {
 
 	r.StatusCode = p.GetString("return_code")
@@ -102,7 +119,7 @@ func (r Resp) Validate(app PayApp) *view.Reason {
 	if r.ResultCode.String == wxpay.Fail {
 		reason := &view.Reason{
 			Field: "result",
-			Code: r.ErrorCode.String,
+			Code:  r.ErrorCode.String,
 		}
 		reason.SetMessage(r.ErrorMessage.String)
 
@@ -151,4 +168,3 @@ func (r Resp) Validate(app PayApp) *view.Reason {
 
 	return nil
 }
-
