@@ -32,15 +32,20 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
+
+	// message:
+	// error.field: code
+	// error.code: "missing_field"
 	if code == "" {
 		r := view.NewReason()
-		r.Field = "code"
+		r.Field = "redeem_code"
 		r.Code = view.CodeMissingField
 		view.Render(w, view.NewUnprocessable(r))
 		return
 	}
 
 	// Find the gift card by the card's code
+	// 404 Not Found
 	card, err := router.model.FindGiftCard(code)
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
@@ -55,15 +60,28 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Now the membership is updated
+	// Update membership from based on gift card info.
 	member, err = member.FromGiftCard(card)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
+	// Flag the card as already used and insert a member.
+	// DB throws error if this user id already exists.
 	err = router.model.RedeemGiftCard(card, member)
+
 	if err != nil {
+		// error.field: "member"
+		// error.code: "already_exists"
+		if util.IsAlreadyExists(err) {
+			r := view.NewReason()
+			r.Field = "member"
+			r.Code = view.CodeAlreadyExists
+			view.Render(w, view.NewUnprocessable(r))
+			return
+		}
+
 		view.Render(w, view.NewDBFailure(err))
 		return
 	}

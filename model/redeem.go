@@ -64,6 +64,9 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 		_ = tx.Rollback()
 
 		logger.WithField("trace", "RedeemGiftCard").Error(err)
+		// Needs this message to tell client whether
+		// there is a duplicate error.
+		return createErr
 	}
 
 	if err := tx.Commit(); err != nil {
