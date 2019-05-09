@@ -159,10 +159,6 @@ func main() {
 		r1.Post("/alipay", aliRouter.Notification)
 	})
 
-	r.Route("/redirect", func(r chi.Router) {
-		r.Get("/alipay/done", aliRouter.RedirectNextUser)
-	})
-
 	r.Route("/paywall", func(r chi.Router) {
 		// Get promotion schedule, pricing plans and banner content
 		r.Get("/default", controller.DefaultPaywall)
