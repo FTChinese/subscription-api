@@ -1,17 +1,18 @@
 package controller
 
 import (
+	"database/sql"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"net/http"
 )
 
 const (
-	apiBaseURL        = "http://www.ftacademy.cn/api"
-	aliAppProductCode = "QUICK_MSECURITY_PAY"
-	aliWebProductCode = "FAST_INSTANT_TRADE_PAY"
+	apiBaseURL = "http://www.ftacademy.cn/api"
 )
 
 // PayRouter is the base type used to handle shared payment operations.
@@ -19,6 +20,77 @@ type PayRouter struct {
 	sandbox bool
 	model   model.Env
 	postman postoffice.Postman
+}
+
+func (router PayRouter) findPlan(req *http.Request) (paywall.Plan, error) {
+	tier, err := GetURLParam(req, "tier").ToString()
+	if err != nil {
+		return paywall.Plan{}, err
+	}
+
+	cycle, err := GetURLParam(req, "cycle").ToString()
+	if err != nil {
+		return paywall.Plan{}, err
+	}
+
+	return router.model.GetCurrentPricing().FindPlan(tier, cycle)
+}
+
+func (router PayRouter) subsKind(user paywall.User, p paywall.Plan) (paywall.SubsKind, error) {
+	member, err := router.model.RetrieveMember(user)
+
+	if err != nil {
+		// User is not a member yet.
+		if err == sql.ErrNoRows {
+			return paywall.SubsKindCreate, nil
+		}
+
+		return paywall.SubsKindDeny, err
+	}
+
+	// User is a member but expired.
+	if member.IsExpired() {
+		return paywall.SubsKindCreate, nil
+	}
+
+	if member.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
+		return paywall.SubsKindUpgrade, nil
+	}
+
+	if member.IsRenewAllowed() {
+		return paywall.SubsKindRenew, nil
+	}
+
+	return paywall.SubsKindDeny, errRenewalForbidden
+}
+
+func (router PayRouter) createOrder(user paywall.User, p paywall.Plan) (paywall.Subscription, error) {
+	subs, err := paywall.NewSubs(user, p)
+	if err != nil {
+		return subs, err
+	}
+
+	subsKind, err := router.subsKind(user, p)
+	if err != nil {
+		return subs, err
+	}
+
+	if subsKind == paywall.SubsKindUpgrade {
+		orders, err := router.model.FindProration(user)
+		if err != nil {
+			return subs, err
+		}
+
+		up := paywall.NewUpgradePlan(p).
+			SetProration(orders).
+			CalculatePayable()
+
+		subs = subs.WithUpgrade(up)
+	} else {
+		subs.Kind = subsKind
+	}
+
+	return subs, nil
 }
 
 // Returns notification URL for Alipay based on whether the api is run for sandbox.
@@ -97,7 +169,7 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 	// If the FTCUserID field is null, it indicates this user
 	// does not have an FTC account bound. You cannot find out
 	// its email address.
-	if !subs.FTCUserID.Valid {
+	if !subs.FtcID.Valid {
 		return nil
 	}
 	// Find this user's personal data
