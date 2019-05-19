@@ -8,47 +8,76 @@ import (
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
-// IsSubsAllowed checks if this user is allowed to purchase a subscription.
-// If a user is a valid member, and the membership is not expired, and not within the allowed renewal period, deny the request.
-func (env Env) IsSubsAllowed(subs paywall.Subscription) (bool, error) {
-	member, err := env.findMember(subs)
+// FindProration loads all orders that are in active user or
+// not consumed yet and calculate the unused portion of
+// each order.
+func (env Env) FindProration(u paywall.User) ([]paywall.Proration, error) {
 
+	rows, err := env.db.Query(
+		env.query.ProratedOrders(),
+		u.CompoundID,
+		u.UnionID)
 	if err != nil {
-		// If this user is not a member yet.
-		if err == sql.ErrNoRows {
-			return true, nil
+		logger.WithField("trace", "FindProration").Error(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	orders := make([]paywall.Proration, 0)
+	for rows.Next() {
+		var o paywall.Proration
+
+		err := rows.Scan()
+
+		if err != nil {
+			logger.WithField("trace", "FindProration").Error(err)
+			continue
 		}
 
-		logger.WithField("trace", "IsSubsAllowed").Error(err)
-		// If any other unknown error occurred
-		return false, err
+		orders = append(orders, o)
 	}
 
-	// Do not allow a subscribed user to change tiers.
-	if subs.TierToBuy != member.Tier {
-		logger.WithField("trace", "IsSubsAllowed").Error("Changing subscription tier is not supported.")
-		return false, nil
+	if err := rows.Err(); err != nil {
+		logger.WithField("trace", "FindProration").Error(err)
+		return nil, err
 	}
 
-	// This user is/was a member.
-	return member.CanRenew(subs.BillingCycle), nil
+	return orders, nil
+}
+
+// BuildUpgradePlan creates upgrade plan based on user's
+// previous orders.
+func (env Env) BuildUpgradePlan(u paywall.User, p paywall.Plan) (paywall.UpgradePlan, error) {
+	orders, err := env.FindProration(u)
+	if err != nil {
+		return paywall.UpgradePlan{}, err
+	}
+
+	up := paywall.NewUpgradePlan(p).
+		SetProration(orders).
+		CalculatePayable()
+
+	return up, nil
 }
 
 // SaveSubscription saves a new subscription order.
-// At this moment, you should already know if this subscription is
-// a renewal of a new one, based on current Membership's expire_date.
 func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error {
 
 	_, err := env.db.Exec(
-		env.stmtInsertSubs(),
+		env.query.InsertSubs(),
 		s.OrderID,
 		s.CompoundID,
-		s.FTCUserID,
+		s.FtcID,
 		s.UnionID,
 		s.ListPrice,
 		s.NetPrice,
 		s.TierToBuy,
 		s.BillingCycle,
+		s.CycleCount,
+		s.ExtraDays,
+		s.Kind,
+		s.ProratedOrders(),
+		s.ProrationAmount,
 		s.PaymentMethod,
 		s.WxAppID,
 		c.ClientType,
@@ -65,184 +94,136 @@ func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error 
 }
 
 // FindSubscription tries to find an order to verify the authenticity of a subscription order.
-func (env Env) FindSubscription(orderID string) (paywall.Subscription, error) {
+func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 
-	var s paywall.Subscription
+	var c paywall.Charge
 	err := env.db.QueryRow(
-		env.stmtSelectSubs(),
+		env.query.SelectSubsPrice(),
 		orderID,
 	).Scan(
-		&s.OrderID,
-		&s.CompoundID,
-		&s.FTCUserID,
-		&s.UnionID,
-		&s.TierToBuy,
-		&s.BillingCycle,
-		&s.ListPrice,
-		&s.NetPrice,
-		&s.PaymentMethod,
-		&s.CreatedAt,
-		&s.ConfirmedAt,
+		&c.ListPrice,
+		&c.NetPrice,
+		&c.IsConfirmed,
 	)
 
 	if err != nil {
-		logger.WithField("trace", "FindSubscription").Error(err)
-		return s, err
+		logger.WithField("trace", "FindSubsCharge").Error(err)
+		return c, err
 	}
 
-	return s, nil
+	return c, nil
 }
 
 // ConfirmPayment handles payment notification with database locking.
 // Returns the a complete Subscription to be used to compose an email.
 // If returned error is ErrOrderNotFound or ErrAlreadyConfirmed, tell Wechat or Ali do not try any more; oterwise let them retry.
 // Only when error is nil should be send a confirmation email.
+// States passed back:
+// Error occurred, allow retry;
+// Error occurred, don't retry;
+// No error, send user confirmation letter.
 func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Subscription, error) {
 
-	var subs paywall.Subscription
-
-	tx, err := env.db.Begin()
+	tx, err := env.BeginMemberTx()
 	if err != nil {
-		logger.WithField("trace", "ConfirmPayment").Error(err)
-		return subs, err
+		logger.WithField("trace", "Env.ConfirmPayment").Error(err)
+		return paywall.Subscription{}, ErrAllowRetry
 	}
 
 	// Step 1: Find the subscription order by order id
-	// The row is locked for update
-	errSubs := env.db.QueryRow(
-		env.stmtSelectSubsLock(),
-		orderID,
-	).Scan(
-		&subs.OrderID,
-		&subs.CompoundID,
-		&subs.FTCUserID,
-		&subs.UnionID,
-		&subs.TierToBuy,
-		&subs.BillingCycle,
-		&subs.ListPrice,
-		&subs.NetPrice,
-		&subs.PaymentMethod,
-		&subs.CreatedAt,
-		&subs.ConfirmedAt,
-	)
-
-	if errSubs != nil {
-		logger.WithField("trace", "ConfirmPayment").Error(err)
-
-		_ = tx.Rollback()
-
-		if errSubs == sql.ErrNoRows {
-			return subs, ErrOrderNotFound
-		}
-	}
-
-	logger.Infof("Found order %s", subs.OrderID)
-
-	// Already confirmed.
-	if !subs.ConfirmedAt.IsZero() {
-		logger.WithField("trace", "ConfirmPayment").Infof("Order %s is already confirmed", orderID)
-
-		_ = tx.Rollback()
-		// Already confirmed, do not retry any more.
-		return subs, ErrAlreadyConfirmed
-	}
-
-	// A flag to determine insert a new member
-	// or update an existing one.
-	memberExists := true
-	// Step 2: query membership expiration time to determine the order's start date, and then user start date to calculate end date.
 	// The row is locked for update.
-	var dur paywall.Duration
-	errDur := env.db.QueryRow(
-		env.stmtSelectExpireDate(),
-		subs.CompoundID,
-		subs.UnionID,
-	).Scan(
-		&dur.Timestamp,
-		&dur.ExpireDate,
-	)
-
-	if errDur != nil {
-		if errDur == sql.ErrNoRows {
-			memberExists = false
-		} else {
-			logger.WithField("trace", "ConfirmPayment").Error(errDur)
-
-			_ = tx.Rollback()
+	// If the order is not found, or is already confirmed,
+	// tell provider not sending notification any longer;
+	// otherwise, allow retry.
+	subs, errSubs := tx.RetrieveOrder(orderID)
+	if errSubs != nil {
+		switch errSubs {
+		case sql.ErrNoRows, ErrAlreadyConfirmed:
+			return subs, ErrDenyRetry
+		default:
+			return subs, ErrAllowRetry
 		}
 	}
 
-	logger.Infof("Membership for %s: %t", subs.CompoundID, memberExists)
+	logger.
+		WithField("trace", "Env.ConfirmPayment").
+		Infof("Found order %s", subs.OrderID)
 
-	// For sql.ErrNoRows, the zero value of Duration
-	// is still a valid value.
-	subs, err = subs.ConfirmWithDuration(dur, confirmedAt)
+	// STEP 2: query membership
+	// For any errors, allow retry.
+	member, errMember := tx.RetrieveMember(subs)
+	if errMember != nil {
+		return subs, ErrAllowRetry
+	}
+
+	// STEP 3: validate the retrieved order.
+	// This order might be invalid for upgrading.
+	errInvalid := subs.Validate(member)
+	// If the order is invalid, record the reason and
+	// stop any further processing.
+	if errInvalid != nil {
+		tx.InvalidUpgrade(subs.OrderID, errInvalid)
+		return subs, ErrDenyRetry
+	}
+
+	// STEP 4: Calculate order's confirmation time.
+	// Populate the ConfirmedAt, StartDate and EndDate.
+	// If there are calculation errors, allow retry.
+	subs, err = subs.ConfirmWithMember(member, confirmedAt)
 	if err != nil {
-		return subs, err
+		// Remember to rollback.
+		_ = tx.tx.Rollback()
+		return subs, ErrAllowRetry
 	}
-	logger.Infof("Order confirmed: %s - %s", subs.StartDate, subs.EndDate)
 
-	// Step 3: Update subscription order with confirmation time, membership start date and end date.
-	_, updateErr := tx.Exec(
-		env.stmtUpdateSubs(),
-		subs.IsRenewal,
-		subs.ConfirmedAt,
-		subs.StartDate,
-		subs.EndDate,
-		orderID,
-	)
+	logger.
+		WithField("trace", "Env.ConfirmPayment").
+		Infof("Order confirmed: %s - %s", subs.StartDate, subs.EndDate)
 
-	// If any error occurred, retry.
+	// STEP 5: Update confirmed order
+	// For any errors, allow retry.
+	updateErr := tx.ConfirmOrder(subs)
 	if updateErr != nil {
-		_ = tx.Rollback()
-
-		logger.WithField("trace", "ConfirmPayment").Error(updateErr)
+		// Remember to rollback.
+		_ = tx.tx.Rollback()
+		return subs, ErrAllowRetry
 	}
 
-	logger.Infof("Order updated")
-
-	// Step 4: Insert a membership or update it in case of duplicate.
-	if memberExists {
-		logger.Infof("Extend an existing member")
-		_, err := tx.Exec(env.stmtUpdateMember(),
-			subs.FTCUserID,
-			subs.UnionID,
-			subs.TierToBuy,
-			subs.BillingCycle,
-			subs.EndDate,
-			subs.CompoundID,
-			subs.UnionID,
-		)
-
-		if err != nil {
-			_ = tx.Rollback()
-
-			logger.WithField("trace", "ConfirmPayment").Error(err)
-		}
-	} else {
-		logger.Info("Create a new member")
-
-		_, err := tx.Exec(env.stmtInsertMember(),
-			subs.CompoundID,
-			subs.UnionID,
-			subs.FTCUserID,
-			subs.UnionID,
-			subs.TierToBuy,
-			subs.BillingCycle,
-			subs.EndDate,
-		)
-		if err != nil {
-			_ = tx.Rollback()
-
-			logger.WithField("trace", "ConfirmPayment").Error(err)
+	// OPTIONAL STEP: Mark the prorated orders.
+	// For any errors, allow retry
+	if subs.Kind == paywall.SubsKindUpgrade {
+		updateErr := tx.MarkOrdersProrated(subs)
+		if updateErr != nil {
+			return subs, ErrAllowRetry
 		}
 	}
 
+	logger.
+		WithField("trace", "Env.ConfirmPayment").
+		Infof("Order confirmed")
+
+	// STEP 6: Build new membership from this order.
+	// This error should allow retry.
+	member, err = subs.BuildMembership()
+	if err != nil {
+		// Remember to rollback
+		_ = tx.tx.Rollback()
+		return subs, ErrAllowRetry
+	}
+
+	// STEP 7: Insert or update membership.
+	// This error should allow retry
+	upsertErr := tx.UpsertMember(member)
+	if upsertErr != nil {
+		return subs, ErrAllowRetry
+	}
+
+	// Error here should allow retry.
 	if err := tx.Commit(); err != nil {
 		logger.WithField("trace", "ConfirmPayment").Error(err)
-		return subs, err
+		return subs, ErrAllowRetry
 	}
 
-	logger.Info("Confirm order finished")
+	logger.Info("Confirm payment finished")
 	return subs, nil
 }
