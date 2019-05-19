@@ -40,15 +40,14 @@ func TestMembership_FromGiftCard(t *testing.T) {
 		UnionID    null.String
 		Tier       enum.Tier
 		Cycle      enum.Cycle
-		Duration   Duration
 	}
 	type args struct {
 		c GiftCard
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
+		name   string
+		fields fields
+		args   args
 		//want    Membership
 		wantErr bool
 	}{
@@ -56,14 +55,14 @@ func TestMembership_FromGiftCard(t *testing.T) {
 			name: "Membership from a Gift Card",
 			fields: fields{
 				CompoundID: ftcID,
-				FTCUserID: null.StringFrom(ftcID),
-				UnionID: null.String{},
+				FTCUserID:  null.StringFrom(ftcID),
+				UnionID:    null.String{},
 			},
 			args: args{
 				c: GiftCard{
-					Code: code,
-					Tier: enum.TierStandard,
-					CycleUnit: enum.CycleYear,
+					Code:       code,
+					Tier:       enum.TierStandard,
+					CycleUnit:  enum.CycleYear,
 					CycleValue: null.IntFrom(1),
 				},
 			},
@@ -77,7 +76,6 @@ func TestMembership_FromGiftCard(t *testing.T) {
 				UnionID:    tt.fields.UnionID,
 				Tier:       tt.fields.Tier,
 				Cycle:      tt.fields.Cycle,
-				Duration:   tt.fields.Duration,
 			}
 			got, err := m.FromGiftCard(tt.args.c)
 			if (err != nil) != tt.wantErr {
