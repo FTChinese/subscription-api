@@ -97,6 +97,7 @@ func main() {
 	aliRouter := controller.NewAliRouter(m, post, sandbox)
 	giftCardRouter := controller.NewGiftCardRouter(m)
 	paywallRouter := controller.NewPaywallRouter(m)
+	upgradeRouter := controller.NewUpgradeRouter(m)
 
 	wxAuth := controller.NewWxAuth(m)
 
@@ -124,7 +125,7 @@ func main() {
 		r.Post("/app/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeApp))
 
 		// Deprecate
-		r.Post("/unified-order/{tier}/{cycle}", wxRouter.AppOrder)
+		//r.Post("/unified-order/{tier}/{cycle}", wxRouter.AppOrder)
 
 		// Query order
 		// X-App-Id
@@ -144,8 +145,14 @@ func main() {
 		r.Post("/app/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryApp))
 
 		// Deprecate
-		r.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
+		//r.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
 		// r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
+	})
+
+	r.Route("/upgrade", func(r chi.Router) {
+		// Get membership information when user want to upgrade: days remaining, account balance, amount
+		r.Put("/", upgradeRouter.DirectUpgrade)
+		r.Get("/preview", upgradeRouter.PreviewUpgrade)
 	})
 
 	r.Route("/gift-card", func(r chi.Router) {
