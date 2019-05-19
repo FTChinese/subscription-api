@@ -59,6 +59,18 @@ func getWxOAuthApps() map[string]wxlogin.WxApp {
 	}
 }
 
+func createWxpayClients() map[string]wechat.Client {
+	apps := getWxPayApps()
+
+	clients := make(map[string]wechat.Client, len(apps))
+
+	for k, v := range apps {
+		clients[k] = wechat.NewClient(v)
+	}
+
+	return clients
+}
+
 func getWxPayApps() map[string]wechat.PayApp {
 	var mSubs, mFTC, oSupport wechat.PayApp
 
