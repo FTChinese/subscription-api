@@ -1,37 +1,30 @@
 package model
 
 import (
-	"database/sql"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 
-	"github.com/google/uuid"
-	"github.com/guregu/null"
-	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
 func TestEnv_FindGiftCard(t *testing.T) {
-	c := test.CreateGiftCard()
-
-	type fields struct {
-		sandbox bool
-		db      *sql.DB
-		cache   *cache.Cache
+	env := Env{
+		db: test.DB,
 	}
+
+	c := test.NewModel(test.DB).CreateGiftCard()
+
 	type args struct {
 		code string
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name string
+		args args
 		//want    paywall.GiftCard
 		wantErr bool
 	}{
 		{
-			name:   "Find Gift Card",
-			fields: fields{db: db},
+			name: "Find Gift Card",
 			args: args{
 				code: c.Code,
 			},
@@ -40,11 +33,7 @@ func TestEnv_FindGiftCard(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				sandbox: tt.fields.sandbox,
-				db:      tt.fields.db,
-				cache:   tt.fields.cache,
-			}
+
 			got, err := env.FindGiftCard(tt.args.code)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Env.FindGiftCard() error = %v, wantErr %v", err, tt.wantErr)
@@ -60,37 +49,25 @@ func TestEnv_FindGiftCard(t *testing.T) {
 }
 
 func TestEnv_RedeemGiftCard(t *testing.T) {
-	ftcID := uuid.New().String()
-	m := paywall.Membership{
-		CompoundID: ftcID,
-		FTCUserID:  null.StringFrom(ftcID),
-		UnionID:    null.String{},
+	env := Env{
+		db: test.DB,
 	}
+	c := test.NewModel(test.DB).CreateGiftCard()
 
-	t.Logf("FTC ID: %s", ftcID)
+	user := test.NewProfile().RandomUser()
+	m, _ := paywall.NewMember(user).FromGiftCard(c)
 
-	c := test.CreateGiftCard()
-
-	m, _ = m.FromGiftCard(c)
-
-	type fields struct {
-		sandbox bool
-		db      *sql.DB
-		cache   *cache.Cache
-	}
 	type args struct {
 		c paywall.GiftCard
 		m paywall.Membership
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
-			name:   "Redeem Gift Card",
-			fields: fields{db: db},
+			name: "Redeem Gift Card",
 			args: args{
 				c: c,
 				m: m,
@@ -99,11 +76,7 @@ func TestEnv_RedeemGiftCard(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				sandbox: tt.fields.sandbox,
-				db:      tt.fields.db,
-				cache:   tt.fields.cache,
-			}
+
 			if err := env.RedeemGiftCard(tt.args.c, tt.args.m); (err != nil) != tt.wantErr {
 				t.Errorf("Env.RedeemGiftCard() error = %v, wantErr %v", err, tt.wantErr)
 			}
