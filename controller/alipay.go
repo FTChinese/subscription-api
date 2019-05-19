@@ -4,11 +4,9 @@ import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
-	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 	"net/url"
@@ -61,19 +59,9 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		tier, err := GetURLParam(req, "tier").ToString()
-		if err != nil {
-			view.Render(w, view.NewBadRequest(err.Error()))
-			return
-		}
+		user, _ := GetUser(req.Header)
 
-		cycle, err := GetURLParam(req, "cycle").ToString()
-		if err != nil {
-			view.Render(w, view.NewBadRequest(err.Error()))
-			return
-		}
-
-		plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
+		plan, err := router.findPlan(req)
 
 		if err != nil {
 			logger.WithField("trace", "AliAppOrder").Error(err)
@@ -84,36 +72,33 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
 
-		// Get user id from request header
-		uID := req.Header.Get(userIDKey)
-		wID := req.Header.Get(unionIDKey)
-
-		userID := null.NewString(uID, uID != "")
-		unionID := null.NewString(wID, wID != "")
-
-		logger.WithField("trace", "AliAppOrder").Infof("FTC id: %+v, wechat id: %+v", userID, unionID)
-
-		subs, err := paywall.NewAlipaySubs(userID, unionID, plan)
+		subs, err := router.createOrder(user, plan)
 		if err != nil {
+			if err == errRenewalForbidden {
+				view.Render(w, view.NewForbidden(err.Error()))
+				return
+			}
 			view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
+		subs = subs.WithAlipay()
 
 		logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
 
 		// Save the subscription
-		app := util.NewClientApp(req)
-		err = router.model.SaveSubscription(subs, app)
+		clientApp := util.NewClientApp(req)
+		err = router.model.SaveSubscription(subs, clientApp)
 		if err != nil {
 			view.Render(w, view.NewDBFailure(err))
 			return
 		}
 
+		// Alipay specific handling.
 		returnURL := req.FormValue("return_url")
 
 		tradePay := alipay.TradePay{
 			NotifyURL:   router.aliCallbackURL(),
-			ReturnURL:   router.aliReturnURL(returnURL),
+			ReturnURL:   returnURL,
 			Subject:     plan.Description,
 			OutTradeNo:  subs.OrderID,
 			TotalAmount: subs.AliNetPrice(),
@@ -164,85 +149,85 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 }
 
 // AppOrder creates an alipay order for native app.
-func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
-
-	tier, err := GetURLParam(req, "tier").ToString()
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	cycle, err := GetURLParam(req, "cycle").ToString()
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
-
-	if err != nil {
-		logger.WithField("trace", "AliAppOrder").Error(err)
-
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
-
-	// Get user id from request header
-	uID := req.Header.Get(userIDKey)
-	wID := req.Header.Get(unionIDKey)
-
-	userID := null.NewString(uID, uID != "")
-	unionID := null.NewString(wID, wID != "")
-
-	logger.WithField("trace", "AliAppOrder").Infof("FTC id: %+v, wechat id: %+v", userID, unionID)
-
-	subs, err := paywall.NewAlipaySubs(userID, unionID, plan)
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
-
-	ok, err := router.model.IsSubsAllowed(subs)
-	// err = ar.model.PlaceOrder(subs, app)
-	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
-	if !ok {
-		view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-		return
-	}
-
-	// Save the subscription
-	app := util.NewClientApp(req)
-	err = router.model.SaveSubscription(subs, app)
-	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
-
-	param := router.aliAppPayParam(plan.Description, subs)
-
-	// Call URLValues to generate alipay required data structure and sign it.
-	//values, err := router.client.URLValues(param)
-
-	queryStr, err := router.client.TradeAppPay(param)
-
-	logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", queryStr)
-
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	resp := ali.NewAppPayResp(subs, queryStr)
-
-	view.Render(w, view.NewResponse().SetBody(resp))
-}
+//func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
+//
+//	tier, err := GetURLParam(req, "tier").ToString()
+//	if err != nil {
+//		view.Render(w, view.NewBadRequest(err.Error()))
+//		return
+//	}
+//
+//	cycle, err := GetURLParam(req, "cycle").ToString()
+//	if err != nil {
+//		view.Render(w, view.NewBadRequest(err.Error()))
+//		return
+//	}
+//
+//	plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
+//
+//	if err != nil {
+//		logger.WithField("trace", "AliAppOrder").Error(err)
+//
+//		view.Render(w, view.NewBadRequest(err.Error()))
+//		return
+//	}
+//
+//	logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
+//
+//	// Get user id from request header
+//	uID := req.Header.Get(userIDKey)
+//	wID := req.Header.Get(unionIDKey)
+//
+//	userID := null.NewString(uID, uID != "")
+//	unionID := null.NewString(wID, wID != "")
+//
+//	logger.WithField("trace", "AliAppOrder").Infof("FTC id: %+v, wechat id: %+v", userID, unionID)
+//
+//	subs, err := paywall.NewAlipaySubs(userID, unionID, plan)
+//	if err != nil {
+//		view.Render(w, view.NewBadRequest(err.Error()))
+//		return
+//	}
+//
+//	logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
+//
+//	ok, err := router.model.IsSubsAllowed(subs)
+//	// err = ar.model.PlaceOrder(subs, app)
+//	if err != nil {
+//		view.Render(w, view.NewDBFailure(err))
+//		return
+//	}
+//	if !ok {
+//		view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+//		return
+//	}
+//
+//	// Save the subscription
+//	app := util.NewClientApp(req)
+//	err = router.model.SaveSubscription(subs, app)
+//	if err != nil {
+//		view.Render(w, view.NewDBFailure(err))
+//		return
+//	}
+//
+//	param := router.aliAppPayParam(plan.Description, subs)
+//
+//	// Call URLValues to generate alipay required data structure and sign it.
+//	//values, err := router.client.URLValues(param)
+//
+//	queryStr, err := router.client.TradeAppPay(param)
+//
+//	logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", queryStr)
+//
+//	if err != nil {
+//		view.Render(w, view.NewBadRequest(err.Error()))
+//		return
+//	}
+//
+//	resp := ali.NewAppPayResp(subs, queryStr)
+//
+//	view.Render(w, view.NewResponse().SetBody(resp))
+//}
 
 // Notification handles alipay server-side notification.
 func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
@@ -302,7 +287,7 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 
 	orderID := noti.OutTradeNo
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
-	subs, err := router.model.FindSubscription(orderID)
+	charge, err := router.model.FindSubsCharge(orderID)
 
 	// If the order does not exist, tell ali success;
 	// If err is not `not found`, tell ali to resend.
@@ -316,8 +301,8 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	}
 
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
-	if subs.AliNetPrice() != noti.TotalAmount {
-		logger.WithField("trace", "AliNotification").Infof("Expected net price: %s, actually received: %s", subs.AliNetPrice(), noti.TotalAmount)
+	if charge.AliNetPrice() != noti.TotalAmount {
+		logger.WithField("trace", "AliNotification").Infof("Expected net price: %s, actually received: %s", charge.AliNetPrice(), noti.TotalAmount)
 
 		w.Write([]byte(success))
 
@@ -325,7 +310,7 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	}
 
 	// If this order already confirmed.
-	if !subs.ConfirmedAt.IsZero() {
+	if charge.IsConfirmed {
 		w.Write([]byte(success))
 		return
 	}
@@ -334,9 +319,14 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 
 	if err != nil {
 		switch err {
-		case model.ErrOrderNotFound, model.ErrAlreadyConfirmed:
+		case model.ErrDenyRetry:
 			w.Write([]byte(success))
 			return
+
+		case model.ErrAllowRetry:
+			w.Write([]byte(fail))
+			return
+
 		default:
 			w.Write([]byte(fail))
 			return
