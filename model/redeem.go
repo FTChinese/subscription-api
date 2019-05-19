@@ -40,7 +40,7 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 
 	// Flag the gift card as used.
 	_, updateErr := tx.Exec(
-		env.stmtUseGiftCard(),
+		env.query.ActivateGiftCard(),
 		c.Code)
 
 	if updateErr != nil {
@@ -51,7 +51,7 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 
 	// Insert a new membership.
 	_, createErr := tx.Exec(
-		env.stmtInsertMember(),
+		env.query.SelectMember(),
 		m.CompoundID,
 		m.UnionID,
 		m.FTCUserID,
