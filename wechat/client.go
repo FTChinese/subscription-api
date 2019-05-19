@@ -2,7 +2,6 @@ package wechat
 
 import (
 	"errors"
-	"fmt"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/objcoding/wxpay"
 )
@@ -19,30 +18,6 @@ func (a PayApp) Ensure() error {
 	}
 
 	return nil
-}
-
-// Clients is a map contains a number of Client.
-type Clients map[string]Client
-
-// CreateClients creates Clients from a map of PayApp
-func CreateClients(apps map[string]PayApp) Clients {
-	clients := make(map[string]Client, len(apps))
-
-	for k, v := range apps {
-		clients[k] = NewClient(v)
-	}
-
-	return clients
-}
-
-// Find tries to search a Client by id.
-func (clients Clients) Find(appID string) (Client, error) {
-	c, ok := clients[appID]
-	if !ok {
-		return c, fmt.Errorf("wxpay client for %s not found", appID)
-	}
-
-	return c, nil
 }
 
 // Client extends wxpay.Client
