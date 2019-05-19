@@ -25,7 +25,12 @@ func NewGiftCardRouter(m model.Env) GiftCardRouter {
 //
 // Input {code: string}
 func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
-	ftcID, unionID := GetUserOrUnionID(req.Header)
+
+	user, err := GetUser(req.Header)
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
 
 	code, err := util.GetJSONString(req.Body, "code")
 	if err != nil {
@@ -52,16 +57,8 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Crate a new membership from user's ftc id or
-	// union id. Other fields are not set yet.
-	member, err := paywall.NewMember(ftcID, unionID)
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
 	// Update membership from based on gift card info.
-	member, err = member.FromGiftCard(card)
+	member, err := paywall.NewMember(user).FromGiftCard(card)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
