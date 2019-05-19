@@ -2,12 +2,12 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
-	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
+	"github.com/pkg/errors"
 	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wechat"
 	"net/http"
@@ -16,15 +16,14 @@ import (
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
 type WxPayRouter struct {
-	clients wechat.Clients
+	clients map[string]wechat.Client
 	PayRouter
 }
 
 // NewWxRouter creates a new instance or OrderRouter
 func NewWxRouter(m model.Env, p postoffice.Postman, sandbox bool) WxPayRouter {
-
 	r := WxPayRouter{
-		clients: wechat.CreateClients(getWxPayApps()),
+		clients: createWxpayClients(),
 	}
 	r.sandbox = sandbox
 	r.model = m
@@ -33,51 +32,78 @@ func NewWxRouter(m model.Env, p postoffice.Postman, sandbox bool) WxPayRouter {
 	return r
 }
 
+// Select a pay client based on trade type.
+func (router WxPayRouter) selectClient(tradeType wechat.TradeType) (wechat.Client, error) {
+	var appID string
+
+	switch tradeType {
+	// Desktop and mobile browser
+	case wechat.TradeTypeDesktop,
+		wechat.TradeTypeMobile:
+		appID = wxAppMobileFTC
+
+	// Wechat in-house browser
+	case wechat.TradeTypeJSAPI:
+		appID = wxAppFTCSupport
+
+	// Native app.
+	case wechat.TradeTypeApp:
+		appID = wxAppMobileSubs
+	}
+
+	if appID == "" {
+		return wechat.Client{}, errors.New("wechat app id is empty")
+	}
+
+	c, ok := router.clients[appID]
+
+	if !ok {
+		return c, fmt.Errorf("wxpay client for %s not found", appID)
+	}
+
+	return c, nil
+}
+
+// Select a pay client by app id.
+func (router WxPayRouter) findClient(appID string) (wechat.Client, error) {
+	c, ok := router.clients[appID]
+	if !ok {
+		return c, fmt.Errorf("wxpay client for %s not found", appID)
+	}
+
+	return c, nil
+}
+
 // PlaceOrder creates order for wechat pay.
 func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		// Find the client to user for wxpay
-		var appID string
+		//var appID string
 		// openID is required for JSAPI pay.
-		var openID string
+		//var openID string
+		openID, _ := util.GetJSONString(req.Body, "openId")
 
-		switch tradeType {
-		// Desktop and mobile browser
-		case wechat.TradeTypeDesktop,
-			wechat.TradeTypeMobile:
-			appID = wxAppMobileFTC
-
-		// Wechat in-house browser
-		case wechat.TradeTypeJSAPI:
-			appID = wxAppFTCSupport
-			openID, _ = util.GetJSONString(req.Body, "openId")
-
-		// Native app.
-		case wechat.TradeTypeApp:
-			appID = wxAppMobileSubs
+		if tradeType == wechat.TradeTypeJSAPI && openID == "" {
+			r := view.NewReason()
+			r.Field = "openId"
+			r.Code = view.CodeMissingField
+			r.SetMessage("You must provide open id to use wechat js api")
+			view.Render(w, view.NewUnprocessable(r))
+			return
 		}
 
-		payClient, err := router.clients.Find(appID)
+		payClient, err := router.selectClient(tradeType)
+
 		if err != nil {
 			view.Render(w, view.NewInternalError(err.Error()))
 			return
 		}
 
-		tier, err := GetURLParam(req, "tier").ToString()
-		if err != nil {
-			view.Render(w, view.NewBadRequest(err.Error()))
-			return
-		}
-
-		cycle, err := GetURLParam(req, "cycle").ToString()
-		if err != nil {
-			view.Render(w, view.NewBadRequest(err.Error()))
-			return
-		}
+		// Get ftc user id or wechat union id.
+		user, _ := GetUser(req.Header)
 
 		// Try to find a plan based on the tier and cycle.
-		plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
-
+		plan, err := router.findPlan(req)
 		// If pricing plan is not found.
 		if err != nil {
 			logger.WithField("trace", "UnifiedOrder").Error(err)
@@ -85,23 +111,19 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			return
 		}
 
-		logger.WithField("trace", "UnifiedOrder").Infof("Subscription plan: %+v", plan)
-
-		// Get user id from request header.
-		// If user id is found, it means user is subscribing with FTC account;
-		// if union id is found, it means user is subscribing with Wechat account;
-		uID := req.Header.Get(userIDKey)
-		wID := req.Header.Get(unionIDKey)
-
-		userID := null.NewString(uID, uID != "")
-		unionID := null.NewString(wID, wID != "")
-
-		subs, err := paywall.NewWxpaySubs(userID, unionID, plan)
+		// Create an subscription order for this user
+		// base on chosen plan.
+		subs, err := router.createOrder(user, plan)
 		if err != nil {
+			if err == errRenewalForbidden {
+				view.Render(w, view.NewForbidden(err.Error()))
+				return
+			}
+
 			view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
-		subs.WxAppID = null.StringFrom(appID)
+		subs = subs.WithWxpay(payClient.GetApp().AppID)
 
 		// Save this subscription order.
 		clientApp := util.NewClientApp(req)
@@ -111,6 +133,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			return
 		}
 
+		// Wxpay specific handling.
 		// Prepare the data used to obtain prepay order from wechat.
 		unifiedOrder := wechat.UnifiedOrder{
 			Body:        plan.Description,
@@ -123,6 +146,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			OpenID:      openID,
 		}
 		// Build Wechat pay parameters.
+		// openID will be added conditionally.
 		param := unifiedOrder.ToParam()
 
 		logger.WithField("trace", "UnifiedOrder").Infof("Unified order params: %+v", param)
@@ -179,120 +203,104 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 
 // UnifiedOrder implements 统一下单.
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_1
-func (router WxPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
-
-	payClient, err := router.clients.Find(wxAppMobileSubs)
-	if err != nil {
-		view.Render(w, view.NewInternalError(err.Error()))
-		return
-	}
-
-	tier, err := GetURLParam(req, "tier").ToString()
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	cycle, err := GetURLParam(req, "cycle").ToString()
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	// Try to find a plan based on the tier and cycle.
-	plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
-
-	// If pricing plan is not found.
-	if err != nil {
-		logger.WithField("trace", "UnifiedOrder").Error(err)
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	logger.WithField("trace", "UnifiedOrder").Infof("Subscription plan: %+v", plan)
-
-	// Get user id from request header.
-	// If user id is found, it means user is subscribing with FTC account;
-	// if union id is found, it means user is subscribing with Wechat account;
-	uID := req.Header.Get(userIDKey)
-	wID := req.Header.Get(unionIDKey)
-
-	userID := null.NewString(uID, uID != "")
-	unionID := null.NewString(wID, wID != "")
-
-	subs, err := paywall.NewWxpaySubs(userID, unionID, plan)
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-	subs.WxAppID = null.StringFrom(wxAppMobileSubs)
-
-	ok, err := router.model.IsSubsAllowed(subs)
-	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
-	if !ok {
-		view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-		return
-	}
-
-	// Save this subscription order.
-	clientApp := util.NewClientApp(req)
-	err = router.model.SaveSubscription(subs, clientApp)
-	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
-
-	unifiedOrder := wechat.UnifiedOrder{
-		Body:        plan.Description,
-		OrderID:     subs.OrderID,
-		Price:       subs.WxNetPrice(),
-		IP:          clientApp.UserIP.String,
-		CallbackURL: router.wxCallbackURL(),
-		TradeType:   wechat.TradeTypeApp,
-		ProductID:   plan.ProductID(),
-	}
-	// Build Wechat pay parameters.
-	//param := router.wxUniOrderParam(plan.Description, clientApp.UserIP.String, subs)
-	param := unifiedOrder.ToParam()
-
-	logger.WithField("trace", "UnifiedOrder").Infof("Unifed order params: %+v", param)
-
-	// Send order to wx
-	resp, err := payClient.UnifiedOrder(param)
-
-	if err != nil {
-		logger.WithField("trace", "UnifiedOrder").Error(err)
-
-		view.Render(w, view.NewBadRequest(err.Error()))
-
-		return
-	}
-
-	uor := wechat.NewUnifiedOrderResp(resp)
-
-	// Log the response.
-	go router.model.SavePrepayResp(subs.OrderID, uor)
-
-	//if r := router.mSubsClient.ValidateResponse(resp); r != nil {
-	//	view.Render(w, view.NewUnprocessable(r))
-	//	return
-	//}
-
-	if r := uor.Validate(payClient.GetApp()); r != nil {
-		view.Render(w, view.NewUnprocessable(r))
-		return
-	}
-
-	//prepay := router.mSubsClient.NewPrepay(resp.GetString("prepay_id"), subs)
-	appPay := uor.ToLegacyAppPay(subs)
-
-	sign := payClient.Sign(appPay.Param())
-
-	view.Render(w, view.NewResponse().SetBody(appPay.WithHash(sign)))
-}
+//func (router WxPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
+//
+//	payClient, err := router.clients.Find(wxAppMobileSubs)
+//	if err != nil {
+//		view.Render(w, view.NewInternalError(err.Error()))
+//		return
+//	}
+//
+//	// Try to find a plan based on the tier and cycle.
+//	plan, err := router.findPlan(req)
+//
+//	// If pricing plan is not found.
+//	if err != nil {
+//		logger.WithField("trace", "UnifiedOrder").Error(err)
+//		view.Render(w, view.NewBadRequest(err.Error()))
+//		return
+//	}
+//
+//	logger.WithField("trace", "UnifiedOrder").Infof("Subscription plan: %+v", plan)
+//
+//	// Get user id from request header.
+//	// If user id is found, it means user is subscribing with FTC account;
+//	// if union id is found, it means user is subscribing with Wechat account;
+//	user, err := GetUser(req.Header)
+//
+//	subs, err := paywall.NewWxpaySubs(user, plan)
+//	if err != nil {
+//		view.Render(w, view.NewBadRequest(err.Error()))
+//		return
+//	}
+//	subs.WxAppID = null.StringFrom(wxAppMobileSubs)
+//
+//	ok, err := router.model.IsSubsAllowed(subs)
+//	if err != nil {
+//		view.Render(w, view.NewDBFailure(err))
+//		return
+//	}
+//	if !ok {
+//		view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
+//		return
+//	}
+//
+//	// Save this subscription order.
+//	clientApp := util.NewClientApp(req)
+//	err = router.model.SaveSubscription(subs, clientApp)
+//	if err != nil {
+//		view.Render(w, view.NewDBFailure(err))
+//		return
+//	}
+//
+//	unifiedOrder := wechat.UnifiedOrder{
+//		Body:        plan.Description,
+//		OrderID:     subs.OrderID,
+//		Price:       subs.WxNetPrice(),
+//		IP:          clientApp.UserIP.String,
+//		CallbackURL: router.wxCallbackURL(),
+//		TradeType:   wechat.TradeTypeApp,
+//		ProductID:   plan.ProductID(),
+//	}
+//	// Build Wechat pay parameters.
+//	//param := router.wxUniOrderParam(plan.Description, clientApp.UserIP.String, subs)
+//	param := unifiedOrder.ToParam()
+//
+//	logger.WithField("trace", "UnifiedOrder").Infof("Unifed order params: %+v", param)
+//
+//	// Send order to wx
+//	resp, err := payClient.UnifiedOrder(param)
+//
+//	if err != nil {
+//		logger.WithField("trace", "UnifiedOrder").Error(err)
+//
+//		view.Render(w, view.NewBadRequest(err.Error()))
+//
+//		return
+//	}
+//
+//	uor := wechat.NewUnifiedOrderResp(resp)
+//
+//	// Log the response.
+//	go router.model.SavePrepayResp(subs.OrderID, uor)
+//
+//	//if r := router.mSubsClient.ValidateResponse(resp); r != nil {
+//	//	view.Render(w, view.NewUnprocessable(r))
+//	//	return
+//	//}
+//
+//	if r := uor.Validate(payClient.GetApp()); r != nil {
+//		view.Render(w, view.NewUnprocessable(r))
+//		return
+//	}
+//
+//	//prepay := router.mSubsClient.NewPrepay(resp.GetString("prepay_id"), subs)
+//	appPay := uor.ToLegacyAppPay(subs)
+//
+//	sign := payClient.Sign(appPay.Param())
+//
+//	view.Render(w, view.NewResponse().SetBody(appPay.WithHash(sign)))
+//}
 
 // Notification implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
@@ -321,7 +329,7 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Try to find out which app is in charge of the response.
-	payClient, err := router.clients.Find(noti.AppID.String)
+	payClient, err := router.findClient(noti.AppID.String)
 
 	//params, err := router.mSubsClient.ParseResponse(req.Body)
 	if err != nil {
@@ -354,7 +362,7 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	// Check the order's confirmed_utc field.
 	// If confirmed_utc is empty, get time_end from params and set confirmed_utc to it.
 	//orderID := params.GetString("out_trade_no")
-	subs, err := router.model.FindSubscription(noti.FTCOrderID.String)
+	charge, err := router.model.FindSubsCharge(noti.FTCOrderID.String)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.Write([]byte(resp.OK()))
@@ -364,19 +372,17 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	//charged := params.GetInt64("total_fee")
-	//if !subs.IsWxChargeMatched(charged) {
-	//	w.Write([]byte(resp.OK()))
-	//	return
-	//}
-
-	if !noti.IsPriceMatched(subs.WxNetPrice()) {
-		logger.WithField("trace", "WxpayNotification").Errorf("Wxpay total amount does not match. Expected: %d, actual: ", subs.WxNetPrice(), noti.TotalFee.Int64)
+	if !noti.IsPriceMatched(charge.WxNetPrice()) {
+		logger.WithField("trace", "WxpayNotification").Errorf("Wxpay total amount does not match. Expected: %d, actual: ", charge.WxNetPrice(), noti.TotalFee.Int64)
 
 		w.Write([]byte(resp.OK()))
 		return
 	}
 
+	if charge.IsConfirmed {
+		w.Write([]byte(resp.OK()))
+		return
+	}
 	// updatedSubs
 	//timeEnd := params.GetString("time_end")
 
@@ -390,9 +396,14 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 		logger.WithField("trace", "Notification").Error(err)
 
 		switch err {
-		case model.ErrOrderNotFound, model.ErrAlreadyConfirmed:
+		case model.ErrDenyRetry:
 			w.Write([]byte(resp.OK()))
 			return
+
+		case model.ErrAllowRetry:
+			w.Write([]byte(resp.NotOK(err.Error())))
+			return
+
 		default:
 			w.Write([]byte(resp.NotOK(err.Error())))
 			return
@@ -423,7 +434,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		appID = wxAppMobileSubs
 	}
 
-	payClient, err := router.clients.Find(appID)
+	payClient, err := router.findClient(appID)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
