@@ -34,7 +34,9 @@ func (b Builder) UpsertMember() string {
 		member_tier = ?,
 		billing_cycle = ?,
 		expire_date = ?
-	ON DUPLICAT KEY UPDATE
+	ON DUPLICATE KEY UPDATE
+		vip_id = ?,
+		vip_id_alias = ?,
 		ftc_user_id = ?,
 		wx_union_id = ?,
 		member_tier = ?,
