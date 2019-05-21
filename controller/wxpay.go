@@ -115,12 +115,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// base on chosen plan.
 		subs, err := router.createOrder(user, plan)
 		if err != nil {
-			if err == errRenewalForbidden {
-				view.Render(w, view.NewForbidden(err.Error()))
-				return
-			}
-
-			view.Render(w, view.NewBadRequest(err.Error()))
+			router.handleOrderErr(w, err)
 			return
 		}
 		subs = subs.WithWxpay(payClient.GetApp().AppID)

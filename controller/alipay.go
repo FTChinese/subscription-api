@@ -74,11 +74,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		subs, err := router.createOrder(user, plan)
 		if err != nil {
-			if err == errRenewalForbidden {
-				view.Render(w, view.NewForbidden(err.Error()))
-				return
-			}
-			view.Render(w, view.NewBadRequest(err.Error()))
+			router.handleOrderErr(w, err)
 			return
 		}
 		subs = subs.WithAlipay()
