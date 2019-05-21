@@ -80,13 +80,6 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	// Retrieve unused portion of orders
-	orders, err := router.model.FindProration(user)
-	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
-
 	// Find the current plan for yearly premium.
 	plan, err := router.model.GetCurrentPricing().
 		FindPlan(
@@ -99,9 +92,11 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	up := paywall.NewUpgradePlan(plan).
-		SetProration(orders).
-		CalculatePayable()
+	up, err := router.model.BuildUpgradePlan(user, plan)
+	if err != nil {
+		view.Render(w, view.NewDBFailure(err))
+		return
+	}
 
 	// If user needs to pay any extra money.
 	if up.Payable > 0 {
@@ -111,15 +106,13 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 
 	// If user do not need to pay, upgrade directly.
 	// Create an order whose net price is 0.
-	subs, err := paywall.NewSubs(user, plan)
+	subs, err := paywall.NewSubsUpgrade(user, up)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
-	subs = subs.WithUpgrade(up)
 
-	clientApp := util.NewClientApp(req)
-	err = router.model.SaveSubscription(subs, clientApp)
+	err = router.model.SaveSubscription(subs, util.NewClientApp(req))
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
