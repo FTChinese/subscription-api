@@ -43,7 +43,7 @@ func (m MemberTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	)
 
 	if ids.Valid {
-		subs.ProrationSource = strings.Split(ids.String, ",")
+		subs.UpgradeSource = strings.Split(ids.String, ",")
 	}
 
 	if err != nil {

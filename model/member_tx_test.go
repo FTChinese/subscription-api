@@ -268,7 +268,7 @@ func TestMemberTx_MarkOrdersProrated(t *testing.T) {
 	subs1 := p.SubsRandom()
 	subs2 := p.SubsRandom()
 	upSubs := p.SubsUpgrade()
-	upSubs.ProrationSource = []string{subs1.OrderID, subs2.OrderID}
+	upSubs.UpgradeSource = []string{subs1.OrderID, subs2.OrderID}
 
 	env := Env{
 		db:    test.DB,
