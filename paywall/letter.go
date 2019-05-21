@@ -25,7 +25,7 @@ FT中文网用户 {{.User.NormalizeName}},
 
 {{if .Subs.IsUpgrade -}}
 此前订单未使用部分的余额已折换进本次订单：
-订单号: {{.Subs.ProratedOrders}}
+订单号: {{.Subs.UpgradeSourceIDs}}
 余额共计: ¥{{.Subs.ProratedAmount}}
 {{- end}}
 
@@ -57,7 +57,7 @@ To get help with subscription and purchases, please contact subscriber.service@f
 
 {{if .Subs.IsUpgrade -}}
 The unused portion of all your previous orders have been prorated and deducted from this payment：
-Those orders are: {{.Subs.ProratedOrders}}
+Those orders are: {{.Subs.UpgradeSourceIDs}}
 Total balance: ¥{{.Subs.ProratedAmount}}
 {{- end}}
 
