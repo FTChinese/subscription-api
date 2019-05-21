@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/go-rest/view"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
@@ -48,27 +49,35 @@ func (router PayRouter) subsKind(user paywall.User, p paywall.Plan) (paywall.Sub
 		return paywall.SubsKindDeny, err
 	}
 
-	// User is a member but expired.
+	// If user is a member but expired, treat it as a new member.
 	if member.IsExpired() {
 		return paywall.SubsKindCreate, nil
 	}
 
+	// Is this an upgrade attempt?
 	if member.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
 		return paywall.SubsKindUpgrade, nil
 	}
 
+	// If member.Tier is standard, and p.Tier is standard, this is renewal;
+	// If member.Tier is premium, and p.Tier is standard, this is downgrade attempt and deny it;
+	// if member.Tier is premium, and p.Tier is premium, this is renewal.
+	if member.Tier != p.Tier {
+		return paywall.SubsKindDeny, errDowngradeNotAllowed
+	}
+
+	// Now the request must be renewal, test whether it is allowed to renew.
 	if member.IsRenewAllowed() {
 		return paywall.SubsKindRenew, nil
 	}
 
+	// Membership exceeds max allowed period.
 	return paywall.SubsKindDeny, errRenewalForbidden
 }
 
 func (router PayRouter) createOrder(user paywall.User, p paywall.Plan) (paywall.Subscription, error) {
-	subs, err := paywall.NewSubs(user, p)
-	if err != nil {
-		return subs, err
-	}
+	var subs paywall.Subscription
+	var err error
 
 	subsKind, err := router.subsKind(user, p)
 	if err != nil {
@@ -76,21 +85,43 @@ func (router PayRouter) createOrder(user paywall.User, p paywall.Plan) (paywall.
 	}
 
 	if subsKind == paywall.SubsKindUpgrade {
-		orders, err := router.model.FindProration(user)
+
+		up, err := router.model.BuildUpgradePlan(user, p)
 		if err != nil {
 			return subs, err
 		}
 
-		up := paywall.NewUpgradePlan(p).
-			SetProration(orders).
-			CalculatePayable()
+		subs, err = paywall.NewSubsUpgrade(user, up)
+		if err != nil {
+			return subs, err
+		}
 
-		subs = subs.WithUpgrade(up)
 	} else {
+		subs, err = paywall.NewSubs(user, p)
+		if err != nil {
+			return subs, err
+		}
 		subs.Kind = subsKind
 	}
 
 	return subs, nil
+}
+
+func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
+	switch err {
+	case errRenewalForbidden:
+		view.Render(w, view.NewForbidden(err.Error()))
+
+	case errDowngradeNotAllowed:
+		r := view.NewReason()
+		r.Field = "downgrade"
+		r.Code = view.CodeInvalid
+		r.SetMessage("downgrade membership is not supported currently")
+		view.Render(w, view.NewUnprocessable(r))
+
+	default:
+		view.Render(w, view.NewDBFailure(err))
+	}
 }
 
 // Returns notification URL for Alipay based on whether the api is run for sandbox.
@@ -100,18 +131,6 @@ func (router PayRouter) aliCallbackURL() string {
 	}
 
 	return apiBaseURL + "/v1/callback/alipay"
-}
-
-func (router PayRouter) aliReturnURL(override string) string {
-	if override != "" {
-		return override
-	}
-
-	if router.sandbox {
-		return apiBaseURL + "/sandbox/redirect/alipay/done"
-	}
-
-	return apiBaseURL + "/v1/redirect/alipay/done"
 }
 
 func (router PayRouter) wxCallbackURL() string {
