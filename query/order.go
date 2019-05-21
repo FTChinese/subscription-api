@@ -18,6 +18,7 @@ func (b Builder) ProratedOrders() string {
 			end_date > UTC_DATE() OR
 			trade_end > UNIX_TIMESTAMP()
 		)
+		AND category != 'upgrade'
 		AND (confirmed_utc IS NOT NULL OR trade_end != 0)
  	ORDER BY start_date ASC`, b.MemberDB())
 }
@@ -84,7 +85,7 @@ func (b Builder) SelectSubsLock() string {
 func (b Builder) InvalidUpgrade() string {
 	return fmt.Sprintf(`
 	UPDATE %s.ftc_trade
-	SET upgrade_failed = ?
+	SET upgrade_failed = ?,
 		confirmed_utc = UTC_TIMESTAMP()
 	WHERE trade_no = ?
 	LIMIT 1`, b.MemberDB())
@@ -106,6 +107,6 @@ func (b Builder) Prorated() string {
 	UPDATE %s.ftc_trade
 	SET prorated_to = ?
 	WHERE user_id IN (?, ?)
-		AND trade_no IN (?)
+		AND FIND_IN_SET(trade_no, ?) > 0
 		AND prorated_to IS NULL`, b.MemberDB())
 }
