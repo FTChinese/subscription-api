@@ -86,27 +86,28 @@ func (p Profile) FtcUser() paywall.FtcUser {
 // wechatOnlyId    aliPay      renew
 // boundId					   upgrade
 func (p Profile) BuildSubs(id ID, pm enum.PayMethod, k paywall.SubsKind) paywall.Subscription {
-	subs, err := paywall.NewSubs(
-		p.User(id),
-		YearlyPlan)
 
-	if err != nil {
-		panic(err)
-	}
-
-	subs.Kind = k
+	var subs paywall.Subscription
+	var err error
 
 	if k == paywall.SubsKindUpgrade {
-		// For upgrade tier is always premium.
-		subs.TierToBuy = enum.TierPremium
+		subs, err = paywall.NewSubsUpgrade(
+			p.User(id),
+			GenUpgradePlan())
 
-		loop := randomdata.Number(3)
-		for i := 0; i < loop; i++ {
-			orderID, _ := paywall.GenerateOrderID()
-			subs.ProrationSource = append(subs.ProrationSource, orderID)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		subs, err = paywall.NewSubs(
+			p.User(id),
+			YearlyStandard)
+
+		if err != nil {
+			panic(err)
 		}
 
-		subs.ProrationAmount = null.FloatFrom(randomdata.Decimal(1998))
+		subs.Kind = k
 	}
 
 	switch pm {
@@ -119,8 +120,8 @@ func (p Profile) BuildSubs(id ID, pm enum.PayMethod, k paywall.SubsKind) paywall
 	return subs
 }
 
-// RandomSubs builds a random subscription order.
-func (p Profile) RandomSubs() paywall.Subscription {
+// SubsRandom builds a random subscription order.
+func (p Profile) SubsRandom() paywall.Subscription {
 	return p.BuildSubs(
 		ID(randomdata.Number(0, 3)),
 		enum.PayMethod(randomdata.Number(1, 3)),
@@ -128,7 +129,23 @@ func (p Profile) RandomSubs() paywall.Subscription {
 	)
 }
 
-func (p Profile) UpgradeSubs() paywall.Subscription {
+func (p Profile) SubsCreate() paywall.Subscription {
+	return p.BuildSubs(
+		ID(randomdata.Number(0, 3)),
+		enum.PayMethod(randomdata.Number(1, 3)),
+		paywall.SubsKindCreate,
+	)
+}
+
+func (p Profile) SubsRenew() paywall.Subscription {
+	return p.BuildSubs(
+		ID(randomdata.Number(0, 3)),
+		enum.PayMethod(randomdata.Number(1, 3)),
+		paywall.SubsKindRenew,
+	)
+}
+
+func (p Profile) SubsUpgrade() paywall.Subscription {
 	return p.BuildSubs(
 		ID(randomdata.Number(0, 3)),
 		enum.PayMethod(randomdata.Number(1, 3)),
@@ -136,11 +153,10 @@ func (p Profile) UpgradeSubs() paywall.Subscription {
 	)
 }
 
-func (p Profile) ConfirmedSubs() paywall.Subscription {
-	subs := p.RandomSubs()
+func (p Profile) SubsConfirmed() paywall.Subscription {
+	subs := p.SubsRandom()
 
-	subs.ConfirmedAt = chrono.TimeNow()
-	err := subs.SetDuration(time.Now())
+	subs, err := subs.ConfirmWithMember(paywall.Membership{}, time.Now())
 
 	if err != nil {
 		panic(err)

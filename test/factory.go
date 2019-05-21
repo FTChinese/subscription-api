@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/guregu/null"
@@ -18,11 +19,16 @@ import (
 
 func RandomClientApp() util.ClientApp {
 	return util.ClientApp{
-		ClientType: enum.PlatformAndroid,
-		Version:    null.StringFrom("1.1.1"),
+		ClientType: enum.Platform(randomdata.Number(1, 4)),
+		Version:    null.StringFrom(GenVersion()),
 		UserIP:     null.StringFrom(randomdata.IpV4Address()),
 		UserAgent:  null.StringFrom(randomdata.UserAgentString()),
 	}
+}
+
+// GenVersion creates a semantic version string.
+func GenVersion() string {
+	return fmt.Sprintf("%d.%d.%d", randomdata.Number(10), randomdata.Number(1, 10), randomdata.Number(1, 10))
 }
 
 func GenWxID() string {
@@ -33,6 +39,38 @@ func GenWxID() string {
 func GenToken() string {
 	token, _ := gorest.RandomBase64(82)
 	return token
+}
+
+func GenUpgradePlan() paywall.UpgradePlan {
+	up := paywall.NewUpgradePlan(yearlyPremium)
+
+	var orders []paywall.Proration
+
+	loop := randomdata.Number(1, 3)
+	for i := 0; i < loop; i++ {
+		orderID, _ := paywall.GenerateOrderID()
+		order := paywall.Proration{
+			OrderID: orderID,
+			Balance: randomdata.Decimal(1998),
+		}
+		orders = append(orders, order)
+	}
+
+	return up.SetProration(orders).CalculatePayable()
+}
+
+func GenMember(u paywall.User, expired bool) paywall.Membership {
+	m := paywall.NewMember(u)
+	m.Tier = YearlyStandard.Tier
+	m.Cycle = YearlyStandard.Cycle
+
+	if expired {
+		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, 0, -7))
+	} else {
+		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(1, 0, 1))
+	}
+
+	return m
 }
 
 func WxXMLNotification(orderID string) string {
