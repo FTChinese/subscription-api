@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
-	"gitlab.com/ftchinese/subscription-api/util"
 	"time"
 )
 
@@ -20,40 +19,30 @@ func NewModel(db *sql.DB) Model {
 	}
 }
 
-func (m Model) ClearFTCMember(id string) error {
-	query := `
-	DELETE FROM premium.ftc_vip
-	WHERE vip_id = ?`
-
-	_, err := m.db.Exec(query, id)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m Model) ClearWxMember(unionID string) error {
-	query := `
-	DELETE FROM premium.ftc_vip
-	WHERE vip_id_alias = ?`
-
-	_, err := m.db.Exec(query, unionID)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m Model) ClearUser(id string) error {
+func (m Model) ClearUser(u paywall.User) error {
 	query := `
 	DELETE FROM cmstmp01.userinfo
-	WHERE user_id = ?`
+	WHERE user_id = ?
+		OR wx_union_id = ?
+	LIMIT 1`
 
-	_, err := m.db.Exec(query, id)
+	_, err := m.db.Exec(query, u.CompoundID, u.UnionID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m Model) ClearMember(u paywall.User) error {
+	query := `
+	DELETE FROM premium.ftc_vip
+	WHERE vip_id = ?
+		OR vip_id_alias = ?
+	LIMIT 1`
+
+	_, err := m.db.Exec(query, u.CompoundID, u.UnionID)
 
 	if err != nil {
 		return err
@@ -76,7 +65,7 @@ func (m Model) ClearUserByEmail(email string) error {
 	return nil
 }
 
-func (m Model) CreateUser(u paywall.FtcUser, app util.ClientApp) error {
+func (m Model) CreateUser(u paywall.FtcUser) error {
 	query := `
 	INSERT INTO cmstmp01.userinfo
 	SET user_id = ?,
@@ -89,6 +78,8 @@ func (m Model) CreateUser(u paywall.FtcUser, app util.ClientApp) error {
 		user_ip = INET6_ATON(?),
 		user_agent = ?,
 		created_utc = UTC_TIMESTAMP()`
+
+	app := RandomClientApp()
 
 	_, err := m.db.Exec(query,
 		u.UserID,
