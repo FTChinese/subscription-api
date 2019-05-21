@@ -42,11 +42,11 @@ func (p UpgradePlan) CalculatePayable() UpgradePlan {
 	// Is Balance big enough to cover NetPrice.
 	diff := p.NetPrice - p.Balance
 
-	if diff > 0 {
+	if diff >= 0 {
 		// User should pay diff
 		p.Payable = diff
 		p.CycleCount = 1
-		p.ExtraDays = 0
+		p.ExtraDays = 1
 	} else {
 		// Enough to cover the gap. User do not need to pay.
 		p.Payable = 0
