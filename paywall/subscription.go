@@ -13,6 +13,14 @@ import (
 )
 
 // GenerateOrderID creates an order id.
+// The id has a total length of 18 chars.
+// If we use this generator:
+// `FT` takes 2, followed by year-month-date-hour-minute
+// FT201905191139, then only 4 chars left for random number
+// 2^16 = 65536, which means only 60000 order could be created every minute.
+// To leave enough space for random number, 8 chars might be reasonable - 22 chars totally.
+// If we use current random number generator:
+// 2 ^ 64 = 1.8 * 10^19 orders.
 func GenerateOrderID() (string, error) {
 
 	id, err := gorest.RandomHex(8)
@@ -20,6 +28,7 @@ func GenerateOrderID() (string, error) {
 		return "", err
 	}
 
+	time.Now().Format("200601021504")
 	return "FT" + strings.ToUpper(id), nil
 }
 
@@ -102,6 +111,36 @@ func NewSubs(u User, p Plan) (Subscription, error) {
 	return s, nil
 }
 
+// NewSubsUpgrade creates an upgrade order.
+func NewSubsUpgrade(u User, p UpgradePlan) (Subscription, error) {
+	s := Subscription{
+		TierToBuy:       p.Tier,
+		BillingCycle:    p.Cycle,
+		CycleCount:      p.CycleCount,
+		ExtraDays:       p.ExtraDays,
+		Kind:            SubsKindUpgrade,
+		ProrationSource: p.OrderIDs,
+		// This value should always exist even for 0.
+		ProrationAmount: null.FloatFrom(p.Balance),
+	}
+
+	s.CompoundID = u.CompoundID
+	s.FtcID = u.FtcID
+	s.UnionID = u.UnionID
+	s.ListPrice = p.ListPrice
+	s.NetPrice = p.Payable
+
+	id, err := GenerateOrderID()
+
+	if err != nil {
+		return s, err
+	}
+
+	s.OrderID = id
+
+	return s, nil
+}
+
 // WithWxpay sets payment method to wechat
 func (s Subscription) WithWxpay(appID string) Subscription {
 	s.PaymentMethod = enum.PayMethodWx
@@ -117,19 +156,13 @@ func (s Subscription) WithAlipay() Subscription {
 	return s
 }
 
-// WithUpgrade returns a new Subscription based on an
-// upgrade plan.
-func (s Subscription) WithUpgrade(up UpgradePlan) Subscription {
+// UpgradeSourceIDs is used to render templates.
+func (s Subscription) UpgradeSourceIDs() string {
+	if s.ProrationSource == nil {
+		return ""
+	}
 
-	s.NetPrice = up.Payable
-	s.CycleCount = up.CycleCount
-	s.ExtraDays = up.ExtraDays
-	s.Kind = SubsKindUpgrade
-
-	s.ProrationSource = up.OrderIDs
-	s.ProrationAmount = null.NewFloat(up.Balance, up.Balance > 0.01)
-
-	return s
+	return strings.Join(s.ProrationSource, ",")
 }
 
 // IsNewMember checks whether this order is used to create a
@@ -156,15 +189,6 @@ func (s Subscription) IsValidPay() bool {
 	return s.PaymentMethod != enum.InvalidPay
 }
 
-// ProratedOrders is used to render templates.
-func (s Subscription) ProratedOrders() null.String {
-	if s.ProrationSource == nil {
-		return null.String{}
-	}
-
-	return null.StringFrom(strings.Join(s.ProrationSource, ", "))
-}
-
 // SetDuration updates the StartDate and EndDate fields.
 func (s *Subscription) SetDuration(start time.Time) error {
 
@@ -185,24 +209,6 @@ func (s *Subscription) SetDuration(start time.Time) error {
 	s.EndDate = chrono.DateFrom(endTime)
 
 	return nil
-}
-
-func (s Subscription) IsKindConsistent(m Membership) bool {
-	switch s.Kind {
-	case SubsKindCreate:
-		return m.Tier == enum.InvalidTier
-
-	case SubsKindRenew:
-		return m.Tier == s.TierToBuy
-
-	// For upgrade, is m.Tier == s.TierToBuy, it indicates
-	// this is a duplicate order for upgrade.
-	case SubsKindUpgrade:
-		return m.Tier != s.TierToBuy
-
-	default:
-		return false
-	}
 }
 
 // Validate ensures the order to confirm must match
