@@ -48,6 +48,10 @@ func (m Membership) FromGiftCard(c GiftCard) (Membership, error) {
 	return m, nil
 }
 
+func (m Membership) Exists() bool {
+	return m.CompoundID != "" && m.Tier != enum.InvalidTier && m.Cycle != enum.InvalidCycle
+}
+
 // CanRenew tests if a membership is allowed to renuew subscription.
 // A member could only renew its subscripiton when remaining duration of a membership is shorter than a billing cycle.
 // Expire date - now > cycle  --- Renwal is not allowed
@@ -57,15 +61,15 @@ func (m Membership) FromGiftCard(c GiftCard) (Membership, error) {
 // now----------------------------| Deny
 // Algorithm changed to membership duration not larger than 3 years.
 // Deprecate
-func (m Membership) CanRenew(cycle enum.Cycle) bool {
-	cycleEnds, err := cycle.TimeAfterACycle(time.Now())
-
-	if err != nil {
-		return false
-	}
-
-	return m.ExpireDate.Before(cycleEnds)
-}
+//func (m Membership) CanRenew(cycle enum.Cycle) bool {
+//	cycleEnds, err := cycle.TimeAfterACycle(time.Now())
+//
+//	if err != nil {
+//		return false
+//	}
+//
+//	return m.ExpireDate.Before(cycleEnds)
+//}
 
 // IsRenewAllowed test if current membership is allowed to renew.
 // now ---------3 years ---------> Expire date
@@ -80,5 +84,5 @@ func (m Membership) IsExpired() bool {
 		return true
 	}
 	// If expire is before now, it is expired.
-	return m.ExpireDate.Before(time.Now())
+	return m.ExpireDate.Before(time.Now().Truncate(24 * time.Hour))
 }
