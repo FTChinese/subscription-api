@@ -15,7 +15,8 @@ const (
 )
 
 var (
-	errRenewalForbidden = errors.New("exceed maximum allowed membership duration")
+	errRenewalForbidden    = errors.New("exceed maximum allowed membership duration")
+	errDowngradeNotAllowed = errors.New("membership downgrading is not allowed")
 )
 
 var logger = log.WithField("project", "subscription-api").
