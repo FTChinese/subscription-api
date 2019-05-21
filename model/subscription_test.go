@@ -210,7 +210,7 @@ func TestEnv_ConfirmPayment(t *testing.T) {
 	subsRenew := p.SubsRenew()
 	subsUpgrade := p.SubsUpgrade()
 
-	subsUpgrade.ProrationSource = []string{subsCreate.OrderID, subsRenew.OrderID}
+	subsUpgrade.UpgradeSource = []string{subsCreate.OrderID, subsRenew.OrderID}
 
 	type args struct {
 		subs        paywall.Subscription
