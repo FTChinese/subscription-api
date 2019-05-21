@@ -2,66 +2,17 @@ package model
 
 import (
 	"database/sql"
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"time"
 
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
-// FindProration loads all orders that are in active user or
-// not consumed yet and calculate the unused portion of
-// each order.
-func (env Env) FindProration(u paywall.User) ([]paywall.Proration, error) {
-
-	rows, err := env.db.Query(
-		env.query.ProratedOrders(),
-		u.CompoundID,
-		u.UnionID)
-	if err != nil {
-		logger.WithField("trace", "FindProration").Error(err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	orders := make([]paywall.Proration, 0)
-	for rows.Next() {
-		var o paywall.Proration
-
-		err := rows.Scan()
-
-		if err != nil {
-			logger.WithField("trace", "FindProration").Error(err)
-			continue
-		}
-
-		orders = append(orders, o)
-	}
-
-	if err := rows.Err(); err != nil {
-		logger.WithField("trace", "FindProration").Error(err)
-		return nil, err
-	}
-
-	return orders, nil
-}
-
-// BuildUpgradePlan creates upgrade plan based on user's
-// previous orders.
-func (env Env) BuildUpgradePlan(u paywall.User, p paywall.Plan) (paywall.UpgradePlan, error) {
-	orders, err := env.FindProration(u)
-	if err != nil {
-		return paywall.UpgradePlan{}, err
-	}
-
-	up := paywall.NewUpgradePlan(p).
-		SetProration(orders).
-		CalculatePayable()
-
-	return up, nil
-}
-
 // SaveSubscription saves a new subscription order.
 func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error {
+
+	orderIDs := s.UpgradeSourceIDs()
 
 	_, err := env.db.Exec(
 		env.query.InsertSubs(),
@@ -76,7 +27,7 @@ func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error 
 		s.CycleCount,
 		s.ExtraDays,
 		s.Kind,
-		s.ProratedOrders(),
+		null.NewString(orderIDs, orderIDs != ""),
 		s.ProrationAmount,
 		s.PaymentMethod,
 		s.WxAppID,
@@ -116,7 +67,7 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 
 // ConfirmPayment handles payment notification with database locking.
 // Returns the a complete Subscription to be used to compose an email.
-// If returned error is ErrOrderNotFound or ErrAlreadyConfirmed, tell Wechat or Ali do not try any more; oterwise let them retry.
+// If returned error is ErrOrderNotFound or ErrAlreadyConfirmed, tell Wechat or Ali do not try any more; otherwise let them retry.
 // Only when error is nil should be send a confirmation email.
 // States passed back:
 // Error occurred, allow retry;
@@ -162,7 +113,8 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// If the order is invalid, record the reason and
 	// stop any further processing.
 	if errInvalid != nil {
-		tx.InvalidUpgrade(subs.OrderID, errInvalid)
+		_ = tx.InvalidUpgrade(subs.OrderID, errInvalid)
+		_ = tx.rollback()
 		return subs, ErrDenyRetry
 	}
 
@@ -198,10 +150,6 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		}
 	}
 
-	logger.
-		WithField("trace", "Env.ConfirmPayment").
-		Infof("Order confirmed")
-
 	// STEP 6: Build new membership from this order.
 	// This error should allow retry.
 	member, err = subs.BuildMembership()
@@ -219,11 +167,67 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	}
 
 	// Error here should allow retry.
-	if err := tx.Commit(); err != nil {
+	if err := tx.commit(); err != nil {
 		logger.WithField("trace", "ConfirmPayment").Error(err)
 		return subs, ErrAllowRetry
 	}
 
 	logger.Info("Confirm payment finished")
 	return subs, nil
+}
+
+// FindProration loads all orders that are in active user or
+// not consumed yet and calculate the unused portion of
+// each order.
+func (env Env) FindProration(u paywall.User) ([]paywall.Proration, error) {
+
+	rows, err := env.db.Query(
+		env.query.ProratedOrders(),
+		u.CompoundID,
+		u.UnionID)
+	if err != nil {
+		logger.WithField("trace", "FindProration").Error(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	orders := make([]paywall.Proration, 0)
+	for rows.Next() {
+		var o paywall.Proration
+
+		err := rows.Scan(
+			&o.OrderID,
+			&o.Balance,
+			&o.StartDate,
+			&o.EndDate)
+
+		if err != nil {
+			logger.WithField("trace", "FindProration").Error(err)
+			continue
+		}
+
+		orders = append(orders, o)
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.WithField("trace", "FindProration").Error(err)
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+// BuildUpgradePlan creates upgrade plan based on user's
+// previous orders.
+func (env Env) BuildUpgradePlan(u paywall.User, p paywall.Plan) (paywall.UpgradePlan, error) {
+	orders, err := env.FindProration(u)
+	if err != nil {
+		return paywall.UpgradePlan{}, err
+	}
+
+	up := paywall.NewUpgradePlan(p).
+		SetProration(orders).
+		CalculatePayable()
+
+	return up, nil
 }
