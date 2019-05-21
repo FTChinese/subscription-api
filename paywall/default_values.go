@@ -75,3 +75,19 @@ func GetSandboxPricing() Pricing {
 func GetDefaultBanner() Banner {
 	return defaultBanner
 }
+
+func GetSandboxUpgrade() UpgradePlan {
+	return UpgradePlan{
+		Plan: Plan{
+			Tier:        enum.TierPremium,
+			Cycle:       enum.CycleYear,
+			ListPrice:   1998.00,
+			NetPrice:    0.01,
+			Description: "FT中文网 - 高端会员",
+		},
+		Balance:    0.01,
+		CycleCount: 1,
+		ExtraDays:  1,
+		Payable:    0.01,
+	}
+}

@@ -28,7 +28,7 @@ func (env Env) SaveSubscription(s paywall.Subscription, c util.ClientApp) error 
 		s.ExtraDays,
 		s.Kind,
 		null.NewString(orderIDs, orderIDs != ""),
-		s.ProrationAmount,
+		s.UpgradeBalance,
 		s.PaymentMethod,
 		s.WxAppID,
 		c.ClientType,
@@ -219,7 +219,12 @@ func (env Env) FindProration(u paywall.User) ([]paywall.Proration, error) {
 
 // BuildUpgradePlan creates upgrade plan based on user's
 // previous orders.
+// See [Env.GetCurrentPlan]
 func (env Env) BuildUpgradePlan(u paywall.User, p paywall.Plan) (paywall.UpgradePlan, error) {
+	if env.sandbox {
+		return paywall.GetSandboxUpgrade(), nil
+	}
+
 	orders, err := env.FindProration(u)
 	if err != nil {
 		return paywall.UpgradePlan{}, err
