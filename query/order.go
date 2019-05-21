@@ -38,8 +38,8 @@ func (b Builder) InsertSubs() string {
 		cycle_count = ?,
 		extra_days = ?,
 		category = ?,
-		proration_source = ?,
-		proration_amount = ?,
+		upgrade_source = ?,
+		upgrade_balance = ?,
 		payment_method = ?,
 		wx_app_id = ?,
 		created_utc = UTC_TIMESTAMP(),
@@ -72,7 +72,7 @@ func (b Builder) SelectSubsLock() string {
 		cycle_count AS cycleCount,
 		extra_days AS extraDays,
 		category AS cateogry,
-		proration_source AS prorationSource,
+		upgrade_source AS upgradeSource,
 		payment_method AS paymentMethod,
 		confirmed_utc AS confirmedAt,
 		confirmed_utc IS NOT NULL AS isConfirmed
@@ -105,8 +105,8 @@ func (b Builder) ConfirmSubs() string {
 func (b Builder) Prorated() string {
 	return fmt.Sprintf(`
 	UPDATE %s.ftc_trade
-	SET prorated_to = ?
+	SET upgrade_target = ?
 	WHERE user_id IN (?, ?)
 		AND FIND_IN_SET(trade_no, ?) > 0
-		AND prorated_to IS NULL`, b.MemberDB())
+		AND upgrade_target IS NULL`, b.MemberDB())
 }

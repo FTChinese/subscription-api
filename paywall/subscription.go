@@ -70,8 +70,8 @@ type Subscription struct {
 	Kind SubsKind
 
 	// Fields only applicable to upgrade.
-	ProrationSource []string   // for upgrade
-	ProrationAmount null.Float // for upgrade
+	UpgradeSource  []string   // for upgrade
+	UpgradeBalance null.Float // for upgrade
 
 	// Payment method
 	PaymentMethod enum.PayMethod
@@ -84,8 +84,8 @@ type Subscription struct {
 }
 
 // NewSubs creates a new subscription with shared fields
-// populated. PaymentMethod, Kind, ProrationSource,
-// ProrationAmount are left to the controller layer.
+// populated. PaymentMethod, Kind, UpgradeSource,
+// UpgradeBalance are left to the controller layer.
 func NewSubs(u User, p Plan) (Subscription, error) {
 	s := Subscription{
 		TierToBuy:    p.Tier,
@@ -114,14 +114,14 @@ func NewSubs(u User, p Plan) (Subscription, error) {
 // NewSubsUpgrade creates an upgrade order.
 func NewSubsUpgrade(u User, p UpgradePlan) (Subscription, error) {
 	s := Subscription{
-		TierToBuy:       p.Tier,
-		BillingCycle:    p.Cycle,
-		CycleCount:      p.CycleCount,
-		ExtraDays:       p.ExtraDays,
-		Kind:            SubsKindUpgrade,
-		ProrationSource: p.OrderIDs,
+		TierToBuy:     p.Tier,
+		BillingCycle:  p.Cycle,
+		CycleCount:    p.CycleCount,
+		ExtraDays:     p.ExtraDays,
+		Kind:          SubsKindUpgrade,
+		UpgradeSource: p.OrderIDs,
 		// This value should always exist even for 0.
-		ProrationAmount: null.FloatFrom(p.Balance),
+		UpgradeBalance: null.FloatFrom(p.Balance),
 	}
 
 	s.CompoundID = u.CompoundID
@@ -158,11 +158,11 @@ func (s Subscription) WithAlipay() Subscription {
 
 // UpgradeSourceIDs is used to render templates.
 func (s Subscription) UpgradeSourceIDs() string {
-	if s.ProrationSource == nil {
+	if s.UpgradeSource == nil {
 		return ""
 	}
 
-	return strings.Join(s.ProrationSource, ",")
+	return strings.Join(s.UpgradeSource, ",")
 }
 
 // IsNewMember checks whether this order is used to create a
