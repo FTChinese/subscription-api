@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
 	"strings"
@@ -18,7 +19,7 @@ type MemberTx struct {
 // RetrieveOrder loads a previously saved order.
 func (m MemberTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	var subs paywall.Subscription
-	var ids string
+	var ids null.String
 
 	err := m.tx.QueryRow(
 		m.query.SelectSubsLock(),
@@ -41,7 +42,9 @@ func (m MemberTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 		&subs.IsConfirmed,
 	)
 
-	subs.ProrationSource = strings.Split(ids, ",")
+	if ids.Valid {
+		subs.ProrationSource = strings.Split(ids.String, ",")
+	}
 
 	if err != nil {
 		logger.WithField("trace", "MemberTx.RetrieveOrder").Error(err)
@@ -92,7 +95,10 @@ func (m MemberTx) RetrieveMember(subs paywall.Subscription) (paywall.Membership,
 	return member, nil
 }
 
-func (m MemberTx) InvalidUpgrade(orderID string, errInvalid error) {
+// InvalidUpgrade marks an upgrade order as invalid.
+// Transaction should rollback regardless of success or not
+// since this action itself is used to handle error.
+func (m MemberTx) InvalidUpgrade(orderID string, errInvalid error) error {
 	var reason string
 	switch errInvalid {
 	case paywall.ErrDuplicateUpgrading:
@@ -107,13 +113,11 @@ func (m MemberTx) InvalidUpgrade(orderID string, errInvalid error) {
 		orderID)
 
 	if err != nil {
-		_ = m.tx.Rollback()
-		return
+		logger.WithField("trace", "MemberTx.InvalidUpgrade").Error(err)
+		return err
 	}
 
-	_ = m.tx.Rollback()
-
-	return
+	return nil
 }
 
 func (m MemberTx) ConfirmOrder(subs paywall.Subscription) error {
@@ -136,14 +140,14 @@ func (m MemberTx) ConfirmOrder(subs paywall.Subscription) error {
 
 func (m MemberTx) MarkOrdersProrated(subs paywall.Subscription) error {
 
-	orderIDs := strings.Join(subs.ProrationSource, ",")
+	logger.Infof("Upgrade source ids: %+v", subs.UpgradeSourceIDs())
 
 	_, err := m.tx.Exec(
 		m.query.Prorated(),
 		subs.OrderID,
 		subs.CompoundID,
 		subs.UnionID,
-		orderIDs)
+		subs.UpgradeSourceIDs())
 
 	if err != nil {
 		logger.WithField("trace", "MemberTx.MarkOrdersProrated").Error(err)
@@ -164,6 +168,8 @@ func (m MemberTx) UpsertMember(mm paywall.Membership) error {
 		mm.Tier,
 		mm.Cycle,
 		mm.ExpireDate,
+		mm.CompoundID,
+		mm.UnionID,
 		mm.FTCUserID,
 		mm.UnionID,
 		mm.Tier,
@@ -172,7 +178,7 @@ func (m MemberTx) UpsertMember(mm paywall.Membership) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "MemberTx.UpsertMeber").Error(err)
+		logger.WithField("trace", "MemberTx.UpsertMember").Error(err)
 		_ = m.tx.Rollback()
 
 		return err
@@ -181,6 +187,10 @@ func (m MemberTx) UpsertMember(mm paywall.Membership) error {
 	return nil
 }
 
-func (m MemberTx) Commit() error {
+func (m MemberTx) rollback() error {
+	return m.tx.Rollback()
+}
+
+func (m MemberTx) commit() error {
 	return m.tx.Commit()
 }
