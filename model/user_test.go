@@ -8,7 +8,9 @@ import (
 )
 
 func TestConfirmationParcel(t *testing.T) {
-	subs := test.MyProfile.SubsConfirmed()
+	p := test.MyProfile
+	u := p.RandomUser()
+	subs := test.MyProfile.SubsConfirmed(u)
 
 	ftcUser := paywall.FtcUser{
 		UserID:   test.MyProfile.FtcID,
@@ -16,20 +18,21 @@ func TestConfirmationParcel(t *testing.T) {
 		UserName: null.StringFrom(test.MyProfile.UserName),
 	}
 
-	p, err := ftcUser.ConfirmationParcel(subs)
+	parcel, err := ftcUser.ConfirmationParcel(subs)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	t.Logf("Parcel: %+v\n", p)
+	t.Logf("Parcel: %+v\n", parcel)
 }
 
 func TestSendEmail(t *testing.T) {
 
 	ftcUser := test.MyProfile.FtcUser()
+	u := test.MyProfile.User(test.IDFtc)
 
-	subs := test.MyProfile.SubsConfirmed()
+	subs := test.MyProfile.SubsConfirmed(u)
 
 	parcel, err := ftcUser.ConfirmationParcel(subs)
 
