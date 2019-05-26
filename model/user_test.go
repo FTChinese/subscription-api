@@ -10,7 +10,7 @@ import (
 func TestConfirmationParcel(t *testing.T) {
 	p := test.MyProfile
 	u := p.RandomUser()
-	subs := test.MyProfile.SubsConfirmed(u)
+	subs := test.SubsConfirmed(u)
 
 	ftcUser := paywall.FtcUser{
 		UserID:   test.MyProfile.FtcID,
@@ -32,7 +32,7 @@ func TestSendEmail(t *testing.T) {
 	ftcUser := test.MyProfile.FtcUser()
 	u := test.MyProfile.User(test.IDFtc)
 
-	subs := test.MyProfile.SubsConfirmed(u)
+	subs := test.SubsConfirmed(u)
 
 	parcel, err := ftcUser.ConfirmationParcel(subs)
 
