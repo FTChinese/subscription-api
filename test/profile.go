@@ -2,7 +2,6 @@ package test
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -78,91 +77,6 @@ func (p Profile) FtcUser() paywall.FtcUser {
 		Email:    p.Email,
 		UserName: null.StringFrom(p.UserName),
 	}
-}
-
-// BuildSubs generates Subscription for the following
-// combination matrix:
-// ftcOnlyId       wechatPay   create
-// wechatOnlyId    aliPay      renew
-// boundId					   upgrade
-func (p Profile) BuildSubs(u paywall.User, pm enum.PayMethod, k paywall.SubsKind) paywall.Subscription {
-
-	var subs paywall.Subscription
-	var err error
-
-	if k == paywall.SubsKindUpgrade {
-		subs, err = paywall.NewSubsUpgrade(
-			u,
-			GenUpgradePlan())
-
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		subs, err = paywall.NewSubs(
-			u,
-			YearlyStandard)
-
-		if err != nil {
-			panic(err)
-		}
-
-		subs.Kind = k
-	}
-
-	switch pm {
-	case enum.PayMethodWx:
-		subs = subs.WithWxpay(WxPayClient.GetApp().AppID)
-	case enum.PayMethodAli:
-		subs = subs.WithAlipay()
-	}
-
-	return subs
-}
-
-// SubsRandom builds a random subscription order.
-func (p Profile) SubsRandom(u paywall.User) paywall.Subscription {
-	return p.BuildSubs(
-		p.RandomUser(),
-		enum.PayMethod(randomdata.Number(1, 3)),
-		paywall.SubsKind(randomdata.Number(1, 3)),
-	)
-}
-
-func (p Profile) SubsCreate(u paywall.User) paywall.Subscription {
-	return p.BuildSubs(
-		u,
-		enum.PayMethod(randomdata.Number(1, 3)),
-		paywall.SubsKindCreate,
-	)
-}
-
-func (p Profile) SubsRenew(u paywall.User) paywall.Subscription {
-	return p.BuildSubs(
-		u,
-		enum.PayMethod(randomdata.Number(1, 3)),
-		paywall.SubsKindRenew,
-	)
-}
-
-func (p Profile) SubsUpgrade(u paywall.User) paywall.Subscription {
-	return p.BuildSubs(
-		u,
-		enum.PayMethod(randomdata.Number(1, 3)),
-		paywall.SubsKindUpgrade,
-	)
-}
-
-func (p Profile) SubsConfirmed(u paywall.User) paywall.Subscription {
-	subs := p.SubsRandom(u)
-
-	subs, err := subs.ConfirmWithMember(paywall.Membership{}, time.Now())
-
-	if err != nil {
-		panic(err)
-	}
-
-	return subs
 }
 
 func (p Profile) WxAccess() wxlogin.OAuthAccess {
