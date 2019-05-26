@@ -20,9 +20,9 @@ func TestEnv_SaveSubscription(t *testing.T) {
 	}
 
 	type args struct {
-		idType test.ID
-		pm     enum.PayMethod
-		k      paywall.SubsKind
+		u  paywall.User
+		pm enum.PayMethod
+		k  paywall.SubsKind
 	}
 
 	tests := []struct {
@@ -34,75 +34,75 @@ func TestEnv_SaveSubscription(t *testing.T) {
 		{
 			name: "Ftc only user using wxpay Pay to create member",
 			args: args{
-				idType: test.IDFtc,
-				pm:     enum.PayMethodWx,
-				k:      paywall.SubsKindCreate,
+				u:  p.User(test.IDFtc),
+				pm: enum.PayMethodWx,
+				k:  paywall.SubsKindCreate,
 			},
 		},
 		{
 			name: "Wx only user using wxpay to create member",
 			args: args{
-				idType: test.IDWx,
-				pm:     enum.PayMethodWx,
-				k:      paywall.SubsKindCreate,
+				u:  p.User(test.IDWx),
+				pm: enum.PayMethodWx,
+				k:  paywall.SubsKindCreate,
 			},
 		},
 		{
 			name: "Bound user using wxpay to create member",
 			args: args{
-				idType: test.IDBound,
-				pm:     enum.PayMethodWx,
-				k:      paywall.SubsKindCreate,
+				u:  p.User(test.IDBound),
+				pm: enum.PayMethodWx,
+				k:  paywall.SubsKindCreate,
 			},
 		},
 		// Matrix 2
 		{
 			name: "Ftc only user using alipay to create member",
 			args: args{
-				idType: test.IDFtc,
-				pm:     enum.PayMethodAli,
-				k:      paywall.SubsKindCreate,
+				u:  p.User(test.IDFtc),
+				pm: enum.PayMethodAli,
+				k:  paywall.SubsKindCreate,
 			},
 		},
 		{
 			name: "Wechat only user using alipay to create member",
 			args: args{
-				idType: test.IDWx,
-				pm:     enum.PayMethodAli,
-				k:      paywall.SubsKindCreate,
+				u:  p.User(test.IDWx),
+				pm: enum.PayMethodAli,
+				k:  paywall.SubsKindCreate,
 			},
 		},
 		{
 			name: "Bound user using alipay to create member",
 			args: args{
-				idType: test.IDBound,
-				pm:     enum.PayMethodAli,
-				k:      paywall.SubsKindCreate,
+				u:  p.User(test.IDBound),
+				pm: enum.PayMethodAli,
+				k:  paywall.SubsKindCreate,
 			},
 		},
 		// Matrix 3
 		{
 			name: "Ftc only user using wxpay to renew member",
 			args: args{
-				idType: test.IDFtc,
-				pm:     enum.PayMethodWx,
-				k:      paywall.SubsKindRenew,
+				u:  p.User(test.IDFtc),
+				pm: enum.PayMethodWx,
+				k:  paywall.SubsKindRenew,
 			},
 		},
 		{
 			name: "Wx only user using wxpay to renew member",
 			args: args{
-				idType: test.IDWx,
-				pm:     enum.PayMethodWx,
-				k:      paywall.SubsKindRenew,
+				u:  p.User(test.IDWx),
+				pm: enum.PayMethodWx,
+				k:  paywall.SubsKindRenew,
 			},
 		},
 		{
 			name: "Bound user using wxpay to renew member",
 			args: args{
-				idType: test.IDBound,
-				pm:     enum.PayMethodWx,
-				k:      paywall.SubsKindRenew,
+				u:  p.User(test.IDBound),
+				pm: enum.PayMethodWx,
+				k:  paywall.SubsKindRenew,
 			},
 		},
 
@@ -110,34 +110,34 @@ func TestEnv_SaveSubscription(t *testing.T) {
 		{
 			name: "Ftc only user using alipay to renew member",
 			args: args{
-				idType: test.IDFtc,
-				pm:     enum.PayMethodAli,
-				k:      paywall.SubsKindRenew,
+				u:  p.User(test.IDFtc),
+				pm: enum.PayMethodAli,
+				k:  paywall.SubsKindRenew,
 			},
 		},
 		{
 			name: "Wx only user using alipay to renew member",
 			args: args{
-				idType: test.IDWx,
-				pm:     enum.PayMethodAli,
-				k:      paywall.SubsKindRenew,
+				u:  p.User(test.IDWx),
+				pm: enum.PayMethodAli,
+				k:  paywall.SubsKindRenew,
 			},
 		},
 		{
 			name: "Bound user using alipay to renew member",
 			args: args{
-				idType: test.IDBound,
-				pm:     enum.PayMethodAli,
-				k:      paywall.SubsKindRenew,
+				u:  p.User(test.IDBound),
+				pm: enum.PayMethodAli,
+				k:  paywall.SubsKindRenew,
 			},
 		},
 
 		{
 			name: "Upgrade order",
 			args: args{
-				idType: test.IDFtc,
-				pm:     enum.PayMethodWx,
-				k:      paywall.SubsKindUpgrade,
+				u:  p.User(test.IDFtc),
+				pm: enum.PayMethodWx,
+				k:  paywall.SubsKindUpgrade,
 			},
 		},
 	}
@@ -145,7 +145,7 @@ func TestEnv_SaveSubscription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			if err := env.SaveSubscription(
-				p.BuildSubs(tt.args.idType, tt.args.pm, tt.args.k),
+				p.BuildSubs(tt.args.u, tt.args.pm, tt.args.k),
 				test.RandomClientApp(),
 			); (err != nil) != tt.wantErr {
 				t.Errorf("Env.SaveSubscription() error = %v, wantErr %v", err, tt.wantErr)
@@ -161,7 +161,8 @@ func TestEnv_FindSubsCharge(t *testing.T) {
 		query: query.NewBuilder(false),
 	}
 
-	subs := test.MyProfile.SubsRandom()
+	u := test.MyProfile.RandomUser()
+	subs := test.MyProfile.SubsRandom(u)
 
 	err := env.SaveSubscription(subs, test.RandomClientApp())
 	if err != nil {
@@ -206,9 +207,10 @@ func TestEnv_ConfirmPayment(t *testing.T) {
 
 	t.Logf("User: %+v", p.User(test.IDBound))
 
-	subsCreate := p.SubsCreate()
-	subsRenew := p.SubsRenew()
-	subsUpgrade := p.SubsUpgrade()
+	u := p.RandomUser()
+	subsCreate := p.SubsCreate(u)
+	subsRenew := p.SubsRenew(u)
+	subsUpgrade := p.SubsUpgrade(u)
 
 	subsUpgrade.UpgradeSource = []string{subsCreate.OrderID, subsRenew.OrderID}
 
@@ -272,8 +274,9 @@ func TestEnv_FindProration(t *testing.T) {
 
 	// You need to create at least one confirmed standard order.
 	p := test.NewProfile()
-	subsCreate := p.SubsCreate()
-	subsRenew := p.SubsRenew()
+	u := p.User(test.IDFtc)
+	subsCreate := p.SubsCreate(u)
+	subsRenew := p.SubsRenew(u)
 
 	for _, subs := range []paywall.Subscription{subsCreate, subsRenew} {
 		err := env.SaveSubscription(subs, test.RandomClientApp())
@@ -328,8 +331,9 @@ func TestEnv_BuildUpgradePlan(t *testing.T) {
 
 	// You need to create at least one confirmed standard order.
 	p := test.NewProfile()
-	subsCreate := p.SubsCreate()
-	subsRenew := p.SubsRenew()
+	u := p.RandomUser()
+	subsCreate := p.SubsCreate(u)
+	subsRenew := p.SubsRenew(u)
 
 	for _, subs := range []paywall.Subscription{subsCreate, subsRenew} {
 		err := env.SaveSubscription(subs, test.RandomClientApp())
@@ -377,4 +381,71 @@ func TestEnv_BuildUpgradePlan(t *testing.T) {
 			t.Logf("Upgrade plan: %+v", got)
 		})
 	}
+}
+
+// This is used to create orders and membership so that client
+// have some data to test upgrading.
+func TestUpgrade_Prerequisite(t *testing.T) {
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	t.Logf("User: %+v", test.MyProfile.User(test.IDBound))
+
+	u := test.MyProfile.User(test.IDFtc)
+
+	orders := []paywall.Subscription{
+		test.MyProfile.SubsCreate(u),
+		test.MyProfile.SubsRenew(u),
+	}
+
+	for _, subs := range orders {
+		err := env.SaveSubscription(subs, test.RandomClientApp())
+		if err != nil {
+			t.Error(err)
+		}
+
+		got, err := env.ConfirmPayment(subs.OrderID, time.Now())
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		t.Logf("Confirmed Order: %+v", got)
+	}
+}
+
+func TestUpgrade_UnusedOrders(t *testing.T) {
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	u := test.MyProfile.User(test.IDFtc)
+
+	orders, err := env.FindProration(u)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Unused orders: %+v", orders)
+}
+
+func TestUpgrade_Plan(t *testing.T) {
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	u := test.MyProfile.User(test.IDFtc)
+
+	plan, err := env.BuildUpgradePlan(u, paywall.GetDefaultPricing()["premium_year"])
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Upgrade plan: %+v", plan)
 }

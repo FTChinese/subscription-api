@@ -19,8 +19,9 @@ func TestBuildUpgradeOrders(t *testing.T) {
 
 	// You need to create at least one confirmed standard order.
 	p := test.NewProfile()
-	subsCreate := p.SubsCreate()
-	subsRenew := p.SubsRenew()
+	u := p.RandomUser()
+	subsCreate := p.SubsCreate(u)
+	subsRenew := p.SubsRenew(u)
 
 	for _, subs := range []paywall.Subscription{subsCreate, subsRenew} {
 		err := env.SaveSubscription(subs, test.RandomClientApp())
