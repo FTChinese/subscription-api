@@ -2,6 +2,9 @@ package query
 
 import "fmt"
 
+// ProratedOrders finds all orders whose end date is later
+// than today, and calculate how much left for each order
+// up to current point.
 func (b Builder) ProratedOrders() string {
 	return fmt.Sprintf(`
 	SELECT trade_no AS orderId,
@@ -19,6 +22,31 @@ func (b Builder) ProratedOrders() string {
 			trade_end > UNIX_TIMESTAMP()
 		)
 		AND category != 'upgrade'
+		AND (confirmed_utc IS NOT NULL OR trade_end != 0)
+ 	ORDER BY start_date ASC`, b.MemberDB())
+}
+
+func (b Builder) UnusedOrders() string {
+	return fmt.Sprintf(`
+	SELECT trade_no AS orderId,
+		trade_amount AS netPrice,
+		CASE trade_subs
+			WHEN 0 THEN start_date
+			WHEN 10 THEN IF(
+				billing_cycle = 'month', 
+				DATE(DATE_ADD(FROM_UNIXTIME(trade_end), INTERVAL -1 MONTH)), 
+				DATE(DATE_ADD(FROM_UNIXTIME(trade_end), INTERVAL -1 YEAR))
+			)
+			WHEN 100 THEN DATE(DATE_ADD(FROM_UNIXTIME(trade_end), INTERVAL -1 YEAR))
+		 END AS startDate,
+		IF(end_date IS NOT NULL, end_date, DATE(FROM_UNIXTIME(trade_end))) AS endDate
+	FROM %s.ftc_trade
+	WHERE user_id IN (?, ?)
+		AND (
+			end_date > UTC_DATE() OR
+			trade_end > UNIX_TIMESTAMP()
+		)
+		AND (tier_to_buy = 'standard' OR trade_subs = 10)
 		AND (confirmed_utc IS NOT NULL OR trade_end != 0)
  	ORDER BY start_date ASC`, b.MemberDB())
 }
