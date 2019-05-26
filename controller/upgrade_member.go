@@ -23,6 +23,11 @@ func NewUpgradeRouter(m model.Env) UpgradeRouter {
 
 // PreviewUpgrade calculates the proration of active or
 // unused orders.
+// Response:
+//
+// 404 membership not found
+// 204 already a premium member
+// 422 field: membership, code: already_upgraded
 func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
 	user, _ := GetUser(req.Header)
 
@@ -36,14 +41,11 @@ func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Requ
 
 	// If user is already a premium member, do nothing.
 	if member.Tier == enum.TierPremium {
-		view.Render(w, view.NewNoContent())
-		return
-	}
-
-	// Retrieve unused portion of orders
-	orders, err := router.model.FindProration(user)
-	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
+		r := view.NewReason()
+		r.Field = "membership"
+		r.Code = "already_upgraded"
+		r.SetMessage("Membership is already premium")
+		view.Render(w, view.NewUnprocessable(r))
 		return
 	}
 
@@ -53,9 +55,11 @@ func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Requ
 			enum.TierPremium.String(),
 			enum.CycleYear.String())
 
-	up := paywall.NewUpgradePlan(plan).
-		SetProration(orders).
-		CalculatePayable()
+	up, err := router.model.BuildUpgradePlan(user, plan)
+	if err != nil {
+		view.Render(w, view.NewDBFailure(err))
+		return
+	}
 
 	// Tell client how much user should pay for upgrading.
 	view.Render(w, view.NewResponse().SetBody(up))
@@ -76,7 +80,11 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 
 	// If user is already a premium member, do nothing.
 	if member.Tier == enum.TierPremium {
-		view.Render(w, view.NewNoContent())
+		r := view.NewReason()
+		r.Field = "membership"
+		r.Code = "already_upgraded"
+		r.SetMessage("Membership is already premium")
+		view.Render(w, view.NewUnprocessable(r))
 		return
 	}
 
