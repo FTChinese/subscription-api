@@ -85,14 +85,14 @@ func (p Profile) FtcUser() paywall.FtcUser {
 // ftcOnlyId       wechatPay   create
 // wechatOnlyId    aliPay      renew
 // boundId					   upgrade
-func (p Profile) BuildSubs(id ID, pm enum.PayMethod, k paywall.SubsKind) paywall.Subscription {
+func (p Profile) BuildSubs(u paywall.User, pm enum.PayMethod, k paywall.SubsKind) paywall.Subscription {
 
 	var subs paywall.Subscription
 	var err error
 
 	if k == paywall.SubsKindUpgrade {
 		subs, err = paywall.NewSubsUpgrade(
-			p.User(id),
+			u,
 			GenUpgradePlan())
 
 		if err != nil {
@@ -100,7 +100,7 @@ func (p Profile) BuildSubs(id ID, pm enum.PayMethod, k paywall.SubsKind) paywall
 		}
 	} else {
 		subs, err = paywall.NewSubs(
-			p.User(id),
+			u,
 			YearlyStandard)
 
 		if err != nil {
@@ -121,40 +121,40 @@ func (p Profile) BuildSubs(id ID, pm enum.PayMethod, k paywall.SubsKind) paywall
 }
 
 // SubsRandom builds a random subscription order.
-func (p Profile) SubsRandom() paywall.Subscription {
+func (p Profile) SubsRandom(u paywall.User) paywall.Subscription {
 	return p.BuildSubs(
-		ID(randomdata.Number(0, 3)),
+		p.RandomUser(),
 		enum.PayMethod(randomdata.Number(1, 3)),
 		paywall.SubsKind(randomdata.Number(1, 3)),
 	)
 }
 
-func (p Profile) SubsCreate() paywall.Subscription {
+func (p Profile) SubsCreate(u paywall.User) paywall.Subscription {
 	return p.BuildSubs(
-		ID(randomdata.Number(0, 3)),
+		u,
 		enum.PayMethod(randomdata.Number(1, 3)),
 		paywall.SubsKindCreate,
 	)
 }
 
-func (p Profile) SubsRenew() paywall.Subscription {
+func (p Profile) SubsRenew(u paywall.User) paywall.Subscription {
 	return p.BuildSubs(
-		ID(randomdata.Number(0, 3)),
+		u,
 		enum.PayMethod(randomdata.Number(1, 3)),
 		paywall.SubsKindRenew,
 	)
 }
 
-func (p Profile) SubsUpgrade() paywall.Subscription {
+func (p Profile) SubsUpgrade(u paywall.User) paywall.Subscription {
 	return p.BuildSubs(
-		ID(randomdata.Number(0, 3)),
+		u,
 		enum.PayMethod(randomdata.Number(1, 3)),
 		paywall.SubsKindUpgrade,
 	)
 }
 
-func (p Profile) SubsConfirmed() paywall.Subscription {
-	subs := p.SubsRandom()
+func (p Profile) SubsConfirmed(u paywall.User) paywall.Subscription {
+	subs := p.SubsRandom(u)
 
 	subs, err := subs.ConfirmWithMember(paywall.Membership{}, time.Now())
 
