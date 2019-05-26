@@ -36,13 +36,26 @@ func (m Model) ClearUser(u paywall.User) error {
 }
 
 func (m Model) ClearMember(u paywall.User) error {
-	query := `
+	q := `
 	DELETE FROM premium.ftc_vip
 	WHERE vip_id = ?
-		OR vip_id_alias = ?
-	LIMIT 1`
+		OR vip_id_alias = ?`
 
-	_, err := m.db.Exec(query, u.CompoundID, u.UnionID)
+	_, err := m.db.Exec(q, u.CompoundID, u.UnionID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m Model) ClearOrder(u paywall.User) error {
+	q := `
+	DELETE FROM premium.ftc_trade
+	WHERE user_id IN (?, ?)`
+
+	_, err := m.db.Exec(q, u.FtcID, u.UnionID)
 
 	if err != nil {
 		return err
