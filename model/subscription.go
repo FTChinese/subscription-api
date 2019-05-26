@@ -218,6 +218,44 @@ func (env Env) FindProration(u paywall.User) ([]paywall.Proration, error) {
 	return orders, nil
 }
 
+// FindUnusedOrders retrieves all orders that has unused portions.
+func (env Env) FindUnusedOrders(u paywall.User) ([]paywall.UnusedOrder, error) {
+	rows, err := env.db.Query(
+		env.query.UnusedOrders(),
+		u.CompoundID,
+		u.UnionID)
+	if err != nil {
+		logger.WithField("trace", "FindUnusedOrders").Error(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	orders := make([]paywall.UnusedOrder, 0)
+	for rows.Next() {
+		var o paywall.UnusedOrder
+
+		err := rows.Scan(
+			&o.ID,
+			&o.NetPrice,
+			&o.StartDate,
+			&o.EndDate)
+
+		if err != nil {
+			logger.WithField("trace", "FindUnusedOrders").Error(err)
+			return nil, err
+		}
+
+		orders = append(orders, o)
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.WithField("trace", "FindUnusedOrders").Error(err)
+		return nil, err
+	}
+
+	return orders, nil
+}
+
 // BuildUpgradePlan creates upgrade plan based on user's
 // previous orders.
 // See [Env.GetCurrentPlan]
@@ -226,13 +264,15 @@ func (env Env) BuildUpgradePlan(u paywall.User, p paywall.Plan) (paywall.Upgrade
 		return paywall.GetSandboxUpgrade(), nil
 	}
 
-	orders, err := env.FindProration(u)
+	//orders, err := env.FindProration(u)
+	orders, err := env.FindUnusedOrders(u)
 	if err != nil {
 		return paywall.UpgradePlan{}, err
 	}
 
 	up := paywall.NewUpgradePlan(p).
-		SetProration(orders).
+		//SetProration(orders).
+		SetBalance(orders).
 		CalculatePayable()
 
 	return up, nil
