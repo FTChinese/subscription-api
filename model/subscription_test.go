@@ -265,64 +265,6 @@ func TestEnv_ConfirmPayment(t *testing.T) {
 	}
 }
 
-// Use this test to generate orders to test upgrading in postman.
-func TestEnv_FindProration(t *testing.T) {
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	// You need to create at least one confirmed standard order.
-	p := test.NewProfile()
-	u := p.User(test.IDFtc)
-	subsCreate := test.SubsCreate(u)
-	subsRenew := test.SubsRenew(u)
-
-	for _, subs := range []paywall.Subscription{subsCreate, subsRenew} {
-		err := env.SaveSubscription(subs, test.RandomClientApp())
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = env.ConfirmPayment(subs.OrderID, time.Now())
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	type args struct {
-		u paywall.User
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Find Proration",
-			args: args{
-				u: p.User(test.IDBound),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			got, err := env.FindProration(tt.args.u)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Env.FindProration() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("Env.FindProration() = %v, want %v", got, tt.want)
-			//}
-			t.Logf("User: %+v", tt.args.u)
-			t.Logf("Proration orders: %+v", got)
-		})
-	}
-}
-
 func TestEnv_BuildUpgradePlan(t *testing.T) {
 	env := Env{
 		db:    test.DB,
@@ -414,23 +356,6 @@ func TestUpgrade_Prerequisite(t *testing.T) {
 
 		t.Logf("Confirmed Order: %+v", got)
 	}
-}
-
-func TestUpgrade_UnusedOrders(t *testing.T) {
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	u := test.MyProfile.User(test.IDFtc)
-
-	orders, err := env.FindProration(u)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("Unused orders: %+v", orders)
 }
 
 func TestUpgrade_Plan(t *testing.T) {
