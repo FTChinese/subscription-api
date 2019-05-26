@@ -3,6 +3,7 @@ package paywall
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"math"
+	"time"
 )
 
 type UpgradePlan struct {
@@ -37,6 +38,15 @@ func (p UpgradePlan) SetProration(orders []Proration) UpgradePlan {
 	return p
 }
 
+func (p UpgradePlan) SetBalance(orders []UnusedOrder) UpgradePlan {
+	for _, v := range orders {
+		p.Balance = p.Balance + v.Balance()
+		p.OrderIDs = append(p.OrderIDs, v.ID)
+	}
+
+	return p
+}
+
 // CalculatePrice determines how user should pay for an upgrade.
 func (p UpgradePlan) CalculatePayable() UpgradePlan {
 	// Is Balance big enough to cover NetPrice.
@@ -63,7 +73,7 @@ func (p UpgradePlan) CalculatePayable() UpgradePlan {
 		// But $1002 cannot be changed for a 1 year's membership
 		r := math.Mod(p.Balance, p.ListPrice)
 
-		// Then see how many day could the remainder be changed.
+		// Then see how many days could the remainder be changed.
 		// Example: 1002 * 365 / 1998.0 = 183.04804804804806
 		// Use math.Ceil to give user a bonus day.
 		days := math.Ceil(r * 365 / p.NetPrice)
@@ -80,4 +90,33 @@ type Proration struct {
 	Balance   float64
 	StartDate chrono.Date
 	EndDate   chrono.Date
+}
+
+type UnusedOrder struct {
+	ID        string
+	NetPrice  float64
+	StartDate chrono.Date
+	EndDate   chrono.Date
+}
+
+// Balance calculates the unused portion of an order
+func (o UnusedOrder) Balance() float64 {
+	today := time.Now().Truncate(24 * time.Hour)
+
+	// If subscription starting date of this order is in
+	// future, returns all the paid amount.
+	if !o.StartDate.Before(today) {
+		return o.NetPrice
+	}
+
+	// If start date is before today, it means portion of
+	// this order has already been used.
+	// Calculate the remaining portion.
+	left := o.EndDate.Sub(today)
+
+	total := o.EndDate.Sub(o.StartDate.Time)
+
+	remains := left.Hours() * o.NetPrice / total.Hours()
+
+	return math.Ceil(remains)
 }
