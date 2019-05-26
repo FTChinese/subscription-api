@@ -2,7 +2,9 @@ package paywall
 
 import (
 	"testing"
+	"time"
 
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/Pallinder/go-randomdata"
 )
 
@@ -26,21 +28,6 @@ func TestUpgradePlan(t *testing.T) {
 
 	t.Logf("Upgrade plan %+v", up)
 }
-
-//func TestUpgradePlan_CalculatePayable(t *testing.T) {
-//	p := UpgradePlan{
-//		Balance: 1998,
-//	}
-//
-//	p.Tier = enum.TierPremium
-//	p.Cycle = enum.CycleYear
-//	p.ListPrice = 1998
-//	p.NetPrice = 1998
-//
-//	p = p.CalculatePayable()
-//
-//	t.Logf("Payable: %+v", p)
-//}
 
 func TestUpgradePlan_CalculatePayable(t *testing.T) {
 
@@ -105,6 +92,61 @@ func TestUpgradePlan_CalculatePayable(t *testing.T) {
 			got := p.CalculatePayable()
 
 			t.Logf("Payable: %+v", got)
+		})
+	}
+}
+
+//func TestUnusedOrder_Balance(t *testing.T) {
+//	order := UnusedOrder{
+//		NetPrice: 258.0,
+//		StartDate: chrono.DateFrom(time.Now().Truncate(24*time.Hour)),
+//		EndDate: chrono.DateFrom(time.Now().AddDate(0, 1, 0).Truncate(24*time.Hour)),
+//	}
+//
+//	t.Logf("Balance: %f", order.Balance())
+//}
+
+func TestUnusedOrder_Balance(t *testing.T) {
+	today := time.Now().Truncate(24 * time.Hour)
+
+	type fields struct {
+		ID        string
+		NetPrice  float64
+		StartDate chrono.Date
+		EndDate   chrono.Date
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		{
+			name: "Unused order",
+			fields: fields{
+				NetPrice:  258.0,
+				StartDate: chrono.DateFrom(today),
+				EndDate:   chrono.DateFrom(today.AddDate(0, 1, 0)),
+			},
+		},
+		{
+			name: "Partly used order",
+			fields: fields{
+				NetPrice:  258.0,
+				StartDate: chrono.DateFrom(today.AddDate(0, -2, 0)),
+				EndDate:   chrono.DateFrom(today.AddDate(0, 10, 0)),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := UnusedOrder{
+				ID:        tt.fields.ID,
+				NetPrice:  tt.fields.NetPrice,
+				StartDate: tt.fields.StartDate,
+				EndDate:   tt.fields.EndDate,
+			}
+			got := o.Balance()
+
+			t.Logf("Remaining amount: %f", got)
 		})
 	}
 }

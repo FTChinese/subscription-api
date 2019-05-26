@@ -145,7 +145,7 @@ func TestEnv_SaveSubscription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			if err := env.SaveSubscription(
-				p.BuildSubs(tt.args.u, tt.args.pm, tt.args.k),
+				test.BuildSubs(tt.args.u, tt.args.pm, tt.args.k),
 				test.RandomClientApp(),
 			); (err != nil) != tt.wantErr {
 				t.Errorf("Env.SaveSubscription() error = %v, wantErr %v", err, tt.wantErr)
@@ -162,7 +162,7 @@ func TestEnv_FindSubsCharge(t *testing.T) {
 	}
 
 	u := test.MyProfile.RandomUser()
-	subs := test.MyProfile.SubsRandom(u)
+	subs := test.SubsRandom(u)
 
 	err := env.SaveSubscription(subs, test.RandomClientApp())
 	if err != nil {
@@ -208,9 +208,9 @@ func TestEnv_ConfirmPayment(t *testing.T) {
 	t.Logf("User: %+v", p.User(test.IDBound))
 
 	u := p.RandomUser()
-	subsCreate := p.SubsCreate(u)
-	subsRenew := p.SubsRenew(u)
-	subsUpgrade := p.SubsUpgrade(u)
+	subsCreate := test.SubsCreate(u)
+	subsRenew := test.SubsRenew(u)
+	subsUpgrade := test.SubsUpgrade(u)
 
 	subsUpgrade.UpgradeSource = []string{subsCreate.OrderID, subsRenew.OrderID}
 
@@ -275,8 +275,8 @@ func TestEnv_FindProration(t *testing.T) {
 	// You need to create at least one confirmed standard order.
 	p := test.NewProfile()
 	u := p.User(test.IDFtc)
-	subsCreate := p.SubsCreate(u)
-	subsRenew := p.SubsRenew(u)
+	subsCreate := test.SubsCreate(u)
+	subsRenew := test.SubsRenew(u)
 
 	for _, subs := range []paywall.Subscription{subsCreate, subsRenew} {
 		err := env.SaveSubscription(subs, test.RandomClientApp())
@@ -332,8 +332,8 @@ func TestEnv_BuildUpgradePlan(t *testing.T) {
 	// You need to create at least one confirmed standard order.
 	p := test.NewProfile()
 	u := p.RandomUser()
-	subsCreate := p.SubsCreate(u)
-	subsRenew := p.SubsRenew(u)
+	subsCreate := test.SubsCreate(u)
+	subsRenew := test.SubsRenew(u)
 
 	for _, subs := range []paywall.Subscription{subsCreate, subsRenew} {
 		err := env.SaveSubscription(subs, test.RandomClientApp())
@@ -396,8 +396,8 @@ func TestUpgrade_Prerequisite(t *testing.T) {
 	u := test.MyProfile.User(test.IDFtc)
 
 	orders := []paywall.Subscription{
-		test.MyProfile.SubsCreate(u),
-		test.MyProfile.SubsRenew(u),
+		test.SubsCreate(u),
+		test.SubsRenew(u),
 	}
 
 	for _, subs := range orders {
