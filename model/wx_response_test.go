@@ -12,7 +12,8 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 		db: test.DB,
 	}
 
-	subs := test.MyProfile.SubsRandom()
+	u := test.MyProfile.RandomUser()
+	subs := test.MyProfile.SubsRandom(u)
 
 	t.Logf("Subs: %+v", subs)
 
@@ -49,7 +50,8 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		db: test.DB,
 	}
 
-	subs := test.MyProfile.SubsRandom()
+	u := test.MyProfile.RandomUser()
+	subs := test.MyProfile.SubsRandom(u)
 
 	type args struct {
 		n wechat.Notification

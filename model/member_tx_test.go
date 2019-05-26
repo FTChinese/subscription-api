@@ -11,8 +11,9 @@ import (
 )
 
 func TestMemberTx_RetrieveOrder(t *testing.T) {
-	subs1 := test.MyProfile.BuildSubs(test.IDFtc, enum.PayMethodWx, paywall.SubsKindRenew)
-	subs2 := test.MyProfile.SubsUpgrade()
+	u := test.MyProfile.RandomUser()
+	subs1 := test.MyProfile.BuildSubs(u, enum.PayMethodWx, paywall.SubsKindRenew)
+	subs2 := test.MyProfile.SubsUpgrade(u)
 
 	env := Env{
 		db:    test.DB,
@@ -75,8 +76,10 @@ func TestMemberTx_RetrieveOrder(t *testing.T) {
 }
 
 func TestMemberTx_RetrieveMember(t *testing.T) {
-	subs1 := test.NewProfile().SubsRandom()
-	subs2 := test.NewProfile().SubsRandom()
+	p := test.NewProfile()
+	u := p.RandomUser()
+	subs1 := test.NewProfile().SubsRandom(u)
+	subs2 := test.NewProfile().SubsRandom(u)
 
 	// Insert a member to test an existing case.
 	subs2, err := subs2.ConfirmWithMember(paywall.Membership{}, time.Now())
@@ -146,8 +149,9 @@ func TestMemberTx_RetrieveMember(t *testing.T) {
 }
 
 func TestMemberTx_InvalidUpgrade(t *testing.T) {
-	subs1 := test.NewProfile().SubsUpgrade()
-	subs2 := test.NewProfile().SubsUpgrade()
+	u := test.MyProfile.RandomUser()
+	subs1 := test.NewProfile().SubsUpgrade(u)
+	subs2 := test.NewProfile().SubsUpgrade(u)
 
 	env := Env{
 		db:    test.DB,
@@ -211,7 +215,9 @@ func TestMemberTx_InvalidUpgrade(t *testing.T) {
 }
 
 func TestMemberTx_ConfirmOrder(t *testing.T) {
-	subs := test.NewProfile().SubsRandom()
+	p := test.NewProfile()
+	u := p.RandomUser()
+	subs := test.NewProfile().SubsRandom(u)
 
 	env := Env{
 		db:    test.DB,
@@ -265,9 +271,10 @@ func TestMemberTx_ConfirmOrder(t *testing.T) {
 
 func TestMemberTx_MarkOrdersProrated(t *testing.T) {
 	p := test.NewProfile()
-	subs1 := p.SubsRandom()
-	subs2 := p.SubsRandom()
-	upSubs := p.SubsUpgrade()
+	u := p.RandomUser()
+	subs1 := p.SubsRandom(u)
+	subs2 := p.SubsRandom(u)
+	upSubs := p.SubsUpgrade(u)
 	upSubs.UpgradeSource = []string{subs1.OrderID, subs2.OrderID}
 
 	env := Env{

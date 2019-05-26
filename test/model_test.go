@@ -91,3 +91,25 @@ func TestCreateMe_withMemberExpired(t *testing.T) {
 		t.Logf("Cannot create member: %v", err)
 	}
 }
+
+func TestModel_ClearMember(t *testing.T) {
+	me := MyProfile.User(IDBound)
+
+	model := NewModel(DB)
+	err := model.ClearMember(me)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestModel_ClearOrder(t *testing.T) {
+	me := MyProfile.User(IDBound)
+
+	model := NewModel(DB)
+
+	err := model.ClearOrder(me)
+
+	if err != nil {
+		t.Error(err)
+	}
+}
