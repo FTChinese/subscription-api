@@ -28,15 +28,15 @@ func NewUpgradePlan(p Plan) UpgradePlan {
 
 // SetProration calculates how much money has left in user's
 // account.
-func (p UpgradePlan) SetProration(orders []Proration) UpgradePlan {
-
-	for _, v := range orders {
-		p.Balance = p.Balance + v.Balance
-		p.OrderIDs = append(p.OrderIDs, v.OrderID)
-	}
-
-	return p
-}
+//func (p UpgradePlan) SetProration(orders []Proration) UpgradePlan {
+//
+//	for _, v := range orders {
+//		p.Balance = p.Balance + v.Balance
+//		p.OrderIDs = append(p.OrderIDs, v.OrderID)
+//	}
+//
+//	return p
+//}
 
 func (p UpgradePlan) SetBalance(orders []UnusedOrder) UpgradePlan {
 	for _, v := range orders {
@@ -85,12 +85,12 @@ func (p UpgradePlan) CalculatePayable() UpgradePlan {
 }
 
 // Proration is an order that is in use or not used yet.
-type Proration struct {
-	OrderID   string
-	Balance   float64
-	StartDate chrono.Date
-	EndDate   chrono.Date
-}
+//type Proration struct {
+//	OrderID   string
+//	Balance   float64
+//	StartDate chrono.Date
+//	EndDate   chrono.Date
+//}
 
 type UnusedOrder struct {
 	ID        string

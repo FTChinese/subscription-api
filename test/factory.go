@@ -44,19 +44,19 @@ func GenToken() string {
 func GenUpgradePlan() paywall.UpgradePlan {
 	up := paywall.NewUpgradePlan(yearlyPremium)
 
-	var orders []paywall.Proration
+	var orders []paywall.UnusedOrder
 
 	loop := randomdata.Number(1, 3)
 	for i := 0; i < loop; i++ {
 		orderID, _ := paywall.GenerateOrderID()
-		order := paywall.Proration{
-			OrderID: orderID,
-			Balance: randomdata.Decimal(1998),
+		order := paywall.UnusedOrder{
+			ID:       orderID,
+			NetPrice: randomdata.Decimal(1998),
 		}
 		orders = append(orders, order)
 	}
 
-	return up.SetProration(orders).CalculatePayable()
+	return up.SetBalance(orders).CalculatePayable()
 }
 
 func GenMember(u paywall.User, expired bool) paywall.Membership {

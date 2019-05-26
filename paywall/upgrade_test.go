@@ -5,29 +5,7 @@ import (
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/Pallinder/go-randomdata"
 )
-
-func TestUpgradePlan(t *testing.T) {
-
-	var orders = make([]Proration, 0)
-	loop := randomdata.Number(3)
-	for i := 0; i < loop; i++ {
-		orderID, _ := GenerateOrderID()
-		orders = append(orders, Proration{
-			OrderID: orderID,
-			Balance: randomdata.Decimal(1998),
-		})
-	}
-
-	plan := GetDefaultPricing()["premium_year"]
-
-	up := NewUpgradePlan(plan).
-		SetProration(orders).
-		CalculatePayable()
-
-	t.Logf("Upgrade plan %+v", up)
-}
 
 func TestUpgradePlan_CalculatePayable(t *testing.T) {
 
