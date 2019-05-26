@@ -73,6 +73,7 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 // Error occurred, allow retry;
 // Error occurred, don't retry;
 // No error, send user confirmation letter.
+// Concurrency pitfalls: if a user, whose is not a member yet, paid at the same moment twice, there are chances that those two orders are both used to create a membership, since transaction lock for update works only when a row exists.
 func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Subscription, error) {
 
 	tx, err := env.BeginMemberTx()
