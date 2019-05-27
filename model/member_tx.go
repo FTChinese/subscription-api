@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
@@ -158,11 +159,28 @@ func (m MemberTx) MarkOrdersProrated(subs paywall.Subscription) error {
 	return nil
 }
 
+func tierID(tier enum.Tier) int64 {
+	switch tier {
+	case enum.TierStandard:
+		return 10
+	case enum.TierPremium:
+		return 100
+	}
+
+	return 0
+}
+
 func (m MemberTx) UpsertMember(mm paywall.Membership) error {
+
+	vipType := tierID(mm.Tier)
+	expireTime := mm.ExpireDate.Unix()
+
 	_, err := m.tx.Exec(
 		m.query.UpsertMember(),
 		mm.CompoundID,
 		mm.UnionID,
+		vipType,
+		expireTime,
 		mm.FTCUserID,
 		mm.UnionID,
 		mm.Tier,
@@ -170,6 +188,8 @@ func (m MemberTx) UpsertMember(mm paywall.Membership) error {
 		mm.ExpireDate,
 		mm.CompoundID,
 		mm.UnionID,
+		vipType,
+		expireTime,
 		mm.FTCUserID,
 		mm.UnionID,
 		mm.Tier,

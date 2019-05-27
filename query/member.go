@@ -29,6 +29,8 @@ func (b Builder) UpsertMember() string {
 	INSERT INTO %s.ftc_vip
 	SET vip_id = ?,
 		vip_id_alias = ?,
+		vip_type = ?,
+		expire_time = ?,
 		ftc_user_id = ?,
 		wx_union_id = ?,
 		member_tier = ?,
@@ -37,6 +39,8 @@ func (b Builder) UpsertMember() string {
 	ON DUPLICATE KEY UPDATE
 		vip_id = ?,
 		vip_id_alias = ?,
+		vip_type = ?,
+		expire_time = ?,
 		ftc_user_id = ?,
 		wx_union_id = ?,
 		member_tier = ?,

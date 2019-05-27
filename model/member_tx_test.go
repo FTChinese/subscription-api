@@ -353,13 +353,6 @@ func TestMemberTx_UpsertMember(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Update Membership",
-			args: args{
-				mm: test.GenMember(test.MyProfile.User(test.IDFtc), false),
-			},
-			wantErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
