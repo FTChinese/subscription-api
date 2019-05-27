@@ -40,7 +40,7 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 
 	// Flag the gift card as used.
 	_, updateErr := tx.Exec(
-		env.stmtUseGiftCard(),
+		env.query.ActivateGiftCard(),
 		c.Code)
 
 	if updateErr != nil {
@@ -51,7 +51,7 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 
 	// Insert a new membership.
 	_, createErr := tx.Exec(
-		env.stmtInsertMember(),
+		env.query.SelectMember(),
 		m.CompoundID,
 		m.UnionID,
 		m.FTCUserID,
@@ -64,6 +64,9 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 		_ = tx.Rollback()
 
 		logger.WithField("trace", "RedeemGiftCard").Error(err)
+		// Needs this message to tell client whether
+		// there is a duplicate error.
+		return createErr
 	}
 
 	if err := tx.Commit(); err != nil {

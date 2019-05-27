@@ -4,7 +4,7 @@ import "errors"
 
 // Errors for controller to identify actions to take.
 var (
-	ErrOrderNotFound    = errors.New("Subscription order is not found")
-	ErrAlreadyConfirmed = errors.New("Subscription order is already confirmed")
-	ErrPriceMismatch    = errors.New("Price does not match")
+	ErrAlreadyConfirmed = errors.New("subscription order is already confirmed")
+	ErrAllowRetry       = errors.New("resend notification")
+	ErrDenyRetry        = errors.New("no longer resend notification")
 )

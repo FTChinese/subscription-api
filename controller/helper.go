@@ -1,16 +1,22 @@
 package controller
 
 import (
+	"errors"
 	"github.com/FTChinese/go-rest"
 	"github.com/go-chi/chi"
 	"github.com/guregu/null"
 	log "github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"net/http"
 )
 
 const (
-	alipayCallback  = "http://next.ftchinese.com/user/subscription/alipay/callback?"
 	wxOAuthCallback = "http://next.ftchinese.com/user/login/wechat/callback?"
+)
+
+var (
+	errRenewalForbidden    = errors.New("exceed maximum allowed membership duration")
+	errDowngradeNotAllowed = errors.New("membership downgrading is not allowed")
 )
 
 var logger = log.WithField("project", "subscription-api").
@@ -33,4 +39,15 @@ func GetUserOrUnionID(h http.Header) (null.String, null.String) {
 	unionID := null.NewString(wID, wID != "")
 
 	return ftcID, unionID
+}
+
+// GetUser extract ftc uuid or union id from request header.
+func GetUser(h http.Header) (paywall.User, error) {
+	uID := h.Get(userIDKey)
+	wID := h.Get(unionIDKey)
+
+	ftcID := null.NewString(uID, uID != "")
+	unionID := null.NewString(wID, wID != "")
+
+	return paywall.NewUser(ftcID, unionID)
 }

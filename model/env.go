@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"gitlab.com/ftchinese/subscription-api/query"
 
 	"github.com/FTChinese/go-rest/enum"
 
@@ -14,6 +15,7 @@ type Env struct {
 	sandbox bool
 	db      *sql.DB
 	cache   *cache.Cache
+	query   query.Builder
 }
 
 // New creates a new instance of Env.
@@ -23,16 +25,19 @@ func New(db *sql.DB, c *cache.Cache, sandbox bool) Env {
 		sandbox: sandbox,
 		db:      db,
 		cache:   c,
+		query:   query.NewBuilder(sandbox),
 	}
 }
 
-// Get the database name used to store subscription and membership tables depending on the whether it is run in sandbox.
-func (env Env) vipDBName() string {
-	if env.sandbox {
-		return "sandbox"
+// BeginMemberTx creates a MemberTx instance.
+func (env Env) BeginMemberTx() (MemberTx, error) {
+	tx, err := env.db.Begin()
+
+	if err != nil {
+		return MemberTx{}, err
 	}
 
-	return "premium"
+	return MemberTx{tx: tx, query: env.query}, nil
 }
 
 var logger = log.

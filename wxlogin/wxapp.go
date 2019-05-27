@@ -71,7 +71,7 @@ func (a WxApp) accessValidityURL(accessToken, openID string) string {
 	return fmt.Sprintf("%s/auth?%s", apiBaseURL, q.Encode())
 }
 
-// GetAccessToken request for access token with a code previsouly acquired from wechat.
+// GetAccessToken request for access token with a code previously acquired from wechat.
 // For every authoriztion request, a new pair of access token and refresh token are generated, even on the same platform under single wechat app.
 //
 // Possible error response:
@@ -98,6 +98,7 @@ func (a WxApp) GetAccessToken(code string) (OAuthAccess, error) {
 		return acc, err
 	}
 
+	// Create an session id to identify this unique session.
 	acc.GenerateSessionID()
 	acc.CreatedAt = chrono.TimeNow()
 	acc.UpdatedAt = chrono.TimeNow()
