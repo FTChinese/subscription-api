@@ -1,60 +1,47 @@
 package model
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
-	"time"
 )
 
 func TestConfirmationParcel(t *testing.T) {
-	m := newMocker()
-	subs, _ := paywall.NewWxpaySubs(
-		null.StringFrom(m.userID),
-		null.String{},
-		mockPlan)
-	m.createSubs(subs)
-	confirmedSubs := m.confirmSubs(subs, time.Now())
+	p := test.MyProfile
+	u := p.RandomUser()
+	subs := test.SubsConfirmed(u)
 
-	user := m.user()
-	p, err := user.ConfirmationParcel(confirmedSubs)
+	ftcUser := paywall.FtcUser{
+		UserID:   test.MyProfile.FtcID,
+		Email:    test.MyProfile.Email,
+		UserName: null.StringFrom(test.MyProfile.UserName),
+	}
+
+	parcel, err := ftcUser.ConfirmationParcel(subs)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	t.Logf("Parcel: %+v\n", p)
+	t.Logf("Parcel: %+v\n", parcel)
 }
 
 func TestSendEmail(t *testing.T) {
 
-	user := paywall.User{
-		UserID:   myFtcID,
-		UserName: null.StringFrom("ToddDay"),
-		Email:    myFtcEmail,
-	}
+	ftcUser := test.MyProfile.FtcUser()
+	u := test.MyProfile.User(test.IDFtc)
 
-	subs, _ := paywall.NewWxpaySubs(
-		null.StringFrom(user.UserID),
-		null.String{},
-		mockPlan)
+	subs := test.SubsConfirmed(u)
 
-	subs.ConfirmedAt = chrono.TimeNow()
-	subs.IsRenewal = false
-	subs.StartDate = chrono.DateNow()
-
-	endDate, _ := subs.BillingCycle.TimeAfterACycle(time.Now())
-	subs.EndDate = chrono.DateFrom(endDate)
-
-	parcel, err := user.ConfirmationParcel(subs)
+	parcel, err := ftcUser.ConfirmationParcel(subs)
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = postman.Deliver(parcel)
+	err = test.Postman.Deliver(parcel)
 	if err != nil {
 		t.Error(err)
 	}

@@ -8,7 +8,7 @@ import (
 func TestMockWxXMLNotification(t *testing.T) {
 	orderID, _ := paywall.GenerateOrderID()
 
-	noti := MockWxXMLNotification(orderID)
+	noti := WxXMLNotification(orderID)
 
 	t.Logf("Mocked wxpay notifiction: %s", noti)
 }
@@ -16,19 +16,43 @@ func TestMockWxXMLNotification(t *testing.T) {
 func TestWxNotification(t *testing.T) {
 	orderID, _ := paywall.GenerateOrderID()
 
-	noti := MockWxNotification(orderID)
+	noti := WxNotification(orderID)
 
 	t.Logf("Notification: %+v", noti)
 }
 
 func TestWxXMLPrepay(t *testing.T) {
-	prepay := MockWxXMLPrepay()
+	prepay := WxXMLPrepay()
 
 	t.Logf("Prepay response: %s", prepay)
 }
 
 func TestWxPrepay(t *testing.T) {
-	uni := MockWxPrepay()
+	uni := WxPrepay()
 
 	t.Logf("Unified order: %+v", uni)
+}
+
+func TestGenCardSerial(t *testing.T) {
+	t.Log(GenCardSerial())
+}
+
+func TestCreateGiftCard(t *testing.T) {
+
+	m := NewModel(DB)
+
+	tests := []struct {
+		name string
+	}{
+		{
+			name: "Create Gift Card",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := m.CreateGiftCard()
+
+			t.Logf("Created gift card: %+v", got)
+		})
+	}
 }

@@ -5,7 +5,7 @@ import (
 )
 
 // FindUser retrieves user's name and email to be used in an email.
-func (env Env) FindUser(id string) (paywall.User, error) {
+func (env Env) FindUser(id string) (paywall.FtcUser, error) {
 	query := `
 	SELECT user_id AS userId,
 		wx_union_id AS unionId,
@@ -14,7 +14,7 @@ func (env Env) FindUser(id string) (paywall.User, error) {
 	FROM cmstmp01.userinfo
 	WHERE user_id = ?`
 
-	var u paywall.User
+	var u paywall.FtcUser
 	err := env.db.QueryRow(query, id).Scan(
 		&u.UserID,
 		&u.UnionID,

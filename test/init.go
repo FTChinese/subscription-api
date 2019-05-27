@@ -2,10 +2,7 @@ package test
 
 import (
 	"database/sql"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
-	"github.com/Pallinder/go-randomdata"
-	"github.com/guregu/null"
 	"github.com/patrickmn/go-cache"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/paywall"
@@ -14,14 +11,22 @@ import (
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 )
 
+const (
+	MyFtcID    = "e1a1f5c0-0e23-11e8-aa75-977ba2bcc6ae"
+	MyFtcEmail = "neefrankie@163.com"
+	MyUnionID  = "ogfvwjk6bFqv2yQpOrac0J3PqA0o"
+	MyEmail    = "neefrankie@gmail.com"
+)
+
 var DB *sql.DB
 var Postman postoffice.Postman
 var Cache *cache.Cache
-var WxOauthApp wxlogin.WxApp
+var WxOAuthApp wxlogin.WxApp
 var WxPayApp wechat.PayApp
 var WxPayClient wechat.Client
 
-var TestPlan = paywall.GetDefaultPricing()["standard_year"]
+var YearlyStandard = paywall.GetDefaultPricing()["standard_year"]
+var yearlyPremium = paywall.GetDefaultPricing()["premium_year"]
 
 func init() {
 	viper.SetConfigName("api")
@@ -45,7 +50,7 @@ func init() {
 
 	Cache = cache.New(cache.DefaultExpiration, 0)
 
-	err = viper.UnmarshalKey("wxapp.m_subs", &WxOauthApp)
+	err = viper.UnmarshalKey("wxapp.m_subs", &WxOAuthApp)
 	if err != nil {
 		panic(err)
 	}
@@ -56,13 +61,4 @@ func init() {
 	}
 
 	WxPayClient = wechat.NewClient(WxPayApp)
-}
-
-func RandomClientApp() util.ClientApp {
-	return util.ClientApp{
-		ClientType: enum.PlatformAndroid,
-		Version:    null.StringFrom("1.1.1"),
-		UserIP:     null.StringFrom(randomdata.IpV4Address()),
-		UserAgent:  null.StringFrom(randomdata.UserAgentString()),
-	}
 }
