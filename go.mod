@@ -2,7 +2,7 @@ module gitlab.com/ftchinese/subscription-api
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/FTChinese/go-rest v0.0.15
+	github.com/FTChinese/go-rest v0.0.17
 	github.com/Pallinder/go-randomdata v1.1.0
 	github.com/corpix/uarand v0.0.0 // indirect
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a // indirect
