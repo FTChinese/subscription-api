@@ -67,6 +67,10 @@ func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Requ
 
 // DirectUpgrade performs membership upgrading for users whose
 // account balance could cover the upgrading expense exactly.
+// 404 if membership is not found
+// 422 if already a premium
+// 200 if balance is not enough to cover upgrading cost.
+// 204 if upgraded successfully.
 func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Request) {
 	user, _ := GetUser(req.Header)
 
