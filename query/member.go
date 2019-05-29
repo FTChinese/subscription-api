@@ -10,13 +10,17 @@ func (b Builder) SelectMemberLock() string {
 	return fmt.Sprintf(`
 	SELECT vip_id AS userId,
 		vip_id_alias AS unionId,
-		CASE vip_type
+		IF(member_tier, member_tier, CASE vip_type
 			WHEN 10 THEN 'standard'
 			WHEN 100 THEN 'premium'
 			ELSE member_tier
-		END AS tier,
+		END) AS tier,
 		billing_cycle AS cycle,
-		IF(expire_time, DATE(FROM_UNIXTIME(expire_time)), expire_date) AS expireDate
+		CASE
+			WHEN expire_date IS NOT NULL THEN expire_date
+			WHEN expire_time > 0 THEN DATE(FROM_UNIXTIME(expire_time))
+			ELSE NULL
+		END AS expireDate
 	FROM %s.ftc_vip
 	WHERE vip_id = ? 
 		OR vip_id_alias = ?
