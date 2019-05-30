@@ -92,9 +92,6 @@ func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
 
 // GetCurrentPricing get current effective pricing plans.
 func (env Env) GetCurrentPricing() paywall.Pricing {
-	if env.sandbox {
-		return paywall.GetSandboxPricing()
-	}
 
 	promo, found := env.LoadCachedPromo()
 	if !found {
