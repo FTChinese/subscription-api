@@ -3,10 +3,8 @@ package model
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
-	"strings"
 )
 
 // MemberTx confirm a payment and creates/renews/upgrades
@@ -17,10 +15,10 @@ type MemberTx struct {
 	query query.Builder
 }
 
-// RetrieveOrder loads a previously saved order.
+// RetrieveOrder loads a previously saved order that is not
+// confirmed yet.
 func (m MemberTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	var subs paywall.Subscription
-	var ids null.String
 
 	err := m.tx.QueryRow(
 		m.query.SelectSubsLock(),
@@ -37,15 +35,10 @@ func (m MemberTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 		&subs.CycleCount,
 		&subs.ExtraDays,
 		&subs.Kind,
-		&ids,
 		&subs.PaymentMethod,
 		&subs.ConfirmedAt,
 		&subs.IsConfirmed,
 	)
-
-	if ids.Valid {
-		subs.UpgradeSource = strings.Split(ids.String, ",")
-	}
 
 	if err != nil {
 		logger.WithField("trace", "MemberTx.RetrieveOrder").Error(err)
@@ -67,6 +60,43 @@ func (m MemberTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	return subs, nil
 }
 
+// RetrieveUpgradeSource loads the order ids upon which an
+// upgrade order is build.
+func (m MemberTx) RetrieveUpgradeSource(upgradeID string) ([]string, error) {
+	rows, err := m.tx.Query(m.query.SelectUpgradeSource(),
+		upgradeID)
+
+	if err != nil {
+		logger.WithField("trace", "MemberTx.RetrieveUpgradeSource").Error(err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id string
+
+		err := rows.Scan(&id)
+
+		if err != nil {
+			logger.WithField("trace", "MemberTx.RetrieveUpgradeSource").Error(err)
+			return nil, err
+		}
+
+		ids = append(ids, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.WithField("trace", "MemberTx.RetrieveUpgradeSource").Error(err)
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+// RetrieveMember find whether an order is created by an
+// existing member.
 func (m MemberTx) RetrieveMember(subs paywall.Subscription) (paywall.Membership, error) {
 	var member paywall.Membership
 
@@ -121,6 +151,7 @@ func (m MemberTx) InvalidUpgrade(orderID string, errInvalid error) error {
 	return nil
 }
 
+// ConfirmOrder set an order's confirmation time
 func (m MemberTx) ConfirmOrder(subs paywall.Subscription) error {
 	_, err := m.tx.Exec(
 		m.query.ConfirmSubs(),
@@ -139,24 +170,18 @@ func (m MemberTx) ConfirmOrder(subs paywall.Subscription) error {
 	return nil
 }
 
-func (m MemberTx) MarkOrdersProrated(subs paywall.Subscription) error {
-
-	logger.Infof("Upgrade source ids: %+v", subs.UpgradeSourceIDs())
-
-	_, err := m.tx.Exec(
-		m.query.Prorated(),
-		subs.OrderID,
-		subs.CompoundID,
-		subs.UnionID,
-		subs.UpgradeSourceIDs())
+// ConfirmUpgradeSource set all orders used for upgrading
+// as confirmed, using the upgrading order's id.
+func (m MemberTx) ConfirmUpgradeSource(upID string) error {
+	_, err := m.tx.Exec(m.query.ConfirmUpgradeSource(),
+		upID)
 
 	if err != nil {
-		logger.WithField("trace", "MemberTx.MarkOrdersProrated").Error(err)
-		_ = m.tx.Rollback()
+		logger.WithField("trace", "MemberTx.ConfirmUpgradeSource").Error(err)
 		return err
 	}
 
-	return nil
+	return err
 }
 
 func tierID(tier enum.Tier) int64 {

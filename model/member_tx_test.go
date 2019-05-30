@@ -13,26 +13,15 @@ import (
 func TestMemberTx_RetrieveOrder(t *testing.T) {
 	u := test.MyProfile.RandomUser()
 	subs1 := test.BuildSubs(u, enum.PayMethodWx, paywall.SubsKindRenew)
-	subs2 := test.SubsUpgrade(u)
+	subs2 := test.SubsUpgrade(u, []paywall.Subscription{subs1})
 
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
 
-	err := env.SaveSubscription(subs1, test.RandomClientApp())
-	if err != nil {
-		panic(err)
-	}
-	err = env.SaveSubscription(subs2, test.RandomClientApp())
-	if err != nil {
-		panic(err)
-	}
-
-	m, err := env.BeginMemberTx()
-	if err != nil {
-		panic(err)
-	}
+	saveOrder(env, subs1)
+	saveOrder(env, subs2)
 
 	type args struct {
 		orderID string
@@ -60,52 +49,39 @@ func TestMemberTx_RetrieveOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := m.RetrieveOrder(tt.args.orderID)
+			mtx, err := env.BeginMemberTx()
+			if err != nil {
+				panic(err)
+			}
+
+			got, err := mtx.RetrieveOrder(tt.args.orderID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MemberTx.RetrieveOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
+			if err := mtx.commit(); err != nil {
+				panic(err)
+			}
+
 			t.Logf("MemberTx.RetireveOrder() = %+v", got)
 		})
-	}
-
-	if err := m.commit(); err != nil {
-		panic(err)
 	}
 }
 
 func TestMemberTx_RetrieveMember(t *testing.T) {
-	p := test.NewProfile()
-	u := p.RandomUser()
-	subs1 := test.SubsRandom(u)
-	subs2 := test.SubsRandom(u)
-
-	// Insert a member to test an existing case.
-	subs2, err := subs2.ConfirmWithMember(paywall.Membership{}, time.Now())
-	if err != nil {
-		panic(err)
-	}
-
-	mm, err := subs2.BuildMembership()
-	if err != nil {
-		panic(err)
-	}
-
-	err = test.NewModel(test.DB).CreateMember(mm)
-	if err != nil {
-		panic(err)
-	}
-
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
 
-	m, err := env.BeginMemberTx()
-	if err != nil {
-		panic(err)
-	}
+	p := test.NewProfile()
+	u := p.RandomUser()
+
+	createMember(env, u)
+
+	subs1 := test.SubsRandom(test.NewProfile().RandomUser())
+	subs2 := test.SubsRandom(u)
 
 	type args struct {
 		subs paywall.Subscription
@@ -132,45 +108,42 @@ func TestMemberTx_RetrieveMember(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		mtx, err := env.BeginMemberTx()
+		if err != nil {
+			panic(err)
+		}
+
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := m.RetrieveMember(tt.args.subs)
+			got, err := mtx.RetrieveMember(tt.args.subs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MemberTx.RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
+			if err := mtx.commit(); err != nil {
+				panic(err)
+			}
+
 			t.Logf("MemberTx.RetrieveMember() = %v", got)
 		})
-	}
-
-	if err := m.commit(); err != nil {
-		panic(err)
 	}
 }
 
 func TestMemberTx_InvalidUpgrade(t *testing.T) {
 	u := test.MyProfile.RandomUser()
-	subs1 := test.SubsUpgrade(u)
-	subs2 := test.SubsUpgrade(u)
+	stdSubs1 := test.SubsCreate(u)
+	stdSubs2 := test.SubsRenew(u)
+
+	subs1 := test.SubsUpgrade(u, []paywall.Subscription{stdSubs1, stdSubs2})
+	subs2 := test.SubsUpgrade(u, []paywall.Subscription{stdSubs1, stdSubs2})
 
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
 
-	err := env.SaveSubscription(subs1, test.RandomClientApp())
-	if err != nil {
-		panic(err)
-	}
-	err = env.SaveSubscription(subs2, test.RandomClientApp())
-	if err != nil {
-		panic(err)
-	}
-
-	m, err := env.BeginMemberTx()
-	if err != nil {
-		panic(err)
-	}
+	saveOrder(env, subs1)
+	saveOrder(env, subs2)
 
 	type args struct {
 		orderID    string
@@ -200,17 +173,22 @@ func TestMemberTx_InvalidUpgrade(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := m.InvalidUpgrade(tt.args.orderID, tt.args.errInvalid)
+			mtx, err := env.BeginMemberTx()
+			if err != nil {
+				panic(err)
+			}
+
+			err = mtx.InvalidUpgrade(tt.args.orderID, tt.args.errInvalid)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MemberTx.InvalidUpgrade() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-		})
-	}
 
-	if err := m.commit(); err != nil {
-		panic(err)
+			if err := mtx.commit(); err != nil {
+				panic(err)
+			}
+		})
 	}
 }
 
@@ -224,20 +202,9 @@ func TestMemberTx_ConfirmOrder(t *testing.T) {
 		query: query.NewBuilder(false),
 	}
 
-	err := env.SaveSubscription(subs, test.RandomClientApp())
-	if err != nil {
-		panic(err)
-	}
+	saveOrder(env, subs)
 
-	subs, err = subs.ConfirmWithMember(paywall.Membership{}, time.Now())
-	if err != nil {
-		panic(err)
-	}
-
-	m, err := env.BeginMemberTx()
-	if err != nil {
-		panic(err)
-	}
+	subs, _ = subs.ConfirmWithMember(paywall.Membership{}, time.Now())
 
 	type args struct {
 		subs paywall.Subscription
@@ -258,71 +225,19 @@ func TestMemberTx_ConfirmOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if err := m.ConfirmOrder(tt.args.subs); (err != nil) != tt.wantErr {
+			mtx, err := env.BeginMemberTx()
+			if err != nil {
+				panic(err)
+			}
+
+			if err := mtx.ConfirmOrder(tt.args.subs); (err != nil) != tt.wantErr {
 				t.Errorf("MemberTx.ConfirmOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
-		})
-	}
 
-	if err := m.commit(); err != nil {
-		panic(err)
-	}
-}
-
-func TestMemberTx_MarkOrdersProrated(t *testing.T) {
-	p := test.NewProfile()
-	u := p.RandomUser()
-	subs1 := test.SubsRandom(u)
-	subs2 := test.SubsRandom(u)
-	upSubs := test.SubsUpgrade(u)
-	upSubs.UpgradeSource = []string{subs1.OrderID, subs2.OrderID}
-
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	err := env.SaveSubscription(subs1, test.RandomClientApp())
-	if err != nil {
-		panic(err)
-	}
-
-	err = env.SaveSubscription(subs2, test.RandomClientApp())
-	if err != nil {
-		panic(err)
-	}
-
-	m, err := env.BeginMemberTx()
-	if err != nil {
-		panic(err)
-	}
-
-	type args struct {
-		subs paywall.Subscription
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Flag prorated orders",
-			args: args{
-				subs: upSubs,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := m.MarkOrdersProrated(tt.args.subs); (err != nil) != tt.wantErr {
-				t.Errorf("MemberTx.MarkOrdersProrated() error = %v, wantErr %v", err, tt.wantErr)
+			if err := mtx.commit(); err != nil {
+				panic(err)
 			}
 		})
-	}
-
-	if err := m.commit(); err != nil {
-		panic(err)
 	}
 }
 
@@ -331,11 +246,6 @@ func TestMemberTx_UpsertMember(t *testing.T) {
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
-	}
-
-	m, err := env.BeginMemberTx()
-	if err != nil {
-		panic(err)
 	}
 
 	type args struct {
@@ -356,15 +266,20 @@ func TestMemberTx_UpsertMember(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := m.UpsertMember(tt.args.mm); (err != nil) != tt.wantErr {
+			mtx, err := env.BeginMemberTx()
+			if err != nil {
+				panic(err)
+			}
+
+			if err := mtx.UpsertMember(tt.args.mm); (err != nil) != tt.wantErr {
 				t.Errorf("MemberTx.UpsertMember() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err := mtx.commit(); err != nil {
+				panic(err)
 			}
 
 			t.Logf("Created membership: %+v", tt.args.mm)
 		})
-	}
-
-	if err := m.commit(); err != nil {
-		panic(err)
 	}
 }
