@@ -2,8 +2,10 @@ package controller
 
 import (
 	"database/sql"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
@@ -72,22 +74,34 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
 
-		subs, err := router.createOrder(user, plan)
+		//subs, err := router.createOrder(user, plan)
+		//if err != nil {
+		//	router.handleOrderErr(w, err)
+		//	return
+		//}
+		//subs = subs.WithAlipay()
+
+		// Save the subscription
+		clientApp := util.NewClientApp(req)
+		//err = router.model.SaveSubscription(subs, clientApp)
+		//if err != nil {
+		//	view.Render(w, view.NewDBFailure(err))
+		//	return
+		//}
+
+		subs, err := router.model.CreateOrder(
+			user,
+			plan,
+			enum.PayMethodAli,
+			clientApp,
+			null.String{},
+		)
 		if err != nil {
 			router.handleOrderErr(w, err)
 			return
 		}
-		subs = subs.WithAlipay()
 
 		logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
-
-		// Save the subscription
-		clientApp := util.NewClientApp(req)
-		err = router.model.SaveSubscription(subs, clientApp)
-		if err != nil {
-			view.Render(w, view.NewDBFailure(err))
-			return
-		}
 
 		// Alipay specific handling.
 		returnURL := req.FormValue("return_url")
