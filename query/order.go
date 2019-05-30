@@ -7,28 +7,56 @@ import "fmt"
 // up to current point.
 func (b Builder) UnusedOrders() string {
 	return fmt.Sprintf(`
-	SELECT trade_no AS orderId,
-		trade_amount AS netPrice,
-		CASE trade_subs
-			WHEN 0 THEN start_date
+	SELECT s.trade_no AS orderId,
+		s.trade_amount AS netPrice,
+		CASE s.trade_subs
+			WHEN 0 THEN s.start_date
 			WHEN 10 THEN IF(
-				billing_cycle = 'month', 
-				DATE(DATE_ADD(FROM_UNIXTIME(trade_end), INTERVAL -1 MONTH)), 
-				DATE(DATE_ADD(FROM_UNIXTIME(trade_end), INTERVAL -1 YEAR))
+				s.billing_cycle = 'month', 
+				DATE(DATE_ADD(FROM_UNIXTIME(s.trade_end), INTERVAL -1 MONTH)), 
+				DATE(DATE_ADD(FROM_UNIXTIME(s.trade_end), INTERVAL -1 YEAR))
 			)
-			WHEN 100 THEN DATE(DATE_ADD(FROM_UNIXTIME(trade_end), INTERVAL -1 YEAR))
+			WHEN 100 THEN DATE(DATE_ADD(FROM_UNIXTIME(s.trade_end), INTERVAL -1 YEAR))
 		 END AS startDate,
-		IF(end_date IS NOT NULL, end_date, DATE(FROM_UNIXTIME(trade_end))) AS endDate
-	FROM %s.ftc_trade
-	WHERE user_id IN (?, ?)
-		AND (tier_to_buy = 'standard' OR trade_subs = 10)
-		AND (confirmed_utc IS NOT NULL OR trade_end != 0)
-		AND upgrade_target IS NULL
+		IF(s.end_date IS NOT NULL, s.end_date, DATE(FROM_UNIXTIME(s.trade_end))) AS endDate
+	FROM %s.ftc_trade AS s
+		LEFT JOIN %s.upgrade_premium AS t
+		ON s.trade_no = t.source_order_id
+	WHERE s.user_id IN (?, ?)
+		AND (s.tier_to_buy = 'standard' OR s.trade_subs = 10)
 		AND (
-			end_date > UTC_DATE() OR
-			trade_end > UNIX_TIMESTAMP()
+			s.end_date > UTC_DATE() OR
+			s.trade_end > UNIX_TIMESTAMP()
 		)
- 	ORDER BY start_date ASC`, b.MemberDB())
+		AND (s.confirmed_utc IS NOT NULL OR s.trade_end != 0)
+		AND t.confirmed_utc IS NULL
+ 	ORDER BY start_date ASC
+	FOR UPDATE`, b.MemberDB(), b.MemberDB())
+}
+
+func (b Builder) InsertUpgradeSource() string {
+	return fmt.Sprintf(`
+	INSERT INTO %s.upgrade_premium (
+		source_order_id,
+		target_order_id,
+		created_utc)
+	SELECT trade_no, 
+		?, 
+		UTC_TIMESTAMP()
+	FROM %s.ftc_trade
+	WHERE FIND_IN_SET(trade_no, ?) > 0`,
+		b.MemberDB(),
+		b.MemberDB(),
+	)
+}
+
+func (b Builder) SelectUpgradeSource() string {
+	return fmt.Sprintf(`
+	SELECT source_order_id
+	FROM %s.upgrade_premium
+	WHERE target_order_id = ?
+		AND confirmed_utc IS NULL
+	FOR UPDATE`, b.MemberDB())
 }
 
 // Statement to insert a subscription order.
@@ -46,7 +74,6 @@ func (b Builder) InsertSubs() string {
 		cycle_count = ?,
 		extra_days = ?,
 		category = ?,
-		upgrade_source = ?,
 		upgrade_balance = ?,
 		payment_method = ?,
 		wx_app_id = ?,
@@ -57,6 +84,8 @@ func (b Builder) InsertSubs() string {
 		user_agent = ?`, b.MemberDB())
 }
 
+// SelectSubsPrice retrieves an order's price when payment
+// provider send confirmation notice.
 func (b Builder) SelectSubsPrice() string {
 	return fmt.Sprintf(`
 	SELECT trade_price AS listPrice,
@@ -80,7 +109,6 @@ func (b Builder) SelectSubsLock() string {
 		cycle_count AS cycleCount,
 		extra_days AS extraDays,
 		category AS cateogry,
-		upgrade_source AS upgradeSource,
 		payment_method AS paymentMethod,
 		confirmed_utc AS confirmedAt,
 		confirmed_utc IS NOT NULL AS isConfirmed
@@ -99,6 +127,13 @@ func (b Builder) InvalidUpgrade() string {
 	LIMIT 1`, b.MemberDB())
 }
 
+func (b Builder) ConfirmUpgradeSource() string {
+	return fmt.Sprintf(`
+	UPDATE %s.upgrade_premium
+		SET confirmed_utc = UTC_TIMESTAMP()
+	WHERE target_order_id = ?`, b.MemberDB())
+}
+
 // Statement to update a subscription order after received notification from payment provider.
 func (b Builder) ConfirmSubs() string {
 	return fmt.Sprintf(`
@@ -110,6 +145,7 @@ func (b Builder) ConfirmSubs() string {
 	LIMIT 1`, b.MemberDB())
 }
 
+// Deprecate
 func (b Builder) Prorated() string {
 	return fmt.Sprintf(`
 	UPDATE %s.ftc_trade
