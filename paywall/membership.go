@@ -52,9 +52,9 @@ func (m Membership) Exists() bool {
 	return m.CompoundID != "" && m.Tier != enum.InvalidTier && m.Cycle != enum.InvalidCycle
 }
 
-// CanRenew tests if a membership is allowed to renuew subscription.
-// A member could only renew its subscripiton when remaining duration of a membership is shorter than a billing cycle.
-// Expire date - now > cycle  --- Renwal is not allowed
+// CanRenew tests if a membership is allowed to renew subscription.
+// A member could only renew its subscription when remaining duration of a membership is shorter than a billing cycle.
+// Expire date - now > cycle  --- Renewal is not allowed
 // Expire date - now <= cycle --- Can renew
 //         now--------------------| Allow
 //      |-------- A cycle --------| Expires
@@ -85,4 +85,33 @@ func (m Membership) IsExpired() bool {
 	}
 	// If expire is before now, it is expired.
 	return m.ExpireDate.Before(time.Now().Truncate(24 * time.Hour))
+}
+
+// SubsKind determines what kind of order a user is creating.
+func (m Membership) SubsKind(p Plan) (SubsKind, error) {
+	if m.Tier == enum.InvalidTier {
+		return SubsKindCreate, nil
+	}
+
+	// If member is expired.
+	if m.IsExpired() {
+		return SubsKindCreate, nil
+	}
+
+	// If member duration is beyond renewal period.
+	if !m.IsRenewAllowed() {
+		return SubsKindDeny, ErrBeyondRenewal
+	}
+
+	if m.Tier == p.Tier {
+		return SubsKindRenew, nil
+	}
+
+	if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
+		return SubsKindUpgrade, nil
+	}
+
+	// The only possibility left here is:
+	// m.Tier == enum.Premium && p.Tier = enum.TierStandard
+	return SubsKindDeny, ErrDowngrade
 }
