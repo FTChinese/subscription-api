@@ -51,9 +51,11 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 
 	// Insert a new membership.
 	_, createErr := tx.Exec(
-		env.query.SelectMember(),
+		env.query.InsertMember(),
 		m.CompoundID,
 		m.UnionID,
+		tierID(m.Tier),
+		m.ExpireDate.Unix(),
 		m.FTCUserID,
 		m.UnionID,
 		m.Tier,
