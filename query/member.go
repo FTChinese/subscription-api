@@ -2,10 +2,6 @@ package query
 
 import "fmt"
 
-func (b Builder) SelectMember() string {
-	return fmt.Sprintf(selectMember, b.MemberDB())
-}
-
 func (b Builder) SelectMemberLock() string {
 	return fmt.Sprintf(`
 	SELECT vip_id AS userId,
@@ -42,6 +38,20 @@ func (b Builder) UpsertMember() string {
 		expire_date = ?
 	ON DUPLICATE KEY UPDATE
 		vip_id = ?,
+		vip_id_alias = ?,
+		vip_type = ?,
+		expire_time = ?,
+		ftc_user_id = ?,
+		wx_union_id = ?,
+		member_tier = ?,
+		billing_cycle = ?,
+		expire_date = ?`, b.MemberDB())
+}
+
+func (b Builder) InsertMember() string {
+	return fmt.Sprintf(`
+	INSERT INTO %s.ftc_vip
+	SET vip_id = ?,
 		vip_id_alias = ?,
 		vip_type = ?,
 		expire_time = ?,
