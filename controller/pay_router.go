@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"database/sql"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/smartwalle/alipay"
@@ -37,86 +35,16 @@ func (router PayRouter) findPlan(req *http.Request) (paywall.Plan, error) {
 	return router.model.GetCurrentPricing().FindPlan(tier, cycle)
 }
 
-func (router PayRouter) subsKind(user paywall.User, p paywall.Plan) (paywall.SubsKind, error) {
-	member, err := router.model.RetrieveMember(user)
-
-	if err != nil {
-		// User is not a member yet.
-		if err == sql.ErrNoRows {
-			return paywall.SubsKindCreate, nil
-		}
-
-		return paywall.SubsKindDeny, err
-	}
-
-	// If user is a member but expired, treat it as a new member.
-	if member.IsExpired() {
-		return paywall.SubsKindCreate, nil
-	}
-
-	// Is this an upgrade attempt?
-	if member.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
-		return paywall.SubsKindUpgrade, nil
-	}
-
-	// If member.Tier is standard, and p.Tier is standard, this is renewal;
-	// If member.Tier is premium, and p.Tier is standard, this is downgrade attempt and deny it;
-	// if member.Tier is premium, and p.Tier is premium, this is renewal.
-	if member.Tier != p.Tier {
-		return paywall.SubsKindDeny, errDowngradeNotAllowed
-	}
-
-	// Now the request must be renewal, test whether it is allowed to renew.
-	if member.IsRenewAllowed() {
-		return paywall.SubsKindRenew, nil
-	}
-
-	// Membership exceeds max allowed period.
-	return paywall.SubsKindDeny, errRenewalForbidden
-}
-
-func (router PayRouter) createOrder(user paywall.User, p paywall.Plan) (paywall.Subscription, error) {
-	var subs paywall.Subscription
-	var err error
-
-	subsKind, err := router.subsKind(user, p)
-	if err != nil {
-		return subs, err
-	}
-
-	if subsKind == paywall.SubsKindUpgrade {
-
-		up, err := router.model.BuildUpgradePlan(user, p)
-		if err != nil {
-			return subs, err
-		}
-
-		subs, err = paywall.NewSubsUpgrade(user, up)
-		if err != nil {
-			return subs, err
-		}
-
-	} else {
-		subs, err = paywall.NewSubs(user, p)
-		if err != nil {
-			return subs, err
-		}
-		subs.Kind = subsKind
-	}
-
-	return subs, nil
-}
-
 func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	switch err {
-	case errRenewalForbidden:
+	case paywall.ErrBeyondRenewal:
 		view.Render(w, view.NewForbidden(err.Error()))
 
-	case errDowngradeNotAllowed:
+	case paywall.ErrDowngrade:
 		r := view.NewReason()
 		r.Field = "downgrade"
 		r.Code = view.CodeInvalid
-		r.SetMessage("downgrade membership is not supported currently")
+		r.SetMessage(err.Error())
 		view.Render(w, view.NewUnprocessable(r))
 
 	default:

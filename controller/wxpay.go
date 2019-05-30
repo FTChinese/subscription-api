@@ -3,8 +3,10 @@ package controller
 import (
 	"database/sql"
 	"fmt"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"github.com/pkg/errors"
 	"gitlab.com/ftchinese/subscription-api/model"
@@ -113,18 +115,30 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 
 		// Create an subscription order for this user
 		// base on chosen plan.
-		subs, err := router.createOrder(user, plan)
-		if err != nil {
-			router.handleOrderErr(w, err)
-			return
-		}
-		subs = subs.WithWxpay(payClient.GetApp().AppID)
+		//subs, err := router.createOrder(user, plan)
+		//if err != nil {
+		//	router.handleOrderErr(w, err)
+		//	return
+		//}
+		//subs = subs.WithWxpay(payClient.GetApp().AppID)
 
 		// Save this subscription order.
 		clientApp := util.NewClientApp(req)
-		err = router.model.SaveSubscription(subs, clientApp)
+		//err = router.model.SaveSubscription(subs, clientApp)
+		//if err != nil {
+		//	view.Render(w, view.NewDBFailure(err))
+		//	return
+		//}
+
+		subs, err := router.model.CreateOrder(
+			user,
+			plan,
+			enum.PayMethodWx,
+			clientApp,
+			null.StringFrom(payClient.GetApp().AppID),
+		)
 		if err != nil {
-			view.Render(w, view.NewDBFailure(err))
+			router.handleOrderErr(w, err)
 			return
 		}
 
