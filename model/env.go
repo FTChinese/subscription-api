@@ -40,6 +40,16 @@ func (env Env) BeginMemberTx() (MemberTx, error) {
 	return MemberTx{tx: tx, query: env.query}, nil
 }
 
+func (env Env) BeginOrderTx() (OrderTx, error) {
+	tx, err := env.db.Begin()
+
+	if err != nil {
+		return OrderTx{}, err
+	}
+
+	return OrderTx{tx: tx, query: env.query}, nil
+}
+
 var logger = log.
 	WithField("project", "subscription-api").
 	WithField("package", "model")
