@@ -1,10 +1,8 @@
 package controller
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/view"
 	"gitlab.com/ftchinese/subscription-api/model"
-	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 	"time"
@@ -31,38 +29,25 @@ func NewUpgradeRouter(m model.Env) UpgradeRouter {
 func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
 	user, _ := GetUser(req.Header)
 
-	// Retrieve this user's current membership.
-	// If not found, deny upgrading.
-	member, err := router.model.RetrieveMember(user)
+	upgradePlan, err := router.model.UpgradePlan(user)
 	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
+		switch err {
+		case model.ErrAlreadyUpgraded:
+			r := view.NewReason()
+			r.Field = "membership"
+			r.Code = "already_upgraded"
+			r.SetMessage("Membership is already premium")
+			view.Render(w, view.NewUnprocessable(r))
+			return
+		}
 
-	// If user is already a premium member, do nothing.
-	if member.Tier == enum.TierPremium {
-		r := view.NewReason()
-		r.Field = "membership"
-		r.Code = "already_upgraded"
-		r.SetMessage("Membership is already premium")
-		view.Render(w, view.NewUnprocessable(r))
-		return
-	}
-
-	// Find the current plan for yearly premium.
-	plan, _ := router.model.GetCurrentPricing().
-		FindPlan(
-			enum.TierPremium.String(),
-			enum.CycleYear.String())
-
-	up, err := router.model.BuildUpgradePlan(user, plan)
-	if err != nil {
+		// membership not found is handled here.
 		view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
 	// Tell client how much user should pay for upgrading.
-	view.Render(w, view.NewResponse().SetBody(up))
+	view.Render(w, view.NewResponse().SetBody(upgradePlan))
 }
 
 // DirectUpgrade performs membership upgrading for users whose
@@ -74,63 +59,36 @@ func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Requ
 func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Request) {
 	user, _ := GetUser(req.Header)
 
-	// Retrieve this user's current membership.
-	// If not found, deny upgrading.
-	member, err := router.model.RetrieveMember(user)
+	upgradePlan, err := router.model.UpgradePlan(user)
 	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
+		switch err {
+		case model.ErrAlreadyUpgraded:
+			r := view.NewReason()
+			r.Field = "membership"
+			r.Code = "already_upgraded"
+			r.SetMessage("Membership is already premium")
+			view.Render(w, view.NewUnprocessable(r))
+			return
+		}
 
-	// If user is already a premium member, do nothing.
-	if member.Tier == enum.TierPremium {
-		r := view.NewReason()
-		r.Field = "membership"
-		r.Code = "already_upgraded"
-		r.SetMessage("Membership is already premium")
-		view.Render(w, view.NewUnprocessable(r))
-		return
-	}
-
-	// Find the current plan for yearly premium.
-	plan, err := router.model.GetCurrentPricing().
-		FindPlan(
-			enum.TierPremium.String(),
-			enum.CycleYear.String())
-
-	if err != nil {
-		logger.WithField("trace", "DirectUpgrade").Error(err)
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	up, err := router.model.BuildUpgradePlan(user, plan)
-	if err != nil {
+		// membership not found is handled here.
 		view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
 	// If user needs to pay any extra money.
-	if up.Payable > 0 {
-		view.Render(w, view.NewResponse().SetBody(up))
+	if upgradePlan.Payable > 0 {
+		view.Render(w, view.NewResponse().SetBody(upgradePlan))
 		return
 	}
 
-	// If user do not need to pay, upgrade directly.
-	// Create an order whose net price is 0.
-	subs, err := paywall.NewSubsUpgrade(user, up)
-	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	err = router.model.SaveSubscription(subs, util.NewClientApp(req))
+	subs, err := router.model.DirectUpgradeOrder(user, upgradePlan, util.NewClientApp(req))
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
-	// Update this member.
+	// Confirm this order
 	updatedSubs, err := router.model.ConfirmPayment(subs.OrderID, time.Now())
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
