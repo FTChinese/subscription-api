@@ -37,39 +37,9 @@ var defaultPlans = Pricing{
 	},
 }
 
-// SandboxPlans is used by sandbox for testing.
-var sandboxPlans = Pricing{
-	"standard_year": Plan{
-		Tier:        enum.TierStandard,
-		Cycle:       enum.CycleYear,
-		ListPrice:   258.00,
-		NetPrice:    0.01,
-		Description: "FT中文网 - 年度标准会员",
-	},
-	"standard_month": Plan{
-		Tier:        enum.TierStandard,
-		Cycle:       enum.CycleMonth,
-		ListPrice:   28.00,
-		NetPrice:    0.01,
-		Description: "FT中文网 - 月度标准会员",
-	},
-	"premium_year": Plan{
-		Tier:        enum.TierPremium,
-		Cycle:       enum.CycleYear,
-		ListPrice:   1998.00,
-		NetPrice:    0.01,
-		Description: "FT中文网 - 高端会员",
-	},
-}
-
 // GetDefaultPricing returns the default pricing plans.
 func GetDefaultPricing() Pricing {
 	return defaultPlans
-}
-
-// GetSandboxPricing returns the pricing plans for sandbox.
-func GetSandboxPricing() Pricing {
-	return sandboxPlans
 }
 
 func GetDefaultBanner() Banner {
