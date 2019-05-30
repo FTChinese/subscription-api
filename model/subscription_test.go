@@ -1,376 +1,264 @@
 package model
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
 	"gitlab.com/ftchinese/subscription-api/test"
+	"gitlab.com/ftchinese/subscription-api/util"
 )
 
-func TestEnv_SaveSubscription(t *testing.T) {
+func TestEnv_CreateOrder(t *testing.T) {
 
-	p := test.NewProfile()
+	user1 := test.NewProfile().RandomUser()
+	user2 := test.NewProfile().RandomUser()
 
 	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		sandbox: false,
+		db:      test.DB,
+		query:   query.NewBuilder(false),
 	}
 
-	type args struct {
-		u  paywall.User
-		pm enum.PayMethod
-		k  paywall.SubsKind
+	createMember(env, user2)
+	t.Logf("Create membership for user: %+v", user2)
+
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		query   query.Builder
 	}
+	type args struct {
+		user      paywall.User
+		plan      paywall.Plan
+		payMethod enum.PayMethod
+		clientApp util.ClientApp
+		wxAppId   null.String
+	}
+
+	field := fields{
+		sandbox: false,
+		db:      test.DB,
+		query:   query.NewBuilder(false),
+	}
+	wxAppID := null.StringFrom(test.WxPayApp.AppID)
 
 	tests := []struct {
 		name    string
+		fields  fields
 		args    args
 		wantErr bool
 	}{
-		// Matrix 1
 		{
-			name: "Ftc only user using wxpay Pay to create member",
+			name:   "Order to Create a New Member",
+			fields: field,
 			args: args{
-				u:  p.User(test.IDFtc),
-				pm: enum.PayMethodWx,
-				k:  paywall.SubsKindCreate,
+				user:      user1,
+				plan:      test.YearlyStandard,
+				payMethod: enum.PayMethodWx,
+				clientApp: test.RandomClientApp(),
+				wxAppId:   wxAppID,
 			},
 		},
 		{
-			name: "Wx only user using wxpay to create member",
+			name:   "Order to Renew a Member",
+			fields: field,
 			args: args{
-				u:  p.User(test.IDWx),
-				pm: enum.PayMethodWx,
-				k:  paywall.SubsKindCreate,
-			},
-		},
-		{
-			name: "Bound user using wxpay to create member",
-			args: args{
-				u:  p.User(test.IDBound),
-				pm: enum.PayMethodWx,
-				k:  paywall.SubsKindCreate,
-			},
-		},
-		// Matrix 2
-		{
-			name: "Ftc only user using alipay to create member",
-			args: args{
-				u:  p.User(test.IDFtc),
-				pm: enum.PayMethodAli,
-				k:  paywall.SubsKindCreate,
-			},
-		},
-		{
-			name: "Wechat only user using alipay to create member",
-			args: args{
-				u:  p.User(test.IDWx),
-				pm: enum.PayMethodAli,
-				k:  paywall.SubsKindCreate,
-			},
-		},
-		{
-			name: "Bound user using alipay to create member",
-			args: args{
-				u:  p.User(test.IDBound),
-				pm: enum.PayMethodAli,
-				k:  paywall.SubsKindCreate,
-			},
-		},
-		// Matrix 3
-		{
-			name: "Ftc only user using wxpay to renew member",
-			args: args{
-				u:  p.User(test.IDFtc),
-				pm: enum.PayMethodWx,
-				k:  paywall.SubsKindRenew,
-			},
-		},
-		{
-			name: "Wx only user using wxpay to renew member",
-			args: args{
-				u:  p.User(test.IDWx),
-				pm: enum.PayMethodWx,
-				k:  paywall.SubsKindRenew,
-			},
-		},
-		{
-			name: "Bound user using wxpay to renew member",
-			args: args{
-				u:  p.User(test.IDBound),
-				pm: enum.PayMethodWx,
-				k:  paywall.SubsKindRenew,
-			},
-		},
-
-		// Matrix 4
-		{
-			name: "Ftc only user using alipay to renew member",
-			args: args{
-				u:  p.User(test.IDFtc),
-				pm: enum.PayMethodAli,
-				k:  paywall.SubsKindRenew,
-			},
-		},
-		{
-			name: "Wx only user using alipay to renew member",
-			args: args{
-				u:  p.User(test.IDWx),
-				pm: enum.PayMethodAli,
-				k:  paywall.SubsKindRenew,
-			},
-		},
-		{
-			name: "Bound user using alipay to renew member",
-			args: args{
-				u:  p.User(test.IDBound),
-				pm: enum.PayMethodAli,
-				k:  paywall.SubsKindRenew,
-			},
-		},
-
-		{
-			name: "Upgrade order",
-			args: args{
-				u:  p.User(test.IDFtc),
-				pm: enum.PayMethodWx,
-				k:  paywall.SubsKindUpgrade,
+				user:      user2,
+				plan:      test.YearlyStandard,
+				payMethod: enum.PayMethodAli,
+				clientApp: test.RandomClientApp(),
+				wxAppId:   null.String{},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			if err := env.SaveSubscription(
-				test.BuildSubs(tt.args.u, tt.args.pm, tt.args.k),
-				test.RandomClientApp(),
-			); (err != nil) != tt.wantErr {
-				t.Errorf("Env.SaveSubscription() error = %v, wantErr %v", err, tt.wantErr)
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				query:   tt.fields.query,
 			}
-		})
-	}
-}
-
-func TestEnv_FindSubsCharge(t *testing.T) {
-
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	u := test.MyProfile.RandomUser()
-	subs := test.SubsRandom(u)
-
-	err := env.SaveSubscription(subs, test.RandomClientApp())
-	if err != nil {
-		panic(err)
-	}
-
-	type args struct {
-		orderID string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name:    "Find Subscription FTC only user",
-			args:    args{orderID: subs.OrderID},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			got, err := env.FindSubsCharge(tt.args.orderID)
+			got, err := env.CreateOrder(tt.args.user, tt.args.plan, tt.args.payMethod, tt.args.clientApp, tt.args.wxAppId)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Env.FindSubscription() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Env.CreateOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("Env.CreateOrder() = %v, want %v", got, tt.want)
+			//}
 
-			t.Logf("%+v\n", got)
+			t.Logf("Got: %+v", got)
 		})
 	}
 }
 
 func TestEnv_ConfirmPayment(t *testing.T) {
 	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		sandbox: false,
+		db:      test.DB,
+		query:   query.NewBuilder(false),
 	}
 
-	p := test.NewProfile()
+	user := test.NewProfile().RandomUser()
+	subsCreate := test.SubsCreate(user)
+	saveOrder(env, subsCreate)
 
-	t.Logf("User: %+v", p.User(test.IDBound))
+	subsRenew := test.SubsRenew(user)
+	saveOrder(env, subsRenew)
 
-	u := p.RandomUser()
-	subsCreate := test.SubsCreate(u)
-	subsRenew := test.SubsRenew(u)
-	subsUpgrade := test.SubsUpgrade(u)
-
-	subsUpgrade.UpgradeSource = []string{subsCreate.OrderID, subsRenew.OrderID}
-
+	type fields struct {
+		sandbox bool
+		db      *sql.DB
+		query   query.Builder
+	}
 	type args struct {
-		subs        paywall.Subscription
+		orderID     string
 		confirmedAt time.Time
 	}
+
+	field := fields{
+		sandbox: false,
+		db:      test.DB,
+		query:   query.NewBuilder(false),
+	}
+
 	tests := []struct {
 		name    string
+		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
-			name: "New or renew",
+			name:   "Confirm Order for New Member",
+			fields: field,
 			args: args{
-				subs:        subsCreate,
+				orderID:     subsCreate.OrderID,
 				confirmedAt: time.Now(),
 			},
 			wantErr: false,
 		},
 		{
-			name: "Renew",
+			name:   "Confirm Order for Renewal",
+			fields: field,
 			args: args{
-				subs:        subsRenew,
+				orderID:     subsRenew.OrderID,
 				confirmedAt: time.Now(),
 			},
-		},
-		{
-			name: "Upgrade",
-			args: args{
-				subs:        subsUpgrade,
-				confirmedAt: time.Now(),
-			},
+			wantErr: false,
 		},
 	}
+	confirmedOrders := make([]paywall.Subscription, 0)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			err := env.SaveSubscription(tt.args.subs, test.RandomClientApp())
-			if err != nil {
-				panic(err)
+			env := Env{
+				sandbox: tt.fields.sandbox,
+				db:      tt.fields.db,
+				query:   tt.fields.query,
 			}
-
-			got, err := env.ConfirmPayment(tt.args.subs.OrderID, tt.args.confirmedAt)
+			got, err := env.ConfirmPayment(tt.args.orderID, tt.args.confirmedAt)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Env.ConfirmPayment() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
-			t.Logf("%+v\n", got)
-		})
-	}
-}
-
-func TestEnv_BuildUpgradePlan(t *testing.T) {
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	// You need to create at least one confirmed standard order.
-	p := test.NewProfile()
-	u := p.RandomUser()
-	subsCreate := test.SubsCreate(u)
-	subsRenew := test.SubsRenew(u)
-
-	for _, subs := range []paywall.Subscription{subsCreate, subsRenew} {
-		err := env.SaveSubscription(subs, test.RandomClientApp())
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = env.ConfirmPayment(subs.OrderID, time.Now())
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	type args struct {
-		u paywall.User
-		p paywall.Plan
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Build Upgrade Plan",
-			args: args{
-				u: p.User(test.IDBound),
-				p: paywall.GetDefaultPricing()["premium_year"],
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			got, err := env.BuildUpgradePlan(tt.args.u, tt.args.p)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Env.BuildUpgradePlan() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
 			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("Env.BuildUpgradePlan() = %v, want %v", got, tt.want)
+			//	t.Errorf("Env.ConfirmPayment() = %v, want %v", got, tt.want)
 			//}
-
-			t.Logf("User: %+v", tt.args.u)
-			t.Logf("Upgrade plan: %+v", got)
+			confirmedOrders = append(confirmedOrders, got)
+			t.Logf("Got confirmed order: %+v", got)
 		})
 	}
-}
 
-// This is used to create orders and membership so that client
-// have some data to test upgrading.
-func TestUpgrade_Prerequisite(t *testing.T) {
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
+	subsUpgrade := test.SubsUpgrade(user, confirmedOrders)
 
-	t.Logf("User: %+v", test.MyProfile.User(test.IDBound))
+	saveUpgradeOrder(env, subsUpgrade)
 
-	u := test.MyProfile.User(test.IDFtc)
-
-	orders := []paywall.Subscription{
-		test.SubsCreate(u),
-		test.SubsRenew(u),
-	}
-
-	for _, subs := range orders {
-		err := env.SaveSubscription(subs, test.RandomClientApp())
-		if err != nil {
-			t.Error(err)
-		}
-
-		got, err := env.ConfirmPayment(subs.OrderID, time.Now())
-
-		if err != nil {
-			t.Error(err)
-		}
-
-		t.Logf("Confirmed Order: %+v", got)
-	}
-}
-
-func TestUpgrade_Plan(t *testing.T) {
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	u := test.MyProfile.User(test.IDFtc)
-
-	plan, err := env.BuildUpgradePlan(u, paywall.GetDefaultPricing()["premium_year"])
+	got, err := env.ConfirmPayment(subsUpgrade.OrderID, time.Now())
 
 	if err != nil {
-		t.Error(err)
+		t.Errorf("Env.ConfirmPayment() error = %v", err)
 	}
 
-	t.Logf("Upgrade plan: %+v", plan)
+	t.Logf("Confirmed upgrade order: %+v", got)
+}
+
+func TestEnv_CreateAndConfirmOrder(t *testing.T) {
+	user := test.NewProfile().RandomUser()
+
+	env := Env{
+		sandbox: false,
+		db:      test.DB,
+		query:   query.NewBuilder(false),
+	}
+
+	// Create a membership
+	orderCreate, err := env.CreateOrder(
+		user,
+		test.YearlyStandard,
+		enum.PayMethodWx,
+		test.RandomClientApp(),
+		null.StringFrom(test.WxPayApp.AppID))
+
+	if err != nil {
+		panic(err)
+	}
+
+	orderCreate, err = env.ConfirmPayment(orderCreate.OrderID, time.Now())
+	if err != nil {
+		panic(err)
+	}
+
+	// Renew member
+	orderRenew, err := env.CreateOrder(
+		user,
+		test.YearlyStandard,
+		enum.PayMethodAli,
+		test.RandomClientApp(),
+		null.String{})
+	if err != nil {
+		panic(err)
+	}
+
+	orderRenew, err = env.ConfirmPayment(orderRenew.OrderID, time.Now())
+	if err != nil {
+		panic(err)
+	}
+
+	// Upgrade
+	orderUpgrade, err := env.CreateOrder(
+		user,
+		test.YearlyPremium,
+		enum.PayMethodAli,
+		test.RandomClientApp(),
+		null.String{})
+	if err != nil {
+		panic(err)
+	}
+
+	orderUpgrade, err = env.ConfirmPayment(orderUpgrade.OrderID, time.Now())
+	if err != nil {
+		panic(err)
+	}
+
+	// Test if SQL FindUnusedOrders if correct after user is upgraded.
+
+	otx, err := env.BeginOrderTx()
+	if err != nil {
+		panic(err)
+	}
+
+	unusedOrders, err := otx.FindUnusedOrders(user)
+	if err != nil {
+		panic(err)
+	}
+
+	t.Logf("Unused order after upgrade: %+v", unusedOrders)
+
+	if err := otx.commit(); err != nil {
+		panic(err)
+	}
 }
