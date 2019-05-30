@@ -14,28 +14,15 @@ import (
 // boundId					   upgrade
 func BuildSubs(u paywall.User, pm enum.PayMethod, k paywall.SubsKind) paywall.Subscription {
 
-	var subs paywall.Subscription
-	var err error
+	subs, err := paywall.NewSubs(
+		u,
+		YearlyStandard)
 
-	if k == paywall.SubsKindUpgrade {
-		subs, err = paywall.NewSubsUpgrade(
-			u,
-			GenUpgradePlan())
-
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		subs, err = paywall.NewSubs(
-			u,
-			YearlyStandard)
-
-		if err != nil {
-			panic(err)
-		}
-
-		subs.Kind = k
+	if err != nil {
+		panic(err)
 	}
+
+	subs.Kind = k
 
 	switch pm {
 	case enum.PayMethodWx:
@@ -76,12 +63,37 @@ func SubsRenew(u paywall.User) paywall.Subscription {
 }
 
 // SubsUpgrade builds an order that is used to upgrade membership.
-func SubsUpgrade(u paywall.User) paywall.Subscription {
-	return BuildSubs(
-		u,
-		enum.PayMethod(randomdata.Number(1, 3)),
-		paywall.SubsKindUpgrade,
-	)
+func SubsUpgrade(u paywall.User, orders []paywall.Subscription) paywall.Subscription {
+	unused := make([]paywall.UnusedOrder, 0)
+	for _, v := range orders {
+		unused = append(unused, paywall.UnusedOrder{
+			ID:        v.OrderID,
+			NetPrice:  v.NetPrice,
+			StartDate: v.StartDate,
+			EndDate:   v.EndDate,
+		})
+	}
+
+	up := paywall.NewUpgradePlan(YearlyPremium).
+		SetBalance(unused).
+		CalculatePayable()
+
+	subs, err := paywall.NewSubsUpgrade(u, up)
+
+	if err != nil {
+		panic(err)
+	}
+
+	pm := enum.PayMethod(randomdata.Number(1, 3))
+
+	switch pm {
+	case enum.PayMethodWx:
+		subs = subs.WithWxpay(WxPayClient.GetApp().AppID)
+	case enum.PayMethodAli:
+		subs = subs.WithAlipay()
+	}
+
+	return subs
 }
 
 // SubsConfirmed builds an order that is confirmed.
