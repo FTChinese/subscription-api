@@ -26,18 +26,6 @@ func NewUpgradePlan(p Plan) UpgradePlan {
 	return up
 }
 
-// SetProration calculates how much money has left in user's
-// account.
-//func (p UpgradePlan) SetProration(orders []Proration) UpgradePlan {
-//
-//	for _, v := range orders {
-//		p.Balance = p.Balance + v.Balance
-//		p.OrderIDs = append(p.OrderIDs, v.OrderID)
-//	}
-//
-//	return p
-//}
-
 func (p UpgradePlan) SetBalance(orders []UnusedOrder) UpgradePlan {
 	for _, v := range orders {
 		p.Balance = p.Balance + v.Balance()
