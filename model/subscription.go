@@ -193,7 +193,7 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "FindSubsCharge").Error(err)
+		logger.WithField("trace", "Env.FindSubsCharge").Error(err)
 		return c, err
 	}
 
