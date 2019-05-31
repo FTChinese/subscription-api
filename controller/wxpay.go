@@ -9,6 +9,7 @@ import (
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wechat"
@@ -317,22 +318,35 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	resp := wxpay.Notifies{}
 
+	// Decode Wechat XML request body.
+	// If it cannot be decoded, tell wechat to resend it.
 	params, err := wechat.DecodeXML(req.Body)
 	if err != nil {
-		logger.WithField("trace", "Notification").Error(err)
-
+		logger.WithFields(logrus.Fields{
+			"trace": "WxPayRouter.Notification",
+			"event": "Failed parsing wechat request",
+		}).Error(err)
 		w.Write([]byte(resp.NotOK(err.Error())))
 
 		return
 	}
 
-	logger.WithField("trace", "WxpayNotification").Infof("%+v", params)
+	logger.WithFields(logrus.Fields{
+		"trace": "WxPayRouter.Notification",
+		"event": "Parsed wechat notification",
+	}).Infof("%v", params)
 
+	// Turn the map to struct
 	noti := wechat.NewNotification(params)
 
+	// Check the status code.
 	err = noti.IsStatusValid()
 	if err != nil {
-		logger.WithField("trace", "WxpayNotification").Error(err)
+		logger.WithFields(logrus.Fields{
+			"trace":   "WxPayRouter.Notification",
+			"event":   "Invalid Status",
+			"orderId": noti.FTCOrderID,
+		}).Error(err)
 		w.Write([]byte(resp.OK()))
 		return
 	}
@@ -340,10 +354,12 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	// Try to find out which app is in charge of the response.
 	payClient, err := router.findClient(noti.AppID.String)
 
-	//params, err := router.mSubsClient.ParseResponse(req.Body)
 	if err != nil {
-		logger.WithField("trace", "Notification").Error(err)
-
+		logger.WithFields(logrus.Fields{
+			"trace":   "WxPayRouter.Notification",
+			"event":   "Find Wechat Client",
+			"orderId": noti.FTCOrderID,
+		}).Error(err)
 		w.Write([]byte(resp.NotOK(err.Error())))
 
 		return
@@ -354,7 +370,12 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	go router.model.SaveWxNotification(noti)
 
 	if err := payClient.VerifyNotification(noti); err != nil {
-		logger.WithField("trace", "Notification").Error(err)
+		logger.WithFields(logrus.Fields{
+			"trace":   "WxPayRouter.Notification",
+			"event":   "VerifyNotification",
+			"orderId": noti.FTCOrderID,
+		}).Error(err)
+
 		w.Write([]byte(resp.OK()))
 		return
 	}
@@ -373,6 +394,12 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	//orderID := params.GetString("out_trade_no")
 	charge, err := router.model.FindSubsCharge(noti.FTCOrderID.String)
 	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"trace":   "WxPayRouter.Notification",
+			"event":   "FindSubsCharge",
+			"orderId": noti.FTCOrderID,
+		}).Error(err)
+
 		if err == sql.ErrNoRows {
 			w.Write([]byte(resp.OK()))
 			return
@@ -382,19 +409,27 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	}
 
 	if !noti.IsPriceMatched(charge.WxNetPrice()) {
-		logger.WithField("trace", "WxpayNotification").Errorf("Wxpay total amount does not match. Expected: %d, actual: ", charge.WxNetPrice(), noti.TotalFee.Int64)
+
+		logger.WithFields(logrus.Fields{
+			"trace":   "WxPayRouter.Notification",
+			"event":   "PriceNotMatch",
+			"orderId": noti.FTCOrderID,
+		}).Errorf("Expected: %d, actual: %d", charge.WxNetPrice(), noti.TotalFee.Int64)
 
 		w.Write([]byte(resp.OK()))
 		return
 	}
 
 	if charge.IsConfirmed {
+		logger.WithFields(logrus.Fields{
+			"trace":   "WxPayRouter.Notification",
+			"event":   "AlreadyConfirmed",
+			"orderId": noti.FTCOrderID,
+		}).Info("Duplicate notification since this order is already confirmed.")
 		w.Write([]byte(resp.OK()))
 		return
 	}
 	// updatedSubs
-	//timeEnd := params.GetString("time_end")
-
 	confirmedAt, err := util.ParseWxTime(noti.TimeEnd.String)
 	if err != nil {
 		confirmedAt = time.Now()
@@ -402,7 +437,11 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	confirmedSubs, err := router.model.ConfirmPayment(noti.FTCOrderID.String, confirmedAt)
 
 	if err != nil {
-		logger.WithField("trace", "Notification").Error(err)
+		logger.WithFields(logrus.Fields{
+			"trace":   "WxPayRouter.Notification",
+			"event":   "ConfirmOrder",
+			"orderId": noti.FTCOrderID,
+		}).Error(err)
 
 		switch err {
 		case model.ErrDenyRetry:
@@ -420,6 +459,13 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Send a letter to this user.
+
+	logger.WithFields(logrus.Fields{
+		"trace":   "WxPayRouter.Notification",
+		"event":   "OrderConfirmed",
+		"orderId": noti.FTCOrderID,
+	}).Infof("Confirmed at %s, membership from %s to %s", confirmedSubs.ConfirmedAt, confirmedSubs.StartDate, confirmedSubs.EndDate)
+
 	go router.sendConfirmationEmail(confirmedSubs)
 
 	w.Write([]byte(resp.OK()))
