@@ -84,9 +84,9 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		"type":  tradeType.String(),
 	})
 
-	logger.Info("Start placing a wechat order")
-
 	return func(w http.ResponseWriter, req *http.Request) {
+		logger.Info("Start placing a wechat order")
+
 		// Find the client to user for wxpay
 		//var appID string
 		// openID is required for JSAPI pay.
