@@ -16,12 +16,8 @@ import (
 )
 
 const (
-	success       = "success"
-	fail          = "fail"
-	tradeFinished = "TRADE_FINISHED"
-	tradeSuccess  = "TRADE_SUCCESS"
-	tradePending  = "WAIT_BUYER_PAY"
-	tradeClosed   = "TRADE_CLOSED"
+	success = "success"
+	fail    = "fail"
 )
 
 // AliPayRouter handles alipay request
@@ -55,9 +51,15 @@ func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter 
 // 	POST /<desktop|mobile|app>/{tier}/{cycle}?<return_url=xxx>
 // `return_url` parameter is only required for apps running on ftacademy.cn
 func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
+	logger := logrus.WithFields(logrus.Fields{
+		"trace": "AliPayRouter.PlaceOrder",
+		"type":  kind.String(),
+	})
+
 	return func(w http.ResponseWriter, req *http.Request) {
 		err := req.ParseForm()
 		if err != nil {
+			logger.Error(err)
 			view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
@@ -67,28 +69,14 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		plan, err := router.findPlan(req)
 
 		if err != nil {
-			logger.WithField("trace", "AliAppOrder").Error(err)
+			logger.Error(err)
 
 			view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
 
-		logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
-
-		//subs, err := router.createOrder(user, plan)
-		//if err != nil {
-		//	router.handleOrderErr(w, err)
-		//	return
-		//}
-		//subs = subs.WithAlipay()
-
 		// Save the subscription
 		clientApp := util.NewClientApp(req)
-		//err = router.model.SaveSubscription(subs, clientApp)
-		//if err != nil {
-		//	view.Render(w, view.NewDBFailure(err))
-		//	return
-		//}
 
 		subs, err := router.model.CreateOrder(
 			user,
@@ -102,7 +90,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
+		logger.Infof("Created order: %+v", subs)
 
 		// Alipay specific handling.
 		returnURL := req.FormValue("return_url")
@@ -123,9 +111,10 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			param := ali.BuildAppPay(tradePay)
 			queryStr, err := router.client.TradeAppPay(param)
 
-			logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", queryStr)
+			logger.Infof("App pay param: %+v\n", queryStr)
 
 			if err != nil {
+				logger.Error(err)
 				view.Render(w, view.NewBadRequest(err.Error()))
 				return
 			}
@@ -147,9 +136,10 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		}
 
 		// Following handles pay from browser, both desktop and mobile.
-		logger.WithField("trace", "PlaceOrder").Infof("Ali Web pay param: %+v\n", payURL)
+		logger.Infof("Ali Web pay param: %+v\n", payURL)
 
 		if err != nil {
+			logger.Error(err)
 			view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
@@ -242,13 +232,13 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 // Notification handles alipay server-side notification.
 func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
-	err := req.ParseForm()
+	logger := logrus.WithFields(logrus.Fields{
+		"trace": "AliPayRouter.Notification",
+	})
 
+	err := req.ParseForm()
 	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"trace": "AliPayRouter.Notification",
-			"event": "ParseRequestParameter",
-		}).Error(err)
+		logger.Error(err)
 
 		w.Write([]byte(fail))
 		return
@@ -257,13 +247,11 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	// If err is nil, then the signature is verified.
 	noti, err := router.client.GetTradeNotification(req)
 	logger.WithFields(logrus.Fields{
-		"trace": "AliPayRouter.Notification",
 		"event": "NotificationBody",
 	}).Infof("+%v", noti)
 
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"trace": "AliPayRouter.Notification",
 			"event": "GetTradeNotification",
 		}).Error(err)
 
@@ -274,9 +262,8 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	// 4、验证app_id是否为该商户本身
 	if noti.AppId != router.appID {
 		logger.WithFields(logrus.Fields{
-			"trace":   "AliPayRouter.Notification",
 			"event":   "AppIDNotMatch",
-			"OrderId": noti.OutTradeNo,
+			"orderId": noti.OutTradeNo,
 		}).Infof("Expected %s, actual %s", router.appID, noti.AppId)
 
 		w.Write([]byte(fail))
@@ -288,9 +275,8 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	// 在支付宝的业务通知中，只有交易通知状态为TRADE_SUCCESS或TRADE_FINISHED时，支付宝才会认定为买家付款成功。
 	if !ali.IsPaySuccess(noti) {
 		logger.WithFields(logrus.Fields{
-			"trace":   "AliPayRouter.Notification",
 			"event":   "PaymentFailed",
-			"OrderId": noti.OutTradeNo,
+			"orderId": noti.OutTradeNo,
 		}).Infof("Status %s", noti.TradeStatus)
 
 		if ali.ShouldRetry(noti) {
@@ -310,9 +296,8 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	// If err is not `not found`, tell ali to resend.
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"trace":   "AliPayRouter.Notification",
 			"event":   "FindSubsCharge",
-			"OrderId": noti.OutTradeNo,
+			"orderId": noti.OutTradeNo,
 		}).Error(err)
 
 		if err == sql.ErrNoRows {
@@ -325,9 +310,8 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
 	if charge.AliNetPrice() != noti.TotalAmount {
 		logger.WithFields(logrus.Fields{
-			"trace":   "AliPayRouter.Notification",
 			"event":   "PaymentFailed",
-			"OrderId": noti.OutTradeNo,
+			"orderId": noti.OutTradeNo,
 		}).Infof("Expected net price: %s, actually received: %s", charge.AliNetPrice(), noti.TotalAmount)
 
 		w.Write([]byte(success))
@@ -338,9 +322,8 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	// If this order already confirmed.
 	if charge.IsConfirmed {
 		logger.WithFields(logrus.Fields{
-			"trace":   "AliPayRouter.Notification",
 			"event":   "AlreadyConfirmed",
-			"OrderId": noti.OutTradeNo,
+			"orderId": noti.OutTradeNo,
 		}).Info("Duplicate notification since this order is already confirmed.")
 
 		w.Write([]byte(success))
@@ -351,9 +334,8 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"trace":   "AliPayRouter.Notification",
 			"event":   "ConfirmOrder",
-			"OrderId": noti.OutTradeNo,
+			"orderId": noti.OutTradeNo,
 		}).Error(err)
 
 		switch err {
@@ -372,7 +354,6 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	}
 
 	logger.WithFields(logrus.Fields{
-		"trace":   "AliPayRouter.Notification",
 		"event":   "PaymentFailed",
 		"OrderId": noti.OutTradeNo,
 	}).Infof("Confirmed at %s, membership from %s to %s", confirmedSubs.ConfirmedAt, confirmedSubs.StartDate, confirmedSubs.EndDate)
