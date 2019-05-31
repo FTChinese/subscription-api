@@ -45,7 +45,7 @@ func init() {
 	}
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
-	log.SetOutput(os.Stdout)
+	logrus.SetOutput(os.Stdout)
 	logrus.WithFields(logrus.Fields{
 		"sandbox":    sandbox,
 		"production": isProd,
@@ -60,6 +60,10 @@ func init() {
 }
 
 func main() {
+	logger := logrus.WithFields(logrus.Fields{
+		"trace": "main",
+	})
+
 	// Get DB connection config.
 	var dbConn util.Conn
 	var err error
@@ -70,7 +74,7 @@ func main() {
 	}
 
 	if err != nil {
-		logrus.WithField("trace", "main").Error(err)
+		logrus.Error(err)
 		os.Exit(1)
 	}
 
@@ -78,19 +82,18 @@ func main() {
 	var emailConn util.Conn
 	err = viper.UnmarshalKey("email.hanqi", &emailConn)
 	if err != nil {
-		logrus.WithField("trace", "main").Error(err)
+		logrus.Error(err)
 		os.Exit(1)
 	}
 
 	db, err := util.NewDB(dbConn)
 	if err != nil {
-		logrus.WithField("trace", "main").Error(err)
+		logrus.Error(err)
 		os.Exit(1)
 	}
-	logrus.
-		WithFields(logrus.Fields{
-			"db": dbConn.Host,
-		}).Info("Connected to MySQL server")
+	logger.WithFields(logrus.Fields{
+		"db": dbConn.Host,
+	}).Info("Connected to MySQL server")
 
 	c := cache.New(cache.DefaultExpiration, 0)
 	post := postoffice.NewPostman(
@@ -197,7 +200,7 @@ func main() {
 		})
 	})
 
-	logrus.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"port": port,
 	}).Info("subscription-api started")
 
