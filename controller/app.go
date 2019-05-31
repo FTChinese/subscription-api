@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/wechat"
@@ -16,36 +17,40 @@ const (
 )
 
 func getWxOAuthApps() map[string]wxlogin.WxApp {
+	logger := logrus.WithFields(logrus.Fields{
+		"package": "controller",
+		"trace":   "getWxOAuthApps",
+	})
 	var mSubs, mFTC, wFTC wxlogin.WxApp
 
 	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
 	err := viper.UnmarshalKey("wxapp.m_subs", &mSubs)
 	if err != nil {
-		logger.WithField("trace", "wxOAuthApps").Error(err)
+		logger.Error(err)
 		os.Exit(1)
 	}
 	if mSubs.Ensure() != nil {
-		logger.WithField("trace", "wxOAuthApps").Error("Mobile app Member subscription has empty fields")
+		logger.Error("Mobile app Member subscription has empty fields")
 		os.Exit(1)
 	}
 	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
 	err = viper.UnmarshalKey("wxapp.m_ftc", &mFTC)
 	if err != nil {
-		logger.WithField("trace", "wxOAuthApps").Error(err)
+		logger.Error(err)
 		os.Exit(1)
 	}
 	if mFTC.Ensure() != nil {
-		logger.WithField("trace", "wxOAuthApps").Error("Mobile app FTC has empty fields")
+		logger.Error("Mobile app FTC has empty fields")
 		os.Exit(1)
 	}
 	// 网站应用 -> FT中文网. This is used for web login
 	err = viper.UnmarshalKey("wxapp.w_ftc", &wFTC)
 	if err != nil {
-		logger.WithField("trace", "wxOAuthApps").Error(err)
+		logger.Error(err)
 		os.Exit(1)
 	}
 	if wFTC.Ensure() != nil {
-		logger.WithField("trace", "wxOAuthApps").Error("Web app FTC has empty fields")
+		logger.Error("Web app FTC has empty fields")
 		os.Exit(1)
 	}
 
@@ -72,35 +77,39 @@ func createWxpayClients() map[string]wechat.Client {
 }
 
 func getWxPayApps() map[string]wechat.PayApp {
+	logger := logrus.WithFields(logrus.Fields{
+		"package": "controller",
+		"trace":   "getWxPayApps",
+	})
 	var mSubs, mFTC, oSupport wechat.PayApp
 
 	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
 	err := viper.UnmarshalKey("wxapp.m_subs", &mSubs)
 	if err != nil {
-		logger.WithField("trace", "getWxPayApps").Error(err)
+		logger.Error(err)
 		os.Exit(1)
 	}
 	if mSubs.Ensure() != nil {
-		logger.WithField("trace", "getWxPayApps").Error("Mobile app Member subscription has empty fields")
+		logger.Error("Mobile app Member subscription has empty fields")
 		os.Exit(1)
 	}
 	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
 	err = viper.UnmarshalKey("wxapp.m_ftc", &mFTC)
 	if err != nil {
-		logger.WithField("trace", "getWxPayApps").Error(err)
+		logger.Error(err)
 		os.Exit(1)
 	}
 	if mFTC.Ensure() != nil {
-		logger.WithField("trace", "getWxPayApps").Error("Mobile app FTC has empty fields")
+		logger.Error("Mobile app FTC has empty fields")
 		os.Exit(1)
 	}
 
 	err = viper.UnmarshalKey("wxapp.o_ftcsupport", &oSupport)
 	if err != nil {
-		logger.WithField("trace", "getWxPayApps").Error(err)
+		logger.Error(err)
 	}
 	if oSupport.Ensure() != nil {
-		logger.WithField("trace", "getWxPayApps").Error("Official account app has empty fields")
+		logger.Error("Official account app has empty fields")
 		os.Exit(1)
 	}
 
@@ -114,15 +123,20 @@ func getWxPayApps() map[string]wechat.PayApp {
 }
 
 func getAliPayApp() ali.App {
+	logger := logrus.WithFields(logrus.Fields{
+		"package": "controller",
+		"trace":   "getAliPayApp",
+	})
+
 	var app ali.App
 
 	if err := viper.UnmarshalKey("alipay", &app); err != nil {
-		logger.WithField("trace", "NewAliRouter").Error(err)
+		logger.Error(err)
 		os.Exit(1)
 	}
 
 	if err := app.Ensure(); err != nil {
-		logger.WithField("trace", "NewAliRouter").Error(err)
+		logger.Error(err)
 		os.Exit(1)
 	}
 
