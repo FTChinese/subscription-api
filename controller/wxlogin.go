@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"strings"
@@ -47,6 +48,10 @@ func NewWxAuth(m model.Env) WxAuthRouter {
 // Use the `X-App-Id` key in request header.
 // Returns a Session wxlogin.Session instance. Client could then fetch user account with the the UnionID field.
 func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
+	logger := logrus.WithFields(logrus.Fields{
+		"trace": "WxAuthRouter.Login",
+	})
+
 	appID := req.Header.Get("X-App-Id")
 	app, ok := router.apps[appID]
 	if !ok {
@@ -54,12 +59,13 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logger.WithField("trace", "Login").Infof("Wechat app: %+v", app)
+	logger.Infof("Wechat app: %+v", app)
 
 	// Get `code` from request body
 	code, err := util.GetJSONString(req.Body, "code")
 
 	if err != nil {
+		logger.Error(err)
 		view.Render(w, view.NewBadRequest(""))
 		return
 	}
@@ -86,7 +92,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 	// Handle wechat response error.
 	if acc.HasError() {
-		logger.WithField("trace", "Login GetAccessToken").Error(acc.Message)
+		logger.Error(acc.Message)
 
 		// Log Wechat error response
 		go router.model.SaveWxStatus(acc.Code, acc.Message)

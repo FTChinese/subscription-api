@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/wechat"
+	"log"
 	"net/http"
 	"os"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/controller"
 	"gitlab.com/ftchinese/subscription-api/model"
@@ -25,7 +26,10 @@ var (
 	sandbox bool
 	version string
 	build   string
-	logger  = log.WithField("project", "subscription-api").WithField("package", "main")
+)
+
+const (
+	port = "8200"
 )
 
 func init() {
@@ -40,9 +44,12 @@ func init() {
 		os.Exit(0)
 	}
 
-	log.SetFormatter(&log.JSONFormatter{})
+	logrus.SetFormatter(&logrus.JSONFormatter{})
 	log.SetOutput(os.Stdout)
-	logger.Infof("Is sandbox: %t. Is production: %t", sandbox, isProd)
+	logrus.WithFields(logrus.Fields{
+		"sandbox":    sandbox,
+		"production": isProd,
+	}).Infof("Initializing environment")
 
 	viper.SetConfigName("api")
 	viper.AddConfigPath("$HOME/config")
@@ -63,7 +70,7 @@ func main() {
 	}
 
 	if err != nil {
-		logger.WithField("trace", "main").Error(err)
+		logrus.WithField("trace", "main").Error(err)
 		os.Exit(1)
 	}
 
@@ -71,18 +78,19 @@ func main() {
 	var emailConn util.Conn
 	err = viper.UnmarshalKey("email.hanqi", &emailConn)
 	if err != nil {
-		logger.WithField("trace", "main").Error(err)
+		logrus.WithField("trace", "main").Error(err)
 		os.Exit(1)
 	}
 
 	db, err := util.NewDB(dbConn)
 	if err != nil {
-		logger.WithField("trace", "main").Error(err)
+		logrus.WithField("trace", "main").Error(err)
 		os.Exit(1)
 	}
-	logger.
-		WithField("trace", "main").
-		Infof("Connected to MySQL server %s", dbConn.Host)
+	logrus.
+		WithFields(logrus.Fields{
+			"db": dbConn.Host,
+		}).Info("Connected to MySQL server")
 
 	c := cache.New(cache.DefaultExpiration, 0)
 	post := postoffice.NewPostman(
@@ -189,8 +197,11 @@ func main() {
 		})
 	})
 
-	logger.WithField("trace", "main").Infof("subscription-api is running on port 8200")
-	log.Fatal(http.ListenAndServe(":8200", r))
+	logrus.WithFields(logrus.Fields{
+		"port": port,
+	}).Info("subscription-api started")
+
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
 func status(w http.ResponseWriter, req *http.Request) {

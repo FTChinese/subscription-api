@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
@@ -113,6 +114,10 @@ func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) ali
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
 func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
+	logger := logrus.WithFields(logrus.Fields{
+		"trace": "PayRouter.sendConfirmationEmail",
+	})
+
 	// If the FTCUserID field is null, it indicates this user
 	// does not have an FTC account bound. You cannot find out
 	// its email address.
@@ -128,14 +133,15 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 
 	parcel, err := user.ConfirmationParcel(subs)
 	if err != nil {
+		logger.Error(err)
 		return err
 	}
 
-	logger.WithField("trace", "SendConirmationLetter").Info("Send subscription confirmation letter")
+	logger.Info("Send subscription confirmation letter")
 
 	err = router.postman.Deliver(parcel)
 	if err != nil {
-		logger.WithField("trace", "SendConfirmationLetter").Error(err)
+		logger.Error(err)
 		return err
 	}
 	return nil
