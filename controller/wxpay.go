@@ -79,6 +79,13 @@ func (router WxPayRouter) findClient(appID string) (wechat.Client, error) {
 
 // PlaceOrder creates order for wechat pay.
 func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFunc {
+	logger := logrus.WithFields(logrus.Fields{
+		"trace": "WxPayRouter.PlaceOrder",
+		"type":  tradeType.String(),
+	})
+
+	logger.Info("Start placing a wechat order")
+
 	return func(w http.ResponseWriter, req *http.Request) {
 		// Find the client to user for wxpay
 		//var appID string
@@ -87,6 +94,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		openID, _ := util.GetJSONString(req.Body, "openId")
 
 		if tradeType == wechat.TradeTypeJSAPI && openID == "" {
+			logger.Error("Requesting JSAPI without providing open id")
 			r := view.NewReason()
 			r.Field = "openId"
 			r.Code = view.CodeMissingField
@@ -98,6 +106,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		payClient, err := router.selectClient(tradeType)
 
 		if err != nil {
+			logger.Error(err)
 			view.Render(w, view.NewInternalError(err.Error()))
 			return
 		}
@@ -109,27 +118,13 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		plan, err := router.findPlan(req)
 		// If pricing plan is not found.
 		if err != nil {
-			logger.WithField("trace", "UnifiedOrder").Error(err)
+			logger.Error(err)
 			view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
 
-		// Create an subscription order for this user
-		// base on chosen plan.
-		//subs, err := router.createOrder(user, plan)
-		//if err != nil {
-		//	router.handleOrderErr(w, err)
-		//	return
-		//}
-		//subs = subs.WithWxpay(payClient.GetApp().AppID)
-
 		// Save this subscription order.
 		clientApp := util.NewClientApp(req)
-		//err = router.model.SaveSubscription(subs, clientApp)
-		//if err != nil {
-		//	view.Render(w, view.NewDBFailure(err))
-		//	return
-		//}
 
 		subs, err := router.model.CreateOrder(
 			user,
@@ -139,9 +134,12 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			null.StringFrom(payClient.GetApp().AppID),
 		)
 		if err != nil {
+			logger.Error(err)
 			router.handleOrderErr(w, err)
 			return
 		}
+
+		logger.Infof("Created order: %+v", subs)
 
 		// Wxpay specific handling.
 		// Prepare the data used to obtain prepay order from wechat.
@@ -159,7 +157,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// openID will be added conditionally.
 		param := unifiedOrder.ToParam()
 
-		logger.WithField("trace", "UnifiedOrder").Infof("Unified order params: %+v", param)
+		logger.WithField("param", param).Info("Create parameter for wechat")
 
 		// Send order to wx
 		// UnifiedOrder checks if `return_code` is SUCCESS/FAIL,
@@ -168,7 +166,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		resp, err := payClient.UnifiedOrder(param)
 
 		if err != nil {
-			logger.WithField("trace", "UnifiedOrder").Error(err)
+			logger.Error(err)
 
 			view.Render(w, view.NewBadRequest(err.Error()))
 
@@ -181,6 +179,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		go router.model.SavePrepayResp(subs.OrderID, uor)
 
 		if r := uor.Validate(payClient.GetApp()); r != nil {
+			logger.Info("Invalid unified order response")
 			view.Render(w, view.NewUnprocessable(r))
 			return
 		}
@@ -316,6 +315,9 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
 func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
 
+	logger := logrus.WithFields(logrus.Fields{
+		"trace": "WxPayRouter.Notification()",
+	})
 	resp := wxpay.Notifies{}
 
 	// Decode Wechat XML request body.
@@ -323,18 +325,17 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	params, err := wechat.DecodeXML(req.Body)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"trace": "WxPayRouter.Notification",
-			"event": "Failed parsing wechat request",
+			"event": "DecodeXML",
 		}).Error(err)
+
 		w.Write([]byte(resp.NotOK(err.Error())))
 
 		return
 	}
 
 	logger.WithFields(logrus.Fields{
-		"trace": "WxPayRouter.Notification",
-		"event": "Parsed wechat notification",
-	}).Infof("%v", params)
+		"param": params,
+	}).Info("Wechat notification decoded")
 
 	// Turn the map to struct
 	noti := wechat.NewNotification(params)
@@ -343,8 +344,7 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	err = noti.IsStatusValid()
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"trace":   "WxPayRouter.Notification",
-			"event":   "Invalid Status",
+			"event":   "InvalidStatus",
 			"orderId": noti.FTCOrderID,
 		}).Error(err)
 		w.Write([]byte(resp.OK()))
@@ -356,8 +356,7 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"trace":   "WxPayRouter.Notification",
-			"event":   "Find Wechat Client",
+			"event":   "FindWechatClient",
 			"orderId": noti.FTCOrderID,
 		}).Error(err)
 		w.Write([]byte(resp.NotOK(err.Error())))
@@ -371,7 +370,6 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	if err := payClient.VerifyNotification(noti); err != nil {
 		logger.WithFields(logrus.Fields{
-			"trace":   "WxPayRouter.Notification",
 			"event":   "VerifyNotification",
 			"orderId": noti.FTCOrderID,
 		}).Error(err)
@@ -380,14 +378,6 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// Verify appid, mch_id, trade_type, total_fee.
-	//if r := router.mSubsClient.ValidateResponse(params); r != nil {
-	//	logger.WithField("trace", "Notification").Error(r.GetMessage())
-	//	w.Write([]byte(resp.OK()))
-	//
-	//	return
-	//}
-
 	// Get out_trade_no to retrieve order.
 	// Check the order's confirmed_utc field.
 	// If confirmed_utc is empty, get time_end from params and set confirmed_utc to it.
@@ -395,7 +385,6 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	charge, err := router.model.FindSubsCharge(noti.FTCOrderID.String)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"trace":   "WxPayRouter.Notification",
 			"event":   "FindSubsCharge",
 			"orderId": noti.FTCOrderID,
 		}).Error(err)
@@ -411,7 +400,6 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	if !noti.IsPriceMatched(charge.WxNetPrice()) {
 
 		logger.WithFields(logrus.Fields{
-			"trace":   "WxPayRouter.Notification",
 			"event":   "PriceNotMatch",
 			"orderId": noti.FTCOrderID,
 		}).Errorf("Expected: %d, actual: %d", charge.WxNetPrice(), noti.TotalFee.Int64)
@@ -422,7 +410,6 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	if charge.IsConfirmed {
 		logger.WithFields(logrus.Fields{
-			"trace":   "WxPayRouter.Notification",
 			"event":   "AlreadyConfirmed",
 			"orderId": noti.FTCOrderID,
 		}).Info("Duplicate notification since this order is already confirmed.")
@@ -438,7 +425,6 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"trace":   "WxPayRouter.Notification",
 			"event":   "ConfirmOrder",
 			"orderId": noti.FTCOrderID,
 		}).Error(err)
@@ -461,7 +447,6 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 	// Send a letter to this user.
 
 	logger.WithFields(logrus.Fields{
-		"trace":   "WxPayRouter.Notification",
 		"event":   "OrderConfirmed",
 		"orderId": noti.FTCOrderID,
 	}).Infof("Confirmed at %s, membership from %s to %s", confirmedSubs.ConfirmedAt, confirmedSubs.StartDate, confirmedSubs.EndDate)
@@ -475,9 +460,14 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 // Only transaction_id or out_trade_no is required.
 func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
+	logger := logrus.WithFields(logrus.Fields{
+		"trace": "WxPayRouter.OrderQuery()",
+	})
+
 	orderID, err := GetURLParam(req, "orderId").ToString()
 
 	if err != nil {
+		logger.Error(err)
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
@@ -491,6 +481,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 
 	payClient, err := router.findClient(appID)
 	if err != nil {
+		logger.Error(err)
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
@@ -507,14 +498,14 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 
 	// If there are any errors when querying order.
 	if err != nil {
-		logger.WithField("trace", "OrderQuery").Error(err)
+		logger.Error(err)
 
 		view.Render(w, view.NewInternalError(err.Error()))
 
 		return
 	}
 
-	logger.WithField("trace", "OrderQuery").Infof("Order query result: %+v", respParams)
+	logger.WithField("param", respParams).Infof("Wechat order found")
 
 	// Response:
 	// {message: "", {field: status, code: fail} }
@@ -523,6 +514,8 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	go router.model.SaveWxQueryResp(resp)
 
 	if r := resp.Validate(payClient.GetApp()); r != nil {
+		logger.Info("Response invalid")
+
 		if r.Field == "result" && r.Code == "ORDERNOTEXIST" {
 			view.Render(w, view.NewNotFound())
 			return
