@@ -9,10 +9,10 @@ LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD}"
 
 .PHONY: build run linux deploy cofig clean
 build :
-	go build $(LDFLAGS) -o $(build_dir)/mac/$(BINARY) -v .
+	go build $(LDFLAGS) -o $(build_dir)/$(BINARY) -v .
 
 run :
-	./$(build_dir)/mac/${BINARY}
+	./$(build_dir)/${BINARY}
 
 sandbox :
 	./$(build_dir)/mac/$(BINARY) -sandbox
