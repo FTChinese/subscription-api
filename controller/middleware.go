@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	userIDKey  = "X-User-Id"
+	ftcIDKey   = "X-User-Id"
 	unionIDKey = "X-Union-Id"
 	appIDKey   = "X-App-Id"
 )
@@ -35,7 +35,7 @@ func NoCache(next http.Handler) http.Handler {
 // or the value is empty.
 func UserOrUnionID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
-		userID := req.Header.Get(userIDKey)
+		userID := req.Header.Get(ftcIDKey)
 		unionID := req.Header.Get(unionIDKey)
 
 		userID = strings.TrimSpace(userID)
@@ -48,7 +48,7 @@ func UserOrUnionID(next http.Handler) http.Handler {
 			return
 		}
 
-		req.Header.Set(userIDKey, userID)
+		req.Header.Set(ftcIDKey, userID)
 
 		next.ServeHTTP(w, req)
 	}
