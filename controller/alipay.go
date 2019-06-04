@@ -176,7 +176,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 //	logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
 //
 //	// Get user id from request header
-//	uID := req.Header.Get(userIDKey)
+//	uID := req.Header.Get(ftcIDKey)
 //	wID := req.Header.Get(unionIDKey)
 //
 //	userID := null.NewString(uID, uID != "")
