@@ -18,8 +18,7 @@ const (
 
 func getWxOAuthApps() map[string]wxlogin.WxApp {
 	logger := logrus.WithFields(logrus.Fields{
-		"package": "controller",
-		"trace":   "getWxOAuthApps",
+		"trace": "getWxOAuthApps",
 	})
 	var mSubs, mFTC, wFTC wxlogin.WxApp
 
