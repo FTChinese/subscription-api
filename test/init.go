@@ -36,7 +36,17 @@ func init() {
 		panic(err)
 	}
 
-	DB, err = sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
+	//DB, err = sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
+	//if err != nil {
+	//	panic(err)
+	//}
+	var dbConn util.Conn
+	err = viper.UnmarshalKey("mysql.dev", &dbConn)
+	if err != nil {
+		panic(err)
+	}
+
+	DB, err = util.NewDB(dbConn)
 	if err != nil {
 		panic(err)
 	}
