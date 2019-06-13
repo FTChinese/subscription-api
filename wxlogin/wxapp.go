@@ -86,15 +86,21 @@ func (a WxApp) GetAccessToken(code string) (OAuthAccess, error) {
 	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
 	if errs != nil {
-		logger.WithField("trace", "GetAccessToken").Error(errs)
+		logger.WithField("trace", "WxApp.GetAccessToken").Error(errs)
 
 		return acc, errs[0]
 	}
 
-	logger.Infof("Response body: %s\n", body)
+	// {"access_token":"22_JJVz_GH32Bt89Cfj_kaSYr5V-j8_iNphiYzQ3i3rMNRdk88k8GZw_v5qhuR9e3X5mZtn4-QTIyqgzmruxSlVZ0shrU9v3mzV7dLY46t4K0M",
+	// "expires_in":7200,
+	// "refresh_token":"22_FfPqWuDBKDZtCwsTyO9tCtWolvi62kXTioDSKN-OO00xxQcLCovxWxg_FWt17Ca5chDjKiQ_aQMyErN4NIJYTCMI0VAcN2Z5Yv2W9kj-AyM",
+	// "openid":"ofP-k1LSVS-ObmrySM1aXKbv1Hjs",
+	// "scope":"snsapi_login",
+	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"}
+	logger.WithField("trace", "WxApp.GetAccessToken").Infof("Wechat response: %s\n", body)
 
 	if err := json.Unmarshal([]byte(body), &acc); err != nil {
-		logger.WithField("trace", "GetAccessToken").Error(errs)
+		logger.WithField("trace", "WxApp.GetAccessToken").Error(errs)
 		return acc, err
 	}
 
@@ -107,6 +113,7 @@ func (a WxApp) GetAccessToken(code string) (OAuthAccess, error) {
 }
 
 // GetUserInfo from Wechat by open id.
+// It seems wechat return empty fields as empty string.
 func (a WxApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 	u := a.userInfoURL(accessToken, openID)
 
@@ -114,16 +121,28 @@ func (a WxApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 
 	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
-	logger.WithField("trace", "GetUserInfo").Infof("Wechat user info: %s", body)
+	// {
+	// "openid":"ofP-k1LSVS-ObmrySM1aXKbv1Hjs",
+	// "nickname":"倪卫国的小号",
+	// "sex":0,
+	// "language":"zh_CN",
+	// "city":"",
+	// "province":"",
+	// "country":"",
+	// "headimgurl":"http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTLvOQseDrWKNS8H4msGicM2EI4DdaC5q5dzSoV8icVicmde2rTaERvXGG7jbLOk89Ish5ppRy1rVGIDA\\/132",
+	// "privilege":[],
+	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"
+	// }
+	logger.WithField("trace", "WxApp.GetUserInfo").Infof("Wechat user info: %s", body)
 
 	if errs != nil {
-		logger.WithField("trace", "GetUserInfo").Error(errs)
+		logger.WithField("trace", "WxApp.GetUserInfo").Error(errs)
 
 		return info, errs[0]
 	}
 
 	if err := json.Unmarshal([]byte(body), &info); err != nil {
-		logger.WithField("trace", "GetUserInfo").Error(errs)
+		logger.WithField("trace", "WxApp.GetUserInfo").Error(errs)
 		return info, err
 	}
 
