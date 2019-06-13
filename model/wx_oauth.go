@@ -1,30 +1,15 @@
 package model
 
 import (
+	"gitlab.com/ftchinese/subscription-api/query"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 )
 
 // SaveWxAccess saves the access token related data after acquired from wechat api.
 func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c util.ClientApp) error {
-	query := `
-	INSERT INTO user_db.wechat_access
-	SET session_id = UNHEX(?),
-		app_id = ?,
-		access_token = ?,
-		expires_in = ?,
-		refresh_token = ?,
-		open_id = ?,
-		scope = ?,
-		union_id = ?,
-		client_type = ?,
-		client_version = ?,
-		user_ip = INET6_ATON(?),
-		user_agent = ?,
-		created_utc = ?,
-		updated_utc = ?`
 
-	_, err := env.db.Exec(query,
+	_, err := env.db.Exec(query.InsertWxAccess,
 		acc.SessionID,
 		appID,
 		acc.AccessToken,
@@ -42,7 +27,7 @@ func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c util.Client
 	)
 
 	if err != nil {
-		logger.WithField("trace", "SaveAccess").Error(err)
+		logger.WithField("trace", "Env.SaveAccess").Error(err)
 		return err
 	}
 
@@ -55,23 +40,12 @@ func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c util.Client
 // What if iOS and Android used the same Wechat app? Will they use the same access token or different one?
 // Open ID is always the same the under the same Wechat app.
 func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error) {
-	query := `
-	SELECT LOWER(HEX(session_id)) AS sessionId, 
-	    access_token AS accessToken,
-		expires_in AS expiresIn,
-		refresh_token AS refreshToken,
-		open_id AS opendId,
-		scope AS scope,
-		union_id AS unionId,
-		created_utc AS createdUtc,
-		updated_utc AS updatedUtc
-	FROM user_db.wechat_access
-	WHERE session_id = UNHEX(?)
-		AND app_id = ?
-	LIMIT 1`
 
 	var acc wxlogin.OAuthAccess
-	err := env.db.QueryRow(query, sessionID, appID).Scan(
+	err := env.db.QueryRow(query.SelectWxAccess,
+		sessionID,
+		appID,
+	).Scan(
 		&acc.SessionID,
 		&acc.AccessToken,
 		&acc.ExpiresIn,
@@ -84,7 +58,7 @@ func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error
 	)
 
 	if err != nil {
-		logger.WithField("trace", "LoadAccess").Error(err)
+		logger.WithField("trace", "Env.LoadAccess").Error(err)
 		return acc, err
 	}
 
@@ -93,20 +67,14 @@ func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error
 
 // UpdateWxAccess saves refreshed access token.
 func (env Env) UpdateWxAccess(sessionID, accessToken string) error {
-	query := `
-	UPDATE user_db.wechat_access
-	SET access_token = ?,
-	    updated_utc = UTC_TIMESTAMP()
-	WHERE session_id = UNHEX(?)
-	LIMIT 1`
 
-	_, err := env.db.Exec(query,
+	_, err := env.db.Exec(query.UpdateWxAccess,
 		accessToken,
 		sessionID,
 	)
 
 	if err != nil {
-		logger.WithField("trace", "UpdateAccess").Error(err)
+		logger.WithField("trace", "Env.UpdateAccess").Error(err)
 		return err
 	}
 
@@ -116,29 +84,8 @@ func (env Env) UpdateWxAccess(sessionID, accessToken string) error {
 // SaveWxUser from wechat API.
 // Since a user can authorize multiple times, use ON DUPLICATE to handle unique key constraint.
 func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
-	query := `
-	INSERT INTO user_db.wechat_userinfo
-	SET union_id = ?,
-		nickname = ?,
-		avatar_url = ?,
-		gender = ?,
-		country = ?,
-		province = ?,
-		city = ?,
-		privilege = NULLIF(?, ''),
-	    created_utc = UTC_TIMESTAMP(),
-	    updated_utc = UTC_TIMESTAMP()
-	ON DUPLICATE KEY UPDATE
-		nickname = ?,
-		avatar_url = ?,
-		gender = ?,
-		country = ?,
-		province = ?,
-		city = ?,
-		privilege = NULLIF(?, ''),
-		updated_utc = UTC_TIMESTAMP()`
 
-	_, err := env.db.Exec(query,
+	_, err := env.db.Exec(query.InsertWxUser,
 		u.UnionID,
 		u.NickName,
 		u.AvatarURL,
@@ -157,7 +104,7 @@ func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "SaveWxUser").Error(err)
+		logger.WithField("trace", "Env.SaveWxUser").Error(err)
 		return err
 	}
 
@@ -166,19 +113,8 @@ func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
 
 // UpdateWxUser update data of one union id.
 func (env Env) UpdateWxUser(u wxlogin.UserInfo) error {
-	query := `
-	UPDATE user_db.wechat_userinfo
-	SET nickname = ?,
-		gender = ?,
-		country = ?,
-		province = ?,
-		city = ?,
-		avatar_url = ?,
-		privilege = NULLIF(?, ''),
-	    updated_utc = UTC_TIMESTAMP()
-	WHERE union_id = ?`
 
-	_, err := env.db.Exec(query,
+	_, err := env.db.Exec(query.UpdateWxUser,
 		u.NickName,
 		u.GetGender(),
 		u.Country,
@@ -190,7 +126,7 @@ func (env Env) UpdateWxUser(u wxlogin.UserInfo) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "UpdateUserInfo").Error(err)
+		logger.WithField("trace", "Env.UpdateUserInfo").Error(err)
 		return err
 	}
 
@@ -199,19 +135,14 @@ func (env Env) UpdateWxUser(u wxlogin.UserInfo) error {
 
 // SaveWxStatus saves Wechat OAuth API error response into data so that we could know what errors on hell Wechat actually produced.
 func (env Env) SaveWxStatus(code int64, message string) error {
-	query := `
-	INSERT INTO user_db.wechat_error_log
-	SET code = ?,
-		message = ?,
-		created_utc = UTC_TIMESTAMP()`
 
-	_, err := env.db.Exec(query,
+	_, err := env.db.Exec(query.InsertWxStatus,
 		code,
 		message,
 	)
 
 	if err != nil {
-		logger.WithField("trace", "SaveWxError").Error(err)
+		logger.WithField("trace", "Env.SaveWxError").Error(err)
 		return err
 	}
 
