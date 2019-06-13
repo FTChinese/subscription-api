@@ -130,6 +130,21 @@ func TestEnv_UpdateWxAccess(t *testing.T) {
 	}
 }
 
+func TestEnv_SaveWxUserEmoji(t *testing.T) {
+	u := wxlogin.UserInfo{
+		UnionID:    test.MyProfile.UnionID,
+		NickName:   "😈🤠",
+		AvatarURL:  test.GenAvatar(),
+		Sex:        0,
+		Country:    "China",
+		Province:   "Beijing",
+		City:       "Beijing",
+		Privileges: []string{},
+	}
+
+	t.Logf("Emoji: %+v", u)
+}
+
 func TestEnv_SaveWxUser(t *testing.T) {
 	env := Env{
 		db: test.DB,
@@ -151,11 +166,19 @@ func TestEnv_SaveWxUser(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Save Existing Wechat User",
+			name: "Save Emoji",
 			args: args{
-				u: test.MyProfile.WxInfo(),
+				u: wxlogin.UserInfo{
+					UnionID:    test.MyProfile.UnionID,
+					NickName:   "😈🤠",
+					AvatarURL:  test.GenAvatar(),
+					Sex:        0,
+					Country:    "China",
+					Province:   "Beijing",
+					City:       "Beijing",
+					Privileges: []string{},
+				},
 			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
