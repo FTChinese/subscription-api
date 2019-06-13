@@ -16,8 +16,7 @@ type Conn struct {
 	Pass string `mapstructure:"pass"`
 }
 
-// NewDB creates a db connection
-func NewDB(c Conn) (*sql.DB, error) {
+func (c Conn) DSN() string {
 	cfg := &mysql.Config{
 		User:   c.User,
 		Passwd: c.Pass,
@@ -32,10 +31,17 @@ func NewDB(c Conn) (*sql.DB, error) {
 		Params: map[string]string{
 			"time_zone": `'+00:00'`,
 		},
+		Collation:            "utf8mb4_unicode_ci",
 		AllowNativePasswords: true,
 	}
 
-	db, err := sql.Open("mysql", cfg.FormatDSN())
+	return cfg.FormatDSN()
+}
+
+// NewDB creates a db connection
+func NewDB(c Conn) (*sql.DB, error) {
+
+	db, err := sql.Open("mysql", c.DSN())
 
 	if err != nil {
 		return nil, err
