@@ -41,6 +41,15 @@ func GenToken() string {
 	return token
 }
 
+var gender = []string{"men", "women"}
+
+func GenAvatar() string {
+	n := randomdata.Number(1, 35)
+	g := gender[randomdata.Number(0, 2)]
+
+	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
+}
+
 func GenMember(u paywall.User, expired bool) paywall.Membership {
 	m := paywall.NewMember(u)
 	m.Tier = YearlyStandard.Tier
