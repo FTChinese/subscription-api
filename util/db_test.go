@@ -1,10 +1,9 @@
 package util
 
 import (
-	"fmt"
-	"github.com/go-sql-driver/mysql"
-	"github.com/spf13/viper"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -16,7 +15,7 @@ func init() {
 	}
 }
 
-func TestViporConfig(t *testing.T) {
+func TestConn(t *testing.T) {
 	var conn Conn
 	err := viper.UnmarshalKey("mysql.dev", &conn)
 	if err != nil {
@@ -33,25 +32,38 @@ func TestViporConfig(t *testing.T) {
 	t.Logf("%+v", conn)
 }
 
-func TestDBConn(t *testing.T) {
-	var c Conn
-	err := viper.UnmarshalKey("mysql.dev", &c)
-	if err != nil {
-		t.Error(err)
-		return
+func TestConn_DSN(t *testing.T) {
+	type fields struct {
+		Host string
+		Port int
+		User string
+		Pass string
 	}
-	t.Logf("Connection: %+v", c)
-
-	cfg := &mysql.Config{
-		User:   c.User,
-		Passwd: c.Pass,
-		Net:    "tcp",
-		Addr:   fmt.Sprintf("%s:%d", c.Host, c.Port),
-		Params: map[string]string{
-			"time_zone": `'+00:00'`,
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		{
+			name: "Data Source Name",
+			fields: fields{
+				Host: "127.0.0.1",
+				Port: 3306,
+				User: "user",
+				Pass: "12345678",
+			},
 		},
-		AllowNativePasswords: true,
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := Conn{
+				Host: tt.fields.Host,
+				Port: tt.fields.Port,
+				User: tt.fields.User,
+				Pass: tt.fields.Pass,
+			}
+			got := c.DSN()
 
-	t.Logf("%s", cfg.FormatDSN())
+			t.Logf("DSN: %s", got)
+		})
+	}
 }
