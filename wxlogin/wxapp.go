@@ -163,7 +163,7 @@ func (a WxApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
 	}
 
 	if err := json.Unmarshal([]byte(body), &acc); err != nil {
-		logger.WithField("trace", "RefreshAccess").Error(err)
+		logger.WithField("trace", "WxApp.RefreshAccess").Error(err)
 
 		return acc, err
 	}
@@ -180,12 +180,12 @@ func (a WxApp) IsValidAccess(accessToken, openID string) bool {
 	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
 	if errs != nil {
-		logger.WithField("trace", "IsInvalidAccess").Error(errs)
+		logger.WithField("trace", "WxApp.IsInvalidAccess").Error(errs)
 		return false
 	}
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
-		logger.WithField("trace", "IsValidAccess")
+		logger.WithField("trace", "WxApp.IsValidAccess").Error(err)
 		return false
 	}
 
