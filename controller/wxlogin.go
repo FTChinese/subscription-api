@@ -47,11 +47,19 @@ func NewWxAuth(m model.Env) WxAuthRouter {
 // Since the code is bound to the app id, this API must know which which app id to use to perform the folowing steps.
 // Use the `X-App-Id` key in request header.
 // Returns a Session wxlogin.Session instance. Client could then fetch user account with the the UnionID field.
+//
+// Request:
+// body {code: xxxxx}
+// header X-App-Id: xxxx
+//
+// Error:
+// 422: code_missing_field; code_invalid; openId_invalid
 func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	logger := logrus.WithFields(logrus.Fields{
 		"trace": "WxAuthRouter.Login",
 	})
 
+	// Find this app.
 	appID := req.Header.Get("X-App-Id")
 	app, ok := router.apps[appID]
 	if !ok {
@@ -146,7 +154,10 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 // Refresh allows user to refresh userinfo.
 // Request header must contain `X-App-Id`.
-// Input {openId: string}
+// Input {sessionId: string}
+//
+// Error
+// 422: refresh_token_invalid
 func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	appID := req.Header.Get("X-App-Id")
 	app, ok := router.apps[appID]
@@ -213,6 +224,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 
 	// Handle wechat response error.
 	// Caused by: invalid refresh token.
+	// Client should ask user to re-authorize
 	if acc.HasError() {
 		go router.model.SaveWxStatus(acc.Code, acc.Message)
 
