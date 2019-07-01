@@ -27,6 +27,7 @@ require (
 	github.com/spf13/afero v1.2.1 // indirect
 	github.com/spf13/viper v1.3.1
 	github.com/stretchr/testify v1.3.0 // indirect
+	github.com/stripe/stripe-go v61.9.0+incompatible // indirect
 	github.com/tidwall/gjson v1.1.5
 	github.com/tidwall/match v1.0.1 // indirect
 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
