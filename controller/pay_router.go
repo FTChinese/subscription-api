@@ -125,7 +125,7 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 		return nil
 	}
 	// Find this user's personal data
-	user, err := router.model.FindUser(subs.CompoundID)
+	user, err := router.model.FindFtcUser(subs.CompoundID)
 
 	if err != nil {
 		return err
