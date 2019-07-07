@@ -11,7 +11,7 @@ import (
 )
 
 // CreateOrder creates an order for a user with the selected plan and payment method.
-func (env Env) CreateOrder(user paywall.User, plan paywall.Plan, payMethod enum.PayMethod, clientApp util.ClientApp, wxAppId null.String) (paywall.Subscription, error) {
+func (env Env) CreateOrder(user paywall.UserID, plan paywall.Plan, payMethod enum.PayMethod, clientApp util.ClientApp, wxAppId null.String) (paywall.Subscription, error) {
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "Env.CreateOrder").Error(err)
@@ -88,7 +88,7 @@ func (env Env) CreateOrder(user paywall.User, plan paywall.Plan, payMethod enum.
 // UpgradePlan builds upgrade preview for a standard user who
 // is trying to upgrade to premium.
 // DO remember to rollback!
-func (env Env) UpgradePlan(user paywall.User) (paywall.UpgradePlan, error) {
+func (env Env) UpgradePlan(user paywall.UserID) (paywall.UpgradePlan, error) {
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "Env.CreateOrder").Error(err)
@@ -140,7 +140,7 @@ func (env Env) UpgradePlan(user paywall.User) (paywall.UpgradePlan, error) {
 // which nearly won't happen since we limit renewal to 3 years
 // at most. 3 years of standard membership costs 258 * 3 < 1998.
 // It is provided here just for completeness.
-func (env Env) DirectUpgradeOrder(user paywall.User, plan paywall.UpgradePlan, clientApp util.ClientApp) (paywall.Subscription, error) {
+func (env Env) DirectUpgradeOrder(user paywall.UserID, plan paywall.UpgradePlan, clientApp util.ClientApp) (paywall.Subscription, error) {
 
 	subs, err := paywall.NewSubsUpgrade(user, plan)
 	if err != nil {
@@ -186,6 +186,28 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 	err := env.db.QueryRow(
 		env.query.SelectSubsPrice(),
 		orderID,
+	).Scan(
+		&c.ListPrice,
+		&c.NetPrice,
+		&c.IsConfirmed,
+	)
+
+	if err != nil {
+		logger.WithField("trace", "Env.FindSubsCharge").Error(err)
+		return c, err
+	}
+
+	return c, nil
+}
+
+// FindOrderBilling retrieves an order's billing data
+// by order id and ftc user id.
+func (env Env) FindOrderBilling(orderID, ftcID string) (paywall.Charge, error) {
+	var c paywall.Charge
+	err := env.db.QueryRow(
+		env.query.FtcUserOrderBilling(),
+		orderID,
+		ftcID,
 	).Scan(
 		&c.ListPrice,
 		&c.NetPrice,
