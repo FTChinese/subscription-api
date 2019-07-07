@@ -33,9 +33,9 @@ func GenerateOrderID() (string, error) {
 }
 
 type Charge struct {
-	ListPrice   float64
-	NetPrice    float64
-	IsConfirmed bool
+	ListPrice   float64 `json:"listPrice"`
+	NetPrice    float64 `json:"netPrice"`
+	IsConfirmed bool    `json:"-"`
 }
 
 // AliNetPrice converts Charged price to ailpay format
@@ -43,8 +43,8 @@ func (c Charge) AliNetPrice() string {
 	return strconv.FormatFloat(c.NetPrice, 'f', 2, 32)
 }
 
-// WxNetPrice converts Charged price to int64 in cent for comparison with wx notification.
-func (c Charge) WxNetPrice() int64 {
+// PriceInCent converts Charged price to int64 in cent for comparison with wx notification.
+func (c Charge) PriceInCent() int64 {
 	return int64(c.NetPrice * 100)
 }
 
@@ -58,40 +58,43 @@ func (c Charge) WxNetPrice() int64 {
 // All those combination add up to 3 * 2 * 3 * 3 = 54
 type Subscription struct {
 	// Fields common to all.
-	OrderID string
-	User
+	OrderID string `json:"id"`
+	UserID
 	Charge
-	TierToBuy    enum.Tier
-	BillingCycle enum.Cycle
-	CycleCount   int64 // Default to 1. Change it for upgrade
-	ExtraDays    int64 // Default to 1. Change it for upgraded.
+	TierToBuy    enum.Tier  `json:"tier"`
+	BillingCycle enum.Cycle `json:"cycle"`
+	CycleCount   int64      `json:"cycleCount"` // Default to 1. Change it for upgrade
+	ExtraDays    int64      `json:"extraDays"`  // Default to 1. Change it for upgraded.
 
 	// The category of this order.
-	Kind SubsKind
+	Kind SubsKind `json:"usageType"`
 
 	// Fields only applicable to upgrade.
-	UpgradeSource  []string   // for upgrade
-	UpgradeBalance null.Float // for upgrade
+	UpgradeSource  []string   `json:"-"`       // for upgrade
+	UpgradeBalance null.Float `json:"balance"` // for upgrade
 
 	// Payment method
-	PaymentMethod enum.PayMethod
-	WxAppID       null.String // Wechat specific
+	PaymentMethod enum.PayMethod `json:"paymentMethod"`
+	WxAppID       null.String    `json:"-"` // Wechat specific
+
+	CreatedAt chrono.Time `json:"createdAt"`
 
 	// Fields populated only after payment finished.
-	ConfirmedAt chrono.Time // When the payment is confirmed.
-	StartDate   chrono.Date // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	EndDate     chrono.Date // Membership end date for this order. Depends on start date.
+	ConfirmedAt chrono.Time `json:"confirmedAt"` // When the payment is confirmed.
+	StartDate   chrono.Date `json:"startDate"`   // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
+	EndDate     chrono.Date `json:"endDate"`     // Membership end date for this order. Depends on start date.
 }
 
 // NewSubs creates a new subscription with shared fields
 // populated. PaymentMethod, Kind, UpgradeSource,
 // UpgradeBalance are left to the controller layer.
-func NewSubs(u User, p Plan) (Subscription, error) {
+func NewSubs(u UserID, p Plan) (Subscription, error) {
 	s := Subscription{
 		TierToBuy:    p.Tier,
 		BillingCycle: p.Cycle,
 		CycleCount:   1,
 		ExtraDays:    1,
+		CreatedAt:    chrono.TimeNow(),
 	}
 
 	s.CompoundID = u.CompoundID
@@ -112,7 +115,7 @@ func NewSubs(u User, p Plan) (Subscription, error) {
 }
 
 // NewSubsUpgrade creates an upgrade order.
-func NewSubsUpgrade(u User, p UpgradePlan) (Subscription, error) {
+func NewSubsUpgrade(u UserID, p UpgradePlan) (Subscription, error) {
 	s := Subscription{
 		TierToBuy:     p.Tier,
 		BillingCycle:  p.Cycle,
