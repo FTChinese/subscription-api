@@ -171,11 +171,18 @@ func main() {
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(controller.FtcID)
 		r.Post("/order/{tier}/{cycle}", stripeRouter.PlaceOrder)
+
+		r.Post("/subscriptions", stripeRouter.CreateSubscription)
+
 		r.Put("/customers", stripeRouter.GetCustomerID)
 		r.Get("/customers/{id}/cards", stripeRouter.ListCustomerCards)
 		r.Post("/customers/{id}/sources", stripeRouter.AddCard)
 		r.Post("/customers/{id}/ephemeral_keys", stripeRouter.IssueKey)
+
 		r.Post("/payment_intents", stripeRouter.CreatePayIntent)
+
+		//r.Get("/payment_methods/{id}", stripeRouter.GetPaymentMethod)
+
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
