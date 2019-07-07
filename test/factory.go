@@ -50,7 +50,7 @@ func GenAvatar() string {
 	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
 }
 
-func GenMember(u paywall.User, expired bool) paywall.Membership {
+func GenMember(u paywall.UserID, expired bool) paywall.Membership {
 	m := paywall.NewMember(u)
 	m.Tier = YearlyStandard.Tier
 	m.Cycle = YearlyStandard.Cycle

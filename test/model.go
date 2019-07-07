@@ -19,7 +19,7 @@ func NewModel(db *sql.DB) Model {
 	}
 }
 
-func (m Model) ClearUser(u paywall.User) error {
+func (m Model) ClearUser(u paywall.UserID) error {
 	query := `
 	DELETE FROM cmstmp01.userinfo
 	WHERE user_id = ?
@@ -35,7 +35,7 @@ func (m Model) ClearUser(u paywall.User) error {
 	return nil
 }
 
-func (m Model) ClearMember(u paywall.User) error {
+func (m Model) ClearMember(u paywall.UserID) error {
 	q := `
 	DELETE FROM premium.ftc_vip
 	WHERE vip_id = ?
@@ -50,7 +50,7 @@ func (m Model) ClearMember(u paywall.User) error {
 	return nil
 }
 
-func (m Model) ClearOrder(u paywall.User) error {
+func (m Model) ClearOrder(u paywall.UserID) error {
 	q := `
 	DELETE FROM premium.ftc_trade
 	WHERE user_id IN (?, ?)`
@@ -98,7 +98,7 @@ func (m Model) CreateUser(u paywall.FtcUser) error {
 		u.UserID,
 		u.UnionID,
 		u.Email,
-		"12345678",
+		p.Password,
 		u.UserName,
 		app.ClientType,
 		app.Version,
