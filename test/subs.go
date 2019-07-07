@@ -12,7 +12,7 @@ import (
 // ftcOnlyId       wechatPay   create
 // wechatOnlyId    aliPay      renew
 // boundId					   upgrade
-func BuildSubs(u paywall.User, pm enum.PayMethod, k paywall.SubsKind) paywall.Subscription {
+func BuildSubs(u paywall.UserID, pm enum.PayMethod, k paywall.SubsKind) paywall.Subscription {
 
 	subs, err := paywall.NewSubs(
 		u,
@@ -35,7 +35,7 @@ func BuildSubs(u paywall.User, pm enum.PayMethod, k paywall.SubsKind) paywall.Su
 }
 
 // SubsRandom builds a random subscription order.
-func SubsRandom(u paywall.User) paywall.Subscription {
+func SubsRandom(u paywall.UserID) paywall.Subscription {
 	return BuildSubs(
 		u,
 		enum.PayMethod(randomdata.Number(1, 3)),
@@ -45,7 +45,7 @@ func SubsRandom(u paywall.User) paywall.Subscription {
 
 // SubsCreate builds an order that is used to create a new
 // member
-func SubsCreate(u paywall.User) paywall.Subscription {
+func SubsCreate(u paywall.UserID) paywall.Subscription {
 	return BuildSubs(
 		u,
 		enum.PayMethod(randomdata.Number(1, 3)),
@@ -54,7 +54,7 @@ func SubsCreate(u paywall.User) paywall.Subscription {
 }
 
 // SubsRenew builds an order that is used to renew a member
-func SubsRenew(u paywall.User) paywall.Subscription {
+func SubsRenew(u paywall.UserID) paywall.Subscription {
 	return BuildSubs(
 		u,
 		enum.PayMethod(randomdata.Number(1, 3)),
@@ -63,7 +63,7 @@ func SubsRenew(u paywall.User) paywall.Subscription {
 }
 
 // SubsUpgrade builds an order that is used to upgrade membership.
-func SubsUpgrade(u paywall.User, orders []paywall.Subscription) paywall.Subscription {
+func SubsUpgrade(u paywall.UserID, orders []paywall.Subscription) paywall.Subscription {
 	unused := make([]paywall.UnusedOrder, 0)
 	for _, v := range orders {
 		unused = append(unused, paywall.UnusedOrder{
@@ -97,7 +97,7 @@ func SubsUpgrade(u paywall.User, orders []paywall.Subscription) paywall.Subscrip
 }
 
 // SubsConfirmed builds an order that is confirmed.
-func SubsConfirmed(u paywall.User) paywall.Subscription {
+func SubsConfirmed(u paywall.UserID) paywall.Subscription {
 	subs := SubsRandom(u)
 
 	subs, err := subs.ConfirmWithMember(paywall.Membership{}, time.Now())

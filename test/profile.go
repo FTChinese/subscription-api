@@ -49,25 +49,25 @@ var MyProfile = Profile{
 	Avatar:   "http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIibCfVIicoNXZ15Af6nWkXwq5QgFcrNdkEKMHT7P1oJVI6McLT2qFia2ialF4FSMnm33yS0eAq7MK1cA/132",
 }
 
-func (p Profile) User(id ID) paywall.User {
+func (p Profile) User(id ID) paywall.UserID {
 
-	var user paywall.User
+	var user paywall.UserID
 
 	switch id {
 	case IDFtc:
-		user, _ = paywall.NewUser(null.StringFrom(p.FtcID), null.String{})
+		user, _ = paywall.NewUserID(null.StringFrom(p.FtcID), null.String{})
 
 	case IDWx:
-		user, _ = paywall.NewUser(null.String{}, null.StringFrom(p.UnionID))
+		user, _ = paywall.NewUserID(null.String{}, null.StringFrom(p.UnionID))
 
 	case IDBound:
-		user, _ = paywall.NewUser(null.StringFrom(p.FtcID), null.StringFrom(p.UnionID))
+		user, _ = paywall.NewUserID(null.StringFrom(p.FtcID), null.StringFrom(p.UnionID))
 	}
 
 	return user
 }
 
-func (p Profile) RandomUser() paywall.User {
+func (p Profile) RandomUser() paywall.UserID {
 	return p.User(ID(randomdata.Number(0, 3)))
 }
 
