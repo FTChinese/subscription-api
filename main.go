@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/wechat"
 	"log"
@@ -57,6 +58,12 @@ func init() {
 	if err != nil {
 		os.Exit(1)
 	}
+
+	if isProd {
+		stripe.Key = viper.GetString("stripe.live_secret_key")
+	} else {
+		stripe.Key = viper.GetString("stripe.test_secret_key")
+	}
 }
 
 func main() {
@@ -109,6 +116,7 @@ func main() {
 	giftCardRouter := controller.NewGiftCardRouter(m)
 	paywallRouter := controller.NewPaywallRouter(m)
 	upgradeRouter := controller.NewUpgradeRouter(m)
+	stripeRouter := controller.NewStripeRouter(m, post, sandbox)
 
 	wxAuth := controller.NewWxAuth(m)
 
@@ -158,6 +166,16 @@ func main() {
 		// Deprecate
 		//r.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
 		// r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
+	})
+
+	r.Route("/stripe", func(r chi.Router) {
+		r.Use(controller.FtcID)
+		r.Post("/order/{tier}/{cycle}", stripeRouter.PlaceOrder)
+		r.Put("/customers", stripeRouter.GetCustomerID)
+		r.Get("/customers/{id}/cards", stripeRouter.ListCustomerCards)
+		r.Post("/customers/{id}/sources", stripeRouter.AddCard)
+		r.Post("/customers/{id}/ephemeral_keys", stripeRouter.IssueKey)
+		r.Post("/payment_intents", stripeRouter.CreatePayIntent)
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
