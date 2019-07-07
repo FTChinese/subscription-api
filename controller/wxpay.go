@@ -146,7 +146,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		unifiedOrder := wechat.UnifiedOrder{
 			Body:        plan.Description,
 			OrderID:     subs.OrderID,
-			Price:       subs.WxNetPrice(),
+			Price:       subs.PriceInCent(),
 			IP:          clientApp.UserIP.String,
 			CallbackURL: router.wxCallbackURL(),
 			TradeType:   tradeType,
@@ -187,25 +187,27 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		switch tradeType {
 		// Desktop returns a url that can be turned to QR code
 		case wechat.TradeTypeDesktop:
-			desktopPay := uor.ToDesktopPay(subs)
-			view.Render(w, view.NewResponse().SetBody(desktopPay))
+			order := wechat.BuildDesktopOrder(uor, subs)
+			view.Render(w, view.NewResponse().SetBody(order))
 
 		// Mobile returns a url which is redirect in browser
 		case wechat.TradeTypeMobile:
-			mobilePay := uor.ToMobilePay(subs)
-			view.Render(w, view.NewResponse().SetBody(mobilePay))
+			order := wechat.BuildMobileOrder(uor, subs)
+			view.Render(w, view.NewResponse().SetBody(order))
 
 		// Create the json data used by js api
 		case wechat.TradeTypeJSAPI:
-			browserPay := uor.ToWxBrowserPay(subs)
-			sign := payClient.Sign(browserPay.Params())
-			view.Render(w, view.NewResponse().SetBody(browserPay.WithHash(sign)))
+			//browserPay := uor.ToWxBrowserPay(subs)
+			//sign := payClient.Sign(browserPay.Params())
+			order := payClient.BuildInAppBrowserOrder(uor, subs)
+			view.Render(w, view.NewResponse().SetBody(order))
 
 		// Create the json data used by native app.
 		case wechat.TradeTypeApp:
-			appPay := uor.ToAppPay(subs)
-			sign := payClient.Sign(appPay.Params())
-			view.Render(w, view.NewResponse().SetBody(appPay.WithHash(sign)))
+			//appPay := uor.ToAppPay(subs)
+			//sign := payClient.Sign(appPay.Params())
+			order := payClient.BuildAppOrder(uor, subs)
+			view.Render(w, view.NewResponse().SetBody(order))
 		}
 	}
 }
@@ -265,7 +267,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 //	unifiedOrder := wechat.UnifiedOrder{
 //		Body:        plan.Description,
 //		OrderID:     subs.OrderID,
-//		Price:       subs.WxNetPrice(),
+//		Price:       subs.PriceInCent(),
 //		IP:          clientApp.UserIP.String,
 //		CallbackURL: router.wxCallbackURL(),
 //		TradeType:   wechat.TradeTypeApp,
@@ -397,12 +399,12 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	if !noti.IsPriceMatched(charge.WxNetPrice()) {
+	if !noti.IsPriceMatched(charge.PriceInCent()) {
 
 		logger.WithFields(logrus.Fields{
 			"event":   "PriceNotMatch",
 			"orderId": noti.FTCOrderID,
-		}).Errorf("Expected: %d, actual: %d", charge.WxNetPrice(), noti.TotalFee.Int64)
+		}).Errorf("Expected: %d, actual: %d", charge.PriceInCent(), noti.TotalFee.Int64)
 
 		w.Write([]byte(resp.OK()))
 		return
