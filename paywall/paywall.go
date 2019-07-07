@@ -14,21 +14,6 @@ type Banner struct {
 	Content    []string `json:"content"`
 }
 
-// Plan is a pricing plan.
-// The list price is the price that buyers pay for your product or service without any discounts.
-// The net price of a product or service is the actual price that customers pay for the product or service.
-type Plan struct {
-	Tier        enum.Tier  `json:"tier"`
-	Cycle       enum.Cycle `json:"cycle"`
-	ListPrice   float64    `json:"listPrice"`
-	NetPrice    float64    `json:"netPrice"`
-	Description string     `json:"description"`
-}
-
-func (p Plan) ProductID() string {
-	return p.Tier.String() + "_" + p.Cycle.String()
-}
-
 // Pricing defines a collection pricing plan.
 type Pricing map[string]Plan
 
@@ -45,8 +30,8 @@ func (plans Pricing) FindPlan(tier, cycle string) (Plan, error) {
 	return p, nil
 }
 
-// Product contains data to show the description of a subscription product.
-type Product struct {
+// ProductCard contains data to show the description of a subscription product.
+type ProductCard struct {
 	Heading    string      `json:"heading"`
 	Benefits   []string    `json:"benefits"`
 	SmallPrint null.String `json:"smallPrint"`
@@ -56,8 +41,8 @@ type Product struct {
 }
 
 type PayWall struct {
-	Banner   Banner    `json:"banner"`
-	Products []Product `json:"products"`
+	Banner   Banner        `json:"banner"`
+	Products []ProductCard `json:"products"`
 }
 
 // BuildPayWall constructs the data used to show pay wall.
@@ -85,7 +70,7 @@ func BuildPayWall(banner Banner, pricing Pricing) (PayWall, error) {
 
 	return PayWall{
 		Banner: banner,
-		Products: []Product{
+		Products: []ProductCard{
 			{
 				Heading: "标准会员",
 				Benefits: []string{
