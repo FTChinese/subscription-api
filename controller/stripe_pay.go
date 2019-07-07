@@ -241,3 +241,23 @@ func (router StripeRouter) CreatePayIntent(w http.ResponseWriter, req *http.Requ
 		"secret": intent.ClientSecret,
 	}))
 }
+
+// CreateSubscription create a stripe subscription.
+// Input: {customer: "", plan: ""}
+func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.Request) {
+	// "plan_FOEFa7c1zLOtJW"
+	customerID, err := util.GetJSONString(req.Body, "customer")
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	s, err := stripepay.CreateSubscription(customerID, "plan_FOEFa7c1zLOtJW")
+
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	view.Render(w, view.NewResponse().SetBody(s))
+}
