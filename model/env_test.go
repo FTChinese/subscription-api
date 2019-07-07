@@ -44,7 +44,7 @@ func saveUpgradeOrder(env Env, subs paywall.Subscription) {
 	}
 }
 
-func createMember(env Env, user paywall.User) {
+func createMember(env Env, user paywall.UserID) {
 	subs := test.SubsCreate(user)
 	saveOrder(env, subs)
 
