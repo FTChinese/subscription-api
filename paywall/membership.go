@@ -22,7 +22,7 @@ type Membership struct {
 // This is currently used by activating gift cards.
 // If membership is purchased via direct payment channel,
 // membership is created from subscription order.
-func NewMember(u User) Membership {
+func NewMember(u UserID) Membership {
 	return Membership{
 		CompoundID: u.CompoundID,
 		FTCUserID:  u.FtcID,
