@@ -22,7 +22,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 	}
 
 	type args struct {
-		u paywall.User
+		u paywall.UserID
 	}
 	tests := []struct {
 		name    string
@@ -139,7 +139,7 @@ func TestOrderTx_FindUnusedOrders(t *testing.T) {
 	}
 
 	type args struct {
-		u paywall.User
+		u paywall.UserID
 	}
 	tests := []struct {
 		name    string
@@ -212,7 +212,7 @@ func TestOrderTx_BuildUpgradeOrder(t *testing.T) {
 		query query.Builder
 	}
 	type args struct {
-		user paywall.User
+		user paywall.UserID
 		plan paywall.Plan
 	}
 	tests := []struct {
