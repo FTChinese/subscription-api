@@ -12,7 +12,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
-	"net/url"
 )
 
 const (
@@ -103,12 +102,11 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			TotalAmount: subs.AliNetPrice(),
 		}
 
-		var payURL = &url.URL{}
-
 		switch kind {
 		case ali.EntryApp:
-			//param := router.aliAppPayParam(plan.Description, subs)
 			param := ali.BuildAppPay(tradePay)
+			// Generate signature and creates a string of query
+			// parameter.
 			queryStr, err := router.client.TradeAppPay(param)
 
 			logger.Infof("App pay param: %+v\n", queryStr)
@@ -118,34 +116,38 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 				view.Render(w, view.NewBadRequest(err.Error()))
 				return
 			}
+			//resp := ali.NewAppPayResp(subs, queryStr)
 
-			resp := ali.NewAppPayResp(subs, queryStr)
-			view.Render(w, view.NewResponse().SetBody(resp))
+			order := ali.NewAppOrder(subs, queryStr)
+			view.Render(w, view.NewResponse().SetBody(order))
 			// For pay from app you should stop here.
 			return
 
 		case ali.EntryDesktopWeb:
-			//param := router.aliDesktopPayParam(plan.Description, subs)
 			param := ali.BuildDesktopPay(tradePay)
-			payURL, err = router.client.TradePagePay(param)
+			redirectURL, err := router.client.TradePagePay(param)
+			if err != nil {
+				logger.Error(err)
+				view.Render(w, view.NewBadRequest(err.Error()))
+				return
+			}
+
+			logger.Infof("Ali desktop browser redirect url: %+v\n", redirectURL)
+			order := ali.NewBrowserOrder(subs, redirectURL.String())
+			view.Render(w, view.NewResponse().SetBody(order))
 
 		case ali.EntryMobileWeb:
-			//param := router.aliWapPayParam(plan.Description, subs)
 			param := ali.BuildWapPay(tradePay)
-			payURL, err = router.client.TradeWapPay(param)
+			redirectURL, err := router.client.TradeWapPay(param)
+			if err != nil {
+				logger.Error(err)
+				view.Render(w, view.NewBadRequest(err.Error()))
+				return
+			}
+			logger.Infof("Ali mobile browser redirect url: %+v\n", redirectURL)
+			order := ali.NewBrowserOrder(subs, redirectURL.String())
+			view.Render(w, view.NewResponse().SetBody(order))
 		}
-
-		// Following handles pay from browser, both desktop and mobile.
-		logger.Infof("Ali Web pay param: %+v\n", payURL)
-
-		if err != nil {
-			logger.Error(err)
-			view.Render(w, view.NewBadRequest(err.Error()))
-			return
-		}
-
-		resp := ali.NewWebPay(subs, payURL)
-		view.Render(w, view.NewResponse().SetBody(resp))
 	}
 }
 
