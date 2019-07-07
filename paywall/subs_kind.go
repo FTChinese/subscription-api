@@ -70,7 +70,7 @@ func (x SubsKind) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 
-	return []byte(`""` + s + `""`), nil
+	return []byte(`"` + s + `"`), nil
 }
 
 func (x *SubsKind) Scan(src interface{}) error {
