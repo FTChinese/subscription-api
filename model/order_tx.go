@@ -15,7 +15,7 @@ type OrderTx struct {
 
 // RetrieveMember retrieves a user's membership info by ftc id
 // or wechat union id.
-func (o OrderTx) RetrieveMember(u paywall.User) (paywall.Membership, error) {
+func (o OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 	var m paywall.Membership
 
 	// In the ftc_vip table, vip_id might be ftc uuid or wechat
@@ -78,7 +78,7 @@ func (o OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 }
 
 // FindUnusedOrders retrieves all orders that has unused portions.
-func (o OrderTx) FindUnusedOrders(u paywall.User) ([]paywall.UnusedOrder, error) {
+func (o OrderTx) FindUnusedOrders(u paywall.UserID) ([]paywall.UnusedOrder, error) {
 	rows, err := o.tx.Query(
 		o.query.UnusedOrders(),
 		u.CompoundID,
@@ -117,7 +117,7 @@ func (o OrderTx) FindUnusedOrders(u paywall.User) ([]paywall.UnusedOrder, error)
 
 // BuildUpgradeOrder tries to find out unused orders
 // and build a Subscription based on those orders.
-func (o OrderTx) BuildUpgradeOrder(user paywall.User, plan paywall.Plan) (paywall.Subscription, error) {
+func (o OrderTx) BuildUpgradeOrder(user paywall.UserID, plan paywall.Plan) (paywall.Subscription, error) {
 	orders, err := o.FindUnusedOrders(user)
 	if err != nil {
 		return paywall.Subscription{}, err

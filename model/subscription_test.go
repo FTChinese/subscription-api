@@ -33,7 +33,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 		query   query.Builder
 	}
 	type args struct {
-		user      paywall.User
+		user      paywall.UserID
 		plan      paywall.Plan
 		payMethod enum.PayMethod
 		clientApp util.ClientApp
