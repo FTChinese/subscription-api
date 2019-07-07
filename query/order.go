@@ -96,6 +96,17 @@ func (b Builder) SelectSubsPrice() string {
 	LIMIT 1`, b.MemberDB())
 }
 
+func (b Builder) FtcUserOrderBilling() string {
+	return fmt.Sprintf(`
+	SELECT trade_price AS listPrice,
+		trade_amount AS netPrice,
+		confirmed_utc IS NOT NULL AS isConfirmed
+	FROM %s.ftc_trade
+	WHERE trade_no = ?
+		AND ftc_user_id = ?
+	LIMIT 1`, b.MemberDB())
+}
+
 func (b Builder) SelectSubsLock() string {
 	return fmt.Sprintf(`
 	SELECT trade_no AS orderId,
