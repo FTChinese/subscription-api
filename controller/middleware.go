@@ -56,6 +56,31 @@ func UserOrUnionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
+// FtcID middleware makes sure all request header contains `X-User-Id` field.
+//
+// - 401 Unauthorized if request header does not have `X-User-Name`,
+// or the value is empty.
+func FtcID(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, req *http.Request) {
+		userID := req.Header.Get(ftcIDKey)
+
+		userID = strings.TrimSpace(userID)
+		if userID == "" {
+			log.WithField("trace", "FtcID").Info("Missing X-User-Id header")
+
+			view.Render(w, view.NewUnauthorized(""))
+
+			return
+		}
+
+		req.Header.Set(ftcIDKey, userID)
+
+		next.ServeHTTP(w, req)
+	}
+
+	return http.HandlerFunc(fn)
+}
+
 // CheckUnionID middleware makes sure all request header contains `X-Union-Id` field.
 //
 // - 401 Unauthorized if request header does not have `X-User-Name`,
