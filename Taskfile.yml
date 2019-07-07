@@ -1,0 +1,35 @@
+version: '2'
+
+vars:
+  BUILD_DIR: build
+  BINARY: subscription-api
+  VERSION: {sh: git describe --tags}
+  LDFLAGS: -ldflags "-w -s -X main.version={{.VERSION}} -X main.buildAt={{now | date "2006-01-02T15:04:05Z07:00"}}"
+
+tasks:
+  build:
+    desc: Build the go binary for current platform.
+    cmds:
+      - go build {{.LDFLAGS}} -o {{.BUILD_DIR}}/{{.BINARY}}{{exeExt}} -v .
+
+  run:
+    desc: Run the program
+    cmds:
+      - ./{{.BUILD_DIR}}/{{.BINARY}}{{exeExt}}
+
+  deploy:
+    desc: Build Linux binary and copy to production machine.
+    deps: [linux]
+    cmds:
+      - rsync -v $(build_dir)/linux/$(BINARY) nodeserver:/home/node/go/bin/
+
+  linux:
+    desc: Build the go binary for Linux.
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build {{.LDFLAGS}} -o {{.BUILD_DIR}}/linux/{{.BINARY}} -v .
+
+  now:
+    desc: Show current time.
+    cmds:
+      - echo {{now | date "2006-01-02T15:04:05Z07:00"}}
+      - echo {sh: date +%FT%T%z}
