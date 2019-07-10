@@ -11,7 +11,14 @@ import (
 )
 
 // CreateOrder creates an order for a user with the selected plan and payment method.
-func (env Env) CreateOrder(user paywall.UserID, plan paywall.Plan, payMethod enum.PayMethod, clientApp util.ClientApp, wxAppId null.String) (paywall.Subscription, error) {
+func (env Env) CreateOrder(
+	user paywall.UserID,
+	plan paywall.Plan,
+	payMethod enum.PayMethod,
+	clientApp util.ClientApp,
+	wxAppId null.String,
+) (paywall.Subscription, error) {
+
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "Env.CreateOrder").Error(err)
@@ -20,7 +27,7 @@ func (env Env) CreateOrder(user paywall.UserID, plan paywall.Plan, payMethod enu
 
 	// Find the member
 	member, err := otx.RetrieveMember(user)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil {
 		_ = otx.rollback()
 		return paywall.Subscription{}, err
 	}
@@ -50,11 +57,6 @@ func (env Env) CreateOrder(user paywall.UserID, plan paywall.Plan, payMethod enu
 	}
 	subs.PaymentMethod = payMethod
 	subs.WxAppID = wxAppId
-
-	// Save Order
-	if env.sandbox {
-		subs.NetPrice = 0.01
-	}
 
 	err = otx.SaveOrder(subs, clientApp)
 	if err != nil {
@@ -100,6 +102,11 @@ func (env Env) UpgradePlan(user paywall.UserID) (paywall.UpgradePlan, error) {
 	if err != nil {
 		_ = otx.rollback()
 		return paywall.UpgradePlan{}, err
+	}
+
+	if member.IsZero() {
+		_ = otx.rollback()
+		return paywall.UpgradePlan{}, ErrMemberNotFound
 	}
 
 	if member.Tier == enum.TierPremium {
@@ -200,28 +207,6 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 	return c, nil
 }
 
-// FindOrderBilling retrieves an order's billing data
-// by order id and ftc user id.
-func (env Env) FindOrderBilling(orderID, ftcID string) (paywall.Charge, error) {
-	var c paywall.Charge
-	err := env.db.QueryRow(
-		env.query.FtcUserOrderBilling(),
-		orderID,
-		ftcID,
-	).Scan(
-		&c.ListPrice,
-		&c.NetPrice,
-		&c.IsConfirmed,
-	)
-
-	if err != nil {
-		logger.WithField("trace", "Env.FindSubsCharge").Error(err)
-		return c, err
-	}
-
-	return c, nil
-}
-
 // ConfirmPayment handles payment notification with database locking.
 // Returns the a complete Subscription to be used to compose an email.
 // If returned error is ErrOrderNotFound or ErrAlreadyConfirmed, tell Wechat or Ali do not try any more; otherwise let them retry.
@@ -246,6 +231,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// otherwise, allow retry.
 	subs, errSubs := mtx.RetrieveOrder(orderID)
 	if errSubs != nil {
+		_ = mtx.rollback()
 		switch errSubs {
 		case sql.ErrNoRows, ErrAlreadyConfirmed:
 			return subs, ErrDenyRetry
@@ -270,7 +256,11 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
-	member, errMember := mtx.RetrieveMember(subs)
+	member, errMember := mtx.RetrieveMember(paywall.UserID{
+		CompoundID: subs.CompoundID,
+		FtcID:      subs.FtcID,
+		UnionID:    subs.UnionID,
+	})
 	if errMember != nil {
 		return subs, ErrAllowRetry
 	}
@@ -289,7 +279,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// STEP 4: Calculate order's confirmation time.
 	// Populate the ConfirmedAt, StartDate and EndDate.
 	// If there are calculation errors, allow retry.
-	subs, err = subs.ConfirmWithMember(member, confirmedAt)
+	subs, err = subs.Confirm(member, confirmedAt)
 	if err != nil {
 		// Remember to rollback.
 		_ = mtx.tx.Rollback()
@@ -318,7 +308,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// STEP 6: Build new membership from this order.
 	// This error should allow retry.
-	member, err = subs.BuildMembership()
+	member, err = member.FromAliOrWx(subs)
 	if err != nil {
 		// Remember to rollback
 		_ = mtx.tx.Rollback()
@@ -332,12 +322,16 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		return subs, ErrAllowRetry
 	}
 
+	if err := mtx.LinkUser(member); err != nil {
+		_ = mtx.rollback()
+		return subs, err
+	}
 	// Error here should allow retry.
 	if err := mtx.commit(); err != nil {
-		logger.WithField("trace", "ConfirmPayment").Error(err)
+		logger.WithField("trace", "Env.ConfirmPayment").Error(err)
 		return subs, ErrAllowRetry
 	}
 
-	logger.Info("Confirm payment finished")
+	logger.Info("Env.ConfirmPayment finished.")
 	return subs, nil
 }

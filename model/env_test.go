@@ -54,7 +54,7 @@ func createMember(env Env, user paywall.UserID) {
 	}
 
 	// Build a confirmed order.
-	subs, err = subs.ConfirmWithMember(paywall.Membership{}, time.Now())
+	subs, err = subs.Confirm(paywall.Membership{}, time.Now())
 	if err != nil {
 		panic(err)
 	}

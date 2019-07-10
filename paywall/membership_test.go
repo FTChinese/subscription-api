@@ -11,6 +11,15 @@ import (
 	"github.com/guregu/null"
 )
 
+func TestGenMemberID(t *testing.T) {
+	id, err := genMmID()
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(id)
+}
+
 func TestMembership_FromGiftCard(t *testing.T) {
 	ftcID := uuid.New().String()
 	code, _ := gorest.RandomBase64(12)

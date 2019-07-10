@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+// OrderTx check a user's member status and create an order
+// if allowed.
 type OrderTx struct {
 	tx    *sql.Tx
 	query query.Builder
@@ -29,13 +31,17 @@ func (o OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 		u.CompoundID,
 		u.UnionID,
 	).Scan(
+		&m.ID,
 		&m.CompoundID,
 		&m.UnionID,
 		&m.Tier,
 		&m.Cycle,
-		&m.ExpireDate)
+		&m.ExpireDate,
+		&m.PaymentMethod,
+		&m.StripeSubID,
+		&m.AutoRenewal)
 
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		logger.WithField("trace", "OrderTx.RetrieveMember").Error(err)
 
 		return m, err
@@ -43,38 +49,6 @@ func (o OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 
 	// Treat a non-existing member as a valid value.
 	return m, nil
-}
-
-// SaveOrder saves an order to db.
-func (o OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
-
-	_, err := o.tx.Exec(
-		o.query.InsertSubs(),
-		s.OrderID,
-		s.CompoundID,
-		s.FtcID,
-		s.UnionID,
-		s.ListPrice,
-		s.NetPrice,
-		s.TierToBuy,
-		s.BillingCycle,
-		s.CycleCount,
-		s.ExtraDays,
-		s.Kind,
-		s.UpgradeBalance,
-		s.PaymentMethod,
-		s.WxAppID,
-		c.ClientType,
-		c.Version,
-		c.UserIP,
-		c.UserAgent)
-
-	if err != nil {
-		logger.WithField("trace", "OrderTx.SaveSubscription").Error(err)
-		return err
-	}
-
-	return nil
 }
 
 // FindUnusedOrders retrieves all orders that has unused portions.
@@ -134,6 +108,38 @@ func (o OrderTx) BuildUpgradeOrder(user paywall.UserID, plan paywall.Plan) (payw
 	}
 
 	return subs, nil
+}
+
+// SaveOrder saves an order to db.
+func (o OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
+
+	_, err := o.tx.Exec(
+		o.query.InsertSubs(),
+		s.OrderID,
+		s.CompoundID,
+		s.FtcID,
+		s.UnionID,
+		s.ListPrice,
+		s.NetPrice,
+		s.TierToBuy,
+		s.BillingCycle,
+		s.CycleCount,
+		s.ExtraDays,
+		s.Kind,
+		s.UpgradeBalance,
+		s.PaymentMethod,
+		s.WxAppID,
+		c.ClientType,
+		c.Version,
+		c.UserIP,
+		c.UserAgent)
+
+	if err != nil {
+		logger.WithField("trace", "OrderTx.SaveSubscription").Error(err)
+		return err
+	}
+
+	return nil
 }
 
 // SaveUpgradeSource saves unused orders to db.

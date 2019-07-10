@@ -64,6 +64,56 @@ func init() {
 	} else {
 		stripe.Key = viper.GetString("stripe.test_secret_key")
 	}
+
+	controller.Sandbox = sandbox
+	controller.Production = isProd
+}
+
+func getStripeKey() string {
+	var key string
+
+	if isProd {
+		key = viper.GetString("stripe.live_secret_key")
+	} else {
+		key = viper.GetString("stripe.test_secret_key")
+	}
+
+	if key == "" {
+		logrus.Error("cannot find stripe secret key")
+		os.Exit(1)
+	}
+
+	return key
+}
+
+func getDBConn() util.Conn {
+	// Get DB connection config.
+	var conn util.Conn
+	var err error
+	if isProd {
+		err = viper.UnmarshalKey("mysql.master", &conn)
+	} else {
+		err = viper.UnmarshalKey("mysql.dev", &conn)
+	}
+
+	if err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
+
+	logrus.Infof("Using MySQL server %s", conn.Host)
+	return conn
+}
+
+func getEmailConn() util.Conn {
+	var conn util.Conn
+	err := viper.UnmarshalKey("email.hanqi", &conn)
+	if err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
+
+	return conn
 }
 
 func main() {
@@ -71,38 +121,17 @@ func main() {
 		"trace": "main",
 	})
 
-	// Get DB connection config.
-	var dbConn util.Conn
-	var err error
-	if isProd {
-		err = viper.UnmarshalKey("mysql.master", &dbConn)
-	} else {
-		err = viper.UnmarshalKey("mysql.dev", &dbConn)
-	}
+	stripe.Key = getStripeKey()
 
+	db, err := util.NewDB(getDBConn())
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)
 	}
-
-	// Get email server config.
-	var emailConn util.Conn
-	err = viper.UnmarshalKey("email.hanqi", &emailConn)
-	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
-
-	db, err := util.NewDB(dbConn)
-	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
-	logger.WithFields(logrus.Fields{
-		"db": dbConn.Host,
-	}).Info("Connected to MySQL server")
 
 	c := cache.New(cache.DefaultExpiration, 0)
+
+	emailConn := getEmailConn()
 	post := postoffice.NewPostman(
 		emailConn.Host,
 		emailConn.Port,
@@ -134,6 +163,7 @@ func main() {
 	r.Route("/wxpay", func(r chi.Router) {
 		r.Use(controller.UserOrUnionID)
 
+		// Create a new subscription.
 		r.Post("/desktop/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeDesktop))
 
 		r.Post("/mobile/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeMobile))
@@ -143,14 +173,9 @@ func main() {
 
 		r.Post("/app/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeApp))
 
-		// Deprecate
-		//r.Post("/unified-order/{tier}/{cycle}", wxRouter.AppOrder)
-
 		// Query order
 		// X-App-Id
 		r.Get("/query/{orderId}", wxRouter.OrderQuery)
-
-		// Cancel order
 	})
 
 	// Require user id.
@@ -170,19 +195,29 @@ func main() {
 
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(controller.FtcID)
-		r.Post("/order/{tier}/{cycle}", stripeRouter.PlaceOrder)
 
-		r.Post("/subscriptions", stripeRouter.CreateSubscription)
+		// Get a stripe plan.
+		r.Get("/plans/{id}", stripeRouter.GetPlan)
 
-		r.Put("/customers", stripeRouter.GetCustomerID)
-		r.Get("/customers/{id}/cards", stripeRouter.ListCustomerCards)
-		r.Post("/customers/{id}/sources", stripeRouter.AddCard)
-		r.Post("/customers/{id}/ephemeral_keys", stripeRouter.IssueKey)
+		r.Route("/customers", func(r chi.Router) {
+			// Create a stripe customer if not exists yet, or
+			// just return the customer id if already exists.
+			r.Put("/", stripeRouter.CreateCustomer)
+			// Get stripe user's default payment method.
+			r.Get("/{id}/default_payment_method", stripeRouter.GetDefaultPaymentMethod)
+			// Set stripe user's default payment method.
+			r.Post("/{id}/default_payment_method", stripeRouter.SetDefaultPaymentMethod)
+			// Generate ephemeral key for client when it is
+			// trying to modify customer data.
+			r.Post("/{id}/ephemeral_keys", stripeRouter.IssueKey)
+		})
 
-		r.Post("/payment_intents", stripeRouter.CreatePayIntent)
-
-		//r.Get("/payment_methods/{id}", stripeRouter.GetPaymentMethod)
-
+		// Create Stripe subscription.
+		r.Route("/subscriptions", func(r chi.Router) {
+			r.Post("/", stripeRouter.CreateSubscription)
+			// Upgrade membership.
+			r.Patch("/", stripeRouter.UpdateSubscription)
+		})
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
@@ -212,6 +247,10 @@ func main() {
 		r.Get("/pricing/current", paywallRouter.GetPricing)
 
 		r.Get("/promo", paywallRouter.GetPromo)
+	})
+
+	r.Route("/webhook", func(r chi.Router) {
+		r.Post("/", stripeRouter.WebHook)
 	})
 
 	r.Route("/wx", func(r chi.Router) {
