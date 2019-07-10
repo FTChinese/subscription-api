@@ -20,6 +20,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v0.0.0-20181028125025-b2ce2384e17b
+	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24 // indirect
 	github.com/sirupsen/logrus v1.3.0
 	github.com/smartwalle/alipay v0.0.0-20190125062115-fa003253fa03
 	github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304 // indirect
