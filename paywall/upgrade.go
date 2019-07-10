@@ -7,23 +7,23 @@ import (
 )
 
 type UpgradePlan struct {
+	ID string `json:"id"`
 	Plan
-	Balance    float64  `json:"balance"` // Accumulated on all Proration.Balance
-	CycleCount int64    `json:"cycleCount"`
-	ExtraDays  int64    `json:"extraDays"` // If Balance is larger than the price to cover one cycle.
-	Payable    float64  `json:"payable"`   // The amount user needs to pay.
-	OrderIDs   []string `json:"-"`         // From which orders you get Balance
+	Balance     float64     `json:"balance"` // Accumulated on all Proration.Balance
+	CycleCount  int64       `json:"cycleCount"`
+	ExtraDays   int64       `json:"extraDays"` // If Balance is larger than the price to cover one cycle.
+	Payable     float64     `json:"payable"`   // The amount user needs to pay.
+	OrderIDs    []string    `json:"-"`         // From which orders you get Balance
+	Source      []string    `json:"-"`
+	CreatedAt   chrono.Time `json:"createdAt"`
+	ConfirmedAt chrono.Time `json:"confirmedAt"`
+	Member      Membership  `json:"-"`
 }
 
 func NewUpgradePlan(p Plan) UpgradePlan {
-	up := UpgradePlan{}
-	up.Tier = p.Tier
-	up.Cycle = p.Cycle
-	up.ListPrice = p.ListPrice
-	up.NetPrice = p.NetPrice
-	up.Description = p.Description
-
-	return up
+	return UpgradePlan{
+		Plan: p,
+	}
 }
 
 func (p UpgradePlan) SetBalance(orders []UnusedOrder) UpgradePlan {
