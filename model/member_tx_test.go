@@ -204,7 +204,7 @@ func TestMemberTx_ConfirmOrder(t *testing.T) {
 
 	saveOrder(env, subs)
 
-	subs, _ = subs.ConfirmWithMember(paywall.Membership{}, time.Now())
+	subs, _ = subs.Confirm(paywall.Membership{}, time.Now())
 
 	type args struct {
 		subs paywall.Subscription

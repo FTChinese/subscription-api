@@ -100,7 +100,7 @@ func SubsUpgrade(u paywall.UserID, orders []paywall.Subscription) paywall.Subscr
 func SubsConfirmed(u paywall.UserID) paywall.Subscription {
 	subs := SubsRandom(u)
 
-	subs, err := subs.ConfirmWithMember(paywall.Membership{}, time.Now())
+	subs, err := subs.Confirm(paywall.Membership{}, time.Now())
 
 	if err != nil {
 		panic(err)

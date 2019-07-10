@@ -43,16 +43,12 @@ func (m MemberTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	if err != nil {
 		logger.WithField("trace", "MemberTx.RetrieveOrder").Error(err)
 
-		_ = m.tx.Rollback()
-
 		return subs, err
 	}
 
 	// Already confirmed.
 	if subs.IsConfirmed {
 		logger.WithField("trace", "MemberTx.RetrieveOrder").Infof("Order %s is already confirmed", orderID)
-
-		_ = m.tx.Rollback()
 
 		return subs, ErrAlreadyConfirmed
 	}
@@ -97,19 +93,23 @@ func (m MemberTx) RetrieveUpgradeSource(upgradeID string) ([]string, error) {
 
 // RetrieveMember find whether an order is created by an
 // existing member.
-func (m MemberTx) RetrieveMember(subs paywall.Subscription) (paywall.Membership, error) {
+func (m MemberTx) RetrieveMember(id paywall.UserID) (paywall.Membership, error) {
 	var member paywall.Membership
 
 	err := m.tx.QueryRow(
 		m.query.SelectMemberLock(),
-		subs.CompoundID,
-		subs.UnionID,
+		id.CompoundID,
+		id.UnionID,
 	).Scan(
+		&member.ID,
 		&member.CompoundID,
 		&member.UnionID,
 		&member.Tier,
 		&member.Cycle,
 		&member.ExpireDate,
+		&member.PaymentMethod,
+		&member.StripeSubID,
+		&member.AutoRenewal,
 	)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -195,6 +195,7 @@ func tierID(tier enum.Tier) int64 {
 	return 0
 }
 
+// UpsertMember creates or update a member.
 func (m MemberTx) UpsertMember(mm paywall.Membership) error {
 
 	vipType := tierID(mm.Tier)
@@ -211,6 +212,9 @@ func (m MemberTx) UpsertMember(mm paywall.Membership) error {
 		mm.Tier,
 		mm.Cycle,
 		mm.ExpireDate,
+		mm.PaymentMethod,
+		mm.StripeSubID,
+		mm.AutoRenewal,
 		mm.CompoundID,
 		mm.UnionID,
 		vipType,
@@ -220,6 +224,9 @@ func (m MemberTx) UpsertMember(mm paywall.Membership) error {
 		mm.Tier,
 		mm.Cycle,
 		mm.ExpireDate,
+		mm.PaymentMethod,
+		mm.StripeSubID,
+		mm.AutoRenewal,
 	)
 
 	if err != nil {
@@ -227,6 +234,30 @@ func (m MemberTx) UpsertMember(mm paywall.Membership) error {
 		_ = m.tx.Rollback()
 
 		return err
+	}
+
+	return nil
+}
+
+// LinkUser adds membership id to user table.
+func (m MemberTx) LinkUser(mm paywall.Membership) error {
+	if mm.IsFtc() {
+		_, err := m.tx.Exec(m.query.LinkFtcMember(),
+			mm.ID,
+			mm.FTCUserID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if mm.IsWx() {
+		_, err := m.tx.Exec(m.query.LinkWxMember(),
+			mm.ID,
+			mm.UnionID)
+
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

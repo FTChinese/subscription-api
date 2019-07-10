@@ -2,12 +2,12 @@ package model
 
 import (
 	"database/sql"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/query"
 
 	"github.com/FTChinese/go-rest/enum"
 
-	cache "github.com/patrickmn/go-cache"
-	log "github.com/sirupsen/logrus"
+	"github.com/patrickmn/go-cache"
 )
 
 // Env wraps database connection
@@ -50,7 +50,17 @@ func (env Env) BeginOrderTx() (OrderTx, error) {
 	return OrderTx{tx: tx, query: env.query}, nil
 }
 
-var logger = log.
+func (env Env) BeginStripeTx() (StripeTx, error) {
+	tx, err := env.db.Begin()
+
+	if err != nil {
+		return StripeTx{}, err
+	}
+
+	return StripeTx{tx: tx, query: env.query}, nil
+}
+
+var logger = logrus.
 	WithField("project", "subscription-api").
 	WithField("package", "model")
 
