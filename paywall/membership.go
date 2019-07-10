@@ -1,6 +1,9 @@
 package paywall
 
 import (
+	"errors"
+	gorest "github.com/FTChinese/go-rest"
+	"github.com/stripe/stripe-go"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -8,14 +11,28 @@ import (
 	"github.com/guregu/null"
 )
 
+func genMmID() (string, error) {
+	s, err := gorest.RandomBase64(9)
+	if err != nil {
+		return "", err
+	}
+
+	return "mmb_" + s, nil
+}
+
 // Membership contains a user's membership details
+// This is actually called subscription by Stripe.
 type Membership struct {
-	CompoundID string      `json:"-"` // Either FTCUserID or UnionID
-	FTCUserID  null.String `json:"-"`
-	UnionID    null.String `json:"-"` // For both vip_id_alias and wx_union_id columns.
-	Tier       enum.Tier   `json:"tier"`
-	Cycle      enum.Cycle  `json:"billingCycle"`
-	ExpireDate chrono.Date
+	ID            null.String    `json:"id"`
+	CompoundID    string         `json:"-"` // Either FTCUserID or UnionID
+	FTCUserID     null.String    `json:"-"`
+	UnionID       null.String    `json:"-"` // For both vip_id_alias and wx_union_id columns.
+	Tier          enum.Tier      `json:"tier"`
+	Cycle         enum.Cycle     `json:"billingCycle"`
+	ExpireDate    chrono.Date    `json:"expireDate"`
+	PaymentMethod enum.PayMethod `json:"payMethod"`
+	StripeSubID   null.String    `json:"-"`
+	AutoRenewal   bool           `json:"autoRenewal"`
 }
 
 // NewMember creates a membership directly for a user.
@@ -28,6 +45,91 @@ func NewMember(u UserID) Membership {
 		FTCUserID:  u.FtcID,
 		UnionID:    u.UnionID,
 	}
+}
+
+// FromStripe creates a new Membership purchased via stripe.
+// The original might not exists, which indicates this is a new member.
+// Even if we only allow FTC user to use Stripe, we still
+// needs to record incomming user's wechat id, since this user
+// might already have its accounts linked.
+func (m Membership) FromStripe(
+	id UserID,
+	p StripeSubParams,
+	sub *stripe.Subscription) Membership {
+
+	endTime := time.Unix(sub.CurrentPeriodEnd, 0)
+
+	if m.ID.IsZero() {
+		mId, _ := genMmID()
+		m.ID = null.StringFrom(mId)
+	}
+
+	if m.IsZero() {
+		return Membership{
+			ID:            m.ID,
+			CompoundID:    id.CompoundID,
+			FTCUserID:     id.FtcID,
+			UnionID:       id.UnionID,
+			Tier:          p.Tier,
+			Cycle:         p.Cycle,
+			ExpireDate:    chrono.DateFrom(endTime.AddDate(0, 0, 1)),
+			PaymentMethod: enum.PayMethodStripe,
+			StripeSubID:   null.StringFrom(sub.ID),
+			AutoRenewal:   !sub.CancelAtPeriodEnd,
+		}
+	}
+
+	return Membership{
+		ID:            m.ID,
+		CompoundID:    m.CompoundID,
+		FTCUserID:     m.FTCUserID,
+		UnionID:       m.UnionID,
+		Tier:          p.Tier,
+		Cycle:         p.Cycle,
+		ExpireDate:    chrono.DateFrom(endTime.AddDate(0, 0, 1)),
+		PaymentMethod: enum.PayMethodStripe,
+		StripeSubID:   null.StringFrom(sub.ID),
+		AutoRenewal:   !sub.CancelAtPeriodEnd,
+	}
+}
+
+func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
+	if !sub.IsConfirmed {
+		return m, errors.New("only confirmed order could be used to build membership")
+	}
+
+	if m.ID.IsZero() {
+		mId, _ := genMmID()
+		m.ID = null.StringFrom(mId)
+	}
+
+	if m.IsZero() {
+		return Membership{
+			ID:            m.ID,
+			CompoundID:    sub.CompoundID,
+			FTCUserID:     sub.FtcID,
+			UnionID:       sub.UnionID,
+			Tier:          sub.TierToBuy,
+			Cycle:         sub.BillingCycle,
+			ExpireDate:    sub.EndDate,
+			PaymentMethod: sub.PaymentMethod,
+			StripeSubID:   null.String{},
+			AutoRenewal:   false,
+		}, nil
+	}
+
+	return Membership{
+		ID:            m.ID,
+		CompoundID:    m.CompoundID,
+		FTCUserID:     m.FTCUserID,
+		UnionID:       m.UnionID,
+		Tier:          sub.TierToBuy,
+		Cycle:         sub.BillingCycle,
+		ExpireDate:    sub.EndDate,
+		PaymentMethod: sub.PaymentMethod,
+		StripeSubID:   null.String{},
+		AutoRenewal:   false,
+	}, nil
 }
 
 // FromGiftCard creates a new instance based on a gift card.
@@ -50,6 +152,14 @@ func (m Membership) FromGiftCard(c GiftCard) (Membership, error) {
 
 func (m Membership) Exists() bool {
 	return m.CompoundID != "" && m.Tier != enum.InvalidTier && m.Cycle != enum.InvalidCycle
+}
+
+func (m Membership) IsFtc() bool {
+	return m.FTCUserID.Valid
+}
+
+func (m Membership) IsWx() bool {
+	return m.UnionID.Valid
 }
 
 // CanRenew tests if a membership is allowed to renew subscription.
@@ -89,7 +199,7 @@ func (m Membership) IsExpired() bool {
 
 // SubsKind determines what kind of order a user is creating.
 func (m Membership) SubsKind(p Plan) (SubsKind, error) {
-	if m.Tier == enum.InvalidTier {
+	if m.IsZero() {
 		return SubsKindCreate, nil
 	}
 
@@ -115,3 +225,70 @@ func (m Membership) SubsKind(p Plan) (SubsKind, error) {
 	// m.Tier == enum.Premium && p.Tier = enum.TierStandard
 	return SubsKindDeny, ErrDowngrade
 }
+
+func (m Membership) IsZero() bool {
+	return m.Tier == enum.InvalidTier
+}
+
+func (m Membership) IsAliOrWxPay() bool {
+	return m.PaymentMethod == enum.InvalidPay || m.PaymentMethod == enum.PayMethodAli || m.PaymentMethod == enum.PayMethodWx
+}
+
+func (m Membership) ActionOnStripe() StripeAction {
+	if m.Tier == enum.InvalidTier {
+		return StripeActionCreate
+	}
+
+	// if membership is not expired yet, do nothing.
+	if !m.IsExpired() {
+		return StripeActionNoop
+	}
+
+	switch m.PaymentMethod {
+	case enum.PayMethodAli, enum.PayMethodWx, enum.InvalidPay:
+		return StripeActionCreate
+
+	case enum.PayMethodStripe:
+		if m.AutoRenewal {
+			return StripeActionSync
+		} else {
+			return StripeActionCreate
+		}
+
+	default:
+		return StripeActionDeny
+	}
+}
+
+func (m Membership) PermitStripeUpgrade(p StripeSubParams) bool {
+	if m.PaymentMethod != enum.PayMethodStripe {
+		return false
+	}
+
+	if m.IsExpired() {
+		return false
+	}
+
+	if m.Tier == p.Tier && m.Cycle == m.Cycle {
+		return false
+	}
+
+	if m.Tier >= p.Tier {
+		return false
+	}
+
+	if m.Cycle >= p.Cycle {
+		return false
+	}
+
+	return true
+}
+
+type StripeAction int
+
+const (
+	StripeActionDeny StripeAction = iota
+	StripeActionNoop
+	StripeActionCreate
+	StripeActionSync
+)

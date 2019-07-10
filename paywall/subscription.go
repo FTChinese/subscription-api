@@ -12,6 +12,20 @@ import (
 	"github.com/guregu/null"
 )
 
+type StripeSubParams struct {
+	Tier                 enum.Tier   `json:"tier"`
+	Cycle                enum.Cycle  `json:"cycle"`
+	Customer             string      `json:"customer"`
+	Coupon               null.String `json:"coupon"`
+	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
+	PlanID               string      `json:"-"`
+	IdempotencyKey       string      `json:"idenpotencyKey"`
+}
+
+func (s StripeSubParams) Key() string {
+	return s.Tier.String() + "_" + s.Cycle.String()
+}
+
 // GenerateOrderID creates an order id.
 // The id has a total length of 18 chars.
 // If we use this generator:
@@ -28,7 +42,6 @@ func GenerateOrderID() (string, error) {
 		return "", err
 	}
 
-	time.Now().Format("200601021504")
 	return "FT" + strings.ToUpper(id), nil
 }
 
@@ -245,7 +258,7 @@ func (s Subscription) Validate(m Membership) error {
 
 // WithMember updates an order with existing membership.
 // Zero membership is a valid value.
-func (s Subscription) ConfirmWithMember(m Membership, confirmedAt time.Time) (Subscription, error) {
+func (s Subscription) Confirm(m Membership, confirmedAt time.Time) (Subscription, error) {
 	s.ConfirmedAt = chrono.TimeFrom(confirmedAt)
 
 	var startTime time.Time
@@ -275,21 +288,4 @@ func (s Subscription) ConfirmWithMember(m Membership, confirmedAt time.Time) (Su
 
 	s.IsConfirmed = true
 	return s, nil
-}
-
-// BuildMembership creates a Membership based on a
-// confirmed order.
-func (s Subscription) BuildMembership() (Membership, error) {
-	if !s.IsConfirmed {
-		return Membership{}, errors.New("only confirmed order could be used to build membership")
-	}
-
-	return Membership{
-		CompoundID: s.CompoundID,
-		FTCUserID:  s.FtcID,
-		UnionID:    s.UnionID,
-		Tier:       s.TierToBuy,
-		Cycle:      s.BillingCycle,
-		ExpireDate: s.EndDate,
-	}, nil
 }
