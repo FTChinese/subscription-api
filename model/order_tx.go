@@ -89,6 +89,43 @@ func (o OrderTx) FindBalanceSource(u paywall.UserID) ([]paywall.BalanceSource, e
 	return orders, nil
 }
 
+func (o OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
+	_, err := o.tx.Exec(o.query.InsertUpgrade(),
+		up.ID,
+		orderID,
+		up.Balance,
+		up.SourceOrderIDs(),
+		up.Member.ID,
+		up.Member.Cycle,
+		up.Member.ExpireDate,
+		up.Member.FTCUserID,
+		up.Member.UnionID,
+		up.Member.Tier)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SetUpgradeTarget set the upgrade id on all rows that can
+// be used as balance source.
+// This operation should be performed together with
+// SaveOrder and SaveUpgrade.
+func (o OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
+	strList := strings.Join(up.Source, ",")
+	_, err := o.tx.Exec(o.query.SetUpgradeIDOnSource(),
+		up.ID,
+		strList)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SaveOrder saves an order to db.
 func (o OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 
@@ -120,58 +157,6 @@ func (o OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 
 	return nil
 }
-
-// SetUpgradeTarget set the upgrade id on all rows that can
-// be used as balance source.
-// This operation should be performed together with
-// SaveOrder and SaveUpgrade.
-func (o OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
-	strList := strings.Join(up.Source, ",")
-	_, err := o.tx.Exec(o.query.SetUpgradeIDOnSource(),
-		up.ID,
-		strList)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (o OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
-	_, err := o.tx.Exec(o.query.InsertUpgrade(),
-		up.ID,
-		orderID,
-		up.Balance,
-		up.SourceOrderIDs(),
-		up.Member.ID,
-		up.Member.Cycle,
-		up.Member.ExpireDate,
-		up.Member.FTCUserID,
-		up.Member.UnionID,
-		up.Member.Tier)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// SaveUpgradeSource saves unused orders to db.
-// Deprecate
-//func (o OrderTx) SaveUpgradeSource(targetID string, srcIDs []string) error {
-//	id := strings.Join(srcIDs, ",")
-//
-//	_, err := o.tx.Exec(o.query.InsertUpgradeSource(), targetID, id)
-//
-//	if err != nil {
-//		logger.WithField("trace", "OrderTx.SaveUpgradeSource").Error(err)
-//		return err
-//	}
-//
-//	return nil
-//}
 
 func (o OrderTx) rollback() error {
 	return o.tx.Rollback()
