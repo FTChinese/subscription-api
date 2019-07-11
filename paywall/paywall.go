@@ -14,17 +14,26 @@ type Banner struct {
 	Content    []string `json:"content"`
 }
 
-// Pricing defines a collection pricing plan.
-type Pricing map[string]Plan
+// FtcPlans defines a collection pricing plan.
+type FtcPlans map[string]Plan
 
 // FindPlan picks a pricing plan from a group a pre-defined plans.
-func (plans Pricing) FindPlan(tier, cycle string) (Plan, error) {
+func (plans FtcPlans) FindPlan(tier, cycle string) (Plan, error) {
 	key := tier + "_" + cycle
 
 	p, ok := plans[key]
 
 	if !ok {
 		return p, fmt.Errorf("pricing plan for %s not found", key)
+	}
+
+	return p, nil
+}
+
+func (plans FtcPlans) GetPlanByID(id string) (Plan, error) {
+	p, ok := plans[id]
+	if !ok {
+		return p, fmt.Errorf("pricing plan for %s not found", id)
 	}
 
 	return p, nil
@@ -46,7 +55,7 @@ type PayWall struct {
 }
 
 // BuildPayWall constructs the data used to show pay wall.
-func BuildPayWall(banner Banner, pricing Pricing) (PayWall, error) {
+func BuildPayWall(banner Banner, pricing FtcPlans) (PayWall, error) {
 	planStdYear, err := pricing.FindPlan(
 		enum.TierStandard.String(),
 		enum.CycleYear.String())
