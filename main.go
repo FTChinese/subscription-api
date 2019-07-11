@@ -166,8 +166,8 @@ func main() {
 		// Create a new subscription.
 		r.Post("/desktop/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeDesktop))
 
-		r.Post("/desktop", wxRouter.NewSub(wechat.TradeTypeDesktop))
-		r.Patch("/desktop", wxRouter.UpgradeSub(wechat.TradeTypeDesktop))
+		//r.Post("/desktop", wxRouter.NewSub(wechat.TradeTypeDesktop))
+		//r.Patch("/desktop", wxRouter.UpgradeSub(wechat.TradeTypeDesktop))
 
 		r.Post("/mobile/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeMobile))
 
