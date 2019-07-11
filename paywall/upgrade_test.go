@@ -22,7 +22,7 @@ func TestUpgradePlan_CalculatePayable(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   UpgradePlan
+		want   Upgrade
 	}{
 		{
 			name: "Exactly Cover One Cycle",
@@ -55,7 +55,7 @@ func TestUpgradePlan_CalculatePayable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := UpgradePlan{
+			p := Upgrade{
 				Plan:       tt.fields.Plan,
 				Balance:    tt.fields.Balance,
 				CycleCount: tt.fields.CycleCount,
@@ -64,7 +64,7 @@ func TestUpgradePlan_CalculatePayable(t *testing.T) {
 				OrderIDs:   tt.fields.OrderIDs,
 			}
 			//if got := p.CalculatePayable(); !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("UpgradePlan.CalculatePayable() = %v, want %v", got, tt.want)
+			//	t.Errorf("Upgrade.CalculatePayable() = %v, want %v", got, tt.want)
 			//}
 
 			got := p.CalculatePayable()
