@@ -64,9 +64,9 @@ func SubsRenew(u paywall.UserID) paywall.Subscription {
 
 // SubsUpgrade builds an order that is used to upgrade membership.
 func SubsUpgrade(u paywall.UserID, orders []paywall.Subscription) paywall.Subscription {
-	unused := make([]paywall.UnusedOrder, 0)
+	unused := make([]paywall.BalanceSource, 0)
 	for _, v := range orders {
-		unused = append(unused, paywall.UnusedOrder{
+		unused = append(unused, paywall.BalanceSource{
 			ID:        v.OrderID,
 			NetPrice:  v.NetPrice,
 			StartDate: v.StartDate,
