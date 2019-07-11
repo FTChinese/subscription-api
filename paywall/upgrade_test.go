@@ -75,7 +75,7 @@ func TestUpgradePlan_CalculatePayable(t *testing.T) {
 }
 
 //func TestUnusedOrder_Balance(t *testing.T) {
-//	order := UnusedOrder{
+//	order := BalanceSource{
 //		NetPrice: 258.0,
 //		StartDate: chrono.DateFrom(time.Now().Truncate(24*time.Hour)),
 //		EndDate: chrono.DateFrom(time.Now().AddDate(0, 1, 0).Truncate(24*time.Hour)),
@@ -116,7 +116,7 @@ func TestUnusedOrder_Balance(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			o := UnusedOrder{
+			o := BalanceSource{
 				ID:        tt.fields.ID,
 				NetPrice:  tt.fields.NetPrice,
 				StartDate: tt.fields.StartDate,

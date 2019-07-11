@@ -26,7 +26,7 @@ func NewUpgradePlan(p Plan) UpgradePlan {
 	}
 }
 
-func (p UpgradePlan) SetBalance(orders []UnusedOrder) UpgradePlan {
+func (p UpgradePlan) SetBalance(orders []BalanceSource) UpgradePlan {
 	for _, v := range orders {
 		p.Balance = p.Balance + v.Balance()
 		p.OrderIDs = append(p.OrderIDs, v.ID)
@@ -80,7 +80,7 @@ func (p UpgradePlan) CalculatePayable() UpgradePlan {
 //	EndDate   chrono.Date
 //}
 
-type UnusedOrder struct {
+type BalanceSource struct {
 	ID        string
 	NetPrice  float64
 	StartDate chrono.Date
@@ -88,23 +88,23 @@ type UnusedOrder struct {
 }
 
 // Balance calculates the unused portion of an order
-func (o UnusedOrder) Balance() float64 {
+func (s BalanceSource) Balance() float64 {
 	today := time.Now().Truncate(24 * time.Hour)
 
 	// If subscription starting date of this order is in
 	// future, returns all the paid amount.
-	if !o.StartDate.Before(today) {
-		return o.NetPrice
+	if !s.StartDate.Before(today) {
+		return s.NetPrice
 	}
 
 	// If start date is before today, it means portion of
 	// this order has already been used.
 	// Calculate the remaining portion.
-	left := o.EndDate.Sub(today)
+	left := s.EndDate.Sub(today)
 
-	total := o.EndDate.Sub(o.StartDate.Time)
+	total := s.EndDate.Sub(s.StartDate.Time)
 
-	remains := left.Hours() * o.NetPrice / total.Hours()
+	remains := left.Hours() * s.NetPrice / total.Hours()
 
 	return math.Ceil(remains)
 }
