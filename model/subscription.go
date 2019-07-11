@@ -114,7 +114,7 @@ func (env Env) UpgradePlan(user paywall.UserID) (paywall.UpgradePlan, error) {
 		return paywall.UpgradePlan{}, ErrAlreadyUpgraded
 	}
 
-	orders, err := otx.FindUnusedOrders(user)
+	orders, err := otx.FindBalanceSource(user)
 	if err != nil {
 		_ = otx.rollback()
 		return paywall.UpgradePlan{}, err
