@@ -51,14 +51,14 @@ func (o OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 	return m, nil
 }
 
-// FindUnusedOrders retrieves all orders that has unused portions.
-func (o OrderTx) FindUnusedOrders(u paywall.UserID) ([]paywall.BalanceSource, error) {
+// FindBalanceSource retrieves all orders that has unused portions.
+func (o OrderTx) FindBalanceSource(u paywall.UserID) ([]paywall.BalanceSource, error) {
 	rows, err := o.tx.Query(
 		o.query.UnusedOrders(),
 		u.CompoundID,
 		u.UnionID)
 	if err != nil {
-		logger.WithField("trace", "OrderTx.FindUnusedOrders").Error(err)
+		logger.WithField("trace", "OrderTx.FindBalanceSource").Error(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -74,7 +74,7 @@ func (o OrderTx) FindUnusedOrders(u paywall.UserID) ([]paywall.BalanceSource, er
 			&o.EndDate)
 
 		if err != nil {
-			logger.WithField("trace", "OrderTx.FindUnusedOrders").Error(err)
+			logger.WithField("trace", "OrderTx.FindBalanceSource").Error(err)
 			return nil, err
 		}
 
@@ -82,7 +82,7 @@ func (o OrderTx) FindUnusedOrders(u paywall.UserID) ([]paywall.BalanceSource, er
 	}
 
 	if err := rows.Err(); err != nil {
-		logger.WithField("trace", "OrderTx.FindUnusedOrders").Error(err)
+		logger.WithField("trace", "OrderTx.FindBalanceSource").Error(err)
 		return nil, err
 	}
 
@@ -92,7 +92,7 @@ func (o OrderTx) FindUnusedOrders(u paywall.UserID) ([]paywall.BalanceSource, er
 // BuildUpgradeOrder tries to find out unused orders
 // and build a Subscription based on those orders.
 func (o OrderTx) BuildUpgradeOrder(user paywall.UserID, plan paywall.Plan) (paywall.Subscription, error) {
-	orders, err := o.FindUnusedOrders(user)
+	orders, err := o.FindBalanceSource(user)
 	if err != nil {
 		return paywall.Subscription{}, err
 	}
