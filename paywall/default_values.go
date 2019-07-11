@@ -13,7 +13,7 @@ var defaultBanner = Banner{
 }
 
 // DefaultPlans is the default subscription. No discount.
-var defaultPlans = Pricing{
+var defaultPlans = FtcPlans{
 	"standard_year": Plan{
 		Tier:        enum.TierStandard,
 		Cycle:       enum.CycleYear,
@@ -38,7 +38,7 @@ var defaultPlans = Pricing{
 }
 
 // GetDefaultPricing returns the default pricing plans.
-func GetDefaultPricing() Pricing {
+func GetDefaultPricing() FtcPlans {
 	return defaultPlans
 }
 
