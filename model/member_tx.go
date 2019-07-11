@@ -35,6 +35,7 @@ func (m MemberTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 		&subs.CycleCount,
 		&subs.ExtraDays,
 		&subs.Kind,
+		&subs.UpgradeID,
 		&subs.PaymentMethod,
 		&subs.ConfirmedAt,
 		&subs.IsConfirmed,
@@ -54,41 +55,6 @@ func (m MemberTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	}
 
 	return subs, nil
-}
-
-// RetrieveUpgradeSource loads the order ids upon which an
-// upgrade order is build.
-func (m MemberTx) RetrieveUpgradeSource(upgradeID string) ([]string, error) {
-	rows, err := m.tx.Query(m.query.SelectUpgradeSource(),
-		upgradeID)
-
-	if err != nil {
-		logger.WithField("trace", "MemberTx.RetrieveUpgradeSource").Error(err)
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	ids := make([]string, 0)
-	for rows.Next() {
-		var id string
-
-		err := rows.Scan(&id)
-
-		if err != nil {
-			logger.WithField("trace", "MemberTx.RetrieveUpgradeSource").Error(err)
-			return nil, err
-		}
-
-		ids = append(ids, id)
-	}
-
-	if err := rows.Err(); err != nil {
-		logger.WithField("trace", "MemberTx.RetrieveUpgradeSource").Error(err)
-		return nil, err
-	}
-
-	return ids, nil
 }
 
 // RetrieveMember find whether an order is created by an
@@ -126,22 +92,11 @@ func (m MemberTx) RetrieveMember(id paywall.UserID) (paywall.Membership, error) 
 	return member, nil
 }
 
-// InvalidUpgrade marks an upgrade order as invalid.
-// Transaction should rollback regardless of success or not
-// since this action itself is used to handle error.
-func (m MemberTx) InvalidUpgrade(orderID string, errInvalid error) error {
-	var reason string
-	switch errInvalid {
-	case paywall.ErrDuplicateUpgrading:
-		reason = "duplicate"
-	case paywall.ErrNoUpgradingTarget:
-		reason = "missing_target"
-	}
-
+func (m MemberTx) DuplicateUpgrade(orderID string) error {
 	_, err := m.tx.Exec(
-		m.query.InvalidUpgrade(),
-		reason,
-		orderID)
+		m.query.UpgradeFailure(),
+		"failed",
+		"duplicate_upgrade")
 
 	if err != nil {
 		logger.WithField("trace", "MemberTx.InvalidUpgrade").Error(err)
@@ -170,18 +125,14 @@ func (m MemberTx) ConfirmOrder(subs paywall.Subscription) error {
 	return nil
 }
 
-// ConfirmUpgradeSource set all orders used for upgrading
-// as confirmed, using the upgrading order's id.
-func (m MemberTx) ConfirmUpgradeSource(upID string) error {
-	_, err := m.tx.Exec(m.query.ConfirmUpgradeSource(),
-		upID)
-
+func (m MemberTx) ConfirmUpgrade(id string) error {
+	_, err := m.tx.Exec(m.query.ConfirmUpgrade(), id)
 	if err != nil {
-		logger.WithField("trace", "MemberTx.ConfirmUpgradeSource").Error(err)
+		logger.WithField("trace", "MemberTx.ConfirmUpgrade").Error(err)
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func tierID(tier enum.Tier) int64 {
