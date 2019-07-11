@@ -52,7 +52,7 @@ func (o OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 }
 
 // FindUnusedOrders retrieves all orders that has unused portions.
-func (o OrderTx) FindUnusedOrders(u paywall.UserID) ([]paywall.UnusedOrder, error) {
+func (o OrderTx) FindUnusedOrders(u paywall.UserID) ([]paywall.BalanceSource, error) {
 	rows, err := o.tx.Query(
 		o.query.UnusedOrders(),
 		u.CompoundID,
@@ -63,9 +63,9 @@ func (o OrderTx) FindUnusedOrders(u paywall.UserID) ([]paywall.UnusedOrder, erro
 	}
 	defer rows.Close()
 
-	orders := make([]paywall.UnusedOrder, 0)
+	orders := make([]paywall.BalanceSource, 0)
 	for rows.Next() {
-		var o paywall.UnusedOrder
+		var o paywall.BalanceSource
 
 		err := rows.Scan(
 			&o.ID,
