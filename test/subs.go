@@ -74,11 +74,11 @@ func SubsUpgrade(u paywall.UserID, orders []paywall.Subscription) paywall.Subscr
 		})
 	}
 
-	up := paywall.NewUpgradePlan(YearlyPremium).
+	up := paywall.NewUpgrade(YearlyPremium).
 		SetBalance(unused).
 		CalculatePayable()
 
-	subs, err := paywall.NewSubsUpgrade(u, up)
+	subs, err := paywall.NewUpgradeOrder(u, up)
 
 	if err != nil {
 		panic(err)
