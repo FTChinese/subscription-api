@@ -11,7 +11,7 @@ type Promotion struct {
 	StartUTC  chrono.Time `json:"startAt"`
 	EndUTC    chrono.Time `json:"endAt"`
 	Banner    Banner      `json:"banner"`
-	Pricing   Pricing     `json:"plans"`
+	Pricing   FtcPlans    `json:"plans"`
 	CreatedAt chrono.Time `json:"createdAt"`
 }
 
