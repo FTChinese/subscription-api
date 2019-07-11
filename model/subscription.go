@@ -43,7 +43,25 @@ func (env Env) CreateOrder(
 	// Create order
 	var subs paywall.Subscription
 	if subsKind == paywall.SubsKindUpgrade {
-		subs, err = otx.BuildUpgradeOrder(user, plan)
+		balanceSource, err := otx.FindBalanceSource(user)
+		if err != nil {
+			_ = otx.rollback()
+			return subs, err
+		}
+
+		upgrade := paywall.NewUpgrade(plan).
+			SetBalance(balanceSource).
+			CalculatePayable()
+
+		// Record the membership status prior to upgrade.
+		upgrade.Member = member
+		subs, err = paywall.NewUpgradeOrder(user, upgrade)
+		if err != nil {
+			_ = otx.rollback()
+			return subs, err
+		}
+
+		err = otx.SaveUpgrade(subs.OrderID, upgrade)
 		if err != nil {
 			_ = otx.rollback()
 			return subs, err
@@ -64,15 +82,6 @@ func (env Env) CreateOrder(
 		return subs, err
 	}
 
-	// Save upgrade source order.
-	if subsKind == paywall.SubsKindUpgrade {
-		err := otx.SaveUpgradeSource(subs.OrderID, subs.UpgradeSource)
-		if err != nil {
-			_ = otx.rollback()
-			return subs, err
-		}
-	}
-
 	if err := otx.commit(); err != nil {
 		logger.WithField("trace", "ConfirmPayment").Error(err)
 		return paywall.Subscription{}, err
@@ -87,42 +96,42 @@ func (env Env) CreateOrder(
 	return subs, nil
 }
 
-// UpgradePlan builds upgrade preview for a standard user who
+// Upgrade builds upgrade preview for a standard user who
 // is trying to upgrade to premium.
 // DO remember to rollback!
-func (env Env) UpgradePlan(user paywall.UserID) (paywall.UpgradePlan, error) {
+func (env Env) UpgradePlan(user paywall.UserID) (paywall.Upgrade, error) {
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "Env.CreateOrder").Error(err)
-		return paywall.UpgradePlan{}, err
+		return paywall.Upgrade{}, err
 	}
 
 	member, err := otx.RetrieveMember(user)
 	// If membership is not found for this user, deny upgrading.
 	if err != nil {
 		_ = otx.rollback()
-		return paywall.UpgradePlan{}, err
+		return paywall.Upgrade{}, err
 	}
 
 	if member.IsZero() {
 		_ = otx.rollback()
-		return paywall.UpgradePlan{}, ErrMemberNotFound
+		return paywall.Upgrade{}, ErrMemberNotFound
 	}
 
 	if member.Tier == enum.TierPremium {
 		_ = otx.rollback()
-		return paywall.UpgradePlan{}, ErrAlreadyUpgraded
+		return paywall.Upgrade{}, ErrAlreadyUpgraded
 	}
 
 	orders, err := otx.FindBalanceSource(user)
 	if err != nil {
 		_ = otx.rollback()
-		return paywall.UpgradePlan{}, err
+		return paywall.Upgrade{}, err
 	}
 
 	plan, _ := env.GetCurrentPricing().FindPlan(enum.TierPremium.String(), enum.CycleYear.String())
 
-	up := paywall.NewUpgradePlan(plan).
+	up := paywall.NewUpgrade(plan).
 		SetBalance(orders).
 		CalculatePayable()
 
@@ -147,9 +156,12 @@ func (env Env) UpgradePlan(user paywall.UserID) (paywall.UpgradePlan, error) {
 // which nearly won't happen since we limit renewal to 3 years
 // at most. 3 years of standard membership costs 258 * 3 < 1998.
 // It is provided here just for completeness.
-func (env Env) DirectUpgradeOrder(user paywall.UserID, plan paywall.UpgradePlan, clientApp util.ClientApp) (paywall.Subscription, error) {
+func (env Env) DirectUpgradeOrder(
+	user paywall.UserID,
+	upgrade paywall.Upgrade,
+	clientApp util.ClientApp) (paywall.Subscription, error) {
 
-	subs, err := paywall.NewSubsUpgrade(user, plan)
+	subs, err := paywall.NewUpgradeOrder(user, upgrade)
 	if err != nil {
 		return subs, err
 	}
@@ -171,7 +183,7 @@ func (env Env) DirectUpgradeOrder(user paywall.UserID, plan paywall.UpgradePlan,
 		return subs, err
 	}
 
-	err = otx.SaveUpgradeSource(subs.OrderID, subs.UpgradeSource)
+	err = otx.SaveUpgrade(subs.OrderID, upgrade)
 	if err != nil {
 		_ = otx.rollback()
 		return subs, err
@@ -244,16 +256,6 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		WithField("trace", "Env.ConfirmPayment").
 		Infof("Found order %s", subs.OrderID)
 
-	// If this is a upgrade order, find out the orders prorated
-	// to the account balance.
-	if subs.Kind == paywall.SubsKindUpgrade {
-		//  nil value is still valid.
-		srcIDs, err := mtx.RetrieveUpgradeSource(subs.OrderID)
-		if err == nil {
-			subs.UpgradeSource = srcIDs
-		}
-	}
-
 	// STEP 2: query membership
 	// For any errors, allow retry.
 	member, errMember := mtx.RetrieveMember(paywall.UserID{
@@ -267,13 +269,22 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// STEP 3: validate the retrieved order.
 	// This order might be invalid for upgrading.
-	errInvalid := subs.Validate(member)
-	// If the order is invalid, record the reason and
-	// stop any further processing.
-	if errInvalid != nil {
-		_ = mtx.InvalidUpgrade(subs.OrderID, errInvalid)
-		_ = mtx.rollback()
-		return subs, ErrDenyRetry
+	// OPTIONAL STEP: Mark the prorated orders.
+	// For any errors, allow retry
+	if subs.Kind == paywall.SubsKindUpgrade && member.Tier == enum.TierPremium && !member.IsExpired() {
+		// In case of any error, just ignore it.
+		err = mtx.DuplicateUpgrade(subs.OrderID)
+
+		if err != nil {
+			_ = mtx.rollback()
+			return subs, paywall.ErrDuplicateUpgrading
+		}
+
+		if err := mtx.commit(); err != nil {
+			return subs, paywall.ErrDuplicateUpgrading
+		}
+
+		return subs, paywall.ErrDuplicateUpgrading
 	}
 
 	// STEP 4: Calculate order's confirmation time.
@@ -297,13 +308,6 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		// Remember to rollback.
 		_ = mtx.tx.Rollback()
 		return subs, ErrAllowRetry
-	}
-
-	// OPTIONAL STEP: Mark the prorated orders.
-	// For any errors, allow retry
-	if subs.Kind == paywall.SubsKindUpgrade {
-		// In case of any error, just ignore it.
-		_ = mtx.ConfirmUpgradeSource(subs.OrderID)
 	}
 
 	// STEP 6: Build new membership from this order.

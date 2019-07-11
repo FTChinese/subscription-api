@@ -54,7 +54,7 @@ func (o OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 // FindBalanceSource retrieves all orders that has unused portions.
 func (o OrderTx) FindBalanceSource(u paywall.UserID) ([]paywall.BalanceSource, error) {
 	rows, err := o.tx.Query(
-		o.query.UnusedOrders(),
+		o.query.BalanceSource(),
 		u.CompoundID,
 		u.UnionID)
 	if err != nil {
@@ -89,27 +89,6 @@ func (o OrderTx) FindBalanceSource(u paywall.UserID) ([]paywall.BalanceSource, e
 	return orders, nil
 }
 
-// BuildUpgradeOrder tries to find out unused orders
-// and build a Subscription based on those orders.
-func (o OrderTx) BuildUpgradeOrder(user paywall.UserID, plan paywall.Plan) (paywall.Subscription, error) {
-	orders, err := o.FindBalanceSource(user)
-	if err != nil {
-		return paywall.Subscription{}, err
-	}
-
-	up := paywall.NewUpgradePlan(plan).
-		SetBalance(orders).
-		CalculatePayable()
-
-	subs, err := paywall.NewSubsUpgrade(user, up)
-	if err != nil {
-		logger.WithField("trace", "OrderTx.BuildUpgradeOrder").Error(err)
-		return subs, err
-	}
-
-	return subs, nil
-}
-
 // SaveOrder saves an order to db.
 func (o OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 
@@ -126,7 +105,7 @@ func (o OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 		s.CycleCount,
 		s.ExtraDays,
 		s.Kind,
-		s.UpgradeBalance,
+		s.UpgradeID,
 		s.PaymentMethod,
 		s.WxAppID,
 		c.ClientType,
@@ -142,19 +121,57 @@ func (o OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 	return nil
 }
 
-// SaveUpgradeSource saves unused orders to db.
-func (o OrderTx) SaveUpgradeSource(targetID string, srcIDs []string) error {
-	id := strings.Join(srcIDs, ",")
-
-	_, err := o.tx.Exec(o.query.InsertUpgradeSource(), targetID, id)
+// SetUpgradeTarget set the upgrade id on all rows that can
+// be used as balance source.
+// This operation should be performed together with
+// SaveOrder and SaveUpgrade.
+func (o OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
+	strList := strings.Join(up.Source, ",")
+	_, err := o.tx.Exec(o.query.SetUpgradeIDOnSource(),
+		up.ID,
+		strList)
 
 	if err != nil {
-		logger.WithField("trace", "OrderTx.SaveUpgradeSource").Error(err)
 		return err
 	}
 
 	return nil
 }
+
+func (o OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
+	_, err := o.tx.Exec(o.query.InsertUpgrade(),
+		up.ID,
+		orderID,
+		up.Balance,
+		up.SourceOrderIDs(),
+		up.Member.ID,
+		up.Member.Cycle,
+		up.Member.ExpireDate,
+		up.Member.FTCUserID,
+		up.Member.UnionID,
+		up.Member.Tier)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SaveUpgradeSource saves unused orders to db.
+// Deprecate
+//func (o OrderTx) SaveUpgradeSource(targetID string, srcIDs []string) error {
+//	id := strings.Join(srcIDs, ",")
+//
+//	_, err := o.tx.Exec(o.query.InsertUpgradeSource(), targetID, id)
+//
+//	if err != nil {
+//		logger.WithField("trace", "OrderTx.SaveUpgradeSource").Error(err)
+//		return err
+//	}
+//
+//	return nil
+//}
 
 func (o OrderTx) rollback() error {
 	return o.tx.Rollback()

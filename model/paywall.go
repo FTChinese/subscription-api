@@ -91,7 +91,7 @@ func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
 }
 
 // GetCurrentPricing get current effective pricing plans.
-func (env Env) GetCurrentPricing() paywall.Pricing {
+func (env Env) GetCurrentPricing() paywall.FtcPlans {
 
 	promo, found := env.LoadCachedPromo()
 	if !found {
