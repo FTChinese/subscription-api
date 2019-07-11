@@ -11,6 +11,9 @@ type Plan struct {
 	ListPrice   float64    `json:"listPrice"`
 	NetPrice    float64    `json:"netPrice"`
 	Description string     `json:"description"`
+	CycleCount  int64      `json:"cycleCount"`
+	Currency    string     `json:"currency"`
+	ExtraDays   int64      `json:"extraDays"`
 }
 
 func (p Plan) ProductID() string {
