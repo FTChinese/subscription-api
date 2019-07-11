@@ -74,23 +74,15 @@ type Subscription struct {
 	OrderID string `json:"id"`
 	UserID
 	Charge
-	TierToBuy    enum.Tier  `json:"tier"`
-	BillingCycle enum.Cycle `json:"cycle"`
-	CycleCount   int64      `json:"cycleCount"` // Default to 1. Change it for upgrade
-	ExtraDays    int64      `json:"extraDays"`  // Default to 1. Change it for upgraded.
-
-	// The category of this order.
-	Kind SubsKind `json:"usageType"`
-
-	// Fields only applicable to upgrade.
-	UpgradeSource  []string   `json:"-"`       // for upgrade
-	UpgradeBalance null.Float `json:"balance"` // for upgrade
-
-	// Payment method
+	TierToBuy     enum.Tier      `json:"tier"`
+	BillingCycle  enum.Cycle     `json:"cycle"`
+	CycleCount    int64          `json:"cycleCount"` // Default to 1. Change it for upgrade
+	ExtraDays     int64          `json:"extraDays"`  // Default to 1. Change it for upgraded.
+	Kind          SubsKind       `json:"usageType"`  // The usage of this order: creat new, renew, or upgrade?
+	UpgradeID     null.String    `json:"-"`
 	PaymentMethod enum.PayMethod `json:"paymentMethod"`
 	WxAppID       null.String    `json:"-"` // Wechat specific
-
-	CreatedAt chrono.Time `json:"createdAt"`
+	CreatedAt     chrono.Time    `json:"createdAt"`
 
 	// Fields populated only after payment finished.
 	ConfirmedAt chrono.Time `json:"confirmedAt"` // When the payment is confirmed.
@@ -103,18 +95,17 @@ type Subscription struct {
 // UpgradeBalance are left to the controller layer.
 func NewSubs(u UserID, p Plan) (Subscription, error) {
 	s := Subscription{
+		UserID: u,
+		Charge: Charge{
+			ListPrice: p.ListPrice,
+			NetPrice:  p.NetPrice,
+		},
 		TierToBuy:    p.Tier,
 		BillingCycle: p.Cycle,
 		CycleCount:   1,
 		ExtraDays:    1,
 		CreatedAt:    chrono.TimeNow(),
 	}
-
-	s.CompoundID = u.CompoundID
-	s.FtcID = u.FtcID
-	s.UnionID = u.UnionID
-	s.ListPrice = p.ListPrice
-	s.NetPrice = p.NetPrice
 
 	id, err := GenerateOrderID()
 
@@ -127,24 +118,21 @@ func NewSubs(u UserID, p Plan) (Subscription, error) {
 	return s, nil
 }
 
-// NewSubsUpgrade creates an upgrade order.
-func NewSubsUpgrade(u UserID, p UpgradePlan) (Subscription, error) {
+// NewUpgradeOrder creates an upgrade order.
+func NewUpgradeOrder(u UserID, p Upgrade) (Subscription, error) {
 	s := Subscription{
-		TierToBuy:     p.Tier,
-		BillingCycle:  p.Cycle,
-		CycleCount:    p.CycleCount,
-		ExtraDays:     p.ExtraDays,
-		Kind:          SubsKindUpgrade,
-		UpgradeSource: p.OrderIDs,
-		// This value should always exist even for 0.
-		UpgradeBalance: null.FloatFrom(p.Balance),
+		UserID: u,
+		Charge: Charge{
+			ListPrice: p.ListPrice,
+			NetPrice:  p.NetPrice,
+		},
+		TierToBuy:    p.Tier,
+		BillingCycle: p.Cycle,
+		CycleCount:   p.CycleCount,
+		ExtraDays:    p.ExtraDays,
+		Kind:         SubsKindUpgrade,
+		UpgradeID:    null.StringFrom(p.ID),
 	}
-
-	s.CompoundID = u.CompoundID
-	s.FtcID = u.FtcID
-	s.UnionID = u.UnionID
-	s.ListPrice = p.ListPrice
-	s.NetPrice = p.Payable
 
 	id, err := GenerateOrderID()
 
@@ -170,15 +158,6 @@ func (s Subscription) WithAlipay() Subscription {
 	s.PaymentMethod = enum.PayMethodAli
 
 	return s
-}
-
-// UpgradeSourceIDs is used to render templates.
-func (s Subscription) UpgradeSourceIDs() string {
-	if s.UpgradeSource == nil {
-		return ""
-	}
-
-	return strings.Join(s.UpgradeSource, ",")
 }
 
 // IsNewMember checks whether this order is used to create a
