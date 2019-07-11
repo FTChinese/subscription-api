@@ -34,6 +34,35 @@ func (b Builder) UnusedOrders() string {
 	FOR UPDATE`, b.MemberDB(), b.MemberDB())
 }
 
+func (b Builder) BalanceSource() string {
+	return fmt.Sprintf(`
+	SELECT s.trade_no AS orderId,
+		s.trade_amount AS amount,
+		CASE s.trade_subs
+			WHEN 0 THEN s.start_date
+			WHEN 10 THEN IF(
+				s.billing_cycle = 'month', 
+				DATE(DATE_ADD(FROM_UNIXTIME(s.trade_end), INTERVAL -1 MONTH)), 
+				DATE(DATE_ADD(FROM_UNIXTIME(s.trade_end), INTERVAL -1 YEAR))
+			)
+			WHEN 100 THEN DATE(DATE_ADD(FROM_UNIXTIME(s.trade_end), INTERVAL -1 YEAR))
+		 END AS startDate,
+		IF(s.end_date IS NOT NULL, s.end_date, DATE(FROM_UNIXTIME(s.trade_end))) AS endDate
+	FROM %s.ftc_trade AS s
+		LEFT JOIN %s.upgrade AS u
+		ON s.last_upgrade_id = upgrade.id
+	WHERE s.user_id IN (?, ?)
+		AND (s.tier_to_buy = 'standard' OR s.trade_subs = 10)
+		AND (
+			s.end_date > UTC_DATE() OR
+			s.trade_end > UNIX_TIMESTAMP()
+		)
+		AND (s.confirmed_utc IS NOT NULL OR s.trade_end != 0)
+		AND u.confirmed_utc IS NULL
+ 	ORDER BY start_date ASC
+	FOR UPDATE`, b.MemberDB(), b.MemberDB())
+}
+
 func (b Builder) InsertUpgradeSource() string {
 	return fmt.Sprintf(`
 	INSERT INTO %s.upgrade_premium (
