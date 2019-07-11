@@ -244,14 +244,14 @@ func TestEnv_CreateAndConfirmOrder(t *testing.T) {
 		panic(err)
 	}
 
-	// Test if SQL FindUnusedOrders if correct after user is upgraded.
+	// Test if SQL FindBalanceSource if correct after user is upgraded.
 
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		panic(err)
 	}
 
-	unusedOrders, err := otx.FindUnusedOrders(user)
+	unusedOrders, err := otx.FindBalanceSource(user)
 	if err != nil {
 		panic(err)
 	}
