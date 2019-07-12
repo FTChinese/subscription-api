@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func genUpgradeID() (string, error) {
+func GenerateUpgradeID() (string, error) {
 	s, err := gorest.RandomBase64(9)
 	if err != nil {
 		return "", err
@@ -31,7 +31,7 @@ type Upgrade struct {
 // NewUpgrade creates an Upgrade instance based on the plan selected.
 // Actually the only plan available is premium_year.
 func NewUpgrade(p Plan) Upgrade {
-	id, _ := genUpgradeID()
+	id, _ := GenerateUpgradeID()
 	return Upgrade{
 		ID:   id,
 		Plan: p,
@@ -61,13 +61,13 @@ func (p Upgrade) CalculatePayable() Upgrade {
 	diff := p.ListPrice - p.Balance
 
 	if diff >= 0 {
-		// User should pay diff
+		// UserID should pay diff
 		p.NetPrice = diff
 		p.Payable = diff
 		p.CycleCount = 1
 		p.ExtraDays = 1
 	} else {
-		// Enough to cover the gap. User do not need to pay.
+		// Enough to cover the gap. UserID do not need to pay.
 		p.Payable = 0
 		p.NetPrice = 0
 
@@ -103,7 +103,7 @@ func (p Upgrade) CalculatePayable() Upgrade {
 //}
 
 type BalanceSource struct {
-	ID        string
+	ID        string // Order id.
 	NetPrice  float64
 	StartDate chrono.Date
 	EndDate   chrono.Date
