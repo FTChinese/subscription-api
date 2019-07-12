@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
@@ -32,46 +33,34 @@ func (env Env) FindGiftCard(code string) (paywall.GiftCard, error) {
 }
 
 func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
-	tx, err := env.db.Begin()
+	tx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "RedeemGiftCard").Error(err)
 		return err
 	}
 
 	// Flag the gift card as used.
-	_, updateErr := tx.Exec(
-		env.query.ActivateGiftCard(),
-		c.Code)
+	err = tx.ActivateGiftCard(c.Code)
 
-	if updateErr != nil {
-		_ = tx.Rollback()
+	if err != nil {
+		_ = tx.rollback()
 
-		logger.WithField("trace", "RedeemGiftCard").Error(updateErr)
+		logger.WithField("trace", "RedeemGiftCard").Error(err)
 	}
 
 	// Insert a new membership.
-	_, createErr := tx.Exec(
-		env.query.InsertMember(),
-		m.CompoundID,
-		m.UnionID,
-		tierID(m.Tier),
-		m.ExpireDate.Unix(),
-		m.FTCUserID,
-		m.UnionID,
-		m.Tier,
-		m.Cycle,
-		m.ExpireDate)
+	err = tx.CreateMember(m, null.String{})
 
-	if createErr != nil {
-		_ = tx.Rollback()
+	if err != nil {
+		_ = tx.rollback()
 
 		logger.WithField("trace", "RedeemGiftCard").Error(err)
 		// Needs this message to tell client whether
 		// there is a duplicate error.
-		return createErr
+		return err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.commit(); err != nil {
 		logger.WithField("trace", "Redeem").Error(err)
 		return err
 	}
