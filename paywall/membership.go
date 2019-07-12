@@ -32,6 +32,7 @@ type Membership struct {
 	ExpireDate    chrono.Date    `json:"expireDate"`
 	PaymentMethod enum.PayMethod `json:"payMethod"`
 	StripeSubID   null.String    `json:"-"`
+	StripePlanID  null.String    `json:"-"`
 	AutoRenewal   bool           `json:"autoRenewal"`
 }
 
@@ -40,7 +41,9 @@ type Membership struct {
 // If membership is purchased via direct payment channel,
 // membership is created from subscription order.
 func NewMember(u UserID) Membership {
+	id, _ := genMmID()
 	return Membership{
+		ID:         null.StringFrom(id),
 		CompoundID: u.CompoundID,
 		FTCUserID:  u.FtcID,
 		UnionID:    u.UnionID,
@@ -75,6 +78,7 @@ func (m Membership) FromStripe(
 			ExpireDate:    chrono.DateFrom(endTime.AddDate(0, 0, 1)),
 			PaymentMethod: enum.PayMethodStripe,
 			StripeSubID:   null.StringFrom(sub.ID),
+			StripePlanID:  null.StringFrom(p.PlanID),
 			AutoRenewal:   !sub.CancelAtPeriodEnd,
 		}
 	}
@@ -89,6 +93,7 @@ func (m Membership) FromStripe(
 		ExpireDate:    chrono.DateFrom(endTime.AddDate(0, 0, 1)),
 		PaymentMethod: enum.PayMethodStripe,
 		StripeSubID:   null.StringFrom(sub.ID),
+		StripePlanID:  null.StringFrom(p.PlanID),
 		AutoRenewal:   !sub.CancelAtPeriodEnd,
 	}
 }
