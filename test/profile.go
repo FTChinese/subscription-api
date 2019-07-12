@@ -49,7 +49,7 @@ var MyProfile = Profile{
 	Avatar:   "http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIibCfVIicoNXZ15Af6nWkXwq5QgFcrNdkEKMHT7P1oJVI6McLT2qFia2ialF4FSMnm33yS0eAq7MK1cA/132",
 }
 
-func (p Profile) User(id ID) paywall.UserID {
+func (p Profile) UserID(id ID) paywall.UserID {
 
 	var user paywall.UserID
 
@@ -67,8 +67,8 @@ func (p Profile) User(id ID) paywall.UserID {
 	return user
 }
 
-func (p Profile) RandomUser() paywall.UserID {
-	return p.User(ID(randomdata.Number(0, 3)))
+func (p Profile) RandomUserID() paywall.UserID {
+	return p.UserID(ID(randomdata.Number(0, 3)))
 }
 
 func (p Profile) FtcUser() paywall.FtcUser {

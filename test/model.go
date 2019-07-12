@@ -2,6 +2,7 @@ package test
 
 import (
 	"database/sql"
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
 	"time"
@@ -78,7 +79,7 @@ func (m Model) ClearUserByEmail(email string) error {
 	return nil
 }
 
-func (m Model) CreateUser(u paywall.FtcUser) error {
+func (m Model) CreateFtcUser(p Profile) error {
 	query := `
 	INSERT INTO cmstmp01.userinfo
 	SET user_id = ?,
@@ -95,38 +96,15 @@ func (m Model) CreateUser(u paywall.FtcUser) error {
 	app := RandomClientApp()
 
 	_, err := m.db.Exec(query,
-		u.UserID,
-		u.UnionID,
-		u.Email,
+		p.FtcID,
+		null.String{},
+		p.Email,
 		p.Password,
-		u.UserName,
+		p.UserName,
 		app.ClientType,
 		app.Version,
 		app.UserIP,
 		app.UserAgent)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m Model) CreateMember(mm paywall.Membership) error {
-	_, err := m.db.Exec(
-		m.query.UpsertMember(),
-		mm.CompoundID,
-		mm.UnionID,
-		mm.FTCUserID,
-		mm.UnionID,
-		mm.Tier,
-		mm.Cycle,
-		mm.ExpireDate,
-		mm.FTCUserID,
-		mm.UnionID,
-		mm.Tier,
-		mm.Cycle,
-		mm.ExpireDate)
 
 	if err != nil {
 		return err
