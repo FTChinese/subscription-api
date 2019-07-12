@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/guregu/null"
 	"github.com/pkg/errors"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
@@ -80,23 +81,23 @@ func (env Env) CreateStripeSub(
 
 	log := logger.WithField("trace", "Env.CreateStripeCustomer")
 
-	stx, err := env.BeginStripeTx()
+	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
 		return &stripe.Subscription{}, err
 	}
 
-	mmb, err := stx.RetrieveMember(id.FtcID.String)
+	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
-		_ = stx.rollback()
+		_ = tx.rollback()
 		return &stripe.Subscription{}, nil
 	}
 
 	var stripeSub *stripe.Subscription
 	switch mmb.ActionOnStripe() {
 	default:
-		_ = stx.rollback()
+		_ = tx.rollback()
 		return &stripe.Subscription{}, errors.New("Unknown operation for stripe payment")
 
 	case paywall.StripeActionCreate:
@@ -109,13 +110,13 @@ func (env Env) CreateStripeSub(
 
 	case paywall.StripeActionNoop:
 		log.Info("Stripe noop")
-		_ = stx.rollback()
+		_ = tx.rollback()
 		return &stripe.Subscription{}, ErrAlreadyAMember
 	}
 
 	if err != nil {
 		log.Error(err)
-		_ = stx.rollback()
+		_ = tx.rollback()
 		return &stripe.Subscription{}, err
 	}
 
@@ -123,24 +124,24 @@ func (env Env) CreateStripeSub(
 
 	if mmb.IsZero() {
 		// Insert member
-		if err := stx.CreateMember(newMmb, params.PlanID); err != nil {
-			_ = stx.rollback()
+		if err := tx.CreateMember(newMmb, null.StringFrom(params.PlanID)); err != nil {
+			_ = tx.rollback()
 			return stripeSub, err
 		}
 	} else {
 		// update member
-		if err := stx.UpdateMember(newMmb, params.PlanID); err != nil {
-			_ = stx.rollback()
+		if err := tx.UpdateMember(newMmb); err != nil {
+			_ = tx.rollback()
 			return stripeSub, err
 		}
 	}
 
-	if err := stx.LinkUser(newMmb); err != nil {
-		_ = stx.rollback()
+	if err := tx.LinkUser(newMmb); err != nil {
+		_ = tx.rollback()
 		return stripeSub, err
 	}
 
-	if err := stx.commit(); err != nil {
+	if err := tx.commit(); err != nil {
 		return &stripe.Subscription{}, err
 	}
 
@@ -154,16 +155,16 @@ func (env Env) UpdateStripeSubs(
 
 	log := logger.WithField("trace", "Env.CreateStripeCustomer")
 
-	stx, err := env.BeginStripeTx()
+	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
 		return &stripe.Subscription{}, err
 	}
 
-	mmb, err := stx.RetrieveMember(id.FtcID.String)
+	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
-		_ = stx.rollback()
+		_ = tx.rollback()
 		return &stripe.Subscription{}, nil
 	}
 
@@ -175,23 +176,23 @@ func (env Env) UpdateStripeSubs(
 
 	if err != nil {
 		log.Error(err)
-		_ = stx.rollback()
+		_ = tx.rollback()
 		return &stripe.Subscription{}, err
 	}
 
 	newMmb := mmb.FromStripe(id, params, stripeSub)
 
-	if err := stx.UpdateMember(newMmb, params.PlanID); err != nil {
-		_ = stx.rollback()
+	if err := tx.UpdateMember(newMmb); err != nil {
+		_ = tx.rollback()
 		return stripeSub, err
 	}
 
-	if err := stx.LinkUser(newMmb); err != nil {
-		_ = stx.rollback()
+	if err := tx.LinkUser(newMmb); err != nil {
+		_ = tx.rollback()
 		return stripeSub, err
 	}
 
-	if err := stx.commit(); err != nil {
+	if err := tx.commit(); err != nil {
 		return stripeSub, err
 	}
 
