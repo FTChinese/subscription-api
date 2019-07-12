@@ -64,6 +64,38 @@ func GenMember(u paywall.UserID, expired bool) paywall.Membership {
 	return m
 }
 
+func BalanceSources() []paywall.BalanceSource {
+	sources := []paywall.BalanceSource{}
+
+	for i := 0; i < 2; i++ {
+		id, _ := paywall.GenerateOrderID()
+		startTime := time.Now().AddDate(i, 0, 0)
+		endTime := startTime.AddDate(i+1, 0, 0)
+
+		s := paywall.BalanceSource{
+			ID:        id,
+			NetPrice:  258,
+			StartDate: chrono.DateFrom(startTime),
+			EndDate:   chrono.DateFrom(endTime),
+		}
+
+		sources = append(sources, s)
+	}
+
+	return sources
+}
+
+func GenUpgrade(userID paywall.UserID) paywall.Upgrade {
+
+	up := paywall.NewUpgrade(YearlyPremium).
+		SetBalance(BalanceSources()).
+		CalculatePayable()
+
+	up.Member = GenMember(userID, false)
+
+	return up
+}
+
 func WxXMLNotification(orderID string) string {
 	openID, _ := gorest.RandomBase64(21)
 	nonce, _ := gorest.RandomHex(16)
