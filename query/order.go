@@ -18,7 +18,7 @@ func (b Builder) BalanceSource() string {
 		IF(s.end_date IS NOT NULL, s.end_date, DATE(FROM_UNIXTIME(s.trade_end))) AS endDate
 	FROM %s.ftc_trade AS s
 		LEFT JOIN %s.upgrade AS u
-		ON s.last_upgrade_id = upgrade.id
+		ON s.last_upgrade_id = u.id
 	WHERE s.user_id IN (?, ?)
 		AND (s.tier_to_buy = 'standard' OR s.trade_subs = 10)
 		AND (
@@ -48,7 +48,7 @@ func (b Builder) InsertUpgrade() string {
 		created_utc = UTC_TIMESTAMP(),
 		member_id = ?,
 		cycle = ?,
-		expired_date = ?,
+		expire_date = ?,
 		ftc_id = ?,
 		wx_union_id = ?,
 		product_tier = ?`,
@@ -78,7 +78,6 @@ func (b Builder) InsertSubs() string {
 		cycle_count = ?,
 		extra_days = ?,
 		category = ?,
-		upgrade_id = ?
 		payment_method = ?,
 		wx_app_id = ?,
 		created_utc = UTC_TIMESTAMP(),
@@ -111,6 +110,8 @@ func (b Builder) FtcUserOrderBilling() string {
 	LIMIT 1`, b.MemberDB())
 }
 
+// SelectSubsLock select an order upon webhook received
+// notification.
 func (b Builder) SelectSubsLock() string {
 	return fmt.Sprintf(`
 	SELECT trade_no AS orderId,
@@ -118,16 +119,15 @@ func (b Builder) SelectSubsLock() string {
 		ftc_user_id AS ftcUserId,
 		wx_union_id AS unionId,
 		trade_price AS listPrice,
-		trade_amount AS netPrice,
+		trade_amount AS amount,
 		tier_to_buy AS tier,
 		billing_cycle AS Cycle,
 		cycle_count AS cycleCount,
 		extra_days AS extraDays,
-		category AS usage,
-		upgrade_id AS upgradeId,
+		category AS usageType,
 		payment_method AS paymentMethod,
 		confirmed_utc AS confirmedAt,
-		confirmed_utc IS NOT NULL AS isConfirmed
+		confirmed_utc IS NOT NULL AS confirmed
 	FROM %s.ftc_trade
 	WHERE trade_no = ?
 	LIMIT 1
