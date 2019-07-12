@@ -29,17 +29,6 @@ func New(db *sql.DB, c *cache.Cache, sandbox bool) Env {
 	}
 }
 
-// BeginMemberTx creates a MemberTx instance.
-func (env Env) BeginMemberTx() (MemberTx, error) {
-	tx, err := env.db.Begin()
-
-	if err != nil {
-		return MemberTx{}, err
-	}
-
-	return MemberTx{tx: tx, query: env.query}, nil
-}
-
 func (env Env) BeginOrderTx() (OrderTx, error) {
 	tx, err := env.db.Begin()
 
@@ -48,16 +37,6 @@ func (env Env) BeginOrderTx() (OrderTx, error) {
 	}
 
 	return OrderTx{tx: tx, query: env.query}, nil
-}
-
-func (env Env) BeginStripeTx() (StripeTx, error) {
-	tx, err := env.db.Begin()
-
-	if err != nil {
-		return StripeTx{}, err
-	}
-
-	return StripeTx{tx: tx, query: env.query}, nil
 }
 
 var logger = logrus.
