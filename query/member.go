@@ -28,51 +28,7 @@ func (b Builder) SelectMemberLock() string {
 	FOR UPDATE`, b.MemberDB())
 }
 
-func (b Builder) UpsertMember() string {
-	return fmt.Sprintf(`
-	INSERT INTO %s.ftc_vip
-	SET vip_id = ?,
-		vip_id_alias = ?,
-		vip_type = ?,
-		expire_time = ?,
-		ftc_user_id = ?,
-		wx_union_id = ?,
-		member_tier = ?,
-		billing_cycle = ?,
-		expire_date = ?,
-		payment_method = ?,
-		stripe_subscription_id = ?,
-		auto_renewal = ?
-	ON DUPLICATE KEY UPDATE
-		vip_id = ?,
-		vip_id_alias = ?,
-		vip_type = ?,
-		expire_time = ?,
-		ftc_user_id = ?,
-		wx_union_id = ?,
-		member_tier = ?,
-		billing_cycle = ?,
-		expire_date = ?,
-		payment_method = ?,
-		stripe_subscription_id = ?,
-		auto_renewal = ?`, b.MemberDB())
-}
-
 func (b Builder) InsertMember() string {
-	return fmt.Sprintf(`
-	INSERT INTO %s.ftc_vip
-	SET vip_id = ?,
-		vip_id_alias = ?,
-		vip_type = ?,
-		expire_time = ?,
-		ftc_user_id = ?,
-		wx_union_id = ?,
-		member_tier = ?,
-		billing_cycle = ?,
-		expire_date = ?`, b.MemberDB())
-}
-
-func (b Builder) InsertStripeMember() string {
 	return fmt.Sprintf(`
 	INSERT INTO %s.ftc_vip
 	SET id = ?,
@@ -84,20 +40,20 @@ func (b Builder) InsertStripeMember() string {
 		wx_union_id = ?,
 		member_tier = ?,
 		billing_cycle = ?,
-		expire_date = ?
+		expire_date = ?,
 		payment_method = ?,
 		stripe_subscription_id = ?,
 		stripe_plan_id = ?,
 		auto_renewal = ?`, b.MemberDB())
 }
 
-// UpdateStripeMember update an existing member for stripe pay.
+// UpdateMember update an existing member for stripe pay.
 // The only works fot FTC users. Wechat user are not allowed
 // to use stripe since those users are mostly located in China.
-func (b Builder) UpdateStripeMember() string {
+func (b Builder) UpdateMember() string {
 	return fmt.Sprintf(`
 	UPDATE %s.ftc_vip
-	SET id = IFNULL(id, ?)
+	SET id = IFNULL(id, ?),
 		vip_type = ?,
 		expire_time = ?,
 		member_tier = ?,
@@ -107,7 +63,8 @@ func (b Builder) UpdateStripeMember() string {
 		stripe_subscription_id = ?,
 		stripe_plan_id = ?,
 		auto_renewal = ?
-	WHERE vip_id = ?`, b.MemberDB())
+	WHERE vip_id IN (?, ?)
+	LIMIT 1`, b.MemberDB())
 }
 
 func (b Builder) LinkFtcMember() string {
