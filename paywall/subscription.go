@@ -79,7 +79,6 @@ type Subscription struct {
 	CycleCount    int64          `json:"cycleCount"` // Default to 1. Change it for upgrade
 	ExtraDays     int64          `json:"extraDays"`  // Default to 1. Change it for upgraded.
 	Kind          SubsKind       `json:"usageType"`  // The usage of this order: creat new, renew, or upgrade?
-	UpgradeID     null.String    `json:"-"`
 	PaymentMethod enum.PayMethod `json:"paymentMethod"`
 	WxAppID       null.String    `json:"-"` // Wechat specific
 	CreatedAt     chrono.Time    `json:"createdAt"`
@@ -119,19 +118,18 @@ func NewSubs(u UserID, p Plan) (Subscription, error) {
 }
 
 // NewUpgradeOrder creates an upgrade order.
-func NewUpgradeOrder(u UserID, p Upgrade) (Subscription, error) {
+func NewUpgradeOrder(u UserID, up Upgrade) (Subscription, error) {
 	s := Subscription{
 		UserID: u,
 		Charge: Charge{
-			ListPrice: p.ListPrice,
-			NetPrice:  p.NetPrice,
+			ListPrice: up.ListPrice,
+			NetPrice:  up.NetPrice,
 		},
-		TierToBuy:    p.Tier,
-		BillingCycle: p.Cycle,
-		CycleCount:   p.CycleCount,
-		ExtraDays:    p.ExtraDays,
+		TierToBuy:    up.Tier,
+		BillingCycle: up.Cycle,
+		CycleCount:   up.CycleCount,
+		ExtraDays:    up.ExtraDays,
 		Kind:         SubsKindUpgrade,
-		UpgradeID:    null.StringFrom(p.ID),
 	}
 
 	id, err := GenerateOrderID()
