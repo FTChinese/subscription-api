@@ -54,7 +54,7 @@ func TestEnv_RedeemGiftCard(t *testing.T) {
 	}
 	c := test.NewModel(test.DB).CreateGiftCard()
 
-	user := test.NewProfile().RandomUser()
+	user := test.NewProfile().RandomUserID()
 	m, _ := paywall.NewMember(user).FromGiftCard(c)
 
 	type args struct {
