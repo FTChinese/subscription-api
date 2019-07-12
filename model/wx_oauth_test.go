@@ -159,7 +159,7 @@ func TestEnv_SaveWxUser(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save Wechat User Info",
+			name: "Save Wechat UserID Info",
 			args: args{
 				u: test.MyProfile.WxInfo(),
 			},
@@ -206,7 +206,7 @@ func TestEnv_UpdateWxUser(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Update Wechat User Info",
+			name: "Update Wechat UserID Info",
 			args: args{
 				u: test.MyProfile.WxInfo(),
 			},

@@ -1,83 +1,84 @@
 package model
 
 import (
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/query"
 	"gitlab.com/ftchinese/subscription-api/test"
-	"time"
 )
 
-// helper function
-func saveOrder(env Env, subs paywall.Subscription) {
-	otx, err := env.BeginOrderTx()
+// Create a new order in db and returns it.
+func createOrder(userID paywall.UserID) paywall.Subscription {
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
 	if err != nil {
 		panic(err)
 	}
 
-	err = otx.SaveOrder(subs, test.RandomClientApp())
-	if err != nil {
+	order := test.SubsCreate(userID)
+
+	if err := tx.SaveOrder(order, test.RandomClientApp()); err != nil {
 		panic(err)
 	}
 
-	if err := otx.commit(); err != nil {
+	if err := tx.commit(); err != nil {
 		panic(err)
 	}
+
+	return order
 }
 
-func saveUpgradeOrder(env Env, subs paywall.Subscription) {
-	otx, err := env.BeginOrderTx()
+func createUpgrade(userID paywall.UserID) paywall.Upgrade {
+	upgrade := test.GenUpgrade(userID)
+	orderID, _ := paywall.GenerateOrderID()
+	upgrade.Member = test.GenMember(userID, false)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
 	if err != nil {
 		panic(err)
 	}
 
-	err = otx.SaveOrder(subs, test.RandomClientApp())
-	if err != nil {
+	if err := tx.SaveUpgrade(orderID, upgrade); err != nil {
 		panic(err)
 	}
 
-	err = otx.SaveUpgradeSource(subs.OrderID, subs.UpgradeSource)
-	if err != nil {
+	if err := tx.commit(); err != nil {
 		panic(err)
 	}
 
-	if err := otx.commit(); err != nil {
-		panic(err)
-	}
+	return upgrade
 }
 
-func createMember(env Env, user paywall.UserID) {
-	subs := test.SubsCreate(user)
-	saveOrder(env, subs)
+func createMember(userID paywall.UserID) paywall.Membership {
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
 
-	mtx, err := env.BeginMemberTx()
+	tx, err := env.BeginOrderTx()
 	if err != nil {
 		panic(err)
 	}
 
-	// Build a confirmed order.
-	subs, err = subs.Confirm(paywall.Membership{}, time.Now())
+	m := test.GenMember(userID, false)
+
+	err = tx.CreateMember(m, null.String{})
 	if err != nil {
 		panic(err)
 	}
 
-	// Update the order
-	err = mtx.ConfirmOrder(subs)
-	if err != nil {
+	if err := tx.commit(); err != nil {
 		panic(err)
 	}
 
-	// Build membership from order
-	mm, err := subs.BuildMembership()
-	if err != nil {
-		panic(err)
-	}
-
-	// insert member.
-	err = mtx.UpsertMember(mm)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := mtx.commit(); err != nil {
-		panic(err)
-	}
+	return m
 }
