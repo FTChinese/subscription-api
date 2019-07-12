@@ -9,7 +9,7 @@ import (
 	"github.com/guregu/null"
 )
 
-// User is used to identify an FTC user.
+// UserID is used to identify an FTC user.
 // A user might have an ftc uuid, or a wechat union id,
 // or both.
 // This type structure is used to ensure unique constraint
@@ -24,7 +24,7 @@ type UserID struct {
 	UnionID    null.String `json:"-"`
 }
 
-// NewUserID creates a new User instance and select the correct CompoundID
+// NewUserID creates a new UserID instance and select the correct CompoundID
 func NewUserID(ftcID null.String, unionID null.String) (UserID, error) {
 	u := UserID{
 		FtcID:   ftcID,
