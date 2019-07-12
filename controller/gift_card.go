@@ -26,7 +26,7 @@ func NewGiftCardRouter(m model.Env) GiftCardRouter {
 // Input {code: string}
 func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 
-	user, err := GetUser(req.Header)
+	userID, err := GetUser(req.Header)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -58,7 +58,7 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Update membership from based on gift card info.
-	member, err := paywall.NewMember(user).FromGiftCard(card)
+	member, err := paywall.NewMember(userID).FromGiftCard(card)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
