@@ -2,6 +2,8 @@ package model
 
 import (
 	"database/sql"
+	"github.com/FTChinese/go-rest/enum"
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -17,7 +19,7 @@ type OrderTx struct {
 
 // RetrieveMember retrieves a user's membership info by ftc id
 // or wechat union id.
-func (o OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
+func (t OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 	var m paywall.Membership
 
 	// In the ftc_vip table, vip_id might be ftc uuid or wechat
@@ -26,8 +28,8 @@ func (o OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 	// columns ftc_user_id dedicated to ftc uuid and wx_union_id
 	// dedicated for wechat union id. The vip_id column will be
 	// use only as a unique constraint on these two columns.
-	err := o.tx.QueryRow(
-		o.query.SelectMemberLock(),
+	err := t.tx.QueryRow(
+		t.query.SelectMemberLock(),
 		u.CompoundID,
 		u.UnionID,
 	).Scan(
@@ -51,14 +53,46 @@ func (o OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 	return m, nil
 }
 
-// FindBalanceSource retrieves all orders that has unused portions.
-func (o OrderTx) FindBalanceSource(u paywall.UserID) ([]paywall.BalanceSource, error) {
-	rows, err := o.tx.Query(
-		o.query.BalanceSource(),
-		u.CompoundID,
-		u.UnionID)
+// SaveOrder saves an order to db.
+func (t OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
+
+	_, err := t.tx.Exec(
+		t.query.InsertSubs(),
+		s.OrderID,
+		s.CompoundID,
+		s.FtcID,
+		s.UnionID,
+		s.ListPrice,
+		s.NetPrice,
+		s.TierToBuy,
+		s.BillingCycle,
+		s.CycleCount,
+		s.ExtraDays,
+		s.Kind,
+		s.PaymentMethod,
+		s.WxAppID,
+		c.ClientType,
+		c.Version,
+		c.UserIP,
+		c.UserAgent)
+
 	if err != nil {
-		logger.WithField("trace", "OrderTx.FindBalanceSource").Error(err)
+		logger.WithField("trace", "OrderTx.SaveSubscription").Error(err)
+		return err
+	}
+
+	return nil
+}
+
+// FindBalanceSources retrieves all orders that has unused portions.
+// Used to build upgrade order for alipay and wxpay
+func (t OrderTx) FindBalanceSources(userID paywall.UserID) ([]paywall.BalanceSource, error) {
+	rows, err := t.tx.Query(
+		t.query.BalanceSource(),
+		userID.CompoundID,
+		userID.UnionID)
+	if err != nil {
+		logger.WithField("trace", "OrderTx.FindBalanceSources").Error(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -74,7 +108,7 @@ func (o OrderTx) FindBalanceSource(u paywall.UserID) ([]paywall.BalanceSource, e
 			&o.EndDate)
 
 		if err != nil {
-			logger.WithField("trace", "OrderTx.FindBalanceSource").Error(err)
+			logger.WithField("trace", "OrderTx.FindBalanceSources").Error(err)
 			return nil, err
 		}
 
@@ -82,15 +116,16 @@ func (o OrderTx) FindBalanceSource(u paywall.UserID) ([]paywall.BalanceSource, e
 	}
 
 	if err := rows.Err(); err != nil {
-		logger.WithField("trace", "OrderTx.FindBalanceSource").Error(err)
+		logger.WithField("trace", "OrderTx.FindBalanceSources").Error(err)
 		return nil, err
 	}
 
 	return orders, nil
 }
 
-func (o OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
-	_, err := o.tx.Exec(o.query.InsertUpgrade(),
+// SaveUpgrade saves the data about upgrading.
+func (t OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
+	_, err := t.tx.Exec(t.query.InsertUpgrade(),
 		up.ID,
 		orderID,
 		up.Balance,
@@ -113,9 +148,9 @@ func (o OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
 // be used as balance source.
 // This operation should be performed together with
 // SaveOrder and SaveUpgrade.
-func (o OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
+func (t OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
 	strList := strings.Join(up.Source, ",")
-	_, err := o.tx.Exec(o.query.SetUpgradeIDOnSource(),
+	_, err := t.tx.Exec(t.query.SetUpgradeIDOnSource(),
 		up.ID,
 		strList)
 
@@ -126,42 +161,201 @@ func (o OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
 	return nil
 }
 
-// SaveOrder saves an order to db.
-func (o OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
+// ----------------------------------
+// The following only applicable to confirmation of orders
+func tierID(tier enum.Tier) int64 {
+	switch tier {
+	case enum.TierStandard:
+		return 10
+	case enum.TierPremium:
+		return 100
+	}
 
-	_, err := o.tx.Exec(
-		o.query.InsertSubs(),
-		s.OrderID,
-		s.CompoundID,
-		s.FtcID,
-		s.UnionID,
-		s.ListPrice,
-		s.NetPrice,
-		s.TierToBuy,
-		s.BillingCycle,
-		s.CycleCount,
-		s.ExtraDays,
-		s.Kind,
-		s.UpgradeID,
-		s.PaymentMethod,
-		s.WxAppID,
-		c.ClientType,
-		c.Version,
-		c.UserIP,
-		c.UserAgent)
+	return 0
+}
+
+// RetrieveOrder loads a previously saved order that is not
+// confirmed yet.
+func (t OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
+	var subs paywall.Subscription
+
+	err := t.tx.QueryRow(
+		t.query.SelectSubsLock(),
+		orderID,
+	).Scan(
+		&subs.OrderID,
+		&subs.CompoundID,
+		&subs.FtcID,
+		&subs.UnionID,
+		&subs.ListPrice,
+		&subs.NetPrice,
+		&subs.TierToBuy,
+		&subs.BillingCycle,
+		&subs.CycleCount,
+		&subs.ExtraDays,
+		&subs.Kind,
+		&subs.PaymentMethod,
+		&subs.ConfirmedAt,
+		&subs.IsConfirmed,
+	)
 
 	if err != nil {
-		logger.WithField("trace", "OrderTx.SaveSubscription").Error(err)
+		logger.WithField("trace", "MemberTx.RetrieveOrder").Error(err)
+
+		return subs, err
+	}
+
+	// Already confirmed.
+	if subs.IsConfirmed {
+		logger.WithField("trace", "MemberTx.RetrieveOrder").Infof("Order %s is already confirmed", orderID)
+
+		return subs, ErrAlreadyConfirmed
+	}
+
+	return subs, nil
+}
+
+// ConfirmOrder set an order's confirmation time.
+func (t OrderTx) ConfirmOrder(order paywall.Subscription) error {
+	_, err := t.tx.Exec(
+		t.query.ConfirmSubs(),
+		order.ConfirmedAt,
+		order.StartDate,
+		order.EndDate,
+		order.OrderID,
+	)
+
+	if err != nil {
+		logger.WithField("trace", "OrderTx.ConfirmOrder").Error(err)
+		_ = t.tx.Rollback()
 		return err
 	}
 
 	return nil
 }
 
-func (o OrderTx) rollback() error {
-	return o.tx.Rollback()
+// ConfirmUpgrade set an upgrade's confirmation time.
+func (t OrderTx) ConfirmUpgrade(id string) error {
+	_, err := t.tx.Exec(t.query.ConfirmUpgrade(), id)
+	if err != nil {
+		logger.WithField("trace", "OrderTx.ConfirmUpgrade").Error(err)
+		return err
+	}
+
+	return nil
 }
 
-func (o OrderTx) commit() error {
-	return o.tx.Commit()
+func (t OrderTx) DuplicateUpgrade(orderID string) error {
+	_, err := t.tx.Exec(
+		t.query.UpgradeFailure(),
+		"failed",
+		"duplicate_upgrade")
+
+	if err != nil {
+		logger.WithField("trace", "MemberTx.InvalidUpgrade").Error(err)
+		return err
+	}
+
+	return nil
+}
+
+func (t OrderTx) CreateMember(m paywall.Membership, stripePlanID null.String) error {
+	vipType := tierID(m.Tier)
+	expireTime := m.ExpireDate.Unix()
+
+	_, err := t.tx.Exec(
+		t.query.InsertMember(),
+		m.ID,
+		m.CompoundID,
+		m.UnionID,
+		vipType,
+		expireTime,
+		m.FTCUserID,
+		m.UnionID,
+		m.Tier,
+		m.Cycle,
+		m.ExpireDate,
+		m.PaymentMethod,
+		m.StripeSubID,
+		stripePlanID,
+		m.AutoRenewal,
+	)
+
+	if err != nil {
+		logger.WithField("trace", "MemberTx.CreateMember").Error(err)
+		return err
+	}
+
+	return nil
+}
+
+func (t OrderTx) UpdateMember(m paywall.Membership) error {
+	vipType := tierID(m.Tier)
+	expireTime := m.ExpireDate.Unix()
+
+	_, err := t.tx.Exec(t.query.UpdateMember(),
+		m.ID,
+		vipType,
+		expireTime,
+		m.Tier,
+		m.Cycle,
+		m.ExpireDate,
+		m.PaymentMethod,
+		m.StripeSubID,
+		m.StripePlanID,
+		m.AutoRenewal,
+		m.CompoundID,
+		m.UnionID)
+
+	if err != nil {
+		logger.WithField("trace", "OrderTx.UpdateMembership").Error(err)
+		return err
+	}
+
+	return nil
+}
+
+// LinkUser adds membership id to userinfo or wechat_info
+func (t OrderTx) LinkUser(m paywall.Membership) error {
+	if m.IsFtc() {
+		_, err := t.tx.Exec(t.query.LinkFtcMember(),
+			m.ID,
+			m.FTCUserID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if m.IsWx() {
+		_, err := t.tx.Exec(t.query.LinkWxMember(),
+			m.ID,
+			m.UnionID)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// -------------
+// The following are used by gift card
+
+func (t OrderTx) ActivateGiftCard(code string) error {
+	_, err := t.tx.Exec(t.query.ActivateGiftCard(), code)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t OrderTx) rollback() error {
+	return t.tx.Rollback()
+}
+
+func (t OrderTx) commit() error {
+	return t.tx.Commit()
 }
