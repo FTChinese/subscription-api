@@ -25,8 +25,8 @@ var WxOAuthApp wxlogin.WxApp
 var WxPayApp wechat.PayApp
 var WxPayClient wechat.Client
 
-var YearlyStandard = paywall.GetDefaultPricing()["standard_year"]
-var YearlyPremium = paywall.GetDefaultPricing()["premium_year"]
+var YearlyStandard = paywall.GetDefaultPlans()["standard_year"]
+var YearlyPremium = paywall.GetDefaultPlans()["premium_year"]
 
 func init() {
 	viper.SetConfigName("api")
