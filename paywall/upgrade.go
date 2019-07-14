@@ -23,8 +23,8 @@ type Upgrade struct {
 	Balance     float64     `json:"balance"` // Accumulated on all BalanceSource.Balance
 	Payable     float64     `json:"payable"` // The amount user needs to pay.
 	Source      []string    `json:"-"`       // The order ids which still have portion of days unused.
-	CreatedAt   chrono.Time `json:"createdAt"`
-	ConfirmedAt chrono.Time `json:"confirmedAt"`
+	CreatedAt   chrono.Time `json:"-"`
+	ConfirmedAt chrono.Time `json:"-"`
 	Member      Membership  `json:"-"` // Membership status prior to upgrade.
 }
 
@@ -93,14 +93,6 @@ func (p Upgrade) CalculatePayable() Upgrade {
 
 	return p
 }
-
-// Proration is an order that is in use or not used yet.
-//type Proration struct {
-//	OrderID   string
-//	Balance   float64
-//	StartDate chrono.Date
-//	EndDate   chrono.Date
-//}
 
 type BalanceSource struct {
 	ID        string // Order id.
