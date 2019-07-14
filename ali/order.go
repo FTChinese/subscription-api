@@ -24,12 +24,14 @@ func NewBrowserOrder(subs paywall.Subscription, redirect string) BrowserOrder {
 // AppOrder is an order created inside a native app.
 type AppOrder struct {
 	paywall.Subscription
-	Param string `json:"param"`
+	FtcOrderID string `json:"ftcOrderId"` // Deprecate
+	Param      string `json:"param"`
 }
 
 func NewAppOrder(subs paywall.Subscription, query string) AppOrder {
 	return AppOrder{
 		Subscription: subs,
+		FtcOrderID:   subs.OrderID,
 		Param:        query,
 	}
 }
