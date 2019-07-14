@@ -35,7 +35,7 @@ func (router PaywallRouter) GetPaywall(w http.ResponseWriter, req *http.Request)
 func DefaultPaywall(w http.ResponseWriter, req *http.Request) {
 	pw, err := paywall.BuildPayWall(
 		paywall.GetDefaultBanner(),
-		paywall.GetDefaultPricing())
+		paywall.GetDefaultPlans())
 
 	if err != nil {
 		view.Render(w, view.NewInternalError(err.Error()))
@@ -59,7 +59,7 @@ func DefaultPricing(w http.ResponseWriter, req *http.Request) {
 		w,
 		view.NewResponse().
 			NoCache().
-			SetBody(paywall.GetDefaultPricing()))
+			SetBody(paywall.GetDefaultPlans()))
 }
 
 // GetPromo gets the current effective promotion schedule.
