@@ -126,6 +126,7 @@ func (b Builder) SelectSubsLock() string {
 		extra_days AS extraDays,
 		category AS usageType,
 		payment_method AS paymentMethod,
+		created_utc AS createdAt,
 		confirmed_utc AS confirmedAt,
 		confirmed_utc IS NOT NULL AS confirmed
 	FROM %s.ftc_trade
