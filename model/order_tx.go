@@ -228,6 +228,7 @@ func (t OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 		&subs.ExtraDays,
 		&subs.Usage,
 		&subs.PaymentMethod,
+		&subs.CreatedAt,
 		&subs.ConfirmedAt,
 		&subs.IsConfirmed,
 	)
