@@ -78,19 +78,19 @@ type Subscription struct {
 	BillingCycle  enum.Cycle     `json:"cycle"`
 	CycleCount    int64          `json:"cycleCount"` // Default to 1. Change it for upgrade
 	ExtraDays     int64          `json:"extraDays"`  // Default to 1. Change it for upgraded.
-	Kind          SubsKind       `json:"usageType"`  // The usage of this order: creat new, renew, or upgrade?
+	Usage         SubsKind       `json:"usageType"`  // The usage of this order: creat new, renew, or upgrade?
 	PaymentMethod enum.PayMethod `json:"paymentMethod"`
 	WxAppID       null.String    `json:"-"` // Wechat specific
 	CreatedAt     chrono.Time    `json:"createdAt"`
 
 	// Fields populated only after payment finished.
-	ConfirmedAt chrono.Time `json:"confirmedAt"` // When the payment is confirmed.
-	StartDate   chrono.Date `json:"startDate"`   // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	EndDate     chrono.Date `json:"endDate"`     // Membership end date for this order. Depends on start date.
+	ConfirmedAt chrono.Time `json:"-"` // When the payment is confirmed.
+	StartDate   chrono.Date `json:"-"` // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
+	EndDate     chrono.Date `json:"-"` // Membership end date for this order. Depends on start date.
 }
 
 // NewSubs creates a new subscription with shared fields
-// populated. PaymentMethod, Kind, UpgradeSource,
+// populated. PaymentMethod, Usage, UpgradeSource,
 // UpgradeBalance are left to the controller layer.
 func NewSubs(u UserID, p Plan) (Subscription, error) {
 	s := Subscription{
@@ -129,7 +129,32 @@ func NewUpgradeOrder(u UserID, up Upgrade) (Subscription, error) {
 		BillingCycle: up.Cycle,
 		CycleCount:   up.CycleCount,
 		ExtraDays:    up.ExtraDays,
-		Kind:         SubsKindUpgrade,
+		Usage:        SubsKindUpgrade,
+	}
+
+	id, err := GenerateOrderID()
+
+	if err != nil {
+		return s, err
+	}
+
+	s.OrderID = id
+
+	return s, nil
+}
+
+func NewUpgradeOrderV2(userID UserID, up UpgradePreview) (Subscription, error) {
+	s := Subscription{
+		UserID: userID,
+		Charge: Charge{
+			ListPrice: up.Plan.ListPrice,
+			NetPrice:  up.Plan.NetPrice,
+		},
+		TierToBuy:    up.Plan.Tier,
+		BillingCycle: up.Plan.Cycle,
+		CycleCount:   up.Plan.CycleCount,
+		ExtraDays:    up.Plan.ExtraDays,
+		Usage:        SubsKindUpgrade,
 	}
 
 	id, err := GenerateOrderID()
@@ -158,59 +183,13 @@ func (s Subscription) WithAlipay() Subscription {
 	return s
 }
 
-// IsNewMember checks whether this order is used to create a
-// new member
-func (s Subscription) IsNewMember() bool {
-	return s.Kind == SubsKindCreate
-}
-
-// IsRenewal checks whether this order is used to renew
-// membership.
-func (s Subscription) IsRenewal() bool {
-	return s.Kind == SubsKindRenew
-}
-
-// IsUpgrade checks whether this order is used to upgrade
-// member tier.
-func (s Subscription) IsUpgrade() bool {
-	return s.Kind == SubsKindUpgrade
-}
-
-// IsValidPay checks whether user actually used any payment
-// method.
-func (s Subscription) IsValidPay() bool {
-	return s.PaymentMethod != enum.InvalidPay
-}
-
-// SetDuration updates the StartDate and EndDate fields.
-func (s *Subscription) SetDuration(start time.Time) error {
-
-	var endTime time.Time
-
-	switch s.BillingCycle {
-	case enum.CycleYear:
-		endTime = start.AddDate(int(s.CycleCount), 0, int(s.ExtraDays))
-
-	case enum.CycleMonth:
-		endTime = start.AddDate(0, int(s.CycleCount), int(s.ExtraDays))
-
-	default:
-		return errors.New("invalid billing cycle")
-	}
-
-	s.StartDate = chrono.DateFrom(start)
-	s.EndDate = chrono.DateFrom(endTime)
-
-	return nil
-}
-
 // Validate ensures the order to confirm must match
 // the state of membership prior to creation/upgrading.
-// If subs.Kind == SubsKindCreate, member.Tier == InvalidTier;
-// If subs.Kind == SubsKindRenew, member.Tier == subs.Tier;
-// If subs.Kind == SubsKindUpgrade, member.Tier != subs.Tier && member.Tier != TierInvalid
+// If subs.Usage == SubsKindCreate, member.Tier == InvalidTier;
+// If subs.Usage == SubsKindRenew, member.Tier == subs.Tier;
+// If subs.Usage == SubsKindUpgrade, member.Tier != subs.Tier && member.Tier != TierInvalid
 func (s Subscription) Validate(m Membership) error {
-	switch s.Kind {
+	switch s.Usage {
 
 	case SubsKindUpgrade:
 		if s.TierToBuy != enum.TierPremium {
@@ -233,11 +212,7 @@ func (s Subscription) Validate(m Membership) error {
 	return nil
 }
 
-// WithMember updates an order with existing membership.
-// Zero membership is a valid value.
-func (s Subscription) Confirm(m Membership, confirmedAt time.Time) (Subscription, error) {
-	s.ConfirmedAt = chrono.TimeFrom(confirmedAt)
-
+func (s Subscription) GetStartDate(m Membership, confirmedAt time.Time) time.Time {
 	var startTime time.Time
 
 	// If membership is expired, always use the confirmation
@@ -250,19 +225,46 @@ func (s Subscription) Confirm(m Membership, confirmedAt time.Time) (Subscription
 		// For renewal, we use current membership's
 		// expiration date;
 		// For upgrade, we use confirmation time.
-		if s.Kind == SubsKindUpgrade {
+		if s.Usage == SubsKindUpgrade {
 			startTime = confirmedAt
 		} else {
 			startTime = m.ExpireDate.Time
 		}
 	}
 
-	err := s.SetDuration(startTime)
+	return startTime
+}
 
+func (s Subscription) GetEndDate(startTime time.Time) (time.Time, error) {
+	var endTime time.Time
+
+	switch s.BillingCycle {
+	case enum.CycleYear:
+		endTime = startTime.AddDate(int(s.CycleCount), 0, int(s.ExtraDays))
+
+	case enum.CycleMonth:
+		endTime = startTime.AddDate(0, int(s.CycleCount), int(s.ExtraDays))
+
+	default:
+		return endTime, errors.New("invalid billing cycle")
+	}
+
+	return endTime, nil
+}
+
+// WithMember updates an order with existing membership.
+// Zero membership is a valid value.
+func (s Subscription) Confirm(m Membership, confirmedAt time.Time) (Subscription, error) {
+
+	startTime := s.GetStartDate(m, confirmedAt)
+	endTime, err := s.GetEndDate(startTime)
 	if err != nil {
 		return s, err
 	}
 
-	s.IsConfirmed = true
+	s.ConfirmedAt = chrono.TimeFrom(confirmedAt)
+	s.StartDate = chrono.DateFrom(startTime)
+	s.EndDate = chrono.DateFrom(endTime)
+
 	return s, nil
 }
