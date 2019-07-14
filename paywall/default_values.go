@@ -20,6 +20,9 @@ var defaultPlans = FtcPlans{
 		ListPrice:   258.00,
 		NetPrice:    258.00,
 		Description: "FT中文网 - 年度标准会员",
+		CycleCount:  1,
+		Currency:    "￥",
+		ExtraDays:   1,
 	},
 	"standard_month": Plan{
 		Tier:        enum.TierStandard,
@@ -27,6 +30,9 @@ var defaultPlans = FtcPlans{
 		ListPrice:   28.00,
 		NetPrice:    28.00,
 		Description: "FT中文网 - 月度标准会员",
+		CycleCount:  1,
+		Currency:    "￥",
+		ExtraDays:   1,
 	},
 	"premium_year": Plan{
 		Tier:        enum.TierPremium,
@@ -34,6 +40,9 @@ var defaultPlans = FtcPlans{
 		ListPrice:   1998.00,
 		NetPrice:    1998.00,
 		Description: "FT中文网 - 高端会员",
+		CycleCount:  1,
+		Currency:    "￥",
+		ExtraDays:   1,
 	},
 }
 
@@ -44,6 +53,9 @@ var sandboxPlans = FtcPlans{
 		ListPrice:   258.00,
 		NetPrice:    0.01,
 		Description: "FT中文网 - 年度标准会员",
+		CycleCount:  1,
+		Currency:    "￥",
+		ExtraDays:   1,
 	},
 	"standard_month": Plan{
 		Tier:        enum.TierStandard,
@@ -51,6 +63,9 @@ var sandboxPlans = FtcPlans{
 		ListPrice:   28.00,
 		NetPrice:    0.01,
 		Description: "FT中文网 - 月度标准会员",
+		CycleCount:  1,
+		Currency:    "￥",
+		ExtraDays:   1,
 	},
 	"premium_year": Plan{
 		Tier:        enum.TierPremium,
@@ -58,6 +73,9 @@ var sandboxPlans = FtcPlans{
 		ListPrice:   1998.00,
 		NetPrice:    0.01,
 		Description: "FT中文网 - 高端会员",
+		CycleCount:  1,
+		Currency:    "￥",
+		ExtraDays:   1,
 	},
 }
 
