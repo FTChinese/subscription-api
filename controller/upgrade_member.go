@@ -29,7 +29,7 @@ func NewUpgradeRouter(m model.Env) UpgradeRouter {
 func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
 	user, _ := GetUser(req.Header)
 
-	upgradePlan, err := router.model.UpgradePlan(user)
+	balance, err := router.model.UpgradeBalance(user)
 	if err != nil {
 		switch err {
 		case model.ErrAlreadyUpgraded:
@@ -47,7 +47,19 @@ func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Requ
 	}
 
 	// Tell client how much user should pay for upgrading.
-	view.Render(w, view.NewResponse().SetBody(upgradePlan))
+	view.Render(w, view.NewResponse().SetBody(balance))
+}
+
+func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
+	userID, _ := GetUser(req.Header)
+
+	up, err := router.model.PreviewUpgrade(userID)
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	view.Render(w, view.NewResponse().SetBody(up))
 }
 
 // DirectUpgrade performs membership upgrading for users whose
@@ -59,7 +71,7 @@ func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Requ
 func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Request) {
 	user, _ := GetUser(req.Header)
 
-	upgradePlan, err := router.model.UpgradePlan(user)
+	upgradePlan, err := router.model.UpgradeBalance(user)
 	if err != nil {
 		switch err {
 		case model.ErrAlreadyUpgraded:
@@ -96,6 +108,32 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 	}
 
 	go router.sendConfirmationEmail(updatedSubs)
+
+	view.Render(w, view.NewNoContent())
+}
+
+func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
+	userID, _ := GetUser(req.Header)
+
+	up, err := router.model.PreviewUpgrade(userID)
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	// If user needs to pay any extra money.
+	if up.Plan.NetPrice > 0 {
+		view.Render(w, view.NewResponse().SetBody(up))
+		return
+	}
+
+	subs, err := router.model.FreeUpgrade(userID, up, util.NewClientApp(req))
+	if err != nil {
+		view.Render(w, view.NewDBFailure(err))
+		return
+	}
+
+	go router.sendConfirmationEmail(subs)
 
 	view.Render(w, view.NewNoContent())
 }
