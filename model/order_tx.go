@@ -68,7 +68,7 @@ func (t OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 		s.BillingCycle,
 		s.CycleCount,
 		s.ExtraDays,
-		s.Kind,
+		s.Usage,
 		s.PaymentMethod,
 		s.WxAppID,
 		c.ClientType,
@@ -144,6 +144,26 @@ func (t OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
 	return nil
 }
 
+func (t OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) error {
+	_, err := t.tx.Exec(t.query.InsertUpgrade(),
+		up.ID,
+		orderID,
+		up.Balance,
+		up.SourceOrderIDs(),
+		up.Member.ID,
+		up.Member.Cycle,
+		up.Member.ExpireDate,
+		up.Member.FTCUserID,
+		up.Member.UnionID,
+		up.Member.Tier)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SetUpgradeTarget set the upgrade id on all rows that can
 // be used as balance source.
 // This operation should be performed together with
@@ -153,6 +173,19 @@ func (t OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
 	_, err := t.tx.Exec(t.query.SetUpgradeIDOnSource(),
 		up.ID,
 		strList)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t OrderTx) SetUpgradeIDOnSourceV2(up paywall.UpgradePreview) error {
+
+	_, err := t.tx.Exec(t.query.SetUpgradeIDOnSource(),
+		up.ID,
+		up.SourceOrderIDs())
 
 	if err != nil {
 		return err
@@ -193,7 +226,7 @@ func (t OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 		&subs.BillingCycle,
 		&subs.CycleCount,
 		&subs.ExtraDays,
-		&subs.Kind,
+		&subs.Usage,
 		&subs.PaymentMethod,
 		&subs.ConfirmedAt,
 		&subs.IsConfirmed,
