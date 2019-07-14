@@ -22,13 +22,14 @@ func GenerateTimestamp() string {
 // inside your own app.
 type AppOrder struct {
 	paywall.Subscription
-	AppID     string `json:"appId"`
-	PartnerID string `json:"partnerId"`
-	PrepayID  string `json:"prepayId"`
-	Timestamp string `json:"timestamp"`
-	Nonce     string `json:"nonce"`
-	Package   string `json:"pkg"`
-	Signature string `json:"signature"`
+	FtcOrderID string `json:"ftcOrderId"` // Deprecate
+	AppID      string `json:"appId"`
+	PartnerID  string `json:"partnerId"`
+	PrepayID   string `json:"prepayId"`
+	Timestamp  string `json:"timestamp"`
+	Nonce      string `json:"nonce"`
+	Package    string `json:"pkg"`
+	Signature  string `json:"signature"`
 }
 
 func (a *AppOrder) Params() wxpay.Params {
@@ -48,6 +49,7 @@ func (a *AppOrder) Params() wxpay.Params {
 func (c Client) BuildAppOrder(u UnifiedOrderResp, subs paywall.Subscription) AppOrder {
 	o := AppOrder{
 		Subscription: subs,
+		FtcOrderID:   subs.OrderID,
 		AppID:        subs.WxAppID.String,
 		PartnerID:    u.MID.String,
 		PrepayID:     u.PrepayID.String,
