@@ -37,9 +37,38 @@ var defaultPlans = FtcPlans{
 	},
 }
 
-// GetDefaultPricing returns the default pricing plans.
-func GetDefaultPricing() FtcPlans {
+var sandboxPlans = FtcPlans{
+	"standard_year": Plan{
+		Tier:        enum.TierStandard,
+		Cycle:       enum.CycleYear,
+		ListPrice:   258.00,
+		NetPrice:    0.01,
+		Description: "FT中文网 - 年度标准会员",
+	},
+	"standard_month": Plan{
+		Tier:        enum.TierStandard,
+		Cycle:       enum.CycleMonth,
+		ListPrice:   28.00,
+		NetPrice:    0.01,
+		Description: "FT中文网 - 月度标准会员",
+	},
+	"premium_year": Plan{
+		Tier:        enum.TierPremium,
+		Cycle:       enum.CycleYear,
+		ListPrice:   1998.00,
+		NetPrice:    0.01,
+		Description: "FT中文网 - 高端会员",
+	},
+}
+
+// GetDefaultPlans returns the default pricing plans.
+func GetDefaultPlans() FtcPlans {
 	return defaultPlans
+}
+
+// GetSandboxPlans returns the plans used under sandbox.
+func GetSandboxPlans() FtcPlans {
+	return sandboxPlans
 }
 
 func GetDefaultBanner() Banner {
