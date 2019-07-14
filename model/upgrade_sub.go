@@ -56,7 +56,7 @@ func (env Env) PreviewUpgrade(userID paywall.UserID) (paywall.UpgradePreview, er
 
 	up := paywall.NewUpgradePreview(sources)
 	plan, _ := env.GetCurrentPricing().GetPlanByID("premium_year")
-	up.Plan = plan
+	up.Plan = plan.BuildUpgradePlan(up.Balance)
 	up.Member = member
 
 	return up, nil
