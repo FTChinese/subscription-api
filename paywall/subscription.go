@@ -265,6 +265,7 @@ func (s Subscription) Confirm(m Membership, confirmedAt time.Time) (Subscription
 	s.ConfirmedAt = chrono.TimeFrom(confirmedAt)
 	s.StartDate = chrono.DateFrom(startTime)
 	s.EndDate = chrono.DateFrom(endTime)
+	s.IsConfirmed = true
 
 	return s, nil
 }
