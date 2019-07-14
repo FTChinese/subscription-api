@@ -227,6 +227,9 @@ func main() {
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
 		r.Put("/", upgradeRouter.DirectUpgrade)
 		r.Get("/preview", upgradeRouter.PreviewUpgrade)
+
+		r.Put("/free", upgradeRouter.FreeUpgrade)
+		r.Get("/balance", upgradeRouter.UpgradeBalance)
 	})
 
 	r.Route("/gift-card", func(r chi.Router) {
