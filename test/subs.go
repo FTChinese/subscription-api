@@ -22,7 +22,7 @@ func BuildSubs(u paywall.UserID, pm enum.PayMethod, k paywall.SubsKind) paywall.
 		panic(err)
 	}
 
-	subs.Kind = k
+	subs.Usage = k
 
 	switch pm {
 	case enum.PayMethodWx:
