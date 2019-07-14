@@ -21,7 +21,7 @@ type Upgrade struct {
 	ID string `json:"id"`
 	Plan
 	Balance     float64     `json:"balance"` // Accumulated on all BalanceSource.Balance
-	Payable     float64     `json:"payable"` // The amount user needs to pay.
+	Payable     float64     `json:"payable"` // Deprecate. The amount user needs to pay.
 	Source      []string    `json:"-"`       // The order ids which still have portion of days unused.
 	CreatedAt   chrono.Time `json:"-"`
 	ConfirmedAt chrono.Time `json:"-"`
@@ -46,8 +46,8 @@ func (p Upgrade) SourceOrderIDs() string {
 
 // SetBalance sets the balance for an upgrade and where those
 // balances comes from.
-func (p Upgrade) SetBalance(orders []BalanceSource) Upgrade {
-	for _, v := range orders {
+func (p Upgrade) SetBalance(sources []BalanceSource) Upgrade {
+	for _, v := range sources {
 		p.Balance = p.Balance + v.Balance()
 		p.Source = append(p.Source, v.ID)
 	}
@@ -58,40 +58,35 @@ func (p Upgrade) SetBalance(orders []BalanceSource) Upgrade {
 // CalculatePrice determines how user should pay for an upgrade.
 func (p Upgrade) CalculatePayable() Upgrade {
 	// Is Balance big enough to cover NetPrice.
-	diff := p.ListPrice - p.Balance
 
-	if diff >= 0 {
+	if p.ListPrice > p.Balance {
 		// UserID should pay diff
-		p.NetPrice = diff
-		p.Payable = diff
+		p.NetPrice = p.ListPrice - p.Balance
+		p.Payable = p.NetPrice
 		p.CycleCount = 1
 		p.ExtraDays = 1
 	} else {
-		// Enough to cover the gap. UserID do not need to pay.
+		// Enough to cover the gap. User do not need to pay.
+		p.CycleCount, p.ExtraDays = convertBalance(p.Balance, p.Plan.ListPrice)
+
 		p.Payable = 0
 		p.NetPrice = 0
-
-		// The balance might be multiple of `price`
-		quotient := p.Balance / p.NetPrice
-		// Balance is larger than `price`
-		// Example 3000.0 / 1998.0 = 1.5015015015015014
-		p.CycleCount = int64(math.Trunc(quotient))
-
-		// Change remaining amount to days
-		// Example: math.Mod(3000.0, 1998.0) = 1002
-		// It means there are $1002 left in user pocket.
-		// But $1002 cannot be changed for a 1 year's membership
-		r := math.Mod(p.Balance, p.ListPrice)
-
-		// Then see how many days could the remainder be changed.
-		// Example: 1002 * 365 / 1998.0 = 183.04804804804806
-		// Use math.Ceil to give user a bonus day.
-		days := math.Ceil(r * 365 / p.NetPrice)
-
-		p.ExtraDays = int64(days)
 	}
 
 	return p
+}
+
+func convertBalance(balance, price float64) (int64, int64) {
+	var cycles int64 = 0
+
+	for balance > price {
+		cycles = cycles + 1
+		balance = balance - price
+	}
+
+	days := math.Ceil(balance * 365 / price)
+
+	return cycles, int64(days)
 }
 
 type BalanceSource struct {
