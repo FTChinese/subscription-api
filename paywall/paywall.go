@@ -1,7 +1,6 @@
 package paywall
 
 import (
-	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 )
@@ -12,31 +11,6 @@ type Banner struct {
 	SubHeading string   `json:"subHeading"`
 	CoverURL   string   `json:"coverUrl"`
 	Content    []string `json:"content"`
-}
-
-// FtcPlans defines a collection pricing plan.
-type FtcPlans map[string]Plan
-
-// FindPlan picks a pricing plan from a group a pre-defined plans.
-func (plans FtcPlans) FindPlan(tier, cycle string) (Plan, error) {
-	key := tier + "_" + cycle
-
-	p, ok := plans[key]
-
-	if !ok {
-		return p, fmt.Errorf("pricing plan for %s not found", key)
-	}
-
-	return p, nil
-}
-
-func (plans FtcPlans) GetPlanByID(id string) (Plan, error) {
-	p, ok := plans[id]
-	if !ok {
-		return p, fmt.Errorf("pricing plan for %s not found", id)
-	}
-
-	return p, nil
 }
 
 // ProductCard contains data to show the description of a subscription product.
