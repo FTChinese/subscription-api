@@ -9,7 +9,7 @@ import (
 
 func TestUpgradePlan_CalculatePayable(t *testing.T) {
 
-	plan := GetDefaultPricing()["premium_year"]
+	plan := GetDefaultPlans()["premium_year"]
 
 	type fields struct {
 		Plan       Plan
@@ -56,12 +56,9 @@ func TestUpgradePlan_CalculatePayable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := Upgrade{
-				Plan:       tt.fields.Plan,
-				Balance:    tt.fields.Balance,
-				CycleCount: tt.fields.CycleCount,
-				ExtraDays:  tt.fields.ExtraDays,
-				Payable:    tt.fields.Payable,
-				OrderIDs:   tt.fields.OrderIDs,
+				Plan:    tt.fields.Plan,
+				Balance: tt.fields.Balance,
+				Payable: tt.fields.Payable,
 			}
 			//if got := p.CalculatePayable(); !reflect.DeepEqual(got, tt.want) {
 			//	t.Errorf("Upgrade.CalculatePayable() = %v, want %v", got, tt.want)
