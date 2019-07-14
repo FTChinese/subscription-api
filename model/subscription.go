@@ -99,7 +99,7 @@ func (env Env) CreateOrder(
 		if err != nil {
 			return subs, err
 		}
-		subs.Kind = subsKind
+		subs.Usage = subsKind
 	}
 	subs.PaymentMethod = payMethod
 	subs.WxAppID = wxAppId
@@ -129,7 +129,7 @@ func (env Env) CreateOrder(
 // Upgrade builds upgrade preview for a standard user who
 // is trying to upgrade to premium.
 // DO remember to rollback!
-func (env Env) UpgradePlan(user paywall.UserID) (paywall.Upgrade, error) {
+func (env Env) UpgradeBalance(user paywall.UserID) (paywall.Upgrade, error) {
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "Env.CreateOrder").Error(err)
@@ -207,14 +207,17 @@ func (env Env) DirectUpgradeOrder(
 		subs.NetPrice = 0.01
 	}
 
-	err = otx.SaveOrder(subs, clientApp)
-	if err != nil {
+	if err = otx.SaveOrder(subs, clientApp); err != nil {
 		_ = otx.rollback()
 		return subs, err
 	}
 
-	err = otx.SaveUpgrade(subs.OrderID, upgrade)
-	if err != nil {
+	if err = otx.SaveUpgrade(subs.OrderID, upgrade); err != nil {
+		_ = otx.rollback()
+		return subs, err
+	}
+
+	if err := otx.SetUpgradeIDOnSource(upgrade); err != nil {
 		_ = otx.rollback()
 		return subs, err
 	}
@@ -259,10 +262,11 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 // No error, send user confirmation letter.
 // Concurrency pitfalls: if a user, whose is not a member yet, paid at the same moment twice, there are chances that those two orders are both used to create a membership, since transaction lock for update works only when a row exists.
 func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Subscription, error) {
+	log := logger.WithField("trace", "Env.ConfirmPayment")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
-		logger.WithField("trace", "Env.ConfirmPayment").Error(err)
+		log.Error(err)
 		return paywall.Subscription{}, ErrAllowRetry
 	}
 
@@ -282,9 +286,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		}
 	}
 
-	logger.
-		WithField("trace", "Env.ConfirmPayment").
-		Infof("Found order %s", subs.OrderID)
+	log.Infof("Found order %s", subs.OrderID)
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
@@ -301,7 +303,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// This order might be invalid for upgrading.
 	// OPTIONAL STEP: Mark the prorated orders.
 	// For any errors, allow retry
-	if subs.Kind == paywall.SubsKindUpgrade && member.Tier == enum.TierPremium && !member.IsExpired() {
+	if subs.Usage == paywall.SubsKindUpgrade && member.Tier == enum.TierPremium && !member.IsExpired() {
 		// In case of any error, just ignore it.
 		err = tx.DuplicateUpgrade(subs.OrderID)
 
@@ -327,9 +329,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		return subs, ErrAllowRetry
 	}
 
-	logger.
-		WithField("trace", "Env.ConfirmPayment").
-		Infof("Order confirmed: %s - %s", subs.StartDate, subs.EndDate)
+	log.Infof("Order confirmed: %s - %s", subs.StartDate, subs.EndDate)
 
 	// STEP 5: Update confirmed order
 	// For any errors, allow retry.
@@ -351,7 +351,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// STEP 7: Insert or update membership.
 	// This error should allow retry
-	if subs.Kind == paywall.SubsKindCreate {
+	if subs.Usage == paywall.SubsKindCreate {
 		err := tx.CreateMember(member, null.String{})
 		if err != nil {
 			return subs, ErrAllowRetry
@@ -370,10 +370,11 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// Error here should allow retry.
 	if err := tx.commit(); err != nil {
-		logger.WithField("trace", "Env.ConfirmPayment").Error(err)
+		log.Error(err)
 		return subs, ErrAllowRetry
 	}
 
-	logger.Info("Env.ConfirmPayment finished.")
+	log.Info("ConfirmPayment finished.")
+
 	return subs, nil
 }
