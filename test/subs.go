@@ -3,6 +3,7 @@ package test
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/Pallinder/go-randomdata"
+	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"time"
 )
@@ -63,20 +64,7 @@ func SubsRenew(u paywall.UserID) paywall.Subscription {
 }
 
 // SubsUpgrade builds an order that is used to upgrade membership.
-func SubsUpgrade(u paywall.UserID, orders []paywall.Subscription) paywall.Subscription {
-	unused := make([]paywall.BalanceSource, 0)
-	for _, v := range orders {
-		unused = append(unused, paywall.BalanceSource{
-			ID:        v.OrderID,
-			NetPrice:  v.NetPrice,
-			StartDate: v.StartDate,
-			EndDate:   v.EndDate,
-		})
-	}
-
-	up := paywall.NewUpgrade(YearlyPremium).
-		SetBalance(unused).
-		CalculatePayable()
+func SubsUpgrade(u paywall.UserID, up paywall.Upgrade) paywall.Subscription {
 
 	subs, err := paywall.NewUpgradeOrder(u, up)
 
@@ -88,9 +76,10 @@ func SubsUpgrade(u paywall.UserID, orders []paywall.Subscription) paywall.Subscr
 
 	switch pm {
 	case enum.PayMethodWx:
-		subs = subs.WithWxpay(WxPayClient.GetApp().AppID)
+		subs.PaymentMethod = enum.PayMethodWx
+		subs.WxAppID = null.StringFrom(WxPayApp.AppID)
 	case enum.PayMethodAli:
-		subs = subs.WithAlipay()
+		subs.PaymentMethod = enum.PayMethodAli
 	}
 
 	return subs
