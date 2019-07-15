@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
@@ -239,12 +237,109 @@ func TestOrderTx_CreateMember(t *testing.T) {
 	}
 
 	if err := tx.CreateMember(m, null.String{}); err != nil {
-		t.Error()
+		t.Error(err)
 	}
 
 	if err := tx.commit(); err != nil {
 		t.Error(err)
 	}
+}
+
+func createNewMember(userID paywall.UserID) paywall.Membership {
+
+	previousMember := paywall.NewMember(userID)
+	order := createConfirmedOrder(test.SubsCreate(userID), previousMember)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	// User new order to build member
+	m, err := previousMember.FromAliOrWx(order)
+	if err != nil {
+		panic(err)
+	}
+
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		panic(err)
+	}
+
+	if err := tx.CreateMember(m, null.String{}); err != nil {
+		panic(err)
+	}
+
+	if err := tx.commit(); err != nil {
+		panic(err)
+	}
+
+	return m
+}
+
+func TestOrderTx_UpdateMember(t *testing.T) {
+	userID := test.NewProfile().UserID(test.IDFtc)
+
+	previousMember := createNewMember(userID)
+	t.Logf("Existing membership: %+v", previousMember)
+
+	renewalSubs := createConfirmedOrder(test.SubsRenew(userID), previousMember)
+
+	renewedMember, err := previousMember.FromAliOrWx(renewalSubs)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Renewed membership: %+v", renewedMember)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err := tx.UpdateMember(renewedMember); err != nil {
+		t.Error(err)
+	}
+
+	if err := tx.commit(); err != nil {
+		t.Error(err)
+	}
+}
+
+func createRenewedMember(userID paywall.UserID) paywall.Membership {
+	previousMember := createNewMember(userID)
+
+	renewalSubs := createConfirmedOrder(test.SubsRenew(userID), previousMember)
+
+	renewedMember, err := previousMember.FromAliOrWx(renewalSubs)
+	if err != nil {
+		panic(err)
+	}
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		panic(err)
+	}
+
+	if err := tx.UpdateMember(renewedMember); err != nil {
+		panic(err)
+	}
+
+	if err := tx.commit(); err != nil {
+		panic(err)
+	}
+
+	return renewedMember
 }
 
 func TestOrderTx_FindBalanceSources(t *testing.T) {
@@ -437,75 +532,6 @@ func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 			}
 			if err := tx.ConfirmUpgrade(tt.args.id); (err != nil) != tt.wantErr {
 				t.Errorf("OrderTx.ConfirmUpgrade() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if err := tx.commit(); err != nil {
-				t.Error(err)
-			}
-		})
-	}
-}
-
-func TestOrderTx_UpdateMember(t *testing.T) {
-	userID := test.NewProfile().UserID(test.IDFtc)
-
-	m := createMember(userID)
-	t.Logf("New membership: %+v", m)
-
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	type args struct {
-		m paywall.Membership
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Renew Member",
-			args: args{
-				m: paywall.Membership{
-					ID:            m.ID,
-					CompoundID:    m.CompoundID,
-					FTCUserID:     m.FTCUserID,
-					UnionID:       m.UnionID,
-					Tier:          enum.TierPremium,
-					Cycle:         enum.CycleYear,
-					ExpireDate:    chrono.DateFrom(m.ExpireDate.Time.AddDate(1, 0, 0)),
-					PaymentMethod: enum.PayMethodAli,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Upgrade member",
-			args: args{
-				m: paywall.Membership{
-					ID:            m.ID,
-					CompoundID:    m.CompoundID,
-					FTCUserID:     m.FTCUserID,
-					UnionID:       m.UnionID,
-					Tier:          enum.TierPremium,
-					Cycle:         enum.CycleYear,
-					ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
-					PaymentMethod: enum.PayMethodAli,
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
-
-			if err := tx.UpdateMember(tt.args.m); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.UpdateMember() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err := tx.commit(); err != nil {
