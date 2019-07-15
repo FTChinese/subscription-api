@@ -214,6 +214,10 @@ func createStripeSub(p paywall.StripeSubParams) (*stripe.Subscription, error) {
 		},
 	}
 
+	if p.IdempotencyKey != "" {
+		params.IdempotencyKey = stripe.String(p.IdempotencyKey)
+	}
+
 	if p.Coupon.Valid {
 		params.Coupon = stripe.String(p.DefaultPaymentMethod.String)
 	}
@@ -239,6 +243,10 @@ func updateStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscript
 				stripe.String("latest_invoice.payment_intent"),
 			},
 		},
+	}
+
+	if p.IdempotencyKey != "" {
+		params.IdempotencyKey = stripe.String(p.IdempotencyKey)
 	}
 
 	if p.Coupon.Valid {
