@@ -434,6 +434,64 @@ func TestOrderTx_SaveUpgrade(t *testing.T) {
 	}
 }
 
+func buildUpgradeV2(userID paywall.UserID, count int) paywall.UpgradePreview {
+	member := renewMemberN(userID, count)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		panic(err)
+	}
+
+	sources, err := tx.FindBalanceSources(userID)
+
+	if err := tx.commit(); err != nil {
+		panic(err)
+	}
+
+	plan, err := paywall.GetDefaultPlans().GetPlanByID("premium_year")
+	if err != nil {
+		panic(err)
+	}
+
+	up := paywall.NewUpgradePreview(sources)
+	up.Plan = plan.BuildUpgradePlan(up.Balance)
+	up.Member = member
+	return up
+}
+
+func TestOrderTx_SaveUpgradeV2(t *testing.T) {
+	userID := test.NewProfile().RandomUserID()
+
+	upgrade := buildUpgradeV2(userID, 3)
+
+	t.Logf("Upgrade %+v", upgrade)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		t.Error(err)
+	}
+
+	orderID, _ := paywall.GenerateOrderID()
+
+	if err := tx.SaveUpgradeV2(orderID, upgrade); err != nil {
+		t.Error(err)
+	}
+
+	if err := tx.commit(); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestOrderTx_SetUpgradeIDOnSource(t *testing.T) {
 	userID := test.NewProfile().RandomUserID()
 
