@@ -130,6 +130,7 @@ func NewUpgradeOrder(u UserID, up Upgrade) (Subscription, error) {
 		CycleCount:   up.CycleCount,
 		ExtraDays:    up.ExtraDays,
 		Usage:        SubsKindUpgrade,
+		CreatedAt:    chrono.TimeNow(),
 	}
 
 	id, err := GenerateOrderID()
@@ -155,6 +156,7 @@ func NewUpgradeOrderV2(userID UserID, up UpgradePreview) (Subscription, error) {
 		CycleCount:   up.Plan.CycleCount,
 		ExtraDays:    up.Plan.ExtraDays,
 		Usage:        SubsKindUpgrade,
+		CreatedAt:    chrono.TimeNow(),
 	}
 
 	id, err := GenerateOrderID()
