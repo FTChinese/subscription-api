@@ -10,57 +10,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/test"
 )
 
-func createUpgrade(userID paywall.UserID) paywall.Upgrade {
-	upgrade := test.GenUpgrade(userID)
-	orderID, _ := paywall.GenerateOrderID()
-	upgrade.Member = test.GenMember(userID, false)
-
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	tx, err := env.BeginOrderTx()
-	if err != nil {
-		panic(err)
-	}
-
-	if err := tx.SaveUpgrade(orderID, upgrade); err != nil {
-		panic(err)
-	}
-
-	if err := tx.commit(); err != nil {
-		panic(err)
-	}
-
-	return upgrade
-}
-
-func createMember(userID paywall.UserID) paywall.Membership {
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	tx, err := env.BeginOrderTx()
-	if err != nil {
-		panic(err)
-	}
-
-	m := test.GenMember(userID, false)
-
-	err = tx.CreateMember(m, null.String{})
-	if err != nil {
-		panic(err)
-	}
-
-	if err := tx.commit(); err != nil {
-		panic(err)
-	}
-
-	return m
-}
-
 // Those tests only checks whether db operations are correct.
 // It does not guarantees logical correctness.
 func TestOrderTx_SaveOrder(t *testing.T) {
@@ -183,7 +132,7 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 	}
 }
 
-func createConfirmedOrder(
+func confirmOrder(
 	unconfirmedOrder paywall.Subscription,
 	previousMember paywall.Membership,
 ) paywall.Subscription {
@@ -216,7 +165,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 	userID := test.NewProfile().RandomUserID()
 
 	previousMember := paywall.NewMember(userID)
-	order := createConfirmedOrder(test.SubsCreate(userID), previousMember)
+	order := confirmOrder(test.SubsCreate(userID), previousMember)
 	t.Logf("A confirmed order: %+v", order)
 
 	env := Env{
@@ -245,10 +194,10 @@ func TestOrderTx_CreateMember(t *testing.T) {
 	}
 }
 
-func createNewMember(userID paywall.UserID) paywall.Membership {
+func newMember(userID paywall.UserID) paywall.Membership {
 
 	previousMember := paywall.NewMember(userID)
-	order := createConfirmedOrder(test.SubsCreate(userID), previousMember)
+	order := confirmOrder(test.SubsCreate(userID), previousMember)
 
 	env := Env{
 		db:    test.DB,
@@ -280,10 +229,10 @@ func createNewMember(userID paywall.UserID) paywall.Membership {
 func TestOrderTx_UpdateMember(t *testing.T) {
 	userID := test.NewProfile().UserID(test.IDFtc)
 
-	previousMember := createNewMember(userID)
+	previousMember := newMember(userID)
 	t.Logf("Existing membership: %+v", previousMember)
 
-	renewalSubs := createConfirmedOrder(test.SubsRenew(userID), previousMember)
+	renewalSubs := confirmOrder(test.SubsRenew(userID), previousMember)
 
 	renewedMember, err := previousMember.FromAliOrWx(renewalSubs)
 	if err != nil {
@@ -311,12 +260,10 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 	}
 }
 
-func createRenewedMember(userID paywall.UserID) paywall.Membership {
-	previousMember := createNewMember(userID)
+func renewMember(userID paywall.UserID, initial paywall.Membership) paywall.Membership {
+	renewalSubs := confirmOrder(test.SubsRenew(userID), initial)
 
-	renewalSubs := createConfirmedOrder(test.SubsRenew(userID), previousMember)
-
-	renewedMember, err := previousMember.FromAliOrWx(renewalSubs)
+	renewedMember, err := initial.FromAliOrWx(renewalSubs)
 	if err != nil {
 		panic(err)
 	}
@@ -342,14 +289,28 @@ func createRenewedMember(userID paywall.UserID) paywall.Membership {
 	return renewedMember
 }
 
+// Renew a membership N times.
+func renewMemberN(userID paywall.UserID, count int) paywall.Membership {
+	previousMember := newMember(userID)
+
+	for i := 0; i < count; i++ {
+		previousMember = renewMember(userID, previousMember)
+	}
+
+	return previousMember
+}
+
 func TestOrderTx_FindBalanceSources(t *testing.T) {
+
+	userID := test.NewProfile().RandomUserID()
+	finalMember := renewMemberN(userID, 3)
+
+	t.Logf("Final member %+v", finalMember)
 
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
-
-	userID := test.NewProfile().RandomUserID()
 
 	type args struct {
 		userID paywall.UserID
@@ -390,15 +351,51 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 	}
 }
 
-func TestOrderTx_SaveUpgrade(t *testing.T) {
-	userID := test.NewProfile().RandomUserID()
+func buildUpgrade(userID paywall.UserID, count int) paywall.Upgrade {
+	member := renewMemberN(userID, count)
 
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
 
-	orderID, _ := paywall.GenerateOrderID()
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		panic(err)
+	}
+
+	sources, err := tx.FindBalanceSources(userID)
+
+	if err := tx.commit(); err != nil {
+		panic(err)
+	}
+
+	plan, err := paywall.GetDefaultPlans().GetPlanByID("premium_year")
+	if err != nil {
+		panic(err)
+	}
+
+	up := paywall.NewUpgrade(plan).SetBalance(sources).CalculatePayable()
+
+	up.Member = member
+	return up
+}
+
+func TestOrderTx_SaveUpgrade(t *testing.T) {
+	userID := test.NewProfile().RandomUserID()
+
+	upgrade := buildUpgrade(userID, 3)
+
+	t.Logf("Upgrade %+v", upgrade)
+
+	upgradeOrder := createOrder(test.SubsUpgrade(userID, upgrade))
+
+	t.Logf("Created upgrade order: %+v", upgradeOrder)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
 
 	type args struct {
 		orderID string
@@ -412,8 +409,8 @@ func TestOrderTx_SaveUpgrade(t *testing.T) {
 		{
 			name: "Save Upgrade",
 			args: args{
-				orderID: orderID,
-				up:      test.GenUpgrade(userID),
+				orderID: upgradeOrder.OrderID,
+				up:      upgrade,
 			},
 		},
 	}
@@ -431,6 +428,8 @@ func TestOrderTx_SaveUpgrade(t *testing.T) {
 			if err := tx.commit(); err != nil {
 				t.Error(err)
 			}
+
+			t.Logf("Saved upgrade: %+v", tt.args.up)
 		})
 	}
 }
@@ -438,32 +437,14 @@ func TestOrderTx_SaveUpgrade(t *testing.T) {
 func TestOrderTx_SetUpgradeIDOnSource(t *testing.T) {
 	userID := test.NewProfile().RandomUserID()
 
+	upgrade := buildUpgrade(userID, 3)
+
+	t.Logf("Upgrade %+v", upgrade)
+
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
-
-	order1 := test.SubsCreate(userID)
-	order2 := test.SubsRenew(userID)
-
-	for _, o := range []paywall.Subscription{order1, order2} {
-		tx, err := env.BeginOrderTx()
-		if err != nil {
-			t.Error(err)
-		}
-
-		if err := tx.SaveOrder(o, test.RandomClientApp()); err != nil {
-			_ = tx.rollback()
-			t.Error()
-		}
-
-		if err := tx.commit(); err != nil {
-			t.Error(err)
-		}
-	}
-
-	up := paywall.NewUpgrade(test.YearlyPremium)
-	up.Source = []string{order1.OrderID, order2.OrderID}
 
 	type args struct {
 		up paywall.Upgrade
@@ -477,7 +458,7 @@ func TestOrderTx_SetUpgradeIDOnSource(t *testing.T) {
 		{
 			name: "Set upgrade id on upgrade source order",
 			args: args{
-				up: up,
+				up: upgrade,
 			},
 		},
 	}
@@ -498,10 +479,42 @@ func TestOrderTx_SetUpgradeIDOnSource(t *testing.T) {
 	}
 }
 
+func createUpgrade(userID paywall.UserID, count int) (paywall.Upgrade, paywall.Subscription) {
+	upgrade := buildUpgrade(userID, count)
+
+	upgradeOrder := createOrder(test.SubsUpgrade(userID, upgrade))
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		panic(err)
+	}
+
+	if err := tx.SaveUpgrade(upgradeOrder.OrderID, upgrade); err != nil {
+		panic(err)
+	}
+
+	if err := tx.SetUpgradeIDOnSource(upgrade); err != nil {
+		panic(err)
+	}
+
+	if err := tx.commit(); err != nil {
+		panic(err)
+	}
+
+	return upgrade, upgradeOrder
+}
+
 func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 	userID := test.NewProfile().RandomUserID()
 
-	upgrade := createUpgrade(userID)
+	upgrade, _ := createUpgrade(userID, 3)
+
+	t.Logf("Created upgrade +%v", upgrade)
 
 	env := Env{
 		db:    test.DB,
@@ -538,6 +551,136 @@ func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 				t.Error(err)
 			}
 		})
+	}
+}
+
+// Test the process of upgrading a membership.
+func TestOrderTx_CreateUpgradedMember(t *testing.T) {
+	// Prerequisites to create an existing user, an upgrade order,
+	// and an upgrade metadata.
+	userID := test.NewProfile().RandomUserID()
+	upgrade, order := createUpgrade(userID, 3)
+
+	confirmedSubs, err := order.Confirm(upgrade.Member, time.Now())
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Confirmed upgrade order: %+v", confirmedSubs)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Set the order and upgrade as confirmed.
+	if err := tx.ConfirmOrder(confirmedSubs); err != nil {
+		t.Error(err)
+	}
+
+	if err := tx.ConfirmUpgrade(upgrade.ID); err != nil {
+		t.Error(err)
+	}
+
+	// Build upgrade membership from previous membership
+	// and upgrade order.
+	upgradedMember, err := upgrade.Member.FromAliOrWx(confirmedSubs)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Update membership
+	if err := tx.UpdateMember(upgradedMember); err != nil {
+		t.Error(err)
+	}
+
+	if err := tx.commit(); err != nil {
+		panic(err)
+	}
+}
+
+func createUpgradedMember(userID paywall.UserID, count int) paywall.Membership {
+	upgrade, order := createUpgrade(userID, count)
+
+	confirmedSubs, err := order.Confirm(upgrade.Member, time.Now())
+	if err != nil {
+		panic(err)
+	}
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		panic(err)
+	}
+
+	// Set the order and upgrade as confirmed.
+	if err := tx.ConfirmOrder(confirmedSubs); err != nil {
+		panic(err)
+	}
+
+	if err := tx.ConfirmUpgrade(upgrade.ID); err != nil {
+		panic(err)
+	}
+
+	// Build upgrade membership from previous membership
+	// and upgrade order.
+	upgradedMember, err := upgrade.Member.FromAliOrWx(confirmedSubs)
+	if err != nil {
+		panic(err)
+	}
+
+	// Update membership
+	if err := tx.UpdateMember(upgradedMember); err != nil {
+		panic(err)
+	}
+
+	if err := tx.commit(); err != nil {
+		panic(err)
+	}
+
+	return upgradedMember
+}
+
+// Make sure if existing orders were used for upgrading,
+// they will never be used again.
+func TestOrderTx_RetrieveUsedBalanceSources(t *testing.T) {
+	userID := test.NewProfile().RandomUserID()
+
+	m := createUpgradedMember(userID, 3)
+
+	t.Logf("Upgraded membership: %+v", m)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		t.Error(err)
+	}
+	sources, err := tx.FindBalanceSources(userID)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(sources) != 0 {
+		t.Errorf("Balance sources should already be used. Got %+v", sources)
+	}
+
+	t.Logf("Sources: %+v", sources)
+
+	if err := tx.commit(); err != nil {
+		t.Error(err)
 	}
 }
 
