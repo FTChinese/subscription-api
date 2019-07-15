@@ -225,7 +225,9 @@ func main() {
 
 	r.Route("/upgrade", func(r chi.Router) {
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
+		// Deprecate
 		r.Put("/", upgradeRouter.DirectUpgrade)
+		// Deprecate
 		r.Get("/preview", upgradeRouter.PreviewUpgrade)
 
 		r.Put("/free", upgradeRouter.FreeUpgrade)
