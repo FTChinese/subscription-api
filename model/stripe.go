@@ -136,10 +136,10 @@ func (env Env) CreateStripeSub(
 		}
 	}
 
-	if err := tx.LinkUser(newMmb); err != nil {
-		_ = tx.rollback()
-		return stripeSub, err
-	}
+	//if err := tx.LinkUser(newMmb); err != nil {
+	//	_ = tx.rollback()
+	//	return stripeSub, err
+	//}
 
 	if err := tx.commit(); err != nil {
 		return &stripe.Subscription{}, err
@@ -187,10 +187,10 @@ func (env Env) UpdateStripeSubs(
 		return stripeSub, err
 	}
 
-	if err := tx.LinkUser(newMmb); err != nil {
-		_ = tx.rollback()
-		return stripeSub, err
-	}
+	//if err := tx.LinkUser(newMmb); err != nil {
+	//	_ = tx.rollback()
+	//	return stripeSub, err
+	//}
 
 	if err := tx.commit(); err != nil {
 		return stripeSub, err
