@@ -363,10 +363,10 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		}
 	}
 
-	if err := tx.LinkUser(member); err != nil {
-		_ = tx.rollback()
-		return subs, err
-	}
+	//if err := tx.LinkUser(member); err != nil {
+	//	_ = tx.rollback()
+	//	return subs, err
+	//}
 
 	// Error here should allow retry.
 	if err := tx.commit(); err != nil {
