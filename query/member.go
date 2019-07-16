@@ -67,18 +67,18 @@ func (b Builder) UpdateMember() string {
 	LIMIT 1`, b.MemberDB())
 }
 
-func (b Builder) LinkFtcMember() string {
-	return fmt.Sprintf(`
-	UPDATE %s.userinfo
-	SET member_id = ?
-	WHERE user_id = ?
-	LIMIT 1`, b.CmsTmp())
-}
-
-func (b Builder) LinkWxMember() string {
-	return fmt.Sprintf(`
-	UPDATE %s.wechat_userinfo
-	SET member_id = ?
-	WHERE union_id = ?
-	LIMIT 1`, b.UserDB())
-}
+//func (b Builder) LinkFtcMember() string {
+//	return fmt.Sprintf(`
+//	UPDATE %s.userinfo
+//	SET member_id = ?
+//	WHERE user_id = ?
+//	LIMIT 1`, b.CmsTmp())
+//}
+//
+//func (b Builder) LinkWxMember() string {
+//	return fmt.Sprintf(`
+//	UPDATE %s.wechat_userinfo
+//	SET member_id = ?
+//	WHERE union_id = ?
+//	LIMIT 1`, b.UserDB())
+//}
