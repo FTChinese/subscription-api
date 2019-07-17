@@ -17,9 +17,14 @@ const (
 
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
-	sandbox bool
-	model   model.Env
-	postman postoffice.Postman
+	sandbox    bool
+	production bool
+	model      model.Env
+	postman    postoffice.Postman
+}
+
+func (router PayRouter) stripeLive() bool {
+	return router.production && !router.sandbox
 }
 
 func (router PayRouter) findPlan(req *http.Request) (paywall.Plan, error) {
@@ -33,7 +38,7 @@ func (router PayRouter) findPlan(req *http.Request) (paywall.Plan, error) {
 		return paywall.Plan{}, err
 	}
 
-	return router.model.GetCurrentPricing().FindPlan(tier, cycle)
+	return router.model.GetCurrentPlans().GetPlanByID(tier + "_" + cycle)
 }
 
 func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
