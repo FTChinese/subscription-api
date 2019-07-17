@@ -256,32 +256,6 @@ func (m Membership) IsAliOrWxPay() bool {
 	return m.PaymentMethod == enum.InvalidPay || m.PaymentMethod == enum.PayMethodAli || m.PaymentMethod == enum.PayMethodWx
 }
 
-func (m Membership) ActionOnStripe() StripeAction {
-	if m.Tier == enum.InvalidTier {
-		return StripeActionCreate
-	}
-
-	// if membership is not expired yet, do nothing.
-	if !m.IsExpired() {
-		return StripeActionNoop
-	}
-
-	switch m.PaymentMethod {
-	case enum.PayMethodAli, enum.PayMethodWx, enum.InvalidPay:
-		return StripeActionCreate
-
-	case enum.PayMethodStripe:
-		if m.AutoRenewal {
-			return StripeActionSync
-		} else {
-			return StripeActionCreate
-		}
-
-	default:
-		return StripeActionDeny
-	}
-}
-
 func (m Membership) PermitStripeCreate() bool {
 	// If a membership does not exist, allow create stripe
 	// subscription
@@ -300,35 +274,18 @@ func (m Membership) PermitStripeCreate() bool {
 	return false
 }
 
+// PermitStripeUpgrade tests whether a stripe customer with
+// standard membership should be allowed to upgrade to premium.
 func (m Membership) PermitStripeUpgrade(p StripeSubParams) bool {
-	if m.PaymentMethod != enum.PayMethodStripe {
-		return false
+	// expired members could simply re-subscribe.
+	// If member is expired but it is an auto renewal, we should allow upgrading.
+	if m.PaymentMethod == enum.PayMethodStripe && m.Tier < p.Tier {
+		if m.IsExpired() && !m.AutoRenewal {
+			return false
+		}
+
+		return true
 	}
 
-	if m.IsExpired() {
-		return false
-	}
-
-	if m.Tier == p.Tier && m.Cycle == m.Cycle {
-		return false
-	}
-
-	if m.Tier >= p.Tier {
-		return false
-	}
-
-	if m.Cycle >= p.Cycle {
-		return false
-	}
-
-	return true
+	return false
 }
-
-type StripeAction int
-
-const (
-	StripeActionDeny StripeAction = iota
-	StripeActionNoop
-	StripeActionCreate
-	StripeActionSync
-)
