@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/guregu/null"
+	"database/sql"
 	"github.com/pkg/errors"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
@@ -74,129 +74,160 @@ func createCustomer(email string) (string, error) {
 	return cus.ID, nil
 }
 
+// CreateStripeSub creates a new subscription.
 func (env Env) CreateStripeSub(
 	id paywall.UserID,
 	params paywall.StripeSubParams,
-) (*stripe.Subscription, error) {
+) (paywall.StripeSub, error) {
 
-	log := logger.WithField("trace", "Env.CreateStripeCustomer")
+	log := logger.WithField("trace", "Env.CreateStripeSub")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return &stripe.Subscription{}, err
+		return paywall.StripeSub{}, err
 	}
 
+	// Retrieve member for this user to check whether the
+	// operation is allowed.
+	// Only expired members without auto renewal are allowed to create a new subscription via stripe
 	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return &stripe.Subscription{}, nil
+		return paywall.StripeSub{}, nil
 	}
 
-	var stripeSub *stripe.Subscription
-	switch mmb.ActionOnStripe() {
-	default:
+	if !mmb.PermitStripeCreate() {
 		_ = tx.rollback()
-		return &stripe.Subscription{}, errors.New("Unknown operation for stripe payment")
-
-	case paywall.StripeActionCreate:
-		log.Info("Creating stripe subscription")
-		stripeSub, err = createStripeSub(params)
-
-	case paywall.StripeActionSync:
-		log.Info("Syncing stripe subscription data")
-		stripeSub, err = sub.Get(mmb.StripeSubID.String, nil)
-
-	case paywall.StripeActionNoop:
-		log.Info("Stripe noop")
-		_ = tx.rollback()
-		return &stripe.Subscription{}, ErrAlreadyAMember
+		return paywall.StripeSub{}, errors.New("only new members or expired members are allowed to create stripe subscription")
 	}
 
+	// When user reaches here, the membership must be expired,
+	// and it is not auto renewal.
+	//log.Info("Creating stripe subscription")
+	s, err := createStripeSub(params)
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return &stripe.Subscription{}, err
+		return paywall.StripeSub{}, err
 	}
 
-	newMmb := mmb.FromStripe(id, params, stripeSub)
+	//log.Infof("Payment intent %+v", stripeSub.LatestInvoice.PaymentIntent)
+	newMmb := mmb.FromStripe(id, params, s)
+
+	//log.Infof("A stripe membership: %+v", newMmb)
 
 	if mmb.IsZero() {
 		// Insert member
-		if err := tx.CreateMember(newMmb, null.StringFrom(params.PlanID)); err != nil {
+		if err := tx.CreateMember(newMmb); err != nil {
 			_ = tx.rollback()
-			return stripeSub, err
+			return paywall.StripeSub{}, err
 		}
 	} else {
 		// update member
 		if err := tx.UpdateMember(newMmb); err != nil {
 			_ = tx.rollback()
-			return stripeSub, err
+			return paywall.StripeSub{}, err
 		}
 	}
 
-	//if err := tx.LinkUser(newMmb); err != nil {
-	//	_ = tx.rollback()
-	//	return stripeSub, err
-	//}
-
 	if err := tx.commit(); err != nil {
-		return &stripe.Subscription{}, err
+		return paywall.StripeSub{}, err
 	}
 
-	return &stripe.Subscription{}, nil
+	return paywall.NewStripeSub(s), nil
 }
 
-func (env Env) UpdateStripeSubs(
+// GetStripeSub refresh stripe subscription data if stale.
+func (env Env) GetStripeSub(id paywall.UserID) (paywall.StripeSub, error) {
+	tx, err := env.BeginOrderTx()
+	if err != nil {
+		//log.Error(err)
+		return paywall.StripeSub{}, err
+	}
+
+	mmb, err := tx.RetrieveMember(id)
+	if err != nil {
+		//log.Error(err)
+		_ = tx.rollback()
+		return paywall.StripeSub{}, nil
+	}
+
+	if mmb.IsZero() {
+		return paywall.StripeSub{}, sql.ErrNoRows
+	}
+
+	//log.Info("Creating stripe subscription")
+	s, err := sub.Get(mmb.StripeSubID.String, nil)
+	if err != nil {
+		//log.Error(err)
+		_ = tx.rollback()
+		return paywall.StripeSub{}, err
+	}
+
+	//log.Infof("Payment intent %+v", stripeSub.LatestInvoice.PaymentIntent)
+	newMmb := mmb.RefreshStripe(s)
+
+	//log.Infof("A stripe membership: %+v", newMmb)
+	// update member
+	if err := tx.UpdateMember(newMmb); err != nil {
+		_ = tx.rollback()
+		return paywall.StripeSub{}, err
+	}
+
+	if err := tx.commit(); err != nil {
+		return paywall.StripeSub{}, err
+	}
+
+	return paywall.NewStripeSub(s), nil
+}
+
+// UpgradeStripeSubs switches subscription plan.
+func (env Env) UpgradeStripeSubs(
 	id paywall.UserID,
 	params paywall.StripeSubParams,
-) (*stripe.Subscription, error) {
+) (paywall.StripeSub, error) {
 
 	log := logger.WithField("trace", "Env.CreateStripeCustomer")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return &stripe.Subscription{}, err
+		return paywall.StripeSub{}, err
 	}
 
 	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return &stripe.Subscription{}, nil
+		return paywall.StripeSub{}, nil
 	}
 
 	if !mmb.PermitStripeUpgrade(params) {
-		return &stripe.Subscription{}, errors.New("only upgrading from monthly to yearly plan, or from standard product to premium is allowed")
+		return paywall.StripeSub{}, errors.New("only upgrading from monthly to yearly plan, or from standard product to premium is allowed")
 	}
 
-	stripeSub, err := updateStripeSub(params, mmb.StripeSubID.String)
+	s, err := upgradeStripeSub(params, mmb.StripeSubID.String)
 
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return &stripe.Subscription{}, err
+		return paywall.StripeSub{}, err
 	}
 
-	newMmb := mmb.FromStripe(id, params, stripeSub)
+	newMmb := mmb.FromStripe(id, params, s)
 
 	if err := tx.UpdateMember(newMmb); err != nil {
 		_ = tx.rollback()
-		return stripeSub, err
+		return paywall.StripeSub{}, err
 	}
-
-	//if err := tx.LinkUser(newMmb); err != nil {
-	//	_ = tx.rollback()
-	//	return stripeSub, err
-	//}
 
 	if err := tx.commit(); err != nil {
-		return stripeSub, err
+		return paywall.StripeSub{}, err
 	}
 
-	return stripeSub, nil
+	return paywall.NewStripeSub(s), nil
 }
 
 func createStripeSub(p paywall.StripeSubParams) (*stripe.Subscription, error) {
@@ -230,7 +261,7 @@ func createStripeSub(p paywall.StripeSubParams) (*stripe.Subscription, error) {
 	return sub.New(params)
 }
 
-func updateStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscription, error) {
+func upgradeStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscription, error) {
 	params := &stripe.SubscriptionParams{
 		Customer: stripe.String(p.Customer),
 		Items: []*stripe.SubscriptionItemsParams{
