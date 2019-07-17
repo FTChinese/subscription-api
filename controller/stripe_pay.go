@@ -239,6 +239,8 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 		return
 	}
 
+	logrus.WithField("trace", "StripeRouter").Infof("Stripe param: %+v", params)
+
 	planID, err := getStripePlanID(params.Key())
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
@@ -260,9 +262,24 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	view.Render(w, view.NewResponse().SetBody(s))
 }
 
-// UpdateSubscription create a stripe subscription.
+// GetSubscription fetches a user's subscription and update membership if data in our db is stale.
+func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Request) {
+	ftcID := req.Header.Get(ftcIDKey)
+
+	id, _ := paywall.NewUserID(null.StringFrom(ftcID), null.String{})
+
+	ss, err := router.model.GetStripeSub(id)
+	if err != nil {
+		view.Render(w, stripeDBFailure(err))
+		return
+	}
+
+	view.Render(w, view.NewResponse().SetBody(ss))
+}
+
+// UpgradeSubscription create a stripe subscription.
 // Input: {customer: "", coupon: "", defaultPaymentMethod: "", ftcPlanId: "standard_year" | "standard_month" | "premium_year"}
-func (router StripeRouter) UpdateSubscription(w http.ResponseWriter, req *http.Request) {
+func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(ftcIDKey)
 	// "plan_FOEFa7c1zLOtJW"
 	var params paywall.StripeSubParams
@@ -283,7 +300,7 @@ func (router StripeRouter) UpdateSubscription(w http.ResponseWriter, req *http.R
 	}
 
 	params.PlanID = planID
-	s, err := router.model.UpdateStripeSubs(paywall.UserID{
+	s, err := router.model.UpgradeStripeSubs(paywall.UserID{
 		CompoundID: ftcID,
 		FtcID:      null.StringFrom(ftcID),
 		UnionID:    null.String{},
