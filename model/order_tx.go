@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -293,7 +292,7 @@ func (t OrderTx) DuplicateUpgrade(orderID string) error {
 	return nil
 }
 
-func (t OrderTx) CreateMember(m paywall.Membership, stripePlanID null.String) error {
+func (t OrderTx) CreateMember(m paywall.Membership) error {
 	vipType := tierID(m.Tier)
 	expireTime := m.ExpireDate.Unix()
 
@@ -311,7 +310,7 @@ func (t OrderTx) CreateMember(m paywall.Membership, stripePlanID null.String) er
 		m.ExpireDate,
 		m.PaymentMethod,
 		m.StripeSubID,
-		stripePlanID,
+		m.StripePlanID,
 		m.AutoRenewal,
 	)
 
