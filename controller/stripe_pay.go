@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
@@ -18,44 +17,15 @@ import (
 	"net/http"
 )
 
-var stripeTestPlans = map[string]string{
-	"standard_year":  "plan_FOdfeaqzczp6Ag",
-	"standard_month": "plan_FOdgPTznDwHU4i",
-	"premium_year":   "plan_FOde0uAr0V4WmT",
-}
-
-var stripeLivePlans = map[string]string{}
-
-// In sandbox and dev env, use stripeTestPlans.
-func getStripePlanID(key string) (string, error) {
-	// Only in non-sandbox production env should we use
-	// the live key.
-	live := Production && !Sandbox
-
-	var id string
-	var ok bool
-
-	if live {
-		id, ok = stripeLivePlans[key]
-	} else {
-		id, ok = stripeTestPlans[key]
-	}
-
-	if !ok {
-		return id, fmt.Errorf("plan for %s not found", key)
-	}
-
-	return id, nil
-}
-
 type StripeRouter struct {
 	PayRouter
 }
 
-func NewStripeRouter(m model.Env, p postoffice.Postman, sandbox bool) StripeRouter {
+func NewStripeRouter(m model.Env, p postoffice.Postman, sandbox bool, production bool) StripeRouter {
 	r := StripeRouter{}
 
 	r.sandbox = sandbox
+	r.production = production
 	r.model = m
 	r.postman = p
 
@@ -86,13 +56,13 @@ func stripeDBFailure(err error) view.Response {
 
 // GetPlan retrieves a stripe plan.
 func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
-	id, err := GetURLParam(req, "id").ToString()
+	key, err := GetURLParam(req, "id").ToString()
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	planID, err := getStripePlanID(id)
+	planID, err := paywall.GetStripePlans(router.stripeLive()).FindPlanID(key)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -241,7 +211,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 
 	logrus.WithField("trace", "StripeRouter").Infof("Stripe param: %+v", params)
 
-	planID, err := getStripePlanID(params.Key())
+	planID, err := paywall.GetStripePlans(router.stripeLive()).FindPlanID(params.Key())
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -289,11 +259,13 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 	}
 
 	if params.Key() == "standard_month" {
-		view.Render(w, view.NewBadRequest("This is used only to change monthly pan to yearly or from standard to premium."))
+		view.Render(w, view.NewBadRequest("This is used only to change monthly plan to yearly or from standard to premium."))
 		return
 	}
 
-	planID, err := getStripePlanID(params.Key())
+	planID, err := paywall.
+		GetStripePlans(router.stripeLive()).
+		FindPlanID(params.Key())
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
