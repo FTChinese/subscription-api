@@ -39,8 +39,6 @@ func extractStripePlanID(s *stripe.Subscription) (string, error) {
 }
 
 type StripeSub struct {
-	// A date in the future at which the subscription will automatically get canceled. Nullable.
-	CancelAt           chrono.Time   `json:"cancelAt"`
 	CancelAtPeriodEnd  bool          `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time   `json:"created"`
 	CurrentPeriodEnd   chrono.Time   `json:"currentPeriodEnd"`
@@ -53,16 +51,24 @@ type StripeSub struct {
 	Status stripe.SubscriptionStatus `json:"status"`
 }
 
+// Bridge between chrono pkg and unix timestamp.
+func canonicalizeUnix(s int64) time.Time {
+	if s > 0 {
+		return time.Unix(s, 0)
+	}
+
+	return time.Time{}
+}
+
 func NewStripeSub(s *stripe.Subscription) StripeSub {
 	return StripeSub{
-		CancelAt:           chrono.TimeFrom(time.Unix(s.CancelAt, 0)),
 		CancelAtPeriodEnd:  s.CancelAtPeriodEnd,
-		Created:            chrono.TimeFrom(time.Unix(s.Created, 0)),
-		CurrentPeriodEnd:   chrono.TimeFrom(time.Unix(s.CurrentPeriodEnd, 0)),
-		CurrentPeriodStart: chrono.TimeFrom(time.Unix(s.CurrentPeriodStart, 0)),
-		EndedAt:            chrono.TimeFrom(time.Unix(s.EndedAt, 0)),
+		Created:            chrono.TimeFrom(canonicalizeUnix(s.Created)),
+		CurrentPeriodEnd:   chrono.TimeFrom(canonicalizeUnix(s.CurrentPeriodEnd)),
+		CurrentPeriodStart: chrono.TimeFrom(canonicalizeUnix(s.CurrentPeriodStart)),
+		EndedAt:            chrono.TimeFrom(canonicalizeUnix(s.EndedAt)),
 		LatestInvoice:      NewStripeInvoice(s.LatestInvoice),
-		StartDate:          chrono.TimeFrom(time.Unix(s.StartDate, 0)),
+		StartDate:          chrono.TimeFrom(canonicalizeUnix(s.StartDate)),
 		Status:             s.Status,
 	}
 }
@@ -85,7 +91,7 @@ type StripeInvoice struct {
 
 func NewStripeInvoice(i *stripe.Invoice) StripeInvoice {
 	return StripeInvoice{
-		Created:             chrono.TimeFrom(time.Unix(i.Created, 0)),
+		Created:             chrono.TimeFrom(canonicalizeUnix(i.Created)),
 		Currency:            i.Currency,
 		HostedInvoiceURL:    i.HostedInvoiceURL,
 		InvoicePDF:          i.InvoicePDF,
