@@ -3,7 +3,7 @@ package model
 import (
 	"encoding/json"
 
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
@@ -50,7 +50,7 @@ func (env Env) RetrievePromo() (paywall.Promotion, error) {
 	}
 
 	if plans != "" {
-		if err := json.Unmarshal([]byte(plans), &p.Pricing); err != nil {
+		if err := json.Unmarshal([]byte(plans), &p.Plans); err != nil {
 			return p, err
 		}
 	}
@@ -90,28 +90,28 @@ func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
 	return paywall.Promotion{}, false
 }
 
-// GetCurrentPricing get current effective pricing plans.
-func (env Env) GetCurrentPricing() paywall.FtcPlans {
+// GetCurrentPlans get current effective pricing plans.
+func (env Env) GetCurrentPlans() paywall.FtcPlans {
 
 	if env.sandbox {
-		return paywall.GetSandboxPlans()
+		return paywall.GetFtcPlans(env.sandbox)
 	}
 
 	promo, found := env.LoadCachedPromo()
 	if !found {
-		logger.WithField("trace", "GetCurrentPricing").Info("Promo not found. Use default plans")
+		logger.WithField("trace", "GetCurrentPlans").Info("Promo not found. Use default plans")
 
-		return paywall.GetDefaultPlans()
+		return paywall.GetFtcPlans(env.sandbox)
 	}
 	if !promo.IsInEffect() {
-		logger.WithField("trace", "GetCurrentPricing").Info("Promo is not in effective time range. Use default plans")
+		logger.WithField("trace", "GetCurrentPlans").Info("Promo is not in effective time range. Use default plans")
 
-		return paywall.GetDefaultPlans()
+		return paywall.GetFtcPlans(env.sandbox)
 	}
 
-	logger.WithField("trace", "GetCurrentPricing").Info("Use promotion pricing plans")
+	logger.WithField("trace", "GetCurrentPlans").Info("Use promotion pricing plans")
 
-	return promo.Pricing
+	return promo.Plans
 }
 
 func (env Env) GetPayWall() (paywall.PayWall, error) {
@@ -122,10 +122,10 @@ func (env Env) GetPayWall() (paywall.PayWall, error) {
 	if !found || !promo.IsInEffect() {
 		return paywall.BuildPayWall(
 			paywall.GetDefaultBanner(),
-			paywall.GetDefaultPlans())
+			paywall.GetFtcPlans(false))
 	}
 
 	return paywall.BuildPayWall(
 		promo.Banner,
-		promo.Pricing)
+		promo.Plans)
 }
