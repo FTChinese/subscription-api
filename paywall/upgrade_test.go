@@ -1,6 +1,7 @@
 package paywall
 
 import (
+	"gitlab.com/ftchinese/subscription-api/test"
 	"math"
 	"testing"
 	"time"
@@ -74,7 +75,6 @@ func TestBalanceSource_Balance(t *testing.T) {
 }
 
 func TestUpgrade_SetBalance(t *testing.T) {
-	plan, _ := GetDefaultPlans().GetPlanByID("premium_year")
 
 	type fields struct {
 		Upgrade Upgrade
@@ -90,7 +90,7 @@ func TestUpgrade_SetBalance(t *testing.T) {
 		{
 			name: "Not Enough Balance",
 			fields: fields{
-				Upgrade: NewUpgrade(plan),
+				Upgrade: NewUpgrade(test.YearlyPremium),
 			},
 			args: args{
 				sources: buildBalanceSources(2),
@@ -99,7 +99,7 @@ func TestUpgrade_SetBalance(t *testing.T) {
 		{
 			name: "Enough to Cover",
 			fields: fields{
-				Upgrade: NewUpgrade(plan),
+				Upgrade: NewUpgrade(test.YearlyPremium),
 			},
 			args: args{
 				sources: buildBalanceSources(8),
@@ -108,7 +108,7 @@ func TestUpgrade_SetBalance(t *testing.T) {
 		{
 			name: "More than 2 cycles",
 			fields: fields{
-				Upgrade: NewUpgrade(plan),
+				Upgrade: NewUpgrade(test.YearlyPremium),
 			},
 			args: args{
 				sources: buildBalanceSources(16),
