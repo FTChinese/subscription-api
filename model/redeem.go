@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 )
 
@@ -49,7 +48,7 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 	}
 
 	// Insert a new membership.
-	err = tx.CreateMember(m, null.String{})
+	err = tx.CreateMember(m)
 
 	if err != nil {
 		_ = tx.rollback()
