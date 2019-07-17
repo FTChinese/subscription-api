@@ -166,7 +166,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 //		return
 //	}
 //
-//	plan, err := router.model.GetCurrentPricing().FindPlan(tier, cycle)
+//	plan, err := router.model.GetCurrentPlans().FindPlan(tier, cycle)
 //
 //	if err != nil {
 //		logger.WithField("trace", "AliAppOrder").Error(err)
