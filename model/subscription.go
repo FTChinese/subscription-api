@@ -159,7 +159,7 @@ func (env Env) UpgradeBalance(user paywall.UserID) (paywall.Upgrade, error) {
 		return paywall.Upgrade{}, err
 	}
 
-	plan, _ := env.GetCurrentPricing().FindPlan(enum.TierPremium.String(), enum.CycleYear.String())
+	plan, _ := env.GetCurrentPlans().FindPlan(enum.TierPremium.String(), enum.CycleYear.String())
 
 	up := paywall.NewUpgrade(plan).
 		SetBalance(orders).
