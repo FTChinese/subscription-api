@@ -38,6 +38,15 @@ func extractStripePlanID(s *stripe.Subscription) (string, error) {
 	return s.Items.Data[0].Plan.ID, nil
 }
 
+type PaymentOutcome int
+
+const (
+	OutcomeUnknown PaymentOutcome = iota
+	OutcomeSuccess
+	OutcomeFailure
+	OutcomeRequiresAction
+)
+
 type StripeSub struct {
 	CancelAtPeriodEnd  bool          `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time   `json:"created"`
@@ -73,6 +82,22 @@ func NewStripeSub(s *stripe.Subscription) StripeSub {
 	}
 }
 
+func (s StripeSub) Outcome() PaymentOutcome {
+	if s.Status == stripe.SubscriptionStatusActive && s.LatestInvoice.PaymentIntent.Status == stripe.PaymentIntentStatusSucceeded {
+		return OutcomeSuccess
+	}
+
+	if s.Status == stripe.SubscriptionStatusIncomplete && s.LatestInvoice.PaymentIntent.Status == stripe.PaymentIntentStatusRequiresPaymentMethod {
+		return OutcomeFailure
+	}
+
+	if s.Status == stripe.SubscriptionStatusIncomplete && s.LatestInvoice.PaymentIntent.Status == stripe.PaymentIntentStatusRequiresAction {
+		return OutcomeRequiresAction
+	}
+
+	return OutcomeUnknown
+}
+
 type StripeInvoice struct {
 	Created          chrono.Time     `json:"created"`
 	Currency         stripe.Currency `json:"currency"`
@@ -81,24 +106,34 @@ type StripeInvoice struct {
 	// A unique, identifying string that appears on emails sent to the customer for this invoice.
 	Number string `json:"number"`
 	Paid   bool   `json:"paid"`
-	// Status of this PaymentIntent, one of requires_payment_method, requires_confirmation, requires_action, processing, requires_capture, canceled, or succeeded
-	PaymentIntentStatus stripe.PaymentIntentStatus `json:"paymentIntentStatus"`
+
+	PaymentIntent PaymentIntent `json:"paymentIntent"`
 	// This is the transaction number that appears on email receipts sent for this invoice.
 	ReceiptNumber string `json:"receiptNumber"`
-	// The status of the invoice, one of draft, open, paid, uncollectible, or void
-	Status stripe.InvoiceBillingStatus `json:"status"`
 }
 
 func NewStripeInvoice(i *stripe.Invoice) StripeInvoice {
 	return StripeInvoice{
-		Created:             chrono.TimeFrom(canonicalizeUnix(i.Created)),
-		Currency:            i.Currency,
-		HostedInvoiceURL:    i.HostedInvoiceURL,
-		InvoicePDF:          i.InvoicePDF,
-		Number:              i.Number,
-		Paid:                i.Paid,
-		PaymentIntentStatus: i.PaymentIntent.Status,
-		ReceiptNumber:       i.ReceiptNumber,
-		Status:              i.Status,
+		Created:          chrono.TimeFrom(canonicalizeUnix(i.Created)),
+		Currency:         i.Currency,
+		HostedInvoiceURL: i.HostedInvoiceURL,
+		InvoicePDF:       i.InvoicePDF,
+		Number:           i.Number,
+		Paid:             i.Paid,
+		PaymentIntent:    NewPaymentIntent(i.PaymentIntent),
+		ReceiptNumber:    i.ReceiptNumber,
+	}
+}
+
+type PaymentIntent struct {
+	ClientSecret string `json:"clientSecret"`
+	// Status of this PaymentIntent, one of requires_payment_method, requires_confirmation, requires_action, processing, requires_capture, canceled, or succeeded
+	Status stripe.PaymentIntentStatus `json:"status"`
+}
+
+func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
+	return PaymentIntent{
+		ClientSecret: pi.ClientSecret,
+		Status:       pi.Status,
 	}
 }
