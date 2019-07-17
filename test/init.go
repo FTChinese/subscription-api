@@ -24,6 +24,7 @@ var Cache *cache.Cache
 var WxOAuthApp wxlogin.WxApp
 var WxPayApp wechat.PayApp
 var WxPayClient wechat.Client
+var StripeKey string
 
 var YearlyStandard = paywall.GetDefaultPlans()["standard_year"]
 var YearlyPremium = paywall.GetDefaultPlans()["premium_year"]
@@ -71,4 +72,6 @@ func init() {
 	}
 
 	WxPayClient = wechat.NewClient(WxPayApp)
+
+	StripeKey = viper.GetString("stripe.test_secret_key")
 }
