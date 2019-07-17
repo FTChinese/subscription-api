@@ -1,6 +1,9 @@
 package paywall
 
-import "github.com/FTChinese/go-rest/enum"
+import (
+	"fmt"
+	"github.com/FTChinese/go-rest/enum"
+)
 
 // The default banner message used on web version of pay wall.
 var defaultBanner = Banner{
@@ -79,6 +82,14 @@ var sandboxPlans = FtcPlans{
 	},
 }
 
+var stripeTestPlanIDs = map[string]string{
+	"standard_year":  "plan_FOdfeaqzczp6Ag",
+	"standard_month": "plan_FOdgPTznDwHU4i",
+	"premium_year":   "plan_FOde0uAr0V4WmT",
+}
+
+var stripeLivePlanIDs = map[string]string{}
+
 // GetDefaultPlans returns the default pricing plans.
 func GetDefaultPlans() FtcPlans {
 	return defaultPlans
@@ -87,6 +98,23 @@ func GetDefaultPlans() FtcPlans {
 // GetSandboxPlans returns the plans used under sandbox.
 func GetSandboxPlans() FtcPlans {
 	return sandboxPlans
+}
+
+func GetStripePlanID(key string, live bool) (string, error) {
+	var id string
+	var ok bool
+
+	if live {
+		id, ok = stripeLivePlanIDs[key]
+	} else {
+		id, ok = stripeTestPlanIDs[key]
+	}
+
+	if !ok {
+		return id, fmt.Errorf("plan for %s not found", key)
+	}
+
+	return id, nil
 }
 
 func GetDefaultBanner() Banner {
