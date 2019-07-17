@@ -141,15 +141,17 @@ func (env Env) CreateStripeSub(
 
 // GetStripeSub refresh stripe subscription data if stale.
 func (env Env) GetStripeSub(id paywall.UserID) (paywall.StripeSub, error) {
+	log := logger.WithField("trace", "Env.GetStripeSub")
+
 	tx, err := env.BeginOrderTx()
 	if err != nil {
-		//log.Error(err)
+		log.Error(err)
 		return paywall.StripeSub{}, err
 	}
 
 	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
-		//log.Error(err)
+		log.Error(err)
 		_ = tx.rollback()
 		return paywall.StripeSub{}, nil
 	}
@@ -158,8 +160,18 @@ func (env Env) GetStripeSub(id paywall.UserID) (paywall.StripeSub, error) {
 		return paywall.StripeSub{}, sql.ErrNoRows
 	}
 
-	//log.Info("Creating stripe subscription")
-	s, err := sub.Get(mmb.StripeSubID.String, nil)
+	log.Infof("Retrieve a member: %+v", mmb)
+
+	log.Info("Getting stripe subscription")
+
+	s, err := sub.Get(mmb.StripeSubID.String, &stripe.SubscriptionParams{
+		Params: stripe.Params{
+			Expand: []*string{
+				stripe.String("latest_invoice.payment_intent"),
+			},
+		},
+	})
+
 	if err != nil {
 		//log.Error(err)
 		_ = tx.rollback()
@@ -168,6 +180,8 @@ func (env Env) GetStripeSub(id paywall.UserID) (paywall.StripeSub, error) {
 
 	//log.Infof("Payment intent %+v", stripeSub.LatestInvoice.PaymentIntent)
 	newMmb := mmb.RefreshStripe(s)
+
+	log.Infof("Refreshed membership: %+v", newMmb)
 
 	//log.Infof("A stripe membership: %+v", newMmb)
 	// update member
@@ -180,6 +194,7 @@ func (env Env) GetStripeSub(id paywall.UserID) (paywall.StripeSub, error) {
 		return paywall.StripeSub{}, err
 	}
 
+	log.Info("Refreshed finished.")
 	return paywall.NewStripeSub(s), nil
 }
 
