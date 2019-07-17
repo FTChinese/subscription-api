@@ -217,9 +217,10 @@ func main() {
 
 		// Create Stripe subscription.
 		r.Route("/subscriptions", func(r chi.Router) {
+			r.Get("/", stripeRouter.GetSubscription)
 			r.Post("/", stripeRouter.CreateSubscription)
 			// Upgrade membership.
-			r.Patch("/", stripeRouter.UpdateSubscription)
+			r.Patch("/", stripeRouter.UpgradeSubscription)
 		})
 	})
 
