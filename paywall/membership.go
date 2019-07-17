@@ -98,6 +98,23 @@ func (m Membership) FromStripe(
 	}
 }
 
+func (m Membership) RefreshStripe(s *stripe.Subscription) Membership {
+
+	planID, err := extractStripePlanID(s)
+	if err == nil {
+		m.StripePlanID = null.StringFrom(planID)
+	}
+
+	//m.Tier =          p.Tier
+	//m.Cycle =         p.Cycle
+	m.ExpireDate = chrono.DateFrom(time.Unix(s.CurrentPeriodEnd, 0))
+	m.PaymentMethod = enum.PayMethodStripe
+	m.StripeSubID = null.StringFrom(s.ID)
+	m.AutoRenewal = !s.CancelAtPeriodEnd
+
+	return m
+}
+
 func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
 	if !sub.IsConfirmed {
 		return m, errors.New("only confirmed order could be used to build membership")
@@ -263,6 +280,24 @@ func (m Membership) ActionOnStripe() StripeAction {
 	default:
 		return StripeActionDeny
 	}
+}
+
+func (m Membership) PermitStripeCreate() bool {
+	// If a membership does not exist, allow create stripe
+	// subscription
+	if m.IsZero() {
+		return true
+	}
+
+	// If a membership is expired but not auto renewal,
+	// allow create subscription.
+	// This includes non-existent member.
+	if m.IsExpired() && !m.AutoRenewal {
+		return true
+	}
+
+	// Deny any other cases.
+	return false
 }
 
 func (m Membership) PermitStripeUpgrade(p StripeSubParams) bool {
