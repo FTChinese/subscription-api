@@ -12,20 +12,6 @@ import (
 	"github.com/guregu/null"
 )
 
-type StripeSubParams struct {
-	Tier                 enum.Tier   `json:"tier"`
-	Cycle                enum.Cycle  `json:"cycle"`
-	Customer             string      `json:"customer"`
-	Coupon               null.String `json:"coupon"`
-	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
-	PlanID               string      `json:"-"`
-	IdempotencyKey       string      `json:"idenpotencyKey"`
-}
-
-func (s StripeSubParams) Key() string {
-	return s.Tier.String() + "_" + s.Cycle.String()
-}
-
 // GenerateOrderID creates an order id.
 // The id has a total length of 18 chars.
 // If we use this generator:
@@ -79,7 +65,7 @@ type Subscription struct {
 	CycleCount    int64          `json:"cycleCount"` // Default to 1. Change it for upgrade
 	ExtraDays     int64          `json:"extraDays"`  // Default to 1. Change it for upgraded.
 	Usage         SubsKind       `json:"usageType"`  // The usage of this order: creat new, renew, or upgrade?
-	PaymentMethod enum.PayMethod `json:"paymentMethod"`
+	PaymentMethod enum.PayMethod `json:"payMethod"`
 	WxAppID       null.String    `json:"-"` // Wechat specific
 	CreatedAt     chrono.Time    `json:"createdAt"`
 
