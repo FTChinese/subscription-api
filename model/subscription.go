@@ -352,7 +352,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// STEP 7: Insert or update membership.
 	// This error should allow retry
 	if subs.Usage == paywall.SubsKindCreate {
-		err := tx.CreateMember(member, null.String{})
+		err := tx.CreateMember(member)
 		if err != nil {
 			return subs, ErrAllowRetry
 		}
