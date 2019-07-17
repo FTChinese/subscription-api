@@ -105,8 +105,12 @@ func (m Membership) RefreshStripe(s *stripe.Subscription) Membership {
 		m.StripePlanID = null.StringFrom(planID)
 	}
 
-	//m.Tier =          p.Tier
-	//m.Cycle =         p.Cycle
+	plan, err := GetStripeToFtcPlans(s.Livemode).GetPlanByID(planID)
+	if err == nil {
+		m.Tier = plan.Tier
+		m.Cycle = plan.Cycle
+	}
+
 	m.ExpireDate = chrono.DateFrom(time.Unix(s.CurrentPeriodEnd, 0))
 	m.PaymentMethod = enum.PayMethodStripe
 	m.StripeSubID = null.StringFrom(s.ID)
