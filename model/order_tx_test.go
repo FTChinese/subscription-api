@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
 	"gitlab.com/ftchinese/subscription-api/test"
@@ -185,7 +184,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err := tx.CreateMember(m, null.String{}); err != nil {
+	if err := tx.CreateMember(m); err != nil {
 		t.Error(err)
 	}
 
@@ -215,7 +214,7 @@ func newMember(userID paywall.UserID) paywall.Membership {
 		panic(err)
 	}
 
-	if err := tx.CreateMember(m, null.String{}); err != nil {
+	if err := tx.CreateMember(m); err != nil {
 		panic(err)
 	}
 
