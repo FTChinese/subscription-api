@@ -113,6 +113,11 @@ func (env Env) CreateStripeSub(
 		return paywall.StripeSub{}, err
 	}
 
+	ss := paywall.NewStripeSub(s)
+	if ss.Outcome() != paywall.OutcomeSuccess {
+		return ss, nil
+	}
+
 	//log.Infof("Payment intent %+v", stripeSub.LatestInvoice.PaymentIntent)
 	newMmb := mmb.FromStripe(id, params, s)
 
