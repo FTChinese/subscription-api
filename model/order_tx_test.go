@@ -369,12 +369,7 @@ func buildUpgrade(userID paywall.UserID, count int) paywall.Upgrade {
 		panic(err)
 	}
 
-	plan, err := paywall.GetDefaultPlans().GetPlanByID("premium_year")
-	if err != nil {
-		panic(err)
-	}
-
-	up := paywall.NewUpgrade(plan).SetBalance(sources).CalculatePayable()
+	up := paywall.NewUpgrade(test.YearlyPremium).SetBalance(sources).CalculatePayable()
 
 	up.Member = member
 	return up
@@ -452,13 +447,8 @@ func buildUpgradeV2(userID paywall.UserID, count int) paywall.UpgradePreview {
 		panic(err)
 	}
 
-	plan, err := paywall.GetDefaultPlans().GetPlanByID("premium_year")
-	if err != nil {
-		panic(err)
-	}
-
 	up := paywall.NewUpgradePreview(sources)
-	up.Plan = plan.BuildUpgradePlan(up.Balance)
+	up.Plan = test.YearlyPremium.BuildUpgradePlan(up.Balance)
 	up.Member = member
 	return up
 }
