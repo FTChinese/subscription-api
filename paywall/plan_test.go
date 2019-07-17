@@ -1,12 +1,11 @@
 package paywall
 
 import (
+	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 
 func TestPlan_BuildUpgradePlan(t *testing.T) {
-
-	plan, _ := GetDefaultPlans().GetPlanByID("premium_year")
 
 	type args struct {
 		balance float64
@@ -18,14 +17,14 @@ func TestPlan_BuildUpgradePlan(t *testing.T) {
 	}{
 		{
 			name: "Exceed List Price",
-			plan: plan,
+			plan: test.YearlyPremium,
 			args: args{
 				balance: 3000.00,
 			},
 		},
 		{
 			name: "Below List Price",
-			plan: plan,
+			plan: test.YearlyPremium,
 			args: args{
 				balance: 1000.00,
 			},
