@@ -225,7 +225,8 @@ func (env Env) UpgradeStripeSubs(
 	}
 
 	if !mmb.PermitStripeUpgrade(params) {
-		return paywall.StripeSub{}, errors.New("only upgrading from monthly to yearly plan, or from standard product to premium is allowed")
+		_ = tx.rollback()
+		return paywall.StripeSub{}, errors.New("only upgrading from standard member to premium is allowed")
 	}
 
 	s, err := upgradeStripeSub(params, mmb.StripeSubID.String)
@@ -283,7 +284,6 @@ func createStripeSub(p paywall.StripeSubParams) (*stripe.Subscription, error) {
 
 func upgradeStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscription, error) {
 	params := &stripe.SubscriptionParams{
-		Customer: stripe.String(p.Customer),
 		Items: []*stripe.SubscriptionItemsParams{
 			{
 				Plan: stripe.String(p.PlanID),
