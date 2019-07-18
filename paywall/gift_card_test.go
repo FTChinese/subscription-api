@@ -1,7 +1,7 @@
 package paywall
 
 import (
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"testing"
 
 	"github.com/FTChinese/go-rest/enum"
@@ -17,17 +17,17 @@ func TestGiftCard_ExpireTime(t *testing.T) {
 		CycleValue null.Int
 	}
 	tests := []struct {
-		name    string
-		fields  fields
+		name   string
+		fields fields
 		//want    time.Time
 		wantErr bool
 	}{
 		{
 			name: "Gift Card Expiration Time",
 			fields: fields{
-				Code: code,
-				Tier: enum.TierStandard,
-				CycleUnit: enum.CycleYear,
+				Code:       code,
+				Tier:       enum.TierStandard,
+				CycleUnit:  enum.CycleYear,
 				CycleValue: null.IntFrom(1),
 			},
 		},
