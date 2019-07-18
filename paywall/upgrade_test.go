@@ -1,13 +1,14 @@
 package paywall
 
 import (
-	"gitlab.com/ftchinese/subscription-api/test"
 	"math"
 	"testing"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
 )
+
+var premiumPlan, _ = GetFtcPlans(false).GetPlanByID("premium_year")
 
 func orderID() string {
 	id, err := GenerateOrderID()
@@ -82,6 +83,7 @@ func TestUpgrade_SetBalance(t *testing.T) {
 	type args struct {
 		sources []BalanceSource
 	}
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -90,7 +92,7 @@ func TestUpgrade_SetBalance(t *testing.T) {
 		{
 			name: "Not Enough Balance",
 			fields: fields{
-				Upgrade: NewUpgrade(test.YearlyPremium),
+				Upgrade: NewUpgrade(premiumPlan),
 			},
 			args: args{
 				sources: buildBalanceSources(2),
@@ -99,7 +101,7 @@ func TestUpgrade_SetBalance(t *testing.T) {
 		{
 			name: "Enough to Cover",
 			fields: fields{
-				Upgrade: NewUpgrade(test.YearlyPremium),
+				Upgrade: NewUpgrade(premiumPlan),
 			},
 			args: args{
 				sources: buildBalanceSources(8),
@@ -108,7 +110,7 @@ func TestUpgrade_SetBalance(t *testing.T) {
 		{
 			name: "More than 2 cycles",
 			fields: fields{
-				Upgrade: NewUpgrade(test.YearlyPremium),
+				Upgrade: NewUpgrade(premiumPlan),
 			},
 			args: args{
 				sources: buildBalanceSources(16),
