@@ -20,7 +20,8 @@ func (b Builder) SelectMemberLock() string {
 		END AS expireDate,
 		payment_method AS paymentMethod,
 		stripe_subscription_id AS stripeSubId,
-		auto_renewal AS autoRenewal
+		auto_renewal AS autoRenewal,
+		sub_status AS subStatus
 	FROM %s.ftc_vip
 	WHERE vip_id = ? 
 		OR vip_id_alias = ?
@@ -44,7 +45,8 @@ func (b Builder) InsertMember() string {
 		payment_method = ?,
 		stripe_subscription_id = ?,
 		stripe_plan_id = ?,
-		auto_renewal = ?`, b.MemberDB())
+		auto_renewal = ?,
+		sub_status = ?`, b.MemberDB())
 }
 
 // UpdateMember update an existing member for stripe pay.
@@ -62,7 +64,8 @@ func (b Builder) UpdateMember() string {
 		payment_method = ?,
 		stripe_subscription_id = ?,
 		stripe_plan_id = ?,
-		auto_renewal = ?
+		auto_renewal = ?,
+		sub_status = ?
 	WHERE vip_id IN (?, ?)
 	LIMIT 1`, b.MemberDB())
 }
