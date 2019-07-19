@@ -269,7 +269,7 @@ func (m Membership) PermitStripeCreate() bool {
 			return false
 		}
 
-		return false
+		return true
 	}
 
 	// Member is either not expired, or auto renewal
