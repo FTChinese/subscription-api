@@ -5,7 +5,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
-	"github.com/stripe/stripe-go/paymentintent"
 	"github.com/stripe/stripe-go/sub"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
@@ -107,21 +106,23 @@ func (env Env) CreateStripeSub(
 	// and it is not auto renewal.
 	//log.Info("Creating stripe subscription")
 	s, err := createStripeSub(params)
+	// {"status":400,
+	// "message":"Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than '4a857eb3-396c-4c91-a8f1-4014868a8437' if you meant to execute a different request.","request_id":"req_Dv6N7d9lF8uDHJ",
+	// "type":"idempotency_error"
+	// }
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
 		return paywall.StripeSub{}, err
 	}
 
-	ss := paywall.NewStripeSub(s)
-	if ss.Outcome() != paywall.OutcomeSuccess {
-		return ss, nil
+	//log.Infof("Payment intent %+v", stripeSub.LatestInvoice.PaymentIntent)
+	newMmb, err := mmb.FromStripe(id, s)
+	if err != nil {
+		return paywall.StripeSub{}, err
 	}
 
-	//log.Infof("Payment intent %+v", stripeSub.LatestInvoice.PaymentIntent)
-	newMmb := mmb.FromStripe(id, params, s)
-
-	//log.Infof("A stripe membership: %+v", newMmb)
+	log.Infof("A stripe membership: %+v", newMmb)
 
 	if mmb.IsZero() {
 		// Insert member
@@ -184,7 +185,10 @@ func (env Env) GetStripeSub(id paywall.UserID) (paywall.StripeSub, error) {
 	}
 
 	//log.Infof("Payment intent %+v", stripeSub.LatestInvoice.PaymentIntent)
-	newMmb := mmb.RefreshStripe(s)
+	newMmb, err := mmb.FromStripe(id, s)
+	if err != nil {
+		return paywall.StripeSub{}, err
+	}
 
 	log.Infof("Refreshed membership: %+v", newMmb)
 
@@ -230,14 +234,16 @@ func (env Env) UpgradeStripeSubs(
 	}
 
 	s, err := upgradeStripeSub(params, mmb.StripeSubID.String)
-
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
 		return paywall.StripeSub{}, err
 	}
 
-	newMmb := mmb.FromStripe(id, params, s)
+	newMmb, err := mmb.FromStripe(id, s)
+	if err != nil {
+		return paywall.StripeSub{}, err
+	}
 
 	if err := tx.UpdateMember(newMmb); err != nil {
 		_ = tx.rollback()
@@ -259,15 +265,19 @@ func createStripeSub(p paywall.StripeSubParams) (*stripe.Subscription, error) {
 				Plan: stripe.String(p.PlanID),
 			},
 		},
-		Params: stripe.Params{
-			Expand: []*string{
-				stripe.String("latest_invoice.payment_intent"),
-			},
-		},
 	}
 
+	params.AddExpand("latest_invoice.payment_intent")
+
+	// {
+	// "status":400,
+	// "message":"Idempotent key length is 0 characters long, which is outside accepted lengths. Idempotent Keys must be 1-255 characters long. If you're looking for a decent generator, try using a UUID defined by IETF RFC 4122.",
+	// "request_id":"req_O6zILK5QEVpViw",
+	// "type":"idempotency_error"
+	// }
 	if p.IdempotencyKey != "" {
-		params.IdempotencyKey = stripe.String(p.IdempotencyKey)
+		logger.Infof("Setting idempotency key: %s", p.IdempotencyKey)
+		params.SetIdempotencyKey(p.IdempotencyKey)
 	}
 
 	if p.Coupon.Valid {
@@ -278,7 +288,6 @@ func createStripeSub(p paywall.StripeSubParams) (*stripe.Subscription, error) {
 		params.DefaultPaymentMethod = stripe.String(p.DefaultPaymentMethod.String)
 	}
 
-	params.SetIdempotencyKey(p.IdempotencyKey)
 	return sub.New(params)
 }
 
@@ -310,17 +319,4 @@ func upgradeStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscrip
 
 	params.SetIdempotencyKey(p.IdempotencyKey)
 	return sub.Update(subID, params)
-}
-
-func createPaymentIntent(price int64, customerID string) (*stripe.PaymentIntent, error) {
-	params := &stripe.PaymentIntentParams{
-		Amount:   stripe.Int64(price),
-		Currency: stripe.String(string(stripe.CurrencyCNY)),
-		PaymentMethodTypes: stripe.StringSlice([]string{
-			"card",
-		}),
-		Customer: stripe.String(customerID),
-	}
-
-	return paymentintent.New(params)
 }
