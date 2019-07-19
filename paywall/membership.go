@@ -23,17 +23,25 @@ func genMmID() (string, error) {
 // Membership contains a user's membership details
 // This is actually called subscription by Stripe.
 type Membership struct {
-	ID            null.String    `json:"id"`
-	CompoundID    string         `json:"-"` // Either FTCUserID or UnionID
-	FTCUserID     null.String    `json:"-"`
-	UnionID       null.String    `json:"-"` // For both vip_id_alias and wx_union_id columns.
+	ID null.String `json:"id"`
+	//CompoundID    string         `json:"-"` // Either FtcID or UnionID
+	//FtcID         null.String    `json:"-"`
+	//UnionID       null.String    `json:"-"` // For both vip_id_alias and wx_union_id columns.
+	UserID
 	Tier          enum.Tier      `json:"tier"`
-	Cycle         enum.Cycle     `json:"billingCycle"`
+	Cycle         enum.Cycle     `json:"cycle"`
 	ExpireDate    chrono.Date    `json:"expireDate"`
 	PaymentMethod enum.PayMethod `json:"payMethod"`
 	StripeSubID   null.String    `json:"-"`
 	StripePlanID  null.String    `json:"-"`
 	AutoRenewal   bool           `json:"autoRenewal"`
+	// This is used to save stripe subscription status.
+	// Since wechat and alipay treats everything as one-time purchase, they do not have a complex state machine.
+	// If we could integrate apple in-app purchase, this column
+	// might be extended to apple users.
+	// Only `active` should be treated as valid member.
+	// Wechat and alipay default to `active` for backward compatibility.
+	Status SubStatus `json:"status"`
 }
 
 // NewMember creates a membership directly for a user.
@@ -43,10 +51,11 @@ type Membership struct {
 func NewMember(u UserID) Membership {
 	id, _ := genMmID()
 	return Membership{
-		ID:         null.StringFrom(id),
-		CompoundID: u.CompoundID,
-		FTCUserID:  u.FtcID,
-		UnionID:    u.UnionID,
+		ID: null.StringFrom(id),
+		//CompoundID: u.CompoundID,
+		//FtcID:      u.FtcID,
+		//UnionID:    u.UnionID,
+		UserID: u,
 	}
 }
 
@@ -57,66 +66,38 @@ func NewMember(u UserID) Membership {
 // might already have its accounts linked.
 func (m Membership) FromStripe(
 	id UserID,
-	p StripeSubParams,
-	sub *stripe.Subscription) Membership {
+	sub *stripe.Subscription) (Membership, error) {
 
-	endTime := time.Unix(sub.CurrentPeriodEnd, 0)
+	// Must test before modifying data.
+	if m.IsZero() {
+		m.CompoundID = id.CompoundID
+		m.FtcID = id.FtcID
+		m.UnionID = id.UnionID
 
-	if m.ID.IsZero() {
 		mId, _ := genMmID()
 		m.ID = null.StringFrom(mId)
 	}
 
-	if m.IsZero() {
-		return Membership{
-			ID:            m.ID,
-			CompoundID:    id.CompoundID,
-			FTCUserID:     id.FtcID,
-			UnionID:       id.UnionID,
-			Tier:          p.Tier,
-			Cycle:         p.Cycle,
-			ExpireDate:    chrono.DateFrom(endTime.AddDate(0, 0, 1)),
-			PaymentMethod: enum.PayMethodStripe,
-			StripeSubID:   null.StringFrom(sub.ID),
-			StripePlanID:  null.StringFrom(p.PlanID),
-			AutoRenewal:   !sub.CancelAtPeriodEnd,
-		}
+	planID, err := extractStripePlanID(sub)
+	if err != nil {
+		return m, err
+	}
+	m.StripePlanID = null.StringFrom(planID)
+
+	plan, err := GetStripeToFtcPlans(sub.Livemode).GetPlanByID(planID)
+	if err != nil {
+		return m, err
 	}
 
-	return Membership{
-		ID:            m.ID,
-		CompoundID:    m.CompoundID,
-		FTCUserID:     m.FTCUserID,
-		UnionID:       m.UnionID,
-		Tier:          p.Tier,
-		Cycle:         p.Cycle,
-		ExpireDate:    chrono.DateFrom(endTime.AddDate(0, 0, 1)),
-		PaymentMethod: enum.PayMethodStripe,
-		StripeSubID:   null.StringFrom(sub.ID),
-		StripePlanID:  null.StringFrom(p.PlanID),
-		AutoRenewal:   !sub.CancelAtPeriodEnd,
-	}
-}
-
-func (m Membership) RefreshStripe(s *stripe.Subscription) Membership {
-
-	planID, err := extractStripePlanID(s)
-	if err == nil {
-		m.StripePlanID = null.StringFrom(planID)
-	}
-
-	plan, err := GetStripeToFtcPlans(s.Livemode).GetPlanByID(planID)
-	if err == nil {
-		m.Tier = plan.Tier
-		m.Cycle = plan.Cycle
-	}
-
-	m.ExpireDate = chrono.DateFrom(time.Unix(s.CurrentPeriodEnd, 0))
+	m.Tier = plan.Tier
+	m.Cycle = plan.Cycle
+	m.ExpireDate = chrono.DateFrom(time.Unix(sub.CurrentPeriodEnd, 0).AddDate(0, 0, 1))
 	m.PaymentMethod = enum.PayMethodStripe
-	m.StripeSubID = null.StringFrom(s.ID)
-	m.AutoRenewal = !s.CancelAtPeriodEnd
+	m.StripeSubID = null.StringFrom(sub.ID)
+	m.AutoRenewal = !sub.CancelAtPeriodEnd
+	m.Status, _ = ParseSubStatus(string(sub.Status))
 
-	return m
+	return m, nil
 }
 
 func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
@@ -131,10 +112,12 @@ func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
 
 	if m.IsZero() {
 		return Membership{
-			ID:            m.ID,
-			CompoundID:    sub.CompoundID,
-			FTCUserID:     sub.FtcID,
-			UnionID:       sub.UnionID,
+			ID: m.ID,
+			UserID: UserID{
+				CompoundID: sub.CompoundID,
+				FtcID:      sub.FtcID,
+				UnionID:    sub.UnionID,
+			},
 			Tier:          sub.TierToBuy,
 			Cycle:         sub.BillingCycle,
 			ExpireDate:    sub.EndDate,
@@ -145,10 +128,12 @@ func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
 	}
 
 	return Membership{
-		ID:            m.ID,
-		CompoundID:    m.CompoundID,
-		FTCUserID:     m.FTCUserID,
-		UnionID:       m.UnionID,
+		ID: m.ID,
+		UserID: UserID{
+			CompoundID: m.CompoundID,
+			FtcID:      m.FtcID,
+			UnionID:    m.UnionID,
+		},
 		Tier:          sub.TierToBuy,
 		Cycle:         sub.BillingCycle,
 		ExpireDate:    sub.EndDate,
@@ -181,7 +166,7 @@ func (m Membership) Exists() bool {
 }
 
 func (m Membership) IsFtc() bool {
-	return m.FTCUserID.Valid
+	return m.FtcID.Valid
 }
 
 func (m Membership) IsWx() bool {
@@ -267,13 +252,27 @@ func (m Membership) PermitStripeCreate() bool {
 		return true
 	}
 
-	// If a membership is expired but not auto renewal,
-	// allow create subscription.
-	// This includes non-existent member.
-	if m.IsExpired() && !m.AutoRenewal {
-		return true
+	if m.IsAliOrWxPay() {
+		if m.IsExpired() {
+			return true
+		}
+		return false
 	}
 
+	if m.PaymentMethod == enum.PayMethodStripe {
+		// An expired member that is not auto renewal.
+		if m.IsExpired() && !m.AutoRenewal {
+			return true
+		}
+		// Member is not expired, or is auto renewal.
+		if m.Status == SubStatusActive {
+			return false
+		}
+
+		return false
+	}
+
+	// Member is either not expired, or auto renewal
 	// Deny any other cases.
 	return false
 }
