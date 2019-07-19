@@ -38,15 +38,6 @@ func extractStripePlanID(s *stripe.Subscription) (string, error) {
 	return s.Items.Data[0].Plan.ID, nil
 }
 
-type PaymentOutcome int
-
-const (
-	OutcomeUnknown PaymentOutcome = iota
-	OutcomeSuccess
-	OutcomeFailure
-	OutcomeRequiresAction
-)
-
 type StripeSub struct {
 	CancelAtPeriodEnd  bool          `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time   `json:"created"`
@@ -82,22 +73,6 @@ func NewStripeSub(s *stripe.Subscription) StripeSub {
 	}
 }
 
-func (s StripeSub) Outcome() PaymentOutcome {
-	if s.Status == stripe.SubscriptionStatusActive && s.LatestInvoice.PaymentIntent.Status == stripe.PaymentIntentStatusSucceeded {
-		return OutcomeSuccess
-	}
-
-	if s.Status == stripe.SubscriptionStatusIncomplete && s.LatestInvoice.PaymentIntent.Status == stripe.PaymentIntentStatusRequiresPaymentMethod {
-		return OutcomeFailure
-	}
-
-	if s.Status == stripe.SubscriptionStatusIncomplete && s.LatestInvoice.PaymentIntent.Status == stripe.PaymentIntentStatusRequiresAction {
-		return OutcomeRequiresAction
-	}
-
-	return OutcomeUnknown
-}
-
 type StripeInvoice struct {
 	Created          chrono.Time     `json:"created"`
 	Currency         stripe.Currency `json:"currency"`
@@ -126,7 +101,8 @@ func NewStripeInvoice(i *stripe.Invoice) StripeInvoice {
 }
 
 type PaymentIntent struct {
-	ClientSecret string `json:"clientSecret"`
+	ClientSecret string                          `json:"clientSecret"`
+	NextAction   *stripe.PaymentIntentNextAction `json:"nextAction,omitempty"`
 	// Status of this PaymentIntent, one of requires_payment_method, requires_confirmation, requires_action, processing, requires_capture, canceled, or succeeded
 	Status stripe.PaymentIntentStatus `json:"status"`
 }
@@ -135,5 +111,6 @@ func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 	return PaymentIntent{
 		ClientSecret: pi.ClientSecret,
 		Status:       pi.Status,
+		NextAction:   pi.NextAction,
 	}
 }
