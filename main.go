@@ -140,12 +140,12 @@ func main() {
 
 	m := model.New(db, c, sandbox)
 
-	wxRouter := controller.NewWxRouter(m, post, sandbox)
-	aliRouter := controller.NewAliRouter(m, post, sandbox)
+	wxRouter := controller.NewWxRouter(m, post, sandbox, isProd)
+	aliRouter := controller.NewAliRouter(m, post, sandbox, isProd)
 	giftCardRouter := controller.NewGiftCardRouter(m)
 	paywallRouter := controller.NewPaywallRouter(m)
 	upgradeRouter := controller.NewUpgradeRouter(m)
-	stripeRouter := controller.NewStripeRouter(m, post, sandbox)
+	stripeRouter := controller.NewStripeRouter(m, post, sandbox, isProd)
 
 	wxAuth := controller.NewWxAuth(m)
 

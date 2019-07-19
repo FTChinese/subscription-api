@@ -27,7 +27,7 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter {
+func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool, production bool) AliPayRouter {
 
 	app := getAliPayApp()
 
@@ -37,6 +37,7 @@ func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool) AliPayRouter 
 		appID:  app.ID,
 		client: client,
 	}
+	r.production = production
 	r.sandbox = sandbox
 	r.model = m
 	r.postman = p
