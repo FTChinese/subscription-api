@@ -40,7 +40,8 @@ func (t OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 		&m.ExpireDate,
 		&m.PaymentMethod,
 		&m.StripeSubID,
-		&m.AutoRenewal)
+		&m.AutoRenewal,
+		&m.Status)
 
 	if err != nil && err != sql.ErrNoRows {
 		logger.WithField("trace", "OrderTx.RetrieveMember").Error(err)
@@ -132,7 +133,7 @@ func (t OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
 		up.Member.ID,
 		up.Member.Cycle,
 		up.Member.ExpireDate,
-		up.Member.FTCUserID,
+		up.Member.FtcID,
 		up.Member.UnionID,
 		up.Member.Tier)
 
@@ -152,7 +153,7 @@ func (t OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) error 
 		up.Member.ID,
 		up.Member.Cycle,
 		up.Member.ExpireDate,
-		up.Member.FTCUserID,
+		up.Member.FtcID,
 		up.Member.UnionID,
 		up.Member.Tier)
 
@@ -303,7 +304,7 @@ func (t OrderTx) CreateMember(m paywall.Membership) error {
 		m.UnionID,
 		vipType,
 		expireTime,
-		m.FTCUserID,
+		m.FtcID,
 		m.UnionID,
 		m.Tier,
 		m.Cycle,
@@ -312,6 +313,7 @@ func (t OrderTx) CreateMember(m paywall.Membership) error {
 		m.StripeSubID,
 		m.StripePlanID,
 		m.AutoRenewal,
+		m.Status,
 	)
 
 	if err != nil {
@@ -338,6 +340,7 @@ func (t OrderTx) UpdateMember(m paywall.Membership) error {
 		m.StripePlanID,
 		m.AutoRenewal,
 		m.CompoundID,
+		m.Status,
 		m.UnionID)
 
 	if err != nil {
@@ -353,7 +356,7 @@ func (t OrderTx) UpdateMember(m paywall.Membership) error {
 //	if m.IsFtc() {
 //		_, err := t.tx.Exec(t.query.LinkFtcMember(),
 //			m.ID,
-//			m.FTCUserID)
+//			m.FtcID)
 //		if err != nil {
 //			return err
 //		}
