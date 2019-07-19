@@ -24,10 +24,11 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(m model.Env, p postoffice.Postman, sandbox bool) WxPayRouter {
+func NewWxRouter(m model.Env, p postoffice.Postman, sandbox bool, production bool) WxPayRouter {
 	r := WxPayRouter{
 		clients: createWxpayClients(),
 	}
+	r.production = production
 	r.sandbox = sandbox
 	r.model = m
 	r.postman = p
