@@ -123,7 +123,7 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 		"trace": "PayRouter.sendConfirmationEmail",
 	})
 
-	// If the FTCUserID field is null, it indicates this user
+	// If the FtcID field is null, it indicates this user
 	// does not have an FTC account bound. You cannot find out
 	// its email address.
 	if !subs.FtcID.Valid {
