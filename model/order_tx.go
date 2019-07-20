@@ -243,7 +243,7 @@ func (t OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	if subs.IsConfirmed {
 		logger.WithField("trace", "MemberTx.RetrieveOrder").Infof("Order %s is already confirmed", orderID)
 
-		return subs, ErrAlreadyConfirmed
+		return subs, util.ErrAlreadyConfirmed
 	}
 
 	return subs, nil
