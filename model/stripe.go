@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"github.com/guregu/null"
 	"github.com/pkg/errors"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
@@ -20,7 +21,7 @@ func (env Env) CreateStripeCustomer(ftcID string) (string, error) {
 	}
 
 	var u paywall.FtcUser
-	err = env.db.QueryRow(query.LockFtcUser, ftcID).Scan(
+	err = tx.QueryRow(query.LockFtcUser, ftcID).Scan(
 		&u.UserID,
 		&u.UnionID,
 		&u.StripeID,
@@ -319,4 +320,24 @@ func upgradeStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscrip
 
 	params.SetIdempotencyKey(p.IdempotencyKey)
 	return sub.Update(subID, params)
+}
+
+func (env Env) SaveStripeError(id paywall.UserID, e *stripe.Error) error {
+	_, err := env.db.Exec(query.InsertStripeError,
+		id.FtcID,
+		null.NewString(e.ChargeID, e.ChargeID != ""),
+		null.NewString(string(e.Code), e.Code != ""),
+		null.NewInt(int64(e.HTTPStatusCode), e.HTTPStatusCode != 0),
+		e.Msg,
+		null.NewString(e.Param, e.Param != ""),
+		null.NewString(e.RequestID, e.RequestID != ""),
+		e.Type,
+	)
+
+	if err != nil {
+		logger.WithField("trace", "Env.SaveStripeError").Error(err)
+		return err
+	}
+
+	return nil
 }
