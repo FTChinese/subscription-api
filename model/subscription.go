@@ -145,12 +145,12 @@ func (env Env) UpgradeBalance(user paywall.UserID) (paywall.Upgrade, error) {
 
 	if member.IsZero() {
 		_ = otx.rollback()
-		return paywall.Upgrade{}, ErrMemberNotFound
+		return paywall.Upgrade{}, util.ErrMemberNotFound
 	}
 
 	if member.Tier == enum.TierPremium {
 		_ = otx.rollback()
-		return paywall.Upgrade{}, ErrAlreadyUpgraded
+		return paywall.Upgrade{}, util.ErrAlreadyUpgraded
 	}
 
 	orders, err := otx.FindBalanceSources(user)
@@ -267,7 +267,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.Subscription{}, ErrAllowRetry
+		return paywall.Subscription{}, util.ErrAllowRetry
 	}
 
 	// Step 1: Find the subscription order by order id
@@ -279,10 +279,10 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	if errSubs != nil {
 		_ = tx.rollback()
 		switch errSubs {
-		case sql.ErrNoRows, ErrAlreadyConfirmed:
-			return subs, ErrDenyRetry
+		case sql.ErrNoRows, util.ErrAlreadyConfirmed:
+			return subs, util.ErrDenyRetry
 		default:
-			return subs, ErrAllowRetry
+			return subs, util.ErrAllowRetry
 		}
 	}
 
@@ -296,7 +296,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		UnionID:    subs.UnionID,
 	})
 	if errMember != nil {
-		return subs, ErrAllowRetry
+		return subs, util.ErrAllowRetry
 	}
 
 	// STEP 3: validate the retrieved order.
@@ -326,7 +326,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	if err != nil {
 		// Remember to rollback.
 		_ = tx.tx.Rollback()
-		return subs, ErrAllowRetry
+		return subs, util.ErrAllowRetry
 	}
 
 	log.Infof("Order confirmed: %s - %s", subs.StartDate, subs.EndDate)
@@ -337,7 +337,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	if updateErr != nil {
 		// Remember to rollback.
 		_ = tx.tx.Rollback()
-		return subs, ErrAllowRetry
+		return subs, util.ErrAllowRetry
 	}
 
 	// STEP 6: Build new membership from this order.
@@ -346,7 +346,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	if err != nil {
 		// Remember to rollback
 		_ = tx.tx.Rollback()
-		return subs, ErrAllowRetry
+		return subs, util.ErrAllowRetry
 	}
 
 	// STEP 7: Insert or update membership.
@@ -354,12 +354,12 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	if subs.Usage == paywall.SubsKindCreate {
 		err := tx.CreateMember(member)
 		if err != nil {
-			return subs, ErrAllowRetry
+			return subs, util.ErrAllowRetry
 		}
 	} else {
 		err := tx.UpdateMember(member)
 		if err != nil {
-			return subs, ErrAllowRetry
+			return subs, util.ErrAllowRetry
 		}
 	}
 
@@ -371,7 +371,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// Error here should allow retry.
 	if err := tx.commit(); err != nil {
 		log.Error(err)
-		return subs, ErrAllowRetry
+		return subs, util.ErrAllowRetry
 	}
 
 	log.Info("ConfirmPayment finished.")

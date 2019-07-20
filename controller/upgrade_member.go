@@ -32,7 +32,7 @@ func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Requ
 	balance, err := router.model.UpgradeBalance(user)
 	if err != nil {
 		switch err {
-		case model.ErrAlreadyUpgraded:
+		case util.ErrAlreadyUpgraded:
 			r := view.NewReason()
 			r.Field = "membership"
 			r.Code = "already_upgraded"
@@ -74,7 +74,7 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 	upgradePlan, err := router.model.UpgradeBalance(user)
 	if err != nil {
 		switch err {
-		case model.ErrAlreadyUpgraded:
+		case util.ErrAlreadyUpgraded:
 			r := view.NewReason()
 			r.Field = "membership"
 			r.Code = "already_upgraded"

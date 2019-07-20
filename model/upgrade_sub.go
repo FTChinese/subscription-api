@@ -26,7 +26,7 @@ func (env Env) PreviewUpgrade(userID paywall.UserID) (paywall.UpgradePreview, er
 
 	if member.IsZero() {
 		_ = otx.rollback()
-		return paywall.UpgradePreview{}, ErrMemberNotFound
+		return paywall.UpgradePreview{}, util.ErrMemberNotFound
 	}
 
 	if member.IsExpired() {
@@ -40,7 +40,7 @@ func (env Env) PreviewUpgrade(userID paywall.UserID) (paywall.UpgradePreview, er
 
 	if member.Tier == enum.TierPremium {
 		_ = otx.rollback()
-		return paywall.UpgradePreview{}, ErrAlreadyUpgraded
+		return paywall.UpgradePreview{}, util.ErrAlreadyUpgraded
 	}
 
 	sources, err := otx.FindBalanceSources(userID)

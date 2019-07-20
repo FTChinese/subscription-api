@@ -433,11 +433,11 @@ func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request)
 		}).Error(err)
 
 		switch err {
-		case model.ErrDenyRetry:
+		case util.ErrDenyRetry:
 			w.Write([]byte(resp.OK()))
 			return
 
-		case model.ErrAllowRetry:
+		case util.ErrAllowRetry:
 			w.Write([]byte(resp.NotOK(err.Error())))
 			return
 
