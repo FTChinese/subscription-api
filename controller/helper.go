@@ -2,8 +2,9 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/view"
 	"github.com/go-chi/chi"
-	"github.com/guregu/null"
+	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"net/http"
 )
@@ -21,11 +22,31 @@ func GetURLParam(req *http.Request, key string) gorest.Param {
 
 // GetUser extract ftc uuid or union id from request header.
 func GetUser(h http.Header) (paywall.UserID, error) {
-	uID := h.Get(ftcIDKey)
-	wID := h.Get(unionIDKey)
+	return paywall.NewID(h.Get(ftcIDKey), h.Get(unionIDKey))
+}
 
-	ftcID := null.NewString(uID, uID != "")
-	unionID := null.NewString(wID, wID != "")
+func GetFtcOnlyID(h http.Header) (paywall.UserID, error) {
+	return paywall.NewID(h.Get(ftcIDKey), "")
+}
 
-	return paywall.NewUserID(ftcID, unionID)
+// CastStripeError tries to cast an error to stripe.Error, or nil if it is not.
+func CastStripeError(err error) *stripe.Error {
+	if stripeErr, ok := err.(*stripe.Error); ok {
+		return stripeErr
+	}
+
+	return nil
+}
+
+func BuildStripeResponse(e *stripe.Error) view.Response {
+	r := view.NewResponse()
+	r.StatusCode = e.HTTPStatusCode
+	r.Body = view.ClientError{
+		Message: e.Msg,
+		Code:    string(e.Code),
+		Param:   e.Param,
+		Type:    string(e.Type),
+	}
+
+	return r
 }
