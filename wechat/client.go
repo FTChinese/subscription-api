@@ -169,10 +169,10 @@ func (c Client) VerifyNotification(n Notification) error {
 //	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 //
 //	return AppPay{
-//		FtcOrderID: subs.OrderID,
+//		FtcOrderID: subs.ID,
 //		Price:      subs.ListPrice,
 //		ListPrice:  subs.ListPrice,
-//		NetPrice:   subs.NetPrice,
+//		Amount:   subs.Amount,
 //		AppID:      c.app.AppID,
 //		PartnerID:  c.app.MchID,
 //		PrepayID:   prepayID,
