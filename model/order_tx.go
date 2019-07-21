@@ -13,6 +13,7 @@ import (
 // if allowed.
 type OrderTx struct {
 	tx    *sql.Tx
+	live  bool
 	query query.Builder
 }
 
@@ -49,6 +50,11 @@ func (t OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 		return m, err
 	}
 
+	plan, err := paywall.GetFtcPlans(t.live).FindPlan(m.PlanID())
+	if err == nil {
+		m.FtcPlan = plan
+	}
+
 	// Treat a non-existing member as a valid value.
 	return m, nil
 }
@@ -58,14 +64,14 @@ func (t OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 
 	_, err := t.tx.Exec(
 		t.query.InsertSubs(),
-		s.OrderID,
+		s.ID,
 		s.CompoundID,
 		s.FtcID,
 		s.UnionID,
 		s.ListPrice,
-		s.NetPrice,
-		s.TierToBuy,
-		s.BillingCycle,
+		s.Amount,
+		s.Tier,
+		s.Cycle,
 		s.CycleCount,
 		s.ExtraDays,
 		s.Usage,
@@ -216,14 +222,14 @@ func (t OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 		t.query.SelectSubsLock(),
 		orderID,
 	).Scan(
-		&subs.OrderID,
+		&subs.ID,
 		&subs.CompoundID,
 		&subs.FtcID,
 		&subs.UnionID,
 		&subs.ListPrice,
-		&subs.NetPrice,
-		&subs.TierToBuy,
-		&subs.BillingCycle,
+		&subs.Amount,
+		&subs.Tier,
+		&subs.Cycle,
 		&subs.CycleCount,
 		&subs.ExtraDays,
 		&subs.Usage,
@@ -256,7 +262,7 @@ func (t OrderTx) ConfirmOrder(order paywall.Subscription) error {
 		order.ConfirmedAt,
 		order.StartDate,
 		order.EndDate,
-		order.OrderID,
+		order.ID,
 	)
 
 	if err != nil {
