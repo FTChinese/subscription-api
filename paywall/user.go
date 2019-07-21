@@ -24,22 +24,20 @@ type UserID struct {
 	UnionID    null.String `json:"-"`
 }
 
-// NewUserID creates a new UserID instance and select the correct CompoundID
-func NewUserID(ftcID null.String, unionID null.String) (UserID, error) {
-	u := UserID{
-		FtcID:   ftcID,
-		UnionID: unionID,
+func NewID(ftcID, unionID string) (UserID, error) {
+	id := UserID{
+		FtcID:   null.NewString(ftcID, ftcID != ""),
+		UnionID: null.NewString(unionID, unionID != ""),
 	}
 
-	if ftcID.Valid {
-		u.CompoundID = ftcID.String
-	} else if unionID.Valid {
-		u.CompoundID = unionID.String
+	if ftcID != "" {
+		id.CompoundID = ftcID
+	} else if unionID != "" {
+		id.CompoundID = unionID
 	} else {
-		return u, errors.New("ftcID and unionID should not both be null")
+		return id, errors.New("ftcID and unionID should not both be null")
 	}
-
-	return u, nil
+	return id, nil
 }
 
 // FtcUser represents a row retrieve from userinfo table.
@@ -49,6 +47,14 @@ type FtcUser struct {
 	StripeID null.String
 	Email    string
 	UserName null.String
+}
+
+func (u FtcUser) ID() UserID {
+	return UserID{
+		CompoundID: u.UserID,
+		FtcID:      null.StringFrom(u.UserID),
+		UnionID:    u.UnionID,
+	}
 }
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
@@ -62,7 +68,7 @@ func (u FtcUser) NormalizeName() string {
 
 // ConfirmationParcel create a parcel for email after subscription is confirmed.
 func (u FtcUser) ConfirmationParcel(s Subscription) (postoffice.Parcel, error) {
-	tmpl, err := template.New("order").Parse(confirmationLetter)
+	tmpl, err := template.New("order").Parse(letterNewSub)
 
 	if err != nil {
 		return postoffice.Parcel{}, err
@@ -89,6 +95,76 @@ func (u FtcUser) ConfirmationParcel(s Subscription) (postoffice.Parcel, error) {
 		ToAddress:   u.Email,
 		ToName:      u.NormalizeName(),
 		Subject:     "会员订阅",
+		Body:        body.String(),
+	}, nil
+}
+
+func (u FtcUser) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
+	tmpl, err := template.New("stripe_sub").Parse(letterStripeSub)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	plan, _ := s.BuildFtcPlan()
+	data := struct {
+		User FtcUser
+		Sub  StripeSub
+		Plan Plan
+	}{
+		User: u,
+		Sub:  s,
+		Plan: plan,
+	}
+
+	var body strings.Builder
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	return postoffice.Parcel{
+		FromAddress: "no-reply@ftchinese.com",
+		FromName:    "FT中文网会员订阅",
+		ToAddress:   u.Email,
+		ToName:      u.NormalizeName(),
+		Subject:     "Stripe订阅",
+		Body:        body.String(),
+	}, nil
+}
+
+func (u FtcUser) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error) {
+	tmpl, err := template.New("stripe_invoice").Parse(letterStripeInvoice)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	plan, _ := i.BuildFtcPlan()
+	data := struct {
+		User    FtcUser
+		Invoice EmailedInvoice
+		Plan    Plan
+	}{
+		User:    u,
+		Invoice: i,
+		Plan:    plan,
+	}
+
+	var body strings.Builder
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	return postoffice.Parcel{
+		FromAddress: "no-reply@ftchinese.com",
+		FromName:    "FT中文网会员订阅",
+		ToAddress:   u.Email,
+		ToName:      u.NormalizeName(),
+		Subject:     "Stripe订阅发票",
 		Body:        body.String(),
 	}, nil
 }
