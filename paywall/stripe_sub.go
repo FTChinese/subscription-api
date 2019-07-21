@@ -3,39 +3,18 @@ package paywall
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
 	"time"
 )
 
 type StripeSubParams struct {
-	Tier                 enum.Tier   `json:"tier"`
-	Cycle                enum.Cycle  `json:"cycle"`
+	Coordinate
 	Customer             string      `json:"customer"`
 	Coupon               null.String `json:"coupon"`
 	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
-	PlanID               string      `json:"-"`
 	IdempotencyKey       string      `json:"idempotency"`
-}
-
-func (s StripeSubParams) Key() string {
-	return s.Tier.String() + "_" + s.Cycle.String()
-}
-
-func extractStripePlanID(s *stripe.Subscription) (string, error) {
-	if s.Items == nil {
-		return "", errors.New("stripe subscription items are nil")
-	}
-	if len(s.Items.Data) == 0 {
-		return "", errors.New("stripe subscription items are empty")
-	}
-
-	if s.Items.Data[0].Plan == nil {
-		return "", errors.New("stripe subscription plan is nil")
-	}
-
-	return s.Items.Data[0].Plan.ID, nil
+	FtcPlan              Plan        `json:"-"`
 }
 
 type StripeSub struct {
@@ -43,8 +22,12 @@ type StripeSub struct {
 	Created            chrono.Time   `json:"created"`
 	CurrentPeriodEnd   chrono.Time   `json:"currentPeriodEnd"`
 	CurrentPeriodStart chrono.Time   `json:"currentPeriodStart"`
+	CustomerID         string        `json:"customerId"`
 	EndedAt            chrono.Time   `json:"endedAt"`
+	ID                 string        `json:"id"`
 	LatestInvoice      StripeInvoice `json:"latestInvoice"`
+	Livemode           bool          `json:livemode`
+	Plan               stripe.Plan   `json:"plan"`
 	StartDate          chrono.Time   `json:"startDate"`
 
 	// Possible values are incomplete, incomplete_expired, trialing, active, past_due, canceled, or unpaid.
@@ -61,56 +44,81 @@ func canonicalizeUnix(s int64) time.Time {
 }
 
 func NewStripeSub(s *stripe.Subscription) StripeSub {
+	plan, _ := extractStripePlan(s)
+
 	return StripeSub{
 		CancelAtPeriodEnd:  s.CancelAtPeriodEnd,
 		Created:            chrono.TimeFrom(canonicalizeUnix(s.Created)),
 		CurrentPeriodEnd:   chrono.TimeFrom(canonicalizeUnix(s.CurrentPeriodEnd)),
 		CurrentPeriodStart: chrono.TimeFrom(canonicalizeUnix(s.CurrentPeriodStart)),
+		CustomerID:         s.Customer.ID,
 		EndedAt:            chrono.TimeFrom(canonicalizeUnix(s.EndedAt)),
+		ID:                 s.ID,
 		LatestInvoice:      NewStripeInvoice(s.LatestInvoice),
+		Livemode:           s.Livemode,
+		Plan:               plan,
 		StartDate:          chrono.TimeFrom(canonicalizeUnix(s.StartDate)),
 		Status:             s.Status,
 	}
 }
 
-type StripeInvoice struct {
-	Created          chrono.Time     `json:"created"`
-	Currency         stripe.Currency `json:"currency"`
-	HostedInvoiceURL string          `json:"hostedInvoiceUrl"`
-	InvoicePDF       string          `json:"invoicePdf"`
-	// A unique, identifying string that appears on emails sent to the customer for this invoice.
-	Number string `json:"number"`
-	Paid   bool   `json:"paid"`
-
-	PaymentIntent PaymentIntent `json:"paymentIntent"`
-	// This is the transaction number that appears on email receipts sent for this invoice.
-	ReceiptNumber string `json:"receiptNumber"`
-}
-
-func NewStripeInvoice(i *stripe.Invoice) StripeInvoice {
-	return StripeInvoice{
-		Created:          chrono.TimeFrom(canonicalizeUnix(i.Created)),
-		Currency:         i.Currency,
-		HostedInvoiceURL: i.HostedInvoiceURL,
-		InvoicePDF:       i.InvoicePDF,
-		Number:           i.Number,
-		Paid:             i.Paid,
-		PaymentIntent:    NewPaymentIntent(i.PaymentIntent),
-		ReceiptNumber:    i.ReceiptNumber,
+func (s StripeSub) BuildFtcPlan() (Plan, error) {
+	ftcPlan, err := GetStripeToFtcPlans(s.Livemode).FindPlan(s.Plan.ID)
+	if err != nil {
+		return ftcPlan, err
 	}
+
+	return ftcPlan.WithStripe(s.Plan), nil
 }
 
-type PaymentIntent struct {
-	ClientSecret string                          `json:"clientSecret"`
-	NextAction   *stripe.PaymentIntentNextAction `json:"nextAction,omitempty"`
-	// Status of this PaymentIntent, one of requires_payment_method, requires_confirmation, requires_action, processing, requires_capture, canceled, or succeeded
-	Status stripe.PaymentIntentStatus `json:"status"`
-}
+func (s StripeSub) ReadableStatus() string {
+	switch s.Status {
+	case stripe.SubscriptionStatusActive:
+		return "活跃"
 
-func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
-	return PaymentIntent{
-		ClientSecret: pi.ClientSecret,
-		Status:       pi.Status,
-		NextAction:   pi.NextAction,
+	//  the initial payment attempt fails
+	case stripe.SubscriptionStatusIncomplete:
+		return "支付未完成，请在24小时内完成支付"
+
+	// If the first invoice is not paid within 23 hours, the subscription transitions to incomplete_expired. This is a terminal state, the open invoice will be voided and no further invoices will be generated.
+	case stripe.SubscriptionStatusIncompleteExpired:
+		return "支付已过期"
+
+	case stripe.SubscriptionStatusPastDue:
+		// payment to renew it fails
+		return "续费失败"
+
+	case stripe.SubscriptionStatusCanceled:
+		// when Stripe has exhausted all payment retry attempts.
+		return "Stripe未能找到合适的支付方式，支付已取消"
+
+	case stripe.SubscriptionStatusUnpaid:
+		// when Stripe has exhausted all payment retry attempts.
+		return "Stripe未能找到合适的支付方式，支付已取消"
 	}
+
+	return "未知"
+}
+
+func (s StripeSub) RequiresAction() bool {
+	return s.Status == stripe.SubscriptionStatusIncomplete
+}
+
+func extractStripePlan(s *stripe.Subscription) (stripe.Plan, error) {
+	if s.Plan != nil {
+		return *s.Plan, nil
+	}
+
+	if s.Items == nil {
+		return stripe.Plan{}, errors.New("stripe subscription items are empty")
+	}
+	if len(s.Items.Data) == 0 {
+		return stripe.Plan{}, errors.New("stripe subscription items are empty")
+	}
+
+	if s.Items.Data[0].Plan == nil {
+		return stripe.Plan{}, errors.New("stripe subscription plan is nil")
+	}
+
+	return *s.Items.Data[0].Plan, nil
 }
