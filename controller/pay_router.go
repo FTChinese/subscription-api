@@ -8,6 +8,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 )
 
@@ -17,36 +18,30 @@ const (
 
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
-	sandbox    bool
-	production bool
-	model      model.Env
-	postman    postoffice.Postman
-}
-
-func (router PayRouter) stripeLive() bool {
-	return router.production && !router.sandbox
+	model   model.Env
+	postman postoffice.Postman
 }
 
 func (router PayRouter) findPlan(req *http.Request) (paywall.Plan, error) {
-	tier, err := GetURLParam(req, "tier").ToString()
+	t, err := GetURLParam(req, "tier").ToString()
 	if err != nil {
 		return paywall.Plan{}, err
 	}
 
-	cycle, err := GetURLParam(req, "cycle").ToString()
+	c, err := GetURLParam(req, "cycle").ToString()
 	if err != nil {
 		return paywall.Plan{}, err
 	}
 
-	return router.model.GetCurrentPlans().GetPlanByID(tier + "_" + cycle)
+	return router.model.GetCurrentPlans().FindPlan(t + "_" + c)
 }
 
 func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	switch err {
-	case paywall.ErrBeyondRenewal:
+	case util.ErrBeyondRenewal:
 		view.Render(w, view.NewForbidden(err.Error()))
 
-	case paywall.ErrDowngrade:
+	case util.ErrDowngrade:
 		r := view.NewReason()
 		r.Field = "downgrade"
 		r.Code = view.CodeInvalid
@@ -60,7 +55,7 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 
 // Returns notification URL for Alipay based on whether the api is run for sandbox.
 func (router PayRouter) aliCallbackURL() string {
-	if router.sandbox {
+	if router.model.Sandbox {
 		return apiBaseURL + "/sandbox/callback/alipay"
 	}
 
@@ -68,7 +63,7 @@ func (router PayRouter) aliCallbackURL() string {
 }
 
 func (router PayRouter) wxCallbackURL() string {
-	if router.sandbox {
+	if router.model.Sandbox {
 		return apiBaseURL + "/sandbox/callback/wxpay"
 	}
 
@@ -80,8 +75,8 @@ func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) ali
 	p := alipay.AliPayTradeAppPay{}
 	p.NotifyURL = router.aliCallbackURL()
 	p.Subject = title
-	p.OutTradeNo = s.OrderID
-	p.TotalAmount = s.AliNetPrice()
+	p.OutTradeNo = s.ID
+	p.TotalAmount = s.AliPrice()
 	p.ProductCode = ali.ProductCodeApp.String()
 	p.GoodsType = "0"
 
@@ -96,8 +91,8 @@ func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) ali
 //	p.NotifyURL = router.aliCallbackURL()
 //	p.ReturnURL = router.aliReturnURL()
 //	p.Subject = title
-//	p.OutTradeNo = s.OrderID
-//	p.TotalAmount = s.AliNetPrice()
+//	p.OutTradeNo = s.ID
+//	p.TotalAmount = s.AliPrice()
 //	p.ProductCode = ali.ProductCodeWeb.String()
 //	p.GoodsType = "0"
 //
@@ -109,8 +104,8 @@ func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) ali
 //	p.NotifyURL = router.aliCallbackURL()
 //	p.ReturnURL = router.aliReturnURL()
 //	p.Subject = title
-//	p.OutTradeNo = s.OrderID
-//	p.TotalAmount = s.AliNetPrice()
+//	p.OutTradeNo = s.ID
+//	p.TotalAmount = s.AliPrice()
 //	p.ProductCode = ali.ProductCodeWeb.String()
 //	p.GoodsType = "0"
 //
