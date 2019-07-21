@@ -2,10 +2,9 @@ package controller
 
 import (
 	"encoding/json"
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
-	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
@@ -21,11 +20,9 @@ type StripeRouter struct {
 	PayRouter
 }
 
-func NewStripeRouter(m model.Env, p postoffice.Postman, sandbox bool, production bool) StripeRouter {
+func NewStripeRouter(m model.Env, p postoffice.Postman) StripeRouter {
 	r := StripeRouter{}
 
-	r.sandbox = sandbox
-	r.production = production
 	r.model = m
 	r.postman = p
 
@@ -62,13 +59,16 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	planID, err := paywall.GetStripePlans(router.stripeLive()).FindPlanID(key)
+	ftcPlan, err := paywall.
+		GetFtcPlans(router.model.Live()).
+		FindPlan(key)
+
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	p, err := plan.Get(planID, nil)
+	p, err := plan.Get(ftcPlan.StripeID, nil)
 	if err != nil {
 		view.Render(w, stripeBadRequest(err))
 		return
@@ -200,8 +200,11 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 // "request_id":"req_fa0rfmytgnI22E",
 // "type":"invalid_request_error"
 // }
+// TODO: requires ftc id but optional union id
+// in case user alread linked wechat.
 func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(ftcIDKey)
+	userID, _ := GetFtcOnlyID(req.Header)
+
 	// "plan_FOEFa7c1zLOtJW"
 	var params paywall.StripeSubParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -211,21 +214,33 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 
 	logrus.WithField("trace", "StripeRouter").Infof("Stripe param: %+v", params)
 
-	planID, err := paywall.GetStripePlans(router.stripeLive()).FindPlanID(params.Key())
+	ftcPlan, err := paywall.
+		GetFtcPlans(router.model.Live()).
+		FindPlan(params.PlanID())
+
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	params.PlanID = planID
-	s, err := router.model.CreateStripeSub(paywall.UserID{
-		CompoundID: ftcID,
-		FtcID:      null.StringFrom(ftcID),
-		UnionID:    null.String{},
-	}, params)
+	params.FtcPlan = ftcPlan
+	s, err := router.model.CreateStripeSub(userID, params)
 
 	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
+		if sErr := CastStripeError(err); sErr != nil {
+			view.Render(w, BuildStripeResponse(sErr))
+			router.model.SaveStripeError(userID, sErr)
+			return
+		}
+
+		switch err {
+		case util.ErrNonStripeValidSub,
+			util.ErrActiveStripeSub,
+			util.ErrUnknownSubState:
+			view.Render(w, view.NewBadRequest(err.Error()))
+		default:
+			view.Render(w, view.NewDBFailure(err))
+		}
 		return
 	}
 
@@ -233,14 +248,21 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 }
 
 // GetSubscription fetches a user's subscription and update membership if data in our db is stale.
+//
+// Error Response:
+// 404: membership for this user is not found.
 func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(ftcIDKey)
 
-	id, _ := paywall.NewUserID(null.StringFrom(ftcID), null.String{})
+	id, _ := GetFtcOnlyID(req.Header)
 
 	ss, err := router.model.GetStripeSub(id)
 	if err != nil {
-		view.Render(w, stripeDBFailure(err))
+		if sErr := CastStripeError(err); err != nil {
+			view.Render(w, BuildStripeResponse(sErr))
+			return
+		}
+
+		view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
@@ -249,8 +271,12 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 
 // UpgradeSubscription create a stripe subscription.
 // Input: {customer: "", coupon: "", defaultPaymentMethod: "", ftcPlanId: "standard_year" | "standard_month" | "premium_year"}
+//
+// Error response:
+// 404 if membership if not found.
 func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(ftcIDKey)
+	id, _ := GetFtcOnlyID(req.Header)
+
 	// "plan_FOEFa7c1zLOtJW"
 	var params paywall.StripeSubParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -258,27 +284,26 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		return
 	}
 
-	if params.Key() == "standard_month" {
-		view.Render(w, view.NewBadRequest("This is used only to change monthly plan to yearly or from standard to premium."))
-		return
-	}
+	ftcPlan, err := paywall.
+		GetFtcPlans(router.model.Live()).
+		FindPlan(params.PlanID())
 
-	planID, err := paywall.
-		GetStripePlans(router.stripeLive()).
-		FindPlanID(params.Key())
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	params.PlanID = planID
-	s, err := router.model.UpgradeStripeSubs(paywall.UserID{
-		CompoundID: ftcID,
-		FtcID:      null.StringFrom(ftcID),
-		UnionID:    null.String{},
-	}, params)
+	params.FtcPlan = ftcPlan
+
+	s, err := router.model.UpgradeStripeSubs(id, params)
 
 	if err != nil {
+		if sErr := CastStripeError(err); sErr != nil {
+			view.Render(w, BuildStripeResponse(sErr))
+			go router.model.SaveStripeError(id, sErr)
+			return
+		}
+
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
@@ -286,7 +311,34 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 	view.Render(w, view.NewResponse().SetBody(s))
 }
 
+func (router StripeRouter) onSubscription(s *stripe.Subscription) error {
+	logger := logrus.WithField("trace", "StripeRouter.onSubscription")
+
+	ss := paywall.NewStripeSub(s)
+	ftcUser, err := router.model.WebHookSaveSub(ss)
+
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	parcel, err := ftcUser.StripeSubParcel(ss)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	err = router.postman.Deliver(parcel)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	return nil
+}
+
 func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
+	logger := logrus.WithField("trace", "StripeRouter.WebHook")
 	event := stripe.Event{}
 
 	if err := gorest.ParseJSON(req.Body, &event); err != nil {
@@ -294,10 +346,12 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logrus.WithField("trace", "StripeRouter.WebHook").Infof("Stripe event type: %s", event.Type)
+	logger.Infof("Stripe event type: %s", event.Type)
 
 	invoice := stripe.Invoice{}
 	switch event.Type {
+
+	// Occurs whenever a customer is signed up for a new plan.
 	case "customer.subscription.created":
 		s := stripe.Subscription{}
 		if err := json.Unmarshal(event.Data.Raw, &s); err != nil {
@@ -305,9 +359,18 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		logrus.Info(s)
+
+		go func() {
+			err := router.onSubscription(&s)
+			if err != nil {
+				logger.Error(err)
+			}
+		}()
+
 		w.WriteHeader(http.StatusOK)
 		return
 
+	//	Occurs whenever a subscription changes (e.g., switching from one plan to another, or changing the status from trial to active).
 	case "customer.subscription.updated":
 		s := stripe.Subscription{}
 		if err := json.Unmarshal(event.Data.Raw, &s); err != nil {
@@ -333,6 +396,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 
+	// Handling payment failures
 	case "invoice.payment_failed":
 		if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -342,7 +406,13 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 
-	case "invoice.payment_succeeded":
+	// Handling payments that require additional action
+	case "invoice.payment_action_required":
+		return
+
+	// Tracking active subscriptions
+	// A few days prior to renewal, your site receives an invoice.upcoming event at the webhook endpoint.
+	case "invoice.upcoming":
 		if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -351,7 +421,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 
-	case "invoice.upcoming":
+	case "invoice.payment_succeeded":
 		if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
