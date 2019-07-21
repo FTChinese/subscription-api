@@ -64,7 +64,7 @@ func (c Client) BuildAppOrder(u UnifiedOrderResp, subs paywall.Subscription) App
 
 	o := AppOrder{
 		Subscription:   subs,
-		FtcOrderID:     subs.OrderID,
+		FtcOrderID:     subs.ID,
 		AppOrderParams: p,
 		Params:         p,
 	}
