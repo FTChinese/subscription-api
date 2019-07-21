@@ -33,7 +33,7 @@ func TestEnv_PreviewUpgrade(t *testing.T) {
 
 		t.Logf("Created an order: %+v", subs)
 
-		subs, err = env.ConfirmPayment(subs.OrderID, time.Now())
+		subs, err = env.ConfirmPayment(subs.ID, time.Now())
 		if err != nil {
 			t.Error(err)
 			panic(err)
@@ -61,7 +61,7 @@ func TestEnv_PreviewUpgrade(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := env.PreviewUpgrade(tt.args.userID)
+			got, err := env.PreviewUpgrade(tt.args.userID, test.YearlyPremium)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Env.PreviewUpgrade() error = %v, wantErr %v", err, tt.wantErr)
 				return
