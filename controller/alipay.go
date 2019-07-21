@@ -27,7 +27,7 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool, production bool) AliPayRouter {
+func NewAliRouter(m model.Env, p postoffice.Postman) AliPayRouter {
 
 	app := getAliPayApp()
 
@@ -37,8 +37,6 @@ func NewAliRouter(m model.Env, p postoffice.Postman, sandbox bool, production bo
 		appID:  app.ID,
 		client: client,
 	}
-	r.production = production
-	r.sandbox = sandbox
 	r.model = m
 	r.postman = p
 
@@ -98,9 +96,9 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		tradePay := alipay.TradePay{
 			NotifyURL:   router.aliCallbackURL(),
 			ReturnURL:   returnURL,
-			Subject:     plan.Description,
-			OutTradeNo:  subs.OrderID,
-			TotalAmount: subs.AliNetPrice(),
+			Subject:     plan.Title,
+			OutTradeNo:  subs.ID,
+			TotalAmount: subs.AliPrice(),
 		}
 
 		switch kind {
@@ -214,7 +212,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 //		return
 //	}
 //
-//	param := router.aliAppPayParam(plan.Description, subs)
+//	param := router.aliAppPayParam(plan.Title, subs)
 //
 //	// Call URLValues to generate alipay required data structure and sign it.
 //	//values, err := router.client.URLValues(param)
@@ -311,11 +309,11 @@ func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request
 	}
 
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
-	if charge.AliNetPrice() != noti.TotalAmount {
+	if charge.AliPrice() != noti.TotalAmount {
 		logger.WithFields(logrus.Fields{
 			"event":   "PaymentFailed",
 			"orderId": noti.OutTradeNo,
-		}).Infof("Expected net price: %s, actually received: %s", charge.AliNetPrice(), noti.TotalAmount)
+		}).Infof("Expected net price: %s, actually received: %s", charge.AliPrice(), noti.TotalAmount)
 
 		w.Write([]byte(success))
 
