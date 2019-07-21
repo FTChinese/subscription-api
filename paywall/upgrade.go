@@ -57,7 +57,7 @@ func (p Upgrade) SetBalance(sources []BalanceSource) Upgrade {
 
 // CalculatePrice determines how user should pay for an upgrade.
 func (p Upgrade) CalculatePayable() Upgrade {
-	// Is Balance big enough to cover NetPrice.
+	// Is Balance big enough to cover Amount.
 
 	if p.ListPrice > p.Balance {
 		// UserID should pay diff
