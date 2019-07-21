@@ -24,12 +24,10 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(m model.Env, p postoffice.Postman, sandbox bool, production bool) WxPayRouter {
+func NewWxRouter(m model.Env, p postoffice.Postman) WxPayRouter {
 	r := WxPayRouter{
 		clients: createWxpayClients(),
 	}
-	r.production = production
-	r.sandbox = sandbox
 	r.model = m
 	r.postman = p
 
@@ -145,13 +143,13 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Wxpay specific handling.
 		// Prepare the data used to obtain prepay order from wechat.
 		unifiedOrder := wechat.UnifiedOrder{
-			Body:        plan.Description,
-			OrderID:     subs.OrderID,
+			Body:        plan.Title,
+			OrderID:     subs.ID,
 			Price:       subs.PriceInCent(),
 			IP:          clientApp.UserIP.String,
 			CallbackURL: router.wxCallbackURL(),
 			TradeType:   tradeType,
-			ProductID:   plan.ProductID(),
+			ProductID:   plan.PlanID(),
 			OpenID:      openID,
 		}
 		// Build Wechat pay parameters.
@@ -177,7 +175,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Convert wxpay's map to struct for easy manipulation.
 		uor := wechat.NewUnifiedOrderResp(resp)
 
-		go router.model.SavePrepayResp(subs.OrderID, uor)
+		go router.model.SavePrepayResp(subs.ID, uor)
 
 		if r := uor.Validate(payClient.GetApp()); r != nil {
 			logger.Info("Invalid unified order response")
@@ -266,8 +264,8 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 //	}
 //
 //	unifiedOrder := wechat.UnifiedOrder{
-//		Body:        plan.Description,
-//		OrderID:     subs.OrderID,
+//		Body:        plan.Title,
+//		ID:     subs.ID,
 //		Price:       subs.PriceInCent(),
 //		IP:          clientApp.UserIP.String,
 //		CallbackURL: router.wxCallbackURL(),
@@ -275,7 +273,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 //		ProductID:   plan.ProductID(),
 //	}
 //	// Build Wechat pay parameters.
-//	//param := router.wxUniOrderParam(plan.Description, clientApp.UserIP.String, subs)
+//	//param := router.wxUniOrderParam(plan.Title, clientApp.UserIP.String, subs)
 //	param := unifiedOrder.ToParam()
 //
 //	logger.WithField("trace", "UnifiedOrder").Infof("Unifed order params: %+v", param)
@@ -294,7 +292,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 //	uor := wechat.NewUnifiedOrderResp(resp)
 //
 //	// Log the response.
-//	go router.model.SavePrepayResp(subs.OrderID, uor)
+//	go router.model.SavePrepayResp(subs.ID, uor)
 //
 //	//if r := router.mSubsClient.ValidateResponse(resp); r != nil {
 //	//	view.Render(w, view.NewUnprocessable(r))
