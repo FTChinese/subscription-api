@@ -101,7 +101,7 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 	}
 
 	// Confirm this order
-	updatedSubs, err := router.model.ConfirmPayment(subs.OrderID, time.Now())
+	updatedSubs, err := router.model.ConfirmPayment(subs.ID, time.Now())
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
