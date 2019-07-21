@@ -371,41 +371,6 @@ func TestUnmarshalStripeSub(t *testing.T) {
 	t.Log(chrono.TimeFrom(time.Time{}))
 }
 
-func Test_extractStripePlanID(t *testing.T) {
-	s := stripe.Subscription{}
-
-	if err := json.Unmarshal([]byte(subData), &s); err != nil {
-		t.Error(err)
-	}
-
-	type args struct {
-		s *stripe.Subscription
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Extract Plan ID from Stripe Subscription",
-			args: args{
-				s: &s,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractStripePlanID(tt.args.s)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("extractStripePlanID() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			t.Logf("Plan id: %s", got)
-		})
-	}
-}
-
 func TestNewStripeSub(t *testing.T) {
 	s := stripe.Subscription{}
 
@@ -413,25 +378,7 @@ func TestNewStripeSub(t *testing.T) {
 		t.Error(err)
 	}
 
-	type args struct {
-		s *stripe.Subscription
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "Create NewStripSub",
-			args: args{
-				s: &s,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := NewStripeSub(tt.args.s)
+	got := NewStripeSub(&s)
 
-			t.Logf("%+v", got)
-		})
-	}
+	t.Logf("%+v", got)
 }
