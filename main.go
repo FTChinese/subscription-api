@@ -23,8 +23,7 @@ import (
 )
 
 var (
-	isProd  bool
-	sandbox bool
+	config  model.BuildConfig
 	version string
 	build   string
 )
@@ -34,8 +33,8 @@ const (
 )
 
 func init() {
-	flag.BoolVar(&isProd, "production", false, "Connect to production MySQL database if present. Default to localhost.")
-	flag.BoolVar(&sandbox, "sandbox", false, "Use sandbox database to save subscription data if present.")
+	flag.BoolVar(&config.Production, "production", false, "Connect to production MySQL database if present. Default to localhost.")
+	flag.BoolVar(&config.Sandbox, "sandbox", false, "Use sandbox database to save subscription data if present.")
 	var v = flag.Bool("v", false, "print current version")
 
 	flag.Parse()
@@ -48,8 +47,8 @@ func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
 	logrus.WithFields(logrus.Fields{
-		"sandbox":    sandbox,
-		"production": isProd,
+		"sandbox":    config.Sandbox,
+		"production": config.Production,
 	}).Infof("Initializing environment")
 
 	viper.SetConfigName("api")
@@ -59,20 +58,17 @@ func init() {
 		os.Exit(1)
 	}
 
-	if isProd {
+	if config.Production {
 		stripe.Key = viper.GetString("stripe.live_secret_key")
 	} else {
 		stripe.Key = viper.GetString("stripe.test_secret_key")
 	}
-
-	controller.Sandbox = sandbox
-	controller.Production = isProd
 }
 
 func getStripeKey() string {
 	var key string
 
-	if isProd {
+	if config.Production {
 		key = viper.GetString("stripe.live_secret_key")
 	} else {
 		key = viper.GetString("stripe.test_secret_key")
@@ -90,7 +86,7 @@ func getDBConn() util.Conn {
 	// Get DB connection config.
 	var conn util.Conn
 	var err error
-	if isProd {
+	if config.Production {
 		err = viper.UnmarshalKey("mysql.master", &conn)
 	} else {
 		err = viper.UnmarshalKey("mysql.dev", &conn)
@@ -138,14 +134,14 @@ func main() {
 		emailConn.User,
 		emailConn.Pass)
 
-	m := model.New(db, c, sandbox)
+	m := model.New(db, c, config)
 
-	wxRouter := controller.NewWxRouter(m, post, sandbox, isProd)
-	aliRouter := controller.NewAliRouter(m, post, sandbox, isProd)
+	wxRouter := controller.NewWxRouter(m, post)
+	aliRouter := controller.NewAliRouter(m, post)
 	giftCardRouter := controller.NewGiftCardRouter(m)
 	paywallRouter := controller.NewPaywallRouter(m)
 	upgradeRouter := controller.NewUpgradeRouter(m)
-	stripeRouter := controller.NewStripeRouter(m, post, sandbox, isProd)
+	stripeRouter := controller.NewStripeRouter(m, post)
 
 	wxAuth := controller.NewWxAuth(m)
 
@@ -289,7 +285,7 @@ func status(w http.ResponseWriter, req *http.Request) {
 	}{
 		Version: version,
 		Build:   build,
-		Sandbox: sandbox,
+		Sandbox: config.Sandbox,
 	}
 
 	view.Render(w, view.NewResponse().NoCache().SetBody(data))
