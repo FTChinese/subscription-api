@@ -3,6 +3,8 @@ package paywall
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/stripe/stripe-go"
+	"strings"
 )
 
 var (
@@ -11,13 +13,13 @@ var (
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleMonth,
 		},
-		ListPrice:   28.00,
-		NetPrice:    28.00,
-		Description: "FT中文网 - 月度标准会员",
-		CycleCount:  1,
-		Currency:    "￥",
-		ExtraDays:   1,
-		StripeID:    "",
+		ListPrice:  28.00,
+		NetPrice:   28.00,
+		Title:      "FT中文网 - 月度标准会员",
+		CycleCount: 1,
+		Currency:   "cny",
+		ExtraDays:  1,
+		StripeID:   "",
 	}
 
 	standardYearlyPlan = Plan{
@@ -25,13 +27,13 @@ var (
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,
 		},
-		ListPrice:   258.00,
-		NetPrice:    258.00,
-		Description: "FT中文网 - 年度标准会员",
-		CycleCount:  1,
-		Currency:    "￥",
-		ExtraDays:   1,
-		StripeID:    "",
+		ListPrice:  258.00,
+		NetPrice:   258.00,
+		Title:      "FT中文网 - 年度标准会员",
+		CycleCount: 1,
+		Currency:   "cny",
+		ExtraDays:  1,
+		StripeID:   "",
 	}
 
 	premiumYearlyPlan = Plan{
@@ -39,13 +41,13 @@ var (
 			Tier:  enum.TierPremium,
 			Cycle: enum.CycleYear,
 		},
-		ListPrice:   1998.00,
-		NetPrice:    1998.00,
-		Description: "FT中文网 - 高端会员",
-		CycleCount:  1,
-		Currency:    "￥",
-		ExtraDays:   1,
-		StripeID:    "",
+		ListPrice:  1998.00,
+		NetPrice:   1998.00,
+		Title:      "FT中文网 - 高端会员",
+		CycleCount: 1,
+		Currency:   "cny",
+		ExtraDays:  1,
+		StripeID:   "",
 	}
 )
 
@@ -81,14 +83,6 @@ func buildSandboxPlans() FtcPlans {
 	return plans
 }
 
-var stripeToFtcPlansTest = FtcPlans{
-	"plan_FOdfeaqzczp6Ag": standardYearlyPlan.withSandbox(),
-	"plan_FOdgPTznDwHU4i": standardMonthlyPlan.withSandbox(),
-	"plan_FOde0uAr0V4WmT": premiumYearlyPlan.withSandbox(),
-}
-
-var stripeToFtcPlansLive = FtcPlans{}
-
 // Coordinate includes a product and a plan billing cycle to identify the plan to subscribe.
 type Coordinate struct {
 	Tier  enum.Tier  `json:"tier"`
@@ -109,13 +103,13 @@ func (c Coordinate) GetOrdinal() int {
 // The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
 	Coordinate
-	ListPrice   float64 `json:"listPrice"`
-	NetPrice    float64 `json:"netPrice"`
-	Description string  `json:"description"`
-	CycleCount  int64   `json:"cycleCount"`
-	Currency    string  `json:"currency"`
-	ExtraDays   int64   `json:"extraDays"`
-	StripeID    string  `json:"-"`
+	ListPrice  float64 `json:"listPrice"`
+	NetPrice   float64 `json:"netPrice"`
+	Title      string  `json:"description"`
+	CycleCount int64   `json:"cycleCount"`
+	Currency   string  `json:"currency"`
+	ExtraDays  int64   `json:"extraDays"`
+	StripeID   string  `json:"-"`
 }
 
 // withSandbox returns the sandbox version of a plan.
@@ -124,7 +118,7 @@ func (p Plan) withSandbox() Plan {
 	return p
 }
 
-func (p Plan) BuildUpgradePlan(balance float64) Plan {
+func (p Plan) WithUpgrade(balance float64) Plan {
 	if p.ListPrice >= balance {
 		p.NetPrice = p.ListPrice - balance
 	} else {
@@ -135,8 +129,24 @@ func (p Plan) BuildUpgradePlan(balance float64) Plan {
 	return p
 }
 
-func (p Plan) StripePrice() int64 {
-	return int64(p.NetPrice * 100)
+func (p Plan) WithStripe(sp stripe.Plan) Plan {
+	p.ListPrice = float64(sp.Amount / 100)
+	p.NetPrice = p.ListPrice
+	p.Currency = string(sp.Currency)
+
+	return p
+}
+
+// Desc is used for displaying to user.
+// The price show here is not the final price user paid.
+func (p Plan) Desc() string {
+	return fmt.Sprintf(
+		"%s %s%.2f/%s",
+		p.Tier.StringCN(),
+		strings.ToUpper(p.Currency),
+		p.ListPrice,
+		p.Cycle.StringCN(),
+	)
 }
 
 // FtcPlans maps a key to a FTC plan.
@@ -150,6 +160,14 @@ func (plans FtcPlans) FindPlan(id string) (Plan, error) {
 
 	return p, nil
 }
+
+var stripeToFtcPlansTest = FtcPlans{
+	"plan_FOdfeaqzczp6Ag": standardYearlyPlan.withSandbox(),
+	"plan_FOdgPTznDwHU4i": standardMonthlyPlan.withSandbox(),
+	"plan_FOde0uAr0V4WmT": premiumYearlyPlan.withSandbox(),
+}
+
+var stripeToFtcPlansLive = FtcPlans{}
 
 func GetFtcPlans(live bool) FtcPlans {
 	if live {
