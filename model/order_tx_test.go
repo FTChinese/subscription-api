@@ -33,7 +33,7 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 		panic(err)
 	}
 
-	t.Logf("Saved new order: %+s", subs.OrderID)
+	t.Logf("Saved new order: %+s", subs.ID)
 }
 
 // Create a new order in db and returns it.
@@ -64,7 +64,7 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 	userID := test.MyProfile.RandomUserID()
 
 	subs := createOrder(test.SubsCreate(userID))
-	t.Logf("Saved new order: %+s", subs.OrderID)
+	t.Logf("Saved new order: %+s", subs.ID)
 
 	env := Env{
 		db:    test.DB,
@@ -77,7 +77,7 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 		t.Error(err)
 	}
 
-	order, err := tx.RetrieveOrder(subs.OrderID)
+	order, err := tx.RetrieveOrder(subs.ID)
 	if err != nil {
 		t.Error(err)
 	}
@@ -90,7 +90,7 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 
 	order, _ := createOrder(test.SubsCreate(userID)).
 		Confirm(paywall.Membership{}, time.Now())
-	t.Logf("Created order: %s", order.OrderID)
+	t.Logf("Created order: %s", order.ID)
 
 	env := Env{
 		db:    test.DB,
@@ -403,7 +403,7 @@ func TestOrderTx_SaveUpgrade(t *testing.T) {
 		{
 			name: "Save Upgrade",
 			args: args{
-				orderID: upgradeOrder.OrderID,
+				orderID: upgradeOrder.ID,
 				up:      upgrade,
 			},
 		},
@@ -448,7 +448,7 @@ func buildUpgradeV2(userID paywall.UserID, count int) paywall.UpgradePreview {
 	}
 
 	up := paywall.NewUpgradePreview(sources)
-	up.Plan = test.YearlyPremium.BuildUpgradePlan(up.Balance)
+	up.Plan = test.YearlyPremium.WithUpgrade(up.Balance)
 	up.Member = member
 	return up
 }
@@ -541,7 +541,7 @@ func createUpgrade(userID paywall.UserID, count int) (paywall.Upgrade, paywall.S
 		panic(err)
 	}
 
-	if err := tx.SaveUpgrade(upgradeOrder.OrderID, upgrade); err != nil {
+	if err := tx.SaveUpgrade(upgradeOrder.ID, upgrade); err != nil {
 		panic(err)
 	}
 
