@@ -55,13 +55,13 @@ func (p Profile) UserID(id ID) paywall.UserID {
 
 	switch id {
 	case IDFtc:
-		user, _ = paywall.NewUserID(null.StringFrom(p.FtcID), null.String{})
+		user, _ = paywall.NewID(p.FtcID, "")
 
 	case IDWx:
-		user, _ = paywall.NewUserID(null.String{}, null.StringFrom(p.UnionID))
+		user, _ = paywall.NewID("", p.UnionID)
 
 	case IDBound:
-		user, _ = paywall.NewUserID(null.StringFrom(p.FtcID), null.StringFrom(p.UnionID))
+		user, _ = paywall.NewID(p.FtcID, p.UnionID)
 	}
 
 	return user
