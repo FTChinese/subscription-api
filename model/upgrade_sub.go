@@ -55,8 +55,6 @@ func (env Env) PreviewUpgrade(userID paywall.UserID) (paywall.UpgradePreview, er
 	}
 
 	up := paywall.NewUpgradePreview(sources)
-	plan, _ := env.GetCurrentPlans().GetPlanByID("premium_year")
-	up.Plan = plan.BuildUpgradePlan(up.Balance)
 	up.Member = member
 
 	return up, nil
@@ -86,7 +84,7 @@ func (env Env) FreeUpgrade(
 		return subs, err
 	}
 
-	if err := tx.SaveUpgradeV2(subs.OrderID, up); err != nil {
+	if err := tx.SaveUpgradeV2(subs.ID, up); err != nil {
 		_ = tx.rollback()
 		return subs, err
 	}
@@ -101,5 +99,5 @@ func (env Env) FreeUpgrade(
 		return subs, err
 	}
 
-	return env.ConfirmPayment(subs.OrderID, time.Now())
+	return env.ConfirmPayment(subs.ID, time.Now())
 }
