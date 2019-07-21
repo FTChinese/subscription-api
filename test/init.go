@@ -26,8 +26,8 @@ var WxPayApp wechat.PayApp
 var WxPayClient wechat.Client
 var StripeKey string
 
-var YearlyStandard = paywall.GetFtcPlans(false)["standard_year"]
-var YearlyPremium = paywall.GetFtcPlans(false)["premium_year"]
+var YearlyStandard = paywall.GetFtcPlans(true)["standard_year"]
+var YearlyPremium = paywall.GetFtcPlans(true)["premium_year"]
 
 func init() {
 	viper.SetConfigName("api")
