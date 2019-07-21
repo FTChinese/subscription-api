@@ -5,6 +5,20 @@ import (
 	"github.com/guregu/null"
 )
 
+// The default banner message used on web version of pay wall.
+var defaultBanner = Banner{
+	Heading:    "FT中文网会员订阅服务",
+	CoverURL:   "http://www.ftacademy.cn/subscription.jpg",
+	SubHeading: "欢迎您",
+	Content: []string{
+		"希望全球视野的FT中文网，能够带您站在高海拔的地方俯瞰世界，引发您的思考，从不同的角度看到不一样的事物，见他人之未见！",
+	},
+}
+
+func GetDefaultBanner() Banner {
+	return defaultBanner
+}
+
 // Banner is the banner used on the barrier page
 type Banner struct {
 	Heading    string   `json:"heading"`
@@ -19,8 +33,7 @@ type ProductCard struct {
 	Benefits   []string    `json:"benefits"`
 	SmallPrint null.String `json:"smallPrint"`
 	Tier       enum.Tier   `json:"tier"`
-	Currency   string      `json:"currency"`
-	Pricing    []Plan      `json:"pricing"`
+	Plans      []Plan      `json:"plans"`
 }
 
 type PayWall struct {
@@ -29,24 +42,18 @@ type PayWall struct {
 }
 
 // BuildPayWall constructs the data used to show pay wall.
-func BuildPayWall(banner Banner, pricing FtcPlans) (PayWall, error) {
-	planStdYear, err := pricing.FindPlan(
-		enum.TierStandard.String(),
-		enum.CycleYear.String())
+func BuildPayWall(banner Banner, plans FtcPlans) (PayWall, error) {
+	planStdYear, err := plans.FindPlan("standard_year")
 	if err != nil {
 		return PayWall{}, err
 	}
 
-	planStdMonth, err := pricing.FindPlan(
-		enum.TierStandard.String(),
-		enum.CycleMonth.String())
+	planStdMonth, err := plans.FindPlan("standard_month")
 	if err != nil {
 		return PayWall{}, err
 	}
 
-	planPrmYear, err := pricing.FindPlan(
-		enum.TierPremium.String(),
-		enum.CycleYear.String())
+	planPrmYear, err := plans.FindPlan("premium_year")
 	if err != nil {
 		return PayWall{}, err
 	}
@@ -66,8 +73,7 @@ func BuildPayWall(banner Banner, pricing FtcPlans) (PayWall, error) {
 				},
 				SmallPrint: null.String{},
 				Tier:       enum.TierStandard,
-				Currency:   "CNY",
-				Pricing: []Plan{
+				Plans: []Plan{
 					planStdYear,
 					planStdMonth,
 				},
@@ -82,8 +88,7 @@ func BuildPayWall(banner Banner, pricing FtcPlans) (PayWall, error) {
 				},
 				SmallPrint: null.StringFrom("注：所有活动门票不可折算现金、不能转让、不含差旅与食宿"),
 				Tier:       enum.TierPremium,
-				Currency:   "CNY",
-				Pricing: []Plan{
+				Plans: []Plan{
 					planPrmYear,
 				},
 			},
