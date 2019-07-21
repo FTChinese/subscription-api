@@ -23,7 +23,7 @@ func TestMembership_FromStripe(t *testing.T) {
 	}
 	type args struct {
 		id  UserID
-		sub *stripe.Subscription
+		sub StripeSub
 	}
 	tests := []struct {
 		name    string
@@ -41,7 +41,7 @@ func TestMembership_FromStripe(t *testing.T) {
 					CompoundID: id,
 					FtcID:      null.StringFrom(id),
 				},
-				sub: &s,
+				sub: NewStripeSub(&s),
 			},
 			wantErr: false,
 		},
