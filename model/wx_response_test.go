@@ -29,7 +29,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 		{
 			name: "Save Prepay Response",
 			args: args{
-				orderID: subs.OrderID,
+				orderID: subs.ID,
 				p:       test.WxPrepay(),
 			},
 			wantErr: false,
@@ -64,7 +64,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		{
 			name: "Save Wxpay Notification",
 			args: args{
-				n: test.WxNotification(subs.OrderID),
+				n: test.WxNotification(subs.ID),
 			},
 			wantErr: false,
 		},
