@@ -1,8 +1,10 @@
 package paywall
 
 import (
+	"fmt"
 	"github.com/FTChinese/go-rest"
 	"github.com/pkg/errors"
+	"gitlab.com/ftchinese/subscription-api/util"
 	"strconv"
 	"strings"
 	"time"
@@ -33,18 +35,19 @@ func GenerateOrderID() (string, error) {
 
 type Charge struct {
 	ListPrice   float64 `json:"listPrice"`
-	NetPrice    float64 `json:"netPrice"`
+	NetPrice    float64 `json:"netPrice"` // Deprecate
+	Amount      float64 `json:"amount"`
 	IsConfirmed bool    `json:"-"`
 }
 
-// AliNetPrice converts Charged price to ailpay format
-func (c Charge) AliNetPrice() string {
-	return strconv.FormatFloat(c.NetPrice, 'f', 2, 32)
+// AliPrice converts Charged price to ailpay format
+func (c Charge) AliPrice() string {
+	return strconv.FormatFloat(c.Amount, 'f', 2, 32)
 }
 
 // PriceInCent converts Charged price to int64 in cent for comparison with wx notification.
 func (c Charge) PriceInCent() int64 {
-	return int64(c.NetPrice * 100)
+	return int64(c.Amount * 100)
 }
 
 // Subscription contains the details of a user's action to place an order.
@@ -57,22 +60,20 @@ func (c Charge) PriceInCent() int64 {
 // All those combination add up to 3 * 2 * 3 * 3 = 54
 type Subscription struct {
 	// Fields common to all.
-	OrderID string `json:"id"`
-	UserID
 	Charge
-	TierToBuy     enum.Tier      `json:"tier"`
-	BillingCycle  enum.Cycle     `json:"cycle"`
-	CycleCount    int64          `json:"cycleCount"` // Default to 1. Change it for upgrade
-	ExtraDays     int64          `json:"extraDays"`  // Default to 1. Change it for upgraded.
-	Usage         SubsKind       `json:"usageType"`  // The usage of this order: creat new, renew, or upgrade?
-	PaymentMethod enum.PayMethod `json:"payMethod"`
-	WxAppID       null.String    `json:"-"` // Wechat specific
-	CreatedAt     chrono.Time    `json:"createdAt"`
-
-	// Fields populated only after payment finished.
 	ConfirmedAt chrono.Time `json:"-"` // When the payment is confirmed.
-	StartDate   chrono.Date `json:"-"` // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	EndDate     chrono.Date `json:"-"` // Membership end date for this order. Depends on start date.
+	Coordinate
+	CreatedAt     chrono.Time    `json:"createdAt"`
+	Currency      string         `json:"-"`
+	CycleCount    int64          `json:"cycleCount"` // Default to 1. Change it for upgrade
+	EndDate       chrono.Date    `json:"-"`          // Membership end date for this order. Depends on start date.
+	ExtraDays     int64          `json:"extraDays"`  // Default to 1. Change it for upgraded.
+	ID            string         `json:"id"`
+	PaymentMethod enum.PayMethod `json:"payMethod"`
+	StartDate     chrono.Date    `json:"-"`         // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
+	Usage         SubsKind       `json:"usageType"` // The usage of this order: creat new, renew, or upgrade?
+	UserID
+	WxAppID null.String `json:"-"` // Wechat specific
 }
 
 // NewSubs creates a new subscription with shared fields
@@ -80,16 +81,20 @@ type Subscription struct {
 // UpgradeBalance are left to the controller layer.
 func NewSubs(u UserID, p Plan) (Subscription, error) {
 	s := Subscription{
-		UserID: u,
+		CreatedAt: chrono.TimeNow(),
 		Charge: Charge{
 			ListPrice: p.ListPrice,
 			NetPrice:  p.NetPrice,
+			Amount:    p.NetPrice,
 		},
-		TierToBuy:    p.Tier,
-		BillingCycle: p.Cycle,
-		CycleCount:   1,
-		ExtraDays:    1,
-		CreatedAt:    chrono.TimeNow(),
+		Coordinate: Coordinate{
+			Tier:  p.Tier,
+			Cycle: p.Cycle,
+		},
+		Currency:   p.Currency,
+		CycleCount: 1,
+		ExtraDays:  1,
+		UserID:     u,
 	}
 
 	id, err := GenerateOrderID()
@@ -98,7 +103,7 @@ func NewSubs(u UserID, p Plan) (Subscription, error) {
 		return s, err
 	}
 
-	s.OrderID = id
+	s.ID = id
 
 	return s, nil
 }
@@ -106,17 +111,21 @@ func NewSubs(u UserID, p Plan) (Subscription, error) {
 // NewUpgradeOrder creates an upgrade order.
 func NewUpgradeOrder(u UserID, up Upgrade) (Subscription, error) {
 	s := Subscription{
-		UserID: u,
 		Charge: Charge{
 			ListPrice: up.ListPrice,
 			NetPrice:  up.NetPrice,
+			Amount:    up.NetPrice,
 		},
-		TierToBuy:    up.Tier,
-		BillingCycle: up.Cycle,
-		CycleCount:   up.CycleCount,
-		ExtraDays:    up.ExtraDays,
-		Usage:        SubsKindUpgrade,
-		CreatedAt:    chrono.TimeNow(),
+		CreatedAt: chrono.TimeNow(),
+		Coordinate: Coordinate{
+			Tier:  up.Tier,
+			Cycle: up.Cycle,
+		},
+		Currency:   up.Currency,
+		CycleCount: up.CycleCount,
+		ExtraDays:  up.ExtraDays,
+		Usage:      SubsKindUpgrade,
+		UserID:     u,
 	}
 
 	id, err := GenerateOrderID()
@@ -125,7 +134,7 @@ func NewUpgradeOrder(u UserID, up Upgrade) (Subscription, error) {
 		return s, err
 	}
 
-	s.OrderID = id
+	s.ID = id
 
 	return s, nil
 }
@@ -135,14 +144,17 @@ func NewUpgradeOrderV2(userID UserID, up UpgradePreview) (Subscription, error) {
 		UserID: userID,
 		Charge: Charge{
 			ListPrice: up.Plan.ListPrice,
-			NetPrice:  up.Plan.NetPrice,
+			Amount:    up.Plan.NetPrice,
 		},
-		TierToBuy:    up.Plan.Tier,
-		BillingCycle: up.Plan.Cycle,
-		CycleCount:   up.Plan.CycleCount,
-		ExtraDays:    up.Plan.ExtraDays,
-		Usage:        SubsKindUpgrade,
-		CreatedAt:    chrono.TimeNow(),
+		Coordinate: Coordinate{
+			Tier:  up.Plan.Tier,
+			Cycle: up.Plan.Cycle,
+		},
+		Currency:   up.Plan.Currency,
+		CycleCount: up.Plan.CycleCount,
+		ExtraDays:  up.Plan.ExtraDays,
+		Usage:      SubsKindUpgrade,
+		CreatedAt:  chrono.TimeNow(),
 	}
 
 	id, err := GenerateOrderID()
@@ -151,24 +163,16 @@ func NewUpgradeOrderV2(userID UserID, up UpgradePreview) (Subscription, error) {
 		return s, err
 	}
 
-	s.OrderID = id
+	s.ID = id
 
 	return s, nil
 }
 
-// WithWxpay sets payment method to wechat
-func (s Subscription) WithWxpay(appID string) Subscription {
-	s.PaymentMethod = enum.PayMethodWx
-	s.WxAppID = null.StringFrom(appID)
-
-	return s
-}
-
-// WithAlipay sets payment method to alipay
-func (s Subscription) WithAlipay() Subscription {
-	s.PaymentMethod = enum.PayMethodAli
-
-	return s
+func (s Subscription) ReadableAmount() string {
+	return fmt.Sprintf("%s%.2f",
+		strings.ToUpper(s.Currency),
+		s.Amount,
+	)
 }
 
 // Validate ensures the order to confirm must match
@@ -180,17 +184,17 @@ func (s Subscription) Validate(m Membership) error {
 	switch s.Usage {
 
 	case SubsKindUpgrade:
-		if s.TierToBuy != enum.TierPremium {
-			return ErrTierMismatched
+		if s.Tier != enum.TierPremium {
+			return util.ErrTierMismatched
 		}
 		if m.Tier == enum.InvalidTier {
-			return ErrNoUpgradingTarget
+			return util.ErrNoUpgradingTarget
 		}
 		// For upgrading, order's tier must be different
 		// from member's tier; otherwise this might be
 		// a duplicate upgrading request.
-		if m.Tier == s.TierToBuy {
-			return ErrDuplicateUpgrading
+		if m.Tier == s.Tier {
+			return util.ErrDuplicateUpgrading
 		}
 
 	default:
@@ -226,7 +230,7 @@ func (s Subscription) GetStartDate(m Membership, confirmedAt time.Time) time.Tim
 func (s Subscription) GetEndDate(startTime time.Time) (time.Time, error) {
 	var endTime time.Time
 
-	switch s.BillingCycle {
+	switch s.Cycle {
 	case enum.CycleYear:
 		endTime = startTime.AddDate(int(s.CycleCount), 0, int(s.ExtraDays))
 
