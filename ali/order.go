@@ -31,7 +31,7 @@ type AppOrder struct {
 func NewAppOrder(subs paywall.Subscription, query string) AppOrder {
 	return AppOrder{
 		Subscription: subs,
-		FtcOrderID:   subs.OrderID,
+		FtcOrderID:   subs.ID,
 		Param:        query,
 	}
 }
