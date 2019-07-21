@@ -72,7 +72,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				return
 			}
 
-			confirmed, err := env.ConfirmPayment(got.OrderID, time.Now())
+			confirmed, err := env.ConfirmPayment(got.ID, time.Now())
 
 			if err != nil {
 				t.Error(err)
