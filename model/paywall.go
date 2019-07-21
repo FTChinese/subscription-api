@@ -93,20 +93,21 @@ func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
 // GetCurrentPlans get current effective pricing plans.
 func (env Env) GetCurrentPlans() paywall.FtcPlans {
 
-	if env.sandbox {
-		return paywall.GetFtcPlans(env.sandbox)
+	live := env.Live()
+	if !env.Live() {
+		return paywall.GetFtcPlans(live)
 	}
 
 	promo, found := env.LoadCachedPromo()
 	if !found {
 		logger.WithField("trace", "GetCurrentPlans").Info("Promo not found. Use default plans")
 
-		return paywall.GetFtcPlans(env.sandbox)
+		return paywall.GetFtcPlans(live)
 	}
 	if !promo.IsInEffect() {
 		logger.WithField("trace", "GetCurrentPlans").Info("Promo is not in effective time range. Use default plans")
 
-		return paywall.GetFtcPlans(env.sandbox)
+		return paywall.GetFtcPlans(live)
 	}
 
 	logger.WithField("trace", "GetCurrentPlans").Info("Use promotion pricing plans")
@@ -122,7 +123,7 @@ func (env Env) GetPayWall() (paywall.PayWall, error) {
 	if !found || !promo.IsInEffect() {
 		return paywall.BuildPayWall(
 			paywall.GetDefaultBanner(),
-			paywall.GetFtcPlans(false))
+			paywall.GetFtcPlans(true))
 	}
 
 	return paywall.BuildPayWall(
