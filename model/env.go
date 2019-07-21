@@ -5,27 +5,34 @@ import (
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/query"
 
-	"github.com/FTChinese/go-rest/enum"
-
 	"github.com/patrickmn/go-cache"
 )
 
+type BuildConfig struct {
+	Sandbox    bool
+	Production bool
+}
+
+func (c BuildConfig) Live() bool {
+	return c.Production && !c.Sandbox
+}
+
 // Env wraps database connection
 type Env struct {
-	sandbox bool
-	db      *sql.DB
-	cache   *cache.Cache
-	query   query.Builder
+	BuildConfig
+	db    *sql.DB
+	cache *cache.Cache
+	query query.Builder
 }
 
 // New creates a new instance of Env.
 // `sandbox` is used to determine which table to write subscription data.
-func New(db *sql.DB, c *cache.Cache, sandbox bool) Env {
+func New(db *sql.DB, c *cache.Cache, b BuildConfig) Env {
 	return Env{
-		sandbox: sandbox,
-		db:      db,
-		cache:   c,
-		query:   query.NewBuilder(sandbox),
+		BuildConfig: b,
+		db:          db,
+		cache:       c,
+		query:       query.NewBuilder(b.Sandbox),
 	}
 }
 
@@ -36,7 +43,11 @@ func (env Env) BeginOrderTx() (OrderTx, error) {
 		return OrderTx{}, err
 	}
 
-	return OrderTx{tx: tx, query: env.query}, nil
+	return OrderTx{
+		tx:    tx,
+		live:  env.Live(),
+		query: env.query,
+	}, nil
 }
 
 var logger = logrus.
@@ -44,20 +55,5 @@ var logger = logrus.
 	WithField("package", "model")
 
 const (
-	keySchedule = "discountSchedule"
-	keyPromo    = "promotionSchedule"
+	keyPromo = "promotionSchedule"
 )
-
-func normalizeMemberTier(vipType int64) enum.Tier {
-	switch vipType {
-
-	case 10:
-		return enum.TierStandard
-
-	case 100:
-		return enum.TierPremium
-
-	default:
-		return enum.InvalidTier
-	}
-}
