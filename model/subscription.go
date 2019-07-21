@@ -78,7 +78,7 @@ func (env Env) CreateOrder(
 			return subs, err
 		}
 
-		err = otx.SaveUpgrade(subs.OrderID, upgrade)
+		err = otx.SaveUpgrade(subs.ID, upgrade)
 		if err != nil {
 			_ = otx.rollback()
 			return subs, err
@@ -116,12 +116,6 @@ func (env Env) CreateOrder(
 		return paywall.Subscription{}, err
 	}
 
-	// For sandbox.
-	if env.sandbox {
-		log.Info("Sandbox environment. Set price to 0.01")
-		subs.NetPrice = 0.01
-		return subs, nil
-	}
 	// Return the order
 	return subs, nil
 }
@@ -159,8 +153,10 @@ func (env Env) UpgradeBalance(user paywall.UserID) (paywall.Upgrade, error) {
 		return paywall.Upgrade{}, err
 	}
 
-	plan, _ := env.GetCurrentPlans().FindPlan(enum.TierPremium.String(), enum.CycleYear.String())
-
+	plan, err := paywall.GetFtcPlans(true).FindPlan("premium_year")
+	if err != nil {
+		return paywall.Upgrade{}, err
+	}
 	up := paywall.NewUpgrade(plan).
 		SetBalance(orders).
 		CalculatePayable()
@@ -168,13 +164,6 @@ func (env Env) UpgradeBalance(user paywall.UserID) (paywall.Upgrade, error) {
 	if err := otx.commit(); err != nil {
 		logger.WithField("trace", "ConfirmPayment").Error(err)
 		return up, err
-	}
-
-	// For testing.
-	// We must mimic the whole process.
-	if env.sandbox {
-		up.Payable = 0.01
-		return up, nil
 	}
 
 	return up, nil
@@ -202,17 +191,12 @@ func (env Env) DirectUpgradeOrder(
 		return paywall.Subscription{}, err
 	}
 
-	// Save Order
-	if env.sandbox {
-		subs.NetPrice = 0.01
-	}
-
 	if err = otx.SaveOrder(subs, clientApp); err != nil {
 		_ = otx.rollback()
 		return subs, err
 	}
 
-	if err = otx.SaveUpgrade(subs.OrderID, upgrade); err != nil {
+	if err = otx.SaveUpgrade(subs.ID, upgrade); err != nil {
 		_ = otx.rollback()
 		return subs, err
 	}
@@ -240,7 +224,7 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 		orderID,
 	).Scan(
 		&c.ListPrice,
-		&c.NetPrice,
+		&c.Amount,
 		&c.IsConfirmed,
 	)
 
@@ -286,7 +270,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		}
 	}
 
-	log.Infof("Found order %s", subs.OrderID)
+	log.Infof("Found order %s", subs.ID)
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
@@ -305,18 +289,18 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// For any errors, allow retry
 	if subs.Usage == paywall.SubsKindUpgrade && member.Tier == enum.TierPremium && !member.IsExpired() {
 		// In case of any error, just ignore it.
-		err = tx.DuplicateUpgrade(subs.OrderID)
+		err = tx.DuplicateUpgrade(subs.ID)
 
 		if err != nil {
 			_ = tx.rollback()
-			return subs, paywall.ErrDuplicateUpgrading
+			return subs, util.ErrDuplicateUpgrading
 		}
 
 		if err := tx.commit(); err != nil {
-			return subs, paywall.ErrDuplicateUpgrading
+			return subs, util.ErrDuplicateUpgrading
 		}
 
-		return subs, paywall.ErrDuplicateUpgrading
+		return subs, util.ErrDuplicateUpgrading
 	}
 
 	// STEP 4: Calculate order's confirmation time.
