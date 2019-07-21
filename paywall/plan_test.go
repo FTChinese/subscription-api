@@ -16,14 +16,14 @@ func TestPlan_BuildUpgradePlan(t *testing.T) {
 	}{
 		{
 			name: "Exceed List Price",
-			plan: premiumPlan,
+			plan: premiumYearlyPlan,
 			args: args{
 				balance: 3000.00,
 			},
 		},
 		{
 			name: "Below List Price",
-			plan: premiumPlan,
+			plan: premiumYearlyPlan,
 			args: args{
 				balance: 1000.00,
 			},
@@ -31,7 +31,7 @@ func TestPlan_BuildUpgradePlan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.plan.BuildUpgradePlan(tt.args.balance)
+			got := tt.plan.WithUpgrade(tt.args.balance)
 
 			t.Logf("Upgrade plan: %+v", got)
 		})
