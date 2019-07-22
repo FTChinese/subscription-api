@@ -19,3 +19,7 @@ var currencySymbolMap = map[Currency]string{
 	CurrencyJPY: "¥",
 	CurrencyUSD: "US$",
 }
+
+func (c Currency) Symbol() string {
+	return currencySymbolMap[c]
+}
