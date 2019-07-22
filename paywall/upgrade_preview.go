@@ -31,6 +31,7 @@ func NewUpgradePreview(sources []BalanceSource) UpgradePreview {
 		up.SourceIDs = append(up.SourceIDs, v.ID)
 	}
 
+	// This is hardcoded. Should refactor in the future.
 	up.Plan = premiumYearlyPlan.WithUpgrade(up.Balance)
 	return up
 }
