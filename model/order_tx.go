@@ -50,10 +50,10 @@ func (t OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
 		return m, err
 	}
 
-	plan, err := paywall.GetFtcPlans(t.live).FindPlan(m.PlanID())
-	if err == nil {
-		m.FtcPlan = plan
-	}
+	//plan, err := paywall.GetFtcPlans(t.live).FindPlan(m.PlanID())
+	//if err == nil {
+	//	m.FtcPlan = plan
+	//}
 
 	// Treat a non-existing member as a valid value.
 	return m, nil
