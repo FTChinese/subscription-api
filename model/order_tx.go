@@ -357,30 +357,6 @@ func (t OrderTx) UpdateMember(m paywall.Membership) error {
 	return nil
 }
 
-// LinkUser adds membership id to userinfo or wechat_info
-//func (t OrderTx) LinkUser(m paywall.Membership) error {
-//	if m.IsFtc() {
-//		_, err := t.tx.Exec(t.query.LinkFtcMember(),
-//			m.ID,
-//			m.FtcID)
-//		if err != nil {
-//			return err
-//		}
-//	}
-//
-//	if m.IsWx() {
-//		_, err := t.tx.Exec(t.query.LinkWxMember(),
-//			m.ID,
-//			m.UnionID)
-//
-//		if err != nil {
-//			return err
-//		}
-//	}
-//
-//	return nil
-//}
-
 // -------------
 // The following are used by gift card
 
