@@ -62,7 +62,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save Wxpay Notification",
+			name: "Save Wxpay WebHook",
 			args: args{
 				n: test.WxNotification(subs.ID),
 			},
