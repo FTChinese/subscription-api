@@ -92,8 +92,8 @@ func NewSubs(u UserID, p Plan) (Subscription, error) {
 			Cycle: p.Cycle,
 		},
 		Currency:   p.Currency,
-		CycleCount: 1,
-		ExtraDays:  1,
+		CycleCount: p.CycleCount,
+		ExtraDays:  p.ExtraDays,
 		UserID:     u,
 	}
 
@@ -109,6 +109,7 @@ func NewSubs(u UserID, p Plan) (Subscription, error) {
 }
 
 // NewUpgradeOrder creates an upgrade order.
+// Deprecate
 func NewUpgradeOrder(u UserID, up Upgrade) (Subscription, error) {
 	s := Subscription{
 		Charge: Charge{
@@ -126,35 +127,6 @@ func NewUpgradeOrder(u UserID, up Upgrade) (Subscription, error) {
 		ExtraDays:  up.ExtraDays,
 		Usage:      SubsKindUpgrade,
 		UserID:     u,
-	}
-
-	id, err := GenerateOrderID()
-
-	if err != nil {
-		return s, err
-	}
-
-	s.ID = id
-
-	return s, nil
-}
-
-func NewUpgradeOrderV2(userID UserID, up UpgradePreview) (Subscription, error) {
-	s := Subscription{
-		UserID: userID,
-		Charge: Charge{
-			ListPrice: up.Plan.ListPrice,
-			Amount:    up.Plan.NetPrice,
-		},
-		Coordinate: Coordinate{
-			Tier:  up.Plan.Tier,
-			Cycle: up.Plan.Cycle,
-		},
-		Currency:   up.Plan.Currency,
-		CycleCount: up.Plan.CycleCount,
-		ExtraDays:  up.Plan.ExtraDays,
-		Usage:      SubsKindUpgrade,
-		CreatedAt:  chrono.TimeNow(),
 	}
 
 	id, err := GenerateOrderID()
