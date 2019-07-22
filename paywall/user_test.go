@@ -43,7 +43,7 @@ func TestFtcUser_StripeInvoiceParcel(t *testing.T) {
 		t.Error(err)
 	}
 
-	parcel, err := newFtcUser().StripeInvoiceParcel(EmailedInvoice{i})
+	parcel, err := newFtcUser().StripeInvoiceParcel(EmailedInvoice{&i})
 	if err != nil {
 		t.Error(err)
 	}
