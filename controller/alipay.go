@@ -62,7 +62,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		user, _ := GetUser(req.Header)
+		user, _ := GetUserID(req.Header)
 
 		plan, err := router.findPlan(req)
 
@@ -231,10 +231,10 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 //	view.Render(w, view.NewResponse().SetBody(resp))
 //}
 
-// Notification handles alipay server-side notification.
-func (router AliPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
+// WebHook handles alipay server-side notification.
+func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	logger := logrus.WithFields(logrus.Fields{
-		"trace": "AliPayRouter.Notification",
+		"trace": "AliPayRouter.WebHook",
 	})
 
 	err := req.ParseForm()
