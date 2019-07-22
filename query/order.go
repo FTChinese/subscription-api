@@ -56,6 +56,19 @@ func (b Builder) InsertUpgrade() string {
 	)
 }
 
+func (b Builder) SelectUpgrade() string {
+	return fmt.Sprintf(`
+	SELECT id,
+		balance,
+		source_id AS sourceId,
+		order_id AS orderId,
+		created_utc AS createdUtc,
+		confirmed_utc AS confirmedUtc
+	FROM %s.upgrade
+	WHERE order_id = ?
+	LIMIT 1`, b.MemberDB())
+}
+
 func (b Builder) ConfirmUpgrade() string {
 	return fmt.Sprintf(`
 	UPDATE %s.upgrade
