@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/view"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
@@ -26,8 +27,9 @@ func NewUpgradeRouter(m model.Env) UpgradeRouter {
 // 404 membership not found
 // 204 already a premium member
 // 422 field: membership, code: already_upgraded
+// Deprecate
 func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
-	user, _ := GetUser(req.Header)
+	user, _ := GetUserID(req.Header)
 
 	balance, err := router.model.UpgradeBalance(user)
 	if err != nil {
@@ -51,7 +53,7 @@ func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Requ
 }
 
 func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
-	userID, _ := GetUser(req.Header)
+	userID, _ := GetUserID(req.Header)
 
 	up, err := router.model.PreviewUpgrade(userID)
 	if err != nil {
@@ -68,8 +70,9 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 // 422 if already a premium
 // 200 if balance is not enough to cover upgrading cost.
 // 204 if upgraded successfully.
+// Deprecate
 func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Request) {
-	user, _ := GetUser(req.Header)
+	user, _ := GetUserID(req.Header)
 
 	upgradePlan, err := router.model.UpgradeBalance(user)
 	if err != nil {
@@ -113,7 +116,7 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 }
 
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
-	userID, _ := GetUser(req.Header)
+	userID, _ := GetUserID(req.Header)
 
 	up, err := router.model.PreviewUpgrade(userID)
 	if err != nil {
@@ -133,7 +136,12 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	go router.sendConfirmationEmail(subs)
+	go func() {
+		err := router.sendConfirmationEmail(subs)
+		if err != nil {
+			logrus.WithField("trace", "UpgradeRouter.FreeUpgrade").Error(err)
+		}
+	}()
 
 	view.Render(w, view.NewNoContent())
 }
