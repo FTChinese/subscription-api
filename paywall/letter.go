@@ -117,7 +117,7 @@ FT中文网`
 const letterPaymentActionRequired = `
 FT中文网用户 {{.User.NormalizeName}},
 
-您通过Stripe支付订阅FT中文网 {{.Plan.Desc}} 尚未完成支付，您的法卡航可能需要安全验证。请按照Stripe的提示执行下一步操作。
+您通过Stripe支付订阅FT中文网 {{.Plan.Desc}} 尚未完成支付，您的发卡行可能需要进行安全验证。请按照Stripe的提示执行下一步操作。
 
 本次支付的发票号是 {{.Invoice.Number}}，创建于 {{.Invoice.CreationTime.StringCN}}。
 
