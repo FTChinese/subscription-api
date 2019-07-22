@@ -100,3 +100,31 @@ FT中文网用户 {{.User.NormalizeName}},
 再次感谢您对FT中文网的支持。
 
 FT中文网`
+
+const letterStripePaymentFailed = `
+FT中文网用户 {{.User.NormalizeName}},
+
+您通过Stripe支付订阅FT中文网 {{.Plan.Desc}} 支付失败。本次支付的发票号是 {{.Invoice.Number}}，创建于 {{.Invoice.CreationTime.StringCN}}。
+
+您可以联系我们的客服：subscriber.service@ftchinese.com 询问支付问题。
+
+目前FT中文网的Stripe支付以英镑结算，不支持银联(UnionPay)等人民币信用卡。您可以使用有带有Visa、Mastercard、American Express、Discover、Diners Club等标志的卡片。
+
+感谢您对FT中文网的支持。
+
+FT中文网`
+
+const letterPaymentActionRequired = `
+FT中文网用户 {{.User.NormalizeName}},
+
+您通过Stripe支付订阅FT中文网 {{.Plan.Desc}} 尚未完成支付，您的法卡航可能需要安全验证。请按照Stripe的提示执行下一步操作。
+
+本次支付的发票号是 {{.Invoice.Number}}，创建于 {{.Invoice.CreationTime.StringCN}}。
+
+您可以联系我们的客服：subscriber.service@ftchinese.com 询问支付问题。
+
+目前FT中文网的Stripe支付以英镑结算，不支持银联(UnionPay)等人民币信用卡。您可以使用有带有Visa、Mastercard、American Express、Discover、Diners Club等标志的卡片。
+
+感谢您对FT中文网的支持。
+
+FT中文网`
