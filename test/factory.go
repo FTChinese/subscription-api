@@ -31,6 +31,11 @@ func GenVersion() string {
 	return fmt.Sprintf("%d.%d.%d", randomdata.Number(10), randomdata.Number(1, 10), randomdata.Number(1, 10))
 }
 
+func GenSubID() string {
+	id, _ := gorest.RandomBase64(9)
+	return "sub_" + id
+}
+
 func GenWxID() string {
 	id, _ := gorest.RandomBase64(21)
 	return id
