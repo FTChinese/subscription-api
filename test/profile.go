@@ -2,6 +2,7 @@ package test
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -26,17 +27,16 @@ type Profile struct {
 }
 
 func NewProfile() Profile {
-	profile := randomdata.GenerateProfile(randomdata.RandomGender)
 	return Profile{
 		FtcID:      uuid.New().String(),
 		UnionID:    GenWxID(),
-		Email:      profile.Email,
-		Password:   profile.Login.Password,
-		UserName:   profile.Login.Username,
-		Avatar:     profile.Picture.Thumbnail,
+		Email:      fake.EmailAddress(),
+		Password:   fake.SimplePassword(),
+		UserName:   fake.UserName(),
+		Avatar:     GenAvatar(),
 		OpenID:     GenWxID(),
 		ExpireDate: chrono.DateNow(),
-		IP:         randomdata.IpV4Address(),
+		IP:         fake.IPv4(),
 	}
 }
 
@@ -49,34 +49,78 @@ var MyProfile = Profile{
 	Avatar:   "http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIibCfVIicoNXZ15Af6nWkXwq5QgFcrNdkEKMHT7P1oJVI6McLT2qFia2ialF4FSMnm33yS0eAq7MK1cA/132",
 }
 
-func (p Profile) UserID(id ID) paywall.UserID {
+func (p Profile) UserID(kind AccountKind) paywall.UserID {
 
-	var user paywall.UserID
+	var id paywall.UserID
 
-	switch id {
-	case IDFtc:
-		user, _ = paywall.NewID(p.FtcID, "")
+	switch kind {
+	case AccountKindFtc:
+		id, _ = paywall.NewID(p.FtcID, "")
 
-	case IDWx:
-		user, _ = paywall.NewID("", p.UnionID)
+	case AccountKindWx:
+		id, _ = paywall.NewID("", p.UnionID)
 
-	case IDBound:
-		user, _ = paywall.NewID(p.FtcID, p.UnionID)
+	case AccountKindLinked:
+		id, _ = paywall.NewID(p.FtcID, p.UnionID)
 	}
 
-	return user
+	return id
 }
 
 func (p Profile) RandomUserID() paywall.UserID {
-	return p.UserID(ID(randomdata.Number(0, 3)))
+	return p.UserID(AccountKind(randomdata.Number(0, 3)))
 }
 
 func (p Profile) FtcUser() paywall.FtcUser {
 	return paywall.FtcUser{
 		UserID:   p.FtcID,
+		UnionID:  null.String{},
+		StripeID: null.String{},
 		Email:    p.Email,
 		UserName: null.StringFrom(p.UserName),
 	}
+}
+
+func (p Profile) Membership(kind AccountKind, pm enum.PayMethod, expired bool) paywall.Membership {
+	m := paywall.NewMember(p.UserID(kind))
+	m.Tier = YearlyStandard.Tier
+	m.Cycle = YearlyStandard.Cycle
+
+	if expired {
+		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, 0, -7))
+	} else {
+		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(1, 0, 1))
+	}
+
+	m.PaymentMethod = pm
+
+	if pm == enum.PayMethodStripe {
+		m.StripeSubID = null.StringFrom(GenSubID())
+		m.StripePlanID = null.StringFrom(YearlyStandard.StripeID)
+		m.AutoRenewal = true
+		m.Status = paywall.SubStatusActive
+	}
+
+	return m
+}
+
+func (p Profile) AliWxSub(kind AccountKind, pm enum.PayMethod, usage paywall.SubsKind) paywall.Subscription {
+	s, err := paywall.NewSubs(p.UserID(kind), YearlyStandard)
+	if err != nil {
+		panic(err)
+	}
+
+	s.ConfirmedAt = chrono.TimeNow()
+	s.IsConfirmed = true
+	s.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 1))
+	s.PaymentMethod = pm
+	s.StartDate = chrono.DateNow()
+	s.Usage = usage
+	if pm == enum.PayMethodWx {
+		s.WxAppID = null.StringFrom(WxPayApp.AppID)
+	}
+
+	return s
 }
 
 func (p Profile) WxAccess() wxlogin.OAuthAccess {
