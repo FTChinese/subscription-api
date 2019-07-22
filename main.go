@@ -65,10 +65,10 @@ func init() {
 	}
 }
 
-func getStripeKey() string {
+func getStripeSecretKey() string {
 	var key string
 
-	if config.Production {
+	if config.Live() {
 		key = viper.GetString("stripe.live_secret_key")
 	} else {
 		key = viper.GetString("stripe.test_secret_key")
@@ -76,6 +76,22 @@ func getStripeKey() string {
 
 	if key == "" {
 		logrus.Error("cannot find stripe secret key")
+		os.Exit(1)
+	}
+
+	return key
+}
+
+func getStripeSigningKey() string {
+	var key string
+	if config.Live() {
+		key = viper.GetString("stripe.live_signing_key")
+	} else {
+		key = viper.GetString("stripe.test_signing_key")
+	}
+
+	if key == "" {
+		logrus.Error("cannot find stripe signing key")
 		os.Exit(1)
 	}
 
@@ -117,7 +133,7 @@ func main() {
 		"trace": "main",
 	})
 
-	stripe.Key = getStripeKey()
+	stripe.Key = getStripeSecretKey()
 
 	db, err := util.NewDB(getDBConn())
 	if err != nil {
@@ -141,7 +157,7 @@ func main() {
 	giftCardRouter := controller.NewGiftCardRouter(m)
 	paywallRouter := controller.NewPaywallRouter(m)
 	upgradeRouter := controller.NewUpgradeRouter(m)
-	stripeRouter := controller.NewStripeRouter(m, post)
+	stripeRouter := controller.NewStripeRouter(m, post, getStripeSigningKey())
 
 	wxAuth := controller.NewWxAuth(m)
 
@@ -221,6 +237,7 @@ func main() {
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
+		r.Use(controller.UserOrUnionID)
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
 		// Deprecate
 		r.Put("/", upgradeRouter.DirectUpgrade)
@@ -231,15 +248,22 @@ func main() {
 		r.Get("/balance", upgradeRouter.UpgradeBalance)
 	})
 
+	r.Route("/webhook", func(r chi.Router) {
+		r.Post("/wxpay", wxRouter.WebHook)
+		r.Post("/alipay", aliRouter.WebHook)
+		r.Post("/stripe", stripeRouter.WebHook)
+	})
+
 	r.Route("/gift-card", func(r chi.Router) {
 		r.Use(controller.UserOrUnionID)
 
 		r.Put("/redeem", giftCardRouter.Redeem)
 	})
 
+	// Deprecate
 	r.Route("/callback", func(r1 chi.Router) {
-		r1.Post("/wxpay", wxRouter.Notification)
-		r1.Post("/alipay", aliRouter.Notification)
+		r1.Post("/wxpay", wxRouter.WebHook)
+		r1.Post("/alipay", aliRouter.WebHook)
 	})
 
 	r.Route("/paywall", func(r chi.Router) {
@@ -252,10 +276,6 @@ func main() {
 		r.Get("/pricing/current", paywallRouter.GetPricing)
 
 		r.Get("/promo", paywallRouter.GetPromo)
-	})
-
-	r.Route("/webhook", func(r chi.Router) {
-		r.Post("/", stripeRouter.WebHook)
 	})
 
 	r.Route("/wx", func(r chi.Router) {
