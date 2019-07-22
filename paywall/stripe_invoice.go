@@ -54,7 +54,7 @@ func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 }
 
 type EmailedInvoice struct {
-	stripe.Invoice
+	*stripe.Invoice
 }
 
 func (i EmailedInvoice) CreationTime() chrono.Time {
