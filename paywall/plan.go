@@ -99,23 +99,21 @@ func (c Coordinate) GetOrdinal() int {
 	return ordinals[c.PlanID()]
 }
 
-// Calculate how many cycles and extra days a user's balance could be converted to.
-func convertBalance(balance, price float64) (int64, int64) {
-	var cycles int64 = 0
+// QuoRem returns the integer quotient and remainder of x/y
+func QuoRem(x, y float64) (int64, float64) {
+	var q int64
 
-	for balance > price {
-		cycles = cycles + 1
-		balance = balance - price
+	for x > y {
+		q = q + 1
+		x = x - y
 	}
 
-	days := math.Ceil(balance * 365 / price)
-
-	return cycles, int64(days)
+	return q, x
 }
 
 type CycleQuantity struct {
-	Count     int64 `json:"cycleCount"`
-	ExtraDays int64 `json:"extraDays"`
+	Count     int64
+	ExtraDays int64
 }
 
 // Plan is a pricing plan.
@@ -125,10 +123,10 @@ type Plan struct {
 	Coordinate
 	ListPrice  float64 `json:"listPrice"`
 	NetPrice   float64 `json:"netPrice"`
-	Title      string  `json:"description"`
 	CycleCount int64   `json:"cycleCount"`
 	Currency   string  `json:"currency"`
 	ExtraDays  int64   `json:"extraDays"`
+	Title      string  `json:"description"`
 	StripeID   string  `json:"-"`
 }
 
@@ -138,15 +136,42 @@ func (p Plan) withSandbox() Plan {
 	return p
 }
 
+// WithUpgrade creates an upgrading plan.
 func (p Plan) WithUpgrade(balance float64) Plan {
-	if p.ListPrice >= balance {
-		p.NetPrice = p.ListPrice - balance
+
+	if balance < p.NetPrice {
+		p.NetPrice = p.NetPrice - balance
 	} else {
-		p.CycleCount, p.ExtraDays = convertBalance(balance, p.ListPrice)
 		p.NetPrice = 0
 	}
 
+	q := p.CalculateConversion(balance)
+
+	p.CycleCount = q.Count
+	p.ExtraDays = q.ExtraDays
+
 	return p
+}
+
+// ConvertBalance checks to see how many cycles and extra
+// days a user's balance could be exchanged.
+func (p Plan) CalculateConversion(balance float64) CycleQuantity {
+
+	if balance <= p.NetPrice {
+		return CycleQuantity{
+			Count:     1,
+			ExtraDays: 1,
+		}
+	}
+
+	cycles, r := QuoRem(balance, p.NetPrice)
+
+	days := math.Ceil(r * 365 / p.NetPrice)
+
+	return CycleQuantity{
+		Count:     cycles,
+		ExtraDays: int64(days),
+	}
 }
 
 func (p Plan) WithStripe(sp stripe.Plan) Plan {
