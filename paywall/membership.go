@@ -87,7 +87,7 @@ func (m Membership) FromStripe(
 
 	m.StripePlanID = null.StringFrom(sub.Plan.ID)
 
-	plan, err := GetStripeToFtcPlans(sub.Livemode).FindPlan(sub.Plan.ID)
+	plan, err := sub.BuildFtcPlan()
 	if err != nil {
 		return m, err
 	}
@@ -224,7 +224,6 @@ func (m Membership) IsAliOrWxPay() bool {
 }
 
 // SubsKind determines what kind of order a user is creating.
-// TODO: deny a valid stripe user.
 func (m Membership) SubsKind(p Plan) (SubsKind, error) {
 	if m.IsZero() {
 		return SubsKindCreate, nil
