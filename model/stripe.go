@@ -79,7 +79,6 @@ func createCustomer(email string) (string, error) {
 // util.ErrNonStripeValidSub
 // util.ErrActiveStripeSub
 // util.ErrUnknownSubState
-// TODO: ftc id should be required but union id is optional so that if user already linked to wechat, we need to keep membership linked.
 func (env Env) CreateStripeSub(
 	id paywall.UserID,
 	params paywall.StripeSubParams,
@@ -101,13 +100,17 @@ func (env Env) CreateStripeSub(
 		return paywall.StripeSub{}, nil
 	}
 
+	// Check whether creating stripe subscription is allowed for this member.
 	if err := mmb.PermitStripeCreate(); err != nil {
 		_ = tx.rollback()
 		return paywall.StripeSub{}, err
 	}
 
 	log.Info("Creating stripe subscription")
+
+	// Contact Stripe API.
 	s, err := createStripeSub(params)
+
 	// {"status":400,
 	// "message":"Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than '4a857eb3-396c-4c91-a8f1-4014868a8437' if you meant to execute a different request.","request_id":"req_Dv6N7d9lF8uDHJ",
 	// "type":"idempotency_error"
@@ -179,19 +182,20 @@ func (env Env) GetStripeSub(id paywall.UserID) (paywall.StripeSub, error) {
 	})
 
 	if err != nil {
-		//log.Error(err)
+		log.Error(err)
 		_ = tx.rollback()
 		return paywall.StripeSub{}, err
 	}
 
 	ss := paywall.NewStripeSub(s)
-	//log.Infof("Payment intent %+v", stripeSub.LatestInvoice.PaymentIntent)
+
 	newMmb, err := mmb.FromStripe(id, ss)
 	if err != nil {
 		return ss, err
 	}
 
 	log.Infof("Refreshed membership: %+v", newMmb)
+
 	// update member
 	if err := tx.UpdateMember(newMmb); err != nil {
 		_ = tx.rollback()
@@ -231,6 +235,7 @@ func (env Env) UpgradeStripeSubs(
 		return paywall.StripeSub{}, sql.ErrNoRows
 	}
 
+	// Check whether upgrading is permitted.
 	if !mmb.PermitStripeUpgrade(params) {
 		_ = tx.rollback()
 		return paywall.StripeSub{}, util.ErrInvalidStripeSub
@@ -262,11 +267,12 @@ func (env Env) UpgradeStripeSubs(
 }
 
 func createStripeSub(p paywall.StripeSubParams) (*stripe.Subscription, error) {
+
 	params := &stripe.SubscriptionParams{
 		Customer: stripe.String(p.Customer),
 		Items: []*stripe.SubscriptionItemsParams{
 			{
-				Plan: stripe.String(p.FtcPlan.StripeID),
+				Plan: stripe.String(p.GetPlanID()),
 			},
 		},
 	}
@@ -299,7 +305,7 @@ func upgradeStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscrip
 	params := &stripe.SubscriptionParams{
 		Items: []*stripe.SubscriptionItemsParams{
 			{
-				Plan: stripe.String(p.FtcPlan.StripeID),
+				Plan: stripe.String(p.GetPlanID()),
 			},
 		},
 		Params: stripe.Params{
