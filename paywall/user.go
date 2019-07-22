@@ -67,19 +67,26 @@ func (u FtcUser) NormalizeName() string {
 }
 
 // ConfirmationParcel create a parcel for email after subscription is confirmed.
-func (u FtcUser) ConfirmationParcel(s Subscription) (postoffice.Parcel, error) {
+func (u FtcUser) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterNewSub)
 
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
+	plan, err := GetFtcPlans(true).FindPlan(s.PlanID())
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
 	data := struct {
 		User FtcUser
-		Subs Subscription
+		Sub  Subscription
+		Plan Plan
 	}{
-		u,
-		s,
+		User: u,
+		Sub:  s,
+		Plan: plan,
 	}
 
 	var body strings.Builder
@@ -95,6 +102,86 @@ func (u FtcUser) ConfirmationParcel(s Subscription) (postoffice.Parcel, error) {
 		ToAddress:   u.Email,
 		ToName:      u.NormalizeName(),
 		Subject:     "会员订阅",
+		Body:        body.String(),
+	}, nil
+}
+
+func (u FtcUser) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
+	tmpl, err := template.New("order").Parse(letterRenewalSub)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	plan, err := GetFtcPlans(true).FindPlan(s.PlanID())
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	data := struct {
+		User FtcUser
+		Sub  Subscription
+		Plan Plan
+	}{
+		User: u,
+		Sub:  s,
+		Plan: plan,
+	}
+
+	var body strings.Builder
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	return postoffice.Parcel{
+		FromAddress: "no-reply@ftchinese.com",
+		FromName:    "FT中文网会员订阅",
+		ToAddress:   u.Email,
+		ToName:      u.NormalizeName(),
+		Subject:     "会员续订",
+		Body:        body.String(),
+	}, nil
+}
+
+func (u FtcUser) UpgradeSubParcel(s Subscription, preview UpgradePreview) (postoffice.Parcel, error) {
+	tmpl, err := template.New("order").Parse(letterNewSub)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	plan, err := GetFtcPlans(true).FindPlan(s.PlanID())
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	data := struct {
+		User    FtcUser
+		Sub     Subscription
+		Plan    Plan
+		Upgrade UpgradePreview
+	}{
+		User:    u,
+		Sub:     s,
+		Plan:    plan,
+		Upgrade: preview,
+	}
+
+	var body strings.Builder
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	return postoffice.Parcel{
+		FromAddress: "no-reply@ftchinese.com",
+		FromName:    "FT中文网会员订阅",
+		ToAddress:   u.Email,
+		ToName:      u.NormalizeName(),
+		Subject:     "会员升级",
 		Body:        body.String(),
 	}, nil
 }
@@ -165,6 +252,76 @@ func (u FtcUser) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error
 		ToAddress:   u.Email,
 		ToName:      u.NormalizeName(),
 		Subject:     "Stripe订阅发票",
+		Body:        body.String(),
+	}, nil
+}
+
+func (u FtcUser) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error) {
+	tmpl, err := template.New("stripe_payment_failed").Parse(letterStripePaymentFailed)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	plan, _ := i.BuildFtcPlan()
+	data := struct {
+		User    FtcUser
+		Invoice EmailedInvoice
+		Plan    Plan
+	}{
+		User:    u,
+		Invoice: i,
+		Plan:    plan,
+	}
+
+	var body strings.Builder
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	return postoffice.Parcel{
+		FromAddress: "no-reply@ftchinese.com",
+		FromName:    "FT中文网会员订阅",
+		ToAddress:   u.Email,
+		ToName:      u.NormalizeName(),
+		Subject:     "Stripe支付失败",
+		Body:        body.String(),
+	}, nil
+}
+
+func (u FtcUser) StripeActionRequired(i EmailedInvoice) (postoffice.Parcel, error) {
+	tmpl, err := template.New("stripe_action_required").Parse(letterPaymentActionRequired)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	plan, _ := i.BuildFtcPlan()
+	data := struct {
+		User    FtcUser
+		Invoice EmailedInvoice
+		Plan    Plan
+	}{
+		User:    u,
+		Invoice: i,
+		Plan:    plan,
+	}
+
+	var body strings.Builder
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	return postoffice.Parcel{
+		FromAddress: "no-reply@ftchinese.com",
+		FromName:    "FT中文网会员订阅",
+		ToAddress:   u.Email,
+		ToName:      u.NormalizeName(),
+		Subject:     "Stripe支付尚未完成",
 		Body:        body.String(),
 	}, nil
 }
