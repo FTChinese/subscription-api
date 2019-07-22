@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/stripe/stripe-go"
+	"math"
 	"strings"
 )
 
@@ -96,6 +97,25 @@ func (c Coordinate) PlanID() string {
 
 func (c Coordinate) GetOrdinal() int {
 	return ordinals[c.PlanID()]
+}
+
+// Calculate how many cycles and extra days a user's balance could be converted to.
+func convertBalance(balance, price float64) (int64, int64) {
+	var cycles int64 = 0
+
+	for balance > price {
+		cycles = cycles + 1
+		balance = balance - price
+	}
+
+	days := math.Ceil(balance * 365 / price)
+
+	return cycles, int64(days)
+}
+
+type CycleQuantity struct {
+	Count     int64 `json:"cycleCount"`
+	ExtraDays int64 `json:"extraDays"`
 }
 
 // Plan is a pricing plan.

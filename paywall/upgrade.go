@@ -76,19 +76,6 @@ func (p Upgrade) CalculatePayable() Upgrade {
 	return p
 }
 
-func convertBalance(balance, price float64) (int64, int64) {
-	var cycles int64 = 0
-
-	for balance > price {
-		cycles = cycles + 1
-		balance = balance - price
-	}
-
-	days := math.Ceil(balance * 365 / price)
-
-	return cycles, int64(days)
-}
-
 type BalanceSource struct {
 	ID        string // Order id.
 	NetPrice  float64
