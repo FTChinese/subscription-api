@@ -80,6 +80,12 @@ type Subscription struct {
 // populated. PaymentMethod, Usage, UpgradeSource,
 // UpgradeBalance are left to the controller layer.
 func NewSubs(u UserID, p Plan) (Subscription, error) {
+	id, err := GenerateOrderID()
+
+	if err != nil {
+		return Subscription{}, err
+	}
+
 	s := Subscription{
 		CreatedAt: chrono.TimeNow(),
 		Charge: Charge{
@@ -94,16 +100,9 @@ func NewSubs(u UserID, p Plan) (Subscription, error) {
 		Currency:   p.Currency,
 		CycleCount: p.CycleCount,
 		ExtraDays:  p.ExtraDays,
+		ID:         id,
 		UserID:     u,
 	}
-
-	id, err := GenerateOrderID()
-
-	if err != nil {
-		return s, err
-	}
-
-	s.ID = id
 
 	return s, nil
 }
