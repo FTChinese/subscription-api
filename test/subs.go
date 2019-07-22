@@ -24,12 +24,9 @@ func BuildSubs(u paywall.UserID, pm enum.PayMethod, k paywall.SubsKind) paywall.
 	}
 
 	subs.Usage = k
-
-	switch pm {
-	case enum.PayMethodWx:
-		subs = subs.WithWxpay(WxPayClient.GetApp().AppID)
-	case enum.PayMethodAli:
-		subs = subs.WithAlipay()
+	subs.PaymentMethod = pm
+	if pm == enum.PayMethodWx {
+		subs.WxAppID = null.StringFrom(WxPayClient.GetApp().AppID)
 	}
 
 	return subs
