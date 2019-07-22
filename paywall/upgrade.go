@@ -55,6 +55,20 @@ func (p Upgrade) SetBalance(sources []BalanceSource) Upgrade {
 	return p
 }
 
+// Calculate how many cycles and extra days a user's balance could be converted to.
+func convertBalance(balance, price float64) (int64, int64) {
+	var cycles int64 = 0
+
+	for balance > price {
+		cycles = cycles + 1
+		balance = balance - price
+	}
+
+	days := math.Ceil(balance * 365 / price)
+
+	return cycles, int64(days)
+}
+
 // CalculatePrice determines how user should pay for an upgrade.
 func (p Upgrade) CalculatePayable() Upgrade {
 	// Is Balance big enough to cover Amount.
