@@ -14,7 +14,31 @@ type StripeSubParams struct {
 	Coupon               null.String `json:"coupon"`
 	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
 	IdempotencyKey       string      `json:"idempotency"`
-	FtcPlan              Plan        `json:"-"`
+	planID               string
+}
+
+func (p *StripeSubParams) SetStripePlanID(live bool) error {
+	plan, err := GetFtcPlans(live).FindPlan(p.PlanID())
+	if err != nil {
+		return nil
+	}
+
+	p.planID = plan.StripeID
+
+	return nil
+}
+
+func (p StripeSubParams) GetPlanID() string {
+	return p.planID
+}
+
+func (p StripeSubParams) GetStripePlanID(live bool) (string, error) {
+	plan, err := GetFtcPlans(live).FindPlan(p.PlanID())
+	if err != nil {
+		return "", nil
+	}
+
+	return plan.StripeID, nil
 }
 
 type StripeSub struct {
