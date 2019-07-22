@@ -163,7 +163,7 @@ func TestLetter_StripeInvoice(t *testing.T) {
 		t.Error(err)
 	}
 
-	ei := EmailedInvoice{i}
+	ei := EmailedInvoice{&i}
 
 	plan, err := ei.BuildFtcPlan()
 	if err != nil {
