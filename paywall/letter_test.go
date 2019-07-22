@@ -188,3 +188,79 @@ func TestLetter_StripeInvoice(t *testing.T) {
 
 	t.Log(body.String())
 }
+
+func TestLetter_PaymentFailed(t *testing.T) {
+	var i stripe.Invoice
+
+	if err := json.Unmarshal([]byte(invoiceData), &i); err != nil {
+		t.Error(err)
+	}
+
+	tmpl, err := template.New("invoice").Parse(letterStripePaymentFailed)
+	if err != nil {
+		t.Error(err)
+	}
+
+	ei := EmailedInvoice{&i}
+
+	plan, err := ei.BuildFtcPlan()
+	if err != nil {
+		t.Error(err)
+	}
+
+	var body strings.Builder
+	data := struct {
+		User    FtcUser
+		Invoice EmailedInvoice
+		Plan    Plan
+	}{
+		User:    newFtcUser(),
+		Invoice: ei,
+		Plan:    plan,
+	}
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(body.String())
+}
+
+func TestLetter_PaymentActionRequired(t *testing.T) {
+	var i stripe.Invoice
+
+	if err := json.Unmarshal([]byte(invoiceData), &i); err != nil {
+		t.Error(err)
+	}
+
+	tmpl, err := template.New("invoice").Parse(letterPaymentActionRequired)
+	if err != nil {
+		t.Error(err)
+	}
+
+	ei := EmailedInvoice{&i}
+
+	plan, err := ei.BuildFtcPlan()
+	if err != nil {
+		t.Error(err)
+	}
+
+	var body strings.Builder
+	data := struct {
+		User    FtcUser
+		Invoice EmailedInvoice
+		Plan    Plan
+	}{
+		User:    newFtcUser(),
+		Invoice: ei,
+		Plan:    plan,
+	}
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(body.String())
+}
