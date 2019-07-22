@@ -111,7 +111,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		}
 
 		// Get ftc user id or wechat union id.
-		user, _ := GetUser(req.Header)
+		user, _ := GetUserID(req.Header)
 
 		// Try to find a plan based on the tier and cycle.
 		plan, err := router.findPlan(req)
@@ -236,7 +236,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 //	// Get user id from request header.
 //	// If user id is found, it means user is subscribing with FTC account;
 //	// if union id is found, it means user is subscribing with Wechat account;
-//	user, err := GetUser(req.Header)
+//	user, err := GetUserID(req.Header)
 //
 //	subs, err := paywall.NewWxpaySubs(user, plan)
 //	if err != nil {
@@ -312,12 +312,12 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 //	view.Render(w, view.NewResponse().SetBody(appPay.WithHash(sign)))
 //}
 
-// Notification implements 支付结果通知
+// WebHook implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
-func (router WxPayRouter) Notification(w http.ResponseWriter, req *http.Request) {
+func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	logger := logrus.WithFields(logrus.Fields{
-		"trace": "WxPayRouter.Notification()",
+		"trace": "WxPayRouter.WebHook()",
 	})
 	resp := wxpay.Notifies{}
 

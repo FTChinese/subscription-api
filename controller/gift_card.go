@@ -26,7 +26,7 @@ func NewGiftCardRouter(m model.Env) GiftCardRouter {
 // Input {code: string}
 func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 
-	userID, err := GetUser(req.Header)
+	userID, err := GetUserID(req.Header)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
