@@ -23,13 +23,8 @@ func genMmID() (string, error) {
 // Membership contains a user's membership details
 // This is actually called subscription by Stripe.
 type Membership struct {
-	ID null.String `json:"id"`
-	//CompoundID    string         `json:"-"` // Either FtcID or UnionID
-	//FtcID         null.String    `json:"-"`
-	//UnionID       null.String    `json:"-"` // For both vip_id_alias and wx_union_id columns.
+	ID null.String `json:"id"` // A random string. Not used yet.
 	UserID
-	//Tier          enum.Tier      `json:"tier"`
-	//Cycle         enum.Cycle     `json:"cycle"`
 	Coordinate
 	ExpireDate    chrono.Date    `json:"expireDate"`
 	PaymentMethod enum.PayMethod `json:"payMethod"`
@@ -41,9 +36,9 @@ type Membership struct {
 	// If we could integrate apple in-app purchase, this column
 	// might be extended to apple users.
 	// Only `active` should be treated as valid member.
-	// Wechat and alipay default to `active` for backward compatibility.
-	Status  SubStatus `json:"status"`
-	FtcPlan Plan      `json:"-"`
+	// Wechat and alipay defaults to `active` for backward compatibility.
+	Status SubStatus `json:"status"`
+	//FtcPlan Plan      `json:"-"` // The subscribed plan attached to this membership.
 }
 
 // NewMember creates a membership directly for a user.
@@ -53,10 +48,7 @@ type Membership struct {
 func NewMember(u UserID) Membership {
 	id, _ := genMmID()
 	return Membership{
-		ID: null.StringFrom(id),
-		//CompoundID: u.CompoundID,
-		//FtcID:      u.FtcID,
-		//UnionID:    u.UnionID,
+		ID:     null.StringFrom(id),
 		UserID: u,
 	}
 }
@@ -70,22 +62,17 @@ func (m Membership) FromStripe(
 	id UserID,
 	sub StripeSub) (Membership, error) {
 
+	if m.ID.IsZero() {
+		mId, _ := genMmID()
+		m.ID = null.StringFrom(mId)
+	}
+
 	// Must test before modifying data.
 	if m.IsZero() {
 		m.CompoundID = id.CompoundID
 		m.FtcID = id.FtcID
 		m.UnionID = id.UnionID
-
-		mId, _ := genMmID()
-		m.ID = null.StringFrom(mId)
 	}
-
-	//planID, err := extractStripePlanID(sub)
-	//if err != nil {
-	//	return m, err
-	//}
-
-	m.StripePlanID = null.StringFrom(sub.Plan.ID)
 
 	plan, err := sub.BuildFtcPlan()
 	if err != nil {
@@ -97,6 +84,7 @@ func (m Membership) FromStripe(
 	m.ExpireDate = chrono.DateFrom(sub.CurrentPeriodEnd.AddDate(0, 0, 1))
 	m.PaymentMethod = enum.PayMethodStripe
 	m.StripeSubID = null.StringFrom(sub.ID)
+	m.StripePlanID = null.StringFrom(sub.Plan.ID)
 	m.AutoRenewal = !sub.CancelAtPeriodEnd
 	m.Status, _ = ParseSubStatus(string(sub.Status))
 
@@ -114,40 +102,20 @@ func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
 	}
 
 	if m.IsZero() {
-		return Membership{
-			ID: m.ID,
-			UserID: UserID{
-				CompoundID: sub.CompoundID,
-				FtcID:      sub.FtcID,
-				UnionID:    sub.UnionID,
-			},
-			Coordinate: Coordinate{
-				Tier:  sub.Tier,
-				Cycle: sub.Cycle,
-			},
-			ExpireDate:    sub.EndDate,
-			PaymentMethod: sub.PaymentMethod,
-			StripeSubID:   null.String{},
-			AutoRenewal:   false,
-		}, nil
+		m.CompoundID = sub.CompoundID
+		m.FtcID = sub.FtcID
+		m.UnionID = sub.UnionID
 	}
 
-	return Membership{
-		ID: m.ID,
-		UserID: UserID{
-			CompoundID: m.CompoundID,
-			FtcID:      m.FtcID,
-			UnionID:    m.UnionID,
-		},
-		Coordinate: Coordinate{
-			Tier:  sub.Tier,
-			Cycle: sub.Cycle,
-		},
-		ExpireDate:    sub.EndDate,
-		PaymentMethod: sub.PaymentMethod,
-		StripeSubID:   null.String{},
-		AutoRenewal:   false,
-	}, nil
+	m.Tier = sub.Tier
+	m.Cycle = sub.Cycle
+	m.ExpireDate = sub.EndDate
+	m.PaymentMethod = sub.PaymentMethod
+	m.StripeSubID = null.String{}
+	m.StripePlanID = null.String{}
+	m.AutoRenewal = false
+
+	return m, nil
 }
 
 // FromGiftCard creates a new instance based on a gift card.
@@ -168,18 +136,6 @@ func (m Membership) FromGiftCard(c GiftCard) (Membership, error) {
 	return m, nil
 }
 
-func (m Membership) Exists() bool {
-	return m.CompoundID != "" && m.Tier != enum.InvalidTier && m.Cycle != enum.InvalidCycle
-}
-
-func (m Membership) IsFtc() bool {
-	return m.FtcID.Valid
-}
-
-func (m Membership) IsWx() bool {
-	return m.UnionID.Valid
-}
-
 // CanRenew tests if a membership is allowed to renew subscription.
 // A member could only renew its subscription when remaining duration of a membership is shorter than a billing cycle.
 // Expire date - now > cycle  --- Renewal is not allowed
@@ -188,16 +144,6 @@ func (m Membership) IsWx() bool {
 //      |-------- A cycle --------| Expires
 // now----------------------------| Deny
 // Algorithm changed to membership duration not larger than 3 years.
-// Deprecate
-//func (m Membership) CanRenew(cycle enum.Cycle) bool {
-//	cycleEnds, err := cycle.TimeAfterACycle(time.Now())
-//
-//	if err != nil {
-//		return false
-//	}
-//
-//	return m.ExpireDate.Before(cycleEnds)
-//}
 
 // IsRenewAllowed test if current membership is allowed to renew.
 // now ---------3 years ---------> Expire date
