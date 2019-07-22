@@ -125,13 +125,28 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 		return nil
 	}
 	// Find this user's personal data
-	user, err := router.model.FindFtcUser(subs.CompoundID)
+	ftcUser, err := router.model.FindFtcUser(subs.CompoundID)
 
 	if err != nil {
 		return err
 	}
 
-	parcel, err := user.ConfirmationParcel(subs)
+	var parcel postoffice.Parcel
+	switch subs.Usage {
+	case paywall.SubsKindCreate:
+		parcel, err = ftcUser.NewSubParcel(subs)
+
+	case paywall.SubsKindRenew:
+		parcel, err = ftcUser.RenewSubParcel(subs)
+
+	case paywall.SubsKindUpgrade:
+		up, err := router.model.LoadUpgradeSource(subs.ID)
+		if err != nil {
+			return err
+		}
+		parcel, err = ftcUser.UpgradeSubParcel(subs, up)
+	}
+
 	if err != nil {
 		logger.Error(err)
 		return err
