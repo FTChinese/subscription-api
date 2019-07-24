@@ -56,18 +56,18 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 // Returns notification URL for Alipay based on whether the api is run for sandbox.
 func (router PayRouter) aliCallbackURL() string {
 	if router.model.Sandbox {
-		return apiBaseURL + "/sandbox/callback/alipay"
+		return apiBaseURL + "/sandbox/webhook/alipay"
 	}
 
-	return apiBaseURL + "/v1/callback/alipay"
+	return apiBaseURL + "/v1/webhook/alipay"
 }
 
 func (router PayRouter) wxCallbackURL() string {
 	if router.model.Sandbox {
-		return apiBaseURL + "/sandbox/callback/wxpay"
+		return apiBaseURL + "/sandbox/webhook/wxpay"
 	}
 
-	return apiBaseURL + "/v1/callback/wxpay"
+	return apiBaseURL + "/v1/webhook/wxpay"
 }
 
 // AliAppPayParam builds parameters for ali app pay based on current subscription order.
@@ -82,35 +82,6 @@ func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) ali
 
 	return p
 }
-
-// The used by this one is exactly the same as `aliWapPayParam` except the return types are different.
-// They are created separately because `alipay` package
-// requires different data types.
-//func (router PayRouter) aliDesktopPayParam(title string, s paywall.Subscription) alipay.AliPayTradePagePay {
-//	p := alipay.AliPayTradePagePay{}
-//	p.NotifyURL = router.aliCallbackURL()
-//	p.ReturnURL = router.aliReturnURL()
-//	p.Subject = title
-//	p.OutTradeNo = s.ID
-//	p.TotalAmount = s.AliPrice()
-//	p.ProductCode = ali.ProductCodeWeb.String()
-//	p.GoodsType = "0"
-//
-//	return p
-//}
-
-//func (router PayRouter) aliWapPayParam(title string, s paywall.Subscription) alipay.AliPayTradeWapPay {
-//	p := alipay.AliPayTradeWapPay{}
-//	p.NotifyURL = router.aliCallbackURL()
-//	p.ReturnURL = router.aliReturnURL()
-//	p.Subject = title
-//	p.OutTradeNo = s.ID
-//	p.TotalAmount = s.AliPrice()
-//	p.ProductCode = ali.ProductCodeWeb.String()
-//	p.GoodsType = "0"
-//
-//	return p
-//}
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
 func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
