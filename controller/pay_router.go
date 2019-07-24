@@ -4,8 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
-	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -68,19 +66,6 @@ func (router PayRouter) wxCallbackURL() string {
 	}
 
 	return apiBaseURL + "/v1/webhook/wxpay"
-}
-
-// AliAppPayParam builds parameters for ali app pay based on current subscription order.
-func (router PayRouter) aliAppPayParam(title string, s paywall.Subscription) alipay.AliPayTradeAppPay {
-	p := alipay.AliPayTradeAppPay{}
-	p.NotifyURL = router.aliCallbackURL()
-	p.Subject = title
-	p.OutTradeNo = s.ID
-	p.TotalAmount = s.AliPrice()
-	p.ProductCode = ali.ProductCodeApp.String()
-	p.GoodsType = "0"
-
-	return p
 }
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
