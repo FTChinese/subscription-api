@@ -362,13 +362,13 @@ func Test_genMmID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := genMmID()
+			got, err := GenerateMemberID()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("genMmID() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GenerateMemberID() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("genMmID() = %v, want %v", got, tt.want)
+				t.Errorf("GenerateMemberID() = %v, want %v", got, tt.want)
 			}
 		})
 	}
