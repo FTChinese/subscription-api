@@ -74,7 +74,7 @@ func (p Upgrade) CalculatePayable() Upgrade {
 	// Is Balance big enough to cover Amount.
 
 	if p.ListPrice > p.Balance {
-		// UserID should pay diff
+		// AccountID should pay diff
 		p.NetPrice = p.ListPrice - p.Balance
 		p.Payable = p.NetPrice
 		p.CycleCount = 1
