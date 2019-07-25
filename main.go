@@ -248,7 +248,7 @@ func main() {
 		r.Get("/balance", upgradeRouter.UpgradeBalance)
 	})
 
-	// Deprecate
+	// Deprecate. Use /webhook
 	r.Route("/callback", func(r1 chi.Router) {
 		r1.Post("/wxpay", wxRouter.WebHook)
 		r1.Post("/alipay", aliRouter.WebHook)
