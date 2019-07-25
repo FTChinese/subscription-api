@@ -9,7 +9,7 @@ import (
 	"github.com/guregu/null"
 )
 
-// UserID is used to identify an FTC user.
+// FtcID is used to identify an FTC user.
 // A user might have an ftc uuid, or a wechat union id,
 // or both.
 // This type structure is used to ensure unique constraint
@@ -42,7 +42,7 @@ func NewID(ftcID, unionID string) (UserID, error) {
 
 // Account represents a row retrieve from userinfo table.
 type Account struct {
-	UserID   string
+	FtcID    string
 	UnionID  null.String
 	StripeID null.String
 	Email    string
@@ -51,8 +51,8 @@ type Account struct {
 
 func (a Account) ID() UserID {
 	return UserID{
-		CompoundID: a.UserID,
-		FtcID:      null.StringFrom(a.UserID),
+		CompoundID: a.FtcID,
+		FtcID:      null.StringFrom(a.FtcID),
 		UnionID:    a.UnionID,
 	}
 }
