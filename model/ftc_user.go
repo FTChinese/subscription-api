@@ -10,7 +10,7 @@ func (env Env) FindFtcUser(ftcId string) (paywall.Account, error) {
 
 	var u paywall.Account
 	err := env.db.QueryRow(query.SelectFtcUser, ftcId).Scan(
-		&u.UserID,
+		&u.FtcID,
 		&u.UnionID,
 		&u.StripeID,
 		&u.UserName,
@@ -29,7 +29,7 @@ func (env Env) FindFtcUser(ftcId string) (paywall.Account, error) {
 func (env Env) FindStripeCustomer(cusID string) (paywall.Account, error) {
 	var u paywall.Account
 	err := env.db.QueryRow(query.SelectStripeCustomer, cusID).Scan(
-		&u.UserID,
+		&u.FtcID,
 		&u.UnionID,
 		&u.StripeID,
 		&u.UserName,

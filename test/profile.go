@@ -75,7 +75,7 @@ func (p Profile) RandomUserID() paywall.UserID {
 
 func (p Profile) FtcUser() paywall.Account {
 	return paywall.Account{
-		UserID:   p.FtcID,
+		FtcID:    p.FtcID,
 		UnionID:  null.String{},
 		StripeID: null.String{},
 		Email:    p.Email,
