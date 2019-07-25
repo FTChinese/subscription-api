@@ -43,7 +43,7 @@ func (env Env) CreateOrder(
 
 	log.Infof("Membership retrieved %+v", member)
 
-	// UserID the found member to determine order category.
+	// Use the found member to determine order category.
 	// Ignore Golang warning here. It is safe here to user
 	// the zero value of membership since it is not a pointer.
 	subsKind, err := member.SubsKind(plan)
@@ -129,7 +129,7 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 		orderID,
 	).Scan(
 		&c.ListPrice,
-		&c.Amount,
+		&c.NetPrice,
 		&c.IsConfirmed,
 	)
 
