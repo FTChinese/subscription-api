@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/query"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -19,7 +18,7 @@ type OrderTx struct {
 
 // RetrieveMember retrieves a user's membership info by ftc id
 // or wechat union id.
-func (t OrderTx) RetrieveMember(u paywall.AccountID) (paywall.Membership, error) {
+func (otx OrderTx) RetrieveMember(id paywall.AccountID) (paywall.Membership, error) {
 	var m paywall.Membership
 
 	// In the ftc_vip table, vip_id might be ftc uuid or wechat
@@ -28,14 +27,15 @@ func (t OrderTx) RetrieveMember(u paywall.AccountID) (paywall.Membership, error)
 	// columns ftc_user_id dedicated to ftc uuid and wx_union_id
 	// dedicated for wechat union id. The vip_id column will be
 	// use only as a unique constraint on these two columns.
-	err := t.tx.QueryRow(
-		t.query.SelectMemberLock(),
-		u.CompoundID,
-		u.UnionID,
+	err := otx.tx.QueryRow(
+		otx.query.SelectMemberLock(),
+		id.CompoundID,
+		id.UnionID,
 	).Scan(
 		&m.ID,
-		&m.CompoundID,
-		&m.UnionID,
+		&m.User.CompoundID,
+		&m.User.FtcID,
+		&m.User.UnionID,
 		&m.Tier,
 		&m.Cycle,
 		&m.ExpireDate,
@@ -50,24 +50,21 @@ func (t OrderTx) RetrieveMember(u paywall.AccountID) (paywall.Membership, error)
 		return m, err
 	}
 
-	//plan, err := paywall.GetFtcPlans(t.live).FindPlan(m.PlanID())
-	//if err == nil {
-	//	m.FtcPlan = plan
-	//}
-
 	// Treat a non-existing member as a valid value.
 	return m, nil
 }
 
 // SaveOrder saves an order to db.
-func (t OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
+// This is only limited to alipay and wechat pay.
+// Stripe pay does not generate any orders on our side.
+func (otx OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 
-	_, err := t.tx.Exec(
-		t.query.InsertSubs(),
+	_, err := otx.tx.Exec(
+		otx.query.InsertSubs(),
 		s.ID,
-		s.CompoundID,
-		s.FtcID,
-		s.UnionID,
+		s.User.CompoundID,
+		s.User.FtcID,
+		s.User.UnionID,
 		s.ListPrice,
 		s.NetPrice,
 		s.Tier,
@@ -92,9 +89,9 @@ func (t OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
-func (t OrderTx) FindBalanceSources(userID paywall.AccountID) ([]paywall.BalanceSource, error) {
-	rows, err := t.tx.Query(
-		t.query.BalanceSource(),
+func (otx OrderTx) FindBalanceSources(userID paywall.AccountID) ([]paywall.BalanceSource, error) {
+	rows, err := otx.tx.Query(
+		otx.query.BalanceSource(),
 		userID.CompoundID,
 		userID.UnionID)
 	if err != nil {
@@ -130,8 +127,8 @@ func (t OrderTx) FindBalanceSources(userID paywall.AccountID) ([]paywall.Balance
 }
 
 // SaveUpgrade saves the data about upgrading.
-func (t OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
-	_, err := t.tx.Exec(t.query.InsertUpgrade(),
+func (otx OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
+	_, err := otx.tx.Exec(otx.query.InsertUpgrade(),
 		up.ID,
 		orderID,
 		up.Balance,
@@ -139,8 +136,8 @@ func (t OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
 		up.Member.ID,
 		up.Member.Cycle,
 		up.Member.ExpireDate,
-		up.Member.FtcID,
-		up.Member.UnionID,
+		up.Member.User.FtcID,
+		up.Member.User.UnionID,
 		up.Member.Tier)
 
 	if err != nil {
@@ -150,8 +147,8 @@ func (t OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
 	return nil
 }
 
-func (t OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) error {
-	_, err := t.tx.Exec(t.query.InsertUpgrade(),
+func (otx OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) error {
+	_, err := otx.tx.Exec(otx.query.InsertUpgrade(),
 		up.ID,
 		orderID,
 		up.Balance,
@@ -159,8 +156,8 @@ func (t OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) error 
 		up.Member.ID,
 		up.Member.Cycle,
 		up.Member.ExpireDate,
-		up.Member.FtcID,
-		up.Member.UnionID,
+		up.Member.User.FtcID,
+		up.Member.User.UnionID,
 		up.Member.Tier)
 
 	if err != nil {
@@ -174,9 +171,9 @@ func (t OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) error 
 // be used as balance source.
 // This operation should be performed together with
 // SaveOrder and SaveUpgrade.
-func (t OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
+func (otx OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
 	strList := strings.Join(up.Source, ",")
-	_, err := t.tx.Exec(t.query.SetUpgradeIDOnSource(),
+	_, err := otx.tx.Exec(otx.query.SetUpgradeIDOnSource(),
 		up.ID,
 		strList)
 
@@ -187,9 +184,9 @@ func (t OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
 	return nil
 }
 
-func (t OrderTx) SetUpgradeIDOnSourceV2(up paywall.UpgradePreview) error {
+func (otx OrderTx) SetUpgradeIDOnSourceV2(up paywall.UpgradePreview) error {
 
-	_, err := t.tx.Exec(t.query.SetUpgradeIDOnSource(),
+	_, err := otx.tx.Exec(otx.query.SetUpgradeIDOnSource(),
 		up.ID,
 		up.SourceOrderIDs())
 
@@ -200,32 +197,19 @@ func (t OrderTx) SetUpgradeIDOnSourceV2(up paywall.UpgradePreview) error {
 	return nil
 }
 
-// ----------------------------------
-// The following only applicable to confirmation of orders
-func tierID(tier enum.Tier) int64 {
-	switch tier {
-	case enum.TierStandard:
-		return 10
-	case enum.TierPremium:
-		return 100
-	}
-
-	return 0
-}
-
 // RetrieveOrder loads a previously saved order that is not
 // confirmed yet.
-func (t OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
+func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	var subs paywall.Subscription
 
-	err := t.tx.QueryRow(
-		t.query.SelectSubsLock(),
+	err := otx.tx.QueryRow(
+		otx.query.SelectSubsLock(),
 		orderID,
 	).Scan(
 		&subs.ID,
-		&subs.CompoundID,
-		&subs.FtcID,
-		&subs.UnionID,
+		&subs.User.CompoundID,
+		&subs.User.FtcID,
+		&subs.User.UnionID,
 		&subs.ListPrice,
 		&subs.NetPrice,
 		&subs.Tier,
@@ -256,9 +240,9 @@ func (t OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 }
 
 // ConfirmOrder set an order's confirmation time.
-func (t OrderTx) ConfirmOrder(order paywall.Subscription) error {
-	_, err := t.tx.Exec(
-		t.query.ConfirmSubs(),
+func (otx OrderTx) ConfirmOrder(order paywall.Subscription) error {
+	_, err := otx.tx.Exec(
+		otx.query.ConfirmSubs(),
 		order.ConfirmedAt,
 		order.StartDate,
 		order.EndDate,
@@ -267,7 +251,7 @@ func (t OrderTx) ConfirmOrder(order paywall.Subscription) error {
 
 	if err != nil {
 		logger.WithField("trace", "OrderTx.ConfirmOrder").Error(err)
-		_ = t.tx.Rollback()
+		_ = otx.tx.Rollback()
 		return err
 	}
 
@@ -275,8 +259,8 @@ func (t OrderTx) ConfirmOrder(order paywall.Subscription) error {
 }
 
 // ConfirmUpgrade set an upgrade's confirmation time.
-func (t OrderTx) ConfirmUpgrade(id string) error {
-	_, err := t.tx.Exec(t.query.ConfirmUpgrade(), id)
+func (otx OrderTx) ConfirmUpgrade(id string) error {
+	_, err := otx.tx.Exec(otx.query.ConfirmUpgrade(), id)
 	if err != nil {
 		logger.WithField("trace", "OrderTx.ConfirmUpgrade").Error(err)
 		return err
@@ -285,9 +269,9 @@ func (t OrderTx) ConfirmUpgrade(id string) error {
 	return nil
 }
 
-func (t OrderTx) DuplicateUpgrade(orderID string) error {
-	_, err := t.tx.Exec(
-		t.query.UpgradeFailure(),
+func (otx OrderTx) DuplicateUpgrade(orderID string) error {
+	_, err := otx.tx.Exec(
+		otx.query.UpgradeFailure(),
 		"failed",
 		"duplicate_upgrade")
 
@@ -299,19 +283,17 @@ func (t OrderTx) DuplicateUpgrade(orderID string) error {
 	return nil
 }
 
-func (t OrderTx) CreateMember(m paywall.Membership) error {
-	vipType := tierID(m.Tier)
-	expireTime := m.ExpireDate.Unix()
+func (otx OrderTx) CreateMember(m paywall.Membership) error {
 
-	_, err := t.tx.Exec(
-		t.query.InsertMember(),
+	_, err := otx.tx.Exec(
+		otx.query.InsertMember(),
 		m.ID,
-		m.CompoundID,
-		m.UnionID,
-		vipType,
-		expireTime,
-		m.FtcID,
-		m.UnionID,
+		m.User.CompoundID,
+		m.User.UnionID,
+		m.TierCode(),
+		m.ExpireDate.Unix(),
+		m.User.FtcID,
+		m.User.UnionID,
 		m.Tier,
 		m.Cycle,
 		m.ExpireDate,
@@ -330,14 +312,12 @@ func (t OrderTx) CreateMember(m paywall.Membership) error {
 	return nil
 }
 
-func (t OrderTx) UpdateMember(m paywall.Membership) error {
-	vipType := tierID(m.Tier)
-	expireTime := m.ExpireDate.Unix()
+func (otx OrderTx) UpdateMember(m paywall.Membership) error {
 
-	_, err := t.tx.Exec(t.query.UpdateMember(),
+	_, err := otx.tx.Exec(otx.query.UpdateMember(),
 		m.ID,
-		vipType,
-		expireTime,
+		m.TierCode(),
+		m.ExpireDate.Unix(),
 		m.Tier,
 		m.Cycle,
 		m.ExpireDate,
@@ -345,9 +325,9 @@ func (t OrderTx) UpdateMember(m paywall.Membership) error {
 		m.StripeSubID,
 		m.StripePlanID,
 		m.AutoRenewal,
-		m.CompoundID,
 		m.Status,
-		m.UnionID)
+		m.User.CompoundID,
+		m.User.UnionID)
 
 	if err != nil {
 		logger.WithField("trace", "OrderTx.UpdateMembership").Error(err)
@@ -360,8 +340,8 @@ func (t OrderTx) UpdateMember(m paywall.Membership) error {
 // -------------
 // The following are used by gift card
 
-func (t OrderTx) ActivateGiftCard(code string) error {
-	_, err := t.tx.Exec(t.query.ActivateGiftCard(), code)
+func (otx OrderTx) ActivateGiftCard(code string) error {
+	_, err := otx.tx.Exec(otx.query.ActivateGiftCard(), code)
 
 	if err != nil {
 		return err
@@ -370,10 +350,10 @@ func (t OrderTx) ActivateGiftCard(code string) error {
 	return nil
 }
 
-func (t OrderTx) rollback() error {
-	return t.tx.Rollback()
+func (otx OrderTx) rollback() error {
+	return otx.tx.Rollback()
 }
 
-func (t OrderTx) commit() error {
-	return t.tx.Commit()
+func (otx OrderTx) commit() error {
+	return otx.tx.Commit()
 }
