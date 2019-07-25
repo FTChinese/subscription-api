@@ -22,7 +22,7 @@ func (env Env) CreateStripeCustomer(ftcID string) (string, error) {
 
 	var u paywall.Account
 	err = tx.QueryRow(query.LockFtcUser, ftcID).Scan(
-		&u.UserID,
+		&u.FtcID,
 		&u.UnionID,
 		&u.StripeID,
 		&u.UserName,

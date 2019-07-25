@@ -91,7 +91,7 @@ func (p Profile) RandomKindUserID() UserID {
 
 func (p Profile) FtcUser() Account {
 	return Account{
-		UserID:   p.FtcID,
+		FtcID:    p.FtcID,
 		UnionID:  null.String{},
 		StripeID: null.String{},
 		Email:    p.Email,

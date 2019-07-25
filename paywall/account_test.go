@@ -11,7 +11,7 @@ import (
 
 func newFtcUser() Account {
 	return Account{
-		UserID:   uuid.New().String(),
+		FtcID:    uuid.New().String(),
 		UnionID:  null.String{},
 		StripeID: null.String{},
 		Email:    fake.EmailAddress(),
