@@ -89,8 +89,8 @@ func (p Profile) RandomKindUserID() UserID {
 	return p.UserID(AccountKind(randomdata.Number(0, 3)))
 }
 
-func (p Profile) FtcUser() FtcUser {
-	return FtcUser{
+func (p Profile) FtcUser() Account {
+	return Account{
 		UserID:   p.FtcID,
 		UnionID:  null.String{},
 		StripeID: null.String{},
