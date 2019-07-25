@@ -43,7 +43,7 @@ func TestEnv_PreviewUpgrade(t *testing.T) {
 	}
 
 	type args struct {
-		userID paywall.UserID
+		userID paywall.AccountID
 	}
 	tests := []struct {
 		name    string

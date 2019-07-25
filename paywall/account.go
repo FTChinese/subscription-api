@@ -18,14 +18,14 @@ import (
 // keeping either of them nullable.
 // A user's compound id is taken from either ftc uuid or
 // wechat id, with ftc id taking precedence.
-type UserID struct {
+type AccountID struct {
 	CompoundID string      `json:"-"`
 	FtcID      null.String `json:"-"`
 	UnionID    null.String `json:"-"`
 }
 
-func NewID(ftcID, unionID string) (UserID, error) {
-	id := UserID{
+func NewID(ftcID, unionID string) (AccountID, error) {
+	id := AccountID{
 		FtcID:   null.NewString(ftcID, ftcID != ""),
 		UnionID: null.NewString(unionID, unionID != ""),
 	}
@@ -49,7 +49,7 @@ type Account struct {
 	UserName null.String
 }
 
-func (a Account) ID() UserID {
+func (a Account) ID() AccountID {
 	id, _ := NewID(a.FtcID, a.UnionID.String)
 	return id
 }

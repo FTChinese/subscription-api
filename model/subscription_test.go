@@ -16,7 +16,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 	userID := test.NewProfile().RandomUserID()
 
 	type args struct {
-		user      paywall.UserID
+		user      paywall.AccountID
 		plan      paywall.Plan
 		payMethod enum.PayMethod
 		clientApp util.ClientApp

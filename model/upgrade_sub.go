@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (env Env) PreviewUpgrade(userID paywall.UserID) (paywall.UpgradePreview, error) {
+func (env Env) PreviewUpgrade(userID paywall.AccountID) (paywall.UpgradePreview, error) {
 
 	log := logger.WithField("trace", "Env.PreviewUpgrade")
 
@@ -62,7 +62,7 @@ func (env Env) PreviewUpgrade(userID paywall.UserID) (paywall.UpgradePreview, er
 }
 
 func (env Env) FreeUpgrade(
-	userID paywall.UserID,
+	userID paywall.AccountID,
 	up paywall.UpgradePreview,
 	clientApp util.ClientApp,
 ) (paywall.Subscription, error) {
@@ -132,7 +132,7 @@ func (env Env) LoadUpgradeSource(orderID string) (paywall.UpgradePreview, error)
 // It is provided here just for completeness.
 // Deprecate
 func (env Env) DirectUpgradeOrder(
-	user paywall.UserID,
+	user paywall.AccountID,
 	upgrade paywall.Upgrade,
 	clientApp util.ClientApp) (paywall.Subscription, error) {
 
@@ -175,7 +175,7 @@ func (env Env) DirectUpgradeOrder(
 // is trying to upgrade to premium.
 // DO remember to rollback!
 // Deprecate
-func (env Env) UpgradeBalance(user paywall.UserID) (paywall.Upgrade, error) {
+func (env Env) UpgradeBalance(user paywall.AccountID) (paywall.Upgrade, error) {
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "Env.CreateOrder").Error(err)

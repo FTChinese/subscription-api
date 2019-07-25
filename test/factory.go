@@ -36,6 +36,11 @@ func GenSubID() string {
 	return "sub_" + id
 }
 
+func GetCusID() string {
+	id, _ := gorest.RandomBase64(9)
+	return "cus_" + id
+}
+
 func GenWxID() string {
 	id, _ := gorest.RandomBase64(21)
 	return id
@@ -55,7 +60,7 @@ func GenAvatar() string {
 	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
 }
 
-func GenMember(u paywall.UserID, expired bool) paywall.Membership {
+func GenMember(u paywall.AccountID, expired bool) paywall.Membership {
 	m := paywall.NewMember(u)
 	m.Tier = YearlyStandard.Tier
 	m.Cycle = YearlyStandard.Cycle
@@ -90,7 +95,7 @@ func BalanceSources() []paywall.BalanceSource {
 	return sources
 }
 
-func GenUpgrade(userID paywall.UserID) paywall.Upgrade {
+func GenUpgrade(userID paywall.AccountID) paywall.Upgrade {
 
 	up := paywall.NewUpgrade(YearlyPremium).
 		SetBalance(BalanceSources()).

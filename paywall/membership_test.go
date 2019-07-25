@@ -19,7 +19,7 @@ func TestMembership_FromStripe(t *testing.T) {
 		member Membership
 	}
 	type args struct {
-		id  UserID
+		id  AccountID
 		sub StripeSub
 	}
 	tests := []struct {
@@ -123,7 +123,7 @@ func TestMembership_IsRenewAllowed(t *testing.T) {
 
 	type fields struct {
 		ID            null.String
-		UserID        UserID
+		UserID        AccountID
 		Coordinate    Coordinate
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
@@ -141,7 +141,7 @@ func TestMembership_IsRenewAllowed(t *testing.T) {
 			name: "Renew Allowed",
 			fields: fields{
 				ID: m.ID,
-				UserID: UserID{
+				UserID: AccountID{
 					CompoundID: m.CompoundID,
 					FtcID:      m.FtcID,
 					UnionID:    m.UnionID,
@@ -163,7 +163,7 @@ func TestMembership_IsRenewAllowed(t *testing.T) {
 			name: "Beyond Renewal",
 			fields: fields{
 				ID: m.ID,
-				UserID: UserID{
+				UserID: AccountID{
 					CompoundID: m.CompoundID,
 					FtcID:      m.FtcID,
 					UnionID:    m.UnionID,
@@ -186,7 +186,7 @@ func TestMembership_IsRenewAllowed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				UserID:        tt.fields.UserID,
+				AccountID:     tt.fields.UserID,
 				Coordinate:    tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
@@ -208,7 +208,7 @@ func TestMembership_IsExpired(t *testing.T) {
 
 	type fields struct {
 		ID            null.String
-		UserID        UserID
+		UserID        AccountID
 		Coordinate    Coordinate
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
@@ -231,7 +231,7 @@ func TestMembership_IsExpired(t *testing.T) {
 			name: "Expired Member",
 			fields: fields{
 				ID: m.ID,
-				UserID: UserID{
+				UserID: AccountID{
 					CompoundID: m.CompoundID,
 					FtcID:      m.FtcID,
 					UnionID:    m.UnionID,
@@ -253,7 +253,7 @@ func TestMembership_IsExpired(t *testing.T) {
 			name: "Not Expired Member",
 			fields: fields{
 				ID: m.ID,
-				UserID: UserID{
+				UserID: AccountID{
 					CompoundID: m.CompoundID,
 					FtcID:      m.FtcID,
 					UnionID:    m.UnionID,
@@ -276,7 +276,7 @@ func TestMembership_IsExpired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				UserID:        tt.fields.UserID,
+				AccountID:     tt.fields.UserID,
 				Coordinate:    tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
@@ -376,7 +376,7 @@ func Test_genMmID(t *testing.T) {
 
 func TestNewMember(t *testing.T) {
 	type args struct {
-		u UserID
+		u AccountID
 	}
 	tests := []struct {
 		name string
@@ -397,7 +397,7 @@ func TestNewMember(t *testing.T) {
 func TestMembership_FromGiftCard(t *testing.T) {
 	type fields struct {
 		ID            null.String
-		UserID        UserID
+		UserID        AccountID
 		Coordinate    Coordinate
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
@@ -422,7 +422,7 @@ func TestMembership_FromGiftCard(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				UserID:        tt.fields.UserID,
+				AccountID:     tt.fields.UserID,
 				Coordinate:    tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
@@ -446,7 +446,7 @@ func TestMembership_FromGiftCard(t *testing.T) {
 func TestMembership_IsZero(t *testing.T) {
 	type fields struct {
 		ID            null.String
-		UserID        UserID
+		UserID        AccountID
 		Coordinate    Coordinate
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
@@ -466,7 +466,7 @@ func TestMembership_IsZero(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				UserID:        tt.fields.UserID,
+				AccountID:     tt.fields.UserID,
 				Coordinate:    tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
@@ -485,7 +485,7 @@ func TestMembership_IsZero(t *testing.T) {
 func TestMembership_IsAliOrWxPay(t *testing.T) {
 	type fields struct {
 		ID            null.String
-		UserID        UserID
+		UserID        AccountID
 		Coordinate    Coordinate
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
@@ -505,7 +505,7 @@ func TestMembership_IsAliOrWxPay(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				UserID:        tt.fields.UserID,
+				AccountID:     tt.fields.UserID,
 				Coordinate:    tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
@@ -524,7 +524,7 @@ func TestMembership_IsAliOrWxPay(t *testing.T) {
 func TestMembership_SubsKind(t *testing.T) {
 	type fields struct {
 		ID            null.String
-		UserID        UserID
+		UserID        AccountID
 		Coordinate    Coordinate
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
@@ -549,7 +549,7 @@ func TestMembership_SubsKind(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				UserID:        tt.fields.UserID,
+				AccountID:     tt.fields.UserID,
 				Coordinate:    tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
