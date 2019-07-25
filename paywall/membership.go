@@ -24,7 +24,7 @@ func genMmID() (string, error) {
 // This is actually called subscription by Stripe.
 type Membership struct {
 	ID null.String `json:"id"` // A random string. Not used yet.
-	UserID
+	AccountID
 	Coordinate
 	ExpireDate    chrono.Date    `json:"expireDate"`
 	PaymentMethod enum.PayMethod `json:"payMethod"`
@@ -45,11 +45,11 @@ type Membership struct {
 // This is currently used by activating gift cards.
 // If membership is purchased via direct payment channel,
 // membership is created from subscription order.
-func NewMember(u UserID) Membership {
+func NewMember(u AccountID) Membership {
 	id, _ := genMmID()
 	return Membership{
-		ID:     null.StringFrom(id),
-		UserID: u,
+		ID:        null.StringFrom(id),
+		AccountID: u,
 	}
 }
 
@@ -59,7 +59,7 @@ func NewMember(u UserID) Membership {
 // needs to record incomming user's wechat id, since this user
 // might already have its accounts linked.
 func (m Membership) FromStripe(
-	id UserID,
+	id AccountID,
 	sub StripeSub) (Membership, error) {
 
 	if m.ID.IsZero() {

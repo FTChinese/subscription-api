@@ -80,7 +80,7 @@ func createCustomer(email string) (string, error) {
 // util.ErrActiveStripeSub
 // util.ErrUnknownSubState
 func (env Env) CreateStripeSub(
-	id paywall.UserID,
+	id paywall.AccountID,
 	params paywall.StripeSubParams,
 ) (paywall.StripeSub, error) {
 
@@ -151,7 +151,7 @@ func (env Env) CreateStripeSub(
 }
 
 // GetStripeSub refresh stripe subscription data if stale.
-func (env Env) GetStripeSub(id paywall.UserID) (paywall.StripeSub, error) {
+func (env Env) GetStripeSub(id paywall.AccountID) (paywall.StripeSub, error) {
 	log := logger.WithField("trace", "Env.GetStripeSub")
 
 	tx, err := env.BeginOrderTx()
@@ -212,7 +212,7 @@ func (env Env) GetStripeSub(id paywall.UserID) (paywall.StripeSub, error) {
 
 // UpgradeStripeSubs switches subscription plan.
 func (env Env) UpgradeStripeSubs(
-	id paywall.UserID,
+	id paywall.AccountID,
 	params paywall.StripeSubParams,
 ) (paywall.StripeSub, error) {
 
@@ -331,7 +331,7 @@ func upgradeStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscrip
 	return sub.Update(subID, params)
 }
 
-func (env Env) SaveStripeError(id paywall.UserID, e *stripe.Error) error {
+func (env Env) SaveStripeError(id paywall.AccountID, e *stripe.Error) error {
 	_, err := env.db.Exec(query.InsertStripeError,
 		id.FtcID,
 		null.NewString(e.ChargeID, e.ChargeID != ""),

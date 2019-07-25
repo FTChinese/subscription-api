@@ -21,11 +21,11 @@ func GetURLParam(req *http.Request, key string) gorest.Param {
 }
 
 // GetUserID extract ftc uuid or union id from request header.
-func GetUserID(h http.Header) (paywall.UserID, error) {
+func GetUserID(h http.Header) (paywall.AccountID, error) {
 	return paywall.NewID(h.Get(ftcIDKey), h.Get(unionIDKey))
 }
 
-func GetFtcOnlyID(h http.Header) (paywall.UserID, error) {
+func GetFtcOnlyID(h http.Header) (paywall.AccountID, error) {
 	return paywall.NewID(h.Get(ftcIDKey), "")
 }
 

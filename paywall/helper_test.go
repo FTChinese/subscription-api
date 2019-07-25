@@ -68,8 +68,8 @@ func NewProfile() Profile {
 	}
 }
 
-func (p Profile) UserID(kind AccountKind) UserID {
-	var id UserID
+func (p Profile) UserID(kind AccountKind) AccountID {
+	var id AccountID
 
 	switch kind {
 	case AccountKindFtc:
@@ -85,7 +85,7 @@ func (p Profile) UserID(kind AccountKind) UserID {
 	return id
 }
 
-func (p Profile) RandomKindUserID() UserID {
+func (p Profile) RandomKindUserID() AccountID {
 	return p.UserID(AccountKind(randomdata.Number(0, 3)))
 }
 
