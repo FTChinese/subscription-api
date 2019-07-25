@@ -40,7 +40,7 @@ func NewID(ftcID, unionID string) (UserID, error) {
 	return id, nil
 }
 
-// Account represents a row retrieve from userinfo table.
+// Account contains the minimal data to identify a user.
 type Account struct {
 	FtcID    string
 	UnionID  null.String
