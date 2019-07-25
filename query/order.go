@@ -100,6 +100,18 @@ func (b Builder) InsertSubs() string {
 		user_agent = ?`, b.MemberDB())
 }
 
+// Statement to update a subscription order after received notification from payment provider.
+func (b Builder) ConfirmSubs() string {
+	return fmt.Sprintf(`
+	UPDATE %s.ftc_trade
+	SET confirmed_utc = ?,
+		result = 'success',
+		start_date = ?,
+		end_date = ?
+	WHERE trade_no = ?
+	LIMIT 1`, b.MemberDB())
+}
+
 // SelectSubsPrice retrieves an order's price when payment
 // provider send confirmation notice.
 func (b Builder) SelectSubsPrice() string {
@@ -154,18 +166,6 @@ func (b Builder) UpgradeFailure() string {
 	SET result = ?,
 		failure_reason = ?
 		confirmed_utc = UTC_TIMESTAMP()
-	WHERE trade_no = ?
-	LIMIT 1`, b.MemberDB())
-}
-
-// Statement to update a subscription order after received notification from payment provider.
-func (b Builder) ConfirmSubs() string {
-	return fmt.Sprintf(`
-	UPDATE %s.ftc_trade
-	SET confirmed_utc = ?,
-		result = 'success',
-		start_date = ?,
-		end_date = ?
 	WHERE trade_no = ?
 	LIMIT 1`, b.MemberDB())
 }
