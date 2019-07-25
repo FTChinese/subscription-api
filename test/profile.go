@@ -17,6 +17,7 @@ import (
 type Profile struct {
 	FtcID    string
 	UnionID  string
+	StripeID string
 	Email    string
 	Password string
 	UserName string
@@ -30,6 +31,7 @@ func NewProfile() Profile {
 	return Profile{
 		FtcID:    uuid.New().String(),
 		UnionID:  GenWxID(),
+		StripeID: GetCusID(),
 		Email:    fake.EmailAddress(),
 		Password: fake.SimplePassword(),
 		UserName: fake.UserName(),
@@ -43,6 +45,7 @@ func NewProfile() Profile {
 var MyProfile = Profile{
 	FtcID:    MyFtcID,
 	UnionID:  MyUnionID,
+	StripeID: "cus_FOgRRgj9aMzpAv",
 	Email:    MyEmail,
 	Password: "12345678",
 	UserName: "weiguo.ni",
@@ -51,9 +54,9 @@ var MyProfile = Profile{
 	IP:       fake.IPv4(),
 }
 
-func (p Profile) UserID(kind AccountKind) paywall.UserID {
+func (p Profile) UserID(kind AccountKind) paywall.AccountID {
 
-	var id paywall.UserID
+	var id paywall.AccountID
 
 	switch kind {
 	case AccountKindFtc:
@@ -69,7 +72,7 @@ func (p Profile) UserID(kind AccountKind) paywall.UserID {
 	return id
 }
 
-func (p Profile) RandomUserID() paywall.UserID {
+func (p Profile) RandomUserID() paywall.AccountID {
 	return p.UserID(AccountKind(randomdata.Number(0, 3)))
 }
 
@@ -81,6 +84,39 @@ func (p Profile) FtcUser() paywall.Account {
 		Email:    p.Email,
 		UserName: null.StringFrom(p.UserName),
 	}
+}
+
+func (p Profile) Account(k AccountKind) paywall.Account {
+	switch k {
+	case AccountKindFtc:
+		return paywall.Account{
+			FtcID:    p.FtcID,
+			UnionID:  null.String{},
+			StripeID: null.StringFrom(p.UnionID),
+			Email:    p.Email,
+			UserName: null.StringFrom(p.UserName),
+		}
+
+	case AccountKindWx:
+		return paywall.Account{
+			FtcID:    "",
+			UnionID:  null.StringFrom(p.UnionID),
+			StripeID: null.String{},
+			Email:    "",
+			UserName: null.String{},
+		}
+
+	case AccountKindLinked:
+		return paywall.Account{
+			FtcID:    p.FtcID,
+			UnionID:  null.StringFrom(p.UnionID),
+			StripeID: null.StringFrom(p.StripeID),
+			Email:    p.Email,
+			UserName: null.StringFrom(p.UserName),
+		}
+	}
+
+	return paywall.Account{}
 }
 
 func (p Profile) Membership(kind AccountKind, pm enum.PayMethod, expired bool) paywall.Membership {

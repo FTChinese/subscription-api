@@ -193,7 +193,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 	}
 }
 
-func newMember(userID paywall.UserID) paywall.Membership {
+func newMember(userID paywall.AccountID) paywall.Membership {
 
 	previousMember := paywall.NewMember(userID)
 	order := confirmOrder(test.SubsCreate(userID), previousMember)
@@ -259,7 +259,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 	}
 }
 
-func renewMember(userID paywall.UserID, initial paywall.Membership) paywall.Membership {
+func renewMember(userID paywall.AccountID, initial paywall.Membership) paywall.Membership {
 	renewalSubs := confirmOrder(test.SubsRenew(userID), initial)
 
 	renewedMember, err := initial.FromAliOrWx(renewalSubs)
@@ -289,7 +289,7 @@ func renewMember(userID paywall.UserID, initial paywall.Membership) paywall.Memb
 }
 
 // Renew a membership N times.
-func renewMemberN(userID paywall.UserID, count int) paywall.Membership {
+func renewMemberN(userID paywall.AccountID, count int) paywall.Membership {
 	previousMember := newMember(userID)
 
 	for i := 0; i < count; i++ {
@@ -312,7 +312,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 	}
 
 	type args struct {
-		userID paywall.UserID
+		userID paywall.AccountID
 	}
 	tests := []struct {
 		name    string
@@ -350,7 +350,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 	}
 }
 
-func buildUpgrade(userID paywall.UserID, count int) paywall.Upgrade {
+func buildUpgrade(userID paywall.AccountID, count int) paywall.Upgrade {
 	member := renewMemberN(userID, count)
 
 	env := Env{
@@ -428,7 +428,7 @@ func TestOrderTx_SaveUpgrade(t *testing.T) {
 	}
 }
 
-func buildUpgradeV2(userID paywall.UserID, count int) paywall.UpgradePreview {
+func buildUpgradeV2(userID paywall.AccountID, count int) paywall.UpgradePreview {
 	member := renewMemberN(userID, count)
 
 	env := Env{
@@ -526,7 +526,7 @@ func TestOrderTx_SetUpgradeIDOnSource(t *testing.T) {
 	}
 }
 
-func createUpgrade(userID paywall.UserID, count int) (paywall.Upgrade, paywall.Subscription) {
+func createUpgrade(userID paywall.AccountID, count int) (paywall.Upgrade, paywall.Subscription) {
 	upgrade := buildUpgrade(userID, count)
 
 	upgradeOrder := createOrder(test.SubsUpgrade(userID, upgrade))
@@ -651,7 +651,7 @@ func TestOrderTx_CreateUpgradedMember(t *testing.T) {
 	}
 }
 
-func createUpgradedMember(userID paywall.UserID, count int) paywall.Membership {
+func createUpgradedMember(userID paywall.AccountID, count int) paywall.Membership {
 	upgrade, order := createUpgrade(userID, count)
 
 	confirmedSubs, err := order.Confirm(upgrade.Member, time.Now())

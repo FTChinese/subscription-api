@@ -14,7 +14,7 @@ import (
 // CreateOrder creates an order for a user with the selected plan.
 // Only payment method alipay and wechat pay is allowed.
 func (env Env) CreateOrder(
-	user paywall.UserID,
+	user paywall.AccountID,
 	plan paywall.Plan,
 	payMethod enum.PayMethod,
 	clientApp util.ClientApp,
@@ -179,7 +179,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
-	member, errMember := tx.RetrieveMember(paywall.UserID{
+	member, errMember := tx.RetrieveMember(paywall.AccountID{
 		CompoundID: subs.CompoundID,
 		FtcID:      subs.FtcID,
 		UnionID:    subs.UnionID,

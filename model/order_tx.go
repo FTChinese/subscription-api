@@ -19,7 +19,7 @@ type OrderTx struct {
 
 // RetrieveMember retrieves a user's membership info by ftc id
 // or wechat union id.
-func (t OrderTx) RetrieveMember(u paywall.UserID) (paywall.Membership, error) {
+func (t OrderTx) RetrieveMember(u paywall.AccountID) (paywall.Membership, error) {
 	var m paywall.Membership
 
 	// In the ftc_vip table, vip_id might be ftc uuid or wechat
@@ -92,7 +92,7 @@ func (t OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
-func (t OrderTx) FindBalanceSources(userID paywall.UserID) ([]paywall.BalanceSource, error) {
+func (t OrderTx) FindBalanceSources(userID paywall.AccountID) ([]paywall.BalanceSource, error) {
 	rows, err := t.tx.Query(
 		t.query.BalanceSource(),
 		userID.CompoundID,

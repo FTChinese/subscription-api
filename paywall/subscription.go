@@ -72,14 +72,14 @@ type Subscription struct {
 	PaymentMethod enum.PayMethod `json:"payMethod"`
 	StartDate     chrono.Date    `json:"-"`         // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
 	Usage         SubsKind       `json:"usageType"` // The usage of this order: creat new, renew, or upgrade?
-	UserID
+	AccountID
 	WxAppID null.String `json:"-"` // Wechat specific
 }
 
 // NewSubs creates a new subscription with shared fields
 // populated. PaymentMethod, Usage, UpgradeSource,
 // UpgradeBalance are left to the controller layer.
-func NewSubs(u UserID, p Plan) (Subscription, error) {
+func NewSubs(u AccountID, p Plan) (Subscription, error) {
 	id, err := GenerateOrderID()
 
 	if err != nil {
@@ -101,7 +101,7 @@ func NewSubs(u UserID, p Plan) (Subscription, error) {
 		CycleCount: p.CycleCount,
 		ExtraDays:  p.ExtraDays,
 		ID:         id,
-		UserID:     u,
+		AccountID:  u,
 	}
 
 	return s, nil
@@ -109,7 +109,7 @@ func NewSubs(u UserID, p Plan) (Subscription, error) {
 
 // NewUpgradeOrder creates an upgrade order.
 // Deprecate
-func NewUpgradeOrder(u UserID, up Upgrade) (Subscription, error) {
+func NewUpgradeOrder(u AccountID, up Upgrade) (Subscription, error) {
 	s := Subscription{
 		Charge: Charge{
 			ListPrice: up.ListPrice,
@@ -125,7 +125,7 @@ func NewUpgradeOrder(u UserID, up Upgrade) (Subscription, error) {
 		CycleCount: up.CycleCount,
 		ExtraDays:  up.ExtraDays,
 		Usage:      SubsKindUpgrade,
-		UserID:     u,
+		AccountID:  u,
 	}
 
 	id, err := GenerateOrderID()
