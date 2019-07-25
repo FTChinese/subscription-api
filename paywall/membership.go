@@ -11,7 +11,7 @@ import (
 	"github.com/guregu/null"
 )
 
-func genMmID() (string, error) {
+func GenerateMemberID() (string, error) {
 	s, err := gorest.RandomBase64(9)
 	if err != nil {
 		return "", err
@@ -46,11 +46,22 @@ type Membership struct {
 // If membership is purchased via direct payment channel,
 // membership is created from subscription order.
 func NewMember(u AccountID) Membership {
-	id, _ := genMmID()
+	id, _ := GenerateMemberID()
 	return Membership{
 		ID:        null.StringFrom(id),
 		AccountID: u,
 	}
+}
+
+func (m Membership) TierCode() int64 {
+	switch m.Tier {
+	case enum.TierStandard:
+		return 10
+	case enum.TierPremium:
+		return 100
+	}
+
+	return 0
 }
 
 // FromStripe creates a new Membership purchased via stripe.
@@ -63,7 +74,7 @@ func (m Membership) FromStripe(
 	sub StripeSub) (Membership, error) {
 
 	if m.ID.IsZero() {
-		mId, _ := genMmID()
+		mId, _ := GenerateMemberID()
 		m.ID = null.StringFrom(mId)
 	}
 
@@ -97,7 +108,7 @@ func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
 	}
 
 	if m.ID.IsZero() {
-		mId, _ := genMmID()
+		mId, _ := GenerateMemberID()
 		m.ID = null.StringFrom(mId)
 	}
 
