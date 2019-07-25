@@ -24,7 +24,8 @@ func GenerateMemberID() (string, error) {
 // This is actually called subscription by Stripe.
 type Membership struct {
 	ID null.String `json:"id"` // A random string. Not used yet.
-	AccountID
+	//AccountID
+	User AccountID
 	Coordinate
 	ExpireDate    chrono.Date    `json:"expireDate"`
 	PaymentMethod enum.PayMethod `json:"payMethod"`
@@ -45,11 +46,11 @@ type Membership struct {
 // This is currently used by activating gift cards.
 // If membership is purchased via direct payment channel,
 // membership is created from subscription order.
-func NewMember(u AccountID) Membership {
+func NewMember(accountID AccountID) Membership {
 	id, _ := GenerateMemberID()
 	return Membership{
-		ID:        null.StringFrom(id),
-		AccountID: u,
+		ID:   null.StringFrom(id),
+		User: accountID,
 	}
 }
 
@@ -80,9 +81,7 @@ func (m Membership) FromStripe(
 
 	// Must test before modifying data.
 	if m.IsZero() {
-		m.CompoundID = id.CompoundID
-		m.FtcID = id.FtcID
-		m.UnionID = id.UnionID
+		m.User = id
 	}
 
 	plan, err := sub.BuildFtcPlan()
@@ -113,9 +112,7 @@ func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
 	}
 
 	if m.IsZero() {
-		m.CompoundID = sub.CompoundID
-		m.FtcID = sub.FtcID
-		m.UnionID = sub.UnionID
+		m.User = sub.User
 	}
 
 	m.Tier = sub.Tier
