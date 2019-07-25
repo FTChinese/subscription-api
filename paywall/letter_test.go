@@ -28,7 +28,7 @@ func TestLetter_NewSub(t *testing.T) {
 
 	var body strings.Builder
 	data := struct {
-		User FtcUser
+		User Account
 		Sub  Subscription
 		Plan Plan
 	}{
@@ -61,7 +61,7 @@ func TestLetter_RenewSub(t *testing.T) {
 
 	var body strings.Builder
 	data := struct {
-		User FtcUser
+		User Account
 		Sub  Subscription
 		Plan Plan
 	}{
@@ -94,7 +94,7 @@ func TestLetter_UpgradeSub(t *testing.T) {
 
 	var body strings.Builder
 	data := struct {
-		User    FtcUser
+		User    Account
 		Sub     Subscription
 		Plan    Plan
 		Upgrade UpgradePreview
@@ -134,7 +134,7 @@ func TestLetter_StripeSubscription(t *testing.T) {
 	}
 	var body strings.Builder
 	data := struct {
-		User FtcUser
+		User Account
 		Sub  StripeSub
 		Plan Plan
 	}{
@@ -172,7 +172,7 @@ func TestLetter_StripeInvoice(t *testing.T) {
 
 	var body strings.Builder
 	data := struct {
-		User    FtcUser
+		User    Account
 		Invoice EmailedInvoice
 		Plan    Plan
 	}{
@@ -210,7 +210,7 @@ func TestLetter_PaymentFailed(t *testing.T) {
 
 	var body strings.Builder
 	data := struct {
-		User    FtcUser
+		User    Account
 		Invoice EmailedInvoice
 		Plan    Plan
 	}{
@@ -248,7 +248,7 @@ func TestLetter_PaymentActionRequired(t *testing.T) {
 
 	var body strings.Builder
 	data := struct {
-		User    FtcUser
+		User    Account
 		Invoice EmailedInvoice
 		Plan    Plan
 	}{

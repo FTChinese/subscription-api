@@ -57,7 +57,7 @@ FT中文网用户 {{.User.NormalizeName}},
 FT中文网`
 
 // Data used to compile this template:
-// FtcUser to get user name;
+// Account to get user name;
 // StripeSub to get period start and end
 // stripe.Invoice to get price
 const letterStripeSub = `

@@ -15,28 +15,28 @@ import (
 )
 
 type Profile struct {
-	FtcID      string
-	UnionID    string
-	Email      string
-	Password   string
-	UserName   string
-	Avatar     string
-	OpenID     string
-	ExpireDate chrono.Date
-	IP         string
+	FtcID    string
+	UnionID  string
+	Email    string
+	Password string
+	UserName string
+	Nickname string
+	Avatar   string
+	OpenID   string
+	IP       string
 }
 
 func NewProfile() Profile {
 	return Profile{
-		FtcID:      uuid.New().String(),
-		UnionID:    GenWxID(),
-		Email:      fake.EmailAddress(),
-		Password:   fake.SimplePassword(),
-		UserName:   fake.UserName(),
-		Avatar:     GenAvatar(),
-		OpenID:     GenWxID(),
-		ExpireDate: chrono.DateNow(),
-		IP:         fake.IPv4(),
+		FtcID:    uuid.New().String(),
+		UnionID:  GenWxID(),
+		Email:    fake.EmailAddress(),
+		Password: fake.SimplePassword(),
+		UserName: fake.UserName(),
+		Nickname: fake.UserName(),
+		Avatar:   GenAvatar(),
+		OpenID:   GenWxID(),
+		IP:       fake.IPv4(),
 	}
 }
 
@@ -46,7 +46,9 @@ var MyProfile = Profile{
 	Email:    MyEmail,
 	Password: "12345678",
 	UserName: "weiguo.ni",
+	Nickname: fake.UserName(),
 	Avatar:   "http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIibCfVIicoNXZ15Af6nWkXwq5QgFcrNdkEKMHT7P1oJVI6McLT2qFia2ialF4FSMnm33yS0eAq7MK1cA/132",
+	IP:       fake.IPv4(),
 }
 
 func (p Profile) UserID(kind AccountKind) paywall.UserID {
@@ -71,8 +73,8 @@ func (p Profile) RandomUserID() paywall.UserID {
 	return p.UserID(AccountKind(randomdata.Number(0, 3)))
 }
 
-func (p Profile) FtcUser() paywall.FtcUser {
-	return paywall.FtcUser{
+func (p Profile) FtcUser() paywall.Account {
+	return paywall.Account{
 		UserID:   p.FtcID,
 		UnionID:  null.String{},
 		StripeID: null.String{},
