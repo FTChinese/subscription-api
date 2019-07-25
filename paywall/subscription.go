@@ -36,18 +36,18 @@ func GenerateOrderID() (string, error) {
 type Charge struct {
 	ListPrice   float64 `json:"listPrice"`
 	NetPrice    float64 `json:"netPrice"` // Deprecate
-	Amount      float64 `json:"amount"`
+	Amount      float64 `json:"amount"`   // TODO: remove this.
 	IsConfirmed bool    `json:"-"`
 }
 
 // AliPrice converts Charged price to ailpay format
 func (c Charge) AliPrice() string {
-	return strconv.FormatFloat(c.Amount, 'f', 2, 32)
+	return strconv.FormatFloat(c.NetPrice, 'f', 2, 32)
 }
 
 // PriceInCent converts Charged price to int64 in cent for comparison with wx notification.
 func (c Charge) PriceInCent() int64 {
-	return int64(c.Amount * 100)
+	return int64(c.NetPrice * 100)
 }
 
 // Subscription contains the details of a user's action to place an order.
@@ -142,7 +142,7 @@ func NewUpgradeOrder(u AccountID, up Upgrade) (Subscription, error) {
 func (s Subscription) ReadableAmount() string {
 	return fmt.Sprintf("%s%.2f",
 		strings.ToUpper(s.Currency),
-		s.Amount,
+		s.NetPrice,
 	)
 }
 
