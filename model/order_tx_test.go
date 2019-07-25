@@ -226,7 +226,7 @@ func newMember(userID paywall.AccountID) paywall.Membership {
 }
 
 func TestOrderTx_UpdateMember(t *testing.T) {
-	userID := test.NewProfile().UserID(test.AccountKindFtc)
+	userID := test.NewProfile().AccountID(test.AccountKindFtc)
 
 	previousMember := newMember(userID)
 	t.Logf("Existing membership: %+v", previousMember)
