@@ -105,7 +105,6 @@ func (b Builder) ConfirmSubs() string {
 	return fmt.Sprintf(`
 	UPDATE %s.ftc_trade
 	SET confirmed_utc = ?,
-		result = 'success',
 		start_date = ?,
 		end_date = ?
 	WHERE trade_no = ?
