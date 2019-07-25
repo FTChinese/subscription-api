@@ -50,11 +50,8 @@ type Account struct {
 }
 
 func (a Account) ID() UserID {
-	return UserID{
-		CompoundID: a.FtcID,
-		FtcID:      null.StringFrom(a.FtcID),
-		UnionID:    a.UnionID,
-	}
+	id, _ := NewID(a.FtcID, a.UnionID.String)
+	return id
 }
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
