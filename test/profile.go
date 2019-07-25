@@ -54,7 +54,7 @@ var MyProfile = Profile{
 	IP:       fake.IPv4(),
 }
 
-func (p Profile) UserID(kind AccountKind) paywall.AccountID {
+func (p Profile) AccountID(kind AccountKind) paywall.AccountID {
 
 	var id paywall.AccountID
 
@@ -73,7 +73,7 @@ func (p Profile) UserID(kind AccountKind) paywall.AccountID {
 }
 
 func (p Profile) RandomUserID() paywall.AccountID {
-	return p.UserID(AccountKind(randomdata.Number(0, 3)))
+	return p.AccountID(AccountKind(randomdata.Number(0, 3)))
 }
 
 func (p Profile) FtcUser() paywall.Account {
@@ -119,18 +119,26 @@ func (p Profile) Account(k AccountKind) paywall.Account {
 	return paywall.Account{}
 }
 
-func (p Profile) Membership(kind AccountKind, pm enum.PayMethod, expired bool) paywall.Membership {
-	m := paywall.NewMember(p.UserID(kind))
-	m.Tier = YearlyStandard.Tier
-	m.Cycle = YearlyStandard.Cycle
+func (p Profile) Membership(k AccountKind, pm enum.PayMethod, expired bool) paywall.Membership {
+	accountID := p.AccountID(k)
+	id, err := paywall.GenerateMemberID()
+	if err != nil {
+		panic(err)
+	}
+	m := paywall.Membership{
+		ID:        null.StringFrom(id),
+		AccountID: accountID,
+		Coordinate: paywall.Coordinate{
+			Tier:  YearlyStandard.Tier,
+			Cycle: YearlyStandard.Cycle,
+		},
+		ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
+		PaymentMethod: pm,
+	}
 
 	if expired {
 		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, 0, -7))
-	} else {
-		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(1, 0, 1))
 	}
-
-	m.PaymentMethod = pm
 
 	if pm == enum.PayMethodStripe {
 		m.StripeSubID = null.StringFrom(GenSubID())
@@ -142,8 +150,54 @@ func (p Profile) Membership(kind AccountKind, pm enum.PayMethod, expired bool) p
 	return m
 }
 
+func (p Profile) Sub(k AccountKind, usage paywall.SubsKind, confirmed bool, startDate chrono.Date) paywall.Subscription {
+	accountID := p.AccountID(k)
+
+	pm := RandomPayMethod()
+	id, err := paywall.GenerateOrderID()
+	if err != nil {
+		panic(err)
+	}
+
+	s := paywall.Subscription{
+		Charge: paywall.Charge{
+			ListPrice:   YearlyStandard.ListPrice,
+			NetPrice:    YearlyStandard.NetPrice,
+			IsConfirmed: confirmed,
+		},
+		Coordinate: paywall.Coordinate{
+			Tier:  YearlyStandard.Tier,
+			Cycle: YearlyStandard.Cycle,
+		},
+		CreatedAt:     chrono.TimeNow(),
+		Currency:      YearlyStandard.Currency,
+		CycleCount:    YearlyStandard.CycleCount,
+		ExtraDays:     YearlyStandard.ExtraDays,
+		ID:            id,
+		PaymentMethod: pm,
+		Usage:         usage,
+		AccountID:     accountID,
+	}
+
+	if pm == enum.PayMethodWx {
+		s.WxAppID = null.StringFrom(WxPayApp.AppID)
+	}
+
+	if confirmed {
+		s.ConfirmedAt = chrono.TimeNow()
+	}
+
+	if !startDate.IsZero() {
+		s.StartDate = startDate
+		s.EndDate = chrono.DateFrom(startDate.AddDate(1, 0, 1))
+	}
+
+	return s
+}
+
 func (p Profile) AliWxSub(kind AccountKind, pm enum.PayMethod, usage paywall.SubsKind) paywall.Subscription {
-	s, err := paywall.NewSubs(p.UserID(kind), YearlyStandard)
+
+	s, err := paywall.NewSubs(p.AccountID(kind), YearlyStandard)
 	if err != nil {
 		panic(err)
 	}

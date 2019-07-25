@@ -51,9 +51,13 @@ func GenToken() string {
 	return token
 }
 
-var gender = []string{"men", "women"}
+func RandomPayMethod() enum.PayMethod {
+	return enum.PayMethod(randomdata.Number(1, 3))
+}
 
 func GenAvatar() string {
+	var gender = []string{"men", "women"}
+
 	n := randomdata.Number(1, 35)
 	g := gender[randomdata.Number(0, 2)]
 
