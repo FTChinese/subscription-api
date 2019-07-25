@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/FTChinese/go-rest/enum"
+	"gitlab.com/ftchinese/subscription-api/util"
 	"testing"
 	"time"
 
@@ -9,31 +11,114 @@ import (
 	"gitlab.com/ftchinese/subscription-api/test"
 )
 
-// Those tests only checks whether db operations are correct.
-// It does not guarantees logical correctness.
-func TestOrderTx_SaveOrder(t *testing.T) {
-	userID := test.MyProfile.RandomUserID()
+func TestOrderTx_RetrieveMember(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile().AccountID(test.AccountKindFtc))
+	test.NewModel().CreateNewMember(store)
 
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
 
-	otx, err := env.BeginOrderTx()
-	if err != nil {
-		panic(err)
+	type args struct {
+		id paywall.AccountID
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Empty member",
+			args: args{
+				id: test.NewProfile().AccountID(test.AccountKindFtc),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Existing member",
+			args: args{
+				id: store.Member.User,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx, err := env.BeginOrderTx()
+			if err != nil {
+				t.Error(err)
+			}
+			got, err := tx.RetrieveMember(tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("OrderTx.RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if err := tx.commit(); err != nil {
+				t.Error(err)
+			}
+
+			t.Logf("%+v", got)
+		})
+	}
+}
+
+func TestOrderTx_SaveOrder(t *testing.T) {
+	p := test.NewProfile()
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
 	}
 
-	subs := test.SubsCreate(userID)
-	if err := otx.SaveOrder(subs, test.RandomClientApp()); err != nil {
-		t.Error(err)
+	type args struct {
+		s paywall.Subscription
+		c util.ClientApp
 	}
-
-	if err := otx.commit(); err != nil {
-		panic(err)
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "FTC acount with alipay",
+			args: args{
+				s: test.BuildSubs(p.FtcAccountID(), enum.PayMethodAli, paywall.SubsKindCreate),
+				c: test.RandomClientApp(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "WX account with wxpay",
+			args: args{
+				s: test.BuildSubs(p.WxAccountID(), enum.PayMethodWx, paywall.SubsKindRenew),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Linked account upgrading",
+			args: args{
+				s: test.BuildSubs(p.LinkedAccountID(), enum.PayMethodAli, paywall.SubsKindUpgrade),
+			},
+			wantErr: false,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			otx, err := env.BeginOrderTx()
+			if err != nil {
+				t.Error(err)
+			}
 
-	t.Logf("Saved new order: %+s", subs.ID)
+			if err := otx.SaveOrder(tt.args.s, tt.args.c); (err != nil) != tt.wantErr {
+				t.Errorf("OrderTx.SaveOrder() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err := otx.commit(); err != nil {
+				t.Error(err)
+			}
+		})
+	}
 }
 
 // Create a new order in db and returns it.
