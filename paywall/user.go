@@ -40,8 +40,8 @@ func NewID(ftcID, unionID string) (UserID, error) {
 	return id, nil
 }
 
-// FtcUser represents a row retrieve from userinfo table.
-type FtcUser struct {
+// Account represents a row retrieve from userinfo table.
+type Account struct {
 	UserID   string
 	UnionID  null.String
 	StripeID null.String
@@ -49,7 +49,7 @@ type FtcUser struct {
 	UserName null.String
 }
 
-func (u FtcUser) ID() UserID {
+func (u Account) ID() UserID {
 	return UserID{
 		CompoundID: u.UserID,
 		FtcID:      null.StringFrom(u.UserID),
@@ -58,7 +58,7 @@ func (u FtcUser) ID() UserID {
 }
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
-func (u FtcUser) NormalizeName() string {
+func (u Account) NormalizeName() string {
 	if u.UserName.Valid {
 		return strings.Split(u.UserName.String, "@")[0]
 	}
@@ -67,7 +67,7 @@ func (u FtcUser) NormalizeName() string {
 }
 
 // ConfirmationParcel create a parcel for email after subscription is confirmed.
-func (u FtcUser) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
+func (u Account) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterNewSub)
 
 	if err != nil {
@@ -80,7 +80,7 @@ func (u FtcUser) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	}
 
 	data := struct {
-		User FtcUser
+		User Account
 		Sub  Subscription
 		Plan Plan
 	}{
@@ -106,7 +106,7 @@ func (u FtcUser) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	}, nil
 }
 
-func (u FtcUser) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
+func (u Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterRenewalSub)
 
 	if err != nil {
@@ -119,7 +119,7 @@ func (u FtcUser) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	}
 
 	data := struct {
-		User FtcUser
+		User Account
 		Sub  Subscription
 		Plan Plan
 	}{
@@ -145,7 +145,7 @@ func (u FtcUser) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	}, nil
 }
 
-func (u FtcUser) UpgradeSubParcel(s Subscription, preview UpgradePreview) (postoffice.Parcel, error) {
+func (u Account) UpgradeSubParcel(s Subscription, preview UpgradePreview) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterNewSub)
 
 	if err != nil {
@@ -158,7 +158,7 @@ func (u FtcUser) UpgradeSubParcel(s Subscription, preview UpgradePreview) (posto
 	}
 
 	data := struct {
-		User    FtcUser
+		User    Account
 		Sub     Subscription
 		Plan    Plan
 		Upgrade UpgradePreview
@@ -186,7 +186,7 @@ func (u FtcUser) UpgradeSubParcel(s Subscription, preview UpgradePreview) (posto
 	}, nil
 }
 
-func (u FtcUser) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
+func (u Account) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
 	tmpl, err := template.New("stripe_sub").Parse(letterStripeSub)
 
 	if err != nil {
@@ -195,7 +195,7 @@ func (u FtcUser) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
 
 	plan, _ := s.BuildFtcPlan()
 	data := struct {
-		User FtcUser
+		User Account
 		Sub  StripeSub
 		Plan Plan
 	}{
@@ -221,7 +221,7 @@ func (u FtcUser) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
 	}, nil
 }
 
-func (u FtcUser) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error) {
+func (u Account) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error) {
 	tmpl, err := template.New("stripe_invoice").Parse(letterStripeInvoice)
 
 	if err != nil {
@@ -230,7 +230,7 @@ func (u FtcUser) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error
 
 	plan, _ := i.BuildFtcPlan()
 	data := struct {
-		User    FtcUser
+		User    Account
 		Invoice EmailedInvoice
 		Plan    Plan
 	}{
@@ -256,7 +256,7 @@ func (u FtcUser) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error
 	}, nil
 }
 
-func (u FtcUser) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error) {
+func (u Account) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error) {
 	tmpl, err := template.New("stripe_payment_failed").Parse(letterStripePaymentFailed)
 
 	if err != nil {
@@ -265,7 +265,7 @@ func (u FtcUser) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error
 
 	plan, _ := i.BuildFtcPlan()
 	data := struct {
-		User    FtcUser
+		User    Account
 		Invoice EmailedInvoice
 		Plan    Plan
 	}{
@@ -291,7 +291,7 @@ func (u FtcUser) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error
 	}, nil
 }
 
-func (u FtcUser) StripeActionRequired(i EmailedInvoice) (postoffice.Parcel, error) {
+func (u Account) StripeActionRequired(i EmailedInvoice) (postoffice.Parcel, error) {
 	tmpl, err := template.New("stripe_action_required").Parse(letterPaymentActionRequired)
 
 	if err != nil {
@@ -300,7 +300,7 @@ func (u FtcUser) StripeActionRequired(i EmailedInvoice) (postoffice.Parcel, erro
 
 	plan, _ := i.BuildFtcPlan()
 	data := struct {
-		User    FtcUser
+		User    Account
 		Invoice EmailedInvoice
 		Plan    Plan
 	}{

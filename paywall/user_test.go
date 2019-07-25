@@ -9,8 +9,8 @@ import (
 	"testing"
 )
 
-func newFtcUser() FtcUser {
-	return FtcUser{
+func newFtcUser() Account {
+	return Account{
 		UserID:   uuid.New().String(),
 		UnionID:  null.String{},
 		StripeID: null.String{},

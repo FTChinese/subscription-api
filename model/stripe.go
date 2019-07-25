@@ -20,7 +20,7 @@ func (env Env) CreateStripeCustomer(ftcID string) (string, error) {
 		return "", err
 	}
 
-	var u paywall.FtcUser
+	var u paywall.Account
 	err = tx.QueryRow(query.LockFtcUser, ftcID).Scan(
 		&u.UserID,
 		&u.UnionID,
@@ -351,7 +351,7 @@ func (env Env) SaveStripeError(id paywall.UserID, e *stripe.Error) error {
 	return nil
 }
 
-func (env Env) WebHookSaveSub(s paywall.StripeSub) (paywall.FtcUser, error) {
+func (env Env) WebHookSaveSub(s paywall.StripeSub) (paywall.Account, error) {
 
 	ftcUser, err := env.FindStripeCustomer(s.CustomerID)
 	if err != nil {
