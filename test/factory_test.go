@@ -39,7 +39,7 @@ func TestGenCardSerial(t *testing.T) {
 
 func TestCreateGiftCard(t *testing.T) {
 
-	m := NewModel(DB)
+	m := NewModel()
 
 	tests := []struct {
 		name string

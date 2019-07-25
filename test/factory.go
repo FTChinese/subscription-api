@@ -55,6 +55,10 @@ func RandomPayMethod() enum.PayMethod {
 	return enum.PayMethod(randomdata.Number(1, 3))
 }
 
+func RandomAccountKind() AccountKind {
+	return AccountKind(randomdata.Number(1, 3))
+}
+
 func GenAvatar() string {
 	var gender = []string{"men", "women"}
 

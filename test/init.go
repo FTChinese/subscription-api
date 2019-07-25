@@ -2,6 +2,7 @@ package test
 
 import (
 	"database/sql"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/patrickmn/go-cache"
 	"github.com/spf13/viper"
@@ -18,16 +19,58 @@ const (
 	MyEmail    = "neefrankie@gmail.com"
 )
 
-var DB *sql.DB
-var Postman postoffice.Postman
-var Cache *cache.Cache
-var WxOAuthApp wxlogin.WxApp
-var WxPayApp wechat.PayApp
-var WxPayClient wechat.Client
-var StripeKey string
-
 var YearlyStandard = paywall.GetFtcPlans(false)["standard_year"]
 var YearlyPremium = paywall.GetFtcPlans(false)["premium_year"]
+
+var (
+	DB          *sql.DB
+	Postman     postoffice.Postman
+	Cache       *cache.Cache
+	WxOAuthApp  wxlogin.WxApp
+	WxPayApp    wechat.PayApp
+	WxPayClient wechat.Client
+	StripeKey   string
+
+	PlanStandardMonthly = paywall.Plan{
+		Coordinate: paywall.Coordinate{
+			Tier:  enum.TierStandard,
+			Cycle: enum.CycleMonth,
+		},
+		ListPrice:  28.00,
+		NetPrice:   28.00,
+		Title:      "FT中文网 - 月度标准会员",
+		CycleCount: 1,
+		Currency:   "cny",
+		ExtraDays:  1,
+		StripeID:   "plan_FOdgPTznDwHU4i",
+	}
+	PlanStandardYearly = paywall.Plan{
+		Coordinate: paywall.Coordinate{
+			Tier:  enum.TierStandard,
+			Cycle: enum.CycleYear,
+		},
+		ListPrice:  258.00,
+		NetPrice:   258.00,
+		Title:      "FT中文网 - 年度标准会员",
+		CycleCount: 1,
+		Currency:   "cny",
+		ExtraDays:  1,
+		StripeID:   "plan_FOdfeaqzczp6Ag",
+	}
+	PlanPremiumYearly = paywall.Plan{
+		Coordinate: paywall.Coordinate{
+			Tier:  enum.TierPremium,
+			Cycle: enum.CycleYear,
+		},
+		ListPrice:  1998.00,
+		NetPrice:   1998.00,
+		Title:      "FT中文网 - 高端会员",
+		CycleCount: 1,
+		Currency:   "cny",
+		ExtraDays:  1,
+		StripeID:   "plan_FOde0uAr0V4WmT",
+	}
+)
 
 func init() {
 	viper.SetConfigName("api")

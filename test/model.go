@@ -12,70 +12,11 @@ type Model struct {
 	query query.Builder
 }
 
-func NewModel(db *sql.DB) Model {
+func NewModel() Model {
 	return Model{
-		db:    db,
+		db:    DB,
 		query: query.NewBuilder(false),
 	}
-}
-
-func (model Model) ClearUser(u paywall.AccountID) error {
-	query := `
-	DELETE FROM cmstmp01.userinfo
-	WHERE user_id = ?
-		OR wx_union_id = ?
-	LIMIT 1`
-
-	_, err := model.db.Exec(query, u.CompoundID, u.UnionID)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (model Model) ClearMember(u paywall.AccountID) error {
-	q := `
-	DELETE FROM premium.ftc_vip
-	WHERE vip_id = ?
-		OR vip_id_alias = ?`
-
-	_, err := model.db.Exec(q, u.CompoundID, u.UnionID)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (model Model) ClearOrder(u paywall.AccountID) error {
-	q := `
-	DELETE FROM premium.ftc_trade
-	WHERE user_id IN (?, ?)`
-
-	_, err := model.db.Exec(q, u.FtcID, u.UnionID)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (model Model) ClearUserByEmail(email string) error {
-	query := `
-	DELETE FROM cmstmp01.userinfo
-	WHERE email = ?`
-
-	_, err := model.db.Exec(query, email)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (model Model) CreateGiftCard() paywall.GiftCard {
@@ -107,9 +48,9 @@ func (model Model) CreateGiftCard() paywall.GiftCard {
 	return c
 }
 
-func (model Model) CreateSub(s paywall.Subscription) {
+func (model Model) SaveSub(s paywall.Subscription) {
 
-	var stmt = model.query.InsertSubs() + `
+	var stmt = model.query.InsertSubs() + `,
 		confirmed_utc = ?,
 		start_date = ?,
 		end_date = ?`
@@ -118,9 +59,9 @@ func (model Model) CreateSub(s paywall.Subscription) {
 
 	_, err := model.db.Exec(stmt,
 		s.ID,
-		s.CompoundID,
-		s.FtcID,
-		s.UnionID,
+		s.User.CompoundID,
+		s.User.FtcID,
+		s.User.UnionID,
 		s.ListPrice,
 		s.NetPrice,
 		s.Tier,
@@ -130,7 +71,6 @@ func (model Model) CreateSub(s paywall.Subscription) {
 		s.Usage,
 		s.PaymentMethod,
 		s.WxAppID,
-		s.CreatedAt,
 		c.ClientType,
 		c.Version,
 		c.UserIP,
@@ -144,15 +84,15 @@ func (model Model) CreateSub(s paywall.Subscription) {
 	}
 }
 
-func (model Model) CreateMember(m paywall.Membership) {
+func (model Model) SaveMember(m paywall.Membership) {
 	_, err := model.db.Exec(model.query.InsertMember(),
 		m.ID,
-		m.CompoundID,
-		m.UnionID,
+		m.User.CompoundID,
+		m.User.UnionID,
 		m.TierCode(),
 		m.ExpireDate.Unix(),
-		m.FtcID,
-		m.UnionID,
+		m.User.FtcID,
+		m.User.UnionID,
 		m.Tier,
 		m.Cycle,
 		m.ExpireDate,
@@ -164,5 +104,49 @@ func (model Model) CreateMember(m paywall.Membership) {
 
 	if err != nil {
 		panic(err)
+	}
+}
+
+func (model Model) UpdateMember(m paywall.Membership) {
+	_, err := model.db.Exec(model.query.UpdateMember(),
+		m.ID,
+		m.TierCode(),
+		m.ExpireDate.Unix(),
+		m.Tier,
+		m.Cycle,
+		m.ExpireDate,
+		m.PaymentMethod,
+		m.StripeSubID,
+		m.StripePlanID,
+		m.AutoRenewal,
+		m.Status,
+		m.User.CompoundID,
+		m.User.UnionID)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Create a new order and membership.
+func (model Model) CreateNewMember(store *SubStore) {
+	store.AddOrder(paywall.SubsKindCreate)
+
+	model.SaveSub(store.GetLastOrder())
+	model.SaveMember(store.Member)
+}
+
+// Create a new order and renew membership.
+func (model Model) RenewMember(store *SubStore) {
+	store.AddOrder(paywall.SubsKindRenew)
+
+	model.SaveSub(store.GetLastOrder())
+	model.UpdateMember(store.Member)
+}
+
+// Create n orders to renew a member.
+func (model Model) RenewMemberN(store *SubStore, n int) {
+	for i := 0; i < n; i++ {
+		model.RenewMember(store)
 	}
 }
