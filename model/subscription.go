@@ -179,11 +179,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
-	member, errMember := tx.RetrieveMember(paywall.AccountID{
-		CompoundID: subs.CompoundID,
-		FtcID:      subs.FtcID,
-		UnionID:    subs.UnionID,
-	})
+	member, errMember := tx.RetrieveMember(subs.User)
 	if errMember != nil {
 		return subs, util.ErrAllowRetry
 	}
