@@ -12,7 +12,7 @@ func TestEnv_FindGiftCard(t *testing.T) {
 		db: test.DB,
 	}
 
-	c := test.NewModel(test.DB).CreateGiftCard()
+	c := test.NewModel().CreateGiftCard()
 
 	type args struct {
 		code string
@@ -52,7 +52,7 @@ func TestEnv_RedeemGiftCard(t *testing.T) {
 	env := Env{
 		db: test.DB,
 	}
-	c := test.NewModel(test.DB).CreateGiftCard()
+	c := test.NewModel().CreateGiftCard()
 
 	user := test.NewProfile().RandomUserID()
 	m, _ := paywall.NewMember(user).FromGiftCard(c)
