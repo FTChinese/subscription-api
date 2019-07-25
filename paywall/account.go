@@ -49,25 +49,25 @@ type Account struct {
 	UserName null.String
 }
 
-func (u Account) ID() UserID {
+func (a Account) ID() UserID {
 	return UserID{
-		CompoundID: u.UserID,
-		FtcID:      null.StringFrom(u.UserID),
-		UnionID:    u.UnionID,
+		CompoundID: a.UserID,
+		FtcID:      null.StringFrom(a.UserID),
+		UnionID:    a.UnionID,
 	}
 }
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
-func (u Account) NormalizeName() string {
-	if u.UserName.Valid {
-		return strings.Split(u.UserName.String, "@")[0]
+func (a Account) NormalizeName() string {
+	if a.UserName.Valid {
+		return strings.Split(a.UserName.String, "@")[0]
 	}
 
-	return strings.Split(u.Email, "@")[0]
+	return strings.Split(a.Email, "@")[0]
 }
 
 // ConfirmationParcel create a parcel for email after subscription is confirmed.
-func (u Account) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
+func (a Account) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterNewSub)
 
 	if err != nil {
@@ -84,7 +84,7 @@ func (u Account) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
 		Sub  Subscription
 		Plan Plan
 	}{
-		User: u,
+		User: a,
 		Sub:  s,
 		Plan: plan,
 	}
@@ -99,14 +99,14 @@ func (u Account) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	return postoffice.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
-		ToAddress:   u.Email,
-		ToName:      u.NormalizeName(),
+		ToAddress:   a.Email,
+		ToName:      a.NormalizeName(),
 		Subject:     "会员订阅",
 		Body:        body.String(),
 	}, nil
 }
 
-func (u Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
+func (a Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterRenewalSub)
 
 	if err != nil {
@@ -123,7 +123,7 @@ func (u Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 		Sub  Subscription
 		Plan Plan
 	}{
-		User: u,
+		User: a,
 		Sub:  s,
 		Plan: plan,
 	}
@@ -138,14 +138,14 @@ func (u Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	return postoffice.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
-		ToAddress:   u.Email,
-		ToName:      u.NormalizeName(),
+		ToAddress:   a.Email,
+		ToName:      a.NormalizeName(),
 		Subject:     "会员续订",
 		Body:        body.String(),
 	}, nil
 }
 
-func (u Account) UpgradeSubParcel(s Subscription, preview UpgradePreview) (postoffice.Parcel, error) {
+func (a Account) UpgradeSubParcel(s Subscription, preview UpgradePreview) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterNewSub)
 
 	if err != nil {
@@ -163,7 +163,7 @@ func (u Account) UpgradeSubParcel(s Subscription, preview UpgradePreview) (posto
 		Plan    Plan
 		Upgrade UpgradePreview
 	}{
-		User:    u,
+		User:    a,
 		Sub:     s,
 		Plan:    plan,
 		Upgrade: preview,
@@ -179,14 +179,14 @@ func (u Account) UpgradeSubParcel(s Subscription, preview UpgradePreview) (posto
 	return postoffice.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
-		ToAddress:   u.Email,
-		ToName:      u.NormalizeName(),
+		ToAddress:   a.Email,
+		ToName:      a.NormalizeName(),
 		Subject:     "会员升级",
 		Body:        body.String(),
 	}, nil
 }
 
-func (u Account) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
+func (a Account) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
 	tmpl, err := template.New("stripe_sub").Parse(letterStripeSub)
 
 	if err != nil {
@@ -199,7 +199,7 @@ func (u Account) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
 		Sub  StripeSub
 		Plan Plan
 	}{
-		User: u,
+		User: a,
 		Sub:  s,
 		Plan: plan,
 	}
@@ -214,14 +214,14 @@ func (u Account) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
 	return postoffice.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
-		ToAddress:   u.Email,
-		ToName:      u.NormalizeName(),
+		ToAddress:   a.Email,
+		ToName:      a.NormalizeName(),
 		Subject:     "Stripe订阅",
 		Body:        body.String(),
 	}, nil
 }
 
-func (u Account) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error) {
+func (a Account) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error) {
 	tmpl, err := template.New("stripe_invoice").Parse(letterStripeInvoice)
 
 	if err != nil {
@@ -234,7 +234,7 @@ func (u Account) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error
 		Invoice EmailedInvoice
 		Plan    Plan
 	}{
-		User:    u,
+		User:    a,
 		Invoice: i,
 		Plan:    plan,
 	}
@@ -249,14 +249,14 @@ func (u Account) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error
 	return postoffice.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
-		ToAddress:   u.Email,
-		ToName:      u.NormalizeName(),
+		ToAddress:   a.Email,
+		ToName:      a.NormalizeName(),
 		Subject:     "Stripe订阅发票",
 		Body:        body.String(),
 	}, nil
 }
 
-func (u Account) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error) {
+func (a Account) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error) {
 	tmpl, err := template.New("stripe_payment_failed").Parse(letterStripePaymentFailed)
 
 	if err != nil {
@@ -269,7 +269,7 @@ func (u Account) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error
 		Invoice EmailedInvoice
 		Plan    Plan
 	}{
-		User:    u,
+		User:    a,
 		Invoice: i,
 		Plan:    plan,
 	}
@@ -284,14 +284,14 @@ func (u Account) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error
 	return postoffice.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
-		ToAddress:   u.Email,
-		ToName:      u.NormalizeName(),
+		ToAddress:   a.Email,
+		ToName:      a.NormalizeName(),
 		Subject:     "Stripe支付失败",
 		Body:        body.String(),
 	}, nil
 }
 
-func (u Account) StripeActionRequired(i EmailedInvoice) (postoffice.Parcel, error) {
+func (a Account) StripeActionRequired(i EmailedInvoice) (postoffice.Parcel, error) {
 	tmpl, err := template.New("stripe_action_required").Parse(letterPaymentActionRequired)
 
 	if err != nil {
@@ -304,7 +304,7 @@ func (u Account) StripeActionRequired(i EmailedInvoice) (postoffice.Parcel, erro
 		Invoice EmailedInvoice
 		Plan    Plan
 	}{
-		User:    u,
+		User:    a,
 		Invoice: i,
 		Plan:    plan,
 	}
@@ -319,8 +319,8 @@ func (u Account) StripeActionRequired(i EmailedInvoice) (postoffice.Parcel, erro
 	return postoffice.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
-		ToAddress:   u.Email,
-		ToName:      u.NormalizeName(),
+		ToAddress:   a.Email,
+		ToName:      a.NormalizeName(),
 		Subject:     "Stripe支付尚未完成",
 		Body:        body.String(),
 	}, nil
