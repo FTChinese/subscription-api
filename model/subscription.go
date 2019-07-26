@@ -86,7 +86,7 @@ func (env Env) CreateOrder(
 
 		log.Infof("Saved upgrade scheme %s", upgrade.ID)
 
-		err = otx.SetUpgradeIDOnSource(upgrade)
+		err = otx.SetLastUpgradeID(upgrade)
 		if err != nil {
 			_ = otx.rollback()
 			return subs, err
