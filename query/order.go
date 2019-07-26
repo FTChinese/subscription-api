@@ -161,7 +161,7 @@ func (b Builder) SelectSubsLock() string {
 
 func (b Builder) ConfirmationResult() string {
 	return fmt.Sprintf(`
-	INSERT INTO %s.ftc_trade
+	INSERT INTO %s.confirmation_result
 	SET order_id = ?,
 		succeeded = ?,
 		failed = ?,
