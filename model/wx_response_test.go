@@ -1,6 +1,7 @@
 package model
 
 import (
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 
@@ -12,10 +13,12 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 		db: test.DB,
 	}
 
-	u := test.NewProfile().RandomUserID()
-	subs := test.SubsRandom(u)
+	id, err := paywall.GenerateOrderID()
+	if err != nil {
+		t.Error(err)
+	}
 
-	t.Logf("Subs: %+v", subs)
+	t.Logf("Subs id: %+v", id)
 
 	type args struct {
 		orderID string
@@ -29,7 +32,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 		{
 			name: "Save Prepay Response",
 			args: args{
-				orderID: subs.ID,
+				orderID: id,
 				p:       test.WxPrepay(),
 			},
 			wantErr: false,
@@ -50,8 +53,10 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		db: test.DB,
 	}
 
-	u := test.NewProfile().RandomUserID()
-	subs := test.SubsRandom(u)
+	id, err := paywall.GenerateOrderID()
+	if err != nil {
+		t.Error(err)
+	}
 
 	type args struct {
 		n wechat.Notification
@@ -64,7 +69,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		{
 			name: "Save Wxpay WebHook",
 			args: args{
-				n: test.WxNotification(subs.ID),
+				n: test.WxNotification(id),
 			},
 			wantErr: false,
 		},
