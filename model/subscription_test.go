@@ -82,3 +82,53 @@ func TestEnv_CreateOrder(t *testing.T) {
 		})
 	}
 }
+
+func TestEnv_SaveConfirmationResult(t *testing.T) {
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	type args struct {
+		r *paywall.ConfirmationResult
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Save success confirmation",
+			args: args{
+				r: &paywall.ConfirmationResult{
+					Succeeded: true,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Save confirmation failure",
+			args: args{
+				r: &paywall.ConfirmationResult{
+					Failed: null.StringFrom("duplicate upgrading"),
+					Retry:  false,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			orderID, err := paywall.GenerateOrderID()
+			if err != nil {
+				t.Error(err)
+			}
+
+			tt.args.r.OrderID = orderID
+			if err := env.SaveConfirmationResult(tt.args.r); (err != nil) != tt.wantErr {
+				t.Errorf("Env.SaveConfirmationResult() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
