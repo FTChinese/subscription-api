@@ -10,6 +10,7 @@ import (
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/ali"
 	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 )
@@ -150,87 +151,6 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 	}
 }
 
-// AppOrder creates an alipay order for native app.
-//func (router AliPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
-//
-//	tier, err := GetURLParam(req, "tier").ToString()
-//	if err != nil {
-//		view.Render(w, view.NewBadRequest(err.Error()))
-//		return
-//	}
-//
-//	cycle, err := GetURLParam(req, "cycle").ToString()
-//	if err != nil {
-//		view.Render(w, view.NewBadRequest(err.Error()))
-//		return
-//	}
-//
-//	plan, err := router.model.GetCurrentPlans().FindPlan(tier, cycle)
-//
-//	if err != nil {
-//		logger.WithField("trace", "AliAppOrder").Error(err)
-//
-//		view.Render(w, view.NewBadRequest(err.Error()))
-//		return
-//	}
-//
-//	logger.WithField("trace", "AliAppOrder").Infof("Subscription plan: %+v", plan)
-//
-//	// Get user id from request header
-//	uID := req.Header.Get(ftcIDKey)
-//	wID := req.Header.Get(unionIDKey)
-//
-//	userID := null.NewString(uID, uID != "")
-//	unionID := null.NewString(wID, wID != "")
-//
-//	logger.WithField("trace", "AliAppOrder").Infof("FTC id: %+v, wechat id: %+v", userID, unionID)
-//
-//	subs, err := paywall.NewAlipaySubs(userID, unionID, plan)
-//	if err != nil {
-//		view.Render(w, view.NewBadRequest(err.Error()))
-//		return
-//	}
-//
-//	logger.WithField("trace", "AliAppOrder").Infof("User created order: %+v", subs)
-//
-//	ok, err := router.model.IsSubsAllowed(subs)
-//	// err = ar.model.PlaceOrder(subs, app)
-//	if err != nil {
-//		view.Render(w, view.NewDBFailure(err))
-//		return
-//	}
-//	if !ok {
-//		view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-//		return
-//	}
-//
-//	// Save the subscription
-//	app := util.NewClientApp(req)
-//	err = router.model.SaveSubscription(subs, app)
-//	if err != nil {
-//		view.Render(w, view.NewDBFailure(err))
-//		return
-//	}
-//
-//	param := router.aliAppPayParam(plan.Title, subs)
-//
-//	// Call URLValues to generate alipay required data structure and sign it.
-//	//values, err := router.client.URLValues(param)
-//
-//	queryStr, err := router.client.TradeAppPay(param)
-//
-//	logger.WithField("trace", "AliAppOrder").Infof("App pay param: %+v\n", queryStr)
-//
-//	if err != nil {
-//		view.Render(w, view.NewBadRequest(err.Error()))
-//		return
-//	}
-//
-//	resp := ali.NewAppPayResp(subs, queryStr)
-//
-//	view.Render(w, view.NewResponse().SetBody(resp))
-//}
-
 // WebHook handles alipay server-side notification.
 func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	logger := logrus.WithFields(logrus.Fields{
@@ -241,7 +161,9 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		logger.Error(err)
 
-		w.Write([]byte(fail))
+		if _, err := w.Write([]byte(fail)); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
@@ -256,7 +178,9 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"event": "GetTradeNotification",
 		}).Error(err)
 
-		w.Write([]byte(fail))
+		if _, err := w.Write([]byte(fail)); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
@@ -267,11 +191,17 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"orderId": noti.OutTradeNo,
 		}).Infof("Expected %s, actual %s", router.appID, noti.AppId)
 
-		w.Write([]byte(fail))
+		if _, err := w.Write([]byte(fail)); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
-	go router.model.SaveAliNotification(*noti)
+	go func() {
+		if err := router.model.SaveAliNotification(*noti); err != nil {
+			logger.Error(err)
+		}
+	}()
 
 	// 在支付宝的业务通知中，只有交易通知状态为TRADE_SUCCESS或TRADE_FINISHED时，支付宝才会认定为买家付款成功。
 	if !ali.IsPaySuccess(noti) {
@@ -281,11 +211,15 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}).Infof("Status %s", noti.TradeStatus)
 
 		if ali.ShouldRetry(noti) {
-			w.Write([]byte(fail))
+			if _, err := w.Write([]byte(fail)); err != nil {
+				logger.Error(err)
+			}
 			return
 		}
 
-		w.Write([]byte(success))
+		if _, err := w.Write([]byte(success)); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
@@ -302,9 +236,13 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}).Error(err)
 
 		if err == sql.ErrNoRows {
-			w.Write([]byte(success))
+			if _, err := w.Write([]byte(success)); err != nil {
+				logger.Error(err)
+			}
 		}
-		w.Write([]byte(fail))
+		if _, err := w.Write([]byte(fail)); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
@@ -315,7 +253,9 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"orderId": noti.OutTradeNo,
 		}).Infof("Expected net price: %s, actually received: %s", charge.AliPrice(), noti.TotalAmount)
 
-		w.Write([]byte(success))
+		if _, err := w.Write([]byte(success)); err != nil {
+			logger.Error(err)
+		}
 
 		return
 	}
@@ -327,29 +267,36 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"orderId": noti.OutTradeNo,
 		}).Info("Duplicate notification since this order is already confirmed.")
 
-		w.Write([]byte(success))
+		if _, err := w.Write([]byte(success)); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
-	confirmedSubs, err := router.model.ConfirmPayment(orderID, util.ParseAliTime(noti.GmtPayment))
+	confirmedSubs, result := router.model.ConfirmPayment(orderID, util.ParseAliTime(noti.GmtPayment))
 
-	if err != nil {
+	if result != nil {
 		logger.WithFields(logrus.Fields{
 			"event":   "ConfirmOrder",
 			"orderId": noti.OutTradeNo,
 		}).Error(err)
 
-		switch err {
-		case util.ErrDenyRetry:
-			w.Write([]byte(success))
-			return
+		go func() {
+			err := router.model.SaveConfirmationResult(result)
+			if err != nil {
+				logger.Error(err)
+			}
+		}()
 
-		case util.ErrAllowRetry:
-			w.Write([]byte(fail))
+		if result.Retry {
+			if b, err := w.Write([]byte(fail)); err != nil {
+				logger.WithField("byte_output", b).Error(err)
+			}
 			return
-
-		default:
-			w.Write([]byte(fail))
+		} else {
+			if b, err := w.Write([]byte(success)); err != nil {
+				logger.WithField("byte_output", b).Error(err)
+			}
 			return
 		}
 	}
@@ -359,7 +306,19 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		"OrderId": noti.OutTradeNo,
 	}).Infof("Confirmed at %s, membership from %s to %s", confirmedSubs.ConfirmedAt, confirmedSubs.StartDate, confirmedSubs.EndDate)
 
-	go router.sendConfirmationEmail(confirmedSubs)
+	go func() {
+		if err := router.sendConfirmationEmail(confirmedSubs); err != nil {
+			logger.Error(err)
+		}
+	}()
 
-	w.Write([]byte(success))
+	go func() {
+		if err := router.model.SaveConfirmationResult(paywall.NewConfirmationSucceeded(orderID)); err != nil {
+			logger.Error(err)
+		}
+	}()
+
+	if b, err := w.Write([]byte(success)); err != nil {
+		logger.WithField("byte_output", b).Error(err)
+	}
 }
