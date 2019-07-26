@@ -36,7 +36,7 @@ func GenerateOrderID() (string, error) {
 type Charge struct {
 	ListPrice   float64 `json:"listPrice"`
 	NetPrice    float64 `json:"netPrice"` // Deprecate
-	Amount      float64 `json:"amount"`   // TODO: remove this.
+	Amount      float64 `json:"amount"`
 	IsConfirmed bool    `json:"-"`
 }
 
