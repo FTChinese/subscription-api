@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wechat"
 	"net/http"
@@ -175,7 +176,11 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Convert wxpay's map to struct for easy manipulation.
 		uor := wechat.NewUnifiedOrderResp(resp)
 
-		go router.model.SavePrepayResp(subs.ID, uor)
+		go func() {
+			if err := router.model.SavePrepayResp(subs.ID, uor); err != nil {
+				logger.Error(err)
+			}
+		}()
 
 		if r := uor.Validate(payClient.GetApp()); r != nil {
 			logger.Info("Invalid unified order response")
@@ -211,107 +216,6 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 	}
 }
 
-// UnifiedOrder implements 统一下单.
-// https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_1
-//func (router WxPayRouter) AppOrder(w http.ResponseWriter, req *http.Request) {
-//
-//	payClient, err := router.clients.Find(wxAppMobileSubs)
-//	if err != nil {
-//		view.Render(w, view.NewInternalError(err.Error()))
-//		return
-//	}
-//
-//	// Try to find a plan based on the tier and cycle.
-//	plan, err := router.findPlan(req)
-//
-//	// If pricing plan is not found.
-//	if err != nil {
-//		logger.WithField("trace", "UnifiedOrder").Error(err)
-//		view.Render(w, view.NewBadRequest(err.Error()))
-//		return
-//	}
-//
-//	logger.WithField("trace", "UnifiedOrder").Infof("Subscription plan: %+v", plan)
-//
-//	// Get user id from request header.
-//	// If user id is found, it means user is subscribing with FTC account;
-//	// if union id is found, it means user is subscribing with Wechat account;
-//	user, err := GetUserID(req.Header)
-//
-//	subs, err := paywall.NewWxpaySubs(user, plan)
-//	if err != nil {
-//		view.Render(w, view.NewBadRequest(err.Error()))
-//		return
-//	}
-//	subs.WxAppID = null.StringFrom(wxAppMobileSubs)
-//
-//	ok, err := router.model.IsSubsAllowed(subs)
-//	if err != nil {
-//		view.Render(w, view.NewDBFailure(err))
-//		return
-//	}
-//	if !ok {
-//		view.Render(w, view.NewForbidden("Already a subscribed user and not within allowed renewal period."))
-//		return
-//	}
-//
-//	// Save this subscription order.
-//	clientApp := util.NewClientApp(req)
-//	err = router.model.SaveSubscription(subs, clientApp)
-//	if err != nil {
-//		view.Render(w, view.NewDBFailure(err))
-//		return
-//	}
-//
-//	unifiedOrder := wechat.UnifiedOrder{
-//		Body:        plan.Title,
-//		ID:     subs.ID,
-//		Price:       subs.PriceInCent(),
-//		IP:          clientApp.UserIP.String,
-//		CallbackURL: router.wxCallbackURL(),
-//		TradeType:   wechat.TradeTypeApp,
-//		ProductID:   plan.ProductID(),
-//	}
-//	// Build Wechat pay parameters.
-//	//param := router.wxUniOrderParam(plan.Title, clientApp.UserIP.String, subs)
-//	param := unifiedOrder.ToParam()
-//
-//	logger.WithField("trace", "UnifiedOrder").Infof("Unifed order params: %+v", param)
-//
-//	// Send order to wx
-//	resp, err := payClient.UnifiedOrder(param)
-//
-//	if err != nil {
-//		logger.WithField("trace", "UnifiedOrder").Error(err)
-//
-//		view.Render(w, view.NewBadRequest(err.Error()))
-//
-//		return
-//	}
-//
-//	uor := wechat.NewUnifiedOrderResp(resp)
-//
-//	// Log the response.
-//	go router.model.SavePrepayResp(subs.ID, uor)
-//
-//	//if r := router.mSubsClient.ValidateResponse(resp); r != nil {
-//	//	view.Render(w, view.NewUnprocessable(r))
-//	//	return
-//	//}
-//
-//	if r := uor.Validate(payClient.GetApp()); r != nil {
-//		view.Render(w, view.NewUnprocessable(r))
-//		return
-//	}
-//
-//	//prepay := router.mSubsClient.NewPrepay(resp.GetString("prepay_id"), subs)
-//	appPay := uor.ToLegacyAppPay(subs)
-//
-//	sign := payClient.Sign(appPay.Param())
-//
-//	view.Render(w, view.NewResponse().SetBody(appPay.WithHash(sign)))
-//}
-
 // WebHook implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
 func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
@@ -329,7 +233,9 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"event": "DecodeXML",
 		}).Error(err)
 
-		w.Write([]byte(resp.NotOK(err.Error())))
+		if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
+			logger.Error(err)
+		}
 
 		return
 	}
@@ -348,7 +254,10 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"event":   "InvalidStatus",
 			"orderId": noti.FTCOrderID,
 		}).Error(err)
-		w.Write([]byte(resp.OK()))
+
+		if _, err := w.Write([]byte(resp.OK())); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
@@ -360,14 +269,21 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"event":   "FindWechatClient",
 			"orderId": noti.FTCOrderID,
 		}).Error(err)
-		w.Write([]byte(resp.NotOK(err.Error())))
+
+		if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
+			logger.Error(err)
+		}
 
 		return
 	}
 
 	// Log the response, regardless of whether it is an error
 	// or not.
-	go router.model.SaveWxNotification(noti)
+	go func() {
+		if err := router.model.SaveWxNotification(noti); err != nil {
+			logger.Error(err)
+		}
+	}()
 
 	if err := payClient.VerifyNotification(noti); err != nil {
 		logger.WithFields(logrus.Fields{
@@ -375,7 +291,9 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"orderId": noti.FTCOrderID,
 		}).Error(err)
 
-		w.Write([]byte(resp.OK()))
+		if _, err := w.Write([]byte(resp.OK())); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
@@ -391,10 +309,14 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}).Error(err)
 
 		if err == sql.ErrNoRows {
-			w.Write([]byte(resp.OK()))
+			if _, err := w.Write([]byte(resp.OK())); err != nil {
+				logger.Error(err)
+			}
 			return
 		}
-		w.Write([]byte(resp.NotOK(err.Error())))
+		if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
@@ -405,7 +327,9 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"orderId": noti.FTCOrderID,
 		}).Errorf("Expected: %d, actual: %d", charge.PriceInCent(), noti.TotalFee.Int64)
 
-		w.Write([]byte(resp.OK()))
+		if _, err := w.Write([]byte(resp.OK())); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 
@@ -414,7 +338,9 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			"event":   "AlreadyConfirmed",
 			"orderId": noti.FTCOrderID,
 		}).Info("Duplicate notification since this order is already confirmed.")
-		w.Write([]byte(resp.OK()))
+		if _, err := w.Write([]byte(resp.OK())); err != nil {
+			logger.Error(err)
+		}
 		return
 	}
 	// updatedSubs
@@ -422,39 +348,52 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		confirmedAt = time.Now()
 	}
-	confirmedSubs, err := router.model.ConfirmPayment(noti.FTCOrderID.String, confirmedAt)
+	confirmedSubs, result := router.model.ConfirmPayment(noti.FTCOrderID.String, confirmedAt)
 
-	if err != nil {
+	if result != nil {
 		logger.WithFields(logrus.Fields{
 			"event":   "ConfirmOrder",
 			"orderId": noti.FTCOrderID,
 		}).Error(err)
 
-		switch err {
-		case util.ErrDenyRetry:
-			w.Write([]byte(resp.OK()))
-			return
+		go func() {
+			if err := router.model.SaveConfirmationResult(result); err != nil {
+				logger.Error(err)
+			}
+		}()
 
-		case util.ErrAllowRetry:
-			w.Write([]byte(resp.NotOK(err.Error())))
-			return
-
-		default:
-			w.Write([]byte(resp.NotOK(err.Error())))
-			return
+		if result.Retry {
+			if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
+				logger.Error(err)
+			}
+		} else {
+			if _, err := w.Write([]byte(resp.OK())); err != nil {
+				logger.Error(err)
+			}
 		}
 	}
 
 	// Send a letter to this user.
-
 	logger.WithFields(logrus.Fields{
 		"event":   "OrderConfirmed",
 		"orderId": noti.FTCOrderID,
 	}).Infof("Confirmed at %s, membership from %s to %s", confirmedSubs.ConfirmedAt, confirmedSubs.StartDate, confirmedSubs.EndDate)
 
-	go router.sendConfirmationEmail(confirmedSubs)
+	go func() {
+		if err := router.sendConfirmationEmail(confirmedSubs); err != nil {
+			logger.Error(err)
+		}
+	}()
 
-	w.Write([]byte(resp.OK()))
+	go func() {
+		if err := router.model.SaveConfirmationResult(paywall.NewConfirmationSucceeded(noti.FTCOrderID.String)); err != nil {
+			logger.Error(err)
+		}
+	}()
+
+	if _, err := w.Write([]byte(resp.OK())); err != nil {
+		logger.Error(err)
+	}
 }
 
 // OrderQuery implements 查询订单
@@ -512,7 +451,11 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	// {message: "", {field: status, code: fail} }
 	// {message: "", {field: result, code: "ORDERNOTEXIST" | "SYSTEMERROR"} }
 	resp := wechat.NewOrderQueryResp(respParams)
-	go router.model.SaveWxQueryResp(resp)
+	go func() {
+		if err := router.model.SaveWxQueryResp(resp); err != nil {
+			logger.Error(err)
+		}
+	}()
 
 	if r := resp.Validate(payClient.GetApp()); r != nil {
 		logger.Info("Response invalid")
