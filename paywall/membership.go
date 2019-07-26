@@ -169,6 +169,10 @@ func (m Membership) IsExpired() bool {
 	return m.ExpireDate.Before(time.Now().Truncate(24 * time.Hour))
 }
 
+func (m Membership) IsValidPremium() bool {
+	return m.Tier == enum.TierPremium && !m.IsExpired()
+}
+
 func (m Membership) IsZero() bool {
 	return m.Tier == enum.InvalidTier
 }
