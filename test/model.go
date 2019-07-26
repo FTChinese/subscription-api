@@ -128,25 +128,155 @@ func (model Model) UpdateMember(m paywall.Membership) {
 	}
 }
 
-// Create a new order and membership.
-func (model Model) CreateNewMember(store *SubStore) {
-	store.AddOrder(paywall.SubsKindCreate)
+// Create a new order that is not confirmed.
+func (model Model) CreateNewOrder(store *SubStore) paywall.Subscription {
+	o := store.AddOrder(paywall.SubsKindCreate)
+	model.SaveSub(o)
 
-	model.SaveSub(store.GetLastOrder())
-	model.SaveMember(store.Member)
+	return o
 }
 
-// Create a new order and renew membership.
-func (model Model) RenewMember(store *SubStore) {
-	store.AddOrder(paywall.SubsKindRenew)
+// CreateConfirmedOrder is used to test confirming an order in db.
+func (model Model) CreateConfirmedOrder(store *SubStore) paywall.Subscription {
+	o := model.CreateNewOrder(store)
 
-	model.SaveSub(store.GetLastOrder())
-	model.UpdateMember(store.Member)
-}
-
-// Create n orders to renew a member.
-func (model Model) RenewMemberN(store *SubStore, n int) {
-	for i := 0; i < n; i++ {
-		model.RenewMember(store)
+	o, err := o.Confirm(store.Member, time.Now())
+	if err != nil {
+		panic(err)
 	}
+
+	return o
+}
+
+// CreateNewMember create a confirmed order and its
+// membership but the membership is not save to db.
+// This is used to test insert membership.
+func (model Model) CreateNewMember(store *SubStore) paywall.Membership {
+	o := store.AddOrder(paywall.SubsKindCreate)
+
+	o, err := store.ConfirmOrder(o.ID)
+	if err != nil {
+		panic(err)
+	}
+
+	m, err := store.Member.FromAliOrWx(o)
+	if err != nil {
+		return m
+	}
+	store.Member = m
+
+	// Save confirmed order
+	model.SaveSub(o)
+
+	return m
+}
+
+// CreateUpdateMember is used to test UpdateMember.
+func (model Model) CreateUpdatedMember(store *SubStore) paywall.Membership {
+	// First we create a new order and its membership.
+	model.NewMemberCreated(store)
+
+	// Create renewal order
+	o := store.AddOrder(paywall.SubsKindRenew)
+
+	// Confirm this order
+	o, err := store.ConfirmOrder(o.ID)
+	if err != nil {
+		panic(err)
+	}
+
+	// Update membership.
+	m, err := store.Member.FromAliOrWx(o)
+	if err != nil {
+		panic(err)
+	}
+	store.Member = m
+
+	// Save the confirmed renewal order to db
+	model.SaveSub(o)
+
+	return m
+}
+
+// Create a new order and membership.
+func (model Model) NewMemberCreated(store *SubStore) paywall.Subscription {
+	// Create unconfirmed order
+	o := store.AddOrder(paywall.SubsKindCreate)
+
+	// Confirm this order
+	o, err := store.ConfirmOrder(o.ID)
+	if err != nil {
+		panic(err)
+	}
+
+	m, err := store.Member.FromAliOrWx(o)
+	if err != nil {
+		panic(err)
+	}
+	store.Member = m
+
+	// Save the confirmed order to db
+	model.SaveSub(o)
+	// Save the membership to db.
+	model.SaveMember(store.Member)
+
+	return o
+}
+
+// MemberRenewed renews a member and returns all the orders
+// used to create and renew.
+// Must call NewMemberCreate before calling this one.
+func (model Model) MemberRenewed(store *SubStore) paywall.Subscription {
+
+	if store.Member.IsZero() {
+		panic("no membership exists to be renewed.")
+	}
+
+	// Then we create renewal order.
+	o := store.AddOrder(paywall.SubsKindRenew)
+
+	// Confirm this order.
+	o, err := store.ConfirmOrder(o.ID)
+	if err != nil {
+		panic(err)
+	}
+
+	// Save the confirmed order
+	model.SaveSub(o)
+	// Update membership in db.
+	model.UpdateMember(store.Member)
+
+	// Return all the orders this user owns.
+	return o
+}
+
+// MemberRenewedN renew a member for n times, and returned
+// all the orders used perform all the renewal.
+// The total number of orders returned is n + 1 since you n does not include the initial order used to create this membership.
+func (model Model) MemberRenewedN(store *SubStore, n int) []paywall.Subscription {
+	o := model.NewMemberCreated(store)
+
+	orders := []paywall.Subscription{o}
+
+	for i := 0; i < n; i++ {
+		o := model.MemberRenewed(store)
+		orders = append(orders, o)
+	}
+
+	return orders
+}
+
+func (model Model) UpgradeOrder(store *SubStore, n int) paywall.Subscription {
+	o, err := store.UpgradeOrder(n)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, v := range store.Orders {
+		model.SaveSub(v)
+	}
+
+	model.SaveMember(store.Member)
+
+	return o
 }
