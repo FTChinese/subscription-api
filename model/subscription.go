@@ -129,7 +129,7 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 		orderID,
 	).Scan(
 		&c.ListPrice,
-		&c.NetPrice,
+		&c.Amount,
 		&c.IsConfirmed,
 	)
 
@@ -138,6 +138,7 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 		return c, err
 	}
 
+	c.NetPrice = c.Amount
 	return c, nil
 }
 
