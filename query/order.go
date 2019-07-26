@@ -31,7 +31,7 @@ func (b Builder) BalanceSource() string {
 	FOR UPDATE`, b.MemberDB(), b.MemberDB())
 }
 
-func (b Builder) SetUpgradeIDOnSource() string {
+func (b Builder) SetLastUpgradeID() string {
 	return fmt.Sprintf(`
 	UPDATE %s.ftc_trade
 	SET last_upgrade_id = ?

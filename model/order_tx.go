@@ -283,7 +283,7 @@ func (otx OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) erro
 // SaveOrder and SaveUpgrade.
 func (otx OrderTx) SetLastUpgradeID(up paywall.Upgrade) error {
 	strList := strings.Join(up.Source, ",")
-	_, err := otx.tx.Exec(otx.query.SetUpgradeIDOnSource(),
+	_, err := otx.tx.Exec(otx.query.SetLastUpgradeID(),
 		up.ID,
 		strList)
 
@@ -296,7 +296,7 @@ func (otx OrderTx) SetLastUpgradeID(up paywall.Upgrade) error {
 
 func (otx OrderTx) SetLastUpgradeIDV2(up paywall.UpgradePreview) error {
 
-	_, err := otx.tx.Exec(otx.query.SetUpgradeIDOnSource(),
+	_, err := otx.tx.Exec(otx.query.SetLastUpgradeID(),
 		up.ID,
 		up.SourceOrderIDs())
 
