@@ -91,7 +91,7 @@ func (env Env) FreeUpgrade(
 		return subs, err
 	}
 
-	if err := tx.SetUpgradeIDOnSourceV2(up); err != nil {
+	if err := tx.SetLastUpgradeIDV2(up); err != nil {
 		_ = tx.rollback()
 		return subs, err
 	}
@@ -157,7 +157,7 @@ func (env Env) DirectUpgradeOrder(
 		return subs, err
 	}
 
-	if err := otx.SetUpgradeIDOnSource(upgrade); err != nil {
+	if err := otx.SetLastUpgradeID(upgrade); err != nil {
 		_ = otx.rollback()
 		return subs, err
 	}
