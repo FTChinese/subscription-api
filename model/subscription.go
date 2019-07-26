@@ -150,13 +150,14 @@ func (env Env) FindSubsCharge(orderID string) (paywall.Charge, error) {
 // Error occurred, don't retry;
 // No error, send user confirmation letter.
 // Concurrency pitfalls: if a user, whose is not a member yet, paid at the same moment twice, there are chances that those two orders are both used to create a membership, since transaction lock for update works only when a row exists.
-func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Subscription, error) {
+func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Subscription, *paywall.ConfirmationResult) {
+
 	log := logger.WithField("trace", "Env.ConfirmPayment")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.Subscription{}, util.ErrAllowRetry
+		return paywall.Subscription{}, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
 	// Step 1: Find the subscription order by order id
@@ -164,44 +165,38 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// If the order is not found, or is already confirmed,
 	// tell provider not sending notification any longer;
 	// otherwise, allow retry.
-	subs, errSubs := tx.RetrieveOrder(orderID)
-	if errSubs != nil {
+	subs, err := tx.RetrieveOrder(orderID)
+	if err != nil {
+		log.Error(err)
+
 		_ = tx.rollback()
-		switch errSubs {
-		case sql.ErrNoRows, util.ErrAlreadyConfirmed:
-			return subs, util.ErrDenyRetry
-		default:
-			return subs, util.ErrAllowRetry
-		}
+
+		return subs, paywall.NewConfirmationFailed(orderID, err, err != sql.ErrNoRows)
+	}
+
+	if subs.IsConfirmed {
+		_ = tx.rollback()
+		return subs, paywall.NewConfirmationFailed(orderID, util.ErrAlreadyConfirmed, false)
 	}
 
 	log.Infof("Found order %s", subs.ID)
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
-	member, errMember := tx.RetrieveMember(subs.User)
-	if errMember != nil {
-		return subs, util.ErrAllowRetry
+	member, err := tx.RetrieveMember(subs.User)
+	if err != nil {
+		log.Error(err)
+		_ = tx.rollback()
+		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
 	// STEP 3: validate the retrieved order.
 	// This order might be invalid for upgrading.
-	// OPTIONAL STEP: Mark the prorated orders.
-	// For any errors, allow retry
-	if subs.Usage == paywall.SubsKindUpgrade && member.Tier == enum.TierPremium && !member.IsExpired() {
-		// In case of any error, just ignore it.
-		err = tx.DuplicateUpgrade(subs.ID)
-
-		if err != nil {
-			_ = tx.rollback()
-			return subs, util.ErrDuplicateUpgrading
-		}
-
-		if err := tx.commit(); err != nil {
-			return subs, util.ErrDuplicateUpgrading
-		}
-
-		return subs, util.ErrDuplicateUpgrading
+	// If user is already a premium member and this order is used
+	// for upgrading, decline retry.
+	if subs.Usage == paywall.SubsKindUpgrade && member.IsValidPremium() {
+		_ = tx.rollback()
+		return subs, paywall.NewConfirmationFailed(orderID, util.ErrDuplicateUpgrading, false)
 	}
 
 	// STEP 4: Calculate order's confirmation time.
@@ -209,29 +204,30 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// If there are calculation errors, allow retry.
 	subs, err = subs.Confirm(member, confirmedAt)
 	if err != nil {
-		// Remember to rollback.
-		_ = tx.tx.Rollback()
-		return subs, util.ErrAllowRetry
+		log.Error(err)
+		_ = tx.rollback()
+		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
 	log.Infof("Order confirmed: %s - %s", subs.StartDate, subs.EndDate)
 
 	// STEP 5: Update confirmed order
 	// For any errors, allow retry.
-	updateErr := tx.ConfirmOrder(subs)
-	if updateErr != nil {
+	err = tx.ConfirmOrder(subs)
+	if err != nil {
+		log.Error(err)
 		// Remember to rollback.
-		_ = tx.tx.Rollback()
-		return subs, util.ErrAllowRetry
+		_ = tx.rollback()
+		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
 	// STEP 6: Build new membership from this order.
 	// This error should allow retry.
 	member, err = member.FromAliOrWx(subs)
 	if err != nil {
-		// Remember to rollback
-		_ = tx.tx.Rollback()
-		return subs, util.ErrAllowRetry
+		log.Error(err)
+		_ = tx.rollback()
+		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
 	// STEP 7: Insert or update membership.
@@ -239,27 +235,39 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	if subs.Usage == paywall.SubsKindCreate {
 		err := tx.CreateMember(member)
 		if err != nil {
-			return subs, util.ErrAllowRetry
+			log.Error(err)
+			_ = tx.rollback()
+			return subs, paywall.NewConfirmationFailed(orderID, err, true)
 		}
 	} else {
 		err := tx.UpdateMember(member)
 		if err != nil {
-			return subs, util.ErrAllowRetry
+			log.Error(err)
+			_ = tx.rollback()
+			return subs, paywall.NewConfirmationFailed(orderID, err, true)
 		}
 	}
-
-	//if err := tx.LinkUser(member); err != nil {
-	//	_ = tx.rollback()
-	//	return subs, err
-	//}
 
 	// Error here should allow retry.
 	if err := tx.commit(); err != nil {
 		log.Error(err)
-		return subs, util.ErrAllowRetry
+		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
 	log.Info("ConfirmPayment finished.")
 
 	return subs, nil
+}
+
+func (env Env) SaveConfirmationResult(r *paywall.ConfirmationResult) error {
+	_, err := env.db.Exec(env.query.ConfirmationResult(),
+		r.OrderID,
+		r.Succeeded,
+		r.Failed)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
