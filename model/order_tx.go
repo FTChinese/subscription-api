@@ -18,6 +18,7 @@ type OrderTx struct {
 
 // RetrieveMember retrieves a user's membership info by ftc id
 // or wechat union id.
+// Returns zero value of membership if not found.
 func (otx OrderTx) RetrieveMember(id paywall.AccountID) (paywall.Membership, error) {
 	var m paywall.Membership
 
@@ -119,13 +120,6 @@ func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 		return subs, err
 	}
 
-	// Already confirmed.
-	if subs.IsConfirmed {
-		logger.WithField("trace", "MemberTx.RetrieveOrder").Infof("Order %s is already confirmed", orderID)
-
-		return subs, util.ErrAlreadyConfirmed
-	}
-
 	return subs, nil
 }
 
@@ -141,7 +135,7 @@ func (otx OrderTx) ConfirmOrder(order paywall.Subscription) error {
 
 	if err != nil {
 		logger.WithField("trace", "OrderTx.ConfirmOrder").Error(err)
-		_ = otx.tx.Rollback()
+
 		return err
 	}
 
@@ -209,6 +203,7 @@ func (otx OrderTx) FindBalanceSources(accountID paywall.AccountID) ([]paywall.Ba
 		otx.query.BalanceSource(),
 		accountID.CompoundID,
 		accountID.UnionID)
+
 	if err != nil {
 		logger.WithField("trace", "OrderTx.FindBalanceSources").Error(err)
 		return nil, err
@@ -317,20 +312,6 @@ func (otx OrderTx) ConfirmUpgrade(id string) error {
 	_, err := otx.tx.Exec(otx.query.ConfirmUpgrade(), id)
 	if err != nil {
 		logger.WithField("trace", "OrderTx.ConfirmUpgrade").Error(err)
-		return err
-	}
-
-	return nil
-}
-
-func (otx OrderTx) DuplicateUpgrade(orderID string) error {
-	_, err := otx.tx.Exec(
-		otx.query.UpgradeFailure(),
-		"failed",
-		"duplicate_upgrade")
-
-	if err != nil {
-		logger.WithField("trace", "MemberTx.InvalidUpgrade").Error(err)
 		return err
 	}
 
