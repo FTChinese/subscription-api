@@ -159,12 +159,11 @@ func (b Builder) SelectSubsLock() string {
 	FOR UPDATE`, b.MemberDB())
 }
 
-func (b Builder) UpgradeFailure() string {
+func (b Builder) ConfirmationResult() string {
 	return fmt.Sprintf(`
-	UPDATE %s.ftc_trade
-	SET result = ?,
-		failure_reason = ?
-		confirmed_utc = UTC_TIMESTAMP()
-	WHERE trade_no = ?
-	LIMIT 1`, b.MemberDB())
+	INSERT INTO %s.ftc_trade
+	SET order_id = ?,
+		succeeded = ?,
+		failed = ?,
+		created_utc = UTC_TIMESTAMP()`, b.MemberDB())
 }
