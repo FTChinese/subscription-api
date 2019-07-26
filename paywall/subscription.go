@@ -42,12 +42,12 @@ type Charge struct {
 
 // AliPrice converts Charged price to ailpay format
 func (c Charge) AliPrice() string {
-	return strconv.FormatFloat(c.NetPrice, 'f', 2, 32)
+	return strconv.FormatFloat(c.Amount, 'f', 2, 32)
 }
 
 // PriceInCent converts Charged price to int64 in cent for comparison with wx notification.
 func (c Charge) PriceInCent() int64 {
-	return int64(c.NetPrice * 100)
+	return int64(c.Amount * 100)
 }
 
 // Subscription contains the details of a user's action to place an order.
@@ -73,7 +73,7 @@ type Subscription struct {
 	StartDate     chrono.Date    `json:"-"`         // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
 	Usage         SubsKind       `json:"usageType"` // The usage of this order: creat new, renew, or upgrade?
 	//AccountID
-	User    AccountID
+	User    AccountID   `json:"-"`
 	WxAppID null.String `json:"-"` // Wechat specific
 }
 
@@ -142,7 +142,7 @@ func NewUpgradeOrder(accountID AccountID, up Upgrade) (Subscription, error) {
 func (s Subscription) ReadableAmount() string {
 	return fmt.Sprintf("%s%.2f",
 		strings.ToUpper(s.Currency),
-		s.NetPrice,
+		s.Amount,
 	)
 }
 

@@ -67,7 +67,7 @@ func (otx OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 		s.User.FtcID,
 		s.User.UnionID,
 		s.ListPrice,
-		s.NetPrice,
+		s.Amount,
 		s.Tier,
 		s.Cycle,
 		s.CycleCount,
@@ -102,7 +102,7 @@ func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 		&subs.User.FtcID,
 		&subs.User.UnionID,
 		&subs.ListPrice,
-		&subs.NetPrice,
+		&subs.Amount,
 		&subs.Tier,
 		&subs.Cycle,
 		&subs.CycleCount,
@@ -119,6 +119,8 @@ func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 
 		return subs, err
 	}
+
+	subs.NetPrice = subs.Amount
 
 	return subs, nil
 }

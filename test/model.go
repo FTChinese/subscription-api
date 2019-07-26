@@ -63,7 +63,7 @@ func (model Model) SaveSub(s paywall.Subscription) {
 		s.User.FtcID,
 		s.User.UnionID,
 		s.ListPrice,
-		s.NetPrice,
+		s.Amount,
 		s.Tier,
 		s.Cycle,
 		s.CycleCount,
