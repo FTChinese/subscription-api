@@ -29,6 +29,7 @@ func BuildSubs(
 		Charge: paywall.Charge{
 			ListPrice:   PlanStandardYearly.ListPrice,
 			NetPrice:    PlanStandardYearly.NetPrice,
+			Amount:      PlanStandardYearly.NetPrice,
 			IsConfirmed: false,
 		},
 		Coordinate: paywall.Coordinate{
@@ -52,6 +53,7 @@ func BuildSubs(
 	if usage == paywall.SubsKindUpgrade {
 		s.ListPrice = PlanPremiumYearly.ListPrice
 		s.NetPrice = PlanPremiumYearly.NetPrice
+		s.Amount = PlanPremiumYearly.NetPrice
 		s.Tier = PlanPremiumYearly.Tier
 		s.Cycle = PlanPremiumYearly.Cycle
 	}
@@ -136,7 +138,7 @@ func (s *SubStore) UpgradeOrder(n int) (paywall.Subscription, error) {
 
 	sources = append(sources, paywall.BalanceSource{
 		ID:        o.ID,
-		NetPrice:  o.NetPrice,
+		NetPrice:  o.Amount,
 		StartDate: o.StartDate,
 		EndDate:   o.EndDate,
 	})
@@ -150,7 +152,7 @@ func (s *SubStore) UpgradeOrder(n int) (paywall.Subscription, error) {
 
 		sources = append(sources, paywall.BalanceSource{
 			ID:        o.ID,
-			NetPrice:  o.NetPrice,
+			NetPrice:  o.Amount,
 			StartDate: o.StartDate,
 			EndDate:   o.EndDate,
 		})
