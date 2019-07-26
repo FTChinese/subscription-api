@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
@@ -48,55 +49,120 @@ func BuildSubs(
 		s.WxAppID = null.StringFrom(WxPayApp.AppID)
 	}
 
+	if usage == paywall.SubsKindUpgrade {
+		s.ListPrice = PlanPremiumYearly.ListPrice
+		s.NetPrice = PlanPremiumYearly.NetPrice
+		s.Tier = PlanPremiumYearly.Tier
+		s.Cycle = PlanPremiumYearly.Cycle
+	}
 	return s
 }
 
-// SubStore acts like a storage engine for a user's subscription.
+// SubStore is a mock database for a single member.
+// It mimics the working flow of user's order and membership
+// creation and updating inside a real db.
 type SubStore struct {
-	User   paywall.AccountID
-	Orders []paywall.Subscription // A user could have multiple orders.
-	Member paywall.Membership     // But only one membership.
+	User      paywall.AccountID
+	Orders    map[string]paywall.Subscription // A user could have multiple orders.
+	Member    paywall.Membership              // But only one membership.
+	UpgradeV1 paywall.Upgrade
+	UpgradeV2 paywall.UpgradePreview
 }
 
 // NewSubStore creates a new storage for a user's membership.
 func NewSubStore(id paywall.AccountID) *SubStore {
 	return &SubStore{
 		User:   id,
-		Orders: make([]paywall.Subscription, 0), // Initially user has no orders.
-		Member: paywall.Membership{},            // and zero membership.
+		Orders: make(map[string]paywall.Subscription), // Initially user has no orders.
+		Member: paywall.Membership{},                  // and zero membership.
 	}
 }
 
 // AddOrder creates a new order and update user's membership.
-func (s *SubStore) AddOrder(kind paywall.SubsKind) {
+func (s *SubStore) AddOrder(kind paywall.SubsKind) paywall.Subscription {
 	// Build a new order
 	o := BuildSubs(s.User, RandomPayMethod(), kind)
+	s.Orders[o.ID] = o
 
-	// Confirm the order
-	o, err := o.Confirm(s.Member, time.Now())
-	if err != nil {
-		panic(err)
+	return o
+}
+
+// GetOrder retrieves a previously saved order.
+func (s *SubStore) GetOrder(id string) (paywall.Subscription, error) {
+	o, ok := s.Orders[id]
+	if !ok {
+		return paywall.Subscription{}, fmt.Errorf("order %s is not found", id)
 	}
 
-	// Store this order
-	s.Orders = append(s.Orders, o)
+	return o, nil
+}
 
-	// Derive membership from this order.
+func (s *SubStore) ConfirmOrder(id string) (paywall.Subscription, error) {
+	o, err := s.GetOrder(id)
+	if err != nil {
+		return o, err
+	}
+
+	if o.IsConfirmed {
+		return o, fmt.Errorf("order %s is already confirmed", id)
+	}
+
+	o, err = o.Confirm(s.Member, time.Now())
+	if err != nil {
+		return o, err
+	}
+
+	// Add the confirmed order back to store.
+	s.Orders[o.ID] = o
+
 	m, err := s.Member.FromAliOrWx(o)
 	if err != nil {
-		panic(err)
+		return o, err
 	}
 
 	s.Member = m
+
+	return o, nil
 }
 
-// GetLastSub retrieves last order created.
-func (s *SubStore) GetLastOrder() paywall.Subscription {
-	l := len(s.Orders)
+func (s *SubStore) UpgradeOrder(n int) (paywall.Subscription, error) {
+	sources := make([]paywall.BalanceSource, 0)
 
-	if l > 0 {
-		return s.Orders[l-1]
+	o := s.AddOrder(paywall.SubsKindCreate)
+	o, err := s.ConfirmOrder(o.ID)
+	if err != nil {
+		return o, err
 	}
 
-	return paywall.Subscription{}
+	sources = append(sources, paywall.BalanceSource{
+		ID:        o.ID,
+		NetPrice:  o.NetPrice,
+		StartDate: o.StartDate,
+		EndDate:   o.EndDate,
+	})
+
+	for i := 0; i < n; i++ {
+		o := s.AddOrder(paywall.SubsKindRenew)
+		o, err := s.ConfirmOrder(o.ID)
+		if err != nil {
+			return o, err
+		}
+
+		sources = append(sources, paywall.BalanceSource{
+			ID:        o.ID,
+			NetPrice:  o.NetPrice,
+			StartDate: o.StartDate,
+			EndDate:   o.EndDate,
+		})
+	}
+
+	s.UpgradeV1 = paywall.NewUpgrade(PlanPremiumYearly).SetBalance(sources).CalculatePayable()
+	s.UpgradeV1.Member = s.Member
+
+	s.UpgradeV2 = paywall.NewUpgradePreview(sources)
+	s.UpgradeV2.Member = s.Member
+
+	o = s.AddOrder(paywall.SubsKindUpgrade)
+
+	return o, nil
 }
