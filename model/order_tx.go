@@ -87,13 +87,128 @@ func (otx OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 	return nil
 }
 
+// RetrieveOrder loads a previously saved order that is not
+// confirmed yet.
+func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
+	var subs paywall.Subscription
+
+	err := otx.tx.QueryRow(
+		otx.query.SelectSubsLock(),
+		orderID,
+	).Scan(
+		&subs.ID,
+		&subs.User.CompoundID,
+		&subs.User.FtcID,
+		&subs.User.UnionID,
+		&subs.ListPrice,
+		&subs.NetPrice,
+		&subs.Tier,
+		&subs.Cycle,
+		&subs.CycleCount,
+		&subs.ExtraDays,
+		&subs.Usage,
+		&subs.PaymentMethod,
+		&subs.CreatedAt,
+		&subs.ConfirmedAt,
+		&subs.IsConfirmed,
+	)
+
+	if err != nil {
+		logger.WithField("trace", "MemberTx.RetrieveOrder").Error(err)
+
+		return subs, err
+	}
+
+	// Already confirmed.
+	if subs.IsConfirmed {
+		logger.WithField("trace", "MemberTx.RetrieveOrder").Infof("Order %s is already confirmed", orderID)
+
+		return subs, util.ErrAlreadyConfirmed
+	}
+
+	return subs, nil
+}
+
+// ConfirmOrder set an order's confirmation time.
+func (otx OrderTx) ConfirmOrder(order paywall.Subscription) error {
+	_, err := otx.tx.Exec(
+		otx.query.ConfirmSubs(),
+		order.ConfirmedAt,
+		order.StartDate,
+		order.EndDate,
+		order.ID,
+	)
+
+	if err != nil {
+		logger.WithField("trace", "OrderTx.ConfirmOrder").Error(err)
+		_ = otx.tx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
+func (otx OrderTx) CreateMember(m paywall.Membership) error {
+
+	_, err := otx.tx.Exec(
+		otx.query.InsertMember(),
+		m.ID,
+		m.User.CompoundID,
+		m.User.UnionID,
+		m.TierCode(),
+		m.ExpireDate.Unix(),
+		m.User.FtcID,
+		m.User.UnionID,
+		m.Tier,
+		m.Cycle,
+		m.ExpireDate,
+		m.PaymentMethod,
+		m.StripeSubID,
+		m.StripePlanID,
+		m.AutoRenewal,
+		m.Status,
+	)
+
+	if err != nil {
+		logger.WithField("trace", "MemberTx.CreateMember").Error(err)
+		return err
+	}
+
+	return nil
+}
+
+func (otx OrderTx) UpdateMember(m paywall.Membership) error {
+
+	_, err := otx.tx.Exec(otx.query.UpdateMember(),
+		m.ID,
+		m.TierCode(),
+		m.ExpireDate.Unix(),
+		m.Tier,
+		m.Cycle,
+		m.ExpireDate,
+		m.PaymentMethod,
+		m.StripeSubID,
+		m.StripePlanID,
+		m.AutoRenewal,
+		m.Status,
+		m.User.CompoundID,
+		m.User.UnionID)
+
+	if err != nil {
+		logger.WithField("trace", "OrderTx.UpdateMembership").Error(err)
+		return err
+	}
+
+	return nil
+}
+
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
-func (otx OrderTx) FindBalanceSources(userID paywall.AccountID) ([]paywall.BalanceSource, error) {
+func (otx OrderTx) FindBalanceSources(accountID paywall.AccountID) ([]paywall.BalanceSource, error) {
 	rows, err := otx.tx.Query(
 		otx.query.BalanceSource(),
-		userID.CompoundID,
-		userID.UnionID)
+		accountID.CompoundID,
+		accountID.UnionID)
 	if err != nil {
 		logger.WithField("trace", "OrderTx.FindBalanceSources").Error(err)
 		return nil, err
@@ -171,7 +286,7 @@ func (otx OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) erro
 // be used as balance source.
 // This operation should be performed together with
 // SaveOrder and SaveUpgrade.
-func (otx OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
+func (otx OrderTx) SetLastUpgradeID(up paywall.Upgrade) error {
 	strList := strings.Join(up.Source, ",")
 	_, err := otx.tx.Exec(otx.query.SetUpgradeIDOnSource(),
 		up.ID,
@@ -184,74 +299,13 @@ func (otx OrderTx) SetUpgradeIDOnSource(up paywall.Upgrade) error {
 	return nil
 }
 
-func (otx OrderTx) SetUpgradeIDOnSourceV2(up paywall.UpgradePreview) error {
+func (otx OrderTx) SetLastUpgradeIDV2(up paywall.UpgradePreview) error {
 
 	_, err := otx.tx.Exec(otx.query.SetUpgradeIDOnSource(),
 		up.ID,
 		up.SourceOrderIDs())
 
 	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// RetrieveOrder loads a previously saved order that is not
-// confirmed yet.
-func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
-	var subs paywall.Subscription
-
-	err := otx.tx.QueryRow(
-		otx.query.SelectSubsLock(),
-		orderID,
-	).Scan(
-		&subs.ID,
-		&subs.User.CompoundID,
-		&subs.User.FtcID,
-		&subs.User.UnionID,
-		&subs.ListPrice,
-		&subs.NetPrice,
-		&subs.Tier,
-		&subs.Cycle,
-		&subs.CycleCount,
-		&subs.ExtraDays,
-		&subs.Usage,
-		&subs.PaymentMethod,
-		&subs.CreatedAt,
-		&subs.ConfirmedAt,
-		&subs.IsConfirmed,
-	)
-
-	if err != nil {
-		logger.WithField("trace", "MemberTx.RetrieveOrder").Error(err)
-
-		return subs, err
-	}
-
-	// Already confirmed.
-	if subs.IsConfirmed {
-		logger.WithField("trace", "MemberTx.RetrieveOrder").Infof("Order %s is already confirmed", orderID)
-
-		return subs, util.ErrAlreadyConfirmed
-	}
-
-	return subs, nil
-}
-
-// ConfirmOrder set an order's confirmation time.
-func (otx OrderTx) ConfirmOrder(order paywall.Subscription) error {
-	_, err := otx.tx.Exec(
-		otx.query.ConfirmSubs(),
-		order.ConfirmedAt,
-		order.StartDate,
-		order.EndDate,
-		order.ID,
-	)
-
-	if err != nil {
-		logger.WithField("trace", "OrderTx.ConfirmOrder").Error(err)
-		_ = otx.tx.Rollback()
 		return err
 	}
 
@@ -277,60 +331,6 @@ func (otx OrderTx) DuplicateUpgrade(orderID string) error {
 
 	if err != nil {
 		logger.WithField("trace", "MemberTx.InvalidUpgrade").Error(err)
-		return err
-	}
-
-	return nil
-}
-
-func (otx OrderTx) CreateMember(m paywall.Membership) error {
-
-	_, err := otx.tx.Exec(
-		otx.query.InsertMember(),
-		m.ID,
-		m.User.CompoundID,
-		m.User.UnionID,
-		m.TierCode(),
-		m.ExpireDate.Unix(),
-		m.User.FtcID,
-		m.User.UnionID,
-		m.Tier,
-		m.Cycle,
-		m.ExpireDate,
-		m.PaymentMethod,
-		m.StripeSubID,
-		m.StripePlanID,
-		m.AutoRenewal,
-		m.Status,
-	)
-
-	if err != nil {
-		logger.WithField("trace", "MemberTx.CreateMember").Error(err)
-		return err
-	}
-
-	return nil
-}
-
-func (otx OrderTx) UpdateMember(m paywall.Membership) error {
-
-	_, err := otx.tx.Exec(otx.query.UpdateMember(),
-		m.ID,
-		m.TierCode(),
-		m.ExpireDate.Unix(),
-		m.Tier,
-		m.Cycle,
-		m.ExpireDate,
-		m.PaymentMethod,
-		m.StripeSubID,
-		m.StripePlanID,
-		m.AutoRenewal,
-		m.Status,
-		m.User.CompoundID,
-		m.User.UnionID)
-
-	if err != nil {
-		logger.WithField("trace", "OrderTx.UpdateMembership").Error(err)
 		return err
 	}
 
