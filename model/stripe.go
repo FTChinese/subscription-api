@@ -168,11 +168,14 @@ func (env Env) GetStripeSub(id paywall.AccountID) (paywall.StripeSub, error) {
 	}
 
 	if mmb.IsZero() {
+		log.Infof("Membership not found for %v", id)
 		return paywall.StripeSub{}, sql.ErrNoRows
 	}
 
 	log.Infof("Retrieve a member: %+v", mmb)
 
+	// TODO: check the member's status.
+	// If this membership is not a stripe subscription, deny further actions
 	s, err := sub.Get(mmb.StripeSubID.String, &stripe.SubscriptionParams{
 		Params: stripe.Params{
 			Expand: []*string{
