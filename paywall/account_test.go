@@ -22,7 +22,7 @@ func newFtcUser() Account {
 func TestFtcUser_StripeSubParcel(t *testing.T) {
 	var s stripe.Subscription
 
-	if err := json.Unmarshal([]byte(subData), &s); err != nil {
+	if err := json.Unmarshal([]byte(subDataExpanded), &s); err != nil {
 		t.Error(err)
 	}
 
