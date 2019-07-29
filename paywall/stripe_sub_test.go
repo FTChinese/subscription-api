@@ -12,7 +12,7 @@ import (
 func TestUnmarshalStripeSub(t *testing.T) {
 	s := stripe.Subscription{}
 
-	if err := json.Unmarshal([]byte(subData), &s); err != nil {
+	if err := json.Unmarshal([]byte(subDataExpanded), &s); err != nil {
 		t.Error(err)
 	}
 
@@ -28,9 +28,23 @@ func TestUnmarshalStripeSub(t *testing.T) {
 func TestNewStripeSub(t *testing.T) {
 	s := stripe.Subscription{}
 
-	if err := json.Unmarshal([]byte(subData), &s); err != nil {
+	if err := json.Unmarshal([]byte(subDataExpanded), &s); err != nil {
 		t.Error(err)
 	}
+
+	got := NewStripeSub(&s)
+
+	t.Logf("%+v", got)
+}
+
+func TestNewStripeSubNotExpanded(t *testing.T) {
+	s := stripe.Subscription{}
+
+	if err := json.Unmarshal([]byte(subDataNotExpanded), &s); err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Lates invoide: %+v", s.LatestInvoice)
 
 	got := NewStripeSub(&s)
 
