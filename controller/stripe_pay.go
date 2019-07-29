@@ -270,7 +270,9 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 
 	ss, err := router.model.GetStripeSub(userID)
 	if err != nil {
-		if sErr := CastStripeError(err); err != nil {
+		logrus.WithField("trace", "StripeRouter.GetSubscription").Error(err)
+
+		if sErr := CastStripeError(err); sErr != nil {
 			view.Render(w, BuildStripeResponse(sErr))
 			return
 		}
