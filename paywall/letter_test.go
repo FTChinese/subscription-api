@@ -122,7 +122,7 @@ func TestLetter_StripeSubscription(t *testing.T) {
 
 	s := stripe.Subscription{}
 
-	if err := json.Unmarshal([]byte(subData), &s); err != nil {
+	if err := json.Unmarshal([]byte(subDataExpanded), &s); err != nil {
 		t.Error(err)
 	}
 
