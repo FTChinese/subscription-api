@@ -25,10 +25,6 @@ func GetUserID(h http.Header) (paywall.AccountID, error) {
 	return paywall.NewID(h.Get(ftcIDKey), h.Get(unionIDKey))
 }
 
-func GetFtcOnlyID(h http.Header) (paywall.AccountID, error) {
-	return paywall.NewID(h.Get(ftcIDKey), "")
-}
-
 // CastStripeError tries to cast an error to stripe.Error, or nil if it is not.
 func CastStripeError(err error) *stripe.Error {
 	if stripeErr, ok := err.(*stripe.Error); ok {
