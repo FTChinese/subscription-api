@@ -70,6 +70,10 @@ func canonicalizeUnix(s int64) time.Time {
 func NewStripeSub(s *stripe.Subscription) StripeSub {
 	plan, _ := extractStripePlan(s)
 
+	if s == nil {
+		return StripeSub{}
+	}
+
 	return StripeSub{
 		CancelAtPeriodEnd:  s.CancelAtPeriodEnd,
 		Created:            chrono.TimeFrom(canonicalizeUnix(s.Created)),

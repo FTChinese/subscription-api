@@ -24,6 +24,10 @@ type StripeInvoice struct {
 }
 
 func NewStripeInvoice(i *stripe.Invoice) StripeInvoice {
+	if i == nil {
+		return StripeInvoice{}
+	}
+
 	return StripeInvoice{
 		Created:          chrono.TimeFrom(canonicalizeUnix(i.Created)),
 		Currency:         i.Currency,
@@ -45,6 +49,10 @@ type PaymentIntent struct {
 }
 
 func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
+	if pi == nil {
+		return PaymentIntent{}
+	}
+
 	return PaymentIntent{
 		ClientSecret: pi.ClientSecret,
 		ID:           pi.ID,
