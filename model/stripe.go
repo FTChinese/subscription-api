@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
@@ -174,7 +175,13 @@ func (env Env) GetStripeSub(id paywall.AccountID) (paywall.StripeSub, error) {
 
 	log.Infof("Retrieve a member: %+v", mmb)
 
-	// TODO: check the member's status.
+	if mmb.PaymentMethod != enum.PayMethodStripe {
+		return paywall.StripeSub{}, sql.ErrNoRows
+	}
+	if mmb.StripeSubID.IsZero() {
+		return paywall.StripeSub{}, sql.ErrNoRows
+	}
+
 	// If this membership is not a stripe subscription, deny further actions
 	s, err := sub.Get(mmb.StripeSubID.String, &stripe.SubscriptionParams{
 		Params: stripe.Params{
