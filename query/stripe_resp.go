@@ -11,5 +11,5 @@ const (
 		parameter = ?,
 		request_id = ?,
 		error_type = ?,
-		create_utc = UTC_TIMESTAMP()`
+		created_utc = UTC_TIMESTAMP()`
 )
