@@ -37,6 +37,7 @@ func (env Env) CreateOrder(
 	log.Info("Start retrieving membership")
 	member, err := otx.RetrieveMember(user)
 	if err != nil {
+		log.Error(err)
 		_ = otx.rollback()
 		return paywall.Subscription{}, err
 	}
@@ -48,6 +49,8 @@ func (env Env) CreateOrder(
 	// the zero value of membership since it is not a pointer.
 	subsKind, err := member.SubsKind(plan)
 	if err != nil {
+		log.Error(err)
+		_ = otx.rollback()
 		return paywall.Subscription{}, err
 	}
 
@@ -59,61 +62,68 @@ func (env Env) CreateOrder(
 		// For upgrade order, first find user's balance.
 		balanceSource, err := otx.FindBalanceSources(user)
 		if err != nil {
+			log.Error(err)
 			_ = otx.rollback()
 			return subs, err
 		}
 		log.Infof("Find balance source: %+v", balanceSource)
 
-		upgrade := paywall.NewUpgrade(plan).
-			SetBalance(balanceSource).
-			CalculatePayable()
+		up := paywall.NewUpgradePreview(balanceSource)
+		up.Member = member
 
-		log.Infof("Upgrading scheme: %+v", upgrade)
-
-		// Record the membership status prior to upgrade.
-		upgrade.Member = member
-		subs, err = paywall.NewUpgradeOrder(user, upgrade)
+		subs, err = paywall.NewSubs(user, up.Plan)
 		if err != nil {
+			log.Error(err)
+			_ = otx.rollback()
+			return subs, err
+		}
+		up.OrderID = null.StringFrom(subs.ID)
+
+		log.Infof("Saved upgrade scheme %s", up)
+		err = otx.SaveUpgradeV2(subs.ID, up)
+		if err != nil {
+			log.Error(err)
 			_ = otx.rollback()
 			return subs, err
 		}
 
-		err = otx.SaveUpgrade(subs.ID, upgrade)
+		log.Info("Mark balance source as used")
+		err = otx.SetLastUpgradeIDV2(up)
 		if err != nil {
+			log.Error(err)
 			_ = otx.rollback()
 			return subs, err
 		}
-
-		log.Infof("Saved upgrade scheme %s", upgrade.ID)
-
-		err = otx.SetLastUpgradeID(upgrade)
-		if err != nil {
-			_ = otx.rollback()
-			return subs, err
-		}
-
-		log.Info("Set upgrade scheme id on balance source")
-
 	} else {
 		subs, err = paywall.NewSubs(user, plan)
 		if err != nil {
+			log.Error(err)
+			_ = otx.rollback()
 			return subs, err
 		}
-		subs.Usage = subsKind
 	}
+
+	subs.Usage = subsKind
 	subs.PaymentMethod = payMethod
 	subs.WxAppID = wxAppId
 
-	log.Infof("Subscription: %+v", subs)
 	err = otx.SaveOrder(subs, clientApp)
 	if err != nil {
+		log.Error(err)
 		_ = otx.rollback()
 		return subs, err
 	}
 
 	if err := otx.commit(); err != nil {
-		logger.WithField("trace", "ConfirmPayment").Error(err)
+		log.Error(err)
 		return paywall.Subscription{}, err
+	}
+
+	// NOTE: the price for test could only be set here since
+	// the upgrading plan's price is dynamically calculated.
+	if !env.Live() {
+		subs.NetPrice = 0.01
+		subs.Amount = 0.01
 	}
 
 	// Return the order
