@@ -71,7 +71,7 @@ func (a Account) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := GetFtcPlans(true).FindPlan(s.PlanID())
+	plan, err := GetFtcPlans(true).FindPlan(s.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -110,7 +110,7 @@ func (a Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := GetFtcPlans(true).FindPlan(s.PlanID())
+	plan, err := GetFtcPlans(true).FindPlan(s.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -143,13 +143,13 @@ func (a Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 }
 
 func (a Account) UpgradeSubParcel(s Subscription, preview UpgradePreview) (postoffice.Parcel, error) {
-	tmpl, err := template.New("order").Parse(letterNewSub)
+	tmpl, err := template.New("order").Parse(letterUpgradeSub)
 
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := GetFtcPlans(true).FindPlan(s.PlanID())
+	plan, err := GetFtcPlans(true).FindPlan(s.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -183,142 +183,142 @@ func (a Account) UpgradeSubParcel(s Subscription, preview UpgradePreview) (posto
 	}, nil
 }
 
-func (a Account) StripeSubParcel(s StripeSub) (postoffice.Parcel, error) {
-	tmpl, err := template.New("stripe_sub").Parse(letterStripeSub)
+//func (a Account) StripeSubParcel(s *stripe.Subscription) (postoffice.Parcel, error) {
+//	tmpl, err := template.New("stripe_sub").Parse(letterStripeSub)
+//
+//	if err != nil {
+//		return postoffice.Parcel{}, err
+//	}
+//
+//	plan, _ := BuildFtcPlanForStripe(s)
+//	data := struct {
+//		User Account
+//		Sub  StripeSub
+//		Plan Plan
+//	}{
+//		User: a,
+//		Sub:  NewStripeSub(s),
+//		Plan: plan,
+//	}
+//
+//	var body strings.Builder
+//	err = tmpl.Execute(&body, data)
+//
+//	if err != nil {
+//		return postoffice.Parcel{}, err
+//	}
+//
+//	return postoffice.Parcel{
+//		FromAddress: "no-reply@ftchinese.com",
+//		FromName:    "FT中文网会员订阅",
+//		ToAddress:   a.Email,
+//		ToName:      a.NormalizeName(),
+//		Subject:     "Stripe订阅",
+//		Body:        body.String(),
+//	}, nil
+//}
 
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	plan, _ := s.BuildFtcPlan()
-	data := struct {
-		User Account
-		Sub  StripeSub
-		Plan Plan
-	}{
-		User: a,
-		Sub:  s,
-		Plan: plan,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	return postoffice.Parcel{
-		FromAddress: "no-reply@ftchinese.com",
-		FromName:    "FT中文网会员订阅",
-		ToAddress:   a.Email,
-		ToName:      a.NormalizeName(),
-		Subject:     "Stripe订阅",
-		Body:        body.String(),
-	}, nil
-}
-
-func (a Account) StripeInvoiceParcel(i EmailedInvoice) (postoffice.Parcel, error) {
-	tmpl, err := template.New("stripe_invoice").Parse(letterStripeInvoice)
-
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	plan, _ := i.BuildFtcPlan()
-	data := struct {
-		User    Account
-		Invoice EmailedInvoice
-		Plan    Plan
-	}{
-		User:    a,
-		Invoice: i,
-		Plan:    plan,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	return postoffice.Parcel{
-		FromAddress: "no-reply@ftchinese.com",
-		FromName:    "FT中文网会员订阅",
-		ToAddress:   a.Email,
-		ToName:      a.NormalizeName(),
-		Subject:     "Stripe订阅发票",
-		Body:        body.String(),
-	}, nil
-}
-
-func (a Account) StripePaymentFailed(i EmailedInvoice) (postoffice.Parcel, error) {
-	tmpl, err := template.New("stripe_payment_failed").Parse(letterStripePaymentFailed)
-
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	plan, _ := i.BuildFtcPlan()
-	data := struct {
-		User    Account
-		Invoice EmailedInvoice
-		Plan    Plan
-	}{
-		User:    a,
-		Invoice: i,
-		Plan:    plan,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	return postoffice.Parcel{
-		FromAddress: "no-reply@ftchinese.com",
-		FromName:    "FT中文网会员订阅",
-		ToAddress:   a.Email,
-		ToName:      a.NormalizeName(),
-		Subject:     "Stripe支付失败",
-		Body:        body.String(),
-	}, nil
-}
-
-func (a Account) StripeActionRequired(i EmailedInvoice) (postoffice.Parcel, error) {
-	tmpl, err := template.New("stripe_action_required").Parse(letterPaymentActionRequired)
-
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	plan, _ := i.BuildFtcPlan()
-	data := struct {
-		User    Account
-		Invoice EmailedInvoice
-		Plan    Plan
-	}{
-		User:    a,
-		Invoice: i,
-		Plan:    plan,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	return postoffice.Parcel{
-		FromAddress: "no-reply@ftchinese.com",
-		FromName:    "FT中文网会员订阅",
-		ToAddress:   a.Email,
-		ToName:      a.NormalizeName(),
-		Subject:     "Stripe支付尚未完成",
-		Body:        body.String(),
-	}, nil
-}
+//func (a Account) StripeInvoiceParcel(i StripeInvoice) (postoffice.Parcel, error) {
+//	tmpl, err := template.New("stripe_invoice").Parse(letterStripeInvoice)
+//
+//	if err != nil {
+//		return postoffice.Parcel{}, err
+//	}
+//
+//	plan, _ := i.BuildFtcPlan()
+//	data := struct {
+//		User    Account
+//		Invoice StripeInvoice
+//		Plan    Plan
+//	}{
+//		User:    a,
+//		Invoice: i,
+//		Plan:    plan,
+//	}
+//
+//	var body strings.Builder
+//	err = tmpl.Execute(&body, data)
+//
+//	if err != nil {
+//		return postoffice.Parcel{}, err
+//	}
+//
+//	return postoffice.Parcel{
+//		FromAddress: "no-reply@ftchinese.com",
+//		FromName:    "FT中文网会员订阅",
+//		ToAddress:   a.Email,
+//		ToName:      a.NormalizeName(),
+//		Subject:     "Stripe订阅发票",
+//		Body:        body.String(),
+//	}, nil
+//}
+//
+//func (a Account) StripePaymentFailed(i StripeInvoice) (postoffice.Parcel, error) {
+//	tmpl, err := template.New("stripe_payment_failed").Parse(letterStripePaymentFailed)
+//
+//	if err != nil {
+//		return postoffice.Parcel{}, err
+//	}
+//
+//	plan, _ := i.BuildFtcPlan()
+//	data := struct {
+//		User    Account
+//		Invoice StripeInvoice
+//		Plan    Plan
+//	}{
+//		User:    a,
+//		Invoice: i,
+//		Plan:    plan,
+//	}
+//
+//	var body strings.Builder
+//	err = tmpl.Execute(&body, data)
+//
+//	if err != nil {
+//		return postoffice.Parcel{}, err
+//	}
+//
+//	return postoffice.Parcel{
+//		FromAddress: "no-reply@ftchinese.com",
+//		FromName:    "FT中文网会员订阅",
+//		ToAddress:   a.Email,
+//		ToName:      a.NormalizeName(),
+//		Subject:     "Stripe支付失败",
+//		Body:        body.String(),
+//	}, nil
+//}
+//
+//func (a Account) StripeActionRequired(i StripeInvoice) (postoffice.Parcel, error) {
+//	tmpl, err := template.New("stripe_action_required").Parse(letterPaymentActionRequired)
+//
+//	if err != nil {
+//		return postoffice.Parcel{}, err
+//	}
+//
+//	plan, _ := i.BuildFtcPlan()
+//	data := struct {
+//		User    Account
+//		Invoice StripeInvoice
+//		Plan    Plan
+//	}{
+//		User:    a,
+//		Invoice: i,
+//		Plan:    plan,
+//	}
+//
+//	var body strings.Builder
+//	err = tmpl.Execute(&body, data)
+//
+//	if err != nil {
+//		return postoffice.Parcel{}, err
+//	}
+//
+//	return postoffice.Parcel{
+//		FromAddress: "no-reply@ftchinese.com",
+//		FromName:    "FT中文网会员订阅",
+//		ToAddress:   a.Email,
+//		ToName:      a.NormalizeName(),
+//		Subject:     "Stripe支付尚未完成",
+//		Body:        body.String(),
+//	}, nil
+//}
