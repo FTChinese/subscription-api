@@ -211,6 +211,7 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 // "type":"invalid_request_error"
 // }
 // in case user alread linked wechat.
+// Notification email is sent upon webhook receiving data, not here.
 func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.Request) {
 	log := logrus.WithField("trace", "StripeRouter")
 
@@ -223,6 +224,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 		return
 	}
 
+	// Attach Stripe plan id.
 	err := params.SetStripePlanID(router.model.Live())
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
@@ -231,6 +233,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 
 	log.Infof("Stripe param: %+v", params)
 
+	// Create stripe subscription.
 	s, err := router.model.CreateStripeSub(userID, params)
 
 	if err != nil {
@@ -257,7 +260,15 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	view.Render(w, view.NewResponse().SetBody(s))
+	resp, err := paywall.BuildStripeSubResponse(s)
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	log.Infof("Subscription id %s, status %s, payment intent status %s", s.ID, s.Status, s.LatestInvoice.PaymentIntent.Status)
+
+	view.Render(w, view.NewResponse().SetBody(resp))
 }
 
 // GetSubscription fetches a user's subscription and update membership if data in our db is stale.
@@ -265,10 +276,11 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 // Error Response:
 // 404: membership for this user is not found.
 func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Request) {
+	log := logrus.WithField("trace", "StripeRouter.GetSubscription")
 
 	userID, _ := GetUserID(req.Header)
 
-	ss, err := router.model.GetStripeSub(userID)
+	s, err := router.model.GetStripeSub(userID)
 	if err != nil {
 		logrus.WithField("trace", "StripeRouter.GetSubscription").Error(err)
 
@@ -281,7 +293,9 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	view.Render(w, view.NewResponse().SetBody(ss))
+	log.Infof("Subscription id %s, status %s", s.ID, s.Status)
+
+	view.Render(w, view.NewResponse().SetBody(paywall.NewStripeSub(s)))
 }
 
 // UpgradeSubscription create a stripe subscription.
@@ -289,6 +303,10 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 //
 // Error response:
 // 404 if membership if not found.
+// NOTE: when updating a stripe subscription, the return payload
+// `items` field contains more than one items:
+// one is standard and another if premium.
+// So we cannot rely on this field to find FTC plan.
 func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.Request) {
 	log := logrus.WithField("trace", "StripeRouter.UpgradeSubscription")
 
@@ -306,6 +324,8 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
+
+	log.Infof("Subscription params: %+v", params)
 
 	s, err := router.model.UpgradeStripeSubs(userID, params)
 
@@ -326,27 +346,22 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		return
 	}
 
-	view.Render(w, view.NewResponse().SetBody(s))
+	resp, err := paywall.BuildStripeSubResponse(s)
+	if err != nil {
+		view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	log.Infof("Subscription id %s, status %s, payment intent status %s", s.ID, s.Status, s.LatestInvoice.PaymentIntent.Status)
+
+	view.Render(w, view.NewResponse().SetBody(resp))
 }
 
 func (router StripeRouter) onSubscription(s *stripe.Subscription) error {
 	logger := logrus.WithField("trace", "StripeRouter.onSubscription")
 
-	ss := paywall.NewStripeSub(s)
-	ftcUser, err := router.model.WebHookSaveSub(ss)
+	_, err := router.model.WebHookSaveStripeSub(s)
 
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
-
-	parcel, err := ftcUser.StripeSubParcel(ss)
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
-
-	err = router.postman.Deliver(parcel)
 	if err != nil {
 		logger.Error(err)
 		return err
@@ -355,37 +370,37 @@ func (router StripeRouter) onSubscription(s *stripe.Subscription) error {
 	return nil
 }
 
-func (router StripeRouter) onInvoice(i *stripe.Invoice, event invoiceEvent) error {
-	logger := logrus.WithField("trace", "StripeRouter.onInvoice")
-
-	ftcUser, err := router.model.FindStripeCustomer(i.Customer.ID)
-	if err != nil {
-		return err
-	}
-
-	var parcel postoffice.Parcel
-	switch event {
-	case invoiceEventSucceeded:
-		parcel, err = ftcUser.StripeInvoiceParcel(paywall.EmailedInvoice{i})
-	case invoiceEventFailed:
-		parcel, err = ftcUser.StripePaymentFailed(paywall.EmailedInvoice{i})
-	case invoiceEventRequiresAction:
-		parcel, err = ftcUser.StripeActionRequired(paywall.EmailedInvoice{i})
-	}
-
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
-
-	err = router.postman.Deliver(parcel)
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
-
-	return nil
-}
+//func (router StripeRouter) onInvoice(i *stripe.Invoice, event invoiceEvent) error {
+//	logger := logrus.WithField("trace", "StripeRouter.onInvoice")
+//
+//	ftcUser, err := router.model.FindStripeCustomer(i.Customer.ID)
+//	if err != nil {
+//		return err
+//	}
+//
+//	var parcel postoffice.Parcel
+//	switch event {
+//	case invoiceEventSucceeded:
+//		parcel, err = ftcUser.StripeInvoiceParcel(paywall.StripeInvoice{i})
+//	case invoiceEventFailed:
+//		parcel, err = ftcUser.StripePaymentFailed(paywall.StripeInvoice{i})
+//	case invoiceEventRequiresAction:
+//		parcel, err = ftcUser.StripeActionRequired(paywall.StripeInvoice{i})
+//	}
+//
+//	if err != nil {
+//		logger.Error(err)
+//		return err
+//	}
+//
+//	err = router.postman.Deliver(parcel)
+//	if err != nil {
+//		logger.Error(err)
+//		return err
+//	}
+//
+//	return nil
+//}
 
 func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	logger := logrus.WithField("trace", "StripeRouter.WebHook")
@@ -467,12 +482,12 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		go func() {
-			err := router.onInvoice(&i, invoiceEventFailed)
-			if err != nil {
-				logger.Error(err)
-			}
-		}()
+		//go func() {
+		//	err := router.onInvoice(&i, invoiceEventFailed)
+		//	if err != nil {
+		//		logger.Error(err)
+		//	}
+		//}()
 		return
 
 	// Handling payments that require additional action
@@ -485,12 +500,12 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		go func() {
-			err := router.onInvoice(&i, invoiceEventRequiresAction)
-			if err != nil {
-				logger.Error(err)
-			}
-		}()
+		//go func() {
+		//	err := router.onInvoice(&i, invoiceEventRequiresAction)
+		//	if err != nil {
+		//		logger.Error(err)
+		//	}
+		//}()
 		return
 
 	// Tracking active subscriptions
@@ -512,12 +527,12 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		go func() {
-			err := router.onInvoice(&i, invoiceEventSucceeded)
-			if err != nil {
-				logger.Error(err)
-			}
-		}()
+		//go func() {
+		//	err := router.onInvoice(&i, invoiceEventSucceeded)
+		//	if err != nil {
+		//		logger.Error(err)
+		//	}
+		//}()
 		return
 
 	case "invoice.finalized":
@@ -533,10 +548,10 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-type invoiceEvent int
-
-const (
-	invoiceEventSucceeded invoiceEvent = iota
-	invoiceEventFailed
-	invoiceEventRequiresAction
-)
+//type invoiceEvent int
+//
+//const (
+//	invoiceEventSucceeded invoiceEvent = iota
+//	invoiceEventFailed
+//	invoiceEventRequiresAction
+//)
