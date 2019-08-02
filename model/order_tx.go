@@ -239,6 +239,7 @@ func (otx OrderTx) FindBalanceSources(accountID paywall.AccountID) ([]paywall.Ba
 }
 
 // SaveUpgrade saves the data about upgrading.
+// Deprecate
 func (otx OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
 	_, err := otx.tx.Exec(otx.query.InsertUpgrade(),
 		up.ID,
@@ -283,6 +284,7 @@ func (otx OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) erro
 // be used as balance source.
 // This operation should be performed together with
 // SaveOrder and SaveUpgrade.
+// Deprecate
 func (otx OrderTx) SetLastUpgradeID(up paywall.Upgrade) error {
 	strList := strings.Join(up.Source, ",")
 	_, err := otx.tx.Exec(otx.query.SetLastUpgradeID(),
