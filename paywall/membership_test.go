@@ -5,62 +5,6 @@ import (
 	"testing"
 )
 
-func TestMembership_FromStripe(t *testing.T) {
-	profile := NewProfile()
-
-	s := GetStripeSub()
-
-	type fields struct {
-		member Membership
-	}
-	type args struct {
-		id  AccountID
-		sub StripeSub
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "New member",
-			fields: fields{
-				member: Membership{},
-			},
-			args: args{
-				id:  profile.UserID(AccountKindFtc),
-				sub: NewStripeSub(&s),
-			},
-			wantErr: false,
-		},
-		{
-			name: "Existing member",
-			fields: fields{
-				member: profile.Membership(AccountKindLinked, enum.PayMethodAli, true),
-			},
-			args: args{
-				id:  profile.UserID(AccountKindLinked),
-				sub: NewStripeSub(&s),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := tt.fields.member
-
-			got, err := m.FromStripe(tt.args.id, tt.args.sub)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Membership.FromStripe() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			t.Logf("Stripe member: %+v", got)
-		})
-	}
-}
-
 func TestMembership_FromAliOrWx(t *testing.T) {
 	profile := NewProfile()
 
