@@ -10,11 +10,11 @@ import (
 var (
 	ErrAlreadyExists = errors.New("already exists")
 
-	ErrAlreadyConfirmed = errors.New("subscription order is already confirmed")
-	ErrAllowRetry       = errors.New("resend notification")
-	ErrDenyRetry        = errors.New("no longer resend notification")
-	ErrAlreadyUpgraded  = errors.New("cannot upgrade: already a premium member")
-	ErrMemberNotFound   = errors.New("requested user is not a member yet")
+	ErrAlreadyConfirmed     = errors.New("subscription order is already confirmed")
+	ErrAlreadyUpgraded      = errors.New("cannot upgrade: already a premium member")
+	ErrMemberNotFound       = errors.New("requested user is not a member yet")
+	ErrMemberExpired        = errors.New("your subscription is already expired")
+	ErrValidStripeSwitching = errors.New("valid stripe user cannot subscribe via alipay or wxpay")
 
 	ErrTierMismatched     = errors.New("the tier of upgrading order is not used for upgrading")
 	ErrDuplicateUpgrading = errors.New("duplicate upgrading")
