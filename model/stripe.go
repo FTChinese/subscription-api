@@ -83,14 +83,14 @@ func createCustomer(email string) (string, error) {
 func (env Env) CreateStripeSub(
 	id paywall.AccountID,
 	params paywall.StripeSubParams,
-) (paywall.StripeSub, error) {
+) (*stripe.Subscription, error) {
 
 	log := logger.WithField("trace", "Env.CreateStripeSub")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.StripeSub{}, err
+		return nil, err
 	}
 
 	// Retrieve member for this user to check whether the operation is allowed.
@@ -98,13 +98,13 @@ func (env Env) CreateStripeSub(
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return paywall.StripeSub{}, nil
+		return nil, err
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
 	if err := mmb.PermitStripeCreate(); err != nil {
 		_ = tx.rollback()
-		return paywall.StripeSub{}, err
+		return nil, err
 	}
 
 	log.Info("Creating stripe subscription")
@@ -119,89 +119,79 @@ func (env Env) CreateStripeSub(
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return paywall.StripeSub{}, err
+		return nil, err
 	}
 
-	ss := paywall.NewStripeSub(s)
-	newMmb, err := mmb.FromStripe(id, ss)
-	if err != nil {
-		return ss, err
-	}
+	newMmb := mmb.NewStripe(id, params, s)
 
-	log.Infof("A stripe membership: %+v", newMmb)
+	log.Infof("A stripe membership: %+v", mmb)
 
+	// What if the user exists but is invalid?
 	if mmb.IsZero() {
-		// Insert member
 		if err := tx.CreateMember(newMmb); err != nil {
 			_ = tx.rollback()
-			return ss, err
+			return nil, err
 		}
 	} else {
-		// update member
 		if err := tx.UpdateMember(newMmb); err != nil {
 			_ = tx.rollback()
-			return ss, err
+			return nil, err
 		}
 	}
 
 	if err := tx.commit(); err != nil {
-		return ss, err
+		return nil, err
 	}
 
-	return ss, nil
+	return s, err
 }
 
 // GetStripeSub refresh stripe subscription data if stale.
-func (env Env) GetStripeSub(id paywall.AccountID) (paywall.StripeSub, error) {
+func (env Env) GetStripeSub(id paywall.AccountID) (*stripe.Subscription, error) {
 	log := logger.WithField("trace", "Env.GetStripeSub")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.StripeSub{}, err
+		return nil, err
 	}
 
 	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return paywall.StripeSub{}, err
+		return nil, err
 	}
 
 	if mmb.IsZero() {
 		log.Infof("Membership not found for %v", id)
-		return paywall.StripeSub{}, sql.ErrNoRows
+		_ = tx.rollback()
+		return nil, sql.ErrNoRows
 	}
 
 	log.Infof("Retrieve a member: %+v", mmb)
 
 	if mmb.PaymentMethod != enum.PayMethodStripe {
-		return paywall.StripeSub{}, sql.ErrNoRows
+		_ = tx.rollback()
+		return nil, sql.ErrNoRows
 	}
 	if mmb.StripeSubID.IsZero() {
-		return paywall.StripeSub{}, sql.ErrNoRows
+		_ = tx.rollback()
+		return nil, sql.ErrNoRows
 	}
 
 	// If this membership is not a stripe subscription, deny further actions
-	s, err := sub.Get(mmb.StripeSubID.String, &stripe.SubscriptionParams{
-		Params: stripe.Params{
-			Expand: []*string{
-				stripe.String("latest_invoice.payment_intent"),
-			},
-		},
-	})
+	s, err := sub.Get(mmb.StripeSubID.String, nil)
 
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return paywall.StripeSub{}, err
+		return nil, err
 	}
 
-	ss := paywall.NewStripeSub(s)
-
-	newMmb, err := mmb.FromStripe(id, ss)
+	newMmb, err := mmb.WithStripe(id, s)
 	if err != nil {
-		return ss, err
+		return nil, err
 	}
 
 	log.Infof("Refreshed membership: %+v", newMmb)
@@ -209,71 +199,70 @@ func (env Env) GetStripeSub(id paywall.AccountID) (paywall.StripeSub, error) {
 	// update member
 	if err := tx.UpdateMember(newMmb); err != nil {
 		_ = tx.rollback()
-		return ss, err
+		return nil, err
 	}
 
 	if err := tx.commit(); err != nil {
-		return ss, err
+		return nil, err
 	}
 
 	log.Info("Refreshed finished.")
-	return ss, nil
+	return s, nil
 }
 
 // UpgradeStripeSubs switches subscription plan.
 func (env Env) UpgradeStripeSubs(
 	id paywall.AccountID,
 	params paywall.StripeSubParams,
-) (paywall.StripeSub, error) {
+) (*stripe.Subscription, error) {
 
 	log := logger.WithField("trace", "Env.CreateStripeCustomer")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.StripeSub{}, err
+		return nil, err
 	}
 
 	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return paywall.StripeSub{}, nil
+		return nil, nil
 	}
 
 	if mmb.IsZero() {
-		return paywall.StripeSub{}, sql.ErrNoRows
+		log.Error("membership for stripe upgrading not found")
+		_ = tx.rollback()
+		return nil, sql.ErrNoRows
 	}
 
 	// Check whether upgrading is permitted.
 	if !mmb.PermitStripeUpgrade(params) {
+		log.Error("upgrading via stripe is not permitted")
 		_ = tx.rollback()
-		return paywall.StripeSub{}, util.ErrInvalidStripeSub
+		return nil, util.ErrInvalidStripeSub
 	}
 
 	s, err := upgradeStripeSub(params, mmb.StripeSubID.String)
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
-		return paywall.StripeSub{}, err
+		return nil, err
 	}
 
-	ss := paywall.NewStripeSub(s)
-	newMmb, err := mmb.FromStripe(id, ss)
-	if err != nil {
-		return ss, err
-	}
+	mmb = mmb.NewStripe(id, params, s)
 
-	if err := tx.UpdateMember(newMmb); err != nil {
+	if err := tx.UpdateMember(mmb); err != nil {
 		_ = tx.rollback()
-		return ss, err
+		return nil, err
 	}
 
 	if err := tx.commit(); err != nil {
-		return ss, err
+		return nil, err
 	}
 
-	return ss, nil
+	return s, nil
 }
 
 func createStripeSub(p paywall.StripeSubParams) (*stripe.Subscription, error) {
@@ -282,7 +271,7 @@ func createStripeSub(p paywall.StripeSubParams) (*stripe.Subscription, error) {
 		Customer: stripe.String(p.Customer),
 		Items: []*stripe.SubscriptionItemsParams{
 			{
-				Plan: stripe.String(p.GetPlanID()),
+				Plan: stripe.String(p.GetStripePlanID()),
 			},
 		},
 	}
@@ -315,15 +304,12 @@ func upgradeStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscrip
 	params := &stripe.SubscriptionParams{
 		Items: []*stripe.SubscriptionItemsParams{
 			{
-				Plan: stripe.String(p.GetPlanID()),
-			},
-		},
-		Params: stripe.Params{
-			Expand: []*string{
-				stripe.String("latest_invoice.payment_intent"),
+				Plan: stripe.String(p.GetStripePlanID()),
 			},
 		},
 	}
+
+	params.AddExpand("latest_invoice.payment_intent")
 
 	if p.IdempotencyKey != "" {
 		params.IdempotencyKey = stripe.String(p.IdempotencyKey)
@@ -341,6 +327,7 @@ func upgradeStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscrip
 	return sub.Update(subID, params)
 }
 
+// SaveStripeError saves any error in stripe response.
 func (env Env) SaveStripeError(id paywall.AccountID, e *stripe.Error) error {
 	_, err := env.db.Exec(query.InsertStripeError,
 		id.FtcID,
@@ -361,9 +348,12 @@ func (env Env) SaveStripeError(id paywall.AccountID, e *stripe.Error) error {
 	return nil
 }
 
-func (env Env) WebHookSaveSub(s paywall.StripeSub) (paywall.Account, error) {
+// WebHookSaveStripeSub saved a user's membership derived from
+// stripe subscription data.
+func (env Env) WebHookSaveStripeSub(s *stripe.Subscription) (paywall.Account, error) {
 
-	ftcUser, err := env.FindStripeCustomer(s.CustomerID)
+	// Find the ftc user associated with stripe custoemr id.
+	ftcUser, err := env.FindStripeCustomer(s.Customer.ID)
 	if err != nil {
 		return ftcUser, err
 	}
@@ -378,7 +368,6 @@ func (env Env) WebHookSaveSub(s paywall.StripeSub) (paywall.Account, error) {
 		return ftcUser, err
 	}
 
-	// Retrieve member for this user to check whether the operation is allowed.
 	m, err := tx.RetrieveMember(userID)
 	if err != nil {
 		log.Error(err)
@@ -386,25 +375,28 @@ func (env Env) WebHookSaveSub(s paywall.StripeSub) (paywall.Account, error) {
 		return ftcUser, nil
 	}
 
-	newMmb, err := m.FromStripe(userID, s)
+	if m.PaymentMethod != enum.PayMethodStripe {
+		_ = tx.rollback()
+		return ftcUser, sql.ErrNoRows
+	}
+
+	if m.StripeSubID.String != s.ID {
+		_ = tx.rollback()
+		return ftcUser, sql.ErrNoRows
+	}
+
+	m, err = m.WithStripe(userID, s)
 	if err != nil {
+		_ = tx.rollback()
 		return ftcUser, err
 	}
 
-	log.Infof("A stripe membership: %+v", newMmb)
+	log.Infof("updating a stripe membership: %+v", m)
 
-	if m.IsZero() {
-		// Insert member
-		if err := tx.CreateMember(newMmb); err != nil {
-			_ = tx.rollback()
-			return ftcUser, err
-		}
-	} else {
-		// update member
-		if err := tx.UpdateMember(newMmb); err != nil {
-			_ = tx.rollback()
-			return ftcUser, err
-		}
+	// update member
+	if err := tx.UpdateMember(m); err != nil {
+		_ = tx.rollback()
+		return ftcUser, err
 	}
 
 	if err := tx.commit(); err != nil {
