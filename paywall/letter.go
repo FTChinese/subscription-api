@@ -90,7 +90,7 @@ FT中文网用户 {{.User.NormalizeName}},
 单号 {{.Invoice.Number}}
 创建于 {{.Invoice.CreationTime.StringCN}}
 订阅产品 {{.Plan.Desc}}
-发票状态 {{.Invoice.Status}}
+发票状态 {{.Invoice.ReadableStatus}}
 支付金额 {{.Invoice.Price}}
 发票链接 {{.Invoice.HostedInvoiceURL}}
 下载PDF {{.Invoice.InvoicePDF}}
