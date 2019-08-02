@@ -23,6 +23,7 @@ func NewUpgradePreview(sources []BalanceSource) UpgradePreview {
 
 	up := UpgradePreview{
 		ID:        id,
+		SourceIDs: []string{}, // This initializes to an empty array, rather than nil so that when marshaling into JSON, it is [], not null.
 		CreatedAt: chrono.TimeNow(),
 	}
 
