@@ -2,63 +2,36 @@ package paywall
 
 import (
 	"errors"
+	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
+	"strings"
 	"time"
 )
 
-type StripeSubParams struct {
-	Coordinate
-	Customer             string      `json:"customer"`
-	Coupon               null.String `json:"coupon"`
-	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
-	IdempotencyKey       string      `json:"idempotency"`
-	planID               string
-}
-
-func (p *StripeSubParams) SetStripePlanID(live bool) error {
-	plan, err := GetFtcPlans(live).FindPlan(p.PlanID())
-	if err != nil {
-		return nil
-	}
-
-	p.planID = plan.StripeID
-
-	return nil
-}
-
-func (p StripeSubParams) GetPlanID() string {
-	return p.planID
-}
-
-func (p StripeSubParams) GetStripePlanID(live bool) (string, error) {
-	plan, err := GetFtcPlans(live).FindPlan(p.PlanID())
-	if err != nil {
-		return "", nil
-	}
-
-	return plan.StripeID, nil
-}
-
+// StripeSub is a reduced version of stripe.Subscription.
+// Used as response when client asks for subscription data.
 type StripeSub struct {
-	CancelAtPeriodEnd  bool          `json:"cancelAtPeriodEnd"`
-	Created            chrono.Time   `json:"created"`
-	CurrentPeriodEnd   chrono.Time   `json:"currentPeriodEnd"`
-	CurrentPeriodStart chrono.Time   `json:"currentPeriodStart"`
-	CustomerID         string        `json:"customerId"`
-	EndedAt            chrono.Time   `json:"endedAt"`
-	ID                 string        `json:"id"`
-	LatestInvoice      StripeInvoice `json:"latestInvoice"`
-	Livemode           bool          `json:livemode`
-	Plan               stripe.Plan   `json:"plan"`
-	StartDate          chrono.Time   `json:"startDate"`
+	AccountID AccountID `json:"-"`
+	Coordinate
+	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
+	Created            chrono.Time `json:"created"`
+	CurrentPeriodEnd   chrono.Time `json:"currentPeriodEnd"`
+	CurrentPeriodStart chrono.Time `json:"currentPeriodStart"`
+	CustomerID         string      `json:"customerId"`
+	EndedAt            chrono.Time `json:"endedAt"`
+	ID                 string      `json:"id"`
+	LatestInvoiceID    string      `json:"latestInvoiceId"`
+	Livemode           bool        `json:"livemode"`
+	StartDate          chrono.Time `json:"startDate"`
 
 	// Possible values are incomplete, incomplete_expired, trialing, active, past_due, canceled, or unpaid.
 	Status stripe.SubscriptionStatus `json:"status"`
 }
 
 // Bridge between chrono pkg and unix timestamp.
+// Unix 0 represent year 1970, while Golang's zero time is really
+// 0.
 func canonicalizeUnix(s int64) time.Time {
 	if s > 0 {
 		return time.Unix(s, 0)
@@ -68,8 +41,6 @@ func canonicalizeUnix(s int64) time.Time {
 }
 
 func NewStripeSub(s *stripe.Subscription) StripeSub {
-	plan, _ := extractStripePlan(s)
-
 	if s == nil {
 		return StripeSub{}
 	}
@@ -82,21 +53,11 @@ func NewStripeSub(s *stripe.Subscription) StripeSub {
 		CustomerID:         s.Customer.ID,
 		EndedAt:            chrono.TimeFrom(canonicalizeUnix(s.EndedAt)),
 		ID:                 s.ID,
-		LatestInvoice:      NewStripeInvoice(s.LatestInvoice),
+		LatestInvoiceID:    s.LatestInvoice.ID,
 		Livemode:           s.Livemode,
-		Plan:               plan,
 		StartDate:          chrono.TimeFrom(canonicalizeUnix(s.StartDate)),
 		Status:             s.Status,
 	}
-}
-
-func (s StripeSub) BuildFtcPlan() (Plan, error) {
-	ftcPlan, err := GetStripeToFtcPlans(s.Livemode).FindPlan(s.Plan.ID)
-	if err != nil {
-		return ftcPlan, err
-	}
-
-	return ftcPlan.WithStripe(s.Plan), nil
 }
 
 func (s StripeSub) ReadableStatus() string {
@@ -132,21 +93,57 @@ func (s StripeSub) RequiresAction() bool {
 	return s.Status == stripe.SubscriptionStatusIncomplete
 }
 
-func extractStripePlan(s *stripe.Subscription) (stripe.Plan, error) {
-	if s.Plan != nil {
-		return *s.Plan, nil
+type StripeInvoice struct {
+	*stripe.Invoice
+}
+
+func (i StripeInvoice) CreationTime() chrono.Time {
+	return chrono.TimeFrom(canonicalizeUnix(i.Created))
+}
+
+func (i StripeInvoice) BuildFtcPlan() (Plan, error) {
+	if i.Lines == nil {
+		return Plan{}, errors.New("empty lines")
 	}
 
-	if s.Items == nil {
-		return stripe.Plan{}, errors.New("stripe subscription items are empty")
-	}
-	if len(s.Items.Data) == 0 {
-		return stripe.Plan{}, errors.New("stripe subscription items are empty")
+	if len(i.Lines.Data) == 0 {
+		return Plan{}, errors.New("empty lines.data")
 	}
 
-	if s.Items.Data[0].Plan == nil {
-		return stripe.Plan{}, errors.New("stripe subscription plan is nil")
+	stripePlan := i.Lines.Data[0].Plan
+
+	ftcPlan, err := GetFtcPlansWithStripe(i.Livemode).FindPlan(stripePlan.ID)
+	if err != nil {
+		return Plan{}, err
 	}
 
-	return *s.Items.Data[0].Plan, nil
+	return ftcPlan.WithStripe(*stripePlan), nil
+}
+
+func (i StripeInvoice) Price() string {
+	return fmt.Sprintf("%s%.2f", strings.ToUpper(string(i.Currency)), float64(i.Total/100))
+}
+
+// ReadableStatus turns stripe invoice status into human readable
+// text.
+// See https://stripe.com/docs/billing/invoices/workflow#workflow-overview
+func (i StripeInvoice) ReadableStatus() string {
+	switch i.Status {
+	case stripe.InvoiceBillingStatusDraft:
+		return "草稿"
+
+	case stripe.InvoiceBillingStatusOpen:
+		return "等待支付"
+
+	case stripe.InvoiceBillingStatusPaid:
+		return "已支付"
+
+	case stripe.InvoiceBillingStatusUncollectible:
+		return "无法收款"
+
+	case stripe.InvoiceBillingStatusVoid:
+		return "撤销"
+	}
+
+	return "未知"
 }
