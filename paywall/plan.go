@@ -20,7 +20,7 @@ var (
 		CycleCount: 1,
 		Currency:   "cny",
 		ExtraDays:  1,
-		StripeID:   "",
+		StripeID:   "plan_FXZYLOEbcvj5Tx",
 	}
 
 	standardYearlyPlan = Plan{
@@ -34,7 +34,7 @@ var (
 		CycleCount: 1,
 		Currency:   "cny",
 		ExtraDays:  1,
-		StripeID:   "",
+		StripeID:   "plan_FXZZUEDpToPlZK",
 	}
 
 	premiumYearlyPlan = Plan{
@@ -48,40 +48,14 @@ var (
 		CycleCount: 1,
 		Currency:   "cny",
 		ExtraDays:  1,
-		StripeID:   "",
+		StripeID:   "plan_FXZbv1cDTsUKOg",
 	}
 )
-
-var stripeTestPlanIDs = map[string]string{
-	"standard_year":  "plan_FOdfeaqzczp6Ag",
-	"standard_month": "plan_FOdgPTznDwHU4i",
-	"premium_year":   "plan_FOde0uAr0V4WmT",
-}
 
 var ordinals = map[string]int{
 	"standard_month": 5,
 	"standard_year":  10,
 	"premium_year":   100,
-}
-
-var ftcPlansLive = FtcPlans{
-	"standard_year":  standardYearlyPlan,
-	"standard_month": standardMonthlyPlan,
-	"premium_year":   premiumYearlyPlan,
-}
-
-var ftcPlansSandbox = buildSandboxPlans()
-
-func buildSandboxPlans() FtcPlans {
-	plans := FtcPlans{}
-
-	for key, plan := range ftcPlansLive {
-		p := plan.withSandbox()
-		p.StripeID = stripeTestPlanIDs[key]
-		plans[key] = p
-	}
-
-	return plans
 }
 
 // Coordinate includes a product and a plan billing cycle to identify the plan to subscribe.
@@ -90,13 +64,13 @@ type Coordinate struct {
 	Cycle enum.Cycle `json:"cycle"`
 }
 
-// PlanID create a unique name for the point in the plane.
-func (c Coordinate) PlanID() string {
+// NamedKey create a unique name for the point in the plane.
+func (c Coordinate) NamedKey() string {
 	return c.Tier.String() + "_" + c.Cycle.String()
 }
 
 func (c Coordinate) GetOrdinal() int {
-	return ordinals[c.PlanID()]
+	return ordinals[c.NamedKey()]
 }
 
 // QuoRem returns the integer quotient and remainder of x/y
@@ -197,6 +171,17 @@ func (p Plan) Desc() string {
 // FtcPlans maps a key to a FTC plan.
 type FtcPlans map[string]Plan
 
+// WithStripeIndex changes the map key to stripe plan id.
+func (plans FtcPlans) WithStripeIndex() FtcPlans {
+	ret := FtcPlans{}
+	for _, v := range plans {
+		ret[v.StripeID] = v
+	}
+
+	return ret
+}
+
+// FindPlan searches a plan by a key.
 func (plans FtcPlans) FindPlan(id string) (Plan, error) {
 	p, ok := plans[id]
 	if !ok {
@@ -206,13 +191,40 @@ func (plans FtcPlans) FindPlan(id string) (Plan, error) {
 	return p, nil
 }
 
-var stripeToFtcPlansTest = FtcPlans{
-	"plan_FOdfeaqzczp6Ag": standardYearlyPlan.withSandbox(),
-	"plan_FOdgPTznDwHU4i": standardMonthlyPlan.withSandbox(),
-	"plan_FOde0uAr0V4WmT": premiumYearlyPlan.withSandbox(),
+// buildSandboxPlans build FTC plans for sandbox environemnt.
+// It differs from live environment in terms of NetPrice and StripeID.
+func buildSandboxPlans() FtcPlans {
+	plans := FtcPlans{}
+
+	for key, plan := range ftcPlansLive {
+		p := plan.withSandbox()
+		p.StripeID = stripePlanIDsTest[key]
+		plans[key] = p
+	}
+
+	return plans
 }
 
-var stripeToFtcPlansLive = FtcPlans{}
+// Use a plan name to find a stripe plan's id.
+var stripePlanIDsTest = map[string]string{
+	"standard_month": "plan_FOdgPTznDwHU4i",
+	"standard_year":  "plan_FOdfeaqzczp6Ag",
+	"premium_year":   "plan_FOde0uAr0V4WmT",
+}
+
+// Index FTC plans by plan name.
+var ftcPlansLive = FtcPlans{
+	"standard_year":  standardYearlyPlan,
+	"standard_month": standardMonthlyPlan,
+	"premium_year":   premiumYearlyPlan,
+}
+
+var ftcPlansSandbox = buildSandboxPlans()
+
+// Index FTC plans by stripe plan id.
+var ftcPlansByStripeIDLive = ftcPlansLive.WithStripeIndex()
+
+var ftcPlansByStripeIDTest = buildSandboxPlans().WithStripeIndex()
 
 func GetFtcPlans(live bool) FtcPlans {
 	if live {
@@ -222,10 +234,10 @@ func GetFtcPlans(live bool) FtcPlans {
 	return ftcPlansSandbox
 }
 
-func GetStripeToFtcPlans(live bool) FtcPlans {
+func GetFtcPlansWithStripe(live bool) FtcPlans {
 	if live {
-		return stripeToFtcPlansLive
+		return ftcPlansByStripeIDLive
 	}
 
-	return stripeToFtcPlansTest
+	return ftcPlansByStripeIDTest
 }
