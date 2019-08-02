@@ -150,7 +150,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			IP:          clientApp.UserIP.String,
 			CallbackURL: router.wxCallbackURL(),
 			TradeType:   tradeType,
-			ProductID:   plan.PlanID(),
+			ProductID:   plan.NamedKey(),
 			OpenID:      openID,
 		}
 		// Build Wechat pay parameters.
