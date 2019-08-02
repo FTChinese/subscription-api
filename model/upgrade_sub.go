@@ -1,7 +1,7 @@
 package model
 
 import (
-	"errors"
+	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/paywall"
 	"gitlab.com/ftchinese/subscription-api/util"
@@ -21,22 +21,24 @@ func (env Env) PreviewUpgrade(userID paywall.AccountID) (paywall.UpgradePreview,
 
 	member, err := otx.RetrieveMember(userID)
 	if err != nil {
+		log.Error(err)
 		_ = otx.rollback()
 		return paywall.UpgradePreview{}, err
 	}
 
 	if member.IsZero() {
 		_ = otx.rollback()
-		return paywall.UpgradePreview{}, util.ErrMemberNotFound
+		return paywall.UpgradePreview{}, sql.ErrNoRows
 	}
 
 	if member.IsExpired() {
-		return paywall.UpgradePreview{}, errors.New("please re-subscribe to any product since your subscription is already expired")
+		_ = otx.rollback()
+		return paywall.UpgradePreview{}, util.ErrMemberExpired
 	}
 
 	if member.PaymentMethod == enum.PayMethodStripe {
 		_ = otx.rollback()
-		return paywall.UpgradePreview{}, errors.New("stripe user cannot switch plan via alipay or wechat pay")
+		return paywall.UpgradePreview{}, util.ErrValidStripeSwitching
 	}
 
 	if member.Tier == enum.TierPremium {
