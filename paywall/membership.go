@@ -2,7 +2,8 @@ package paywall
 
 import (
 	"errors"
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
+	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"time"
 
@@ -54,6 +55,33 @@ func NewMember(accountID AccountID) Membership {
 	}
 }
 
+func (m Membership) NewStripe(id AccountID, p StripeSubParams, s *stripe.Subscription) Membership {
+
+	if m.ID.IsZero() {
+		mId, _ := GenerateMemberID()
+		m.ID = null.StringFrom(mId)
+	}
+
+	periodEnd := canonicalizeUnix(s.CurrentPeriodEnd)
+
+	status, _ := ParseSubStatus(string(s.Status))
+
+	return Membership{
+		ID:   m.ID,
+		User: id,
+		Coordinate: Coordinate{
+			Tier:  p.Tier,
+			Cycle: p.Cycle,
+		},
+		ExpireDate:    chrono.DateFrom(periodEnd.AddDate(0, 0, 1)),
+		PaymentMethod: enum.PayMethodStripe,
+		StripeSubID:   null.StringFrom(s.ID),
+		StripePlanID:  null.StringFrom(p.GetStripePlanID()),
+		AutoRenewal:   !s.CancelAtPeriodEnd,
+		Status:        status,
+	}
+}
+
 func (m Membership) TierCode() int64 {
 	switch m.Tier {
 	case enum.TierStandard:
@@ -65,38 +93,19 @@ func (m Membership) TierCode() int64 {
 	return 0
 }
 
-// FromStripe creates a new Membership purchased via stripe.
-// The original might not exists, which indicates this is a new member.
-// Even if we only allow FTC user to use Stripe, we still
-// needs to record incomming user's wechat id, since this user
-// might already have its accounts linked.
-func (m Membership) FromStripe(
-	id AccountID,
-	sub StripeSub) (Membership, error) {
-
+// WithStripe update an existing stripe membership.
+// This is used in webhook.
+func (m Membership) WithStripe(id AccountID, s *stripe.Subscription) (Membership, error) {
 	if m.ID.IsZero() {
 		mId, _ := GenerateMemberID()
 		m.ID = null.StringFrom(mId)
 	}
 
-	// Must test before modifying data.
-	if m.IsZero() {
-		m.User = id
-	}
+	periodEnd := canonicalizeUnix(s.CurrentPeriodEnd)
 
-	plan, err := sub.BuildFtcPlan()
-	if err != nil {
-		return m, err
-	}
-
-	m.Tier = plan.Tier
-	m.Cycle = plan.Cycle
-	m.ExpireDate = chrono.DateFrom(sub.CurrentPeriodEnd.AddDate(0, 0, 1))
-	m.PaymentMethod = enum.PayMethodStripe
-	m.StripeSubID = null.StringFrom(sub.ID)
-	m.StripePlanID = null.StringFrom(sub.Plan.ID)
-	m.AutoRenewal = !sub.CancelAtPeriodEnd
-	m.Status, _ = ParseSubStatus(string(sub.Status))
+	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
+	m.AutoRenewal = !s.CancelAtPeriodEnd
+	m.Status, _ = ParseSubStatus(string(s.Status))
 
 	return m, nil
 }
@@ -192,19 +201,22 @@ func (m Membership) SubsKind(p Plan) (SubsKind, error) {
 			return SubsKindCreate, nil
 		}
 
-		if !m.IsRenewAllowed() {
-			return SubsKindDeny, util.ErrBeyondRenewal
-		}
-
-		if m.Tier == p.Tier {
-			return SubsKindRenew, nil
-		}
-
+		// If current tier is smaller than the plan,
+		// it indicates user is upgrading.
 		if m.Tier < p.Tier {
 			return SubsKindUpgrade, nil
 		}
 
-		return SubsKindDeny, util.ErrDowngrade
+		// User is downgrading, deny request.
+		if m.Tier > p.Tier {
+			return SubsKindDeny, util.ErrDowngrade
+		}
+
+		if !m.IsRenewAllowed() {
+			return SubsKindDeny, util.ErrBeyondRenewal
+		}
+
+		return SubsKindRenew, nil
 	}
 
 	return SubsKindDeny, errors.New("not alipay or wechat pay")
