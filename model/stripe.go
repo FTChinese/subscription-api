@@ -191,6 +191,7 @@ func (env Env) GetStripeSub(id paywall.AccountID) (*stripe.Subscription, error) 
 
 	newMmb, err := mmb.WithStripe(id, s)
 	if err != nil {
+		_ = tx.rollback()
 		return nil, err
 	}
 
