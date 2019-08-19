@@ -1,6 +1,6 @@
 package repository
 
-import "gitlab.com/ftchinese/subscription-api/wechat"
+import "gitlab.com/ftchinese/subscription-api/models/wechat"
 
 // SavePrepayResp saves Wechat prepay response for future analysis.
 func (env Env) SavePrepayResp(orderID string, p wechat.UnifiedOrderResp) error {

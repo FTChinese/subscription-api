@@ -8,8 +8,8 @@ import (
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/paywall"
-	"gitlab.com/ftchinese/subscription-api/wxlogin"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 	"os"
 	"time"
 )

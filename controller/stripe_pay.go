@@ -11,9 +11,9 @@ import (
 	"github.com/stripe/stripe-go/ephemeralkey"
 	"github.com/stripe/stripe-go/plan"
 	"github.com/stripe/stripe-go/webhook"
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
-	"gitlab.com/ftchinese/subscription-api/util"
 	"io/ioutil"
 	"net/http"
 )
@@ -64,8 +64,7 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ftcPlan, err := paywall.
-		GetFtcPlans(router.model.Live()).
+	ftcPlan, err := paywall.GetFtcPlans(router.model.Live()).
 		FindPlan(key)
 
 	if err != nil {

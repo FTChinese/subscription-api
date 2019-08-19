@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/patrickmn/go-cache"
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 )
 
 // RetrievePromo tries to retrieve a promotion schedule.

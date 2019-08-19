@@ -6,10 +6,10 @@ import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/patrickmn/go-cache"
 	"github.com/spf13/viper"
-	"gitlab.com/ftchinese/subscription-api/paywall"
-	"gitlab.com/ftchinese/subscription-api/util"
-	"gitlab.com/ftchinese/subscription-api/wechat"
-	"gitlab.com/ftchinese/subscription-api/wxlogin"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/models/wechat"
+	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 )
 
 const (

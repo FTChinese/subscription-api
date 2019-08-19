@@ -3,8 +3,8 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
-	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 	"time"
 )

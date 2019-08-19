@@ -2,7 +2,7 @@ package ali
 
 import (
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 )
 
 // BrowserOrder represents an order creates for alipay inside
