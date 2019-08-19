@@ -234,7 +234,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// STEP 6: Build new membership from this order.
 	// This error should allow retry.
-	member, err = member.FromAliOrWx(subs)
+	newMember, err := member.FromAliOrWx(subs)
 	if err != nil {
 		log.Error(err)
 		_ = tx.rollback()
@@ -243,15 +243,15 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 
 	// STEP 7: Insert or update membership.
 	// This error should allow retry
-	if subs.Usage == paywall.SubsKindCreate {
-		err := tx.CreateMember(member)
+	if member.IsZero() {
+		err := tx.CreateMember(newMember)
 		if err != nil {
 			log.Error(err)
 			_ = tx.rollback()
 			return subs, paywall.NewConfirmationFailed(orderID, err, true)
 		}
 	} else {
-		err := tx.UpdateMember(member)
+		err := tx.UpdateMember(newMember)
 		if err != nil {
 			log.Error(err)
 			_ = tx.rollback()
