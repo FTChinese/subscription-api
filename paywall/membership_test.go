@@ -1,8 +1,11 @@
 package paywall
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/guregu/null"
 	"testing"
+	"time"
 )
 
 func TestMembership_FromAliOrWx(t *testing.T) {
@@ -191,4 +194,34 @@ func TestMembership_PermitStripeUpgrade(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMembership_IsZero(t *testing.T) {
+	m := Membership{
+		ID: null.String{},
+		User: AccountID{
+			CompoundID: "b4970a63-966d-4d72-a01d-54f73a872ec1",
+			FtcID:      null.StringFrom("b4970a63-966d-4d72-a01d-54f73a872ec1"),
+			UnionID:    null.String{},
+		},
+		Coordinate: Coordinate{
+			Tier:  enum.TierStandard,
+			Cycle: enum.CycleYear,
+		},
+		ExpireDate:    chrono.DateFrom(time.Date(2020, time.August, 16, 0, 0, 0, 0, time.UTC)),
+		PaymentMethod: 0,
+		StripeSubID:   null.String{},
+		StripePlanID:  null.String{},
+		AutoRenewal:   false,
+		Status:        0,
+	}
+
+	t.Logf("Is zeror: %t", m.IsZero())
+	t.Logf("Is wx or ali: %t", m.IsAliOrWxPay())
+
+	subKind, err := m.SubsKind(standardYearlyPlan)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("Sub kind: %+v", subKind)
 }
