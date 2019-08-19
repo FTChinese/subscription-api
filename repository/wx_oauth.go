@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 // SaveWxAccess saves the access token related data after acquired from wechat api.
