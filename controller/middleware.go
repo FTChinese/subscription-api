@@ -146,7 +146,7 @@ func LogRequest(next http.Handler) http.Handler {
 // DiscountPlans show the current discount plans available.
 // func DiscountPlans() func(http.ResponseWriter, *http.Request) {
 // 	return func(w http.ResponseWriter, req *http.Request) {
-// 		util.Render(w, util.NewResponse().NoCache().SetBody(model.DiscountSchedule))
+// 		util.Render(w, util.NewResponse().NoCache().SetBody(repository.DiscountSchedule))
 // 	}
 // }
 
@@ -159,7 +159,7 @@ func LogRequest(next http.Handler) http.Handler {
 // 				NewResponse().
 // 				NoCache().
 // 				SetBody(
-// 					model.GetCurrentPlans(),
+// 					repository.GetCurrentPlans(),
 // 				),
 // 		)
 // 	}

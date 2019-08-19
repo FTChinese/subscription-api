@@ -3,7 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 	"time"
@@ -13,7 +13,7 @@ type UpgradeRouter struct {
 	PayRouter
 }
 
-func NewUpgradeRouter(m model.Env) UpgradeRouter {
+func NewUpgradeRouter(m repository.Env) UpgradeRouter {
 	r := UpgradeRouter{}
 	r.model = m
 

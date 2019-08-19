@@ -2,18 +2,18 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/view"
-	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 )
 
 type GiftCardRouter struct {
-	model model.Env
+	model repository.Env
 }
 
 // NewGiftCardRouter create a new instance of GiftCardRouter.
-func NewGiftCardRouter(m model.Env) GiftCardRouter {
+func NewGiftCardRouter(m repository.Env) GiftCardRouter {
 	return GiftCardRouter{
 		model: m,
 	}
