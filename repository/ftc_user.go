@@ -2,7 +2,7 @@ package repository
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
-	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 // FindFtcUser retrieves an FTC account's basic info.
