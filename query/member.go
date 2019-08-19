@@ -5,7 +5,7 @@ import "fmt"
 func (b Builder) SelectMemberLock() string {
 	return fmt.Sprintf(`
 	SELECT id, 
-		vip_id AS userId,
+		vip_id AS compoundId,
 		NULLIF(vip_id, vip_id_alias) AS ftcId,
 		vip_id_alias AS unionId,
 		IF(member_tier, member_tier, CASE vip_type
