@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/FTChinese/go-rest/view"
-	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wxlogin"
 )
@@ -19,11 +19,11 @@ import (
 // But when combining their messy documentation, you must do it this way.
 type WxAuthRouter struct {
 	apps  map[string]wxlogin.WxApp
-	model model.Env
+	model repository.Env
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
-func NewWxAuth(m model.Env) WxAuthRouter {
+func NewWxAuth(m repository.Env) WxAuthRouter {
 	return WxAuthRouter{
 		apps:  getWxOAuthApps(),
 		model: m,

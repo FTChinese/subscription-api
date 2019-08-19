@@ -5,16 +5,16 @@ import (
 	"net/http"
 
 	"github.com/FTChinese/go-rest/view"
-	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/repository"
 )
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	model model.Env
+	model repository.Env
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(m model.Env) PaywallRouter {
+func NewPaywallRouter(m repository.Env) PaywallRouter {
 	return PaywallRouter{
 		model: m,
 	}

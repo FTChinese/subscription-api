@@ -1,4 +1,4 @@
-package model
+package repository
 
 import (
 	"github.com/FTChinese/go-rest/enum"
