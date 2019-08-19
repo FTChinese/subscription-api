@@ -2,9 +2,9 @@ package repository
 
 import (
 	"database/sql"
-	"gitlab.com/ftchinese/subscription-api/paywall"
-	"gitlab.com/ftchinese/subscription-api/query"
-	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"strings"
 )
 

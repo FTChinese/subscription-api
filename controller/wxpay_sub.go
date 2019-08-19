@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/view"
-	"gitlab.com/ftchinese/subscription-api/wechat"
+	"gitlab.com/ftchinese/subscription-api/models/wechat"
 )
 
 type wxpayBody struct {

@@ -4,7 +4,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 )
 
 func TestEnv_FindGiftCard(t *testing.T) {

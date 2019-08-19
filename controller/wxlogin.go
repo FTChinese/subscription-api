@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/FTChinese/go-rest/view"
+	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 	"gitlab.com/ftchinese/subscription-api/repository"
-	"gitlab.com/ftchinese/subscription-api/util"
-	"gitlab.com/ftchinese/subscription-api/wxlogin"
 )
 
 // WxAuthRouter handles wechat login.

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 )
 
 // CreateOrder creates an order for a user with the selected plan.

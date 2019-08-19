@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/ali"
-	"gitlab.com/ftchinese/subscription-api/wechat"
+	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"log"
 	"net/http"
 	"os"
@@ -18,8 +18,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/controller"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
-	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 var (

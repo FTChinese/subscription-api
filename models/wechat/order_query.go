@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/util"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 )
 
 type OrderQueryResp struct {

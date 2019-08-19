@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/go-chi/chi"
 	"github.com/stripe/stripe-go"
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"net/http"
 )
 

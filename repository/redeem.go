@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 )
 
 func (env Env) FindGiftCard(code string) (paywall.GiftCard, error) {
