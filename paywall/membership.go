@@ -183,7 +183,7 @@ func (m Membership) IsValidPremium() bool {
 }
 
 func (m Membership) IsZero() bool {
-	return m.Tier == enum.InvalidTier
+	return m.User.CompoundID == "" && m.Tier == enum.InvalidTier
 }
 
 func (m Membership) IsAliOrWxPay() bool {
