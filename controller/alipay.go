@@ -9,8 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/ali"
-	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 )
@@ -28,7 +28,7 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(m model.Env, p postoffice.Postman) AliPayRouter {
+func NewAliRouter(m repository.Env, p postoffice.Postman) AliPayRouter {
 
 	app := getAliPayApp()
 

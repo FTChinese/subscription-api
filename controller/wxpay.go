@@ -10,8 +10,8 @@ import (
 	"github.com/objcoding/wxpay"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"gitlab.com/ftchinese/subscription-api/wechat"
 	"net/http"
@@ -25,7 +25,7 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(m model.Env, p postoffice.Postman) WxPayRouter {
+func NewWxRouter(m repository.Env, p postoffice.Postman) WxPayRouter {
 	r := WxPayRouter{
 		clients: createWxpayClients(),
 	}

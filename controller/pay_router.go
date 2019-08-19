@@ -4,8 +4,8 @@ import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 )
@@ -16,7 +16,7 @@ const (
 
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
-	model   model.Env
+	model   repository.Env
 	postman postoffice.Postman
 }
 

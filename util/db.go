@@ -1,8 +1,8 @@
 package util
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -39,9 +39,9 @@ func (c Conn) DSN() string {
 }
 
 // NewDB creates a db connection
-func NewDB(c Conn) (*sql.DB, error) {
+func NewDB(c Conn) (*sqlx.DB, error) {
 
-	db, err := sql.Open("mysql", c.DSN())
+	db, err := sqlx.Open("mysql", c.DSN())
 
 	if err != nil {
 		return nil, err

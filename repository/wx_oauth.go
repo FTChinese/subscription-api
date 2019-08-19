@@ -1,4 +1,4 @@
-package model
+package repository
 
 import (
 	"gitlab.com/ftchinese/subscription-api/query"

@@ -1,7 +1,7 @@
-package model
+package repository
 
 import (
-	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/query"
 
@@ -20,14 +20,14 @@ func (c BuildConfig) Live() bool {
 // Env wraps database connection
 type Env struct {
 	BuildConfig
-	db    *sql.DB
+	db    *sqlx.DB
 	cache *cache.Cache
 	query query.Builder
 }
 
 // New creates a new instance of Env.
 // `sandbox` is used to determine which table to write subscription data.
-func New(db *sql.DB, c *cache.Cache, b BuildConfig) Env {
+func New(db *sqlx.DB, c *cache.Cache, b BuildConfig) Env {
 	return Env{
 		BuildConfig: b,
 		db:          db,
@@ -52,7 +52,7 @@ func (env Env) BeginOrderTx() (OrderTx, error) {
 
 var logger = logrus.
 	WithField("project", "subscription-api").
-	WithField("package", "model")
+	WithField("package", "repository")
 
 const (
 	keyPromo = "promotionSchedule"

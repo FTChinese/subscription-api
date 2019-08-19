@@ -18,12 +18,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/controller"
-	"gitlab.com/ftchinese/subscription-api/model"
+	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/util"
 )
 
 var (
-	config  model.BuildConfig
+	config  repository.BuildConfig
 	version string
 	build   string
 )
@@ -150,7 +150,7 @@ func main() {
 		emailConn.User,
 		emailConn.Pass)
 
-	m := model.New(db, c, config)
+	m := repository.New(db, c, config)
 
 	wxRouter := controller.NewWxRouter(m, post)
 	aliRouter := controller.NewAliRouter(m, post)

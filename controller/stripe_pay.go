@@ -11,8 +11,8 @@ import (
 	"github.com/stripe/stripe-go/ephemeralkey"
 	"github.com/stripe/stripe-go/plan"
 	"github.com/stripe/stripe-go/webhook"
-	"gitlab.com/ftchinese/subscription-api/model"
 	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/util"
 	"io/ioutil"
 	"net/http"
@@ -23,7 +23,7 @@ type StripeRouter struct {
 	PayRouter
 }
 
-func NewStripeRouter(m model.Env, p postoffice.Postman, sk string) StripeRouter {
+func NewStripeRouter(m repository.Env, p postoffice.Postman, sk string) StripeRouter {
 	r := StripeRouter{
 		signingKey: sk,
 	}
