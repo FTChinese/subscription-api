@@ -1,7 +1,7 @@
 package test
 
 import (
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"testing"
 )
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest"
 	"github.com/pkg/errors"
-	"gitlab.com/ftchinese/subscription-api/util"
+	util2 "gitlab.com/ftchinese/subscription-api/models/util"
 	"strconv"
 	"strings"
 	"time"
@@ -156,16 +156,16 @@ func (s Subscription) Validate(m Membership) error {
 
 	case SubsKindUpgrade:
 		if s.Tier != enum.TierPremium {
-			return util.ErrTierMismatched
+			return util2.ErrTierMismatched
 		}
 		if m.Tier == enum.InvalidTier {
-			return util.ErrNoUpgradingTarget
+			return util2.ErrNoUpgradingTarget
 		}
 		// For upgrading, order's tier must be different
 		// from member's tier; otherwise this might be
 		// a duplicate upgrading request.
 		if m.Tier == s.Tier {
-			return util.ErrDuplicateUpgrading
+			return util2.ErrDuplicateUpgrading
 		}
 
 	default:

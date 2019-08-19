@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"net/http"
 
 	"github.com/FTChinese/go-rest/view"

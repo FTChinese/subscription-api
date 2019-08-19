@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest"
 	"github.com/stripe/stripe-go"
-	"gitlab.com/ftchinese/subscription-api/util"
+	util2 "gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -209,11 +209,11 @@ func (m Membership) SubsKind(p Plan) (SubsKind, error) {
 
 		// User is downgrading, deny request.
 		if m.Tier > p.Tier {
-			return SubsKindDeny, util.ErrDowngrade
+			return SubsKindDeny, util2.ErrDowngrade
 		}
 
 		if !m.IsRenewAllowed() {
-			return SubsKindDeny, util.ErrBeyondRenewal
+			return SubsKindDeny, util2.ErrBeyondRenewal
 		}
 
 		return SubsKindRenew, nil
@@ -244,7 +244,7 @@ func (m Membership) PermitStripeCreate() error {
 		if m.IsExpired() {
 			return nil
 		}
-		return util.ErrNonStripeValidSub
+		return util2.ErrNonStripeValidSub
 	}
 
 	if m.PaymentMethod == enum.PayMethodStripe {
@@ -255,7 +255,7 @@ func (m Membership) PermitStripeCreate() error {
 		// Member is not expired, or is auto renewal.
 		// If status is active, deny it.
 		if m.Status == SubStatusActive {
-			return util.ErrActiveStripeSub
+			return util2.ErrActiveStripeSub
 		}
 
 		return nil
@@ -263,7 +263,7 @@ func (m Membership) PermitStripeCreate() error {
 
 	// Member is either not expired, or auto renewal
 	// Deny any other cases.
-	return util.ErrUnknownSubState
+	return util2.ErrUnknownSubState
 }
 
 // PermitStripeUpgrade tests whether a stripe customer with

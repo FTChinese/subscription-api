@@ -1,11 +1,11 @@
 package repository
 
 import (
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/test"
-	"gitlab.com/ftchinese/subscription-api/util"
 	"testing"
 
-	"gitlab.com/ftchinese/subscription-api/wxlogin"
+	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 )
 
 func TestEnv_SaveWxAccess(t *testing.T) {

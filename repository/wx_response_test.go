@@ -1,11 +1,11 @@
 package repository
 
 import (
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 
-	"gitlab.com/ftchinese/subscription-api/wechat"
+	"gitlab.com/ftchinese/subscription-api/models/wechat"
 )
 
 func TestEnv_SavePrepayResp(t *testing.T) {

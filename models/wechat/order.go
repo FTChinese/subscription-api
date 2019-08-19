@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest"
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"time"
 )
 

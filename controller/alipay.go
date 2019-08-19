@@ -9,9 +9,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/ali"
-	"gitlab.com/ftchinese/subscription-api/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
-	"gitlab.com/ftchinese/subscription-api/util"
 	"net/http"
 )
 

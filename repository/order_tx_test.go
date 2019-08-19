@@ -2,10 +2,10 @@ package repository
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/paywall"
-	"gitlab.com/ftchinese/subscription-api/query"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/test"
-	"gitlab.com/ftchinese/subscription-api/util"
 	"testing"
 )
 
