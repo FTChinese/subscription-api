@@ -3,7 +3,7 @@ package controller
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gitlab.com/ftchinese/subscription-api/ali"
+	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 	"os"

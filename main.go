@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/stripe/stripe-go"
-	"gitlab.com/ftchinese/subscription-api/ali"
+	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"log"
 	"net/http"
