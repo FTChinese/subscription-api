@@ -18,7 +18,7 @@ sandbox :
 	./$(build_dir)/mac/$(BINARY) -sandbox
 
 deploy : linux
-	rsync -v $(build_dir)/linux/$(BINARY) nodeserver:/home/node/go/bin/
+	rsync -v $(build_dir)/linux/$(BINARY) node11:/home/node/go/bin/
 
 # Copy env varaible to server
 config :
