@@ -10,10 +10,10 @@ import (
 
 // ClientApp records the header information of a request.
 type ClientApp struct {
-	ClientType enum.Platform
-	Version    null.String
-	UserIP     null.String
-	UserAgent  null.String
+	ClientType enum.Platform `db:"client_type"`
+	Version    null.String   `db:"client_version"`
+	UserIP     null.String   `db:"user_ip"`
+	UserAgent  null.String   `db:"user_agent"`
 }
 
 // NewClientApp collects information from a request.
