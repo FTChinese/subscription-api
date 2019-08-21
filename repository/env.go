@@ -37,7 +37,7 @@ func New(db *sqlx.DB, c *cache.Cache, b BuildConfig) Env {
 }
 
 func (env Env) BeginOrderTx() (OrderTx, error) {
-	tx, err := env.db.Begin()
+	tx, err := env.db.Beginx()
 
 	if err != nil {
 		return OrderTx{}, err
