@@ -29,7 +29,7 @@ func NewWxRouter(m repository.Env, p postoffice.Postman) WxPayRouter {
 	r := WxPayRouter{
 		clients: createWxpayClients(),
 	}
-	r.model = m
+	r.env = m
 	r.postman = p
 
 	return r
@@ -126,7 +126,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Save this subscription order.
 		clientApp := util.NewClientApp(req)
 
-		subs, err := router.model.CreateOrder(
+		subs, err := router.env.CreateOrder(
 			user,
 			plan,
 			enum.PayMethodWx,
@@ -177,7 +177,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		uor := wechat.NewUnifiedOrderResp(resp)
 
 		go func() {
-			if err := router.model.SavePrepayResp(subs.ID, uor); err != nil {
+			if err := router.env.SavePrepayResp(subs.ID, uor); err != nil {
 				logger.Error(err)
 			}
 		}()
@@ -280,7 +280,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// Log the response, regardless of whether it is an error
 	// or not.
 	go func() {
-		if err := router.model.SaveWxNotification(noti); err != nil {
+		if err := router.env.SaveWxNotification(noti); err != nil {
 			logger.Error(err)
 		}
 	}()
@@ -301,7 +301,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// Check the order's confirmed_utc field.
 	// If confirmed_utc is empty, get time_end from params and set confirmed_utc to it.
 	//orderID := params.GetString("out_trade_no")
-	charge, err := router.model.FindSubsCharge(noti.FTCOrderID.String)
+	charge, err := router.env.FindSubsCharge(noti.FTCOrderID.String)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"event":   "FindSubsCharge",
@@ -348,7 +348,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		confirmedAt = time.Now()
 	}
-	confirmedSubs, result := router.model.ConfirmPayment(noti.FTCOrderID.String, confirmedAt)
+	confirmedSubs, result := router.env.ConfirmPayment(noti.FTCOrderID.String, confirmedAt)
 
 	if result != nil {
 		logger.WithFields(logrus.Fields{
@@ -357,7 +357,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}).Error(err)
 
 		go func() {
-			if err := router.model.SaveConfirmationResult(result); err != nil {
+			if err := router.env.SaveConfirmationResult(result); err != nil {
 				logger.Error(err)
 			}
 		}()
@@ -386,7 +386,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	go func() {
-		if err := router.model.SaveConfirmationResult(paywall.NewConfirmationSucceeded(noti.FTCOrderID.String)); err != nil {
+		if err := router.env.SaveConfirmationResult(paywall.NewConfirmationSucceeded(noti.FTCOrderID.String)); err != nil {
 			logger.Error(err)
 		}
 	}()
@@ -452,7 +452,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	// {message: "", {field: result, code: "ORDERNOTEXIST" | "SYSTEMERROR"} }
 	resp := wechat.NewOrderQueryResp(respParams)
 	go func() {
-		if err := router.model.SaveWxQueryResp(resp); err != nil {
+		if err := router.env.SaveWxQueryResp(resp); err != nil {
 			logger.Error(err)
 		}
 	}()
