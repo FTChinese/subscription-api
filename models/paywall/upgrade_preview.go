@@ -8,14 +8,14 @@ import (
 )
 
 type UpgradePreview struct {
-	ID          string      `json:"id"`
-	Balance     float64     `json:"balance"` // Accumulated on all BalanceSource.Balance
-	SourceIDs   []string    `json:"sources"` // The order ids which still have portion of days unused.
-	OrderID     null.String `json:"orderId"`
-	CreatedAt   chrono.Time `json:"-"`
-	ConfirmedAt chrono.Time `json:"-"`
+	ID          string      `json:"id" db:"up_id"`
+	OrderID     null.String `json:"-" db:"order_id"`
+	Balance     float64     `json:"balance" db:"balance"`   // Accumulated on all BalanceSource.Balance
+	SourceIDs   []string    `json:"sources" db:"source_id"` // The order ids which still have portion of days unused.
+	CreatedAt   chrono.Time `json:"-" db:"created_at"`
+	ConfirmedAt chrono.Time `json:"-" db:"confirmed_at"`
 	Plan        Plan        `json:"plan"`
-	Member      Membership  `json:"-"`
+	//Member      Membership  `json:"-"`
 }
 
 func NewUpgradePreview(sources []BalanceSource) UpgradePreview {
