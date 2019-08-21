@@ -52,7 +52,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 				return
 			}
 
-			if err := tx.commit(); err != nil {
+			if err := tx.Commit(); err != nil {
 				t.Error(err)
 			}
 
@@ -114,7 +114,7 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 				t.Errorf("OrderTx.SaveOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := otx.commit(); err != nil {
+			if err := otx.Commit(); err != nil {
 				t.Error(err)
 			}
 		})
@@ -159,7 +159,7 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 				return
 			}
 
-			if err := otx.commit(); err != nil {
+			if err := otx.Commit(); err != nil {
 				t.Error(err)
 			}
 
@@ -204,7 +204,7 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 				t.Errorf("OrderTx.ConfirmOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := tx.commit(); err != nil {
+			if err := tx.Commit(); err != nil {
 				t.Error(err)
 			}
 		})
@@ -247,7 +247,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 				t.Errorf("OrderTx.CreateMember() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := otx.commit(); err != nil {
+			if err := otx.Commit(); err != nil {
 				t.Error(err)
 			}
 
@@ -292,7 +292,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 				t.Errorf("OrderTx.UpdateMember() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := otx.commit(); err != nil {
+			if err := otx.Commit(); err != nil {
 				t.Error(err)
 			}
 
@@ -343,7 +343,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 				return
 			}
 
-			if err := tx.commit(); err != nil {
+			if err := tx.Commit(); err != nil {
 				t.Error(err)
 			}
 
@@ -394,7 +394,7 @@ func TestOrderTx_SaveUpgrade(t *testing.T) {
 				t.Errorf("OrderTx.SaveUpgrade() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := tx.commit(); err != nil {
+			if err := tx.Commit(); err != nil {
 				t.Error(err)
 			}
 
@@ -445,7 +445,7 @@ func TestOrderTx_SaveUpgradeV2(t *testing.T) {
 				t.Errorf("OrderTx.SaveUpgradeV2() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := otx.commit(); err != nil {
+			if err := otx.Commit(); err != nil {
 				t.Error(err)
 			}
 		})
@@ -489,7 +489,7 @@ func TestOrderTx_SetLastUpgradeID(t *testing.T) {
 				t.Errorf("OrderTx.SetLastUpgradeID() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := tx.commit(); err != nil {
+			if err := tx.Commit(); err != nil {
 				t.Error(err)
 			}
 		})
@@ -520,7 +520,7 @@ func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err := otx.commit(); err != nil {
+	if err := otx.Commit(); err != nil {
 		t.Error(err)
 	}
 
@@ -550,7 +550,7 @@ func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 				t.Errorf("OrderTx.ConfirmUpgrade() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := tx.commit(); err != nil {
+			if err := tx.Commit(); err != nil {
 				t.Error(err)
 			}
 
