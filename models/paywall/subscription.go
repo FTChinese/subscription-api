@@ -34,10 +34,10 @@ func GenerateOrderID() (string, error) {
 }
 
 type Charge struct {
-	ListPrice   float64 `json:"listPrice"`
-	NetPrice    float64 `json:"netPrice"` // Deprecate
-	Amount      float64 `json:"amount"`
-	IsConfirmed bool    `json:"-"`
+	ListPrice   float64 `json:"listPrice" db:"price"`
+	NetPrice    float64 `json:"netPrice" db:"price"` // Deprecate
+	Amount      float64 `json:"amount" db:"amount"`
+	IsConfirmed bool    `json:"-" db:"is_confirmed"`
 }
 
 // AliPrice converts Charged price to ailpay format
@@ -60,21 +60,24 @@ func (c Charge) PriceInCent() int64 {
 // All those combination add up to 3 * 2 * 3 * 3 = 54
 type Subscription struct {
 	// Fields common to all.
-	Charge
-	ConfirmedAt chrono.Time `json:"-"` // When the payment is confirmed.
+	ID string `json:"id" db:"order_id"`
+	AccountID
+	//Charge
+	ListPrice float64 `json:"listPrice" db:"price"`
+	Amount    float64 `json:"amount" db:"amount"`
 	Coordinate
-	CreatedAt     chrono.Time    `json:"createdAt"`
 	Currency      string         `json:"-"`
-	CycleCount    int64          `json:"cycleCount"` // Default to 1. Change it for upgrade
-	EndDate       chrono.Date    `json:"-"`          // Membership end date for this order. Depends on start date.
-	ExtraDays     int64          `json:"extraDays"`  // Default to 1. Change it for upgraded.
-	ID            string         `json:"id"`
-	PaymentMethod enum.PayMethod `json:"payMethod"`
-	StartDate     chrono.Date    `json:"-"`         // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	Usage         SubsKind       `json:"usageType"` // The usage of this order: creat new, renew, or upgrade?
-	//AccountID
-	User    AccountID   `json:"-"`
-	WxAppID null.String `json:"-"` // Wechat specific
+	CycleCount    int64          `json:"cycleCount" db:"cycle_count"` // Default to 1. Change it for upgrade
+	ExtraDays     int64          `json:"extraDays" db:"extra_days"`   // Default to 1. Change it for upgraded.
+	Usage         SubsKind       `json:"usageType" db:"usage_type"`   // The usage of this order: creat new, renew, or upgrade?
+	LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
+	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
+	WxAppID       null.String    `json:"-" db:"wx_app_id"`  // Wechat specific
+	StartDate     chrono.Date    `json:"-" db:"start_date"` // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
+	EndDate       chrono.Date    `json:"-" db:"end_date"`   // Membership end date for this order. Depends on start date.
+	//User          AccountID      `json:"-"`                 // Deprecate
+	CreatedAt   chrono.Time `json:"createdAt" db:"created_at"`
+	ConfirmedAt chrono.Time `json:"-" db:"confirmed_at"` // When the payment is confirmed.
 }
 
 // NewSubs creates a new subscription with shared fields
@@ -88,12 +91,10 @@ func NewSubs(accountID AccountID, p Plan) (Subscription, error) {
 	}
 
 	s := Subscription{
-		CreatedAt: chrono.TimeNow(),
-		Charge: Charge{
-			ListPrice: p.ListPrice,
-			NetPrice:  p.NetPrice,
-			Amount:    p.NetPrice,
-		},
+		ID:        id,
+		AccountID: accountID,
+		ListPrice: p.ListPrice,
+		Amount:    p.NetPrice,
 		Coordinate: Coordinate{
 			Tier:  p.Tier,
 			Cycle: p.Cycle,
@@ -101,11 +102,53 @@ func NewSubs(accountID AccountID, p Plan) (Subscription, error) {
 		Currency:   p.Currency,
 		CycleCount: p.CycleCount,
 		ExtraDays:  p.ExtraDays,
-		ID:         id,
-		User:       accountID,
+		CreatedAt:  chrono.TimeNow(),
 	}
 
 	return s, nil
+}
+
+// NewOrder creates a new subscription order.
+// If later it is found that this order is used for upgrading,
+// upgrade it and returns a new instance with upgrading price.
+func NewOrder(
+	id AccountID,
+	p Plan,
+	method enum.PayMethod,
+	m Membership,
+) (Subscription, error) {
+	orderID, err := GenerateOrderID()
+
+	if err != nil {
+		return Subscription{}, err
+	}
+
+	kind, err := m.SubsKind(p)
+	if err != nil {
+		return Subscription{}, err
+	}
+
+	return Subscription{
+		ID:        orderID,
+		AccountID: id,
+		ListPrice: p.ListPrice,
+		Amount:    p.NetPrice, // Modified for upgrade
+		Coordinate: Coordinate{
+			Tier:  p.Tier,
+			Cycle: p.Cycle,
+		},
+		Currency:      p.Currency,
+		CycleCount:    p.CycleCount, // Modified for upgrade
+		ExtraDays:     p.ExtraDays,  // Modified for upgrade
+		Usage:         kind,
+		LastUpgradeID: null.String{}, // Only for upgrade
+		PaymentMethod: method,
+		//WxAppID:       null.String{}, // To be populated
+		//StartDate:     chrono.Date{},
+		//EndDate:       chrono.Date{},
+		//CreatedAt:     chrono.Time{},
+		//ConfirmedAt:   chrono.Time{},
+	}, nil
 }
 
 // NewUpgradeOrder creates an upgrade order.
@@ -118,13 +161,10 @@ func NewUpgradeOrder(accountID AccountID, up Upgrade) (Subscription, error) {
 	}
 
 	s := Subscription{
-		ID: id,
-		Charge: Charge{
-			ListPrice: up.ListPrice,
-			NetPrice:  up.NetPrice,
-			Amount:    up.NetPrice,
-		},
-		CreatedAt: chrono.TimeNow(),
+		ID:        id,
+		AccountID: accountID,
+		ListPrice: up.ListPrice,
+		Amount:    up.NetPrice,
 		Coordinate: Coordinate{
 			Tier:  up.Tier,
 			Cycle: up.Cycle,
@@ -133,10 +173,31 @@ func NewUpgradeOrder(accountID AccountID, up Upgrade) (Subscription, error) {
 		CycleCount: up.CycleCount,
 		ExtraDays:  up.ExtraDays,
 		Usage:      SubsKindUpgrade,
-		User:       accountID,
+		CreatedAt:  chrono.TimeNow(),
 	}
 
 	return s, nil
+}
+
+func (s Subscription) WithUpgrade(source []BalanceSource) (Subscription, UpgradePreview) {
+	up := NewUpgradePreview(source)
+	up.OrderID = null.StringFrom(s.ID)
+
+	s.Amount = up.Plan.NetPrice
+	s.CycleCount = up.Plan.CycleCount
+	s.ExtraDays = up.Plan.ExtraDays
+
+	return s, up
+}
+
+// AliPrice converts Charged price to ailpay format
+func (s Subscription) AliPrice() string {
+	return strconv.FormatFloat(s.Amount, 'f', 2, 32)
+}
+
+// PriceInCent converts Charged price to int64 in cent for comparison with wx notification.
+func (s Subscription) PriceInCent() int64 {
+	return int64(s.Amount * 100)
 }
 
 func (s Subscription) ReadableAmount() string {
@@ -144,6 +205,10 @@ func (s Subscription) ReadableAmount() string {
 		strings.ToUpper(s.Currency),
 		s.Amount,
 	)
+}
+
+func (s Subscription) IsConfirmed() bool {
+	return !s.ConfirmedAt.IsZero()
 }
 
 // Validate ensures the order to confirm must match
@@ -228,7 +293,6 @@ func (s Subscription) Confirm(m Membership, confirmedAt time.Time) (Subscription
 	s.ConfirmedAt = chrono.TimeFrom(confirmedAt)
 	s.StartDate = chrono.DateFrom(startTime)
 	s.EndDate = chrono.DateFrom(endTime)
-	s.IsConfirmed = true
 
 	return s, nil
 }
