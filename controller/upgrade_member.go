@@ -15,7 +15,7 @@ type UpgradeRouter struct {
 
 func NewUpgradeRouter(m repository.Env) UpgradeRouter {
 	r := UpgradeRouter{}
-	r.model = m
+	r.env = m
 
 	return r
 }
@@ -31,7 +31,7 @@ func NewUpgradeRouter(m repository.Env) UpgradeRouter {
 func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
 	user, _ := GetUserID(req.Header)
 
-	balance, err := router.model.UpgradeBalance(user)
+	balance, err := router.env.UpgradeBalance(user)
 	if err != nil {
 		switch err {
 		case util.ErrAlreadyUpgraded:
@@ -55,7 +55,7 @@ func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Requ
 func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
 
-	up, err := router.model.PreviewUpgrade(userID)
+	up, err := router.env.PreviewUpgrade(userID)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -74,7 +74,7 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Request) {
 	user, _ := GetUserID(req.Header)
 
-	upgradePlan, err := router.model.UpgradeBalance(user)
+	upgradePlan, err := router.env.UpgradeBalance(user)
 	if err != nil {
 		switch err {
 		case util.ErrAlreadyUpgraded:
@@ -97,14 +97,14 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	subs, err := router.model.DirectUpgradeOrder(user, upgradePlan, util.NewClientApp(req))
+	subs, err := router.env.DirectUpgradeOrder(user, upgradePlan, util.NewClientApp(req))
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
 	// Confirm this order
-	updatedSubs, err := router.model.ConfirmPayment(subs.ID, time.Now())
+	updatedSubs, err := router.env.ConfirmPayment(subs.ID, time.Now())
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
@@ -118,7 +118,7 @@ func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Reque
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
 
-	up, err := router.model.PreviewUpgrade(userID)
+	up, err := router.env.PreviewUpgrade(userID)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -130,7 +130,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	subs, err := router.model.FreeUpgrade(userID, up, util.NewClientApp(req))
+	subs, err := router.env.FreeUpgrade(userID, up, util.NewClientApp(req))
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
