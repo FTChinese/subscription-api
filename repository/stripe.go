@@ -97,13 +97,13 @@ func (env Env) CreateStripeSub(
 	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
 	if err := mmb.PermitStripeCreate(); err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
@@ -118,7 +118,7 @@ func (env Env) CreateStripeSub(
 	// }
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
@@ -129,17 +129,17 @@ func (env Env) CreateStripeSub(
 	// What if the user exists but is invalid?
 	if mmb.IsZero() {
 		if err := tx.CreateMember(newMmb); err != nil {
-			_ = tx.rollback()
+			_ = tx.Rollback()
 			return nil, err
 		}
 	} else {
 		if err := tx.UpdateMember(newMmb); err != nil {
-			_ = tx.rollback()
+			_ = tx.Rollback()
 			return nil, err
 		}
 	}
 
-	if err := tx.commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -159,24 +159,24 @@ func (env Env) GetStripeSub(id paywall.AccountID) (*stripe.Subscription, error) 
 	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
 	if mmb.IsZero() {
 		log.Infof("Membership not found for %v", id)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
 
 	log.Infof("Retrieve a member: %+v", mmb)
 
 	if mmb.PaymentMethod != enum.PayMethodStripe {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
 	if mmb.StripeSubID.IsZero() {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
 
@@ -185,13 +185,13 @@ func (env Env) GetStripeSub(id paywall.AccountID) (*stripe.Subscription, error) 
 
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
 	newMmb, err := mmb.WithStripe(id, s)
 	if err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
@@ -199,11 +199,11 @@ func (env Env) GetStripeSub(id paywall.AccountID) (*stripe.Subscription, error) 
 
 	// update member
 	if err := tx.UpdateMember(newMmb); err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
-	if err := tx.commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -228,38 +228,38 @@ func (env Env) UpgradeStripeSubs(
 	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, nil
 	}
 
 	if mmb.IsZero() {
 		log.Error("membership for stripe upgrading not found")
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
 
 	// Check whether upgrading is permitted.
 	if !mmb.PermitStripeUpgrade(params) {
 		log.Error("upgrading via stripe is not permitted")
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, util.ErrInvalidStripeSub
 	}
 
 	s, err := upgradeStripeSub(params, mmb.StripeSubID.String)
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
 	mmb = mmb.NewStripe(id, params, s)
 
 	if err := tx.UpdateMember(mmb); err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
-	if err := tx.commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -372,23 +372,23 @@ func (env Env) WebHookSaveStripeSub(s *stripe.Subscription) (paywall.Account, er
 	m, err := tx.RetrieveMember(userID)
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return ftcUser, nil
 	}
 
 	if m.PaymentMethod != enum.PayMethodStripe {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return ftcUser, sql.ErrNoRows
 	}
 
 	if m.StripeSubID.String != s.ID {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return ftcUser, sql.ErrNoRows
 	}
 
 	m, err = m.WithStripe(userID, s)
 	if err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return ftcUser, err
 	}
 
@@ -396,11 +396,11 @@ func (env Env) WebHookSaveStripeSub(s *stripe.Subscription) (paywall.Account, er
 
 	// update member
 	if err := tx.UpdateMember(m); err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return ftcUser, err
 	}
 
-	if err := tx.commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return ftcUser, err
 	}
 
