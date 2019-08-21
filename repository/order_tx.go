@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository/query"
@@ -11,7 +12,7 @@ import (
 // OrderTx check a user's member status and create an order
 // if allowed.
 type OrderTx struct {
-	tx    *sql.Tx
+	tx    *sqlx.Tx
 	live  bool
 	query query.Builder
 }
@@ -22,34 +23,20 @@ type OrderTx struct {
 func (otx OrderTx) RetrieveMember(id paywall.AccountID) (paywall.Membership, error) {
 	var m paywall.Membership
 
-	// In the ftc_vip table, vip_id might be ftc uuid or wechat
-	// id, and vip_id_alias is always wechat id.
-	// In future, the table will be refactor with two extra
-	// columns ftc_user_id dedicated to ftc uuid and wx_union_id
-	// dedicated for wechat union id. The vip_id column will be
-	// use only as a unique constraint on these two columns.
-	err := otx.tx.QueryRow(
-		otx.query.SelectMemberLock(),
+	err := otx.tx.Get(
+		&m,
+		otx.query.SelectMemberLock(id.MemberColumn()),
 		id.CompoundID,
-		id.UnionID,
-	).Scan(
-		&m.ID,
-		&m.User.CompoundID,
-		&m.User.FtcID,
-		&m.User.UnionID,
-		&m.Tier,
-		&m.Cycle,
-		&m.ExpireDate,
-		&m.PaymentMethod,
-		&m.StripeSubID,
-		&m.AutoRenewal,
-		&m.Status)
+	)
 
 	if err != nil && err != sql.ErrNoRows {
 		logger.WithField("trace", "OrderTx.RetrieveMember").Error(err)
 
 		return m, err
 	}
+
+	// Normalize legacy columns
+	m.Normalize()
 
 	// Treat a non-existing member as a valid value.
 	return m, nil
@@ -60,25 +47,17 @@ func (otx OrderTx) RetrieveMember(id paywall.AccountID) (paywall.Membership, err
 // Stripe pay does not generate any orders on our side.
 func (otx OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 
-	_, err := otx.tx.Exec(
+	// Should we move client data to a separate table?
+	data := struct {
+		paywall.Subscription
+		util.ClientApp
+	}{
+		Subscription: s,
+		ClientApp:    c,
+	}
+	_, err := otx.tx.NamedExec(
 		otx.query.InsertSubs(),
-		s.ID,
-		s.User.CompoundID,
-		s.User.FtcID,
-		s.User.UnionID,
-		s.ListPrice,
-		s.Amount,
-		s.Tier,
-		s.Cycle,
-		s.CycleCount,
-		s.ExtraDays,
-		s.Usage,
-		s.PaymentMethod,
-		s.WxAppID,
-		c.ClientType,
-		c.Version,
-		c.UserIP,
-		c.UserAgent)
+		data)
 
 	if err != nil {
 		logger.WithField("trace", "OrderTx.SaveSubscription").Error(err)
@@ -93,25 +72,10 @@ func (otx OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
 func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	var subs paywall.Subscription
 
-	err := otx.tx.QueryRow(
+	err := otx.tx.Get(
+		&subs,
 		otx.query.SelectSubsLock(),
 		orderID,
-	).Scan(
-		&subs.ID,
-		&subs.User.CompoundID,
-		&subs.User.FtcID,
-		&subs.User.UnionID,
-		&subs.ListPrice,
-		&subs.Amount,
-		&subs.Tier,
-		&subs.Cycle,
-		&subs.CycleCount,
-		&subs.ExtraDays,
-		&subs.Usage,
-		&subs.PaymentMethod,
-		&subs.CreatedAt,
-		&subs.ConfirmedAt,
-		&subs.IsConfirmed,
 	)
 
 	if err != nil {
@@ -120,19 +84,14 @@ func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 		return subs, err
 	}
 
-	subs.NetPrice = subs.Amount
-
 	return subs, nil
 }
 
 // ConfirmOrder set an order's confirmation time.
 func (otx OrderTx) ConfirmOrder(order paywall.Subscription) error {
-	_, err := otx.tx.Exec(
-		otx.query.ConfirmSubs(),
-		order.ConfirmedAt,
-		order.StartDate,
-		order.EndDate,
-		order.ID,
+	_, err := otx.tx.NamedExec(
+		otx.query.ConfirmOrder(),
+		order,
 	)
 
 	if err != nil {
@@ -146,23 +105,9 @@ func (otx OrderTx) ConfirmOrder(order paywall.Subscription) error {
 
 func (otx OrderTx) CreateMember(m paywall.Membership) error {
 
-	_, err := otx.tx.Exec(
+	_, err := otx.tx.NamedExec(
 		otx.query.InsertMember(),
-		m.ID,
-		m.User.CompoundID,
-		m.User.UnionID,
-		m.TierCode(),
-		m.ExpireDate.Unix(),
-		m.User.FtcID,
-		m.User.UnionID,
-		m.Tier,
-		m.Cycle,
-		m.ExpireDate,
-		m.PaymentMethod,
-		m.StripeSubID,
-		m.StripePlanID,
-		m.AutoRenewal,
-		m.Status,
+		m,
 	)
 
 	if err != nil {
@@ -175,20 +120,9 @@ func (otx OrderTx) CreateMember(m paywall.Membership) error {
 
 func (otx OrderTx) UpdateMember(m paywall.Membership) error {
 
-	_, err := otx.tx.Exec(otx.query.UpdateMember(),
-		m.ID,
-		m.TierCode(),
-		m.ExpireDate.Unix(),
-		m.Tier,
-		m.Cycle,
-		m.ExpireDate,
-		m.PaymentMethod,
-		m.StripeSubID,
-		m.StripePlanID,
-		m.AutoRenewal,
-		m.Status,
-		m.User.CompoundID,
-		m.User.UnionID)
+	_, err := otx.tx.NamedExec(
+		otx.query.UpdateMember(m.MemberColumn()),
+		m)
 
 	if err != nil {
 		logger.WithField("trace", "OrderTx.UpdateMembership").Error(err)
@@ -260,18 +194,18 @@ func (otx OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
 	return nil
 }
 
-func (otx OrderTx) SaveUpgradeV2(orderID string, up paywall.UpgradePreview) error {
-	_, err := otx.tx.Exec(otx.query.InsertUpgrade(),
-		up.ID,
-		orderID,
-		up.Balance,
-		up.SourceOrderIDs(),
-		up.Member.ID,
-		up.Member.Cycle,
-		up.Member.ExpireDate,
-		up.Member.User.FtcID,
-		up.Member.User.UnionID,
-		up.Member.Tier)
+func (otx OrderTx) SaveUpgradeV2(up paywall.UpgradePreview, m paywall.Membership) error {
+
+	var data = struct {
+		paywall.UpgradePreview
+		paywall.Membership
+	}{
+		UpgradePreview: up,
+		Membership:     m,
+	}
+	_, err := otx.tx.NamedExec(
+		otx.query.InsertUpgrade(),
+		data)
 
 	if err != nil {
 		return err
@@ -298,6 +232,9 @@ func (otx OrderTx) SetLastUpgradeID(up paywall.Upgrade) error {
 	return nil
 }
 
+// SetLastUpgradeIDV2 set the last_upgrade_id on an order
+// so that balance used for proration cannot be used next
+// time.
 func (otx OrderTx) SetLastUpgradeIDV2(up paywall.UpgradePreview) error {
 
 	_, err := otx.tx.Exec(otx.query.SetLastUpgradeID(),
@@ -335,10 +272,10 @@ func (otx OrderTx) ActivateGiftCard(code string) error {
 	return nil
 }
 
-func (otx OrderTx) rollback() error {
+func (otx OrderTx) Rollback() error {
 	return otx.tx.Rollback()
 }
 
-func (otx OrderTx) commit() error {
+func (otx OrderTx) Commit() error {
 	return otx.tx.Commit()
 }
