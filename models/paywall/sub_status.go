@@ -62,6 +62,16 @@ func ParseSubStatus(name string) (SubStatus, error) {
 	return SubStatusNull, fmt.Errorf("%s is not valid SubStatus", name)
 }
 
+// ShouldCreate checks whether membership's current status
+// should allow creation of a new membership.
+func (x SubStatus) ShouldCreate() bool {
+	return x == SubStatusNull ||
+		x == SubStatusIncompleteExpired ||
+		x == SubStatusPastDue ||
+		x == SubStatusCanceled ||
+		x == SubStatusUnpaid
+}
+
 func (x SubStatus) String() string {
 	if s, ok := subStatusMap[x]; ok {
 		return s
