@@ -22,37 +22,37 @@ func (env Env) PreviewUpgrade(userID paywall.AccountID) (paywall.UpgradePreview,
 	member, err := otx.RetrieveMember(userID)
 	if err != nil {
 		log.Error(err)
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.UpgradePreview{}, err
 	}
 
 	if member.IsZero() {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.UpgradePreview{}, sql.ErrNoRows
 	}
 
 	if member.IsExpired() {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.UpgradePreview{}, util.ErrMemberExpired
 	}
 
 	if member.PaymentMethod == enum.PayMethodStripe {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.UpgradePreview{}, util.ErrValidStripeSwitching
 	}
 
 	if member.Tier == enum.TierPremium {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.UpgradePreview{}, util.ErrAlreadyUpgraded
 	}
 
 	sources, err := otx.FindBalanceSources(userID)
 	if err != nil {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.UpgradePreview{}, err
 	}
 
-	if err := otx.commit(); err != nil {
+	if err := otx.Commit(); err != nil {
 		log.Error(err)
 		return paywall.UpgradePreview{}, err
 	}
@@ -84,21 +84,21 @@ func (env Env) FreeUpgrade(
 	}
 
 	if err := tx.SaveOrder(subs, clientApp); err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return subs, err
 	}
 
 	if err := tx.SaveUpgradeV2(subs.ID, up); err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return subs, err
 	}
 
 	if err := tx.SetLastUpgradeIDV2(up); err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return subs, err
 	}
 
-	if err := tx.commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		log.Error(err)
 		return subs, err
 	}
@@ -150,21 +150,21 @@ func (env Env) DirectUpgradeOrder(
 	}
 
 	if err = otx.SaveOrder(subs, clientApp); err != nil {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return subs, err
 	}
 
 	if err = otx.SaveUpgrade(subs.ID, upgrade); err != nil {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return subs, err
 	}
 
 	if err := otx.SetLastUpgradeID(upgrade); err != nil {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return subs, err
 	}
 
-	if err := otx.commit(); err != nil {
+	if err := otx.Commit(); err != nil {
 		logger.WithField("trace", "ConfirmPayment").Error(err)
 		return paywall.Subscription{}, err
 	}
@@ -187,23 +187,23 @@ func (env Env) UpgradeBalance(user paywall.AccountID) (paywall.Upgrade, error) {
 	member, err := otx.RetrieveMember(user)
 	// If membership is not found for this user, deny upgrading.
 	if err != nil {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.Upgrade{}, err
 	}
 
 	if member.IsZero() {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.Upgrade{}, util.ErrMemberNotFound
 	}
 
 	if member.Tier == enum.TierPremium {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.Upgrade{}, util.ErrAlreadyUpgraded
 	}
 
 	orders, err := otx.FindBalanceSources(user)
 	if err != nil {
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.Upgrade{}, err
 	}
 
@@ -215,7 +215,7 @@ func (env Env) UpgradeBalance(user paywall.AccountID) (paywall.Upgrade, error) {
 		SetBalance(orders).
 		CalculatePayable()
 
-	if err := otx.commit(); err != nil {
+	if err := otx.Commit(); err != nil {
 		logger.WithField("trace", "ConfirmPayment").Error(err)
 		return up, err
 	}
