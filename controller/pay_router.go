@@ -16,7 +16,7 @@ const (
 
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
-	model   repository.Env
+	env     repository.Env
 	postman postoffice.Postman
 }
 
@@ -31,7 +31,7 @@ func (router PayRouter) findPlan(req *http.Request) (paywall.Plan, error) {
 		return paywall.Plan{}, err
 	}
 
-	return router.model.GetCurrentPlans().FindPlan(t + "_" + c)
+	return router.env.GetCurrentPlans().FindPlan(t + "_" + c)
 }
 
 func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
@@ -53,7 +53,7 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 
 // Returns notification URL for Alipay based on whether the api is run for sandbox.
 func (router PayRouter) aliCallbackURL() string {
-	if router.model.Sandbox {
+	if router.env.Sandbox {
 		return apiBaseURL + "/sandbox/webhook/alipay"
 	}
 
@@ -61,7 +61,7 @@ func (router PayRouter) aliCallbackURL() string {
 }
 
 func (router PayRouter) wxCallbackURL() string {
-	if router.model.Sandbox {
+	if router.env.Sandbox {
 		return apiBaseURL + "/sandbox/webhook/wxpay"
 	}
 
@@ -77,11 +77,11 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 	// If the FtcID field is null, it indicates this user
 	// does not have an FTC account bound. You cannot find out
 	// its email address.
-	if !subs.User.FtcID.Valid {
+	if !subs.FtcID.Valid {
 		return nil
 	}
 	// Find this user's personal data
-	ftcUser, err := router.model.FindFtcUser(subs.User.CompoundID)
+	ftcUser, err := router.env.FindFtcUser(subs.CompoundID)
 
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 		parcel, err = ftcUser.RenewSubParcel(subs)
 
 	case paywall.SubsKindUpgrade:
-		up, err := router.model.LoadUpgradeSource(subs.ID)
+		up, err := router.env.LoadUpgradeSource(subs.ID)
 		if err != nil {
 			return err
 		}
