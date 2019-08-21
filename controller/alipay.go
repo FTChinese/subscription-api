@@ -38,7 +38,7 @@ func NewAliRouter(m repository.Env, p postoffice.Postman) AliPayRouter {
 		appID:  app.ID,
 		client: client,
 	}
-	r.model = m
+	r.env = m
 	r.postman = p
 
 	return r
@@ -77,7 +77,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		// Save the subscription
 		clientApp := util.NewClientApp(req)
 
-		subs, err := router.model.CreateOrder(
+		subs, err := router.env.CreateOrder(
 			user,
 			plan,
 			enum.PayMethodAli,
@@ -198,7 +198,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		if err := router.model.SaveAliNotification(*noti); err != nil {
+		if err := router.env.SaveAliNotification(*noti); err != nil {
 			logger.Error(err)
 		}
 	}()
@@ -225,7 +225,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	orderID := noti.OutTradeNo
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
-	charge, err := router.model.FindSubsCharge(orderID)
+	charge, err := router.env.FindSubsCharge(orderID)
 
 	// If the order does not exist, tell ali success;
 	// If err is not `not found`, tell ali to resend.
@@ -273,7 +273,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	confirmedSubs, result := router.model.ConfirmPayment(orderID, util.ParseAliTime(noti.GmtPayment))
+	confirmedSubs, result := router.env.ConfirmPayment(orderID, util.ParseAliTime(noti.GmtPayment))
 
 	if result != nil {
 		logger.WithFields(logrus.Fields{
@@ -282,7 +282,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}).Error(err)
 
 		go func() {
-			err := router.model.SaveConfirmationResult(result)
+			err := router.env.SaveConfirmationResult(result)
 			if err != nil {
 				logger.Error(err)
 			}
@@ -313,7 +313,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	go func() {
-		if err := router.model.SaveConfirmationResult(paywall.NewConfirmationSucceeded(orderID)); err != nil {
+		if err := router.env.SaveConfirmationResult(paywall.NewConfirmationSucceeded(orderID)); err != nil {
 			logger.Error(err)
 		}
 	}()
