@@ -42,7 +42,7 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 	err = tx.ActivateGiftCard(c.Code)
 
 	if err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 
 		logger.WithField("trace", "RedeemGiftCard").Error(err)
 	}
@@ -51,7 +51,7 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 	err = tx.CreateMember(m)
 
 	if err != nil {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 
 		logger.WithField("trace", "RedeemGiftCard").Error(err)
 		// Needs this message to tell client whether
@@ -59,7 +59,7 @@ func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
 		return err
 	}
 
-	if err := tx.commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		logger.WithField("trace", "Redeem").Error(err)
 		return err
 	}
