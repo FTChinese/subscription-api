@@ -2,6 +2,7 @@ package paywall
 
 import (
 	"github.com/pkg/errors"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 	"strings"
 	"text/template"
 
@@ -19,9 +20,9 @@ import (
 // A user's compound id is taken from either ftc uuid or
 // wechat id, with ftc id taking precedence.
 type AccountID struct {
-	CompoundID string      `json:"-"`
-	FtcID      null.String `json:"-"`
-	UnionID    null.String `json:"-"`
+	CompoundID string      `json:"-" db:"compound_id"`
+	FtcID      null.String `json:"-" db:"ftc_id"`
+	UnionID    null.String `json:"-" db:"union_id"`
 }
 
 func NewID(ftcID, unionID string) (AccountID, error) {
@@ -38,6 +39,20 @@ func NewID(ftcID, unionID string) (AccountID, error) {
 		return id, errors.New("ftcID and unionID should not both be null")
 	}
 	return id, nil
+}
+
+// MemberColumn determines which column will be used to
+// retrieve membership.
+func (i AccountID) MemberColumn() query.MemberCol {
+	if i.FtcID.Valid {
+		return query.MemberColCompoundID
+	}
+
+	if i.UnionID.Valid {
+		return query.MemberColUnionID
+	}
+
+	return query.MemberColCompoundID
 }
 
 // Account contains the minimal data to identify a user.
