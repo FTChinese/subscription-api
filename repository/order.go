@@ -38,7 +38,7 @@ func (env Env) CreateOrder(
 	member, err := otx.RetrieveMember(user)
 	if err != nil {
 		log.Error(err)
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.Subscription{}, err
 	}
 
@@ -50,7 +50,7 @@ func (env Env) CreateOrder(
 	subsKind, err := member.SubsKind(plan)
 	if err != nil {
 		log.Error(err)
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return paywall.Subscription{}, err
 	}
 
@@ -63,7 +63,7 @@ func (env Env) CreateOrder(
 		balanceSource, err := otx.FindBalanceSources(user)
 		if err != nil {
 			log.Error(err)
-			_ = otx.rollback()
+			_ = otx.Rollback()
 			return subs, err
 		}
 		log.Infof("Find balance source: %+v", balanceSource)
@@ -74,7 +74,7 @@ func (env Env) CreateOrder(
 		subs, err = paywall.NewSubs(user, up.Plan)
 		if err != nil {
 			log.Error(err)
-			_ = otx.rollback()
+			_ = otx.Rollback()
 			return subs, err
 		}
 		up.OrderID = null.StringFrom(subs.ID)
@@ -83,7 +83,7 @@ func (env Env) CreateOrder(
 		err = otx.SaveUpgradeV2(subs.ID, up)
 		if err != nil {
 			log.Error(err)
-			_ = otx.rollback()
+			_ = otx.Rollback()
 			return subs, err
 		}
 
@@ -91,14 +91,14 @@ func (env Env) CreateOrder(
 		err = otx.SetLastUpgradeIDV2(up)
 		if err != nil {
 			log.Error(err)
-			_ = otx.rollback()
+			_ = otx.Rollback()
 			return subs, err
 		}
 	} else {
 		subs, err = paywall.NewSubs(user, plan)
 		if err != nil {
 			log.Error(err)
-			_ = otx.rollback()
+			_ = otx.Rollback()
 			return subs, err
 		}
 	}
@@ -110,11 +110,11 @@ func (env Env) CreateOrder(
 	err = otx.SaveOrder(subs, clientApp)
 	if err != nil {
 		log.Error(err)
-		_ = otx.rollback()
+		_ = otx.Rollback()
 		return subs, err
 	}
 
-	if err := otx.commit(); err != nil {
+	if err := otx.Commit(); err != nil {
 		log.Error(err)
 		return paywall.Subscription{}, err
 	}
@@ -122,7 +122,6 @@ func (env Env) CreateOrder(
 	// NOTE: the price for test could only be set here since
 	// the upgrading plan's price is dynamically calculated.
 	if !env.Live() {
-		subs.NetPrice = 0.01
 		subs.Amount = 0.01
 	}
 
@@ -180,13 +179,13 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	if err != nil {
 		log.Error(err)
 
-		_ = tx.rollback()
+		_ = tx.Rollback()
 
 		return subs, paywall.NewConfirmationFailed(orderID, err, err != sql.ErrNoRows)
 	}
 
 	if subs.IsConfirmed {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return subs, paywall.NewConfirmationFailed(orderID, util.ErrAlreadyConfirmed, false)
 	}
 
@@ -197,7 +196,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	member, err := tx.RetrieveMember(subs.User)
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
@@ -206,7 +205,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	// If user is already a premium member and this order is used
 	// for upgrading, decline retry.
 	if subs.Usage == paywall.SubsKindUpgrade && member.IsValidPremium() {
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return subs, paywall.NewConfirmationFailed(orderID, util.ErrDuplicateUpgrading, false)
 	}
 
@@ -216,7 +215,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	subs, err = subs.Confirm(member, confirmedAt)
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
@@ -228,7 +227,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	if err != nil {
 		log.Error(err)
 		// Remember to rollback.
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
@@ -237,7 +236,7 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 	member, err = member.FromAliOrWx(subs)
 	if err != nil {
 		log.Error(err)
-		_ = tx.rollback()
+		_ = tx.Rollback()
 		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
 
@@ -247,20 +246,20 @@ func (env Env) ConfirmPayment(orderID string, confirmedAt time.Time) (paywall.Su
 		err := tx.CreateMember(member)
 		if err != nil {
 			log.Error(err)
-			_ = tx.rollback()
+			_ = tx.Rollback()
 			return subs, paywall.NewConfirmationFailed(orderID, err, true)
 		}
 	} else {
 		err := tx.UpdateMember(member)
 		if err != nil {
 			log.Error(err)
-			_ = tx.rollback()
+			_ = tx.Rollback()
 			return subs, paywall.NewConfirmationFailed(orderID, err, true)
 		}
 	}
 
 	// Error here should allow retry.
-	if err := tx.commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		log.Error(err)
 		return subs, paywall.NewConfirmationFailed(orderID, err, true)
 	}
