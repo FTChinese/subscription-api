@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest"
 	"github.com/stripe/stripe-go"
-	util2 "gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -24,22 +24,24 @@ func GenerateMemberID() (string, error) {
 // Membership contains a user's membership details
 // This is actually called subscription by Stripe.
 type Membership struct {
-	ID null.String `json:"id"` // A random string. Not used yet.
-	//AccountID
-	User AccountID
+	ID null.String `json:"id" db:"member_id"` // A random string. Not used yet.
+	AccountID
+	User         AccountID // Deprecate
+	LegacyTier   null.Int  `json:"-" db:"vip_type"`
+	LegacyExpire null.Int  `json:"-" db:"expire_time"`
 	Coordinate
-	ExpireDate    chrono.Date    `json:"expireDate"`
-	PaymentMethod enum.PayMethod `json:"payMethod"`
-	StripeSubID   null.String    `json:"-"`
-	StripePlanID  null.String    `json:"-"`
-	AutoRenewal   bool           `json:"autoRenewal"`
+	ExpireDate    chrono.Date    `json:"expireDate" db:"expire_date"`
+	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
+	StripeSubID   null.String    `json:"-" db:"stripe_sub_id"`
+	StripePlanID  null.String    `json:"-" db:"stripe_plan_id"`
+	AutoRenewal   bool           `json:"autoRenewal" db:"auto_renewal"`
 	// This is used to save stripe subscription status.
 	// Since wechat and alipay treats everything as one-time purchase, they do not have a complex state machine.
 	// If we could integrate apple in-app purchase, this column
 	// might be extended to apple users.
 	// Only `active` should be treated as valid member.
 	// Wechat and alipay defaults to `active` for backward compatibility.
-	Status SubStatus `json:"status"`
+	Status SubStatus `json:"status" db:"sub_status"`
 	//FtcPlan Plan      `json:"-"` // The subscribed plan attached to this membership.
 }
 
@@ -55,12 +57,75 @@ func NewMember(accountID AccountID) Membership {
 	}
 }
 
+// GenerateID generates a unique id for this membership if
+// it is not set. This id is mostly used to identify a row
+// in restful api.
+func (m *Membership) GenerateID() error {
+	if m.ID.Valid {
+		return nil
+	}
+
+	id, err := GenerateMemberID()
+	if err != nil {
+		return err
+	}
+
+	m.ID = null.StringFrom(id)
+
+	return nil
+}
+
+// Deprecate
+func (m Membership) TierCode() int64 {
+	switch m.Tier {
+	case enum.TierStandard:
+		return 10
+	case enum.TierPremium:
+		return 100
+	}
+
+	return 0
+}
+
+// Normalize turns legacy vip_type and expire_time into
+// member_tier and expire_date columns, or vice versus.
+func (m *Membership) Normalize() {
+	// Turn unix seconds to time.
+	if m.LegacyExpire.Valid && m.ExpireDate.IsZero() {
+		m.ExpireDate = chrono.DateFrom(time.Unix(m.LegacyExpire.Int64, 0))
+	}
+
+	// Turn time to unix seconds.
+	if !m.ExpireDate.IsZero() && m.LegacyExpire.IsZero() {
+		m.LegacyExpire = null.IntFrom(m.ExpireDate.Unix())
+	}
+
+	if m.LegacyTier.Valid && m.Tier == enum.InvalidTier {
+		switch m.LegacyTier.Int64 {
+		case 10:
+			m.Tier = enum.TierStandard
+		case 100:
+			m.Tier = enum.TierPremium
+		}
+	}
+
+	if m.Tier != enum.InvalidTier && m.LegacyTier.IsZero() {
+		switch m.Tier {
+		case enum.TierStandard:
+			m.LegacyTier = null.IntFrom(10)
+		case enum.TierPremium:
+			m.LegacyTier = null.IntFrom(100)
+		}
+	}
+}
+
+func (m Membership) IsZero() bool {
+	return m.User.CompoundID == "" && m.Tier == enum.InvalidTier
+}
+
 func (m Membership) NewStripe(id AccountID, p StripeSubParams, s *stripe.Subscription) Membership {
 
-	if m.ID.IsZero() {
-		mId, _ := GenerateMemberID()
-		m.ID = null.StringFrom(mId)
-	}
+	_ = m.GenerateID()
 
 	periodEnd := canonicalizeUnix(s.CurrentPeriodEnd)
 
@@ -82,24 +147,11 @@ func (m Membership) NewStripe(id AccountID, p StripeSubParams, s *stripe.Subscri
 	}
 }
 
-func (m Membership) TierCode() int64 {
-	switch m.Tier {
-	case enum.TierStandard:
-		return 10
-	case enum.TierPremium:
-		return 100
-	}
-
-	return 0
-}
-
 // WithStripe update an existing stripe membership.
 // This is used in webhook.
 func (m Membership) WithStripe(id AccountID, s *stripe.Subscription) (Membership, error) {
-	if m.ID.IsZero() {
-		mId, _ := GenerateMemberID()
-		m.ID = null.StringFrom(mId)
-	}
+
+	_ = m.GenerateID()
 
 	periodEnd := canonicalizeUnix(s.CurrentPeriodEnd)
 
@@ -110,18 +162,19 @@ func (m Membership) WithStripe(id AccountID, s *stripe.Subscription) (Membership
 	return m, nil
 }
 
+// FromAliOrWx builds a new membership based on a confirmed
+// order.
 func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
-	if !sub.IsConfirmed {
+	if !sub.IsConfirmed() {
 		return m, errors.New("only confirmed order could be used to build membership")
 	}
 
-	if m.ID.IsZero() {
-		mId, _ := GenerateMemberID()
-		m.ID = null.StringFrom(mId)
-	}
+	_ = m.GenerateID()
 
 	if m.IsZero() {
-		m.User = sub.User
+		m.CompoundID = sub.CompoundID
+		m.FtcID = sub.FtcID
+		m.UnionID = sub.UnionID
 	}
 
 	m.Tier = sub.Tier
@@ -153,6 +206,28 @@ func (m Membership) FromGiftCard(c GiftCard) (Membership, error) {
 	return m, nil
 }
 
+func (m Membership) IsAliOrWxPay() bool {
+	if m.Tier != enum.InvalidTier && m.PaymentMethod == enum.InvalidPay {
+		return true
+	}
+
+	return m.PaymentMethod == enum.PayMethodAli || m.PaymentMethod == enum.PayMethodWx
+}
+
+// IsExpired tests if the membership's expiration date is before now.
+func (m Membership) IsExpired() bool {
+	// If membership does not exist, it is treated as expired.
+	if m.IsZero() {
+		return true
+	}
+
+	// If expire date is before now, AND auto renew is false,
+	// we treat this one as actually expired.
+	// If ExpireDate is passed, but auto renew is true, we still
+	// treat this one as not expired.
+	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
+}
+
 // CanRenew tests if a membership is allowed to renew subscription.
 // A member could only renew its subscription when remaining duration of a membership is shorter than a billing cycle.
 // Expire date - now > cycle  --- Renewal is not allowed
@@ -162,32 +237,27 @@ func (m Membership) FromGiftCard(c GiftCard) (Membership, error) {
 // now----------------------------| Deny
 // Algorithm changed to membership duration not larger than 3 years.
 
-// IsRenewAllowed test if current membership is allowed to renew.
+// PermitRenewal test if current membership is allowed to renew.
 // now ---------3 years ---------> Expire date
 // expire date - now <= 3 years
-func (m Membership) IsRenewAllowed() bool {
-	return m.ExpireDate.Before(time.Now().AddDate(3, 0, 0))
-}
-
-// IsExpired tests if the membership's expiration date is before now.
-func (m Membership) IsExpired() bool {
+func (m Membership) PermitRenewal() bool {
 	if m.ExpireDate.IsZero() {
-		return true
+		return false
 	}
-	// If expire is before now, it is expired.
-	return m.ExpireDate.Before(time.Now().Truncate(24 * time.Hour))
+
+	if m.AutoRenewal {
+		return false
+	}
+
+	if !m.IsAliOrWxPay() {
+		return false
+	}
+
+	return m.ExpireDate.Before(time.Now().AddDate(3, 0, 0))
 }
 
 func (m Membership) IsValidPremium() bool {
 	return m.Tier == enum.TierPremium && !m.IsExpired()
-}
-
-func (m Membership) IsZero() bool {
-	return m.User.CompoundID == "" && m.Tier == enum.InvalidTier
-}
-
-func (m Membership) IsAliOrWxPay() bool {
-	return m.PaymentMethod == enum.InvalidPay || m.PaymentMethod == enum.PayMethodAli || m.PaymentMethod == enum.PayMethodWx
 }
 
 // SubsKind determines what kind of order a user is creating.
@@ -196,30 +266,29 @@ func (m Membership) SubsKind(p Plan) (SubsKind, error) {
 		return SubsKindCreate, nil
 	}
 
-	if m.IsAliOrWxPay() {
-		if m.IsExpired() {
-			return SubsKindCreate, nil
-		}
+	if m.Status != SubStatusNull && m.Status.ShouldCreate() {
+		return SubsKindCreate, nil
+	}
 
-		// If current tier is smaller than the plan,
-		// it indicates user is upgrading.
-		if m.Tier < p.Tier {
-			return SubsKindUpgrade, nil
-		}
+	if m.IsExpired() {
+		return SubsKindCreate, nil
+	}
 
-		// User is downgrading, deny request.
-		if m.Tier > p.Tier {
-			return SubsKindDeny, util2.ErrDowngrade
-		}
-
-		if !m.IsRenewAllowed() {
-			return SubsKindDeny, util2.ErrBeyondRenewal
-		}
-
+	// Renewal.
+	if m.Tier == p.Tier {
 		return SubsKindRenew, nil
 	}
 
-	return SubsKindDeny, errors.New("not alipay or wechat pay")
+	if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
+		return SubsKindUpgrade, nil
+	}
+
+	// TODO: How to deal with beyond renewal
+	//if !m.PermitRenewal() {
+	//	return SubsKindDeny, util.ErrBeyondRenewal
+	//}
+
+	return SubsKindDeny, errors.New("unknown subscription usage")
 }
 
 // PermitStripeCreate checks whether subscription
@@ -244,7 +313,7 @@ func (m Membership) PermitStripeCreate() error {
 		if m.IsExpired() {
 			return nil
 		}
-		return util2.ErrNonStripeValidSub
+		return util.ErrNonStripeValidSub
 	}
 
 	if m.PaymentMethod == enum.PayMethodStripe {
@@ -255,7 +324,7 @@ func (m Membership) PermitStripeCreate() error {
 		// Member is not expired, or is auto renewal.
 		// If status is active, deny it.
 		if m.Status == SubStatusActive {
-			return util2.ErrActiveStripeSub
+			return util.ErrActiveStripeSub
 		}
 
 		return nil
@@ -263,7 +332,7 @@ func (m Membership) PermitStripeCreate() error {
 
 	// Member is either not expired, or auto renewal
 	// Deny any other cases.
-	return util2.ErrUnknownSubState
+	return util.ErrUnknownSubState
 }
 
 // PermitStripeUpgrade tests whether a stripe customer with
