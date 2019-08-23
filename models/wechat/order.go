@@ -40,8 +40,7 @@ func (a AppOrderParams) ToMap() wxpay.Params {
 	return param
 }
 
-// AppOrder creates an order used when your called wechat pay
-// inside your own app.
+// AppOrder creates an order used by native apps.
 type AppOrder struct {
 	paywall.Subscription
 	FtcOrderID     string         `json:"ftcOrderId"` // Deprecate
@@ -126,30 +125,28 @@ func (c Client) BuildInAppBrowserOrder(u UnifiedOrderResp, subs paywall.Subscrip
 }
 
 // BrowserOrder creates order for browsers.
-// RedirectUrl is added later so that we could merge BrowserOrder
+// For desktop browser, wechat send back a custom url
+// for the client to generate a QR image;
+// For mobile browser, wechat sends back a canonical url
+// that can be redirected to.
 // and MobileOrder into a single data structure.
-// CodeURL and MWebURL are kept for backward compatibility.
-// Once the app ftacademy-node finished migration, they will be
-// removed.
 type BrowserOrder struct {
 	paywall.Subscription
-	CodeURL     string `json:"codeUrl,omitempty"` // Deprecate
-	MWebURL     string `json:"mWebUrl,omitempty"` //Deprecate
-	RedirectURL string `json:"redirectUrl"`
+	// TODO: rename json tag codeUrl to qrCode
+	QRCode  string `json:"codeUrl,omitempty"` // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
+	MWebURL string `json:"mWebUrl,omitempty"` // This is a standard url that can be redirected to.
 }
 
-func BuildDesktopOrder(o UnifiedOrderResp, subs paywall.Subscription) BrowserOrder {
+func BuildDesktopOrder(resp UnifiedOrderResp, subs paywall.Subscription) BrowserOrder {
 	return BrowserOrder{
 		Subscription: subs,
-		CodeURL:      o.CodeURL.String,
-		RedirectURL:  o.CodeURL.String,
+		QRCode:       resp.QRCode.String,
 	}
 }
 
-func BuildMobileOrder(o UnifiedOrderResp, subs paywall.Subscription) BrowserOrder {
+func BuildMobileOrder(resp UnifiedOrderResp, subs paywall.Subscription) BrowserOrder {
 	return BrowserOrder{
 		Subscription: subs,
-		MWebURL:      o.MWebURL.String,
-		RedirectURL:  o.MWebURL.String,
+		MWebURL:      resp.MWebURL.String,
 	}
 }
