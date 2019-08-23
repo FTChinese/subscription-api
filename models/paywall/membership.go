@@ -2,8 +2,8 @@ package paywall
 
 import (
 	"errors"
-	"github.com/FTChinese/go-rest"
 	"github.com/stripe/stripe-go"
+	"gitlab.com/ftchinese/subscription-api/models/rand"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 
@@ -12,13 +12,12 @@ import (
 	"github.com/guregu/null"
 )
 
-func GenerateMemberID() (string, error) {
-	s, err := gorest.RandomBase64(9)
-	if err != nil {
-		return "", err
-	}
+func GenerateMemberID() string {
+	return "mmb_" + rand.String(12)
+}
 
-	return "mmb_" + s, nil
+func GenerateSnapshotID() string {
+	return "snp_" + rand.String(12)
 }
 
 // Membership contains a user's membership details
@@ -26,9 +25,9 @@ func GenerateMemberID() (string, error) {
 type Membership struct {
 	ID null.String `json:"id" db:"member_id"` // A random string. Not used yet.
 	AccountID
-	User         AccountID // Deprecate
-	LegacyTier   null.Int  `json:"-" db:"vip_type"`
-	LegacyExpire null.Int  `json:"-" db:"expire_time"`
+	//User         AccountID // Deprecate
+	LegacyTier   null.Int `json:"-" db:"vip_type"`
+	LegacyExpire null.Int `json:"-" db:"expire_time"`
 	Coordinate
 	ExpireDate    chrono.Date    `json:"expireDate" db:"expire_date"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
@@ -42,7 +41,22 @@ type Membership struct {
 	// Only `active` should be treated as valid member.
 	// Wechat and alipay defaults to `active` for backward compatibility.
 	Status SubStatus `json:"status" db:"sub_status"`
-	//FtcPlan Plan      `json:"-"` // The subscribed plan attached to this membership.
+}
+
+// MemberSnapshot saves a membership's status prior to
+// placing an order.
+type MemberSnapshot struct {
+	ID         string      `db:"snapshot_id"`
+	CreatedUTC chrono.Time `db:"created_utc"`
+	Membership
+}
+
+func NewMemberSnapshot(m Membership) MemberSnapshot {
+	return MemberSnapshot{
+		ID:         GenerateSnapshotID(),
+		CreatedUTC: chrono.TimeNow(),
+		Membership: m,
+	}
 }
 
 // NewMember creates a membership directly for a user.
@@ -50,29 +64,21 @@ type Membership struct {
 // If membership is purchased via direct payment channel,
 // membership is created from subscription order.
 func NewMember(accountID AccountID) Membership {
-	id, _ := GenerateMemberID()
 	return Membership{
-		ID:   null.StringFrom(id),
-		User: accountID,
+		ID:        null.StringFrom(GenerateMemberID()),
+		AccountID: accountID,
 	}
 }
 
 // GenerateID generates a unique id for this membership if
 // it is not set. This id is mostly used to identify a row
 // in restful api.
-func (m *Membership) GenerateID() error {
+func (m *Membership) GenerateID() {
 	if m.ID.Valid {
-		return nil
+		return
 	}
 
-	id, err := GenerateMemberID()
-	if err != nil {
-		return err
-	}
-
-	m.ID = null.StringFrom(id)
-
-	return nil
+	m.ID = null.StringFrom(GenerateMemberID())
 }
 
 // Deprecate
@@ -120,20 +126,20 @@ func (m *Membership) Normalize() {
 }
 
 func (m Membership) IsZero() bool {
-	return m.User.CompoundID == "" && m.Tier == enum.InvalidTier
+	return m.CompoundID == "" && m.Tier == enum.InvalidTier
 }
 
 func (m Membership) NewStripe(id AccountID, p StripeSubParams, s *stripe.Subscription) Membership {
 
-	_ = m.GenerateID()
+	m.GenerateID()
 
 	periodEnd := canonicalizeUnix(s.CurrentPeriodEnd)
 
 	status, _ := ParseSubStatus(string(s.Status))
 
 	return Membership{
-		ID:   m.ID,
-		User: id,
+		ID:        m.ID,
+		AccountID: id,
 		Coordinate: Coordinate{
 			Tier:  p.Tier,
 			Cycle: p.Cycle,
@@ -151,7 +157,7 @@ func (m Membership) NewStripe(id AccountID, p StripeSubParams, s *stripe.Subscri
 // This is used in webhook.
 func (m Membership) WithStripe(id AccountID, s *stripe.Subscription) (Membership, error) {
 
-	_ = m.GenerateID()
+	m.GenerateID()
 
 	periodEnd := canonicalizeUnix(s.CurrentPeriodEnd)
 
@@ -169,7 +175,7 @@ func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
 		return m, errors.New("only confirmed order could be used to build membership")
 	}
 
-	_ = m.GenerateID()
+	m.GenerateID()
 
 	if m.IsZero() {
 		m.CompoundID = sub.CompoundID
