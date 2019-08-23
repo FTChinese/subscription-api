@@ -157,7 +157,7 @@ func (a Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	}, nil
 }
 
-func (a Account) UpgradeSubParcel(s Subscription, preview UpgradePreview) (postoffice.Parcel, error) {
+func (a Account) UpgradeSubParcel(s Subscription, preview UpgradePlan) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterUpgradeSub)
 
 	if err != nil {
@@ -173,7 +173,7 @@ func (a Account) UpgradeSubParcel(s Subscription, preview UpgradePreview) (posto
 		User    Account
 		Sub     Subscription
 		Plan    Plan
-		Upgrade UpgradePreview
+		Upgrade UpgradePlan
 	}{
 		User:    a,
 		Sub:     s,
