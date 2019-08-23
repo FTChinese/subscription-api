@@ -4,9 +4,7 @@ import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
-	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository/query"
-	"strings"
 )
 
 // OrderTx check a user's member status and create an order
@@ -45,19 +43,11 @@ func (otx OrderTx) RetrieveMember(id paywall.AccountID) (paywall.Membership, err
 // SaveOrder saves an order to db.
 // This is only limited to alipay and wechat pay.
 // Stripe pay does not generate any orders on our side.
-func (otx OrderTx) SaveOrder(s paywall.Subscription, c util.ClientApp) error {
+func (otx OrderTx) SaveOrder(order paywall.Subscription) error {
 
-	// Should we move client data to a separate table?
-	data := struct {
-		paywall.Subscription
-		util.ClientApp
-	}{
-		Subscription: s,
-		ClientApp:    c,
-	}
 	_, err := otx.tx.NamedExec(
 		otx.query.InsertSubs(),
-		data)
+		order)
 
 	if err != nil {
 		logger.WithField("trace", "OrderTx.SaveSubscription").Error(err)
@@ -132,11 +122,27 @@ func (otx OrderTx) UpdateMember(m paywall.Membership) error {
 	return nil
 }
 
+func (otx OrderTx) SaveProration(p []paywall.ProrationSource) error {
+	for _, v := range p {
+		_, err := otx.tx.NamedExec(otx.query.InsertProration(), v)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
-func (otx OrderTx) FindBalanceSources(accountID paywall.AccountID) ([]paywall.BalanceSource, error) {
-	rows, err := otx.tx.Query(
-		otx.query.BalanceSource(),
+func (otx OrderTx) FindBalanceSources(accountID paywall.AccountID) ([]paywall.ProrationSource, error) {
+
+	var sources = []paywall.ProrationSource{}
+
+	err := otx.tx.Select(
+		&sources,
+		otx.query.SelectProrationSource(),
 		accountID.CompoundID,
 		accountID.UnionID)
 
@@ -144,67 +150,21 @@ func (otx OrderTx) FindBalanceSources(accountID paywall.AccountID) ([]paywall.Ba
 		logger.WithField("trace", "OrderTx.FindBalanceSources").Error(err)
 		return nil, err
 	}
-	defer rows.Close()
 
-	orders := make([]paywall.BalanceSource, 0)
-	for rows.Next() {
-		var o paywall.BalanceSource
-
-		err := rows.Scan(
-			&o.ID,
-			&o.NetPrice,
-			&o.StartDate,
-			&o.EndDate)
-
-		if err != nil {
-			logger.WithField("trace", "OrderTx.FindBalanceSources").Error(err)
-			return nil, err
-		}
-
-		orders = append(orders, o)
-	}
-
-	if err := rows.Err(); err != nil {
-		logger.WithField("trace", "OrderTx.FindBalanceSources").Error(err)
-		return nil, err
-	}
-
-	return orders, nil
+	return sources, nil
 }
 
-// SaveUpgrade saves the data about upgrading.
-// Deprecate
-func (otx OrderTx) SaveUpgrade(orderID string, up paywall.Upgrade) error {
-	_, err := otx.tx.Exec(otx.query.InsertUpgrade(),
-		up.ID,
-		orderID,
-		up.Balance,
-		up.SourceOrderIDs(),
-		up.Member.ID,
-		up.Member.Cycle,
-		up.Member.ExpireDate,
-		up.Member.User.FtcID,
-		up.Member.User.UnionID,
-		up.Member.Tier)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (otx OrderTx) SaveUpgradeV2(up paywall.UpgradePreview, m paywall.Membership) error {
+func (otx OrderTx) SaveUpgradePlan(up paywall.UpgradePlan) error {
 
 	var data = struct {
-		paywall.UpgradePreview
-		paywall.Membership
+		paywall.UpgradePlan
+		paywall.Plan
 	}{
-		UpgradePreview: up,
-		Membership:     m,
+		UpgradePlan: up,
+		Plan:        up.Plan,
 	}
 	_, err := otx.tx.NamedExec(
-		otx.query.InsertUpgrade(),
+		otx.query.InsertUpgradePlan(),
 		data)
 
 	if err != nil {
@@ -214,43 +174,12 @@ func (otx OrderTx) SaveUpgradeV2(up paywall.UpgradePreview, m paywall.Membership
 	return nil
 }
 
-// SetUpgradeTarget set the upgrade id on all rows that can
-// be used as balance source.
-// This operation should be performed together with
-// SaveOrder and SaveUpgrade.
-// Deprecate
-func (otx OrderTx) SetLastUpgradeID(up paywall.Upgrade) error {
-	strList := strings.Join(up.Source, ",")
-	_, err := otx.tx.Exec(otx.query.SetLastUpgradeID(),
-		up.ID,
-		strList)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// SetLastUpgradeIDV2 set the last_upgrade_id on an order
-// so that balance used for proration cannot be used next
-// time.
-func (otx OrderTx) SetLastUpgradeIDV2(up paywall.UpgradePreview) error {
-
-	_, err := otx.tx.Exec(otx.query.SetLastUpgradeID(),
-		up.ID,
-		up.SourceOrderIDs())
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // ConfirmUpgrade set an upgrade's confirmation time.
-func (otx OrderTx) ConfirmUpgrade(id string) error {
-	_, err := otx.tx.Exec(otx.query.ConfirmUpgrade(), id)
+func (otx OrderTx) ConfirmUpgrade(upgradeID string) error {
+	_, err := otx.tx.Exec(
+		otx.query.ProrationConsumed(),
+		upgradeID,
+	)
 	if err != nil {
 		logger.WithField("trace", "OrderTx.ConfirmUpgrade").Error(err)
 		return err
