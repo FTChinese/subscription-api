@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+func TestGenerateSnapshotID(t *testing.T) {
+	t.Log(GenerateSnapshotID())
+}
+
 func TestMembership_FromAliOrWx(t *testing.T) {
 	profile := NewProfile()
 
@@ -199,11 +203,6 @@ func TestMembership_PermitStripeUpgrade(t *testing.T) {
 func TestMembership_IsZero(t *testing.T) {
 	m := Membership{
 		ID: null.String{},
-		User: AccountID{
-			CompoundID: "b4970a63-966d-4d72-a01d-54f73a872ec1",
-			FtcID:      null.StringFrom("b4970a63-966d-4d72-a01d-54f73a872ec1"),
-			UnionID:    null.String{},
-		},
 		Coordinate: Coordinate{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,
