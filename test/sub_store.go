@@ -68,7 +68,7 @@ type SubStore struct {
 	Orders    map[string]paywall.Subscription // A user could have multiple orders.
 	Member    paywall.Membership              // But only one membership.
 	UpgradeV1 paywall.Upgrade
-	UpgradeV2 paywall.UpgradePreview
+	UpgradeV2 paywall.UpgradePlan
 }
 
 // NewSubStore creates a new storage for a user's membership.
@@ -128,7 +128,7 @@ func (s *SubStore) ConfirmOrder(id string) (paywall.Subscription, error) {
 }
 
 func (s *SubStore) UpgradeOrder(n int) (paywall.Subscription, error) {
-	sources := make([]paywall.BalanceSource, 0)
+	sources := make([]paywall.ProrationSource, 0)
 
 	o := s.AddOrder(paywall.SubsKindCreate)
 	o, err := s.ConfirmOrder(o.ID)
@@ -136,11 +136,11 @@ func (s *SubStore) UpgradeOrder(n int) (paywall.Subscription, error) {
 		return o, err
 	}
 
-	sources = append(sources, paywall.BalanceSource{
-		ID:        o.ID,
-		NetPrice:  o.Amount,
-		StartDate: o.StartDate,
-		EndDate:   o.EndDate,
+	sources = append(sources, paywall.ProrationSource{
+		OrderID:    o.ID,
+		PaidAmount: o.Amount,
+		StartDate:  o.StartDate,
+		EndDate:    o.EndDate,
 	})
 
 	for i := 0; i < n; i++ {
@@ -150,11 +150,11 @@ func (s *SubStore) UpgradeOrder(n int) (paywall.Subscription, error) {
 			return o, err
 		}
 
-		sources = append(sources, paywall.BalanceSource{
-			ID:        o.ID,
-			NetPrice:  o.Amount,
-			StartDate: o.StartDate,
-			EndDate:   o.EndDate,
+		sources = append(sources, paywall.ProrationSource{
+			OrderID:    o.ID,
+			PaidAmount: o.Amount,
+			StartDate:  o.StartDate,
+			EndDate:    o.EndDate,
 		})
 	}
 

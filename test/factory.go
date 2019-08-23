@@ -82,19 +82,19 @@ func GenMember(u paywall.AccountID, expired bool) paywall.Membership {
 	return m
 }
 
-func BalanceSources() []paywall.BalanceSource {
-	sources := []paywall.BalanceSource{}
+func BalanceSources() []paywall.ProrationSource {
+	sources := []paywall.ProrationSource{}
 
 	for i := 0; i < 2; i++ {
 		id, _ := paywall.GenerateOrderID()
 		startTime := time.Now().AddDate(i, 0, 0)
 		endTime := startTime.AddDate(i+1, 0, 0)
 
-		s := paywall.BalanceSource{
-			ID:        id,
-			NetPrice:  258,
-			StartDate: chrono.DateFrom(startTime),
-			EndDate:   chrono.DateFrom(endTime),
+		s := paywall.ProrationSource{
+			OrderID:    id,
+			PaidAmount: 258,
+			StartDate:  chrono.DateFrom(startTime),
+			EndDate:    chrono.DateFrom(endTime),
 		}
 
 		sources = append(sources, s)
