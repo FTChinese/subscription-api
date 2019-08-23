@@ -1,11 +1,13 @@
 package paywall
 
 import (
+	"errors"
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/stripe/stripe-go"
 	"math"
 	"strings"
+	"time"
 )
 
 var (
@@ -44,7 +46,7 @@ var (
 		},
 		ListPrice:  1998.00,
 		NetPrice:   1998.00,
-		Title:      "FT中文网 - 高端会员",
+		Title:      "FT中文网 - 年度高端会员",
 		CycleCount: 1,
 		Currency:   "cny",
 		ExtraDays:  1,
@@ -95,12 +97,12 @@ type CycleQuantity struct {
 // The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
 	Coordinate
-	ListPrice  float64 `json:"listPrice"`
-	NetPrice   float64 `json:"netPrice"`
-	CycleCount int64   `json:"cycleCount"`
-	Currency   string  `json:"currency"`
-	ExtraDays  int64   `json:"extraDays"`
-	Title      string  `json:"description"`
+	ListPrice  float64 `json:"listPrice" db:"price"`
+	NetPrice   float64 `json:"netPrice" db:"amount"`
+	CycleCount int64   `json:"cycleCount" db:"cycle_count"`
+	ExtraDays  int64   `json:"extraDays" db:"extra_days"`
+	Currency   string  `json:"currency" db:"currency"`
+	Title      string  `json:"description" db:"title"`
 	StripeID   string  `json:"-"`
 }
 
@@ -123,6 +125,7 @@ func (p Plan) WithUpgrade(balance float64) Plan {
 
 	p.CycleCount = q.Count
 	p.ExtraDays = q.ExtraDays
+	p.Title = "FT中文网 - 升级高端会员"
 
 	return p
 }
@@ -145,6 +148,20 @@ func (p Plan) CalculateConversion(balance float64) CycleQuantity {
 	return CycleQuantity{
 		Count:     cycles,
 		ExtraDays: int64(days),
+	}
+}
+
+func (p Plan) GetPeriodEnd(start time.Time) (time.Time, error) {
+
+	switch p.Cycle {
+	case enum.CycleYear:
+		return start.AddDate(int(p.CycleCount), 0, int(p.ExtraDays)), nil
+
+	case enum.CycleMonth:
+		return start.AddDate(0, int(p.CycleCount), int(p.ExtraDays)), nil
+
+	default:
+		return time.Time{}, errors.New("invalid plan cycle")
 	}
 }
 
@@ -192,7 +209,7 @@ func (plans FtcPlans) FindPlan(id string) (Plan, error) {
 }
 
 // buildSandboxPlans build FTC plans for sandbox environemnt.
-// It differs from live environment in terms of NetPrice and StripeID.
+// It differs from live environment in terms of Amount and StripeID.
 func buildSandboxPlans() FtcPlans {
 	plans := FtcPlans{}
 
