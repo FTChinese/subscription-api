@@ -8,10 +8,11 @@ import (
 // UnifiedOrderResp is wechat's response for prepay.
 type UnifiedOrderResp struct {
 	Resp
-	TradeType null.String
-	PrepayID  null.String
-	CodeURL   null.String
-	MWebURL   null.String
+	TradeType  null.String `db:"trade_type"`
+	PrepayID   null.String `db:"prepay_id"`
+	QRCode     null.String `db:"qr_code"`
+	MWebURL    null.String `db:"mobile_redirect_url"`
+	FtcOrderID string      `db:"order_id"`
 }
 
 func (o UnifiedOrderResp) Params() wxpay.Params {
@@ -35,8 +36,10 @@ func (o UnifiedOrderResp) Params() wxpay.Params {
 // mch_id:1504993271
 // nonce_str:aOyCOfOvWZQZkRwp
 // ]
-func NewUnifiedOrderResp(p wxpay.Params) UnifiedOrderResp {
-	r := UnifiedOrderResp{}
+func NewUnifiedOrderResp(orderID string, p wxpay.Params) UnifiedOrderResp {
+	r := UnifiedOrderResp{
+		FtcOrderID: orderID,
+	}
 
 	r.Populate(p)
 
@@ -50,7 +53,7 @@ func NewUnifiedOrderResp(p wxpay.Params) UnifiedOrderResp {
 
 	// For native pay.
 	if v, ok := p["code_url"]; ok {
-		r.CodeURL = null.StringFrom(v)
+		r.QRCode = null.StringFrom(v)
 	}
 
 	if v, ok := p["mweb_url"]; ok {

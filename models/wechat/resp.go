@@ -10,23 +10,23 @@ import (
 // WxResp contains the shared fields all wechat pay endpoints contains.
 type Resp struct {
 	// return_code: SUCCESS/FAIL
-	StatusCode string
+	StatusCode string `db:"status_code"`
 	// return_msg
-	StatusMessage string
+	StatusMessage string `db:"status_message"`
 	// appid
-	AppID null.String
+	AppID null.String `db:"app_id"`
 	// mch_id
-	MID null.String
+	MID null.String `db:"merchant_id"`
 	// nonce_str
-	Nonce null.String
+	Nonce null.String `db:"nonce"`
 	// sign
-	Signature null.String
+	Signature null.String `db:"signature"`
 	// result_code: SUCCESS/FAIL
-	ResultCode null.String
+	ResultCode null.String `db:"result_code"`
 	// err_code
-	ErrorCode null.String
+	ErrorCode null.String `db:"error_code"`
 	// err_code_des
-	ErrorMessage null.String
+	ErrorMessage null.String `db:"error_message"`
 }
 
 // BaseParams turns Resp to a wxpay.Params.
