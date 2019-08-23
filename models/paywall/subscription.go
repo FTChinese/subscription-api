@@ -33,21 +33,11 @@ func GenerateOrderID() (string, error) {
 	return "FT" + strings.ToUpper(id), nil
 }
 
-type Charge struct {
-	ListPrice   float64 `json:"listPrice" db:"price"`
-	NetPrice    float64 `json:"netPrice" db:"price"` // Deprecate
-	Amount      float64 `json:"amount" db:"amount"`
-	IsConfirmed bool    `json:"-" db:"is_confirmed"`
-}
-
-// AliPrice converts Charged price to ailpay format
-func (c Charge) AliPrice() string {
-	return strconv.FormatFloat(c.Amount, 'f', 2, 32)
-}
-
-// PriceInCent converts Charged price to int64 in cent for comparison with wx notification.
-func (c Charge) PriceInCent() int64 {
-	return int64(c.Amount * 100)
+// PaymentResult unifies ali and wx webhook notification.
+type PaymentResult struct {
+	Amount      int64
+	OrderID     string
+	ConfirmedAt time.Time
 }
 
 // Subscription contains the details of a user's action to place an order.
@@ -66,46 +56,20 @@ type Subscription struct {
 	ListPrice float64 `json:"listPrice" db:"price"`
 	Amount    float64 `json:"amount" db:"amount"`
 	Coordinate
-	Currency      string         `json:"-"`
-	CycleCount    int64          `json:"cycleCount" db:"cycle_count"` // Default to 1. Change it for upgrade
-	ExtraDays     int64          `json:"extraDays" db:"extra_days"`   // Default to 1. Change it for upgraded.
-	Usage         SubsKind       `json:"usageType" db:"usage_type"`   // The usage of this order: creat new, renew, or upgrade?
-	LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
+	Currency   null.String `json:"-"`
+	CycleCount int64       `json:"cycleCount" db:"cycle_count"` // Default to 1. Change it for upgrade
+	ExtraDays  int64       `json:"extraDays" db:"extra_days"`   // Default to 1. Change it for upgraded.
+	Usage      SubsKind    `json:"usageType" db:"usage_type"`   // The usage of this order: creat new, renew, or upgrade?
+	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
 	WxAppID       null.String    `json:"-" db:"wx_app_id"`  // Wechat specific
 	StartDate     chrono.Date    `json:"-" db:"start_date"` // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
 	EndDate       chrono.Date    `json:"-" db:"end_date"`   // Membership end date for this order. Depends on start date.
 	//User          AccountID      `json:"-"`                 // Deprecate
-	CreatedAt   chrono.Time `json:"createdAt" db:"created_at"`
-	ConfirmedAt chrono.Time `json:"-" db:"confirmed_at"` // When the payment is confirmed.
-}
-
-// NewSubs creates a new subscription with shared fields
-// populated. PaymentMethod, Usage, UpgradeSource,
-// UpgradeBalance are left to the controller layer.
-func NewSubs(accountID AccountID, p Plan) (Subscription, error) {
-	id, err := GenerateOrderID()
-
-	if err != nil {
-		return Subscription{}, err
-	}
-
-	s := Subscription{
-		ID:        id,
-		AccountID: accountID,
-		ListPrice: p.ListPrice,
-		Amount:    p.NetPrice,
-		Coordinate: Coordinate{
-			Tier:  p.Tier,
-			Cycle: p.Cycle,
-		},
-		Currency:   p.Currency,
-		CycleCount: p.CycleCount,
-		ExtraDays:  p.ExtraDays,
-		CreatedAt:  chrono.TimeNow(),
-	}
-
-	return s, nil
+	CreatedAt        chrono.Time `json:"createdAt" db:"created_at"`
+	ConfirmedAt      chrono.Time `json:"-" db:"confirmed_at"` // When the payment is confirmed.
+	UpgradeID        null.String `json:"-" db:"upgrade_id"`
+	MemberSnapshotID null.String `json:"-" db:"member_snapshot_id"` // Member data the moment this order is created. Null for a new member.
 }
 
 // NewOrder creates a new subscription order.
@@ -137,57 +101,65 @@ func NewOrder(
 			Tier:  p.Tier,
 			Cycle: p.Cycle,
 		},
-		Currency:      p.Currency,
+		Currency:      null.StringFrom(p.Currency),
 		CycleCount:    p.CycleCount, // Modified for upgrade
 		ExtraDays:     p.ExtraDays,  // Modified for upgrade
 		Usage:         kind,
-		LastUpgradeID: null.String{}, // Only for upgrade
 		PaymentMethod: method,
 		//WxAppID:       null.String{}, // To be populated
 		//StartDate:     chrono.Date{},
 		//EndDate:       chrono.Date{},
 		//CreatedAt:     chrono.Time{},
 		//ConfirmedAt:   chrono.Time{},
+		UpgradeID:        null.String{},
+		MemberSnapshotID: null.String{},
 	}, nil
 }
 
-// NewUpgradeOrder creates an upgrade order.
-// Deprecate
-func NewUpgradeOrder(accountID AccountID, up Upgrade) (Subscription, error) {
-	id, err := GenerateOrderID()
-
+func NewFreeUpgradeOrder(id AccountID, up UpgradePlan) (Subscription, error) {
+	orderID, err := GenerateOrderID()
 	if err != nil {
 		return Subscription{}, err
 	}
 
-	s := Subscription{
-		ID:        id,
-		AccountID: accountID,
-		ListPrice: up.ListPrice,
-		Amount:    up.NetPrice,
-		Coordinate: Coordinate{
-			Tier:  up.Tier,
-			Cycle: up.Cycle,
-		},
-		Currency:   up.Currency,
-		CycleCount: up.CycleCount,
-		ExtraDays:  up.ExtraDays,
-		Usage:      SubsKindUpgrade,
-		CreatedAt:  chrono.TimeNow(),
+	startTime := time.Now()
+	endTime, err := up.Plan.GetPeriodEnd(startTime)
+	if err != nil {
+		return Subscription{}, err
 	}
 
-	return s, nil
+	return Subscription{
+		ID:        orderID,
+		AccountID: id,
+		ListPrice: 0,
+		Amount:    0,
+		Coordinate: Coordinate{
+			Tier:  up.Plan.Tier,
+			Cycle: up.Plan.Cycle,
+		},
+		Currency:         null.StringFrom(up.Plan.Currency),
+		CycleCount:       up.Plan.CycleCount,
+		ExtraDays:        up.Plan.ExtraDays,
+		Usage:            SubsKindUpgrade,
+		PaymentMethod:    enum.InvalidPay,
+		WxAppID:          null.String{},
+		StartDate:        chrono.DateFrom(startTime),
+		EndDate:          chrono.DateFrom(endTime),
+		CreatedAt:        chrono.TimeNow(),
+		ConfirmedAt:      chrono.TimeNow(),
+		UpgradeID:        null.StringFrom(up.ID),
+		MemberSnapshotID: null.String{}, // Manually add it later.
+	}, nil
 }
 
-func (s Subscription) WithUpgrade(source []BalanceSource) (Subscription, UpgradePreview) {
-	up := NewUpgradePreview(source)
-	up.OrderID = null.StringFrom(s.ID)
+func (s Subscription) WithUpgrade(up UpgradePlan) Subscription {
 
 	s.Amount = up.Plan.NetPrice
 	s.CycleCount = up.Plan.CycleCount
 	s.ExtraDays = up.Plan.ExtraDays
+	s.UpgradeID = null.StringFrom(up.ID)
 
-	return s, up
+	return s
 }
 
 // AliPrice converts Charged price to ailpay format
@@ -195,20 +167,28 @@ func (s Subscription) AliPrice() string {
 	return strconv.FormatFloat(s.Amount, 'f', 2, 32)
 }
 
-// PriceInCent converts Charged price to int64 in cent for comparison with wx notification.
-func (s Subscription) PriceInCent() int64 {
+// AmountInCent converts Charged price to int64 in cent for comparison with wx notification.
+func (s Subscription) AmountInCent() int64 {
 	return int64(s.Amount * 100)
 }
 
 func (s Subscription) ReadableAmount() string {
 	return fmt.Sprintf("%s%.2f",
-		strings.ToUpper(s.Currency),
+		strings.ToUpper(s.Currency.String),
 		s.Amount,
 	)
 }
 
 func (s Subscription) IsConfirmed() bool {
 	return !s.ConfirmedAt.IsZero()
+}
+
+func (s Subscription) GetAccountID() AccountID {
+	return AccountID{
+		CompoundID: s.CompoundID,
+		FtcID:      s.FtcID,
+		UnionID:    s.UnionID,
+	}
 }
 
 // Validate ensures the order to confirm must match
@@ -240,7 +220,7 @@ func (s Subscription) Validate(m Membership) error {
 	return nil
 }
 
-func (s Subscription) GetStartDate(m Membership, confirmedAt time.Time) time.Time {
+func (s Subscription) getStartDate(m Membership, confirmedAt time.Time) time.Time {
 	var startTime time.Time
 
 	// If membership is expired, always use the confirmation
@@ -263,7 +243,7 @@ func (s Subscription) GetStartDate(m Membership, confirmedAt time.Time) time.Tim
 	return startTime
 }
 
-func (s Subscription) GetEndDate(startTime time.Time) (time.Time, error) {
+func (s Subscription) getEndDate(startTime time.Time) (time.Time, error) {
 	var endTime time.Time
 
 	switch s.Cycle {
@@ -284,8 +264,8 @@ func (s Subscription) GetEndDate(startTime time.Time) (time.Time, error) {
 // Zero membership is a valid value.
 func (s Subscription) Confirm(m Membership, confirmedAt time.Time) (Subscription, error) {
 
-	startTime := s.GetStartDate(m, confirmedAt)
-	endTime, err := s.GetEndDate(startTime)
+	startTime := s.getStartDate(m, confirmedAt)
+	endTime, err := s.getEndDate(startTime)
 	if err != nil {
 		return s, err
 	}
