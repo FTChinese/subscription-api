@@ -6,6 +6,7 @@ import (
 	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
+	"gitlab.com/ftchinese/subscription-api/repository/wxoauth"
 	"log"
 	"net/http"
 	"os"
@@ -159,7 +160,7 @@ func main() {
 	upgradeRouter := controller.NewUpgradeRouter(m)
 	stripeRouter := controller.NewStripeRouter(m, post, getStripeSigningKey())
 
-	wxAuth := controller.NewWxAuth(m)
+	wxAuth := controller.NewWxAuth(wxoauth.New(db))
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -240,9 +241,9 @@ func main() {
 		r.Use(controller.UserOrUnionID)
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
 		// Deprecate
-		r.Put("/", upgradeRouter.DirectUpgrade)
+		//r.Put("/", upgradeRouter.DirectUpgrade)
 		// Deprecate
-		r.Get("/preview", upgradeRouter.PreviewUpgrade)
+		//r.Get("/preview", upgradeRouter.PreviewUpgrade)
 
 		r.Put("/free", upgradeRouter.FreeUpgrade)
 		r.Get("/balance", upgradeRouter.UpgradeBalance)
@@ -296,7 +297,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
-func status(w http.ResponseWriter, req *http.Request) {
+func status(w http.ResponseWriter, _ *http.Request) {
 
 	data := struct {
 		Version string `json:"version"`
