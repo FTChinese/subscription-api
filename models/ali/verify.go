@@ -1,6 +1,11 @@
 package ali
 
-import "github.com/smartwalle/alipay"
+import (
+	"github.com/smartwalle/alipay"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/util"
+	"strconv"
+)
 
 const (
 	tradeFinished = "TRADE_FINISHED"
@@ -16,6 +21,19 @@ func IsPaySuccess(n *alipay.TradeNotification) bool {
 	default:
 		return false
 	}
+}
+
+func GetPaymentResult(n *alipay.TradeNotification) (paywall.PaymentResult, error) {
+	f, err := strconv.ParseFloat(n.TotalAmount, 64)
+	if err != nil {
+		return paywall.PaymentResult{}, err
+	}
+
+	return paywall.PaymentResult{
+		Amount:      int64(f * 100),
+		OrderID:     n.OutTradeNo,
+		ConfirmedAt: util.ParseAliTime(n.GmtPayment),
+	}, nil
 }
 
 func ShouldRetry(n *alipay.TradeNotification) bool {
