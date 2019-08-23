@@ -1,61 +1,87 @@
 package controller
 
 import (
+	"database/sql"
+	"errors"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"net/http"
-	"time"
 )
 
 type UpgradeRouter struct {
 	PayRouter
 }
 
-func NewUpgradeRouter(m repository.Env) UpgradeRouter {
+func NewUpgradeRouter(env repository.Env) UpgradeRouter {
 	r := UpgradeRouter{}
-	r.env = m
+	r.env = env
 
 	return r
 }
 
-// PreviewUpgrade calculates the proration of active or
-// unused orders.
-// Response:
-//
-// 404 membership not found
-// 204 already a premium member
-// 422 field: membership, code: already_upgraded
-// Deprecate
-func (router UpgradeRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
-	user, _ := GetUserID(req.Header)
+func (router UpgradeRouter) getUpgradePlan(id paywall.AccountID) (paywall.UpgradePlan, error) {
+	log := logrus.WithField("trace", "UpgradeRouter.getUpgradePlan")
 
-	balance, err := router.env.UpgradeBalance(user)
+	otx, err := router.env.BeginOrderTx()
 	if err != nil {
-		switch err {
-		case util.ErrAlreadyUpgraded:
-			r := view.NewReason()
-			r.Field = "membership"
-			r.Code = "already_upgraded"
-			r.SetMessage("Membership is already premium")
-			view.Render(w, view.NewUnprocessable(r))
-			return
-		}
-
-		// membership not found is handled here.
-		view.Render(w, view.NewDBFailure(err))
-		return
+		log.Error(err)
+		return paywall.UpgradePlan{}, err
 	}
 
-	// Tell client how much user should pay for upgrading.
-	view.Render(w, view.NewResponse().SetBody(balance))
+	member, err := otx.RetrieveMember(id)
+	if err != nil {
+		log.Error(err)
+		_ = otx.Rollback()
+		return paywall.UpgradePlan{}, err
+	}
+
+	// To upgrade, membership must exist, not expired yet,
+	// must be alipay or wxpay, and must not be premium.
+	if member.IsZero() {
+		_ = otx.Rollback()
+		return paywall.UpgradePlan{}, sql.ErrNoRows
+	}
+
+	if member.IsExpired() {
+		_ = otx.Rollback()
+		return paywall.UpgradePlan{}, util.ErrMemberExpired
+	}
+
+	if member.PaymentMethod == enum.PayMethodStripe {
+		_ = otx.Rollback()
+		return paywall.UpgradePlan{}, util.ErrValidStripeSwitching
+	}
+
+	if member.Tier == enum.TierPremium {
+		_ = otx.Rollback()
+		return paywall.UpgradePlan{}, util.ErrAlreadyUpgraded
+	}
+
+	sources, err := otx.FindBalanceSources(id)
+	if err != nil {
+		_ = otx.Rollback()
+		return paywall.UpgradePlan{}, err
+	}
+
+	if err := otx.Commit(); err != nil {
+		log.Error(err)
+		return paywall.UpgradePlan{}, err
+	}
+
+	up := paywall.NewUpgradePreview(sources)
+
+	return up, nil
 }
 
 func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
 
-	up, err := router.env.PreviewUpgrade(userID)
+	up, err := router.getUpgradePlan(userID)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -64,61 +90,10 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 	view.Render(w, view.NewResponse().SetBody(up))
 }
 
-// DirectUpgrade performs membership upgrading for users whose
-// account balance could cover the upgrading expense exactly.
-// 404 if membership is not found
-// 422 if already a premium
-// 200 if balance is not enough to cover upgrading cost.
-// 204 if upgraded successfully.
-// Deprecate
-func (router UpgradeRouter) DirectUpgrade(w http.ResponseWriter, req *http.Request) {
-	user, _ := GetUserID(req.Header)
-
-	upgradePlan, err := router.env.UpgradeBalance(user)
-	if err != nil {
-		switch err {
-		case util.ErrAlreadyUpgraded:
-			r := view.NewReason()
-			r.Field = "membership"
-			r.Code = "already_upgraded"
-			r.SetMessage("Membership is already premium")
-			view.Render(w, view.NewUnprocessable(r))
-			return
-		}
-
-		// membership not found is handled here.
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
-
-	// If user needs to pay any extra money.
-	if upgradePlan.Payable > 0 {
-		view.Render(w, view.NewResponse().SetBody(upgradePlan))
-		return
-	}
-
-	subs, err := router.env.DirectUpgradeOrder(user, upgradePlan, util.NewClientApp(req))
-	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
-
-	// Confirm this order
-	updatedSubs, err := router.env.ConfirmPayment(subs.ID, time.Now())
-	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
-		return
-	}
-
-	go router.sendConfirmationEmail(updatedSubs)
-
-	view.Render(w, view.NewNoContent())
-}
-
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
 
-	up, err := router.env.PreviewUpgrade(userID)
+	up, err := router.getUpgradePlan(userID)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -130,7 +105,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	subs, err := router.env.FreeUpgrade(userID, up, util.NewClientApp(req))
+	subs, err := router.freeUpgrade(userID, util.NewClientApp(req))
 	if err != nil {
 		view.Render(w, view.NewDBFailure(err))
 		return
@@ -144,4 +119,111 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 	}()
 
 	view.Render(w, view.NewNoContent())
+}
+
+func (router UpgradeRouter) freeUpgrade(id paywall.AccountID, app util.ClientApp) (paywall.Subscription, error) {
+	log := logrus.WithField("trace", "UpgradeRouter.freeUpgrade")
+
+	tx, err := router.env.BeginOrderTx()
+	if err != nil {
+		log.Error(err)
+		return paywall.Subscription{}, err
+	}
+
+	member, err := tx.RetrieveMember(id)
+	if err != nil {
+		log.Error(err)
+		_ = tx.Rollback()
+		return paywall.Subscription{}, err
+	}
+
+	// To upgrade, membership must exist, not expired yet,
+	// must be alipay or wxpay, and must not be premium.
+	if member.IsZero() {
+		_ = tx.Rollback()
+		return paywall.Subscription{}, sql.ErrNoRows
+	}
+
+	if member.IsExpired() {
+		_ = tx.Rollback()
+		return paywall.Subscription{}, util.ErrMemberExpired
+	}
+
+	if member.PaymentMethod == enum.PayMethodStripe {
+		_ = tx.Rollback()
+		return paywall.Subscription{}, util.ErrValidStripeSwitching
+	}
+
+	if member.Tier == enum.TierPremium {
+		_ = tx.Rollback()
+		return paywall.Subscription{}, util.ErrAlreadyUpgraded
+	}
+
+	sources, err := tx.FindBalanceSources(id)
+	if err != nil {
+		_ = tx.Rollback()
+		return paywall.Subscription{}, err
+	}
+
+	up := paywall.NewUpgradePreview(sources)
+	if up.Plan.NetPrice > 0 {
+		return paywall.Subscription{}, errors.New("you cannot upgrade for free since payment is required")
+	}
+
+	if err := tx.SaveUpgradePlan(up); err != nil {
+		log.Error(err)
+		_ = tx.Rollback()
+		return paywall.Subscription{}, err
+	}
+
+	if err := tx.SaveProration(up.Data); err != nil {
+		log.Error(err)
+		_ = tx.Rollback()
+
+		return paywall.Subscription{}, err
+	}
+
+	order, err := paywall.NewFreeUpgradeOrder(id, up)
+
+	if err != nil {
+		log.Error(err)
+		_ = tx.Rollback()
+		return order, err
+	}
+
+	snapshot := paywall.NewMemberSnapshot(member)
+	order.MemberSnapshotID = null.StringFrom(snapshot.ID)
+
+	if err := tx.SaveOrder(order); err != nil {
+		_ = tx.Rollback()
+		return order, err
+	}
+
+	newMember, err := member.FromAliOrWx(order)
+
+	if err := tx.UpdateMember(newMember); err != nil {
+		log.Error(err)
+		_ = tx.Rollback()
+		return order, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Error(err)
+		return order, err
+	}
+
+	// Save client app info
+	go func() {
+		if err := router.env.SaveOrderClient(order.ID, app); err != nil {
+			log.Error(err)
+		}
+	}()
+
+	go func() {
+		if err := router.env.BackUpMember(snapshot); err != nil {
+			log.Error()
+		}
+	}()
+
+	return order, nil
 }

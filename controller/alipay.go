@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
@@ -77,19 +76,27 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		// Save the subscription
 		clientApp := util.NewClientApp(req)
 
-		subs, err := router.env.CreateOrder(
+		//subs, err := router.env.CreateOrder(
+		//	user,
+		//	plan,
+		//	enum.PayMethodAli,
+		//	clientApp,
+		//	null.String{},
+		//)
+		order, err := router.createOrder(
 			user,
 			plan,
 			enum.PayMethodAli,
 			clientApp,
 			null.String{},
 		)
+
 		if err != nil {
 			router.handleOrderErr(w, err)
 			return
 		}
 
-		logger.Infof("Created order: %+v", subs)
+		logger.Infof("Created order: %+v", order)
 
 		// Alipay specific handling.
 		returnURL := req.FormValue("return_url")
@@ -98,8 +105,8 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			NotifyURL:   router.aliCallbackURL(),
 			ReturnURL:   returnURL,
 			Subject:     plan.Title,
-			OutTradeNo:  subs.ID,
-			TotalAmount: subs.AliPrice(),
+			OutTradeNo:  order.ID,
+			TotalAmount: order.AliPrice(),
 		}
 
 		switch kind {
@@ -118,7 +125,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			}
 			//resp := ali.NewAppPayResp(subs, queryStr)
 
-			order := ali.NewAppOrder(subs, queryStr)
+			order := ali.NewAppOrder(order, queryStr)
 			view.Render(w, view.NewResponse().SetBody(order))
 			// For pay from app you should stop here.
 			return
@@ -133,7 +140,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			}
 
 			logger.Infof("Ali desktop browser redirect url: %+v\n", redirectURL)
-			order := ali.NewBrowserOrder(subs, redirectURL.String())
+			order := ali.NewBrowserOrder(order, redirectURL.String())
 			view.Render(w, view.NewResponse().SetBody(order))
 
 		case ali.EntryMobileWeb:
@@ -145,7 +152,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 				return
 			}
 			logger.Infof("Ali mobile browser redirect url: %+v\n", redirectURL)
-			order := ali.NewBrowserOrder(subs, redirectURL.String())
+			order := ali.NewBrowserOrder(order, redirectURL.String())
 			view.Render(w, view.NewResponse().SetBody(order))
 		}
 	}
@@ -223,63 +230,14 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	orderID := noti.OutTradeNo
+	payResult, err := ali.GetPaymentResult(noti)
+
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
-	charge, err := router.env.FindSubsCharge(orderID)
-
-	// If the order does not exist, tell ali success;
-	// If err is not `not found`, tell ali to resend.
-	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"event":   "FindSubsCharge",
-			"orderId": noti.OutTradeNo,
-		}).Error(err)
-
-		if err == sql.ErrNoRows {
-			if _, err := w.Write([]byte(success)); err != nil {
-				logger.Error(err)
-			}
-		}
-		if _, err := w.Write([]byte(fail)); err != nil {
-			logger.Error(err)
-		}
-		return
-	}
-
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
-	if charge.AliPrice() != noti.TotalAmount {
-		logger.WithFields(logrus.Fields{
-			"event":   "PaymentFailed",
-			"orderId": noti.OutTradeNo,
-		}).Infof("Expected net price: %s, actually received: %s", charge.AliPrice(), noti.TotalAmount)
-
-		if _, err := w.Write([]byte(success)); err != nil {
-			logger.Error(err)
-		}
-
-		return
-	}
-
-	// If this order already confirmed.
-	if charge.IsConfirmed {
-		logger.WithFields(logrus.Fields{
-			"event":   "AlreadyConfirmed",
-			"orderId": noti.OutTradeNo,
-		}).Info("Duplicate notification since this order is already confirmed.")
-
-		if _, err := w.Write([]byte(success)); err != nil {
-			logger.Error(err)
-		}
-		return
-	}
-
-	confirmedSubs, result := router.env.ConfirmPayment(orderID, util.ParseAliTime(noti.GmtPayment))
+	confirmedOrder, result := router.confirmPayment(payResult)
 
 	if result != nil {
-		logger.WithFields(logrus.Fields{
-			"event":   "ConfirmOrder",
-			"orderId": noti.OutTradeNo,
-		}).Error(err)
+		logger.Error(err)
 
 		go func() {
 			err := router.env.SaveConfirmationResult(result)
@@ -301,19 +259,14 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	logger.WithFields(logrus.Fields{
-		"event":   "PaymentFailed",
-		"OrderId": noti.OutTradeNo,
-	}).Infof("Confirmed at %s, membership from %s to %s", confirmedSubs.ConfirmedAt, confirmedSubs.StartDate, confirmedSubs.EndDate)
-
 	go func() {
-		if err := router.sendConfirmationEmail(confirmedSubs); err != nil {
+		if err := router.sendConfirmationEmail(confirmedOrder); err != nil {
 			logger.Error(err)
 		}
 	}()
 
 	go func() {
-		if err := router.env.SaveConfirmationResult(paywall.NewConfirmationSucceeded(orderID)); err != nil {
+		if err := router.env.SaveConfirmationResult(paywall.NewConfirmationSucceeded(payResult.OrderID)); err != nil {
 			logger.Error(err)
 		}
 	}()

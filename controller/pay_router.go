@@ -96,7 +96,7 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 		parcel, err = ftcUser.RenewSubParcel(subs)
 
 	case paywall.SubsKindUpgrade:
-		up, err := router.env.LoadUpgradeSource(subs.ID)
+		up, err := router.loadUpgradePlan(subs.UpgradeID.String)
 		if err != nil {
 			return err
 		}
@@ -116,4 +116,20 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 		return err
 	}
 	return nil
+}
+
+func (router PayRouter) loadUpgradePlan(upgradeID string) (paywall.UpgradePlan, error) {
+	up, err := router.env.RetrieveUpgradePlan(upgradeID)
+	if err != nil {
+		return up, err
+	}
+
+	sources, err := router.env.RetrieveUpgradeSource(upgradeID)
+	if err != nil {
+		return up, err
+	}
+
+	up.Data = sources
+
+	return up, nil
 }

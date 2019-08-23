@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
@@ -15,7 +14,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"net/http"
-	"time"
 )
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
@@ -126,27 +124,36 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Save this subscription order.
 		clientApp := util.NewClientApp(req)
 
-		subs, err := router.env.CreateOrder(
+		//subs, err := router.env.CreateOrder(
+		//	user,
+		//	plan,
+		//	enum.PayMethodWx,
+		//	clientApp,
+		//	null.StringFrom(payClient.GetApp().AppID),
+		//)
+
+		order, err := router.createOrder(
 			user,
 			plan,
 			enum.PayMethodWx,
 			clientApp,
 			null.StringFrom(payClient.GetApp().AppID),
 		)
+
 		if err != nil {
 			logger.Error(err)
 			router.handleOrderErr(w, err)
 			return
 		}
 
-		logger.Infof("Created order: %+v", subs)
+		logger.Infof("Created order: %+v", order)
 
 		// Wxpay specific handling.
 		// Prepare the data used to obtain prepay order from wechat.
 		unifiedOrder := wechat.UnifiedOrder{
 			Body:        plan.Title,
-			OrderID:     subs.ID,
-			Price:       subs.PriceInCent(),
+			OrderID:     order.ID,
+			Price:       order.AmountInCent(),
 			IP:          clientApp.UserIP.String,
 			CallbackURL: router.wxCallbackURL(),
 			TradeType:   tradeType,
@@ -174,10 +181,10 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		}
 
 		// Convert wxpay's map to struct for easy manipulation.
-		uor := wechat.NewUnifiedOrderResp(resp)
+		uor := wechat.NewUnifiedOrderResp(order.ID, resp)
 
 		go func() {
-			if err := router.env.SavePrepayResp(subs.ID, uor); err != nil {
+			if err := router.env.SavePrepayResp(uor); err != nil {
 				logger.Error(err)
 			}
 		}()
@@ -191,26 +198,26 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		switch tradeType {
 		// Desktop returns a url that can be turned to QR code
 		case wechat.TradeTypeDesktop:
-			order := wechat.BuildDesktopOrder(uor, subs)
+			order := wechat.BuildDesktopOrder(uor, order)
 			view.Render(w, view.NewResponse().SetBody(order))
 
 		// Mobile returns a url which is redirect in browser
 		case wechat.TradeTypeMobile:
-			order := wechat.BuildMobileOrder(uor, subs)
+			order := wechat.BuildMobileOrder(uor, order)
 			view.Render(w, view.NewResponse().SetBody(order))
 
 		// Create the json data used by js api
 		case wechat.TradeTypeJSAPI:
 			//browserPay := uor.ToWxBrowserPay(subs)
 			//sign := payClient.Sign(browserPay.Params())
-			order := payClient.BuildInAppBrowserOrder(uor, subs)
+			order := payClient.BuildInAppBrowserOrder(uor, order)
 			view.Render(w, view.NewResponse().SetBody(order))
 
 		// Create the json data used by native app.
 		case wechat.TradeTypeApp:
 			//appPay := uor.ToAppPay(subs)
 			//sign := payClient.Sign(appPay.Params())
-			order := payClient.BuildAppOrder(uor, subs)
+			order := payClient.BuildAppOrder(uor, order)
 			view.Render(w, view.NewResponse().SetBody(order))
 		}
 	}
@@ -297,64 +304,20 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Get out_trade_no to retrieve order.
-	// Check the order's confirmed_utc field.
-	// If confirmed_utc is empty, get time_end from params and set confirmed_utc to it.
-	//orderID := params.GetString("out_trade_no")
-	charge, err := router.env.FindSubsCharge(noti.FTCOrderID.String)
+	payResult, err := noti.GetPaymentResult()
 	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"event":   "FindSubsCharge",
-			"orderId": noti.FTCOrderID,
-		}).Error(err)
-
-		if err == sql.ErrNoRows {
-			if _, err := w.Write([]byte(resp.OK())); err != nil {
-				logger.Error(err)
-			}
-			return
-		}
-		if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
-			logger.Error(err)
-		}
-		return
-	}
-
-	if !noti.IsPriceMatched(charge.PriceInCent()) {
-
-		logger.WithFields(logrus.Fields{
-			"event":   "PriceNotMatch",
-			"orderId": noti.FTCOrderID,
-		}).Errorf("Expected: %d, actual: %d", charge.PriceInCent(), noti.TotalFee.Int64)
-
+		logger.Error(err)
 		if _, err := w.Write([]byte(resp.OK())); err != nil {
-			logger.Error(err)
+			logger.Error()
 		}
+
 		return
 	}
 
-	if charge.IsConfirmed {
-		logger.WithFields(logrus.Fields{
-			"event":   "AlreadyConfirmed",
-			"orderId": noti.FTCOrderID,
-		}).Info("Duplicate notification since this order is already confirmed.")
-		if _, err := w.Write([]byte(resp.OK())); err != nil {
-			logger.Error(err)
-		}
-		return
-	}
-	// updatedSubs
-	confirmedAt, err := util.ParseWxTime(noti.TimeEnd.String)
-	if err != nil {
-		confirmedAt = time.Now()
-	}
-	confirmedSubs, result := router.env.ConfirmPayment(noti.FTCOrderID.String, confirmedAt)
+	confirmedOrder, result := router.confirmPayment(payResult)
 
 	if result != nil {
-		logger.WithFields(logrus.Fields{
-			"event":   "ConfirmOrder",
-			"orderId": noti.FTCOrderID,
-		}).Error(err)
+		logger.Error(err)
 
 		go func() {
 			if err := router.env.SaveConfirmationResult(result); err != nil {
@@ -371,16 +334,12 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 				logger.Error(err)
 			}
 		}
+
+		return
 	}
 
-	// Send a letter to this user.
-	logger.WithFields(logrus.Fields{
-		"event":   "OrderConfirmed",
-		"orderId": noti.FTCOrderID,
-	}).Infof("Confirmed at %s, membership from %s to %s", confirmedSubs.ConfirmedAt, confirmedSubs.StartDate, confirmedSubs.EndDate)
-
 	go func() {
-		if err := router.sendConfirmationEmail(confirmedSubs); err != nil {
+		if err := router.sendConfirmationEmail(confirmedOrder); err != nil {
 			logger.Error(err)
 		}
 	}()

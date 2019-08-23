@@ -372,7 +372,7 @@ func (router StripeRouter) onSubscription(s *stripe.Subscription) error {
 //func (router StripeRouter) onInvoice(i *stripe.Invoice, event invoiceEvent) error {
 //	logger := logrus.WithField("trace", "StripeRouter.onInvoice")
 //
-//	ftcUser, err := router.model.FindStripeCustomer(i.Customer.ID)
+//	ftcUser, err := router.env.FindStripeCustomer(i.Customer.ID)
 //	if err != nil {
 //		return err
 //	}
