@@ -48,7 +48,9 @@ FT中文网用户 {{.User.NormalizeName}},
 
 本次升级前余额 {{.Upgrade.ReadableBalance}}，余额来自如下订单未使用部分：
 
-{{.Upgrade.SourceOrderIDs}}
+{{range .Upgrade.Data}}
+{{.OrderID}}: {{.Balance}}
+{{end}}
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
