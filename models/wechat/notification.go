@@ -1,8 +1,12 @@
 package wechat
 
 import (
+	"errors"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/util"
+	"time"
 )
 
 // Notification is the data sent by wechat after payment
@@ -10,15 +14,15 @@ import (
 // It is parsed from wechat's raw xml string.
 type Notification struct {
 	Resp
-	OpenID        null.String
-	IsSubscribed  bool
-	TradeType     null.String
-	BankType      null.String
-	TotalFee      null.Int
-	Currency      null.String
-	TransactionID null.String
-	FTCOrderID    null.String
-	TimeEnd       null.String
+	OpenID        null.String `db:"open_id"`
+	IsSubscribed  bool        `db:"is_subscribed"`
+	TradeType     null.String `db:"trade_type"`
+	BankType      null.String `db:"bank_type"`
+	TotalFee      null.Int    `db:"total_fee"`
+	Currency      null.String `db:"currency"`
+	TransactionID null.String `db:"transaction_id"`
+	FTCOrderID    null.String `db:"ftc_order_id"`
+	TimeEnd       null.String `db:"time_end"`
 	params        wxpay.Params
 }
 
@@ -97,4 +101,25 @@ func (n Notification) IsPriceMatched(cent int64) bool {
 	}
 
 	return n.TotalFee.Int64 == cent
+}
+
+func (n Notification) GetPaymentResult() (paywall.PaymentResult, error) {
+	if n.TotalFee.IsZero() {
+		return paywall.PaymentResult{}, errors.New("no payment amount found in wx webhook")
+	}
+
+	if n.FTCOrderID.IsZero() {
+		return paywall.PaymentResult{}, errors.New("no order id in wx webhook")
+	}
+
+	confirmedAt, err := util.ParseWxTime(n.TimeEnd.String)
+	if err != nil {
+		confirmedAt = time.Now()
+	}
+
+	return paywall.PaymentResult{
+		Amount:      n.TotalFee.Int64,
+		OrderID:     n.FTCOrderID.String,
+		ConfirmedAt: confirmedAt,
+	}, nil
 }
