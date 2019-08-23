@@ -9,8 +9,8 @@ import (
 
 type OrderQueryResp struct {
 	Resp
-	OpenID    null.String
-	TradeType null.String // APP
+	OpenID    null.String `db:"open_id"`
+	TradeType null.String `db:"trade_type"` // APP
 	// SUCCESS
 	// REFUND
 	// NOTPAY
@@ -19,15 +19,15 @@ type OrderQueryResp struct {
 	// USERPAYING
 	// PAYERROR
 	// This is `trade_state` field in wechat response.
-	TradeState null.String
+	TradeState null.String `db:"trade_state"`
 	// This is the `trade_state_desc` field.
-	TradeStateDesc null.String
-	BankType       null.String
-	TotalFee       null.Int
-	Currency       null.String
-	TransactionID  null.String
-	FTCOrderID     null.String
-	TimeEnd        null.String // 20141030133525
+	TradeStateDesc null.String `db:"trade_state_desc"`
+	BankType       null.String `db:"bank_type"`
+	TotalFee       null.Int    `db:"total_fee"`
+	Currency       null.String `db:"currency"`
+	TransactionID  null.String `db:"transaction_id"`
+	FTCOrderID     null.String `db:"ftc_order_id"`
+	TimeEnd        null.String `db:"time_end"` // 20141030133525
 }
 
 func NewOrderQueryResp(p wxpay.Params) OrderQueryResp {
