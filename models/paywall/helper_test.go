@@ -127,7 +127,6 @@ func (p Profile) AliWxSub(kind AccountKind, pm enum.PayMethod, usage SubsKind) S
 	}
 
 	s.ConfirmedAt = chrono.TimeNow()
-	s.IsConfirmed = true
 	s.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 1))
 	s.PaymentMethod = pm
 	s.StartDate = chrono.DateNow()
