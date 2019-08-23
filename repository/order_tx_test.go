@@ -419,7 +419,7 @@ func TestOrderTx_SaveUpgradeV2(t *testing.T) {
 
 	type args struct {
 		orderID string
-		up      paywall.UpgradePreview
+		up      paywall.UpgradePlan
 	}
 	tests := []struct {
 		name    string
@@ -441,8 +441,8 @@ func TestOrderTx_SaveUpgradeV2(t *testing.T) {
 				t.Error(err)
 			}
 
-			if err := otx.SaveUpgradeV2(tt.args.orderID, tt.args.up); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.SaveUpgradeV2() error = %v, wantErr %v", err, tt.wantErr)
+			if err := otx.SaveUpgradePlan(tt.args.orderID, tt.args.up); (err != nil) != tt.wantErr {
+				t.Errorf("OrderTx.SaveUpgradePlan() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err := otx.Commit(); err != nil {
@@ -512,7 +512,7 @@ func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err := otx.SaveUpgradeV2(upgradeOrder.ID, store.UpgradeV2); err != nil {
+	if err := otx.SaveUpgradePlan(upgradeOrder.ID, store.UpgradeV2); err != nil {
 		t.Error(err)
 	}
 
