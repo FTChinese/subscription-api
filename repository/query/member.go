@@ -24,23 +24,19 @@ func (b Builder) SelectMemberLock(col MemberCol) string {
 	// 10 -> standard
 	// 100 -> premium
 	return fmt.Sprintf(`
-	SELECT id AS member_id, 
-		vip_id AS compound_id,
-		NULLIF(vip_id, vip_id_alias) AS ftc_id,
-		vip_id_alias AS union_id,
-		vip_type,
-		expire_time,
-		member_tier AS tier,
-		billing_cycle AS cycle,
-		expire_date,
-		payment_method,
-		stripe_subscription_id AS stripe_sub_id,
-		auto_renewal,
-		sub_status
+	%s
 	FROM %s.ftc_vip
 	WHERE %s = ?
 	LIMIT 1
-	FOR UPDATE`, b.MemberDB(), string(col))
+	FOR UPDATE`, stmtSelectMember, b.MemberDB(), string(col))
+}
+
+func (b Builder) SelectMember(col MemberCol) string {
+	return fmt.Sprintf(`
+	%s
+	FROM %s.ftc_vip
+	WHERE %s = ?
+	LIMIT 1`, stmtSelectMember, b.MemberDB(), string(col))
 }
 
 func (b Builder) InsertMember() string {
@@ -90,4 +86,23 @@ func (b Builder) AddMemberID(whereCol MemberCol) string {
 	SET id = IF(id IS NULL, :id, id)
 	WHERE %s = :compound_id
 	LIMIT 1`, b.MemberDB(), string(whereCol))
+}
+
+// BackupMember creates statements to save a membership
+// prior to user requesting a new order.
+func (b Builder) MemberSnapshot() string {
+	return fmt.Sprintf(`
+	INSERT INTO %s.member_snapshot
+	SET id = :snapshot_id,
+		created_utc = UTC_TIMESTAMP(),
+		member_id = :member_id
+		compound_id = :compound_id,
+		ftc_id = :ftc_id,
+		union_id = :union_id,
+		expire_date = :expire_date,
+		payment_method = :payment_method,
+		stripe_sub_id = :stripe_sub_id,
+		stripe_plan_id = :stripe_plan_id,
+		auto_renewal = :auto_renewal,
+		sub_status = :sub_status`, b.MemberDB())
 }
