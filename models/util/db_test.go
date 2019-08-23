@@ -2,8 +2,6 @@ package util
 
 import (
 	"encoding/json"
-	"errors"
-	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -71,33 +69,27 @@ func TestConn_DSN(t *testing.T) {
 	}
 }
 
-type StringSlice []string
-
-func (x *StringSlice) Scan(src interface{}) error {
-	if src == nil {
-		*x = []string{}
-		return nil
-	}
-
-	switch s := src.(type) {
-	case []byte:
-		tmp := strings.Split(string(s), ",")
-		*x = tmp
-		return nil
-
-	default:
-		return errors.New("incompatible type to scan")
-	}
-}
-
-func TestSliceScanner(t *testing.T) {
+func TestStringSlice(t *testing.T) {
 	var ss StringSlice
+
+	emptyStr, err := ss.Value()
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("Empty string: %+v", emptyStr)
 
 	if err := ss.Scan([]byte("ABC,BCD,DEF")); err != nil {
 		t.Error(err)
 	}
 
 	t.Logf("CSV slice: %+v", ss)
+
+	r, err := ss.Value()
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("String to be inserted: %+v", r)
 }
 
 func TestSliceJSON(t *testing.T) {
