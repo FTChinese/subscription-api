@@ -8,12 +8,13 @@ import (
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 )
 
 // createOrder creates an order for ali or wx pay.
 func (router PayRouter) createOrder(
-	id paywall.AccountID,
+	id reader.AccountID,
 	plan paywall.Plan,
 	method enum.PayMethod,
 	app util.ClientApp,

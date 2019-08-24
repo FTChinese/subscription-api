@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest"
 	"github.com/pkg/errors"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	util2 "gitlab.com/ftchinese/subscription-api/models/util"
 	"strconv"
 	"strings"
@@ -51,7 +52,7 @@ type PaymentResult struct {
 type Subscription struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
-	AccountID
+	reader.AccountID
 	//Charge
 	ListPrice float64 `json:"listPrice" db:"price"`
 	Amount    float64 `json:"amount" db:"amount"`
@@ -76,7 +77,7 @@ type Subscription struct {
 // If later it is found that this order is used for upgrading,
 // upgrade it and returns a new instance with upgrading price.
 func NewOrder(
-	id AccountID,
+	id reader.AccountID,
 	p Plan,
 	method enum.PayMethod,
 	m Membership,
@@ -116,7 +117,7 @@ func NewOrder(
 	}, nil
 }
 
-func NewFreeUpgradeOrder(id AccountID, up UpgradePlan) (Subscription, error) {
+func NewFreeUpgradeOrder(id reader.AccountID, up UpgradePlan) (Subscription, error) {
 	orderID, err := GenerateOrderID()
 	if err != nil {
 		return Subscription{}, err
@@ -183,8 +184,8 @@ func (s Subscription) IsConfirmed() bool {
 	return !s.ConfirmedAt.IsZero()
 }
 
-func (s Subscription) GetAccountID() AccountID {
-	return AccountID{
+func (s Subscription) GetAccountID() reader.AccountID {
+	return reader.AccountID{
 		CompoundID: s.CompoundID,
 		FtcID:      s.FtcID,
 		UnionID:    s.UnionID,

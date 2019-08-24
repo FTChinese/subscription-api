@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/models/rand"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 
@@ -24,7 +25,7 @@ func GenerateSnapshotID() string {
 // This is actually called subscription by Stripe.
 type Membership struct {
 	ID null.String `json:"id" db:"member_id"` // A random string. Not used yet.
-	AccountID
+	reader.AccountID
 	//User         AccountID // Deprecate
 	LegacyTier   null.Int `json:"-" db:"vip_type"`
 	LegacyExpire null.Int `json:"-" db:"expire_time"`
@@ -63,7 +64,7 @@ func NewMemberSnapshot(m Membership) MemberSnapshot {
 // This is currently used by activating gift cards.
 // If membership is purchased via direct payment channel,
 // membership is created from subscription order.
-func NewMember(accountID AccountID) Membership {
+func NewMember(accountID reader.AccountID) Membership {
 	return Membership{
 		ID:        null.StringFrom(GenerateMemberID()),
 		AccountID: accountID,
@@ -129,7 +130,7 @@ func (m Membership) IsZero() bool {
 	return m.CompoundID == "" && m.Tier == enum.InvalidTier
 }
 
-func (m Membership) NewStripe(id AccountID, p StripeSubParams, s *stripe.Subscription) Membership {
+func (m Membership) NewStripe(id reader.AccountID, p StripeSubParams, s *stripe.Subscription) Membership {
 
 	m.GenerateID()
 
@@ -155,7 +156,7 @@ func (m Membership) NewStripe(id AccountID, p StripeSubParams, s *stripe.Subscri
 
 // WithStripe update an existing stripe membership.
 // This is used in webhook.
-func (m Membership) WithStripe(id AccountID, s *stripe.Subscription) (Membership, error) {
+func (m Membership) WithStripe(id reader.AccountID, s *stripe.Subscription) (Membership, error) {
 
 	m.GenerateID()
 

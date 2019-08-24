@@ -1,6 +1,9 @@
 package repository
 
-import "gitlab.com/ftchinese/subscription-api/models/paywall"
+import (
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
+)
 
 // AddMemberID set a membership's id column if it is empty.
 func (env Env) AddMemberID(m paywall.Membership) error {
@@ -27,7 +30,7 @@ func (env Env) BackUpMember(m paywall.MemberSnapshot) error {
 	return nil
 }
 
-func (env Env) RetrieveMember(id paywall.AccountID) (paywall.Membership, error) {
+func (env Env) RetrieveMember(id reader.AccountID) (paywall.Membership, error) {
 	var m paywall.Membership
 
 	err := env.db.Get(
@@ -44,7 +47,7 @@ func (env Env) RetrieveMember(id paywall.AccountID) (paywall.Membership, error) 
 	return m, nil
 }
 
-func (env Env) FindUnusedOrders(id paywall.AccountID) ([]paywall.ProrationSource, error) {
+func (env Env) FindUnusedOrders(id reader.AccountID) ([]paywall.ProrationSource, error) {
 	var sources = []paywall.ProrationSource{}
 
 	err := env.db.Select(

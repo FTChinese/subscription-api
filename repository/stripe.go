@@ -9,6 +9,7 @@ import (
 	"github.com/stripe/stripe-go/sub"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 )
 
@@ -21,7 +22,7 @@ func (env Env) CreateStripeCustomer(ftcID string) (string, error) {
 		return "", err
 	}
 
-	var u paywall.Account
+	var u reader.Account
 	err = tx.QueryRow(query.LockFtcUser, ftcID).Scan(
 		&u.FtcID,
 		&u.UnionID,
@@ -81,7 +82,7 @@ func createCustomer(email string) (string, error) {
 // util.ErrActiveStripeSub
 // util.ErrUnknownSubState
 func (env Env) CreateStripeSub(
-	id paywall.AccountID,
+	id reader.AccountID,
 	params paywall.StripeSubParams,
 ) (*stripe.Subscription, error) {
 
@@ -147,7 +148,7 @@ func (env Env) CreateStripeSub(
 }
 
 // GetStripeSub refresh stripe subscription data if stale.
-func (env Env) GetStripeSub(id paywall.AccountID) (*stripe.Subscription, error) {
+func (env Env) GetStripeSub(id reader.AccountID) (*stripe.Subscription, error) {
 	log := logger.WithField("trace", "Env.GetStripeSub")
 
 	tx, err := env.BeginOrderTx()
@@ -213,7 +214,7 @@ func (env Env) GetStripeSub(id paywall.AccountID) (*stripe.Subscription, error) 
 
 // UpgradeStripeSubs switches subscription plan.
 func (env Env) UpgradeStripeSubs(
-	id paywall.AccountID,
+	id reader.AccountID,
 	params paywall.StripeSubParams,
 ) (*stripe.Subscription, error) {
 
@@ -329,7 +330,7 @@ func upgradeStripeSub(p paywall.StripeSubParams, subID string) (*stripe.Subscrip
 }
 
 // SaveStripeError saves any error in stripe response.
-func (env Env) SaveStripeError(id paywall.AccountID, e *stripe.Error) error {
+func (env Env) SaveStripeError(id reader.AccountID, e *stripe.Error) error {
 	_, err := env.db.Exec(query.InsertStripeError,
 		id.FtcID,
 		null.NewString(e.ChargeID, e.ChargeID != ""),
@@ -351,7 +352,7 @@ func (env Env) SaveStripeError(id paywall.AccountID, e *stripe.Error) error {
 
 // WebHookSaveStripeSub saved a user's membership derived from
 // stripe subscription data.
-func (env Env) WebHookSaveStripeSub(s *stripe.Subscription) (paywall.Account, error) {
+func (env Env) WebHookSaveStripeSub(s *stripe.Subscription) (reader.Account, error) {
 
 	// Find the ftc user associated with stripe custoemr id.
 	ftcUser, err := env.FindStripeCustomer(s.Customer.ID)

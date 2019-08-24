@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"time"
 )
 
@@ -15,7 +16,7 @@ import (
 // wechatOnlyId    aliPay      renew
 // boundId					   upgrade
 func BuildSubs(
-	accountID paywall.AccountID,
+	accountID reader.AccountID,
 	pm enum.PayMethod,
 	usage paywall.SubsKind,
 ) paywall.Subscription {
@@ -64,7 +65,7 @@ func BuildSubs(
 // It mimics the working flow of user's order and membership
 // creation and updating inside a real db.
 type SubStore struct {
-	User      paywall.AccountID
+	User      reader.AccountID
 	Orders    map[string]paywall.Subscription // A user could have multiple orders.
 	Member    paywall.Membership              // But only one membership.
 	UpgradeV1 paywall.Upgrade
@@ -72,7 +73,7 @@ type SubStore struct {
 }
 
 // NewSubStore creates a new storage for a user's membership.
-func NewSubStore(id paywall.AccountID) *SubStore {
+func NewSubStore(id reader.AccountID) *SubStore {
 	return &SubStore{
 		User:   id,
 		Orders: make(map[string]paywall.Subscription), // Initially user has no orders.
