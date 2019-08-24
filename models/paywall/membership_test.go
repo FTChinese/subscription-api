@@ -12,57 +12,6 @@ func TestGenerateSnapshotID(t *testing.T) {
 	t.Log(GenerateSnapshotID())
 }
 
-func TestMembership_FromAliOrWx(t *testing.T) {
-	profile := NewProfile()
-
-	type fields struct {
-		member Membership
-	}
-	type args struct {
-		sub Subscription
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Create Member",
-			fields: fields{
-				member: Membership{},
-			},
-			args: args{
-				sub: profile.AliWxSub(AccountKindFtc, enum.PayMethodWx, SubsKindCreate),
-			},
-			wantErr: false,
-		},
-		{
-			name: "Renew Member",
-			fields: fields{
-				member: profile.Membership(AccountKindFtc, enum.PayMethodWx, false),
-			},
-			args: args{
-				sub: profile.AliWxSub(AccountKindFtc, enum.PayMethodAli, SubsKindRenew),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := tt.fields.member
-
-			got, err := m.FromAliOrWx(tt.args.sub)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Membership.FromAliOrWx() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			t.Logf("%+v", got)
-		})
-	}
-}
-
 func TestMembership_PermitStripeCreate(t *testing.T) {
 	profile := NewProfile()
 	m := profile.Membership(AccountKindFtc, enum.PayMethodStripe, false)

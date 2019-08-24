@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
+	"gitlab.com/ftchinese/subscription-api/models/query"
 )
 
 // OrderTx check a user's member status and create an order

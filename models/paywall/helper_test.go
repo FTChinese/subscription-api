@@ -120,24 +120,6 @@ func (p Profile) Membership(kind AccountKind, pm enum.PayMethod, expired bool) M
 	return m
 }
 
-func (p Profile) AliWxSub(kind AccountKind, pm enum.PayMethod, usage SubsKind) Subscription {
-	s, err := NewSubs(p.UserID(kind), standardYearlyPlan)
-	if err != nil {
-		panic(err)
-	}
-
-	s.ConfirmedAt = chrono.TimeNow()
-	s.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 1))
-	s.PaymentMethod = pm
-	s.StartDate = chrono.DateNow()
-	s.Usage = usage
-	if pm == enum.PayMethodWx {
-		s.WxAppID = null.StringFrom(GetWxAppID())
-	}
-
-	return s
-}
-
 func GetWxAppID() string {
 	return viper.GetString("wxapp.m_subs.app_id")
 }
