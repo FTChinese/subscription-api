@@ -2,7 +2,7 @@ package paywall
 
 import (
 	"github.com/pkg/errors"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
+	"gitlab.com/ftchinese/subscription-api/models/query"
 	"strings"
 	"text/template"
 

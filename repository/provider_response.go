@@ -2,8 +2,8 @@ package repository
 
 import (
 	"github.com/smartwalle/alipay"
+	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 // SaveAliNotification logs everything Alipay sends.
