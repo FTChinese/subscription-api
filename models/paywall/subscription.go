@@ -34,13 +34,6 @@ func GenerateOrderID() (string, error) {
 	return "FT" + strings.ToUpper(id), nil
 }
 
-// PaymentResult unifies ali and wx webhook notification.
-type PaymentResult struct {
-	Amount      int64
-	OrderID     string
-	ConfirmedAt time.Time
-}
-
 // Subscription contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 // An order could represents 12 status of user:
