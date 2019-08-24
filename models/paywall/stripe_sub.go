@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/stripe/stripe-go"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"strings"
 	"time"
 )
@@ -12,7 +13,7 @@ import (
 // StripeSub is a reduced version of stripe.Subscription.
 // Used as response when client asks for subscription data.
 type StripeSub struct {
-	AccountID AccountID `json:"-"`
+	AccountID reader.AccountID `json:"-"`
 	Coordinate
 	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time `json:"created"`

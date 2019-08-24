@@ -5,6 +5,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
 
 // OrderTx check a user's member status and create an order
@@ -18,7 +19,7 @@ type OrderTx struct {
 // RetrieveMember retrieves a user's membership info by ftc id
 // or wechat union id.
 // Returns zero value of membership if not found.
-func (otx OrderTx) RetrieveMember(id paywall.AccountID) (paywall.Membership, error) {
+func (otx OrderTx) RetrieveMember(id reader.AccountID) (paywall.Membership, error) {
 	var m paywall.Membership
 
 	err := otx.tx.Get(
@@ -136,7 +137,7 @@ func (otx OrderTx) SaveProration(p []paywall.ProrationSource) error {
 
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
-func (otx OrderTx) FindBalanceSources(accountID paywall.AccountID) ([]paywall.ProrationSource, error) {
+func (otx OrderTx) FindBalanceSources(accountID reader.AccountID) ([]paywall.ProrationSource, error) {
 
 	var sources = []paywall.ProrationSource{}
 

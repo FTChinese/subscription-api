@@ -10,6 +10,7 @@ import (
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
 	"github.com/spf13/viper"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"time"
 )
 
@@ -66,29 +67,29 @@ func NewProfile() Profile {
 	}
 }
 
-func (p Profile) UserID(kind AccountKind) AccountID {
-	var id AccountID
+func (p Profile) UserID(kind AccountKind) reader.AccountID {
+	var id reader.AccountID
 
 	switch kind {
 	case AccountKindFtc:
-		id, _ = NewID(p.FtcID, "")
+		id, _ = reader.NewID(p.FtcID, "")
 
 	case AccountKindWx:
-		id, _ = NewID("", p.UnionID)
+		id, _ = reader.NewID("", p.UnionID)
 
 	case AccountKindLinked:
-		id, _ = NewID(p.FtcID, p.UnionID)
+		id, _ = reader.NewID(p.FtcID, p.UnionID)
 	}
 
 	return id
 }
 
-func (p Profile) RandomKindUserID() AccountID {
+func (p Profile) RandomKindUserID() reader.AccountID {
 	return p.UserID(AccountKind(randomdata.Number(0, 3)))
 }
 
-func (p Profile) FtcUser() Account {
-	return Account{
+func (p Profile) FtcUser() reader.Account {
+	return reader.Account{
 		FtcID:    p.FtcID,
 		UnionID:  null.String{},
 		StripeID: null.String{},
