@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
@@ -19,7 +20,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 	}
 
 	type args struct {
-		id paywall.AccountID
+		id reader.AccountID
 	}
 	tests := []struct {
 		name    string
@@ -314,7 +315,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 	}
 
 	type args struct {
-		accountID paywall.AccountID
+		accountID reader.AccountID
 	}
 	tests := []struct {
 		name    string

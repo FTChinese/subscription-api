@@ -8,6 +8,7 @@ import (
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"net/http"
@@ -24,7 +25,7 @@ func NewUpgradeRouter(env repository.Env) UpgradeRouter {
 	return r
 }
 
-func (router UpgradeRouter) getUpgradePlan(id paywall.AccountID) (paywall.UpgradePlan, error) {
+func (router UpgradeRouter) getUpgradePlan(id reader.AccountID) (paywall.UpgradePlan, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.getUpgradePlan")
 
 	otx, err := router.env.BeginOrderTx()
@@ -121,7 +122,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 	view.Render(w, view.NewNoContent())
 }
 
-func (router UpgradeRouter) freeUpgrade(id paywall.AccountID, app util.ClientApp) (paywall.Subscription, error) {
+func (router UpgradeRouter) freeUpgrade(id reader.AccountID, app util.ClientApp) (paywall.Subscription, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.freeUpgrade")
 
 	tx, err := router.env.BeginOrderTx()

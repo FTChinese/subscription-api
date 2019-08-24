@@ -1,59 +1,13 @@
-package paywall
+package reader
 
 import (
-	"github.com/pkg/errors"
-	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"strings"
 	"text/template"
 
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/guregu/null"
 )
-
-// FtcID is used to identify an FTC user.
-// A user might have an ftc uuid, or a wechat union id,
-// or both.
-// This type structure is used to ensure unique constraint
-// for SQL columns that cannot be both null since SQL do not
-// have a mechanism to do UNIQUE INDEX on two columns while
-// keeping either of them nullable.
-// A user's compound id is taken from either ftc uuid or
-// wechat id, with ftc id taking precedence.
-type AccountID struct {
-	CompoundID string      `json:"-" db:"compound_id"`
-	FtcID      null.String `json:"-" db:"ftc_id"`
-	UnionID    null.String `json:"-" db:"union_id"`
-}
-
-func NewID(ftcID, unionID string) (AccountID, error) {
-	id := AccountID{
-		FtcID:   null.NewString(ftcID, ftcID != ""),
-		UnionID: null.NewString(unionID, unionID != ""),
-	}
-
-	if ftcID != "" {
-		id.CompoundID = ftcID
-	} else if unionID != "" {
-		id.CompoundID = unionID
-	} else {
-		return id, errors.New("ftcID and unionID should not both be null")
-	}
-	return id, nil
-}
-
-// MemberColumn determines which column will be used to
-// retrieve membership.
-func (i AccountID) MemberColumn() query.MemberCol {
-	if i.FtcID.Valid {
-		return query.MemberColCompoundID
-	}
-
-	if i.UnionID.Valid {
-		return query.MemberColUnionID
-	}
-
-	return query.MemberColCompoundID
-}
 
 // Account contains the minimal data to identify a user.
 type Account struct {
@@ -79,22 +33,22 @@ func (a Account) NormalizeName() string {
 }
 
 // ConfirmationParcel create a parcel for email after subscription is confirmed.
-func (a Account) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
+func (a Account) NewSubParcel(s paywall.Subscription) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterNewSub)
 
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := GetFtcPlans(true).FindPlan(s.NamedKey())
+	plan, err := paywall.GetFtcPlans(true).FindPlan(s.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
 	data := struct {
 		User Account
-		Sub  Subscription
-		Plan Plan
+		Sub  paywall.Subscription
+		Plan paywall.Plan
 	}{
 		User: a,
 		Sub:  s,
@@ -118,22 +72,22 @@ func (a Account) NewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	}, nil
 }
 
-func (a Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
+func (a Account) RenewSubParcel(s paywall.Subscription) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterRenewalSub)
 
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := GetFtcPlans(true).FindPlan(s.NamedKey())
+	plan, err := paywall.GetFtcPlans(true).FindPlan(s.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
 	data := struct {
 		User Account
-		Sub  Subscription
-		Plan Plan
+		Sub  paywall.Subscription
+		Plan paywall.Plan
 	}{
 		User: a,
 		Sub:  s,
@@ -157,23 +111,23 @@ func (a Account) RenewSubParcel(s Subscription) (postoffice.Parcel, error) {
 	}, nil
 }
 
-func (a Account) UpgradeSubParcel(s Subscription, preview UpgradePlan) (postoffice.Parcel, error) {
+func (a Account) UpgradeSubParcel(s paywall.Subscription, preview paywall.UpgradePlan) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterUpgradeSub)
 
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := GetFtcPlans(true).FindPlan(s.NamedKey())
+	plan, err := paywall.GetFtcPlans(true).FindPlan(s.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
 	data := struct {
 		User    Account
-		Sub     Subscription
-		Plan    Plan
-		Upgrade UpgradePlan
+		Sub     paywall.Subscription
+		Plan    paywall.Plan
+		Upgrade paywall.UpgradePlan
 	}{
 		User:    a,
 		Sub:     s,

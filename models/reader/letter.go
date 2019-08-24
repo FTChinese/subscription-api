@@ -1,4 +1,4 @@
-package paywall
+package reader
 
 // ConfirmationLetter is the content of the email send to user when user successfully subscribed to membership.
 const letterNewSub = `

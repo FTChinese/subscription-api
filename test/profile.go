@@ -9,6 +9,7 @@ import (
 	"github.com/icrowley/fake"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 	"os"
 	"time"
@@ -54,42 +55,42 @@ var MyProfile = Profile{
 	IP:       fake.IPv4(),
 }
 
-func (p Profile) AccountID(kind AccountKind) paywall.AccountID {
+func (p Profile) AccountID(kind AccountKind) reader.AccountID {
 
-	var id paywall.AccountID
+	var id reader.AccountID
 
 	switch kind {
 	case AccountKindFtc:
-		id, _ = paywall.NewID(p.FtcID, "")
+		id, _ = reader.NewID(p.FtcID, "")
 
 	case AccountKindWx:
-		id, _ = paywall.NewID("", p.UnionID)
+		id, _ = reader.NewID("", p.UnionID)
 
 	case AccountKindLinked:
-		id, _ = paywall.NewID(p.FtcID, p.UnionID)
+		id, _ = reader.NewID(p.FtcID, p.UnionID)
 	}
 
 	return id
 }
 
-func (p Profile) FtcAccountID() paywall.AccountID {
+func (p Profile) FtcAccountID() reader.AccountID {
 	return p.AccountID(AccountKindFtc)
 }
 
-func (p Profile) WxAccountID() paywall.AccountID {
+func (p Profile) WxAccountID() reader.AccountID {
 	return p.AccountID(AccountKindWx)
 }
 
-func (p Profile) LinkedAccountID() paywall.AccountID {
+func (p Profile) LinkedAccountID() reader.AccountID {
 	return p.AccountID(AccountKindLinked)
 }
 
-func (p Profile) RandomUserID() paywall.AccountID {
+func (p Profile) RandomUserID() reader.AccountID {
 	return p.AccountID(AccountKind(randomdata.Number(0, 3)))
 }
 
-func (p Profile) FtcUser() paywall.Account {
-	return paywall.Account{
+func (p Profile) FtcUser() reader.Account {
+	return reader.Account{
 		FtcID:    p.FtcID,
 		UnionID:  null.String{},
 		StripeID: null.String{},
@@ -98,10 +99,10 @@ func (p Profile) FtcUser() paywall.Account {
 	}
 }
 
-func (p Profile) Account(k AccountKind) paywall.Account {
+func (p Profile) Account(k AccountKind) reader.Account {
 	switch k {
 	case AccountKindFtc:
-		return paywall.Account{
+		return reader.Account{
 			FtcID:    p.FtcID,
 			UnionID:  null.String{},
 			StripeID: null.StringFrom(p.UnionID),
@@ -110,7 +111,7 @@ func (p Profile) Account(k AccountKind) paywall.Account {
 		}
 
 	case AccountKindWx:
-		return paywall.Account{
+		return reader.Account{
 			FtcID:    "",
 			UnionID:  null.StringFrom(p.UnionID),
 			StripeID: null.String{},
@@ -119,7 +120,7 @@ func (p Profile) Account(k AccountKind) paywall.Account {
 		}
 
 	case AccountKindLinked:
-		return paywall.Account{
+		return reader.Account{
 			FtcID:    p.FtcID,
 			UnionID:  null.StringFrom(p.UnionID),
 			StripeID: null.StringFrom(p.StripeID),
@@ -128,7 +129,7 @@ func (p Profile) Account(k AccountKind) paywall.Account {
 		}
 	}
 
-	return paywall.Account{}
+	return reader.Account{}
 }
 
 func (p Profile) Membership(k AccountKind, pm enum.PayMethod, expired bool) paywall.Membership {

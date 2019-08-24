@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/go-chi/chi"
 	"github.com/stripe/stripe-go"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"net/http"
 )
 
@@ -21,8 +21,8 @@ func GetURLParam(req *http.Request, key string) gorest.Param {
 }
 
 // GetUserID extract ftc uuid or union id from request header.
-func GetUserID(h http.Header) (paywall.AccountID, error) {
-	return paywall.NewID(h.Get(ftcIDKey), h.Get(unionIDKey))
+func GetUserID(h http.Header) (reader.AccountID, error) {
+	return reader.NewID(h.Get(ftcIDKey), h.Get(unionIDKey))
 }
 
 // CastStripeError tries to cast an error to stripe.Error, or nil if it is not.

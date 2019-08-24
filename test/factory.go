@@ -10,6 +10,7 @@ import (
 	"github.com/icrowley/fake"
 	"github.com/objcoding/wxpay"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"log"
@@ -68,7 +69,7 @@ func GenAvatar() string {
 	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
 }
 
-func GenMember(u paywall.AccountID, expired bool) paywall.Membership {
+func GenMember(u reader.AccountID, expired bool) paywall.Membership {
 	m := paywall.NewMember(u)
 	m.Tier = YearlyStandard.Tier
 	m.Cycle = YearlyStandard.Cycle
@@ -103,7 +104,7 @@ func BalanceSources() []paywall.ProrationSource {
 	return sources
 }
 
-func GenUpgrade(userID paywall.AccountID) paywall.Upgrade {
+func GenUpgrade(userID reader.AccountID) paywall.Upgrade {
 
 	up := paywall.NewUpgrade(YearlyPremium).
 		SetBalance(BalanceSources()).

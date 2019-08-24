@@ -1,14 +1,14 @@
 package repository
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
 
 // FindFtcUser retrieves an FTC account's basic info.
-func (env Env) FindFtcUser(ftcId string) (paywall.Account, error) {
+func (env Env) FindFtcUser(ftcId string) (reader.Account, error) {
 
-	var u paywall.Account
+	var u reader.Account
 	err := env.db.QueryRow(query.SelectFtcUser, ftcId).Scan(
 		&u.FtcID,
 		&u.UnionID,
@@ -26,8 +26,8 @@ func (env Env) FindFtcUser(ftcId string) (paywall.Account, error) {
 	return u, nil
 }
 
-func (env Env) FindStripeCustomer(cusID string) (paywall.Account, error) {
-	var u paywall.Account
+func (env Env) FindStripeCustomer(cusID string) (reader.Account, error) {
+	var u reader.Account
 	err := env.db.QueryRow(query.SelectStripeCustomer, cusID).Scan(
 		&u.FtcID,
 		&u.UnionID,
