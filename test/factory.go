@@ -2,15 +2,13 @@ package test
 
 import (
 	"fmt"
-	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
 	"github.com/objcoding/wxpay"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"log"
@@ -56,10 +54,6 @@ func RandomPayMethod() enum.PayMethod {
 	return enum.PayMethod(randomdata.Number(1, 3))
 }
 
-func RandomAccountKind() AccountKind {
-	return AccountKind(randomdata.Number(1, 3))
-}
-
 func GenAvatar() string {
 	var gender = []string{"men", "women"}
 
@@ -67,52 +61,6 @@ func GenAvatar() string {
 	g := gender[randomdata.Number(0, 2)]
 
 	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
-}
-
-func GenMember(u reader.AccountID, expired bool) paywall.Membership {
-	m := paywall.NewMember(u)
-	m.Tier = YearlyStandard.Tier
-	m.Cycle = YearlyStandard.Cycle
-
-	if expired {
-		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, 0, -7))
-	} else {
-		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(1, 0, 1))
-	}
-
-	return m
-}
-
-func BalanceSources() []paywall.ProrationSource {
-	sources := []paywall.ProrationSource{}
-
-	for i := 0; i < 2; i++ {
-		id, _ := paywall.GenerateOrderID()
-		startTime := time.Now().AddDate(i, 0, 0)
-		endTime := startTime.AddDate(i+1, 0, 0)
-
-		s := paywall.ProrationSource{
-			OrderID:    id,
-			PaidAmount: 258,
-			StartDate:  chrono.DateFrom(startTime),
-			EndDate:    chrono.DateFrom(endTime),
-		}
-
-		sources = append(sources, s)
-	}
-
-	return sources
-}
-
-func GenUpgrade(userID reader.AccountID) paywall.Upgrade {
-
-	up := paywall.NewUpgrade(YearlyPremium).
-		SetBalance(BalanceSources()).
-		CalculatePayable()
-
-	up.Member = GenMember(userID, false)
-
-	return up
 }
 
 func WxXMLNotification(orderID string) string {
@@ -190,7 +138,9 @@ func WxPrepay() wechat.UnifiedOrderResp {
 		log.Fatal(err)
 	}
 
-	return wechat.NewUnifiedOrderResp(p)
+	orderID, _ := paywall.GenerateOrderID()
+
+	return wechat.NewUnifiedOrderResp(orderID, p)
 }
 
 func GenCardSerial() string {
