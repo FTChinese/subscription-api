@@ -1,18 +1,22 @@
 package repository
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 
 func TestOrderTx_RetrieveMember(t *testing.T) {
-	store := test.NewSubStore(test.NewProfile().AccountID(test.AccountKindFtc))
-	test.NewModel().NewMemberCreated(store)
+	store := test.NewSubStore(
+		test.NewProfile(),
+		reader.AccountKindFtc,
+	)
+
+	store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
+
+	test.NewRepo().SaveMember(store.Member)
 
 	env := Env{
 		db:    test.DB,
@@ -30,14 +34,14 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 		{
 			name: "Empty member",
 			args: args{
-				id: test.NewProfile().AccountID(test.AccountKindFtc),
+				id: test.NewProfile().AccountID(reader.AccountKindFtc),
 			},
 			wantErr: false,
 		},
 		{
 			name: "Existing member",
 			args: args{
-				id: store.Member.User,
+				id: store.Member.AccountID,
 			},
 		},
 	}
@@ -63,7 +67,10 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 }
 
 func TestOrderTx_SaveOrder(t *testing.T) {
-	p := test.NewProfile()
+	store := test.NewSubStore(
+		test.NewProfile(),
+		reader.AccountKindFtc,
+	)
 
 	env := Env{
 		db:    test.DB,
@@ -71,8 +78,7 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 	}
 
 	type args struct {
-		s paywall.Subscription
-		c util.ClientApp
+		order paywall.Order
 	}
 	tests := []struct {
 		name    string
@@ -80,26 +86,23 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "FTC account with alipay",
+			name: "FTC account new order",
 			args: args{
-				s: test.BuildSubs(p.FtcAccountID(), enum.PayMethodAli, paywall.SubsKindCreate),
-				c: test.RandomClientApp(),
+				order: store.MustCreate(test.YearlyStandard),
 			},
 			wantErr: false,
 		},
 		{
-			name: "WX account with wxpay",
+			name: "FTC account renew order",
 			args: args{
-				s: test.BuildSubs(p.WxAccountID(), enum.PayMethodWx, paywall.SubsKindRenew),
-				c: test.RandomClientApp(),
+				order: store.MustRenewal(test.YearlyStandard),
 			},
 			wantErr: false,
 		},
 		{
-			name: "Linked account upgrading",
+			name: "FTC account upgrading",
 			args: args{
-				s: test.BuildSubs(p.LinkedAccountID(), enum.PayMethodAli, paywall.SubsKindUpgrade),
-				c: test.RandomClientApp(),
+				order: store.MustUpgrading(),
 			},
 			wantErr: false,
 		},
@@ -111,7 +114,7 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 				t.Error(err)
 			}
 
-			if err := otx.SaveOrder(tt.args.s, tt.args.c); (err != nil) != tt.wantErr {
+			if err := otx.SaveOrder(tt.args.order); (err != nil) != tt.wantErr {
 				t.Errorf("OrderTx.SaveOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
@@ -123,8 +126,17 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 }
 
 func TestOrderTx_RetrieveOrder(t *testing.T) {
-	p := test.NewProfile()
-	store := test.NewSubStore(p.FtcAccountID())
+
+	store := test.NewSubStore(
+		test.NewProfile(),
+		reader.AccountKindFtc,
+	)
+
+	order1 := store.MustCreate(test.YearlyStandard)
+	test.NewRepo().SaveOrder(order1)
+
+	order2 := store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
+	test.NewRepo().SaveOrder(order2)
 
 	env := Env{
 		db:    test.DB,
@@ -142,9 +154,15 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 		{
 			name: "Retrieve an unconfirmed order",
 			args: args{
-				orderID: test.NewModel().CreateNewOrder(store).ID,
+				orderID: order1.ID,
 			},
 			wantErr: false,
+		},
+		{
+			name: "Retrieve a confirmed order",
+			args: args{
+				orderID: order2.ID,
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -170,8 +188,16 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 }
 
 func TestOrderTx_ConfirmOrder(t *testing.T) {
-	p := test.NewProfile()
-	store := test.NewSubStore(p.FtcAccountID())
+
+	store := test.NewSubStore(
+		test.NewProfile(),
+		reader.AccountKindFtc,
+	)
+
+	order := store.MustCreate(test.YearlyStandard)
+	test.NewRepo().SaveOrder(order)
+
+	order = store.MustConfirm(order.ID)
 
 	env := Env{
 		db:    test.DB,
@@ -179,7 +205,7 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 	}
 
 	type args struct {
-		order paywall.Subscription
+		order paywall.Order
 	}
 	tests := []struct {
 		name    string
@@ -187,9 +213,9 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save order to be confirmed",
+			name: "Confirm an order",
 			args: args{
-				order: test.NewModel().CreateConfirmedOrder(store),
+				order: order,
 			},
 			wantErr: false,
 		},
@@ -213,8 +239,15 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 }
 
 func TestOrderTx_CreateMember(t *testing.T) {
-	p := test.NewProfile()
-	store := test.NewSubStore(p.FtcAccountID())
+
+	store := test.NewSubStore(
+		test.NewProfile(),
+		reader.AccountKindFtc,
+	)
+
+	store.MustConfirm(
+		store.MustCreate(test.YearlyStandard).ID,
+	)
 
 	env := Env{
 		db:    test.DB,
@@ -232,7 +265,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 		{
 			name: "Create a new member",
 			args: args{
-				m: test.NewModel().CreateNewMember(store),
+				m: store.Member,
 			},
 			wantErr: false,
 		},
@@ -258,8 +291,18 @@ func TestOrderTx_CreateMember(t *testing.T) {
 }
 
 func TestOrderTx_UpdateMember(t *testing.T) {
-	p := test.NewProfile()
-	store := test.NewSubStore(p.FtcAccountID())
+
+	store := test.NewSubStore(
+		test.NewProfile(),
+		reader.AccountKindFtc,
+	)
+
+	// Create a new order and confirm it.
+	store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
+	test.NewRepo().SaveMember(store.Member)
+
+	// Create another order and confirm it.
+	store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
 
 	env := Env{
 		db:    test.DB,
@@ -277,7 +320,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 		{
 			name: "Update member",
 			args: args{
-				m: test.NewModel().CreateUpdatedMember(store),
+				m: store.Member,
 			},
 			wantErr: false,
 		},
@@ -304,10 +347,19 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 
 func TestOrderTx_FindBalanceSources(t *testing.T) {
 
-	accountID := test.NewProfile().FtcAccountID()
-	store := test.NewSubStore(accountID)
+	profile := test.NewProfile()
 
-	test.NewModel().MemberRenewedN(store, 5)
+	store := test.NewSubStore(
+		profile,
+		reader.AccountKindFtc,
+	)
+
+	orders := store.MustRenewN(test.YearlyStandard, 5)
+
+	repo := test.NewRepo()
+	for _, v := range orders {
+		repo.SaveOrder(v)
+	}
 
 	env := Env{
 		db:    test.DB,
@@ -325,7 +377,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 		{
 			name: "Find Balance Sources",
 			args: args{
-				accountID: accountID,
+				accountID: store.AccountID,
 			},
 			wantErr: false,
 		},
@@ -353,14 +405,14 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 	}
 }
 
-func TestOrderTx_SaveUpgrade(t *testing.T) {
-	accountID := test.NewProfile().FtcAccountID()
-	store := test.NewSubStore(accountID)
+func TestOrderTx_SaveUpgradePlan(t *testing.T) {
 
-	upgradeOrder, err := store.UpgradeOrder(5)
-	if err != nil {
-		t.Error(err)
-	}
+	store := test.NewSubStore(
+		test.NewProfile(),
+		reader.AccountKindFtc,
+	)
+	store.MustRenewN(test.YearlyStandard, 3)
+	store.MustCreate(test.YearlyPremium)
 
 	env := Env{
 		db:    test.DB,
@@ -368,8 +420,7 @@ func TestOrderTx_SaveUpgrade(t *testing.T) {
 	}
 
 	type args struct {
-		orderID string
-		up      paywall.Upgrade
+		up paywall.UpgradePlan
 	}
 	tests := []struct {
 		name    string
@@ -377,41 +428,37 @@ func TestOrderTx_SaveUpgrade(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save Upgrade",
+			name: "Save Upgrade Plan",
 			args: args{
-				orderID: upgradeOrder.ID,
-				up:      store.UpgradeV1,
+				up: store.UpgradePlan,
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tx, err := env.BeginOrderTx()
+			otx, err := env.BeginOrderTx()
 			if err != nil {
 				t.Error(err)
 			}
-
-			if err := tx.SaveUpgrade(tt.args.orderID, tt.args.up); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.SaveUpgrade() error = %v, wantErr %v", err, tt.wantErr)
+			if err := otx.SaveUpgradePlan(tt.args.up); (err != nil) != tt.wantErr {
+				t.Errorf("SaveUpgradePlan() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := tx.Commit(); err != nil {
+			if err := otx.Commit(); err != nil {
 				t.Error(err)
 			}
 
-			t.Logf("Saved upgrade: %+v", tt.args.up)
+			t.Logf("Save upgrade plan: %+v", tt.args.up)
 		})
 	}
 }
 
-func TestOrderTx_SaveUpgradeV2(t *testing.T) {
-	accountID := test.NewProfile().FtcAccountID()
-	store := test.NewSubStore(accountID)
+func TestOrderTx_SaveProration(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile(), reader.AccountKindFtc)
 
-	upgradeOrder, err := store.UpgradeOrder(5)
-	if err != nil {
-		t.Error(err)
-	}
+	store.MustRenewN(test.YearlyStandard, 3)
+	store.MustCreate(test.YearlyPremium)
 
 	env := Env{
 		db:    test.DB,
@@ -419,8 +466,7 @@ func TestOrderTx_SaveUpgradeV2(t *testing.T) {
 	}
 
 	type args struct {
-		orderID string
-		up      paywall.UpgradePlan
+		p []paywall.ProrationSource
 	}
 	tests := []struct {
 		name    string
@@ -428,11 +474,11 @@ func TestOrderTx_SaveUpgradeV2(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save upgrade v2",
+			name: "Save Proration",
 			args: args{
-				orderID: upgradeOrder.ID,
-				up:      store.UpgradeV2,
+				p: store.UpgradePlan.Data,
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -442,8 +488,8 @@ func TestOrderTx_SaveUpgradeV2(t *testing.T) {
 				t.Error(err)
 			}
 
-			if err := otx.SaveUpgradePlan(tt.args.orderID, tt.args.up); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.SaveUpgradePlan() error = %v, wantErr %v", err, tt.wantErr)
+			if err := otx.SaveProration(tt.args.p); (err != nil) != tt.wantErr {
+				t.Errorf("SaveProration() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err := otx.Commit(); err != nil {
@@ -453,80 +499,19 @@ func TestOrderTx_SaveUpgradeV2(t *testing.T) {
 	}
 }
 
-func TestOrderTx_SetLastUpgradeID(t *testing.T) {
-	accountID := test.NewProfile().FtcAccountID()
-	store := test.NewSubStore(accountID)
-
-	test.NewModel().UpgradeOrder(store, 5)
-
-	env := Env{
-		db:    test.DB,
-		query: query.NewBuilder(false),
-	}
-
-	type args struct {
-		up paywall.Upgrade
-	}
-
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Set upgrade id on upgrade source order",
-			args: args{
-				up: store.UpgradeV1,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
-			if err := tx.SetLastUpgradeID(tt.args.up); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.SetLastUpgradeID() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if err := tx.Commit(); err != nil {
-				t.Error(err)
-			}
-		})
-	}
-}
-
 func TestOrderTx_ConfirmUpgrade(t *testing.T) {
-	accountID := test.NewProfile().FtcAccountID()
-	store := test.NewSubStore(accountID)
+	store := test.NewSubStore(test.NewProfile(), reader.AccountKindFtc)
 
-	upgradeOrder := test.NewModel().UpgradeOrder(store, 5)
+	store.MustRenewN(test.YearlyStandard, 3)
+	store.MustCreate(test.YearlyPremium)
 
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
 
-	otx, err := env.BeginOrderTx()
-	if err != nil {
-		t.Error(err)
-	}
-
-	if err := otx.SaveUpgradePlan(upgradeOrder.ID, store.UpgradeV2); err != nil {
-		t.Error(err)
-	}
-
-	if err := otx.SetLastUpgradeIDV2(store.UpgradeV2); err != nil {
-		t.Error(err)
-	}
-
-	if err := otx.Commit(); err != nil {
-		t.Error(err)
-	}
-
 	type args struct {
-		id string
+		upgradeID string
 	}
 	tests := []struct {
 		name    string
@@ -534,28 +519,29 @@ func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Confirm upgrade",
-			args: args{
-				id: store.UpgradeV2.ID,
-			},
+			name:    "Confirm Upgrade",
+			args:    args{upgradeID: store.UpgradePlan.ID},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tx, err := env.BeginOrderTx()
+			otx, err := env.BeginOrderTx()
 			if err != nil {
 				t.Error(err)
 			}
-			if err := tx.ConfirmUpgrade(tt.args.id); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.ConfirmUpgrade() error = %v, wantErr %v", err, tt.wantErr)
-			}
 
-			if err := tx.Commit(); err != nil {
+			if err := otx.SaveProration(store.UpgradePlan.Data); err != nil {
 				t.Error(err)
 			}
 
-			t.Logf("Confirmed upgrade id: %s", tt.args.id)
+			if err := otx.ConfirmUpgrade(tt.args.upgradeID); (err != nil) != tt.wantErr {
+				t.Errorf("ConfirmUpgrade() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err := otx.Commit(); err != nil {
+				t.Error(err)
+			}
 		})
 	}
 }
