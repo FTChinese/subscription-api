@@ -1,9 +1,9 @@
 package test
 
 import (
-	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
@@ -23,7 +23,7 @@ var YearlyStandard = paywall.GetFtcPlans(false)["standard_year"]
 var YearlyPremium = paywall.GetFtcPlans(false)["premium_year"]
 
 var (
-	DB          *sql.DB
+	DB          *sqlx.DB
 	Postman     postoffice.Postman
 	Cache       *cache.Cache
 	WxOAuthApp  wxlogin.WxApp
