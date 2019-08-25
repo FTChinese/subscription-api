@@ -55,53 +55,27 @@ var MyProfile = Profile{
 	IP:       fake.IPv4(),
 }
 
-func (p Profile) AccountID(kind AccountKind) reader.AccountID {
+func (p Profile) AccountID(kind reader.AccountKind) reader.AccountID {
 
 	var id reader.AccountID
 
 	switch kind {
-	case AccountKindFtc:
+	case reader.AccountKindFtc:
 		id, _ = reader.NewID(p.FtcID, "")
 
-	case AccountKindWx:
+	case reader.AccountKindWx:
 		id, _ = reader.NewID("", p.UnionID)
 
-	case AccountKindLinked:
+	case reader.AccountKindLinked:
 		id, _ = reader.NewID(p.FtcID, p.UnionID)
 	}
 
 	return id
 }
 
-func (p Profile) FtcAccountID() reader.AccountID {
-	return p.AccountID(AccountKindFtc)
-}
-
-func (p Profile) WxAccountID() reader.AccountID {
-	return p.AccountID(AccountKindWx)
-}
-
-func (p Profile) LinkedAccountID() reader.AccountID {
-	return p.AccountID(AccountKindLinked)
-}
-
-func (p Profile) RandomUserID() reader.AccountID {
-	return p.AccountID(AccountKind(randomdata.Number(0, 3)))
-}
-
-func (p Profile) FtcUser() reader.Account {
-	return reader.Account{
-		FtcID:    p.FtcID,
-		UnionID:  null.String{},
-		StripeID: null.String{},
-		Email:    p.Email,
-		UserName: null.StringFrom(p.UserName),
-	}
-}
-
-func (p Profile) Account(k AccountKind) reader.Account {
+func (p Profile) Account(k reader.AccountKind) reader.Account {
 	switch k {
-	case AccountKindFtc:
+	case reader.AccountKindFtc:
 		return reader.Account{
 			FtcID:    p.FtcID,
 			UnionID:  null.String{},
@@ -110,7 +84,7 @@ func (p Profile) Account(k AccountKind) reader.Account {
 			UserName: null.StringFrom(p.UserName),
 		}
 
-	case AccountKindWx:
+	case reader.AccountKindWx:
 		return reader.Account{
 			FtcID:    "",
 			UnionID:  null.StringFrom(p.UnionID),
@@ -119,7 +93,7 @@ func (p Profile) Account(k AccountKind) reader.Account {
 			UserName: null.String{},
 		}
 
-	case AccountKindLinked:
+	case reader.AccountKindLinked:
 		return reader.Account{
 			FtcID:    p.FtcID,
 			UnionID:  null.StringFrom(p.UnionID),
@@ -132,35 +106,23 @@ func (p Profile) Account(k AccountKind) reader.Account {
 	return reader.Account{}
 }
 
-func (p Profile) Membership(k AccountKind, pm enum.PayMethod, expired bool) paywall.Membership {
-	accountID := p.AccountID(k)
-	id, err := paywall.GenerateMemberID()
-	if err != nil {
-		panic(err)
-	}
-	m := paywall.Membership{
-		ID:   null.StringFrom(id),
-		User: accountID,
+func (p Profile) Membership(k reader.AccountKind) paywall.Membership {
+	return paywall.Membership{
+		ID:           null.StringFrom(paywall.GenerateMemberID()),
+		AccountID:    p.AccountID(reader.AccountKindFtc),
+		LegacyTier:   null.Int{},
+		LegacyExpire: null.Int{},
 		Coordinate: paywall.Coordinate{
-			Tier:  YearlyStandard.Tier,
-			Cycle: YearlyStandard.Cycle,
+			Tier:  enum.TierStandard,
+			Cycle: enum.CycleYear,
 		},
-		ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
-		PaymentMethod: pm,
+		ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
+		PaymentMethod: enum.PayMethodWx,
+		StripeSubID:   null.String{},
+		StripePlanID:  null.String{},
+		AutoRenewal:   false,
+		Status:        paywall.SubStatusNull,
 	}
-
-	if expired {
-		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, 0, -7))
-	}
-
-	if pm == enum.PayMethodStripe {
-		m.StripeSubID = null.StringFrom(GenSubID())
-		m.StripePlanID = null.StringFrom(YearlyStandard.StripeID)
-		m.AutoRenewal = true
-		m.Status = paywall.SubStatusActive
-	}
-
-	return m
 }
 
 func (p Profile) WxAccess() wxlogin.OAuthAccess {
