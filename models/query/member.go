@@ -76,14 +76,14 @@ func (b Builder) UpdateMember(whereCol MemberCol) string {
 		stripe_plan_id = :stripe_plan_id,
 		auto_renewal = :auto_renewal,
 		sub_status = :sub_status
-	WHERE %s = :coumpound_id
+	WHERE %s = :compound_id
 	LIMIT 1`, b.MemberDB(), string(whereCol))
 }
 
 func (b Builder) AddMemberID(whereCol MemberCol) string {
 	return fmt.Sprintf(`
 	UPDATE %s.ftc_vip
-	SET id = IF(id IS NULL, :id, id)
+	SET id = IF(id IS NULL, :member_id, id)
 	WHERE %s = :compound_id
 	LIMIT 1`, b.MemberDB(), string(whereCol))
 }
@@ -95,13 +95,13 @@ func (b Builder) MemberSnapshot() string {
 	INSERT INTO %s.member_snapshot
 	SET id = :snapshot_id,
 		created_utc = UTC_TIMESTAMP(),
-		member_id = :member_id
+		member_id = :member_id,
 		compound_id = :compound_id,
-		ftc_id = :ftc_id,
-		union_id = :union_id,
+		ftc_user_id = :ftc_id,
+		wx_union_id = :union_id,
 		expire_date = :expire_date,
 		payment_method = :payment_method,
-		stripe_sub_id = :stripe_sub_id,
+		stripe_subscription_id = :stripe_sub_id,
 		stripe_plan_id = :stripe_plan_id,
 		auto_renewal = :auto_renewal,
 		sub_status = :sub_status`, b.MemberDB())
