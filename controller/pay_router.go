@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/models/letter"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
@@ -69,7 +70,7 @@ func (router PayRouter) wxCallbackURL() string {
 }
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
-func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
+func (router PayRouter) sendConfirmationEmail(order paywall.Order) error {
 	logger := logrus.WithFields(logrus.Fields{
 		"trace": "PayRouter.sendConfirmationEmail",
 	})
@@ -77,30 +78,30 @@ func (router PayRouter) sendConfirmationEmail(subs paywall.Subscription) error {
 	// If the FtcID field is null, it indicates this user
 	// does not have an FTC account bound. You cannot find out
 	// its email address.
-	if !subs.FtcID.Valid {
+	if !order.FtcID.Valid {
 		return nil
 	}
 	// Find this user's personal data
-	ftcUser, err := router.env.FindFtcUser(subs.CompoundID)
+	account, err := router.env.FindFtcUser(order.CompoundID)
 
 	if err != nil {
 		return err
 	}
 
 	var parcel postoffice.Parcel
-	switch subs.Usage {
+	switch order.Usage {
 	case paywall.SubsKindCreate:
-		parcel, err = ftcUser.NewSubParcel(subs)
+		parcel, err = letter.NewSubParcel(account, order)
 
 	case paywall.SubsKindRenew:
-		parcel, err = ftcUser.RenewSubParcel(subs)
+		parcel, err = letter.NewRenewalParcel(account, order)
 
 	case paywall.SubsKindUpgrade:
-		up, err := router.loadUpgradePlan(subs.UpgradeID.String)
+		up, err := router.loadUpgradePlan(order.UpgradeID.String)
 		if err != nil {
 			return err
 		}
-		parcel, err = ftcUser.UpgradeSubParcel(subs, up)
+		parcel, err = letter.NewUpgradeParcel(account, order, up)
 	}
 
 	if err != nil {
