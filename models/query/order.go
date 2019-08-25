@@ -13,7 +13,7 @@ func (b Builder) InsertClientApp() string {
 }
 
 // Statement to insert a subscription order.
-func (b Builder) InsertSubs() string {
+func (b Builder) InsertOrder() string {
 	return fmt.Sprintf(`
 	INSERT INTO %s.ftc_trade
 	SET trade_no = :order_id,
@@ -38,21 +38,21 @@ func (b Builder) InsertSubs() string {
 // notification.
 func (b Builder) SelectSubsLock() string {
 	return fmt.Sprintf(`
-	SELECT trade_no AS :order_id,
-		user_id AS :compound_id,
-		ftc_user_id AS :ftc_id,
-		wx_union_id AS :union_id,
-		trade_price AS :price,
-		trade_amount AS :amount,
-		tier_to_buy AS :tier,
-		billing_cycle AS :cycle,
-		cycle_count AS :cycle_count,
-		extra_days AS :extra_days,
-		category AS :usage_type,
-		upgrade_id AS :upgrade_id,
-		payment_method AS :payment_method,
-		created_utc AS :created_at,
-		confirmed_utc AS :confirmed_at
+	SELECT trade_no AS order_id,
+		user_id AS compound_id,
+		ftc_user_id AS ftc_id,
+		wx_union_id AS union_id,
+		trade_price AS price,
+		trade_amount AS amount,
+		tier_to_buy AS tier,
+		billing_cycle AS cycle,
+		cycle_count AS cycle_count,
+		extra_days AS extra_days,
+		category AS usage_type,
+		upgrade_id AS upgrade_id,
+		payment_method AS payment_method,
+		created_utc AS created_at,
+		confirmed_utc AS confirmed_at
 	FROM %s.ftc_trade
 	WHERE trade_no = ?
 	LIMIT 1
@@ -66,7 +66,7 @@ func (b Builder) ConfirmOrder() string {
 	SET confirmed_utc = :confirmed_at,
 		start_date = :start_date,
 		end_date = :end_date
-	WHERE trade_no = :id
+	WHERE trade_no = :order_id
 	LIMIT 1`, b.MemberDB())
 }
 
