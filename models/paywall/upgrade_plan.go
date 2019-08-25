@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"gitlab.com/ftchinese/subscription-api/models/rand"
+	"log"
 	"math"
 	"time"
 )
@@ -28,7 +29,9 @@ func (p ProrationSource) Prorate() float64 {
 
 	// If subscription starting date of this order is in
 	// future, returns all the paid amount.
-	if p.StartDate.After(today) {
+	// If the plan's start date is not passed yet, do not
+	// perform calculation.
+	if today.Before(p.StartDate.Time) {
 		return p.PaidAmount
 	}
 
@@ -37,9 +40,20 @@ func (p ProrationSource) Prorate() float64 {
 	// Calculate the remaining portion.
 	left := p.EndDate.Sub(today)
 
+	log.Printf("Left %+v", left)
+
 	total := p.EndDate.Sub(p.StartDate.Time)
 
+	log.Printf("Total %+v", total)
+
 	remains := left.Hours() * p.PaidAmount / total.Hours()
+
+	log.Printf("Remains %+v", remains)
+
+	// If remains < 1, the result will be 1.0
+	if remains < 1 {
+		return remains
+	}
 
 	return math.Ceil(remains)
 }
@@ -59,7 +73,7 @@ type UpgradePlan struct {
 	Plan Plan              `json:"plan"`
 }
 
-func NewUpgradePreview(sources []ProrationSource) UpgradePlan {
+func NewUpgradePlan(sources []ProrationSource) UpgradePlan {
 	up := UpgradePlan{
 		ID: GenerateUpgradeID(),
 		//SourceIDs: []string{},
