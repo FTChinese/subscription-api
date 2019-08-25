@@ -26,7 +26,6 @@ func GenerateSnapshotID() string {
 type Membership struct {
 	ID null.String `json:"id" db:"member_id"` // A random string. Not used yet.
 	reader.AccountID
-	//User         AccountID // Deprecate
 	LegacyTier   null.Int `json:"-" db:"vip_type"`
 	LegacyExpire null.Int `json:"-" db:"expire_time"`
 	Coordinate
@@ -42,22 +41,6 @@ type Membership struct {
 	// Only `active` should be treated as valid member.
 	// Wechat and alipay defaults to `active` for backward compatibility.
 	Status SubStatus `json:"status" db:"sub_status"`
-}
-
-// MemberSnapshot saves a membership's status prior to
-// placing an order.
-type MemberSnapshot struct {
-	ID         string      `db:"snapshot_id"`
-	CreatedUTC chrono.Time `db:"created_utc"`
-	Membership
-}
-
-func NewMemberSnapshot(m Membership) MemberSnapshot {
-	return MemberSnapshot{
-		ID:         GenerateSnapshotID(),
-		CreatedUTC: chrono.TimeNow(),
-		Membership: m,
-	}
 }
 
 // NewMember creates a membership directly for a user.
@@ -171,7 +154,7 @@ func (m Membership) WithStripe(id reader.AccountID, s *stripe.Subscription) (Mem
 
 // FromAliOrWx builds a new membership based on a confirmed
 // order.
-func (m Membership) FromAliOrWx(sub Subscription) (Membership, error) {
+func (m Membership) FromAliOrWx(sub Order) (Membership, error) {
 	if !sub.IsConfirmed() {
 		return m, errors.New("only confirmed order could be used to build membership")
 	}
