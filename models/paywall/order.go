@@ -42,7 +42,7 @@ func GenerateOrderID() (string, error) {
 // An order could create, renew or upgrade a member.
 // And tier + cycle have 3 combination.
 // All those combination add up to 3 * 2 * 3 * 3 = 54
-type Subscription struct {
+type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
 	reader.AccountID
@@ -74,19 +74,19 @@ func NewOrder(
 	p Plan,
 	method enum.PayMethod,
 	m Membership,
-) (Subscription, error) {
+) (Order, error) {
 	orderID, err := GenerateOrderID()
 
 	if err != nil {
-		return Subscription{}, err
+		return Order{}, err
 	}
 
 	kind, err := m.SubsKind(p)
 	if err != nil {
-		return Subscription{}, err
+		return Order{}, err
 	}
 
-	return Subscription{
+	return Order{
 		ID:        orderID,
 		AccountID: id,
 		ListPrice: p.ListPrice,
@@ -103,26 +103,26 @@ func NewOrder(
 		//WxAppID:       null.String{}, // To be populated
 		//StartDate:     chrono.Date{},
 		//EndDate:       chrono.Date{},
-		//CreatedAt:     chrono.Time{},
+		CreatedAt: chrono.TimeNow(),
 		//ConfirmedAt:   chrono.Time{},
 		UpgradeID:        null.String{},
 		MemberSnapshotID: null.String{},
 	}, nil
 }
 
-func NewFreeUpgradeOrder(id reader.AccountID, up UpgradePlan) (Subscription, error) {
+func NewFreeUpgradeOrder(id reader.AccountID, up UpgradePlan) (Order, error) {
 	orderID, err := GenerateOrderID()
 	if err != nil {
-		return Subscription{}, err
+		return Order{}, err
 	}
 
 	startTime := time.Now()
 	endTime, err := up.Plan.GetPeriodEnd(startTime)
 	if err != nil {
-		return Subscription{}, err
+		return Order{}, err
 	}
 
-	return Subscription{
+	return Order{
 		ID:        orderID,
 		AccountID: id,
 		ListPrice: 0,
@@ -146,7 +146,7 @@ func NewFreeUpgradeOrder(id reader.AccountID, up UpgradePlan) (Subscription, err
 	}, nil
 }
 
-func (s Subscription) WithUpgrade(up UpgradePlan) Subscription {
+func (s Order) WithUpgrade(up UpgradePlan) Order {
 
 	s.Amount = up.Plan.NetPrice
 	s.CycleCount = up.Plan.CycleCount
@@ -157,27 +157,27 @@ func (s Subscription) WithUpgrade(up UpgradePlan) Subscription {
 }
 
 // AliPrice converts Charged price to ailpay format
-func (s Subscription) AliPrice() string {
+func (s Order) AliPrice() string {
 	return strconv.FormatFloat(s.Amount, 'f', 2, 32)
 }
 
 // AmountInCent converts Charged price to int64 in cent for comparison with wx notification.
-func (s Subscription) AmountInCent() int64 {
+func (s Order) AmountInCent() int64 {
 	return int64(s.Amount * 100)
 }
 
-func (s Subscription) ReadableAmount() string {
+func (s Order) ReadableAmount() string {
 	return fmt.Sprintf("%s%.2f",
 		strings.ToUpper(s.Currency.String),
 		s.Amount,
 	)
 }
 
-func (s Subscription) IsConfirmed() bool {
+func (s Order) IsConfirmed() bool {
 	return !s.ConfirmedAt.IsZero()
 }
 
-func (s Subscription) GetAccountID() reader.AccountID {
+func (s Order) GetAccountID() reader.AccountID {
 	return reader.AccountID{
 		CompoundID: s.CompoundID,
 		FtcID:      s.FtcID,
@@ -190,7 +190,7 @@ func (s Subscription) GetAccountID() reader.AccountID {
 // If subs.Usage == SubsKindCreate, member.Tier == InvalidTier;
 // If subs.Usage == SubsKindRenew, member.Tier == subs.Tier;
 // If subs.Usage == SubsKindUpgrade, member.Tier != subs.Tier && member.Tier != TierInvalid
-func (s Subscription) Validate(m Membership) error {
+func (s Order) Validate(m Membership) error {
 	switch s.Usage {
 
 	case SubsKindUpgrade:
@@ -214,7 +214,7 @@ func (s Subscription) Validate(m Membership) error {
 	return nil
 }
 
-func (s Subscription) getStartDate(m Membership, confirmedAt time.Time) time.Time {
+func (s Order) getStartDate(m Membership, confirmedAt time.Time) time.Time {
 	var startTime time.Time
 
 	// If membership is expired, always use the confirmation
@@ -237,7 +237,7 @@ func (s Subscription) getStartDate(m Membership, confirmedAt time.Time) time.Tim
 	return startTime
 }
 
-func (s Subscription) getEndDate(startTime time.Time) (time.Time, error) {
+func (s Order) getEndDate(startTime time.Time) (time.Time, error) {
 	var endTime time.Time
 
 	switch s.Cycle {
@@ -256,7 +256,7 @@ func (s Subscription) getEndDate(startTime time.Time) (time.Time, error) {
 
 // WithMember updates an order with existing membership.
 // Zero membership is a valid value.
-func (s Subscription) Confirm(m Membership, confirmedAt time.Time) (Subscription, error) {
+func (s Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
 
 	startTime := s.getStartDate(m, confirmedAt)
 	endTime, err := s.getEndDate(startTime)
