@@ -44,10 +44,10 @@ func (otx OrderTx) RetrieveMember(id reader.AccountID) (paywall.Membership, erro
 // SaveOrder saves an order to db.
 // This is only limited to alipay and wechat pay.
 // Stripe pay does not generate any orders on our side.
-func (otx OrderTx) SaveOrder(order paywall.Subscription) error {
+func (otx OrderTx) SaveOrder(order paywall.Order) error {
 
 	_, err := otx.tx.NamedExec(
-		otx.query.InsertSubs(),
+		otx.query.InsertOrder(),
 		order)
 
 	if err != nil {
@@ -60,11 +60,11 @@ func (otx OrderTx) SaveOrder(order paywall.Subscription) error {
 
 // RetrieveOrder loads a previously saved order that is not
 // confirmed yet.
-func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
-	var subs paywall.Subscription
+func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Order, error) {
+	var order paywall.Order
 
 	err := otx.tx.Get(
-		&subs,
+		&order,
 		otx.query.SelectSubsLock(),
 		orderID,
 	)
@@ -72,14 +72,14 @@ func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Subscription, error) {
 	if err != nil {
 		logger.WithField("trace", "MemberTx.RetrieveOrder").Error(err)
 
-		return subs, err
+		return order, err
 	}
 
-	return subs, nil
+	return order, nil
 }
 
 // ConfirmOrder set an order's confirmation time.
-func (otx OrderTx) ConfirmOrder(order paywall.Subscription) error {
+func (otx OrderTx) ConfirmOrder(order paywall.Order) error {
 	_, err := otx.tx.NamedExec(
 		otx.query.ConfirmOrder(),
 		order,
@@ -95,6 +95,7 @@ func (otx OrderTx) ConfirmOrder(order paywall.Subscription) error {
 }
 
 func (otx OrderTx) CreateMember(m paywall.Membership) error {
+	m.Normalize()
 
 	_, err := otx.tx.NamedExec(
 		otx.query.InsertMember(),
@@ -110,6 +111,7 @@ func (otx OrderTx) CreateMember(m paywall.Membership) error {
 }
 
 func (otx OrderTx) UpdateMember(m paywall.Membership) error {
+	m.Normalize()
 
 	_, err := otx.tx.NamedExec(
 		otx.query.UpdateMember(m.MemberColumn()),
@@ -125,7 +127,9 @@ func (otx OrderTx) UpdateMember(m paywall.Membership) error {
 
 func (otx OrderTx) SaveProration(p []paywall.ProrationSource) error {
 	for _, v := range p {
-		_, err := otx.tx.NamedExec(otx.query.InsertProration(), v)
+		_, err := otx.tx.NamedExec(
+			otx.query.InsertProration(),
+			v)
 
 		if err != nil {
 			return err
@@ -155,6 +159,8 @@ func (otx OrderTx) FindBalanceSources(accountID reader.AccountID) ([]paywall.Pro
 	return sources, nil
 }
 
+// SaveUpgradePlan saved user's current total balance
+// the the upgrade plan at this moment.
 func (otx OrderTx) SaveUpgradePlan(up paywall.UpgradePlan) error {
 
 	var data = struct {
