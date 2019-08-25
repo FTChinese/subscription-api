@@ -41,7 +41,7 @@ func (b Builder) SelectProrationSource() string {
 
 func (b Builder) InsertUpgradePlan() string {
 	return fmt.Sprintf(`
-	INSERT INTO %s.upgrade
+	INSERT INTO %s.upgrade_plan
 	SET id = :upgrade_id,
 		balance = :balance,
 		created_utc = UTC_TIMESTAMP(),
@@ -60,7 +60,7 @@ func (b Builder) InsertUpgradePlan() string {
 func (b Builder) ProrationConsumed() string {
 	return fmt.Sprintf(`
 	UPDATE %s.proration
-	SET consumed = UTC_TIMESTAMP()
+	SET consumed_utc = UTC_TIMESTAMP()
 	WHERE upgrade_id = ?`, b.MemberDB())
 }
 
