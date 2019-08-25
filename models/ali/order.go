@@ -8,31 +8,31 @@ import (
 // BrowserOrder represents an order creates for alipay inside
 // browsers
 type BrowserOrder struct {
-	paywall.Subscription
+	paywall.Order
 	PayURL      string `json:"payUrl"` // Deprecate
 	RedirectURL string `json:"redirectUrl"`
 }
 
-func NewBrowserOrder(subs paywall.Subscription, redirect string) BrowserOrder {
+func NewBrowserOrder(subs paywall.Order, redirect string) BrowserOrder {
 	return BrowserOrder{
-		Subscription: subs,
-		PayURL:       redirect,
-		RedirectURL:  redirect,
+		Order:       subs,
+		PayURL:      redirect,
+		RedirectURL: redirect,
 	}
 }
 
 // AppOrder is an order created inside a native app.
 type AppOrder struct {
-	paywall.Subscription
+	paywall.Order
 	FtcOrderID string `json:"ftcOrderId"` // Deprecate
 	Param      string `json:"param"`
 }
 
-func NewAppOrder(subs paywall.Subscription, query string) AppOrder {
+func NewAppOrder(subs paywall.Order, query string) AppOrder {
 	return AppOrder{
-		Subscription: subs,
-		FtcOrderID:   subs.ID,
-		Param:        query,
+		Order:      subs,
+		FtcOrderID: subs.ID,
+		Param:      query,
 	}
 }
 
