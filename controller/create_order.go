@@ -19,17 +19,17 @@ func (router PayRouter) createOrder(
 	method enum.PayMethod,
 	app util.ClientApp,
 	wxAppId null.String,
-) (paywall.Subscription, error) {
+) (paywall.Order, error) {
 	log := logrus.WithField("trace", "PayRouter.createOrder")
 
 	if method != enum.PayMethodWx && method != enum.PayMethodAli {
-		return paywall.Subscription{}, errors.New("only used by alipay or wxpay")
+		return paywall.Order{}, errors.New("only used by alipay or wxpay")
 	}
 
 	otx, err := router.env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.Subscription{}, err
+		return paywall.Order{}, err
 	}
 
 	// Step 1: Retrieve membership for this user.
@@ -40,7 +40,7 @@ func (router PayRouter) createOrder(
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return paywall.Subscription{}, err
+		return paywall.Order{}, err
 	}
 	log.Infof("Membership retrieved %+v", member)
 
@@ -64,7 +64,7 @@ func (router PayRouter) createOrder(
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return paywall.Subscription{}, err
+		return paywall.Order{}, err
 	}
 
 	// Step 3: required only if this order is used for
@@ -78,12 +78,12 @@ func (router PayRouter) createOrder(
 		if err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
-			return paywall.Subscription{}, err
+			return paywall.Order{}, err
 		}
 		log.Infof("Find balance source: %+v", sources)
 
 		// Step 3.2: Build upgrade plan
-		up := paywall.NewUpgradePreview(sources)
+		up := paywall.NewUpgradePlan(sources)
 
 		// Step 3.3: Update order based on upgrade plan.
 		order = order.WithUpgrade(up)
@@ -92,44 +92,47 @@ func (router PayRouter) createOrder(
 		if err := otx.SaveUpgradePlan(up); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
-			return paywall.Subscription{}, err
+			return paywall.Order{}, err
 		}
 
 		// Step 3.5: Save prorated orders
 		if err := otx.SaveProration(up.Data); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
-			return paywall.Subscription{}, err
+			return paywall.Order{}, err
 		}
 	}
 
-	snapshot := paywall.NewMemberSnapshot(member)
 	order.WxAppID = wxAppId
-	order.MemberSnapshotID = null.StringFrom(snapshot.ID)
+
+	// Back up membership state the moment the order is created.
+	if !member.IsZero() {
+		snapshot := paywall.NewMemberSnapshot(member)
+		order.MemberSnapshotID = null.StringFrom(snapshot.ID)
+
+		go func() {
+			if err := router.env.BackUpMember(snapshot); err != nil {
+				log.Error(err)
+			}
+		}()
+	}
 
 	// Step 4: Save this order.
 	if err := otx.SaveOrder(order); err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return paywall.Subscription{}, err
+		return paywall.Order{}, err
 	}
 
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
-		return paywall.Subscription{}, err
+		return paywall.Order{}, err
 	}
 
 	// These two steps are not vital.
 	// Perform in background.
 	go func() {
 		if err := router.env.SaveOrderClient(order.ID, app); err != nil {
-			log.Error(err)
-		}
-	}()
-
-	// Back up membership state the moment the order is created.
-	go func() {
-		if err := router.env.BackUpMember(snapshot); err != nil {
 			log.Error(err)
 		}
 	}()
@@ -141,13 +144,13 @@ func (router PayRouter) createOrder(
 	return order, nil
 }
 
-func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Subscription, *paywall.ConfirmationResult) {
+func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Order, *paywall.ConfirmationResult) {
 	log := logrus.WithField("trace", "PayRouter.confirmPayment")
 
 	tx, err := router.env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 	}
 
 	// Step 1: Find the subscription order by order id
@@ -160,17 +163,17 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Su
 		log.Error(err)
 		_ = tx.Rollback()
 
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, err, err != sql.ErrNoRows)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, err != sql.ErrNoRows)
 	}
 
 	if order.IsConfirmed() {
 		_ = tx.Rollback()
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, util.ErrAlreadyConfirmed, false)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, util.ErrAlreadyConfirmed, false)
 	}
 
 	if order.AmountInCent() != result.Amount {
 		_ = tx.Rollback()
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, fmt.Errorf("amount mismatched: expected: %d, actual: %d", order.AmountInCent(), result.Amount), false)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, fmt.Errorf("amount mismatched: expected: %d, actual: %d", order.AmountInCent(), result.Amount), false)
 	}
 
 	log.Infof("Found order %s", order.ID)
@@ -181,7 +184,7 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Su
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 	}
 
 	// STEP 3: validate the retrieved order.
@@ -190,7 +193,7 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Su
 	// for upgrading, decline retry.
 	if order.Usage == paywall.SubsKindUpgrade && member.IsValidPremium() {
 		_ = tx.Rollback()
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, util.ErrDuplicateUpgrading, false)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, util.ErrDuplicateUpgrading, false)
 	}
 
 	// STEP 4: Confirm this order
@@ -200,7 +203,7 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Su
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 	}
 	log.Infof("Order %s confirmed : %s - %s", result.OrderID, order.StartDate, order.EndDate)
 
@@ -209,7 +212,7 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Su
 	if err := tx.ConfirmOrder(confirmedOrder); err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 	}
 
 	newMember, err := member.FromAliOrWx(order)
@@ -217,7 +220,7 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Su
 		log.Error(err)
 		_ = tx.Rollback()
 
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 	}
 
 	// STEP 7: Insert or update membership.
@@ -226,19 +229,19 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Su
 		if err := tx.CreateMember(newMember); err != nil {
 			log.Error(err)
 			_ = tx.Rollback()
-			return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
+			return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 		}
 	} else {
 		if err := tx.UpdateMember(newMember); err != nil {
 			log.Error(err)
 			_ = tx.Rollback()
-			return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
+			return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		log.Error(err)
-		return paywall.Subscription{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
+		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 	}
 
 	log.Infof("Order %s confirmed", result.OrderID)
