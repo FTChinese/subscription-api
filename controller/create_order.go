@@ -1,9 +1,7 @@
 package controller
 
 import (
-	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
@@ -47,7 +45,9 @@ func (router PayRouter) createOrder(
 	// Optional: add member id is this member exists but
 	// its id field is empty.
 	if !member.IsZero() && member.ID.IsZero() {
+
 		member.GenerateID()
+		log.Infof("Membership does not have an id. Generated and add it %s", member.ID.String)
 
 		go func() {
 			if err := router.env.AddMemberID(member); err != nil {
@@ -67,6 +67,8 @@ func (router PayRouter) createOrder(
 		return paywall.Order{}, err
 	}
 
+	log.Infof("Created an order %s for %s", order.ID, order.Usage)
+
 	// Step 3: required only if this order is used for
 	// upgrading.
 	if order.Usage == paywall.SubsKindUpgrade {
@@ -74,6 +76,7 @@ func (router PayRouter) createOrder(
 		// remaining.
 		// DO not save sources directly. The balance is not
 		// calculated at this point.
+		log.Infof("Get balance sources for an upgrading order")
 		sources, err := otx.FindBalanceSources(id)
 		if err != nil {
 			log.Error(err)
@@ -84,6 +87,7 @@ func (router PayRouter) createOrder(
 
 		// Step 3.2: Build upgrade plan
 		up := paywall.NewUpgradePlan(sources)
+		log.Infof("Upgrading plan: %+v", up)
 
 		// Step 3.3: Update order based on upgrade plan.
 		order = order.WithUpgrade(up)
@@ -94,6 +98,7 @@ func (router PayRouter) createOrder(
 			_ = otx.Rollback()
 			return paywall.Order{}, err
 		}
+		log.Info("Upgrading plan saved")
 
 		// Step 3.5: Save prorated orders
 		if err := otx.SaveProration(up.Data); err != nil {
@@ -101,14 +106,18 @@ func (router PayRouter) createOrder(
 			_ = otx.Rollback()
 			return paywall.Order{}, err
 		}
+		log.Info("Prorated orders saved")
 	}
 
 	order.WxAppID = wxAppId
 
 	// Back up membership state the moment the order is created.
 	if !member.IsZero() {
+
 		snapshot := paywall.NewMemberSnapshot(member)
 		order.MemberSnapshotID = null.StringFrom(snapshot.ID)
+
+		log.Info("Membership is not empty. Take a snapshot of its current status %s", snapshot.ID)
 
 		go func() {
 			if err := router.env.BackUpMember(snapshot); err != nil {
@@ -123,14 +132,14 @@ func (router PayRouter) createOrder(
 		_ = otx.Rollback()
 		return paywall.Order{}, err
 	}
+	log.Infof("Order saved %s", order.ID)
 
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
 		return paywall.Order{}, err
 	}
 
-	// These two steps are not vital.
-	// Perform in background.
+	// Not vital. Perform in background.
 	go func() {
 		if err := router.env.SaveOrderClient(order.ID, app); err != nil {
 			log.Error(err)
@@ -142,109 +151,4 @@ func (router PayRouter) createOrder(
 	}
 
 	return order, nil
-}
-
-func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Order, *paywall.ConfirmationResult) {
-	log := logrus.WithField("trace", "PayRouter.confirmPayment")
-
-	tx, err := router.env.BeginOrderTx()
-	if err != nil {
-		log.Error(err)
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
-	}
-
-	// Step 1: Find the subscription order by order id
-	// The row is locked for update.
-	// If the order is not found, or is already confirmed,
-	// tell provider not sending notification any longer;
-	// otherwise, allow retry.
-	order, err := tx.RetrieveOrder(result.OrderID)
-	if err != nil {
-		log.Error(err)
-		_ = tx.Rollback()
-
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, err != sql.ErrNoRows)
-	}
-
-	if order.IsConfirmed() {
-		_ = tx.Rollback()
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, util.ErrAlreadyConfirmed, false)
-	}
-
-	if order.AmountInCent() != result.Amount {
-		_ = tx.Rollback()
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, fmt.Errorf("amount mismatched: expected: %d, actual: %d", order.AmountInCent(), result.Amount), false)
-	}
-
-	log.Infof("Found order %s", order.ID)
-
-	// STEP 2: query membership
-	// For any errors, allow retry.
-	member, err := tx.RetrieveMember(order.GetAccountID())
-	if err != nil {
-		log.Error(err)
-		_ = tx.Rollback()
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
-	}
-
-	// STEP 3: validate the retrieved order.
-	// This order might be invalid for upgrading.
-	// If user is already a premium member and this order is used
-	// for upgrading, decline retry.
-	if order.Usage == paywall.SubsKindUpgrade && member.IsValidPremium() {
-		_ = tx.Rollback()
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, util.ErrDuplicateUpgrading, false)
-	}
-
-	// STEP 4: Confirm this order
-	// Populate the ConfirmedAt, StartDate and EndDate.
-	// If there are calculation errors, allow retry.
-	confirmedOrder, err := order.Confirm(member, result.ConfirmedAt)
-	if err != nil {
-		log.Error(err)
-		_ = tx.Rollback()
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
-	}
-	log.Infof("Order %s confirmed : %s - %s", result.OrderID, order.StartDate, order.EndDate)
-
-	// STEP 5: Update confirmed order
-	// For any errors, allow retry.
-	if err := tx.ConfirmOrder(confirmedOrder); err != nil {
-		log.Error(err)
-		_ = tx.Rollback()
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
-	}
-
-	newMember, err := member.FromAliOrWx(order)
-	if err != nil {
-		log.Error(err)
-		_ = tx.Rollback()
-
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
-	}
-
-	// STEP 7: Insert or update membership.
-	// This error should allow retry
-	if member.IsZero() {
-		if err := tx.CreateMember(newMember); err != nil {
-			log.Error(err)
-			_ = tx.Rollback()
-			return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
-		}
-	} else {
-		if err := tx.UpdateMember(newMember); err != nil {
-			log.Error(err)
-			_ = tx.Rollback()
-			return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		log.Error(err)
-		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
-	}
-
-	log.Infof("Order %s confirmed", result.OrderID)
-
-	return confirmedOrder, nil
 }
