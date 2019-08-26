@@ -76,13 +76,13 @@ func (router PayRouter) sendConfirmationEmail(order paywall.Order) error {
 	})
 
 	// If the FtcID field is null, it indicates this user
-	// does not have an FTC account bound. You cannot find out
+	// does not have an FTC account linked. You cannot find out
 	// its email address.
 	if !order.FtcID.Valid {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := router.env.FindFtcUser(order.CompoundID)
+	account, err := router.env.FindFtcUser(order.FtcID.String)
 
 	if err != nil {
 		return err
