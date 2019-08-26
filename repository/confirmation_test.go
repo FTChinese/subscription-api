@@ -37,7 +37,7 @@ func TestEnv_SaveConfirmationResult(t *testing.T) {
 			name: "Save Failed Confirmation Result",
 			args: args{
 				r: &paywall.ConfirmationResult{
-					OrderID:   mustOrderID(),
+					OrderID:   test.MustGenOrderID(),
 					Succeeded: false,
 					Failed:    null.StringFrom(fake.Sentence()),
 					Retry:     false,
@@ -49,7 +49,7 @@ func TestEnv_SaveConfirmationResult(t *testing.T) {
 			name: "Save Succeeded Confirmation Result",
 			args: args{
 				r: &paywall.ConfirmationResult{
-					OrderID:   mustOrderID(),
+					OrderID:   test.MustGenOrderID(),
 					Succeeded: true,
 					Failed:    null.String{},
 					Retry:     false,
