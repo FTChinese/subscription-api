@@ -5,7 +5,8 @@ import (
 )
 
 func (env Env) SaveConfirmationResult(r *paywall.ConfirmationResult) error {
-	_, err := env.db.Exec(env.query.ConfirmationResult(),
+	_, err := env.db.Exec(
+		env.query.ConfirmationResult(),
 		r.OrderID,
 		r.Succeeded,
 		r.Failed)
