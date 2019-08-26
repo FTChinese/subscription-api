@@ -227,6 +227,25 @@ func (m Membership) IsExpired() bool {
 // now----------------------------| Deny
 // Algorithm changed to membership duration not larger than 3 years.
 
+func (m Membership) inRenewalPeriod() bool {
+	today := time.Now().Truncate(24 * time.Hour)
+	threeYearsLater := today.AddDate(3, 0, 0)
+
+	// If today is after expiration date, it means the membership
+	// is already expired.
+	// expire date >= today
+	if today.After(m.ExpireDate.Time) {
+		return false
+	}
+
+	// expire date <= three years later
+	if threeYearsLater.Before(m.ExpireDate.Time) {
+		return false
+	}
+
+	return true
+}
+
 // PermitRenewal test if current membership is allowed to renew.
 // now ---------3 years ---------> Expire date
 // expire date - now <= 3 years
@@ -243,7 +262,7 @@ func (m Membership) PermitRenewal() bool {
 		return false
 	}
 
-	return m.ExpireDate.Before(time.Now().AddDate(3, 0, 0))
+	return m.inRenewalPeriod()
 }
 
 func (m Membership) IsValidPremium() bool {
@@ -266,17 +285,16 @@ func (m Membership) SubsKind(p Plan) (SubsKind, error) {
 
 	// Renewal.
 	if m.Tier == p.Tier {
-		return SubsKindRenew, nil
+		if m.inRenewalPeriod() {
+			return SubsKindRenew, nil
+		} else {
+			return SubsKindDeny, errors.New("current membership expiration date is beyond max renewal period")
+		}
 	}
 
 	if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
 		return SubsKindUpgrade, nil
 	}
-
-	// TODO: How to deal with beyond renewal
-	//if !m.PermitRenewal() {
-	//	return SubsKindDeny, util.ErrBeyondRenewal
-	//}
 
 	return SubsKindDeny, errors.New("unknown subscription usage")
 }
@@ -312,12 +330,15 @@ func (m Membership) PermitStripeCreate() error {
 			return nil
 		}
 		// Member is not expired, or is auto renewal.
+		// Deny such request.
 		// If status is active, deny it.
-		if m.Status == SubStatusActive {
-			return util.ErrActiveStripeSub
+		if m.Status.ShouldCreate() {
+			return nil
 		}
 
-		return nil
+		// Now it is not expired, or auto renewal,
+		// and status is active.
+		return util.ErrActiveStripeSub
 	}
 
 	// Member is either not expired, or auto renewal
@@ -327,7 +348,7 @@ func (m Membership) PermitStripeCreate() error {
 
 // PermitStripeUpgrade tests whether a stripe customer with
 // standard membership should be allowed to upgrade to premium.
-func (m Membership) PermitStripeUpgrade(p StripeSubParams) bool {
+func (m Membership) PermitStripeUpgrade() bool {
 	if m.IsZero() {
 		return false
 	}
@@ -336,7 +357,7 @@ func (m Membership) PermitStripeUpgrade(p StripeSubParams) bool {
 		return false
 	}
 
-	if m.IsExpired() && !m.AutoRenewal {
+	if m.IsExpired() {
 		return false
 	}
 
@@ -345,10 +366,5 @@ func (m Membership) PermitStripeUpgrade(p StripeSubParams) bool {
 		return false
 	}
 
-	// Already subscribed to premium edition.
-	if m.Tier == enum.TierPremium {
-		return false
-	}
-
-	return m.GetOrdinal() < p.GetOrdinal()
+	return m.Tier == enum.TierStandard
 }
