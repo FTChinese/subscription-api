@@ -79,7 +79,7 @@ func (p Profile) Account(k reader.AccountKind) reader.Account {
 		return reader.Account{
 			FtcID:    p.FtcID,
 			UnionID:  null.String{},
-			StripeID: null.StringFrom(p.UnionID),
+			StripeID: null.StringFrom(p.StripeID),
 			Email:    p.Email,
 			UserName: null.StringFrom(p.UserName),
 		}
