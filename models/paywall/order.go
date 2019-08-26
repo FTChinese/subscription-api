@@ -47,8 +47,8 @@ type Order struct {
 	ID string `json:"id" db:"order_id"`
 	reader.AccountID
 	//Charge
-	ListPrice float64 `json:"listPrice" db:"price"`
-	Amount    float64 `json:"amount" db:"amount"`
+	ListPrice float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
+	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
 	Coordinate
 	Currency   null.String `json:"-"`
 	CycleCount int64       `json:"cycleCount" db:"cycle_count"` // Default to 1. Change it for upgrade
