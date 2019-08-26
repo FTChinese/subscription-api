@@ -24,8 +24,8 @@ type SubStore struct {
 	Orders        map[string]paywall.Order // A user could have multiple orders.
 	Member        paywall.Membership       // But only one membership.
 	balanceAnchor time.Time
-	UpgradePlan   paywall.UpgradePlan
-	Snapshot      paywall.MemberSnapshot
+	UpgradePlan   paywall.UpgradePlan    // To have data populated, you must call MustRenewN() and then call MustCreate(PremiumPlan).
+	Snapshot      paywall.MemberSnapshot // This will be populated and updated for any order other than `create`.
 }
 
 // NewSubStore creates a new storage for a user's membership.
