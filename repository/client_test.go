@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/test"
@@ -12,11 +11,6 @@ func TestEnv_SaveOrderClient(t *testing.T) {
 	env := Env{
 		db:    test.DB,
 		query: query.NewBuilder(false),
-	}
-
-	orderID, err := paywall.GenerateOrderID()
-	if err != nil {
-		panic(err)
 	}
 
 	type args struct {
@@ -31,7 +25,7 @@ func TestEnv_SaveOrderClient(t *testing.T) {
 		{
 			name: "Save Order Client",
 			args: args{
-				orderID: orderID,
+				orderID: mustOrderID(),
 				app:     test.RandomClientApp(),
 			},
 		},
@@ -44,6 +38,6 @@ func TestEnv_SaveOrderClient(t *testing.T) {
 			}
 		})
 
-		t.Logf("Save client for order %s", orderID)
+		t.Logf("Save client for order %s", tt.args.orderID)
 	}
 }
