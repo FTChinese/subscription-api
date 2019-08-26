@@ -2,13 +2,10 @@ package repository
 
 import (
 	"github.com/guregu/null"
-	"github.com/jmoiron/sqlx"
-	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/test"
-	"reflect"
 	"testing"
 )
 
@@ -88,157 +85,177 @@ func TestEnv_BackUpMember(t *testing.T) {
 	}
 }
 
-func TestEnv_FindUnusedOrders(t *testing.T) {
-	type fields struct {
-		BuildConfig BuildConfig
-		db          *sqlx.DB
-		cache       *cache.Cache
-		query       query.Builder
-	}
-	type args struct {
-		id reader.AccountID
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []paywall.ProrationSource
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				BuildConfig: tt.fields.BuildConfig,
-				db:          tt.fields.db,
-				cache:       tt.fields.cache,
-				query:       tt.fields.query,
-			}
-			got, err := env.FindUnusedOrders(tt.args.id)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("FindUnusedOrders() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FindUnusedOrders() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestEnv_RetrieveMember(t *testing.T) {
-	type fields struct {
-		BuildConfig BuildConfig
-		db          *sqlx.DB
-		cache       *cache.Cache
-		query       query.Builder
+
+	store := test.NewSubStore(test.NewProfile(), reader.AccountKindFtc)
+
+	store.MustRenewN(test.YearlyStandardLive, 1)
+
+	test.NewRepo().SaveMember(store.Member)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
 	}
 	type args struct {
 		id reader.AccountID
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
-		want    paywall.Membership
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "Retrieve membership",
+			args:    args{id: store.AccountID},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				BuildConfig: tt.fields.BuildConfig,
-				db:          tt.fields.db,
-				cache:       tt.fields.cache,
-				query:       tt.fields.query,
-			}
+
 			got, err := env.RetrieveMember(tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("RetrieveMember() got = %v, want %v", got, tt.want)
+
+			t.Logf("Membership: %+v", got)
+		})
+	}
+}
+
+func TestEnv_FindBalanceSources(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile(), reader.AccountKindFtc)
+	orders := store.MustRenewN(test.YearlyStandardLive, 3)
+
+	testRepo := test.NewRepo()
+	for _, v := range orders {
+		testRepo.SaveOrder(v)
+	}
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
+	}
+
+	type args struct {
+		id reader.AccountID
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int
+		wantErr bool
+	}{
+		{
+			name: "Find Balance Sources",
+			args: args{
+				id: store.AccountID,
+			},
+			want:    3,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := env.FindBalanceSources(tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FindBalanceSources() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) != tt.want {
+				t.Errorf("FindBalanceSources() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
 func TestEnv_RetrieveUpgradePlan(t *testing.T) {
-	type fields struct {
-		BuildConfig BuildConfig
-		db          *sqlx.DB
-		cache       *cache.Cache
-		query       query.Builder
+
+	store := test.NewSubStore(test.NewProfile(), reader.AccountKindFtc)
+
+	store.MustRenewN(test.YearlyStandardLive, 3)
+	store.MustCreate(test.YearlyPremiumLive)
+
+	test.NewRepo().SaveUpgradePlan(store.UpgradePlan)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
 	}
+
 	type args struct {
 		upgradeID string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
-		want    paywall.UpgradePlan
+		want    int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Retrieve Upgrade Plan",
+			args: args{
+				upgradeID: store.UpgradePlan.ID,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				BuildConfig: tt.fields.BuildConfig,
-				db:          tt.fields.db,
-				cache:       tt.fields.cache,
-				query:       tt.fields.query,
-			}
+
 			got, err := env.RetrieveUpgradePlan(tt.args.upgradeID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrieveUpgradePlan() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("RetrieveUpgradePlan() got = %v, want %v", got, tt.want)
-			}
+
+			t.Logf("Upgrade plan: %+v", got)
 		})
 	}
 }
 
-func TestEnv_RetrieveUpgradeSource(t *testing.T) {
-	type fields struct {
-		BuildConfig BuildConfig
-		db          *sqlx.DB
-		cache       *cache.Cache
-		query       query.Builder
+func TestEnv_RetrieveProratedOrders(t *testing.T) {
+
+	store := test.NewSubStore(test.NewProfile(), reader.AccountKindFtc)
+
+	store.MustRenewN(test.YearlyStandardLive, 3)
+	store.MustCreate(test.YearlyPremiumLive)
+
+	test.NewRepo().SaveBalanceSources(store.UpgradePlan.Data)
+
+	env := Env{
+		db:    test.DB,
+		query: query.NewBuilder(false),
 	}
+
 	type args struct {
 		upgradeID string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
-		want    []paywall.ProrationSource
+		want    int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "Retrieve Upgrade ",
+			args:    args{upgradeID: store.UpgradePlan.ID},
+			want:    3,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				BuildConfig: tt.fields.BuildConfig,
-				db:          tt.fields.db,
-				cache:       tt.fields.cache,
-				query:       tt.fields.query,
-			}
-			got, err := env.RetrieveUpgradeSource(tt.args.upgradeID)
+
+			got, err := env.RetrieveProratedOrders(tt.args.upgradeID)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("RetrieveUpgradeSource() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("RetrieveProratedOrders() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("RetrieveUpgradeSource() got = %v, want %v", got, tt.want)
+			if len(got) != tt.want {
+				t.Errorf("RetrieveProratedOrders() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
