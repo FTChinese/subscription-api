@@ -85,7 +85,7 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(ftcIDKey)
 
-	stripeID, err := router.env.CreateStripeCustomer(ftcID)
+	account, err := router.env.CreateStripeCustomer(ftcID)
 
 	if err != nil {
 		view.Render(w, stripeDBFailure(err))
@@ -93,7 +93,7 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 	}
 
 	view.Render(w, view.NewResponse().SetBody(map[string]string{
-		"id": stripeID,
+		"id": account.StripeID.String,
 	}))
 }
 
