@@ -33,73 +33,91 @@ func GenSubID() string {
 	return "sub_" + id
 }
 
-type AccountKind int
-
-const (
-	AccountKindFtc AccountKind = iota
-	AccountKindWx
-	AccountKindLinked
-)
+func GenCusID() string {
+	id, _ := gorest.RandomBase64(9)
+	return "cus_" + id
+}
 
 type Profile struct {
-	FtcID      string
-	UnionID    string
-	Email      string
-	Password   string
-	UserName   string
-	Avatar     string
-	OpenID     string
-	ExpireDate chrono.Date
-	IP         string
+	FtcID    string
+	UnionID  string
+	StripeID string
+	Email    string
+	Password string
+	UserName string
+	Nickname string
+	Avatar   string
+	OpenID   string
+	IP       string
 }
 
 func NewProfile() Profile {
 	return Profile{
-		FtcID:      uuid.New().String(),
-		UnionID:    GenWxID(),
-		Email:      fake.EmailAddress(),
-		Password:   fake.SimplePassword(),
-		UserName:   fake.UserName(),
-		Avatar:     GenAvatar(),
-		OpenID:     GenWxID(),
-		ExpireDate: chrono.DateNow(),
-		IP:         fake.IPv4(),
+		FtcID:    uuid.New().String(),
+		UnionID:  GenWxID(),
+		StripeID: GenCusID(),
+		Email:    fake.EmailAddress(),
+		Password: fake.SimplePassword(),
+		UserName: fake.UserName(),
+		Nickname: fake.UserName(),
+		Avatar:   GenAvatar(),
+		OpenID:   GenWxID(),
+		IP:       fake.IPv4(),
 	}
 }
 
-func (p Profile) UserID(kind AccountKind) reader.AccountID {
+func (p Profile) AccountID(kind reader.AccountKind) reader.AccountID {
 	var id reader.AccountID
 
 	switch kind {
-	case AccountKindFtc:
+	case reader.AccountKindFtc:
 		id, _ = reader.NewID(p.FtcID, "")
 
-	case AccountKindWx:
+	case reader.AccountKindWx:
 		id, _ = reader.NewID("", p.UnionID)
 
-	case AccountKindLinked:
+	case reader.AccountKindLinked:
 		id, _ = reader.NewID(p.FtcID, p.UnionID)
 	}
 
 	return id
 }
 
-func (p Profile) RandomKindUserID() reader.AccountID {
-	return p.UserID(AccountKind(randomdata.Number(0, 3)))
-}
+func (p Profile) Account(k reader.AccountKind) reader.Account {
+	switch k {
+	case reader.AccountKindFtc:
+		return reader.Account{
+			FtcID:    p.FtcID,
+			UnionID:  null.String{},
+			StripeID: null.StringFrom(p.StripeID),
+			Email:    p.Email,
+			UserName: null.StringFrom(p.UserName),
+		}
 
-func (p Profile) FtcUser() reader.Account {
-	return reader.Account{
-		FtcID:    p.FtcID,
-		UnionID:  null.String{},
-		StripeID: null.String{},
-		Email:    p.Email,
-		UserName: null.StringFrom(p.UserName),
+	case reader.AccountKindWx:
+		return reader.Account{
+			FtcID:    "",
+			UnionID:  null.StringFrom(p.UnionID),
+			StripeID: null.String{},
+			Email:    "",
+			UserName: null.String{},
+		}
+
+	case reader.AccountKindLinked:
+		return reader.Account{
+			FtcID:    p.FtcID,
+			UnionID:  null.StringFrom(p.UnionID),
+			StripeID: null.StringFrom(p.StripeID),
+			Email:    p.Email,
+			UserName: null.StringFrom(p.UserName),
+		}
 	}
+
+	return reader.Account{}
 }
 
-func (p Profile) Membership(kind AccountKind, pm enum.PayMethod, expired bool) Membership {
-	m := NewMember(p.UserID(kind))
+func (p Profile) Membership(kind reader.AccountKind, pm enum.PayMethod, expired bool) Membership {
+	m := NewMember(p.AccountID(kind))
 	m.Tier = standardYearlyPlan.Tier
 	m.Cycle = standardYearlyPlan.Cycle
 

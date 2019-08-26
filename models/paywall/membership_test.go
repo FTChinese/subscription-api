@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"testing"
 	"time"
 )
@@ -14,7 +15,7 @@ func TestGenerateSnapshotID(t *testing.T) {
 
 func TestMembership_PermitStripeCreate(t *testing.T) {
 	profile := NewProfile()
-	m := profile.Membership(AccountKindFtc, enum.PayMethodStripe, false)
+	m := profile.Membership(reader.AccountKindFtc, enum.PayMethodStripe, false)
 	m.Status = SubStatusIncomplete
 
 	type fields struct {
@@ -35,21 +36,21 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 		{
 			name: "Expired Alipay",
 			fields: fields{
-				member: profile.Membership(AccountKindFtc, enum.PayMethodAli, true),
+				member: profile.Membership(reader.AccountKindFtc, enum.PayMethodAli, true),
 			},
 			wantErr: false,
 		},
 		{
 			name: "Not expired wxpay",
 			fields: fields{
-				member: profile.Membership(AccountKindFtc, enum.PayMethodWx, false),
+				member: profile.Membership(reader.AccountKindFtc, enum.PayMethodWx, false),
 			},
 			wantErr: true,
 		},
 		{
 			name: "Active Stripe User",
 			fields: fields{
-				member: profile.Membership(AccountKindFtc, enum.PayMethodStripe, false),
+				member: profile.Membership(reader.AccountKindFtc, enum.PayMethodStripe, false),
 			},
 			wantErr: true,
 		},
@@ -75,7 +76,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 func TestMembership_PermitStripeUpgrade(t *testing.T) {
 
 	profile := NewProfile()
-	incompleteM := profile.Membership(AccountKindFtc, enum.PayMethodStripe, false)
+	incompleteM := profile.Membership(reader.AccountKindFtc, enum.PayMethodStripe, false)
 	incompleteM.Status = SubStatusIncomplete
 
 	p := StripeSubParams{
@@ -110,7 +111,7 @@ func TestMembership_PermitStripeUpgrade(t *testing.T) {
 		{
 			name: "Non stripe member",
 			fields: fields{
-				member: profile.Membership(AccountKindFtc, enum.PayMethodAli, false),
+				member: profile.Membership(reader.AccountKindFtc, enum.PayMethodAli, false),
 			},
 			args: args{
 				p: p,
@@ -130,7 +131,7 @@ func TestMembership_PermitStripeUpgrade(t *testing.T) {
 		{
 			name: "Stripe active standard member",
 			fields: fields{
-				member: profile.Membership(AccountKindFtc, enum.PayMethodStripe, false),
+				member: profile.Membership(reader.AccountKindFtc, enum.PayMethodStripe, false),
 			},
 			args: args{
 				p: p,
