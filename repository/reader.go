@@ -9,12 +9,10 @@ import (
 func (env Env) FindFtcUser(ftcId string) (reader.Account, error) {
 
 	var u reader.Account
-	err := env.db.QueryRow(query.SelectFtcUser, ftcId).Scan(
-		&u.FtcID,
-		&u.UnionID,
-		&u.StripeID,
-		&u.UserName,
-		&u.Email,
+	err := env.db.Get(
+		&u,
+		query.SelectFtcUser,
+		ftcId,
 	)
 
 	if err != nil {
