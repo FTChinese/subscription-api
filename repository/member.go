@@ -47,7 +47,10 @@ func (env Env) RetrieveMember(id reader.AccountID) (paywall.Membership, error) {
 	return m, nil
 }
 
-func (env Env) FindUnusedOrders(id reader.AccountID) ([]paywall.ProrationSource, error) {
+// FindBalanceSources creates a snapshot for orders with
+// unused portion.
+// This is identical to OrderTx.FindBalanceSources without a transaction.
+func (env Env) FindBalanceSources(id reader.AccountID) ([]paywall.ProrationSource, error) {
 	var sources = []paywall.ProrationSource{}
 
 	err := env.db.Select(
@@ -57,7 +60,7 @@ func (env Env) FindUnusedOrders(id reader.AccountID) ([]paywall.ProrationSource,
 		id.UnionID)
 
 	if err != nil {
-		logger.WithField("trace", "Env.FindUnusedOrders").Error(err)
+		logger.WithField("trace", "Env.FindBalanceSources").Error(err)
 		return sources, err
 	}
 
@@ -65,31 +68,43 @@ func (env Env) FindUnusedOrders(id reader.AccountID) ([]paywall.ProrationSource,
 }
 
 func (env Env) RetrieveUpgradePlan(upgradeID string) (paywall.UpgradePlan, error) {
-	var up paywall.UpgradePlan
+
+	var data = struct {
+		paywall.UpgradePlan
+		paywall.Plan
+	}{}
 
 	err := env.db.Get(
-		&up,
+		&data,
 		env.query.SelectUpgradePlan(),
 		upgradeID)
 
 	if err != nil {
 		logger.WithField("trace", "Env.RetrieveUpgradePlan").Error(err)
-		return up, err
+		return paywall.UpgradePlan{}, err
 	}
 
-	return up, nil
+	return paywall.UpgradePlan{
+		ID:        data.ID,
+		Balance:   data.Balance,
+		CreatedAt: data.CreatedAt,
+		Data:      nil,
+		Plan:      data.Plan,
+	}, nil
 }
 
-func (env Env) RetrieveUpgradeSource(upgradeID string) ([]paywall.ProrationSource, error) {
+// RetrieveProratedOrders retrieves all orders prorated from
+// proration table. Used to send user an email after upgrade.
+func (env Env) RetrieveProratedOrders(upgradeID string) ([]paywall.ProrationSource, error) {
 	var sources = []paywall.ProrationSource{}
 
 	err := env.db.Select(
 		&sources,
-		env.query.SelectUpgradeSource(),
+		env.query.SelectProratedOrders(),
 		upgradeID)
 
 	if err != nil {
-		logger.WithField("trace", "Env.RetrieveUpgradeSource").Error(err)
+		logger.WithField("trace", "Env.RetrieveProratedOrders").Error(err)
 		return sources, err
 	}
 
