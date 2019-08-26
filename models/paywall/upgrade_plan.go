@@ -58,6 +58,10 @@ func (p ProrationSource) Prorate() float64 {
 	return math.Ceil(remains)
 }
 
+func (p ProrationSource) ReadableBalance() string {
+	return fmt.Sprintf("%s%.2f", "CNY", p.Balance)
+}
+
 func GenerateUpgradeID() string {
 	return "up_" + rand.String(12)
 }
@@ -95,5 +99,5 @@ func NewUpgradePlan(sources []ProrationSource) UpgradePlan {
 }
 
 func (up UpgradePlan) ReadableBalance() string {
-	return fmt.Sprintf("CNY%.2f", up.Balance)
+	return fmt.Sprintf("%s%.2f", "CNY", up.Balance)
 }
