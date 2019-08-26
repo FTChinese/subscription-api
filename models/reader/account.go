@@ -7,11 +7,11 @@ import (
 
 // Account contains the minimal data to identify a user.
 type Account struct {
-	FtcID    string
-	UnionID  null.String
-	StripeID null.String
-	Email    string
-	UserName null.String
+	FtcID    string      `db:"ftc_id"`
+	UnionID  null.String `db:"union_id"`
+	StripeID null.String `db:"stripe_id"`
+	Email    string      `db:"email"`
+	UserName null.String `db:"user_name"`
 }
 
 func (a Account) ID() AccountID {
