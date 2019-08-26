@@ -21,6 +21,8 @@ const (
 
 var YearlyStandard = paywall.GetFtcPlans(false)["standard_year"]
 var YearlyPremium = paywall.GetFtcPlans(false)["premium_year"]
+var YearlyStandardLive = paywall.GetFtcPlans(true)["standard_year"]
+var YearlyPremiumLive = paywall.GetFtcPlans(true)["premium_year"]
 
 var (
 	DB          *sqlx.DB
