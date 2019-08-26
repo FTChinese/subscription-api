@@ -17,8 +17,8 @@ type ProrationSource struct {
 	EndDate    chrono.Date `db:"end_date"`
 	// The above fields are retrieved from db.
 	Balance     float64     `db:"balance"`
-	CreatedUTC  chrono.Time `db:"created_utc"`  // The moment this record is created.
-	ConsumedUTC chrono.Time `db:"consumed_utc"` // The moment the upgrading order is confirmed.
+	CreatedUTC  chrono.Time `db:"created_at"`  // The moment this record is created.
+	ConsumedUTC chrono.Time `db:"consumed_at"` // The moment the upgrading order is confirmed.
 	UpgradeID   string      `db:"upgrade_id"`
 }
 
