@@ -152,20 +152,3 @@ func (p Profile) WxInfo() wxlogin.UserInfo {
 		Privileges: []string{},
 	}
 }
-
-func AliNoti() alipay.TradeNotification {
-	return alipay.TradeNotification{
-		NotifyTime: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
-		NotifyType: "trade_status_sync",
-		NotifyId:   fake.CharactersN(36),
-		AppId:      os.Getenv("ALIPAY_APP_ID"),
-		Charset:    "utf-8",
-		Version:    "1.0",
-		SignType:   "RSA2",
-		Sign:       fake.CharactersN(256),
-		TradeNo:    fake.CharactersN(64),
-		OutTradeNo: fake.CharactersN(18),
-		GmtCreate:  time.Now().In(time.UTC).Format(chrono.SQLDateTime),
-		GmtPayment: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
-	}
-}
