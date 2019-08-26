@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/pkg/errors"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
-	util2 "gitlab.com/ftchinese/subscription-api/models/util"
 	"strconv"
 	"strings"
 	"time"
@@ -183,35 +182,6 @@ func (s Order) GetAccountID() reader.AccountID {
 		FtcID:      s.FtcID,
 		UnionID:    s.UnionID,
 	}
-}
-
-// Validate ensures the order to confirm must match
-// the state of membership prior to creation/upgrading.
-// If subs.Usage == SubsKindCreate, member.Tier == InvalidTier;
-// If subs.Usage == SubsKindRenew, member.Tier == subs.Tier;
-// If subs.Usage == SubsKindUpgrade, member.Tier != subs.Tier && member.Tier != TierInvalid
-func (s Order) Validate(m Membership) error {
-	switch s.Usage {
-
-	case SubsKindUpgrade:
-		if s.Tier != enum.TierPremium {
-			return util2.ErrTierMismatched
-		}
-		if m.Tier == enum.InvalidTier {
-			return util2.ErrNoUpgradingTarget
-		}
-		// For upgrading, order's tier must be different
-		// from member's tier; otherwise this might be
-		// a duplicate upgrading request.
-		if m.Tier == s.Tier {
-			return util2.ErrDuplicateUpgrading
-		}
-
-	default:
-		return nil
-	}
-
-	return nil
 }
 
 func (s Order) getStartDate(m Membership, confirmedAt time.Time) time.Time {
