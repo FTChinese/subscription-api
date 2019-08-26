@@ -3,15 +3,18 @@ package test
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
 	"github.com/objcoding/wxpay"
+	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -143,6 +146,23 @@ func WxPrepay(orderID string) wechat.UnifiedOrderResp {
 	}
 
 	return wechat.NewUnifiedOrderResp(orderID, p)
+}
+
+func AliNoti() alipay.TradeNotification {
+	return alipay.TradeNotification{
+		NotifyTime: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
+		NotifyType: "trade_status_sync",
+		NotifyId:   fake.CharactersN(36),
+		AppId:      os.Getenv("ALIPAY_APP_ID"),
+		Charset:    "utf-8",
+		Version:    "1.0",
+		SignType:   "RSA2",
+		Sign:       fake.CharactersN(256),
+		TradeNo:    fake.CharactersN(64),
+		OutTradeNo: fake.CharactersN(18),
+		GmtCreate:  time.Now().In(time.UTC).Format(chrono.SQLDateTime),
+		GmtPayment: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
+	}
 }
 
 func GenCardSerial() string {
