@@ -78,13 +78,18 @@ func (b Builder) SelectUpgradePlan() string {
 		plan_currency AS currency,
 		plan_title AS title
 	FROM %s.upgrade_plan
-	WHER id = ?
+	WHERE id = ?
 	LIMIT 1`, b.MemberDB())
 }
 
-func (b Builder) SelectUpgradeSource() string {
+// SelectProratedOrders retrieves all order used to calculated
+// balance for upgrading.
+// NOTE this does not select hte PaidAmount, StartDate and
+// EndDate fields, which corresponds to trade_amount,
+// start_date, end_date columns in ftc_trade table.
+func (b Builder) SelectProratedOrders() string {
 	return fmt.Sprintf(`
-	SELECT order_id
+	SELECT order_id,
 		balance,
 		created_utc AS created_at,
 		consumed_utc AS consumed_at,
