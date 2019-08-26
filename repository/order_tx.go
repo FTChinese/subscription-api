@@ -125,20 +125,6 @@ func (otx OrderTx) UpdateMember(m paywall.Membership) error {
 	return nil
 }
 
-func (otx OrderTx) SaveProration(p []paywall.ProrationSource) error {
-	for _, v := range p {
-		_, err := otx.tx.NamedExec(
-			otx.query.InsertProration(),
-			v)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
 func (otx OrderTx) FindBalanceSources(accountID reader.AccountID) ([]paywall.ProrationSource, error) {
@@ -157,6 +143,26 @@ func (otx OrderTx) FindBalanceSources(accountID reader.AccountID) ([]paywall.Pro
 	}
 
 	return sources, nil
+}
+
+// SaveProration saves all orders with unused portion to calculate each order's balance.
+// Go's SQL does not support batch insert now.
+// We use a loop here to insert all record.
+// Most users won't have much  valid orders
+// at a specific moment, so this should not pose a severe
+// performance issue.
+func (otx OrderTx) SaveProration(p []paywall.ProrationSource) error {
+	for _, v := range p {
+		_, err := otx.tx.NamedExec(
+			otx.query.InsertProration(),
+			v)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // SaveUpgradePlan saved user's current total balance
