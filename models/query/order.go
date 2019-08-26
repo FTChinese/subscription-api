@@ -8,7 +8,7 @@ func (b Builder) InsertClientApp() string {
 	SET order_id = :order_id,
 		client_type = :client_type,
 		client_version = :client_version,
-		user_ip_bin = INET6_ATON(:user_ip),
+		user_ip = INET6_ATON(:user_ip),
 		user_agent = :user_agent`, b.MemberDB())
 }
 
