@@ -125,7 +125,7 @@ func (router PayRouter) loadUpgradePlan(upgradeID string) (paywall.UpgradePlan, 
 		return up, err
 	}
 
-	sources, err := router.env.RetrieveUpgradeSource(upgradeID)
+	sources, err := router.env.RetrieveProratedOrders(upgradeID)
 	if err != nil {
 		return up, err
 	}
