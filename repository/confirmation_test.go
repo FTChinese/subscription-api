@@ -9,15 +9,6 @@ import (
 	"testing"
 )
 
-func mustOrderID() string {
-	id, err := paywall.GenerateOrderID()
-	if err != nil {
-		panic(err)
-	}
-
-	return id
-}
-
 func TestEnv_SaveConfirmationResult(t *testing.T) {
 
 	env := Env{
