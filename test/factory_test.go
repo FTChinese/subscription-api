@@ -28,31 +28,11 @@ func TestWxXMLPrepay(t *testing.T) {
 }
 
 func TestWxPrepay(t *testing.T) {
-	uni := WxPrepay()
+	uni := WxPrepay(MustGenOrderID())
 
 	t.Logf("Unified order: %+v", uni)
 }
 
 func TestGenCardSerial(t *testing.T) {
 	t.Log(GenCardSerial())
-}
-
-func TestCreateGiftCard(t *testing.T) {
-
-	m := NewRepo()
-
-	tests := []struct {
-		name string
-	}{
-		{
-			name: "Create Gift Card",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := m.CreateGiftCard()
-
-			t.Logf("Created gift card: %+v", got)
-		})
-	}
 }
