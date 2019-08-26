@@ -15,51 +15,48 @@ import (
 
 // CreateStripeCustomer create a customer under ftc account
 // for user with `ftcID`.
-func (env Env) CreateStripeCustomer(ftcID string) (string, error) {
-	tx, err := env.db.Begin()
+func (env Env) CreateStripeCustomer(ftcID string) (reader.Account, error) {
+	tx, err := env.db.Beginx()
 	if err != nil {
-		logger.WithField("trace", "CreateStripeCustomer").Error(err)
-		return "", err
+		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		return reader.Account{}, err
 	}
 
-	var u reader.Account
-	err = tx.QueryRow(query.LockFtcUser, ftcID).Scan(
-		&u.FtcID,
-		&u.UnionID,
-		&u.StripeID,
-		&u.UserName,
-		&u.Email)
+	var account reader.Account
+	err = tx.Get(&account, query.LockFtcUser, ftcID)
 	if err != nil {
 		_ = tx.Rollback()
-		logger.WithField("trace", "CreateStripeCustomer").Error(err)
-		return "", err
+		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		return reader.Account{}, err
 	}
 
-	if u.StripeID.Valid {
+	if account.StripeID.Valid {
 		_ = tx.Rollback()
-		return u.StripeID.String, nil
+		return account, nil
 	}
 
-	stripeID, err := createCustomer(u.Email)
+	stripeID, err := createCustomer(account.Email)
 	if err != nil {
 		_ = tx.Rollback()
-		logger.WithField("trace", "CreateStripeCustomer").Error(err)
-		return "", err
+		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		return reader.Account{}, err
 	}
 
-	_, err = tx.Exec(query.SaveStripeID, stripeID, ftcID)
+	account.StripeID = null.StringFrom(stripeID)
+
+	_, err = tx.NamedExec(query.SaveStripeID, account)
 	if err != nil {
 		_ = tx.Rollback()
-		logger.WithField("trace", "CreateStripeCustomer").Error(err)
-		return "", err
+		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		return reader.Account{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		logger.WithField("trace", "CreateStripeCustomer").Error(err)
-		return "", err
+		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		return reader.Account{}, err
 	}
 
-	return stripeID, nil
+	return account, nil
 }
 
 func createCustomer(email string) (string, error) {
