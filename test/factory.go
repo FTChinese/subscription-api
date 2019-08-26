@@ -30,9 +30,13 @@ func GenVersion() string {
 	return fmt.Sprintf("%d.%d.%d", randomdata.Number(10), randomdata.Number(1, 10), randomdata.Number(1, 10))
 }
 
-func GenSubID() string {
-	id, _ := gorest.RandomBase64(9)
-	return "sub_" + id
+func MustGenOrderID() string {
+	id, err := paywall.GenerateOrderID()
+	if err != nil {
+		panic(err)
+	}
+
+	return id
 }
 
 func GetCusID() string {
@@ -129,7 +133,7 @@ func WxXMLPrepay() string {
 	return wxpay.MapToXml(p)
 }
 
-func WxPrepay() wechat.UnifiedOrderResp {
+func WxPrepay(orderID string) wechat.UnifiedOrderResp {
 	uni := WxXMLPrepay()
 
 	p, err := wechat.DecodeXML(strings.NewReader(uni))
@@ -137,8 +141,6 @@ func WxPrepay() wechat.UnifiedOrderResp {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	orderID, _ := paywall.GenerateOrderID()
 
 	return wechat.NewUnifiedOrderResp(orderID, p)
 }
