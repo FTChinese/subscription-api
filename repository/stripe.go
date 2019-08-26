@@ -237,7 +237,7 @@ func (env Env) UpgradeStripeSubs(
 	}
 
 	// Check whether upgrading is permitted.
-	if !mmb.PermitStripeUpgrade(params) {
+	if !mmb.PermitStripeUpgrade() {
 		log.Error("upgrading via stripe is not permitted")
 		_ = tx.Rollback()
 		return nil, util.ErrInvalidStripeSub
