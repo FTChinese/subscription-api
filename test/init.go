@@ -82,10 +82,6 @@ func init() {
 		panic(err)
 	}
 
-	//DB, err = sql.Open("mysql", "sampadm:secret@unix(/tmp/mysql.sock)/")
-	//if err != nil {
-	//	panic(err)
-	//}
 	var dbConn util.Conn
 	err = viper.UnmarshalKey("mysql.dev", &dbConn)
 	if err != nil {
@@ -98,7 +94,7 @@ func init() {
 	}
 
 	var conn util.Conn
-	err = viper.UnmarshalKey("hanqi", &conn)
+	err = viper.UnmarshalKey("email.hanqi", &conn)
 	if err != nil {
 		panic(err)
 	}
