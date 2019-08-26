@@ -25,7 +25,7 @@ func TestEnv_SaveOrderClient(t *testing.T) {
 		{
 			name: "Save Order Client",
 			args: args{
-				orderID: mustOrderID(),
+				orderID: test.MustGenOrderID(),
 				app:     test.RandomClientApp(),
 			},
 		},
