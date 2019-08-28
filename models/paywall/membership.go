@@ -2,11 +2,12 @@ package paywall
 
 import (
 	"errors"
+	"time"
+
 	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/models/rand"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
@@ -15,10 +16,6 @@ import (
 
 func GenerateMemberID() string {
 	return "mmb_" + rand.String(12)
-}
-
-func GenerateSnapshotID() string {
-	return "snp_" + rand.String(12)
 }
 
 // Membership contains a user's membership details
