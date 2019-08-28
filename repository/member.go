@@ -18,6 +18,7 @@ func (env Env) AddMemberID(m paywall.Membership) error {
 	return nil
 }
 
+// BackUpMember saves a member's snapshot at a specific moment.
 func (env Env) BackUpMember(m paywall.MemberSnapshot) error {
 	_, err := env.db.NamedExec(
 		env.query.MemberSnapshot(),
@@ -30,6 +31,7 @@ func (env Env) BackUpMember(m paywall.MemberSnapshot) error {
 	return nil
 }
 
+// RetrieveMember retreives membership from database.
 func (env Env) RetrieveMember(id reader.AccountID) (paywall.Membership, error) {
 	var m paywall.Membership
 
@@ -67,6 +69,7 @@ func (env Env) FindBalanceSources(id reader.AccountID) ([]paywall.ProrationSourc
 	return sources, nil
 }
 
+// RetrieveUpgradePlan retrieves an upgrade plan to be used in email sent to user.
 func (env Env) RetrieveUpgradePlan(upgradeID string) (paywall.UpgradePlan, error) {
 
 	var data = struct {
