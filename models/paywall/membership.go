@@ -14,6 +14,7 @@ import (
 	"github.com/guregu/null"
 )
 
+// GenerateMemberID generates a random string to membership id.
 func GenerateMemberID() string {
 	return "mmb_" + rand.String(12)
 }
@@ -106,10 +107,12 @@ func (m *Membership) Normalize() {
 	}
 }
 
+// IsZero test whether the instance is empty.
 func (m Membership) IsZero() bool {
 	return m.CompoundID == "" && m.Tier == enum.InvalidTier
 }
 
+// NewStripe creates a new membership for stripe.
 func (m Membership) NewStripe(id reader.AccountID, p StripeSubParams, s *stripe.Subscription) Membership {
 
 	m.GenerateID()
