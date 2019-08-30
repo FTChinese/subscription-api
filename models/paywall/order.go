@@ -2,12 +2,13 @@ package paywall
 
 import (
 	"fmt"
-	"github.com/FTChinese/go-rest"
-	"github.com/pkg/errors"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"strconv"
 	"strings"
 	"time"
+
+	gorest "github.com/FTChinese/go-rest"
+	"github.com/pkg/errors"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
@@ -224,7 +225,7 @@ func (s Order) getEndDate(startTime time.Time) (time.Time, error) {
 	return endTime, nil
 }
 
-// WithMember updates an order with existing membership.
+// Confirm updates an order with existing membership.
 // Zero membership is a valid value.
 func (s Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
 
@@ -241,6 +242,7 @@ func (s Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
 	return s, nil
 }
 
+// ConfirmationResult logs the result of confirmation.
 type ConfirmationResult struct {
 	OrderID   string
 	Succeeded bool
@@ -252,6 +254,7 @@ func (r ConfirmationResult) Error() string {
 	return r.Failed.String
 }
 
+// NewConfirmationSucceeded createa a new instance of ConfirmationResult for success.
 func NewConfirmationSucceeded(orderID string) *ConfirmationResult {
 	return &ConfirmationResult{
 		OrderID:   orderID,
