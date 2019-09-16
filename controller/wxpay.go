@@ -90,7 +90,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		logger.Infof("Client app: %+v", clientApp)
 
 		if err := allowAndroidPurchase(clientApp); err != nil {
-			view.Render(w, view.NewForbidden(err.Error()))
+			view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
 
