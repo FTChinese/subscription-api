@@ -62,6 +62,15 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
+		clientApp := util.NewClientApp(req)
+
+		logger.Infof("Client app: %+v", clientApp)
+
+		if err := allowAndroidPurchase(clientApp); err != nil {
+			view.Render(w, view.NewForbidden(err.Error()))
+			return
+		}
+
 		user, _ := GetUserID(req.Header)
 
 		plan, err := router.findPlan(req)
@@ -72,9 +81,6 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
-
-		// Save the subscription
-		clientApp := util.NewClientApp(req)
 
 		//subs, err := router.env.CreateOrder(
 		//	user,
