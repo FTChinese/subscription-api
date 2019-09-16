@@ -71,7 +71,7 @@ func TestEnv_BackUpMember(t *testing.T) {
 		{
 			name: "Backup Membership",
 			args: args{
-				m: paywall.NewMemberSnapshot(m),
+				m: paywall.NewMemberSnapshot(m, paywall.SubsKindRenew),
 			},
 		},
 	}
