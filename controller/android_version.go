@@ -45,7 +45,7 @@ func allowAndroidPurchase(app util.ClientApp) error {
 		flavor = version[1]
 	}
 
-	if flavor != "ftc" && flavor != "play" {
+	if flavor != "ftc" && flavor != "play" && flavor != "" {
 		return errAndroidForbidden
 	}
 
