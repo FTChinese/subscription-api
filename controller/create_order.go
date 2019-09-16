@@ -114,7 +114,8 @@ func (router PayRouter) createOrder(
 	// Back up membership state the moment the order is created.
 	if !member.IsZero() {
 
-		snapshot := paywall.NewMemberSnapshot(member)
+		snapshot := paywall.NewMemberSnapshot(member, order.Usage)
+
 		order.MemberSnapshotID = null.StringFrom(snapshot.ID)
 
 		log.Info("Membership is not empty. Take a snapshot of its current status %s", snapshot.ID)
