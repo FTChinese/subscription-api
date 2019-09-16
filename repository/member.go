@@ -31,7 +31,7 @@ func (env Env) BackUpMember(m paywall.MemberSnapshot) error {
 	return nil
 }
 
-// RetrieveMember retreives membership from database.
+// RetrieveMember retrieves membership from database.
 func (env Env) RetrieveMember(id reader.AccountID) (paywall.Membership, error) {
 	var m paywall.Membership
 
