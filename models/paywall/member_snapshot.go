@@ -13,13 +13,15 @@ func GenerateSnapshotID() string {
 // placing an order.
 type MemberSnapshot struct {
 	ID         string      `db:"snapshot_id"`
+	Reason     SubsKind    `db:"reason"`
 	CreatedUTC chrono.Time `db:"created_utc"`
 	Membership
 }
 
-func NewMemberSnapshot(m Membership) MemberSnapshot {
+func NewMemberSnapshot(m Membership, reason SubsKind) MemberSnapshot {
 	return MemberSnapshot{
 		ID:         GenerateSnapshotID(),
+		Reason:     reason,
 		CreatedUTC: chrono.TimeNow(),
 		Membership: m,
 	}
