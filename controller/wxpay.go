@@ -85,6 +85,15 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 	return func(w http.ResponseWriter, req *http.Request) {
 		logger.Info("Start placing a wechat order")
 
+		clientApp := util.NewClientApp(req)
+
+		logger.Infof("Client app: %+v", clientApp)
+
+		if err := allowAndroidPurchase(clientApp); err != nil {
+			view.Render(w, view.NewForbidden(err.Error()))
+			return
+		}
+
 		// Find the client to user for wxpay
 		//var appID string
 		// openID is required for JSAPI pay.
@@ -122,16 +131,6 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		}
 
 		// Save this subscription order.
-		clientApp := util.NewClientApp(req)
-
-		//subs, err := router.env.CreateOrder(
-		//	user,
-		//	plan,
-		//	enum.PayMethodWx,
-		//	clientApp,
-		//	null.StringFrom(payClient.GetApp().AppID),
-		//)
-
 		order, err := router.createOrder(
 			user,
 			plan,
