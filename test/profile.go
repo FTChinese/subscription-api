@@ -7,11 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
-	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
-	"os"
 	"time"
 )
 

@@ -72,7 +72,7 @@ func (s *SubStore) CreateOrder(p paywall.Plan) (paywall.Order, error) {
 	}
 
 	if !s.Member.IsZero() {
-		snapshot := paywall.NewMemberSnapshot(s.Member)
+		snapshot := paywall.NewMemberSnapshot(s.Member, order.Usage)
 		order.MemberSnapshotID = null.StringFrom(snapshot.ID)
 
 		s.Snapshot = snapshot
