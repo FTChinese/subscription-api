@@ -94,11 +94,14 @@ func (b Builder) MemberSnapshot() string {
 	return fmt.Sprintf(`
 	INSERT INTO %s.member_snapshot
 	SET id = :snapshot_id,
+		reason = :reason,
 		created_utc = UTC_TIMESTAMP(),
 		member_id = :member_id,
 		compound_id = :compound_id,
 		ftc_user_id = :ftc_id,
 		wx_union_id = :union_id,
+		tier = :tier,
+		cycle = :cycle,
 		expire_date = :expire_date,
 		payment_method = :payment_method,
 		stripe_subscription_id = :stripe_sub_id,
