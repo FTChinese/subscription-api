@@ -192,7 +192,7 @@ func (router UpgradeRouter) freeUpgrade(id reader.AccountID, app util.ClientApp)
 		return order, err
 	}
 
-	snapshot := paywall.NewMemberSnapshot(member)
+	snapshot := paywall.NewMemberSnapshot(member, paywall.SubsKindUpgrade)
 	order.MemberSnapshotID = null.StringFrom(snapshot.ID)
 
 	if err := tx.SaveOrder(order); err != nil {
