@@ -30,7 +30,7 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Or
 		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, err != sql.ErrNoRows)
 	}
 
-	log.Infof("Order to confirm %s", order.ID)
+	log.Infof("Found order %s", order.ID)
 
 	if order.IsConfirmed() {
 		log.Infof("Order %s is already confirmed. Abort.", order.ID)
@@ -44,8 +44,6 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Or
 		_ = tx.Rollback()
 		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, fmt.Errorf("amount mismatched: expected: %d, actual: %d", order.AmountInCent(), result.Amount), false)
 	}
-
-	log.Infof("Found order %s", order.ID)
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
@@ -75,7 +73,7 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Or
 		_ = tx.Rollback()
 		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 	}
-	log.Infof("Order %s confirmed : %s - %s", result.OrderID, order.StartDate, order.EndDate)
+	log.Infof("Order %s confirmed : %s - %s", result.OrderID, confirmedOrder.StartDate, confirmedOrder.EndDate)
 
 	// STEP 5: Update confirmed order
 	// For any errors, allow retry.
@@ -85,7 +83,7 @@ func (router PayRouter) confirmPayment(result paywall.PaymentResult) (paywall.Or
 		return paywall.Order{}, paywall.NewConfirmationFailed(result.OrderID, err, true)
 	}
 
-	newMember, err := member.FromAliOrWx(order)
+	newMember, err := member.FromAliOrWx(confirmedOrder)
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
