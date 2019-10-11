@@ -133,8 +133,8 @@ func (c Client) BuildInAppBrowserOrder(u UnifiedOrderResp, subs paywall.Order) I
 type BrowserOrder struct {
 	paywall.Order
 	// TODO: rename json tag codeUrl to qrCode
-	QRCode  string `json:"codeUrl,omitempty"` // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
-	MWebURL string `json:"mWebUrl,omitempty"` // This is a standard url that can be redirected to.
+	QRCode  string `json:"qrCodeUrl,omitempty"`         // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
+	MWebURL string `json:"mobileRedirectUrl,omitempty"` // This is a standard url that can be redirected to.
 }
 
 func BuildDesktopOrder(resp UnifiedOrderResp, subs paywall.Order) BrowserOrder {
