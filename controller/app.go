@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	wxAppMobileSubs = "wxacddf1c20516eb69" // Used by native app to pay and log in.
-	wxAppMobileFTC  = "wxc1bc20ee7478536a" // Used by desktop and mobile browser to pay.
-	wxAppWebFTC     = "wxc7233549ca6bc86a" // Used for web page OAuth
-	wxAppFTCSupport = "wxa8e66ab05d5e212b" // Used for wechat in-house browser to pay.
+	wxAppNativeApp    = "wxacddf1c20516eb69" // Used by native app to pay and log in.
+	wxAppWebPay       = "wxc1bc20ee7478536a" // Used by desktop and mobile browser to pay.
+	wxAppWebOAuth     = "wxc7233549ca6bc86a" // Used for web page OAuth
+	wxAppWeBrowserPay = "wxa8e66ab05d5e212b" // Used for wechat in-house browser to pay.
 )
 
 func getWxOAuthApps() map[string]wxlogin.WxApp {
@@ -23,7 +23,7 @@ func getWxOAuthApps() map[string]wxlogin.WxApp {
 	var mSubs, mFTC, wFTC wxlogin.WxApp
 
 	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
-	err := viper.UnmarshalKey("wxapp.m_subs", &mSubs)
+	err := viper.UnmarshalKey("wxapp.native_app", &mSubs)
 	if err != nil {
 		logger.Error(err)
 		os.Exit(1)
@@ -33,7 +33,7 @@ func getWxOAuthApps() map[string]wxlogin.WxApp {
 		os.Exit(1)
 	}
 	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-	err = viper.UnmarshalKey("wxapp.m_ftc", &mFTC)
+	err = viper.UnmarshalKey("wxapp.web_pay", &mFTC)
 	if err != nil {
 		logger.Error(err)
 		os.Exit(1)
@@ -43,7 +43,7 @@ func getWxOAuthApps() map[string]wxlogin.WxApp {
 		os.Exit(1)
 	}
 	// 网站应用 -> FT中文网. This is used for web login
-	err = viper.UnmarshalKey("wxapp.w_ftc", &wFTC)
+	err = viper.UnmarshalKey("wxapp.web_oauth", &wFTC)
 	if err != nil {
 		logger.Error(err)
 		os.Exit(1)
@@ -55,11 +55,11 @@ func getWxOAuthApps() map[string]wxlogin.WxApp {
 
 	return map[string]wxlogin.WxApp{
 		// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
-		wxAppMobileSubs: mSubs,
+		wxAppNativeApp: mSubs,
 		// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-		wxAppMobileFTC: mFTC,
+		wxAppWebPay: mFTC,
 		// 网站应用 -> FT中文网. This is used for web login
-		wxAppWebFTC: wFTC,
+		wxAppWebOAuth: wFTC,
 	}
 }
 
@@ -114,10 +114,10 @@ func getWxPayApps() map[string]wechat.PayApp {
 
 	return map[string]wechat.PayApp{
 		// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
-		wxAppMobileSubs: mSubs,
+		wxAppNativeApp: mSubs,
 		// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-		wxAppMobileFTC:  mFTC,
-		wxAppFTCSupport: oSupport,
+		wxAppWebPay:       mFTC,
+		wxAppWeBrowserPay: oSupport,
 	}
 }
 
