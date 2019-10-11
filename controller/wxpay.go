@@ -41,15 +41,15 @@ func (router WxPayRouter) selectClient(tradeType wechat.TradeType) (wechat.Clien
 	// Desktop and mobile browser
 	case wechat.TradeTypeDesktop,
 		wechat.TradeTypeMobile:
-		appID = wxAppMobileFTC
+		appID = wxAppWebPay
 
 	// Wechat in-house browser
 	case wechat.TradeTypeJSAPI:
-		appID = wxAppFTCSupport
+		appID = wxAppWeBrowserPay
 
 	// Native app.
 	case wechat.TradeTypeApp:
-		appID = wxAppMobileSubs
+		appID = wxAppNativeApp
 	}
 
 	if appID == "" {
@@ -374,7 +374,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	appID := req.Header.Get(appIDKey)
 	// For backward compatibility with Android <= 2.0.4
 	if appID == "" {
-		appID = wxAppMobileSubs
+		appID = wxAppNativeApp
 	}
 
 	payClient, err := router.findClient(appID)
