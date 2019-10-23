@@ -12,11 +12,13 @@ var errAndroidForbidden = errors.New("您当前版本不支持订阅，请前往
 const (
 	vThreeOneThree = iota + 22
 	vThreeOneFour
+	vThreeOneFive
 )
 
 var androidVersions = map[string]int{
 	"3.1.3": vThreeOneThree,
 	"3.1.4": vThreeOneFour,
+	"3.1.5": vThreeOneFive,
 }
 
 func getAndroidVersion(name string) (int, error) {
