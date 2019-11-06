@@ -17,7 +17,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'make deploy'
+                sh 'make publish'
             }
         }
     }
