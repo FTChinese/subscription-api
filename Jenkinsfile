@@ -18,6 +18,7 @@ pipeline {
                 }
             }
             steps {
+                sh 'make config'
                 sh 'make publish'
                 sh 'make restart'
             }
