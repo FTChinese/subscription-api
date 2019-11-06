@@ -9,6 +9,7 @@ import (
 	"github.com/objcoding/wxpay"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/models"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
@@ -89,7 +90,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 
 		logger.Infof("Client app: %+v", clientApp)
 
-		if err := allowAndroidPurchase(clientApp); err != nil {
+		if err := models.AllowAndroidPurchase(clientApp); err != nil {
 			view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}

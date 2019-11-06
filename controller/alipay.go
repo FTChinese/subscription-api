@@ -7,6 +7,7 @@ import (
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
+	"gitlab.com/ftchinese/subscription-api/models"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/util"
@@ -66,7 +67,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		logger.Infof("Client app: %+v", clientApp)
 
-		if err := allowAndroidPurchase(clientApp); err != nil {
+		if err := models.AllowAndroidPurchase(clientApp); err != nil {
 			logger.Error(err)
 			view.Render(w, view.NewBadRequest(err.Error()))
 			return
