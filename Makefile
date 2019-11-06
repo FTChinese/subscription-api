@@ -28,7 +28,7 @@ restart :
 # From local machine to production server
 # Copy env varaible to server
 config :
-	rsync -v $(HOME)/config/api.toml nodeserver:/home/node/config
+	rsync -v $(HOME)/config/api.toml node11:/home/node/config
 
 deploy : linux
 	rsync -v $(build_dir)/linux/$(BINARY) node11:/home/node/go/bin/

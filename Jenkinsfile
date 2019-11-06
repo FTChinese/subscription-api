@@ -8,6 +8,7 @@ pipeline {
             steps {
                 sh 'make linux'
                 archiveArtifacts artifacts: 'build/linux/*', fingerprint: true
+
             }
         }
         stage('Deploy') {
@@ -17,6 +18,9 @@ pipeline {
                 }
             }
             steps {
+                configFileProvider([configFile('8dab81ba-ecfe-4716-9201-33121b18c470', variable: 'API_CONFIG')]) {
+                    sh 'rsync -v ${API_CONFIG} node11:/home/node/go/api.toml'
+                }
                 sh 'make publish'
                 sh 'make restart'
             }
