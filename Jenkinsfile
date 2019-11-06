@@ -18,9 +18,6 @@ pipeline {
                 }
             }
             steps {
-                configFileProvider([configFile('8dab81ba-ecfe-4716-9201-33121b18c470', variable: 'API_CONFIG')]) {
-                    sh 'scp $API_CONFIG node11:/home/node/go/api.toml'
-                }
                 sh 'make publish'
                 sh 'make restart'
             }
