@@ -22,6 +22,9 @@ linux :
 publish :
 	rsync -v $(build_dir)/linux/$(BINARY) node11:/home/node/go/bin/
 
+restart :
+	ssh node11 supervisorctl restart $(BINARY)
+
 # From local machine to production server
 # Copy env varaible to server
 config :
