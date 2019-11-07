@@ -23,7 +23,7 @@ linux :
 	GOOS=linux GOARCH=amd64 /opt/server/go/bin/go build $(LDFLAGS) -o $(build_dir)/linux/$(BINARY) -v .
 
 publish :
-	rsync -v --timeout=0 $(build_dir)/linux/$(BINARY) ucloud:/home/node/go/bin/
+	scp -rp $(build_dir)/linux/$(BINARY)  ucloud:/home/node/go/bin/$(BINARY).bak
 
 downconfig :
 	rsync -v tk11:/home/node/config/$(config_file) ./$(build_dir)
@@ -32,6 +32,7 @@ upconfig :
 	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
 
 restart :
+	ssh ucloud "cd /home/node/go/bin/ && \mv $(BINARY).bak $(BINARY)"
 	ssh ucloud supervisorctl restart $(BINARY)
 
 # From local machine to production server
