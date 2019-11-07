@@ -1,4 +1,5 @@
 build_dir := build
+config_file := api.toml
 BINARY := subscription-api
 
 VERSION := `git describe --tags`
@@ -23,10 +24,10 @@ publish :
 	rsync -v $(build_dir)/linux/$(BINARY) ucloud:/home/node/go/bin/
 
 downconfig :
-	rsync -v tk11:/home/node/config/api.toml ./build
+	rsync -v tk11:/home/node/config/$(config_file) ./$(build_dir)
 
 upconfig :
-	rsync -v ./api.toml ucloud:/home/node/config
+	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
 
 restart :
 	ssh ucloud supervisorctl restart $(BINARY)
@@ -34,7 +35,7 @@ restart :
 # From local machine to production server
 # Copy env varaible to server
 config :
-	rsync -v $(HOME)/config/api.toml tk11:/home/node/config
+	rsync -v $(HOME)/config/$(config_file) tk11:/home/node/config
 
 deploy : linux config
 	rsync -v $(build_dir)/linux/$(BINARY) tk11:/home/node/go/bin/
