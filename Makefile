@@ -18,7 +18,7 @@ run :
 
 # For CI/CD
 linux :
-	GOOS=linux GOARCH=amd64 /opt/server/go build $(LDFLAGS) -o $(build_dir)/linux/$(BINARY) -v .
+	GOOS=linux GOARCH=amd64 /opt/server/go/bin/go build $(LDFLAGS) -o $(build_dir)/linux/$(BINARY) -v .
 
 publish :
 	rsync -v $(build_dir)/linux/$(BINARY) ucloud:/home/node/go/bin/
