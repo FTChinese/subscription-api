@@ -21,7 +21,7 @@ linux :
 	GOOS=linux GOARCH=amd64 /opt/server/go/bin/go build $(LDFLAGS) -o $(build_dir)/linux/$(BINARY) -v .
 
 publish :
-	scp -rp $(build_dir)/linux/$(BINARY) ucloud:/home/node/go/bin/
+	rsync -v --timeout=0 $(build_dir)/linux/$(BINARY) ucloud:/home/node/go/bin/
 
 downconfig :
 	rsync -v tk11:/home/node/config/$(config_file) ./$(build_dir)
