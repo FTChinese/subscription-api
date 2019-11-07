@@ -18,6 +18,8 @@ run :
 
 # For CI/CD
 linux :
+	gvm install go1.13.4
+	gvm use go1.13.4
 	GOOS=linux GOARCH=amd64 /opt/server/go/bin/go build $(LDFLAGS) -o $(build_dir)/linux/$(BINARY) -v .
 
 publish :
