@@ -7,8 +7,8 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'make linux'
+                sh 'make downconfig'
                 archiveArtifacts artifacts: 'build/linux/*', fingerprint: true
-
             }
         }
         stage('Deploy') {
@@ -18,7 +18,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'make config'
+                sh 'make upconfig'
                 sh 'make publish'
                 sh 'make restart'
             }

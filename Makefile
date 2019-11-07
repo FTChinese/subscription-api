@@ -7,7 +7,7 @@ COMMIT := `git log --max-count=1 --pretty=format:%aI_%h`
 
 LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD}"
 
-.PHONY: build run linux publish restart cofig upload deploy clean
+.PHONY: build run linux publish downconfig upconfig restart cofig upload deploy clean
 # Development
 build :
 	go build $(LDFLAGS) -o $(build_dir)/$(BINARY) -v .
@@ -22,20 +22,22 @@ linux :
 publish :
 	rsync -v $(build_dir)/linux/$(BINARY) ucloud:/home/node/go/bin/
 
+downconfig :
+	rsync -v tk11:/home/node/config/api.toml ./build
+
+upconfig :
+	rsync -v ./api.toml ucloud:/home/node/config
+
 restart :
 	ssh ucloud supervisorctl restart $(BINARY)
 
-config :
-	rsync -v tk11:/home/node/config/api.toml .
-	rsync -v ./api.toml ucloud:/home/node/config/api.toml
-
 # From local machine to production server
 # Copy env varaible to server
-upload :
-	rsync -v $(HOME)/config/api.toml node11:/home/node/config
+config :
+	rsync -v $(HOME)/config/api.toml tk11:/home/node/config
 
-deploy : linux upload
-	rsync -v $(build_dir)/linux/$(BINARY) node11:/home/node/go/bin/
+deploy : linux config
+	rsync -v $(build_dir)/linux/$(BINARY) tk11:/home/node/go/bin/
 
 clean :
 	go clean -x
