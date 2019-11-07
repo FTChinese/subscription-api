@@ -18,6 +18,7 @@ run :
 
 # For CI/CD
 linux :
+	go version
 	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(build_dir)/linux/$(BINARY) -v .
 
 publish :
