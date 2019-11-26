@@ -118,6 +118,15 @@ func getDBConn() util.Conn {
 	return conn
 }
 
+func getReceiptKey() string {
+	pw := viper.GetString("apple.receipt_password")
+	if pw == "" {
+		logrus.Error("empty apple receipt password")
+		os.Exit(1)
+	}
+	return pw
+}
+
 func getEmailConn() util.Conn {
 	var conn util.Conn
 	err := viper.UnmarshalKey("email.hanqi", &conn)
@@ -144,6 +153,8 @@ func main() {
 
 	c := cache.New(cache.DefaultExpiration, 0)
 
+	receiptKey := getReceiptKey()
+
 	emailConn := getEmailConn()
 	post := postoffice.NewPostman(
 		emailConn.Host,
@@ -159,6 +170,7 @@ func main() {
 	paywallRouter := controller.NewPaywallRouter(m)
 	upgradeRouter := controller.NewUpgradeRouter(m)
 	stripeRouter := controller.NewStripeRouter(m, post, getStripeSigningKey())
+	iapRouter := controller.NewIAPRouter(receiptKey, db)
 
 	wxAuth := controller.NewWxAuth(wxoauth.New(db))
 
@@ -237,6 +249,10 @@ func main() {
 		})
 	})
 
+	r.Route("/apple", func(r chi.Router) {
+		r.Post("/verify-receipt", iapRouter.VerifyReceipt)
+	})
+
 	r.Route("/upgrade", func(r chi.Router) {
 		r.Use(controller.UserOrUnionID)
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
@@ -259,6 +275,7 @@ func main() {
 		r.Post("/wxpay", wxRouter.WebHook)
 		r.Post("/alipay", aliRouter.WebHook)
 		r.Post("/stripe", stripeRouter.WebHook)
+		r.Post("/apple", iapRouter.WebHook)
 	})
 
 	r.Route("/gift-card", func(r chi.Router) {
@@ -309,5 +326,5 @@ func status(w http.ResponseWriter, _ *http.Request) {
 		Sandbox: config.Sandbox,
 	}
 
-	view.Render(w, view.NewResponse().NoCache().SetBody(data))
+	_ = view.Render(w, view.NewResponse().NoCache().SetBody(data))
 }
