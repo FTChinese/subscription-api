@@ -1,6 +1,6 @@
 package apple
 
-type WebhookBody struct {
+type WebHookBody struct {
 	AutoRenewAdamID              int64         `json:"auto_renew_adam_id"` // uniquely identify the auto-renewable subscription that the user's subscription renews
 	AutoRenewProductID           string        `json:"auto_renew_product_id"`
 	AutoRenewStatus              string        `json:"auto_renew_status"`
