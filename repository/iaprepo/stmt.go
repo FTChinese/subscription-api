@@ -104,3 +104,22 @@ SET environment = :environment,
 ON DUPLICATE KEY UPDATE
 	latest_receipt = :latest_receipt,
 	updated_utc = UTC_TIMESTAMP()`
+
+const selectMember = `
+SELECT id AS member_id, 
+	vip_id AS compound_id,
+	NULLIF(vip_id, vip_id_alias) AS ftc_id,
+	vip_id_alias AS union_id,
+	vip_type,
+	expire_time,
+	member_tier AS tier,
+	billing_cycle AS cycle,
+	expire_date,
+	payment_method,
+	stripe_subscription_id AS stripe_sub_id,
+	auto_renewal,
+	sub_status
+FROM premium.ftc_vip
+	WHERE %s = ?
+	LIMIT 1
+	FOR UPDATE`
