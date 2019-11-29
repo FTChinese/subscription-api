@@ -14,8 +14,8 @@ type Account struct {
 	UserName null.String `db:"user_name"`
 }
 
-func (a Account) ID() AccountID {
-	id, _ := NewID(a.FtcID, a.UnionID.String)
+func (a Account) ID() MemberID {
+	id, _ := NewMemberID(a.FtcID, a.UnionID.String)
 	return id
 }
 
