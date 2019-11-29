@@ -66,18 +66,18 @@ func NewProfile() Profile {
 	}
 }
 
-func (p Profile) AccountID(kind reader.AccountKind) reader.AccountID {
-	var id reader.AccountID
+func (p Profile) AccountID(kind reader.AccountKind) reader.MemberID {
+	var id reader.MemberID
 
 	switch kind {
 	case reader.AccountKindFtc:
-		id, _ = reader.NewID(p.FtcID, "")
+		id, _ = reader.NewMemberID(p.FtcID, "")
 
 	case reader.AccountKindWx:
-		id, _ = reader.NewID("", p.UnionID)
+		id, _ = reader.NewMemberID("", p.UnionID)
 
 	case reader.AccountKindLinked:
-		id, _ = reader.NewID(p.FtcID, p.UnionID)
+		id, _ = reader.NewMemberID(p.FtcID, p.UnionID)
 	}
 
 	return id

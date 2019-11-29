@@ -14,8 +14,8 @@ import (
 	"github.com/guregu/null"
 )
 
-// GenerateMemberID generates a random string to membership id.
-func GenerateMemberID() string {
+// GenerateMembershipIndex generates a random string to membership id.
+func GenerateMembershipIndex() string {
 	return "mmb_" + rand.String(12)
 }
 
@@ -23,7 +23,7 @@ func GenerateMemberID() string {
 // This is actually called subscription by Stripe.
 type Membership struct {
 	ID null.String `json:"id" db:"member_id"` // A random string. Not used yet.
-	reader.AccountID
+	reader.MemberID
 	LegacyTier   null.Int `json:"-" db:"vip_type"`
 	LegacyExpire null.Int `json:"-" db:"expire_time"`
 	Coordinate
@@ -45,10 +45,10 @@ type Membership struct {
 // This is currently used by activating gift cards.
 // If membership is purchased via direct payment channel,
 // membership is created from subscription order.
-func NewMember(accountID reader.AccountID) Membership {
+func NewMember(accountID reader.MemberID) Membership {
 	return Membership{
-		ID:        null.StringFrom(GenerateMemberID()),
-		AccountID: accountID,
+		ID:       null.StringFrom(GenerateMembershipIndex()),
+		MemberID: accountID,
 	}
 }
 
@@ -60,7 +60,7 @@ func (m *Membership) GenerateID() {
 		return
 	}
 
-	m.ID = null.StringFrom(GenerateMemberID())
+	m.ID = null.StringFrom(GenerateMembershipIndex())
 }
 
 // Deprecate
@@ -113,7 +113,7 @@ func (m Membership) IsZero() bool {
 }
 
 // NewStripe creates a new membership for stripe.
-func (m Membership) NewStripe(id reader.AccountID, p StripeSubParams, s *stripe.Subscription) Membership {
+func (m Membership) NewStripe(id reader.MemberID, p StripeSubParams, s *stripe.Subscription) Membership {
 
 	m.GenerateID()
 
@@ -122,8 +122,8 @@ func (m Membership) NewStripe(id reader.AccountID, p StripeSubParams, s *stripe.
 	status, _ := ParseSubStatus(string(s.Status))
 
 	return Membership{
-		ID:        m.ID,
-		AccountID: id,
+		ID:       m.ID,
+		MemberID: id,
 		Coordinate: Coordinate{
 			Tier:  p.Tier,
 			Cycle: p.Cycle,
@@ -139,7 +139,7 @@ func (m Membership) NewStripe(id reader.AccountID, p StripeSubParams, s *stripe.
 
 // WithStripe update an existing stripe membership.
 // This is used in webhook.
-func (m Membership) WithStripe(id reader.AccountID, s *stripe.Subscription) (Membership, error) {
+func (m Membership) WithStripe(id reader.MemberID, s *stripe.Subscription) (Membership, error) {
 
 	m.GenerateID()
 
