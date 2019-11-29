@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/FTChinese/go-rest/view"
-	log "github.com/sirupsen/logrus"
+	"log"
 )
 
 const (
@@ -41,9 +41,11 @@ func UserOrUnionID(next http.Handler) http.Handler {
 		userID = strings.TrimSpace(userID)
 		unionID = strings.TrimSpace(unionID)
 		if userID == "" && unionID == "" {
-			log.WithField("trace", "CheckUserID").Info("Missing X-User-Id or X-Union-Id header")
+			logger.
+				WithField("trace", "CheckUserID").
+				Info("Missing X-User-Id or X-Union-Id header")
 
-			view.Render(w, view.NewUnauthorized("Missing X-User-Id or X-Union-Id header"))
+			_ = view.Render(w, view.NewUnauthorized("Missing X-User-Id or X-Union-Id header"))
 
 			return
 		}
@@ -66,9 +68,11 @@ func FtcID(next http.Handler) http.Handler {
 
 		userID = strings.TrimSpace(userID)
 		if userID == "" {
-			log.WithField("trace", "FtcID").Info("Missing X-User-Id header")
+			logger.
+				WithField("trace", "FtcID").
+				Info("Missing X-User-Id header")
 
-			view.Render(w, view.NewUnauthorized(""))
+			_ = view.Render(w, view.NewUnauthorized(""))
 
 			return
 		}
@@ -91,9 +95,11 @@ func UnionID(next http.Handler) http.Handler {
 
 		unionID = strings.TrimSpace(unionID)
 		if unionID == "" {
-			log.WithField("trace", "UnionID").Info("Missing X-Union-Id header")
+			logger.
+				WithField("trace", "UnionID").
+				Info("Missing X-Union-Id header")
 
-			view.Render(w, view.NewUnauthorized("Missing X-Union-Id header"))
+			_ = view.Render(w, view.NewUnauthorized("Missing X-Union-Id header"))
 
 			return
 		}
@@ -112,9 +118,11 @@ func RequireAppID(next http.Handler) http.Handler {
 
 		appID = strings.TrimSpace(appID)
 		if appID == "" {
-			log.WithField("trace", "RequireAppID").Info("Missing X-App-Id header")
+			logger.
+				WithField("trace", "RequireAppID").
+				Info("Missing X-App-Id header")
 
-			view.Render(w, view.NewUnauthorized("Missing X-App-Id header"))
+			_ = view.Render(w, view.NewUnauthorized("Missing X-App-Id header"))
 
 			return
 		}
