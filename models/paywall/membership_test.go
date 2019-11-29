@@ -18,7 +18,7 @@ func TestMembership_IsExpired(t *testing.T) {
 
 	type fields struct {
 		ID            null.String
-		AccountID     reader.AccountID
+		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
 		Coordinate    Coordinate
@@ -69,7 +69,7 @@ func TestMembership_IsExpired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				AccountID:     tt.fields.AccountID,
+				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
 				Coordinate:    tt.fields.Coordinate,
@@ -90,7 +90,7 @@ func TestMembership_IsExpired(t *testing.T) {
 func TestMembership_inRenewalPeriod(t *testing.T) {
 	type fields struct {
 		ID            null.String
-		AccountID     reader.AccountID
+		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
 		Coordinate    Coordinate
@@ -151,7 +151,7 @@ func TestMembership_inRenewalPeriod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				AccountID:     tt.fields.AccountID,
+				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
 				Coordinate:    tt.fields.Coordinate,
@@ -172,7 +172,7 @@ func TestMembership_inRenewalPeriod(t *testing.T) {
 func TestMembership_PermitRenewal(t *testing.T) {
 	type fields struct {
 		ID            null.String
-		AccountID     reader.AccountID
+		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
 		Coordinate    Coordinate
@@ -227,7 +227,7 @@ func TestMembership_PermitRenewal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				AccountID:     tt.fields.AccountID,
+				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
 				Coordinate:    tt.fields.Coordinate,
@@ -251,7 +251,7 @@ func TestMembership_SubsKind(t *testing.T) {
 
 	type fields struct {
 		ID            null.String
-		AccountID     reader.AccountID
+		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
 		Coordinate    Coordinate
@@ -332,7 +332,7 @@ func TestMembership_SubsKind(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				AccountID:     tt.fields.AccountID,
+				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
 				Coordinate:    tt.fields.Coordinate,
@@ -360,7 +360,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 
 	type fields struct {
 		ID            null.String
-		AccountID     reader.AccountID
+		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
 		Coordinate    Coordinate
@@ -455,7 +455,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
 				ID:            tt.fields.ID,
-				AccountID:     tt.fields.AccountID,
+				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
 				Coordinate:    tt.fields.Coordinate,

@@ -13,7 +13,7 @@ import (
 // StripeSub is a reduced version of stripe.Subscription.
 // Used as response when client asks for subscription data.
 type StripeSub struct {
-	AccountID reader.AccountID `json:"-"`
+	AccountID reader.MemberID `json:"-"`
 	Coordinate
 	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time `json:"created"`
