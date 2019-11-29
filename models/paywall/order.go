@@ -45,7 +45,7 @@ func GenerateOrderID() (string, error) {
 type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
-	reader.AccountID
+	reader.MemberID
 	//Charge
 	ListPrice float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
 	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
@@ -59,7 +59,7 @@ type Order struct {
 	WxAppID       null.String    `json:"-" db:"wx_app_id"`  // Wechat specific
 	StartDate     chrono.Date    `json:"-" db:"start_date"` // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
 	EndDate       chrono.Date    `json:"-" db:"end_date"`   // Membership end date for this order. Depends on start date.
-	//User          AccountID      `json:"-"`                 // Deprecate
+	//User          MemberID      `json:"-"`                 // Deprecate
 	CreatedAt        chrono.Time `json:"createdAt" db:"created_at"`
 	ConfirmedAt      chrono.Time `json:"-" db:"confirmed_at"` // When the payment is confirmed.
 	UpgradeID        null.String `json:"-" db:"upgrade_id"`
@@ -70,7 +70,7 @@ type Order struct {
 // If later it is found that this order is used for upgrading,
 // upgrade it and returns a new instance with upgrading price.
 func NewOrder(
-	id reader.AccountID,
+	id reader.MemberID,
 	p Plan,
 	method enum.PayMethod,
 	m Membership,
@@ -88,7 +88,7 @@ func NewOrder(
 
 	return Order{
 		ID:        orderID,
-		AccountID: id,
+		MemberID:  id,
 		ListPrice: p.ListPrice,
 		Amount:    p.NetPrice, // Modified for upgrade
 		Coordinate: Coordinate{
@@ -110,7 +110,7 @@ func NewOrder(
 	}, nil
 }
 
-func NewFreeUpgradeOrder(id reader.AccountID, up UpgradePlan) (Order, error) {
+func NewFreeUpgradeOrder(id reader.MemberID, up UpgradePlan) (Order, error) {
 	orderID, err := GenerateOrderID()
 	if err != nil {
 		return Order{}, err
@@ -124,7 +124,7 @@ func NewFreeUpgradeOrder(id reader.AccountID, up UpgradePlan) (Order, error) {
 
 	return Order{
 		ID:        orderID,
-		AccountID: id,
+		MemberID:  id,
 		ListPrice: 0,
 		Amount:    0,
 		Coordinate: Coordinate{
@@ -177,8 +177,8 @@ func (s Order) IsConfirmed() bool {
 	return !s.ConfirmedAt.IsZero()
 }
 
-func (s Order) GetAccountID() reader.AccountID {
-	return reader.AccountID{
+func (s Order) GetAccountID() reader.MemberID {
+	return reader.MemberID{
 		CompoundID: s.CompoundID,
 		FtcID:      s.FtcID,
 		UnionID:    s.UnionID,
