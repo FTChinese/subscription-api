@@ -10,19 +10,28 @@ import (
 	"time"
 )
 
+// Use a plan name to find a stripe plan's id.
+var stripePlanIDsTest = map[string]string{
+	"standard_month": "plan_FOdgPTznDwHU4i",
+	"standard_year":  "plan_FOdfeaqzczp6Ag",
+	"premium_year":   "plan_FOde0uAr0V4WmT",
+}
+
 var (
 	standardMonthlyPlan = Plan{
 		Coordinate: Coordinate{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleMonth,
 		},
-		ListPrice:  28.00,
-		NetPrice:   28.00,
-		Title:      "FT中文网 - 月度标准会员",
-		CycleCount: 1,
-		Currency:   "cny",
-		ExtraDays:  1,
-		StripeID:   "plan_FXZYLOEbcvj5Tx",
+		ListPrice:      28.00,
+		NetPrice:       28.00,
+		Title:          "FT中文网 - 月度标准会员",
+		CycleCount:     1,
+		Currency:       "cny",
+		ExtraDays:      1,
+		StripeID:       "plan_FXZYLOEbcvj5Tx",
+		StripeIDTest:   "plan_FOdgPTznDwHU4i",
+		AppleProductID: "com.ft.ftchinese.mobile.subscription.member.monthly",
 	}
 
 	standardYearlyPlan = Plan{
@@ -30,13 +39,15 @@ var (
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,
 		},
-		ListPrice:  258.00,
-		NetPrice:   258.00,
-		Title:      "FT中文网 - 年度标准会员",
-		CycleCount: 1,
-		Currency:   "cny",
-		ExtraDays:  1,
-		StripeID:   "plan_FXZZUEDpToPlZK",
+		ListPrice:      258.00,
+		NetPrice:       258.00,
+		Title:          "FT中文网 - 年度标准会员",
+		CycleCount:     1,
+		Currency:       "cny",
+		ExtraDays:      1,
+		StripeID:       "plan_FXZZUEDpToPlZK",
+		StripeIDTest:   "plan_FOdfeaqzczp6Ag",
+		AppleProductID: "com.ft.ftchinese.mobile.subscription.member",
 	}
 
 	premiumYearlyPlan = Plan{
@@ -44,13 +55,15 @@ var (
 			Tier:  enum.TierPremium,
 			Cycle: enum.CycleYear,
 		},
-		ListPrice:  1998.00,
-		NetPrice:   1998.00,
-		Title:      "FT中文网 - 年度高端会员",
-		CycleCount: 1,
-		Currency:   "cny",
-		ExtraDays:  1,
-		StripeID:   "plan_FXZbv1cDTsUKOg",
+		ListPrice:      1998.00,
+		NetPrice:       1998.00,
+		Title:          "FT中文网 - 年度高端会员",
+		CycleCount:     1,
+		Currency:       "cny",
+		ExtraDays:      1,
+		StripeID:       "plan_FXZbv1cDTsUKOg",
+		StripeIDTest:   "plan_FOde0uAr0V4WmT",
+		AppleProductID: "com.ft.ftchinese.mobile.subscription.vip",
 	}
 )
 
@@ -97,13 +110,15 @@ type CycleQuantity struct {
 // The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
 	Coordinate
-	ListPrice  float64 `json:"listPrice" db:"price"`
-	NetPrice   float64 `json:"netPrice" db:"amount"`
-	CycleCount int64   `json:"cycleCount" db:"cycle_count"`
-	ExtraDays  int64   `json:"extraDays" db:"extra_days"`
-	Currency   string  `json:"currency" db:"currency"`
-	Title      string  `json:"description" db:"title"`
-	StripeID   string  `json:"-"`
+	ListPrice      float64 `json:"listPrice" db:"price"`
+	NetPrice       float64 `json:"netPrice" db:"amount"`
+	CycleCount     int64   `json:"cycleCount" db:"cycle_count"`
+	ExtraDays      int64   `json:"extraDays" db:"extra_days"`
+	Currency       string  `json:"currency" db:"currency"`
+	Title          string  `json:"description" db:"title"`
+	StripeID       string  `json:"-"`
+	StripeIDTest   string  `json:"-"`
+	AppleProductID string  `json:"-"`
 }
 
 // withSandbox returns the sandbox version of a plan.
@@ -222,13 +237,6 @@ func buildSandboxPlans() FtcPlans {
 	return plans
 }
 
-// Use a plan name to find a stripe plan's id.
-var stripePlanIDsTest = map[string]string{
-	"standard_month": "plan_FOdgPTznDwHU4i",
-	"standard_year":  "plan_FOdfeaqzczp6Ag",
-	"premium_year":   "plan_FOde0uAr0V4WmT",
-}
-
 // Index FTC plans by plan name.
 var ftcPlansLive = FtcPlans{
 	"standard_year":  standardYearlyPlan,
@@ -237,6 +245,10 @@ var ftcPlansLive = FtcPlans{
 }
 
 var ftcPlansSandbox = buildSandboxPlans()
+
+func GetFtcPlan(id string) (Plan, error) {
+	return ftcPlansLive.FindPlan(id)
+}
 
 // Index FTC plans by stripe plan id.
 var ftcPlansByStripeIDLive = ftcPlansLive.WithStripeIndex()
@@ -257,4 +269,43 @@ func GetFtcPlansWithStripe(live bool) FtcPlans {
 	}
 
 	return ftcPlansByStripeIDTest
+}
+
+var stripeLivePlans = FtcPlans{
+	standardMonthlyPlan.StripeID: standardMonthlyPlan,
+	standardYearlyPlan.StripeID:  standardYearlyPlan,
+	premiumYearlyPlan.StripeID:   premiumYearlyPlan,
+}
+
+var stripeTestPlans = FtcPlans{
+	standardMonthlyPlan.StripeIDTest: standardMonthlyPlan,
+	standardYearlyPlan.StripeIDTest:  standardYearlyPlan,
+	premiumYearlyPlan.StripeIDTest:   premiumYearlyPlan,
+}
+
+// GetPlanForStripe finds a Plan for a stripe ID.
+// This will replace the above complex and confusing ways
+// of mapping stripe id to our Plan.
+func GetPlanForStripe(id string, live bool) (Plan, error) {
+	if live {
+		return stripeLivePlans.FindPlan(id)
+	}
+
+	return stripeTestPlans.FindPlan(id)
+}
+
+var appleProductPlans = FtcPlans{
+	standardMonthlyPlan.AppleProductID: standardMonthlyPlan,
+	standardYearlyPlan.AppleProductID:  standardYearlyPlan,
+	premiumYearlyPlan.AppleProductID:   premiumYearlyPlan,
+}
+
+func GetPlanForAppleProduct(id string) (Plan, error) {
+	return appleProductPlans.FindPlan(id)
+}
+
+func AppleProductExists(id string) bool {
+	_, ok := appleProductPlans[id]
+
+	return ok
 }
