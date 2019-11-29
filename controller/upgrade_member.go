@@ -25,7 +25,7 @@ func NewUpgradeRouter(env repository.Env) UpgradeRouter {
 	return r
 }
 
-func (router UpgradeRouter) getUpgradePlan(id reader.AccountID) (paywall.UpgradePlan, error) {
+func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (paywall.UpgradePlan, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.getUpgradePlan")
 
 	otx, err := router.env.BeginOrderTx()
@@ -122,7 +122,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 	view.Render(w, view.NewNoContent())
 }
 
-func (router UpgradeRouter) freeUpgrade(id reader.AccountID, app util.ClientApp) (paywall.Order, error) {
+func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) (paywall.Order, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.freeUpgrade")
 
 	tx, err := router.env.BeginOrderTx()
