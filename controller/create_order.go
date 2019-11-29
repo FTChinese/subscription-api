@@ -12,7 +12,7 @@ import (
 
 // createOrder creates an order for ali or wx pay.
 func (router PayRouter) createOrder(
-	id reader.AccountID,
+	id reader.MemberID,
 	plan paywall.Plan,
 	method enum.PayMethod,
 	app util.ClientApp,
