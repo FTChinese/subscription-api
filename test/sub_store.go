@@ -20,7 +20,7 @@ import (
 // creation and updating inside a real db.
 type SubStore struct {
 	Profile       Profile
-	AccountID     reader.AccountID
+	AccountID     reader.MemberID
 	Orders        map[string]paywall.Order // A user could have multiple orders.
 	Member        paywall.Membership       // But only one membership.
 	balanceAnchor time.Time
