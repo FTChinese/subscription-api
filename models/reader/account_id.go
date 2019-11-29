@@ -15,14 +15,14 @@ import (
 // keeping either of them nullable.
 // A user's compound id is taken from either ftc uuid or
 // wechat id, with ftc id taking precedence.
-type AccountID struct {
+type MemberID struct {
 	CompoundID string      `json:"-" db:"compound_id"`
 	FtcID      null.String `json:"-" db:"ftc_id"`
 	UnionID    null.String `json:"-" db:"union_id"`
 }
 
-func NewID(ftcID, unionID string) (AccountID, error) {
-	id := AccountID{
+func NewMemberID(ftcID, unionID string) (MemberID, error) {
+	id := MemberID{
 		FtcID:   null.NewString(ftcID, ftcID != ""),
 		UnionID: null.NewString(unionID, unionID != ""),
 	}
@@ -39,7 +39,7 @@ func NewID(ftcID, unionID string) (AccountID, error) {
 
 // MemberColumn determines which column will be used to
 // retrieve membership.
-func (i AccountID) MemberColumn() query.MemberCol {
+func (i MemberID) MemberColumn() query.MemberCol {
 	if i.FtcID.Valid {
 		return query.MemberColCompoundID
 	}
