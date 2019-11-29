@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	config  repository.BuildConfig
+	config  util.BuildConfig
 	version string
 	build   string
 )
@@ -118,15 +118,6 @@ func getDBConn() util.Conn {
 	return conn
 }
 
-func getReceiptKey() string {
-	pw := viper.GetString("apple.receipt_password")
-	if pw == "" {
-		logrus.Error("empty apple receipt password")
-		os.Exit(1)
-	}
-	return pw
-}
-
 func getEmailConn() util.Conn {
 	var conn util.Conn
 	err := viper.UnmarshalKey("email.hanqi", &conn)
@@ -153,8 +144,6 @@ func main() {
 
 	c := cache.New(cache.DefaultExpiration, 0)
 
-	receiptKey := getReceiptKey()
-
 	emailConn := getEmailConn()
 	post := postoffice.NewPostman(
 		emailConn.Host,
@@ -162,15 +151,15 @@ func main() {
 		emailConn.User,
 		emailConn.Pass)
 
-	m := repository.New(db, c, config)
+	repo := repository.New(db, c, config)
 
-	wxRouter := controller.NewWxRouter(m, post)
-	aliRouter := controller.NewAliRouter(m, post)
-	giftCardRouter := controller.NewGiftCardRouter(m)
-	paywallRouter := controller.NewPaywallRouter(m)
-	upgradeRouter := controller.NewUpgradeRouter(m)
-	stripeRouter := controller.NewStripeRouter(m, post, getStripeSigningKey())
-	iapRouter := controller.NewIAPRouter(receiptKey, db)
+	wxRouter := controller.NewWxRouter(repo, post)
+	aliRouter := controller.NewAliRouter(repo, post)
+	giftCardRouter := controller.NewGiftCardRouter(repo)
+	paywallRouter := controller.NewPaywallRouter(repo)
+	upgradeRouter := controller.NewUpgradeRouter(repo)
+	stripeRouter := controller.NewStripeRouter(repo, post, getStripeSigningKey())
+	iapRouter := controller.NewIAPRouter(db, config)
 
 	wxAuth := controller.NewWxAuth(wxoauth.New(db))
 
