@@ -24,7 +24,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 	}
 
 	type args struct {
-		id reader.AccountID
+		id reader.MemberID
 	}
 	tests := []struct {
 		name    string
@@ -41,7 +41,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 		{
 			name: "Existing member",
 			args: args{
-				id: store.Member.AccountID,
+				id: store.Member.MemberID,
 			},
 		},
 	}
@@ -367,7 +367,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 	}
 
 	type args struct {
-		accountID reader.AccountID
+		accountID reader.MemberID
 	}
 	tests := []struct {
 		name    string

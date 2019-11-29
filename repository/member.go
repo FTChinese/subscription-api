@@ -32,7 +32,7 @@ func (env Env) BackUpMember(m paywall.MemberSnapshot) error {
 }
 
 // RetrieveMember retrieves membership from database.
-func (env Env) RetrieveMember(id reader.AccountID) (paywall.Membership, error) {
+func (env Env) RetrieveMember(id reader.MemberID) (paywall.Membership, error) {
 	var m paywall.Membership
 
 	err := env.db.Get(
@@ -52,7 +52,7 @@ func (env Env) RetrieveMember(id reader.AccountID) (paywall.Membership, error) {
 // FindBalanceSources creates a snapshot for orders with
 // unused portion.
 // This is identical to OrderTx.FindBalanceSources without a transaction.
-func (env Env) FindBalanceSources(id reader.AccountID) ([]paywall.ProrationSource, error) {
+func (env Env) FindBalanceSources(id reader.MemberID) ([]paywall.ProrationSource, error) {
 	var sources = []paywall.ProrationSource{}
 
 	err := env.db.Select(

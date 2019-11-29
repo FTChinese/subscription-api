@@ -98,7 +98,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 		query: query.NewBuilder(false),
 	}
 	type args struct {
-		id reader.AccountID
+		id reader.MemberID
 	}
 	tests := []struct {
 		name    string
@@ -140,7 +140,7 @@ func TestEnv_FindBalanceSources(t *testing.T) {
 	}
 
 	type args struct {
-		id reader.AccountID
+		id reader.MemberID
 	}
 	tests := []struct {
 		name    string
