@@ -53,19 +53,19 @@ var MyProfile = Profile{
 	IP:       fake.IPv4(),
 }
 
-func (p Profile) AccountID(kind reader.AccountKind) reader.AccountID {
+func (p Profile) AccountID(kind reader.AccountKind) reader.MemberID {
 
-	var id reader.AccountID
+	var id reader.MemberID
 
 	switch kind {
 	case reader.AccountKindFtc:
-		id, _ = reader.NewID(p.FtcID, "")
+		id, _ = reader.NewMemberID(p.FtcID, "")
 
 	case reader.AccountKindWx:
-		id, _ = reader.NewID("", p.UnionID)
+		id, _ = reader.NewMemberID("", p.UnionID)
 
 	case reader.AccountKindLinked:
-		id, _ = reader.NewID(p.FtcID, p.UnionID)
+		id, _ = reader.NewMemberID(p.FtcID, p.UnionID)
 	}
 
 	return id
@@ -106,8 +106,8 @@ func (p Profile) Account(k reader.AccountKind) reader.Account {
 
 func (p Profile) Membership(k reader.AccountKind) paywall.Membership {
 	return paywall.Membership{
-		ID:           null.StringFrom(paywall.GenerateMemberID()),
-		AccountID:    p.AccountID(reader.AccountKindFtc),
+		ID:           null.StringFrom(paywall.GenerateMembershipIndex()),
+		MemberID:     p.AccountID(reader.AccountKindFtc),
 		LegacyTier:   null.Int{},
 		LegacyExpire: null.Int{},
 		Coordinate: paywall.Coordinate{
