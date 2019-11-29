@@ -4,22 +4,14 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 
 	"github.com/patrickmn/go-cache"
 )
 
-type BuildConfig struct {
-	Sandbox    bool
-	Production bool
-}
-
-func (c BuildConfig) Live() bool {
-	return c.Production && !c.Sandbox
-}
-
 // Env wraps database connection
 type Env struct {
-	BuildConfig
+	util.BuildConfig
 	db    *sqlx.DB
 	cache *cache.Cache
 	query query.Builder
@@ -27,7 +19,7 @@ type Env struct {
 
 // New creates a new instance of Env.
 // `sandbox` is used to determine which table to write subscription data.
-func New(db *sqlx.DB, c *cache.Cache, b BuildConfig) Env {
+func New(db *sqlx.DB, c *cache.Cache, b util.BuildConfig) Env {
 	return Env{
 		BuildConfig: b,
 		db:          db,
