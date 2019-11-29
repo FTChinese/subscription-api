@@ -1,7 +1,7 @@
 module gitlab.com/ftchinese/subscription-api
 
 require (
-	github.com/FTChinese/go-rest v0.1.0
+	github.com/FTChinese/go-rest v0.1.1
 	github.com/Pallinder/go-randomdata v1.1.0
 	github.com/corpix/uarand v0.0.0 // indirect
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a // indirect
@@ -28,16 +28,16 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.5.0
 	github.com/stretchr/testify v1.3.0 // indirect
-	github.com/stripe/stripe-go v67.2.0+incompatible
-	github.com/tidwall/gjson v1.3.4
+	github.com/stripe/stripe-go v67.9.0+incompatible
+	github.com/tidwall/gjson v1.3.5
 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
-	golang.org/x/crypto v0.0.0-20191106202628-ed6320f186d4 // indirect
-	golang.org/x/net v0.0.0-20191105084925-a882066a44e0 // indirect
-	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
+	golang.org/x/crypto v0.0.0-20191128160524-b544559bb6d1 // indirect
+	golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933 // indirect
+	golang.org/x/sys v0.0.0-20191128015809-6d18c012aee9 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1 // indirect
-	gopkg.in/yaml.v2 v2.2.5 // indirect
+	gopkg.in/yaml.v2 v2.2.7 // indirect
 	moul.io/http2curl v1.0.0 // indirect
 )
 
