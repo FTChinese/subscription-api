@@ -5,15 +5,16 @@ import (
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 	"time"
 )
 
-func mockOrderAndConfirm(id reader.AccountID) paywall.Order {
+func mockOrderAndConfirm(id reader.MemberID) paywall.Order {
 	router := PayRouter{
-		env: repository.New(test.DB, test.Cache, repository.BuildConfig{
+		env: repository.New(test.DB, test.Cache, util.BuildConfig{
 			Sandbox:    false,
 			Production: false,
 		}),
