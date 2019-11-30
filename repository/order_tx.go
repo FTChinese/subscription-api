@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
@@ -171,7 +172,7 @@ func (otx OrderTx) SaveUpgradePlan(up paywall.UpgradePlan) error {
 
 	var data = struct {
 		paywall.UpgradePlan
-		paywall.Plan
+		plan.Plan
 	}{
 		UpgradePlan: up,
 		Plan:        up.Plan,

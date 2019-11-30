@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"math"
 	"time"
 )
@@ -67,7 +68,7 @@ type UpgradePlan struct {
 	CreatedAt chrono.Time `json:"createdAt" db:"created_at"`
 	//ConfirmedAt chrono.Time `json:"-" db:"confirmed_at"`
 	Data []ProrationSource `json:"data"`
-	Plan Plan              `json:"plan"`
+	Plan plan.Plan         `json:"plan"`
 }
 
 func NewUpgradePlan(sources []ProrationSource) UpgradePlan {
@@ -87,7 +88,7 @@ func NewUpgradePlan(sources []ProrationSource) UpgradePlan {
 	}
 
 	// This is hardcoded. Should refactor in the future.
-	up.Plan = premiumYearlyPlan.WithUpgrade(up.Balance)
+	up.Plan = plan.premiumYearlyPlan.WithUpgrade(up.Balance)
 	return up
 }
 

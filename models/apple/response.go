@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	plan2 "gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"sort"
 	"time"
@@ -166,7 +166,7 @@ func (v *VerificationResponseBody) Subscription(ids reader.MemberID, r ReceiptIn
 
 	p := v.findPendingRenewal(r)
 
-	plan, _ := paywall.FindPlanForApple(r.ProductID)
+	plan, _ := plan2.FindPlanForApple(r.ProductID)
 	pd := MustParseInt64(r.PurchaseDateMs) / 1000
 
 	return Subscription{

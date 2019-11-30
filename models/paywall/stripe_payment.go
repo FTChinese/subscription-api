@@ -4,11 +4,12 @@ import (
 	"errors"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 )
 
 // StripeSubParams defines the payload when requesting to create/upgrade a stripe subscription.
 type StripeSubParams struct {
-	Coordinate
+	plan.BasePlan
 	Customer             string      `json:"customer"`
 	Coupon               null.String `json:"coupon"`
 	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
@@ -17,7 +18,7 @@ type StripeSubParams struct {
 }
 
 func (p *StripeSubParams) SetStripePlanID(live bool) error {
-	plan, err := FindFtcPlan(p.NamedKey())
+	plan, err := plan.FindFtcPlan(p.NamedKey())
 	if err != nil {
 		return nil
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/letter"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"net/http"
@@ -21,15 +22,15 @@ type PayRouter struct {
 	postman postoffice.Postman
 }
 
-func (router PayRouter) findPlan(req *http.Request) (paywall.Plan, error) {
+func (router PayRouter) findPlan(req *http.Request) (plan.Plan, error) {
 	t, err := GetURLParam(req, "tier").ToString()
 	if err != nil {
-		return paywall.Plan{}, err
+		return plan.Plan{}, err
 	}
 
 	c, err := GetURLParam(req, "cycle").ToString()
 	if err != nil {
-		return paywall.Plan{}, err
+		return plan.Plan{}, err
 	}
 
 	return router.env.GetCurrentPlans().FindPlan(t + "_" + c)

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
 
@@ -74,7 +75,7 @@ func (env Env) RetrieveUpgradePlan(upgradeID string) (paywall.UpgradePlan, error
 
 	var data = struct {
 		paywall.UpgradePlan
-		paywall.Plan
+		plan.Plan
 	}{}
 
 	err := env.db.Get(

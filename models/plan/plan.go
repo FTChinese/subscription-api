@@ -1,4 +1,4 @@
-package paywall
+package plan
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"math"
 	"strings"
 	"time"
@@ -13,7 +14,7 @@ import (
 
 var (
 	standardMonthlyPlan = Plan{
-		Coordinate: Coordinate{
+		BasePlan: BasePlan{
 			Tier:       enum.TierStandard,
 			Cycle:      enum.CycleMonth,
 			LegacyTier: null.IntFrom(5),
@@ -30,7 +31,7 @@ var (
 	}
 
 	standardYearlyPlan = Plan{
-		Coordinate: Coordinate{
+		BasePlan: BasePlan{
 			Tier:       enum.TierStandard,
 			Cycle:      enum.CycleYear,
 			LegacyTier: null.IntFrom(10),
@@ -47,7 +48,7 @@ var (
 	}
 
 	premiumYearlyPlan = Plan{
-		Coordinate: Coordinate{
+		BasePlan: BasePlan{
 			Tier:       enum.TierPremium,
 			Cycle:      enum.CycleYear,
 			LegacyTier: null.IntFrom(100),
@@ -64,50 +65,29 @@ var (
 	}
 )
 
-var ordinals = map[string]int{
-	"standard_month": 5,
-	"standard_year":  10,
-	"premium_year":   100,
-}
-
-// Coordinate includes a product and a plan billing cycle to identify the plan to subscribe.
-type Coordinate struct {
+// BasePlan includes a product and a plan billing cycle to identify the plan to subscribe.
+type BasePlan struct {
 	Tier       enum.Tier  `json:"tier" db:"sub_tier"`
 	Cycle      enum.Cycle `json:"cycle" db:"sub_cycle"`
 	LegacyTier null.Int   `json:"-" db:"vip_type"`
 }
 
 // NamedKey create a unique name for the point in the plane.
-func (c Coordinate) NamedKey() string {
+func (c BasePlan) NamedKey() string {
 	return c.Tier.String() + "_" + c.Cycle.String()
 }
 
-func (c Coordinate) GetOrdinal() int {
-	return ordinals[c.NamedKey()]
-}
-
-// QuoRem returns the integer quotient and remainder of x/y
-func QuoRem(x, y float64) (int64, float64) {
-	var q int64
-
-	for x > y {
-		q = q + 1
-		x = x - y
-	}
-
-	return q, x
-}
-
-type CycleQuantity struct {
-	Count     int64
-	ExtraDays int64
+// Duration is the number of billing cycles and extra days of a subscription plan provides.
+type Duration struct {
+	CycleCount int64 `json:"cycle_count" db:"cycle_count"`
+	ExtraDays  int64 `json:"extra_days" db:"extra_days"`
 }
 
 // Plan is a pricing plan.
 // The list price is the price that buyers pay for your product or service without any discounts.
 // The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
-	Coordinate
+	BasePlan
 	ListPrice        float64 `json:"listPrice" db:"price"`
 	NetPrice         float64 `json:"netPrice" db:"amount"`
 	CycleCount       int64   `json:"cycleCount" db:"cycle_count"`
@@ -152,7 +132,7 @@ func (p Plan) WithUpgrade(balance float64) Plan {
 
 	q := p.CalculateConversion(balance)
 
-	p.CycleCount = q.Count
+	p.CycleCount = q.CycleCount
 	p.ExtraDays = q.ExtraDays
 	p.Title = "FT中文网 - 升级高端会员"
 
@@ -161,22 +141,22 @@ func (p Plan) WithUpgrade(balance float64) Plan {
 
 // ConvertBalance checks to see how many cycles and extra
 // days a user's balance could be exchanged.
-func (p Plan) CalculateConversion(balance float64) CycleQuantity {
+func (p Plan) CalculateConversion(balance float64) Duration {
 
 	if balance <= p.NetPrice {
-		return CycleQuantity{
-			Count:     1,
-			ExtraDays: 1,
+		return Duration{
+			CycleCount: 1,
+			ExtraDays:  1,
 		}
 	}
 
-	cycles, r := QuoRem(balance, p.NetPrice)
+	cycles, r := util.Division(balance, p.NetPrice)
 
 	days := math.Ceil(r * 365 / p.NetPrice)
 
-	return CycleQuantity{
-		Count:     cycles,
-		ExtraDays: int64(days),
+	return Duration{
+		CycleCount: cycles,
+		ExtraDays:  int64(days),
 	}
 }
 

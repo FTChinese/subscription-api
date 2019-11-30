@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"testing"
 	"time"
@@ -21,7 +22,7 @@ func TestMembership_IsExpired(t *testing.T) {
 		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
-		Coordinate    Coordinate
+		Coordinate    plan.BasePlan
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
 		StripeSubID   null.String
@@ -43,7 +44,7 @@ func TestMembership_IsExpired(t *testing.T) {
 			name: "Expired",
 			fields: fields{
 				AccountID: profile.AccountID(reader.AccountKindFtc),
-				Coordinate: Coordinate{
+				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -55,7 +56,7 @@ func TestMembership_IsExpired(t *testing.T) {
 			name: "Expired but auto renewal",
 			fields: fields{
 				AccountID: profile.AccountID(reader.AccountKindFtc),
-				Coordinate: Coordinate{
+				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -72,7 +73,7 @@ func TestMembership_IsExpired(t *testing.T) {
 				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
-				Coordinate:    tt.fields.Coordinate,
+				BasePlan:      tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,
@@ -93,7 +94,7 @@ func TestMembership_inRenewalPeriod(t *testing.T) {
 		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
-		Coordinate    Coordinate
+		Coordinate    plan.BasePlan
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
 		StripeSubID   null.String
@@ -154,7 +155,7 @@ func TestMembership_inRenewalPeriod(t *testing.T) {
 				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
-				Coordinate:    tt.fields.Coordinate,
+				BasePlan:      tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,
@@ -175,7 +176,7 @@ func TestMembership_PermitRenewal(t *testing.T) {
 		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
-		Coordinate    Coordinate
+		Coordinate    plan.BasePlan
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
 		StripeSubID   null.String
@@ -230,7 +231,7 @@ func TestMembership_PermitRenewal(t *testing.T) {
 				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
-				Coordinate:    tt.fields.Coordinate,
+				BasePlan:      tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,
@@ -254,7 +255,7 @@ func TestMembership_SubsKind(t *testing.T) {
 		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
-		Coordinate    Coordinate
+		Coordinate    plan.BasePlan
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
 		StripeSubID   null.String
@@ -263,7 +264,7 @@ func TestMembership_SubsKind(t *testing.T) {
 		Status        SubStatus
 	}
 	type args struct {
-		p Plan
+		p plan.Plan
 	}
 	tests := []struct {
 		name    string
@@ -276,7 +277,7 @@ func TestMembership_SubsKind(t *testing.T) {
 			name:   "Empty member",
 			fields: fields{},
 			args: args{
-				p: standardYearlyPlan,
+				p: plan.standardYearlyPlan,
 			},
 			want:    SubsKindCreate,
 			wantErr: false,
@@ -286,7 +287,7 @@ func TestMembership_SubsKind(t *testing.T) {
 			fields: fields{
 				Status: SubStatusIncompleteExpired,
 			},
-			args:    args{p: standardYearlyPlan},
+			args:    args{p: plan.standardYearlyPlan},
 			want:    SubsKindCreate,
 			wantErr: false,
 		},
@@ -295,7 +296,7 @@ func TestMembership_SubsKind(t *testing.T) {
 			fields: fields{
 				ExpireDate: chrono.DateFrom(time.Now().AddDate(1, -1, 0)),
 			},
-			args:    args{p: standardYearlyPlan},
+			args:    args{p: plan.standardYearlyPlan},
 			want:    SubsKindCreate,
 			wantErr: false,
 		},
@@ -303,13 +304,13 @@ func TestMembership_SubsKind(t *testing.T) {
 			name: "Renewal",
 			fields: fields{
 				AccountID: profile.AccountID(reader.AccountKindFtc),
-				Coordinate: Coordinate{
+				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
 				ExpireDate: chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 			},
-			args:    args{p: standardYearlyPlan},
+			args:    args{p: plan.standardYearlyPlan},
 			want:    SubsKindRenew,
 			wantErr: false,
 		},
@@ -317,13 +318,13 @@ func TestMembership_SubsKind(t *testing.T) {
 			name: "Upgrading",
 			fields: fields{
 				AccountID: profile.AccountID(reader.AccountKindFtc),
-				Coordinate: Coordinate{
+				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
 				ExpireDate: chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 			},
-			args:    args{p: premiumYearlyPlan},
+			args:    args{p: plan.premiumYearlyPlan},
 			want:    SubsKindUpgrade,
 			wantErr: false,
 		},
@@ -335,7 +336,7 @@ func TestMembership_SubsKind(t *testing.T) {
 				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
-				Coordinate:    tt.fields.Coordinate,
+				BasePlan:      tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,
@@ -363,7 +364,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 		AccountID     reader.MemberID
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
-		Coordinate    Coordinate
+		Coordinate    plan.BasePlan
 		ExpireDate    chrono.Date
 		PaymentMethod enum.PayMethod
 		StripeSubID   null.String
@@ -386,7 +387,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 			name: "Expired Alipay",
 			fields: fields{
 				AccountID: profile.AccountID(reader.AccountKindFtc),
-				Coordinate: Coordinate{
+				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -398,7 +399,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 			name: "Not Expired Wx",
 			fields: fields{
 				AccountID: profile.AccountID(reader.AccountKindFtc),
-				Coordinate: Coordinate{
+				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -458,7 +459,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 				MemberID:      tt.fields.AccountID,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
-				Coordinate:    tt.fields.Coordinate,
+				BasePlan:      tt.fields.Coordinate,
 				ExpireDate:    tt.fields.ExpireDate,
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,

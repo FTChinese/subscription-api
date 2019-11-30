@@ -1,6 +1,7 @@
-package paywall
+package plan
 
 import (
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"testing"
 )
 
@@ -8,11 +9,11 @@ func TestQuoRem(t *testing.T) {
 	t.Logf("%d", 7%10)
 	t.Logf("%d", 10%7)
 
-	q, r := QuoRem(500.0, 258.0)
+	q, r := util.Division(500.0, 258.0)
 
 	t.Logf("Quotient: %d, remainder: %f", q, r)
 
-	q, r = QuoRem(4000.0, 1998.0)
+	q, r = util.Division(4000.0, 1998.0)
 
 	t.Logf("Quotient: %d, remainder: %f", q, r)
 }
