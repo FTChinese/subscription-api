@@ -87,7 +87,7 @@ func NewRenewalParcel(a reader.Account, order paywall.Order) (postoffice.Parcel,
 	}, nil
 }
 
-func NewUpgradeParcel(a reader.Account, order paywall.Order, up paywall.UpgradePlan) (postoffice.Parcel, error) {
+func NewUpgradeParcel(a reader.Account, order paywall.Order, up plan2.UpgradePlan) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterUpgradeSub)
 
 	if err != nil {
@@ -103,7 +103,7 @@ func NewUpgradeParcel(a reader.Account, order paywall.Order, up paywall.UpgradeP
 		User    reader.Account
 		Sub     paywall.Order
 		Plan    plan2.Plan
-		Upgrade paywall.UpgradePlan
+		Upgrade plan2.UpgradePlan
 	}{
 		User:    a,
 		Sub:     order,

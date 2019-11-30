@@ -1,4 +1,4 @@
-package paywall
+package plan
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
@@ -24,17 +24,17 @@ func TestProrationSource_Prorate(t *testing.T) {
 
 func TestNewUpgradePlan(t *testing.T) {
 	sources := []ProrationSource{
-		ProrationSource{
+		{
 			PaidAmount: 0.01,
 			StartDate:  chrono.DateNow(),
 			EndDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 		},
-		ProrationSource{
+		{
 			PaidAmount: 0.01,
 			StartDate:  chrono.DateNow(),
 			EndDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 		},
-		ProrationSource{
+		{
 			PaidAmount: 0.01,
 			StartDate:  chrono.DateNow(),
 			EndDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),

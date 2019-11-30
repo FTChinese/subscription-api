@@ -111,7 +111,7 @@ func NewOrder(
 	}, nil
 }
 
-func NewFreeUpgradeOrder(id reader.MemberID, up UpgradePlan) (Order, error) {
+func NewFreeUpgradeOrder(id reader.MemberID, up plan.UpgradePlan) (Order, error) {
 	orderID, err := GenerateOrderID()
 	if err != nil {
 		return Order{}, err
@@ -147,7 +147,7 @@ func NewFreeUpgradeOrder(id reader.MemberID, up UpgradePlan) (Order, error) {
 	}, nil
 }
 
-func (s Order) WithUpgrade(up UpgradePlan) Order {
+func (s Order) WithUpgrade(up plan.UpgradePlan) Order {
 
 	s.Amount = up.Plan.NetPrice
 	s.CycleCount = up.Plan.CycleCount
