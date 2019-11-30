@@ -1,15 +1,21 @@
-package paywall
+package plan
 
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"math"
 	"time"
 )
 
 // ProrationSource gets the unused portion of an order.
+// This is the balance of each valid order the moment user
+// is requesting upgrade.
+// Once the webhook received notification, each record
+// will have ConsumedUTC set, indicating this order won't be
+// included the nex time user requesting upgrade, which might
+// happen if user stopped premium subscription, re-subscribed
+// to standard product, and then upgrade again.
 type ProrationSource struct {
 	OrderID    string      `db:"order_id"`
 	PaidAmount float64     `db:"paid_amount"`
@@ -60,6 +66,13 @@ func GenerateUpgradeID() string {
 	return "up_" + rand.String(12)
 }
 
+// UpgradePlan specifies how a standard product is upgraded to premium.
+// The plan is dynamic since it has to be calculated based on
+// current valid renewal orders' balance.
+// This plan is saved to `upgrade_plan` table.
+// The data field is an array of each order's balance containing a
+// upgrade id referring to the ID field. Each data element is saved
+// to `proration` table.
 type UpgradePlan struct {
 	ID string `json:"id" db:"upgrade_id"`
 	//OrderID     null.String `json:"-" db:"order_id"`
@@ -68,7 +81,7 @@ type UpgradePlan struct {
 	CreatedAt chrono.Time `json:"createdAt" db:"created_at"`
 	//ConfirmedAt chrono.Time `json:"-" db:"confirmed_at"`
 	Data []ProrationSource `json:"data"`
-	Plan plan.Plan         `json:"plan"`
+	Plan Plan              `json:"plan"`
 }
 
 func NewUpgradePlan(sources []ProrationSource) UpgradePlan {
@@ -88,10 +101,12 @@ func NewUpgradePlan(sources []ProrationSource) UpgradePlan {
 	}
 
 	// This is hardcoded. Should refactor in the future.
-	up.Plan = plan.premiumYearlyPlan.WithUpgrade(up.Balance)
+	up.Plan = premiumYearlyPlan.WithUpgrade(up.Balance)
 	return up
 }
 
+// ReadableBalance produces a string describing the total balance
+// in the format: CNY99.00 in email sent to user.
 func (up UpgradePlan) ReadableBalance() string {
 	return fmt.Sprintf("%s%.2f", "CNY", up.Balance)
 }

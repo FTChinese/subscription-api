@@ -39,17 +39,17 @@ func (router PayRouter) findPlan(req *http.Request) (plan.Plan, error) {
 func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	switch err {
 	case util.ErrBeyondRenewal:
-		view.Render(w, view.NewForbidden(err.Error()))
+		_ = view.Render(w, view.NewForbidden(err.Error()))
 
 	case util.ErrDowngrade:
 		r := view.NewReason()
 		r.Field = "downgrade"
 		r.Code = view.CodeInvalid
 		r.SetMessage(err.Error())
-		view.Render(w, view.NewUnprocessable(r))
+		_ = view.Render(w, view.NewUnprocessable(r))
 
 	default:
-		view.Render(w, view.NewDBFailure(err))
+		_ = view.Render(w, view.NewDBFailure(err))
 	}
 }
 
@@ -120,7 +120,7 @@ func (router PayRouter) sendConfirmationEmail(order paywall.Order) error {
 	return nil
 }
 
-func (router PayRouter) loadUpgradePlan(upgradeID string) (paywall.UpgradePlan, error) {
+func (router PayRouter) loadUpgradePlan(upgradeID string) (plan.UpgradePlan, error) {
 	up, err := router.env.RetrieveUpgradePlan(upgradeID)
 	if err != nil {
 		return up, err

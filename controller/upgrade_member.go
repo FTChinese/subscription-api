@@ -8,6 +8,7 @@ import (
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
@@ -25,56 +26,56 @@ func NewUpgradeRouter(env repository.Env) UpgradeRouter {
 	return r
 }
 
-func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (paywall.UpgradePlan, error) {
+func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (plan.UpgradePlan, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.getUpgradePlan")
 
 	otx, err := router.env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.UpgradePlan{}, err
+		return plan.UpgradePlan{}, err
 	}
 
 	member, err := otx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return paywall.UpgradePlan{}, err
+		return plan.UpgradePlan{}, err
 	}
 
 	// To upgrade, membership must exist, not expired yet,
 	// must be alipay or wxpay, and must not be premium.
 	if member.IsZero() {
 		_ = otx.Rollback()
-		return paywall.UpgradePlan{}, sql.ErrNoRows
+		return plan.UpgradePlan{}, sql.ErrNoRows
 	}
 
 	if member.IsExpired() {
 		_ = otx.Rollback()
-		return paywall.UpgradePlan{}, util.ErrMemberExpired
+		return plan.UpgradePlan{}, util.ErrMemberExpired
 	}
 
 	if member.PaymentMethod == enum.PayMethodStripe {
 		_ = otx.Rollback()
-		return paywall.UpgradePlan{}, util.ErrValidStripeSwitching
+		return plan.UpgradePlan{}, util.ErrValidStripeSwitching
 	}
 
 	if member.Tier == enum.TierPremium {
 		_ = otx.Rollback()
-		return paywall.UpgradePlan{}, util.ErrAlreadyUpgraded
+		return plan.UpgradePlan{}, util.ErrAlreadyUpgraded
 	}
 
 	sources, err := otx.FindBalanceSources(id)
 	if err != nil {
 		_ = otx.Rollback()
-		return paywall.UpgradePlan{}, err
+		return plan.UpgradePlan{}, err
 	}
 
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
-		return paywall.UpgradePlan{}, err
+		return plan.UpgradePlan{}, err
 	}
 
-	up := paywall.NewUpgradePlan(sources)
+	up := plan.NewUpgradePlan(sources)
 
 	return up, nil
 }
@@ -84,11 +85,11 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 
 	up, err := router.getUpgradePlan(userID)
 	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	view.Render(w, view.NewResponse().SetBody(up))
+	_ = view.Render(w, view.NewResponse().SetBody(up))
 }
 
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
@@ -96,19 +97,19 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 
 	up, err := router.getUpgradePlan(userID)
 	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
 	// If user needs to pay any extra money.
 	if up.Plan.NetPrice > 0 {
-		view.Render(w, view.NewResponse().SetBody(up))
+		_ = view.Render(w, view.NewResponse().SetBody(up))
 		return
 	}
 
 	subs, err := router.freeUpgrade(userID, util.NewClientApp(req))
 	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
+		_ = view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
@@ -119,7 +120,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		}
 	}()
 
-	view.Render(w, view.NewNoContent())
+	_ = view.Render(w, view.NewNoContent())
 }
 
 func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) (paywall.Order, error) {
@@ -166,7 +167,7 @@ func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) 
 		return paywall.Order{}, err
 	}
 
-	up := paywall.NewUpgradePlan(sources)
+	up := plan.NewUpgradePlan(sources)
 	if up.Plan.NetPrice > 0 {
 		return paywall.Order{}, errors.New("you cannot upgrade for free since payment is required")
 	}

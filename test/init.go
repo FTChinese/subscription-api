@@ -1,12 +1,11 @@
 package test
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"github.com/spf13/viper"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
@@ -19,10 +18,10 @@ const (
 	MyEmail    = "neefrankie@gmail.com"
 )
 
-var YearlyStandard = paywall.GetFtcPlans(false)["standard_year"]
-var YearlyPremium = paywall.GetFtcPlans(false)["premium_year"]
-var YearlyStandardLive = paywall.GetFtcPlans(true)["standard_year"]
-var YearlyPremiumLive = paywall.GetFtcPlans(true)["premium_year"]
+var YearlyStandard = plan.GetFtcPlans(false)["standard_year"]
+var YearlyPremium = plan.GetFtcPlans(false)["premium_year"]
+var YearlyStandardLive = plan.GetFtcPlans(true)["standard_year"]
+var YearlyPremiumLive = plan.GetFtcPlans(true)["premium_year"]
 
 var (
 	DB          *sqlx.DB
@@ -33,45 +32,9 @@ var (
 	WxPayClient wechat.Client
 	StripeKey   string
 
-	PlanStandardMonthly = paywall.Plan{
-		Coordinate: paywall.Coordinate{
-			Tier:  enum.TierStandard,
-			Cycle: enum.CycleMonth,
-		},
-		ListPrice:  28.00,
-		NetPrice:   28.00,
-		Title:      "FT中文网 - 月度标准会员",
-		CycleCount: 1,
-		Currency:   "cny",
-		ExtraDays:  1,
-		stripeID:   "plan_FOdgPTznDwHU4i",
-	}
-	PlanStandardYearly = paywall.Plan{
-		Coordinate: paywall.Coordinate{
-			Tier:  enum.TierStandard,
-			Cycle: enum.CycleYear,
-		},
-		ListPrice:  258.00,
-		NetPrice:   258.00,
-		Title:      "FT中文网 - 年度标准会员",
-		CycleCount: 1,
-		Currency:   "cny",
-		ExtraDays:  1,
-		stripeID:   "plan_FOdfeaqzczp6Ag",
-	}
-	PlanPremiumYearly = paywall.Plan{
-		Coordinate: paywall.Coordinate{
-			Tier:  enum.TierPremium,
-			Cycle: enum.CycleYear,
-		},
-		ListPrice:  1998.00,
-		NetPrice:   1998.00,
-		Title:      "FT中文网 - 高端会员",
-		CycleCount: 1,
-		Currency:   "cny",
-		ExtraDays:  1,
-		stripeID:   "plan_FOde0uAr0V4WmT",
-	}
+	PlanStandardMonthly, _ = plan.FindFtcPlan("standard_month")
+	PlanStandardYearly, _  = plan.FindFtcPlan("standard_year")
+	PlanPremiumYearly, _   = plan.FindFtcPlan("premium_year")
 )
 
 func init() {
