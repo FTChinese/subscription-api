@@ -12,59 +12,6 @@ import (
 	"time"
 )
 
-var (
-	standardMonthlyPlan = Plan{
-		BasePlan: BasePlan{
-			Tier:       enum.TierStandard,
-			Cycle:      enum.CycleMonth,
-			LegacyTier: null.IntFrom(5),
-		},
-		ListPrice:        28.00,
-		NetPrice:         28.00,
-		Title:            "FT中文网 - 月度标准会员",
-		CycleCount:       1,
-		Currency:         "cny",
-		ExtraDays:        1,
-		stripeLivePlanID: "plan_FXZYLOEbcvj5Tx",
-		stripeTestPlanID: "plan_FOdgPTznDwHU4i",
-		AppleProductID:   "com.ft.ftchinese.mobile.subscription.member.monthly",
-	}
-
-	standardYearlyPlan = Plan{
-		BasePlan: BasePlan{
-			Tier:       enum.TierStandard,
-			Cycle:      enum.CycleYear,
-			LegacyTier: null.IntFrom(10),
-		},
-		ListPrice:        258.00,
-		NetPrice:         258.00,
-		Title:            "FT中文网 - 年度标准会员",
-		CycleCount:       1,
-		Currency:         "cny",
-		ExtraDays:        1,
-		stripeLivePlanID: "plan_FXZZUEDpToPlZK",
-		stripeTestPlanID: "plan_FOdfeaqzczp6Ag",
-		AppleProductID:   "com.ft.ftchinese.mobile.subscription.member",
-	}
-
-	premiumYearlyPlan = Plan{
-		BasePlan: BasePlan{
-			Tier:       enum.TierPremium,
-			Cycle:      enum.CycleYear,
-			LegacyTier: null.IntFrom(100),
-		},
-		ListPrice:        1998.00,
-		NetPrice:         1998.00,
-		Title:            "FT中文网 - 年度高端会员",
-		CycleCount:       1,
-		Currency:         "cny",
-		ExtraDays:        1,
-		stripeLivePlanID: "plan_FXZbv1cDTsUKOg",
-		stripeTestPlanID: "plan_FOde0uAr0V4WmT",
-		AppleProductID:   "com.ft.ftchinese.mobile.subscription.vip",
-	}
-)
-
 // BasePlan includes a product and a plan billing cycle to identify the plan to subscribe.
 type BasePlan struct {
 	Tier       enum.Tier  `json:"tier" db:"sub_tier"`
@@ -75,12 +22,6 @@ type BasePlan struct {
 // NamedKey create a unique name for the point in the plane.
 func (c BasePlan) NamedKey() string {
 	return c.Tier.String() + "_" + c.Cycle.String()
-}
-
-// Duration is the number of billing cycles and extra days of a subscription plan provides.
-type Duration struct {
-	CycleCount int64 `json:"cycle_count" db:"cycle_count"`
-	ExtraDays  int64 `json:"extra_days" db:"extra_days"`
 }
 
 // Plan is a pricing plan.
@@ -184,82 +125,4 @@ func (p Plan) Desc() string {
 		p.ListPrice,
 		p.Cycle.StringCN(),
 	)
-}
-
-// FtcPlans maps a key to a FTC plan.
-type FtcPlans map[string]Plan
-
-// FindPlan searches a plan by a key.
-func (plans FtcPlans) FindPlan(id string) (Plan, error) {
-	p, ok := plans[id]
-	if !ok {
-		return p, fmt.Errorf("pricing plan for %s not found", id)
-	}
-
-	return p, nil
-}
-
-// Index FTC plans by plan name.
-var ftcPlansLive = FtcPlans{
-	"standard_year":  standardYearlyPlan,
-	"standard_month": standardMonthlyPlan,
-	"premium_year":   premiumYearlyPlan,
-}
-
-func GetFtcPlans(live bool) FtcPlans {
-	if live {
-		return ftcPlansLive
-	}
-
-	plans := FtcPlans{}
-
-	for key, plan := range ftcPlansLive {
-		p := plan.withSandboxPrice()
-		plans[key] = p
-	}
-
-	return plans
-}
-
-func FindFtcPlan(id string) (Plan, error) {
-	return ftcPlansLive.FindPlan(id)
-}
-
-var stripeLivePlans = FtcPlans{
-	standardMonthlyPlan.stripeLivePlanID: standardMonthlyPlan,
-	standardYearlyPlan.stripeLivePlanID:  standardYearlyPlan,
-	premiumYearlyPlan.stripeLivePlanID:   premiumYearlyPlan,
-}
-
-var stripeTestPlans = FtcPlans{
-	standardMonthlyPlan.stripeTestPlanID: standardMonthlyPlan,
-	standardYearlyPlan.stripeTestPlanID:  standardYearlyPlan,
-	premiumYearlyPlan.stripeTestPlanID:   premiumYearlyPlan,
-}
-
-// FindPlanForStripe finds a Plan for a stripe ID.
-// This will replace the above complex and confusing ways
-// of mapping stripe id to our Plan.
-func FindPlanForStripe(id string, live bool) (Plan, error) {
-	if live {
-		return stripeLivePlans.FindPlan(id)
-	}
-
-	return stripeTestPlans.FindPlan(id)
-}
-
-var appleProductPlans = FtcPlans{
-	standardMonthlyPlan.AppleProductID: standardMonthlyPlan,
-	standardYearlyPlan.AppleProductID:  standardYearlyPlan,
-	premiumYearlyPlan.AppleProductID:   premiumYearlyPlan,
-}
-
-func FindPlanForApple(id string) (Plan, error) {
-	return appleProductPlans.FindPlan(id)
-}
-
-func AppleProductExists(id string) bool {
-	_, ok := appleProductPlans[id]
-
-	return ok
 }
