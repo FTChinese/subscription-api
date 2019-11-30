@@ -106,20 +106,38 @@ ON DUPLICATE KEY UPDATE
 	updated_utc = UTC_TIMESTAMP()`
 
 const selectMember = `
-SELECT id AS member_id, 
-	vip_id AS compound_id,
-	NULLIF(vip_id, vip_id_alias) AS ftc_id,
-	vip_id_alias AS union_id,
+SELECT id AS sub_id, 
+	vip_id AS sub_compound_id,
+	NULLIF(vip_id, vip_id_alias) AS sub_ftc_id,
+	vip_id_alias AS sub_union_id,
 	vip_type,
 	expire_time,
 	member_tier AS tier,
 	billing_cycle AS cycle,
-	expire_date,
-	payment_method,
+	expire_date AS sub_expire_date,
+	payment_method AS sub_pay_method,
 	stripe_subscription_id AS stripe_sub_id,
-	auto_renewal,
+	auto_renewal AS sub_auto_renew,
 	sub_status
 FROM premium.ftc_vip
 	WHERE %s = ?
 	LIMIT 1
 	FOR UPDATE`
+
+const insertMemberSnapshot = `
+INSERT INTO premium.member_snapshot
+SET id = :snapshot_id,
+	reason = :reason,
+	created_utc = UTC_TIMESTAMP(),
+	member_id = :sub_id,
+	compound_id = :sub_compound_id,
+	ftc_user_id = :sub_ftc_id,
+	wx_union_id = :sub_union_id,
+	tier = :tier,
+	cycle = :cycle,
+	expire_date = :sub_expire_date,
+	payment_method = :sub_pay_method,
+	stripe_subscription_id = :stripe_sub_id,
+	stripe_plan_id = :stripe_plan_id,
+	auto_renewal = :sub_auto_renew,
+	sub_status = :sub_status`
