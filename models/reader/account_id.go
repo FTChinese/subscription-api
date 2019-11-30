@@ -16,9 +16,9 @@ import (
 // A user's compound id is taken from either ftc uuid or
 // wechat id, with ftc id taking precedence.
 type MemberID struct {
-	CompoundID string      `json:"-" db:"compound_id"`
-	FtcID      null.String `json:"-" db:"ftc_id"`
-	UnionID    null.String `json:"-" db:"union_id"`
+	CompoundID string      `json:"-" db:"sub_compound_id"`
+	FtcID      null.String `json:"-" db:"sub_ftc_id"`
+	UnionID    null.String `json:"-" db:"sub_union_id"`
 }
 
 func NewMemberID(ftcID, unionID string) (MemberID, error) {
