@@ -14,7 +14,7 @@ import (
 // createOrder creates an order for ali or wx pay.
 func (router PayRouter) createOrder(
 	id reader.MemberID,
-	plan plan.Plan,
+	p plan.Plan,
 	method enum.PayMethod,
 	app util.ClientApp,
 	wxAppId null.String,
@@ -61,7 +61,7 @@ func (router PayRouter) createOrder(
 	// with chosen payment method based on previous
 	// membership so that we could how this order
 	// is used: create, renew or upgrade.
-	order, err := paywall.NewOrder(id, plan, method, member)
+	order, err := paywall.NewOrder(id, p, method, member)
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
@@ -87,7 +87,7 @@ func (router PayRouter) createOrder(
 		log.Infof("Find balance source: %+v", sources)
 
 		// Step 3.2: Build upgrade plan
-		up := paywall.NewUpgradePlan(sources)
+		up := plan.NewUpgradePlan(sources)
 		log.Infof("Upgrading plan: %+v", up)
 
 		// Step 3.3: Update order based on upgrade plan.

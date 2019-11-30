@@ -118,8 +118,8 @@ func (p Profile) Account(k reader.AccountKind) reader.Account {
 
 func (p Profile) Membership(kind reader.AccountKind, pm enum.PayMethod, expired bool) Membership {
 	m := NewMember(p.AccountID(kind))
-	m.Tier = standardYearlyPlan.Tier
-	m.Cycle = standardYearlyPlan.Cycle
+	m.Tier = enum.TierStandard
+	m.Cycle = enum.CycleYear
 
 	if expired {
 		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, 0, -7))

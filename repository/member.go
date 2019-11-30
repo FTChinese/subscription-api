@@ -53,8 +53,8 @@ func (env Env) RetrieveMember(id reader.MemberID) (paywall.Membership, error) {
 // FindBalanceSources creates a snapshot for orders with
 // unused portion.
 // This is identical to OrderTx.FindBalanceSources without a transaction.
-func (env Env) FindBalanceSources(id reader.MemberID) ([]paywall.ProrationSource, error) {
-	var sources = []paywall.ProrationSource{}
+func (env Env) FindBalanceSources(id reader.MemberID) ([]plan.ProrationSource, error) {
+	var sources = []plan.ProrationSource{}
 
 	err := env.db.Select(
 		&sources,
@@ -71,10 +71,10 @@ func (env Env) FindBalanceSources(id reader.MemberID) ([]paywall.ProrationSource
 }
 
 // RetrieveUpgradePlan retrieves an upgrade plan to be used in email sent to user.
-func (env Env) RetrieveUpgradePlan(upgradeID string) (paywall.UpgradePlan, error) {
+func (env Env) RetrieveUpgradePlan(upgradeID string) (plan.UpgradePlan, error) {
 
 	var data = struct {
-		paywall.UpgradePlan
+		plan.UpgradePlan
 		plan.Plan
 	}{}
 
@@ -85,10 +85,10 @@ func (env Env) RetrieveUpgradePlan(upgradeID string) (paywall.UpgradePlan, error
 
 	if err != nil {
 		logger.WithField("trace", "Env.RetrieveUpgradePlan").Error(err)
-		return paywall.UpgradePlan{}, err
+		return plan.UpgradePlan{}, err
 	}
 
-	return paywall.UpgradePlan{
+	return plan.UpgradePlan{
 		ID:        data.ID,
 		Balance:   data.Balance,
 		CreatedAt: data.CreatedAt,
@@ -99,8 +99,8 @@ func (env Env) RetrieveUpgradePlan(upgradeID string) (paywall.UpgradePlan, error
 
 // RetrieveProratedOrders retrieves all orders prorated from
 // proration table. Used to send user an email after upgrade.
-func (env Env) RetrieveProratedOrders(upgradeID string) ([]paywall.ProrationSource, error) {
-	var sources = []paywall.ProrationSource{}
+func (env Env) RetrieveProratedOrders(upgradeID string) ([]plan.ProrationSource, error) {
+	var sources = []plan.ProrationSource{}
 
 	err := env.db.Select(
 		&sources,

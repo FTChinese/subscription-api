@@ -2,6 +2,7 @@ package repository
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/test"
@@ -420,7 +421,7 @@ func TestOrderTx_SaveUpgradePlan(t *testing.T) {
 	}
 
 	type args struct {
-		up paywall.UpgradePlan
+		up plan.UpgradePlan
 	}
 	tests := []struct {
 		name    string
@@ -466,7 +467,7 @@ func TestOrderTx_SaveProration(t *testing.T) {
 	}
 
 	type args struct {
-		p []paywall.ProrationSource
+		p []plan.ProrationSource
 	}
 	tests := []struct {
 		name    string

@@ -77,7 +77,7 @@ func (r Repo) UpdateMember(m paywall.Membership) {
 }
 
 // SaveBalanceSources populate data to the proration table.
-func (r Repo) SaveBalanceSources(p []paywall.ProrationSource) {
+func (r Repo) SaveBalanceSources(p []plan.ProrationSource) {
 	for _, v := range p {
 		_, err := r.db.NamedExec(
 			r.query.InsertProration(),
@@ -89,9 +89,9 @@ func (r Repo) SaveBalanceSources(p []paywall.ProrationSource) {
 	}
 }
 
-func (r Repo) SaveUpgradePlan(up paywall.UpgradePlan) {
+func (r Repo) SaveUpgradePlan(up plan.UpgradePlan) {
 	var data = struct {
-		paywall.UpgradePlan
+		plan.UpgradePlan
 		plan.Plan
 	}{
 		UpgradePlan: up,
