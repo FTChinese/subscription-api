@@ -95,9 +95,6 @@ func TestPlan_CalculateConversion(t *testing.T) {
 }
 
 func TestFtcPlans(t *testing.T) {
-	t.Logf("FTC live plans: %+v", ftcPlansLive)
-	t.Logf("FTC test plans: %+v", ftcPlansSandbox)
-
-	t.Logf("FTC live plans indexed by stripe plan id: %+v", ftcPlansByStripeIDLive)
-	t.Logf("FTC tesst plans indexed by stripe plan id: %+v", ftcPlansByStripeIDTest)
+	t.Logf("FTC live plans: %+v", GetFtcPlans(true))
+	t.Logf("FTC test plans: %+v", GetFtcPlans(false))
 }

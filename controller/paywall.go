@@ -38,11 +38,11 @@ func DefaultPaywall(w http.ResponseWriter, req *http.Request) {
 		paywall.GetFtcPlans(true))
 
 	if err != nil {
-		view.Render(w, view.NewInternalError(err.Error()))
+		_ = view.Render(w, view.NewInternalError(err.Error()))
 		return
 	}
 
-	view.Render(w, view.NewResponse().SetBody(pw))
+	_ = view.Render(w, view.NewResponse().SetBody(pw))
 }
 
 // GetPricing loads current pricing plans in effect.
@@ -55,7 +55,7 @@ func (router PaywallRouter) GetPricing(w http.ResponseWriter, req *http.Request)
 // DefaultPlans shows what our subscription plans are.
 func DefaultPricing(w http.ResponseWriter, req *http.Request) {
 
-	view.Render(
+	_ = view.Render(
 		w,
 		view.NewResponse().
 			NoCache().

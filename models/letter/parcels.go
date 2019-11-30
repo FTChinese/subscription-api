@@ -15,7 +15,7 @@ func NewSubParcel(a reader.Account, order paywall.Order) (postoffice.Parcel, err
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := paywall.GetFtcPlans(true).FindPlan(order.NamedKey())
+	plan, err := paywall.FindFtcPlan(order.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -54,7 +54,7 @@ func NewRenewalParcel(a reader.Account, order paywall.Order) (postoffice.Parcel,
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := paywall.GetFtcPlans(true).FindPlan(order.NamedKey())
+	plan, err := paywall.FindFtcPlan(order.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -93,7 +93,7 @@ func NewUpgradeParcel(a reader.Account, order paywall.Order, up paywall.UpgradeP
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := paywall.GetFtcPlans(true).FindPlan(order.NamedKey())
+	plan, err := paywall.FindFtcPlan(order.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}

@@ -44,7 +44,7 @@ var (
 		CycleCount: 1,
 		Currency:   "cny",
 		ExtraDays:  1,
-		StripeID:   "plan_FOdgPTznDwHU4i",
+		stripeID:   "plan_FOdgPTznDwHU4i",
 	}
 	PlanStandardYearly = paywall.Plan{
 		Coordinate: paywall.Coordinate{
@@ -57,7 +57,7 @@ var (
 		CycleCount: 1,
 		Currency:   "cny",
 		ExtraDays:  1,
-		StripeID:   "plan_FOdfeaqzczp6Ag",
+		stripeID:   "plan_FOdfeaqzczp6Ag",
 	}
 	PlanPremiumYearly = paywall.Plan{
 		Coordinate: paywall.Coordinate{
@@ -70,7 +70,7 @@ var (
 		CycleCount: 1,
 		Currency:   "cny",
 		ExtraDays:  1,
-		StripeID:   "plan_FOde0uAr0V4WmT",
+		stripeID:   "plan_FOde0uAr0V4WmT",
 	}
 )
 

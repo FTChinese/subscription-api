@@ -17,12 +17,12 @@ type StripeSubParams struct {
 }
 
 func (p *StripeSubParams) SetStripePlanID(live bool) error {
-	plan, err := GetFtcPlans(live).FindPlan(p.NamedKey())
+	plan, err := FindFtcPlan(p.NamedKey())
 	if err != nil {
 		return nil
 	}
 
-	p.planID = plan.StripeID
+	p.planID = plan.GetStripePlanID(live)
 
 	return nil
 }
