@@ -11,6 +11,7 @@ func GenerateSnapshotID() string {
 
 // MemberSnapshot saves a membership's status prior to
 // placing an order.
+// TODO: rename ID to avoid conflict.
 type MemberSnapshot struct {
 	ID         string      `db:"snapshot_id"`
 	Reason     SubsKind    `db:"reason"`
