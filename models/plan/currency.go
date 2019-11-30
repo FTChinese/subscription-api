@@ -1,4 +1,4 @@
-package paywall
+package plan
 
 type Currency string
 
