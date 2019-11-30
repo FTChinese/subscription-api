@@ -29,15 +29,14 @@ func (c BasePlan) NamedKey() string {
 // The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
 	BasePlan
-	ListPrice        float64 `json:"listPrice" db:"price"`
-	NetPrice         float64 `json:"netPrice" db:"amount"`
-	CycleCount       int64   `json:"cycleCount" db:"cycle_count"`
-	ExtraDays        int64   `json:"extraDays" db:"extra_days"`
-	Currency         string  `json:"currency" db:"currency"`
-	Title            string  `json:"description" db:"title"`
-	stripeLivePlanID string  `json:"-"`
-	stripeTestPlanID string  `json:"-"`
-	AppleProductID   string  `json:"-"`
+	ListPrice float64 `json:"listPrice" db:"price"`
+	NetPrice  float64 `json:"netPrice" db:"amount"`
+	Duration
+	Currency         string `json:"currency" db:"currency"`
+	Title            string `json:"description" db:"title"`
+	stripeLivePlanID string `json:"-"`
+	stripeTestPlanID string `json:"-"`
+	AppleProductID   string `json:"-"`
 }
 
 func (p Plan) GetStripePlanID(live bool) string {
