@@ -4,63 +4,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
-	"math"
-	"time"
 )
-
-// ProrationSource gets the unused portion of an order.
-// This is the balance of each valid order the moment user
-// is requesting upgrade.
-// Once the webhook received notification, each record
-// will have ConsumedUTC set, indicating this order won't be
-// included the nex time user requesting upgrade, which might
-// happen if user stopped premium subscription, re-subscribed
-// to standard product, and then upgrade again.
-type ProrationSource struct {
-	OrderID    string      `db:"order_id"`
-	PaidAmount float64     `db:"paid_amount"`
-	StartDate  chrono.Date `db:"start_date"`
-	EndDate    chrono.Date `db:"end_date"`
-	// The above fields are retrieved from db.
-	Balance     float64     `db:"balance"`
-	CreatedUTC  chrono.Time `db:"created_at"`  // The moment this record is created.
-	ConsumedUTC chrono.Time `db:"consumed_at"` // The moment the upgrading order is confirmed.
-	UpgradeID   string      `db:"upgrade_id"`
-}
-
-// Balance calculates the unused portion of an order up to
-// current moment.
-func (p ProrationSource) Prorate() float64 {
-	today := time.Now().Truncate(24 * time.Hour)
-
-	// If subscription starting date of this order is in
-	// future, returns all the paid amount.
-	// If the plan's start date is not passed yet, do not
-	// perform calculation.
-	if today.Before(p.StartDate.Time) {
-		return p.PaidAmount
-	}
-
-	// If start date is before today, it means portion of
-	// this order has already been used.
-	// Calculate the remaining portion.
-	left := p.EndDate.Sub(today)
-
-	total := p.EndDate.Sub(p.StartDate.Time)
-
-	remains := left.Hours() * p.PaidAmount / total.Hours()
-
-	// If remains < 1, the result will be 1.0
-	if remains < 1 {
-		return remains
-	}
-
-	return math.Ceil(remains)
-}
-
-func (p ProrationSource) ReadableBalance() string {
-	return fmt.Sprintf("%s%.2f", "CNY", p.Balance)
-}
 
 func GenerateUpgradeID() string {
 	return "up_" + rand.String(12)
@@ -74,14 +18,11 @@ func GenerateUpgradeID() string {
 // upgrade id referring to the ID field. Each data element is saved
 // to `proration` table.
 type UpgradePlan struct {
-	ID string `json:"id" db:"upgrade_id"`
-	//OrderID     null.String `json:"-" db:"order_id"`
-	Balance float64 `json:"balance" db:"balance"` // Accumulated on all BalanceSource.Balance
-	//SourceIDs   []string    `json:"sources" db:"source_id"` // The order ids which still have portion of days unused.
-	CreatedAt chrono.Time `json:"createdAt" db:"created_at"`
-	//ConfirmedAt chrono.Time `json:"-" db:"confirmed_at"`
-	Data []ProrationSource `json:"data"`
-	Plan Plan              `json:"plan"`
+	ID        string            `json:"id" db:"upgrade_id"`
+	Balance   float64           `json:"balance" db:"balance"` // Accumulated on all BalanceSource.Balance
+	CreatedAt chrono.Time       `json:"createdAt" db:"created_at"`
+	Data      []ProrationSource `json:"data"`
+	Plan      Plan              `json:"plan"`
 }
 
 func NewUpgradePlan(sources []ProrationSource) UpgradePlan {
