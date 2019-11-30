@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/FTChinese/go-rest/rand"
 	"github.com/stripe/stripe-go"
-	"gitlab.com/ftchinese/subscription-api/models/rand"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 
@@ -23,16 +23,16 @@ func GenerateMembershipIndex() string {
 // This is actually called subscription by Stripe.
 // TODO: rename ID to avoid conflict when embedded.
 type Membership struct {
-	ID null.String `json:"id" db:"member_id"` // A random string. Not used yet.
+	ID null.String `json:"id" db:"sub_id"` // A random string. Not used yet.
 	reader.MemberID
 	LegacyTier   null.Int `json:"-" db:"vip_type"`
 	LegacyExpire null.Int `json:"-" db:"expire_time"`
 	Coordinate
-	ExpireDate    chrono.Date    `json:"expireDate" db:"expire_date"`
-	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
+	ExpireDate    chrono.Date    `json:"expireDate" db:"sub_expire_date"`
+	PaymentMethod enum.PayMethod `json:"payMethod" db:"sub_pay_method"`
 	StripeSubID   null.String    `json:"-" db:"stripe_sub_id"`
 	StripePlanID  null.String    `json:"-" db:"stripe_plan_id"`
-	AutoRenewal   bool           `json:"autoRenewal" db:"auto_renewal"`
+	AutoRenewal   bool           `json:"autoRenewal" db:"sub_auto_renew"`
 	// This is used to save stripe subscription status.
 	// Since wechat and alipay treats everything as one-time purchase, they do not have a complex state machine.
 	// If we could integrate apple in-app purchase, this column

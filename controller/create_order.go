@@ -116,9 +116,9 @@ func (router PayRouter) createOrder(
 
 		snapshot := paywall.NewMemberSnapshot(member, order.Usage)
 
-		order.MemberSnapshotID = null.StringFrom(snapshot.ID)
+		order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
 
-		log.Infof("Membership is not empty. Take a snapshot of its current status %s", snapshot.ID)
+		log.Infof("Membership is not empty. Take a snapshot of its current status %s", snapshot.SnapshotID)
 
 		go func() {
 			if err := router.env.BackUpMember(snapshot); err != nil {

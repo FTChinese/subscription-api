@@ -9,6 +9,21 @@ const (
 	MemberColUnionID              = "vip_id_alias"
 )
 
+const stmtSelectMember = `
+SELECT id AS sub_id, 
+	vip_id AS sub_compound_id,
+	NULLIF(vip_id, vip_id_alias) AS sub_ftc_id,
+	vip_id_alias AS sub_union_id,
+	vip_type,
+	expire_time,
+	member_tier AS tier,
+	billing_cycle AS cycle,
+	expire_date AS sub_expire_date,
+	payment_method AS sub_pay_method,
+	stripe_subscription_id AS stripe_sub_id,
+	auto_renewal AS sub_auto_renew,
+	sub_status`
+
 // SelectMemberLock builds statement to select a membership
 // in a transaction. The where clause might be `vip_id`
 // or `vip_id_alias` depending on user's current login method
@@ -42,20 +57,20 @@ func (b Builder) SelectMember(col MemberCol) string {
 func (b Builder) InsertMember() string {
 	return fmt.Sprintf(`
 	INSERT INTO %s.ftc_vip
-	SET id = :member_id,
-		vip_id = :compound_id,
-		vip_id_alias = :union_id,
+	SET id = :sub_id,
+		vip_id = :sub_compound_id,
+		vip_id_alias = :sub_union_id,
 		vip_type = :vip_type,
 		expire_time = :expire_time,
-		ftc_user_id = :ftc_id,
-		wx_union_id = :union_id,
+		ftc_user_id = :sub_ftc_id,
+		wx_union_id = :sub_union_id,
 		member_tier = :tier,
 		billing_cycle = :cycle,
-		expire_date = :expire_date,
-		payment_method = :payment_method,
+		expire_date = :sub_expire_date,
+		payment_method = :sub_pay_method,
 		stripe_subscription_id = :stripe_sub_id,
 		stripe_plan_id = :stripe_plan_id,
-		auto_renewal = :auto_renewal,
+		auto_renewal = :sub_auto_renew,
 		sub_status = :sub_status`, b.MemberDB())
 }
 
@@ -65,26 +80,26 @@ func (b Builder) InsertMember() string {
 func (b Builder) UpdateMember(whereCol MemberCol) string {
 	return fmt.Sprintf(`
 	UPDATE %s.ftc_vip
-	SET id = :member_id,
+	SET id = :sub_id,
 		vip_type = :vip_type,
 		expire_time = :expire_time,
 		member_tier = :tier,
 		billing_cycle = :cycle,
-		expire_date = :expire_date,
-		payment_method = :payment_method,
+		expire_date = :sub_expire_date,
+		payment_method = :sub_pay_method,
 		stripe_subscription_id = :stripe_sub_id,
 		stripe_plan_id = :stripe_plan_id,
-		auto_renewal = :auto_renewal,
+		auto_renewal = :sub_auto_renew,
 		sub_status = :sub_status
-	WHERE %s = :compound_id
+	WHERE %s = :sub_compound_id
 	LIMIT 1`, b.MemberDB(), string(whereCol))
 }
 
 func (b Builder) AddMemberID(whereCol MemberCol) string {
 	return fmt.Sprintf(`
 	UPDATE %s.ftc_vip
-	SET id = IF(id IS NULL, :member_id, id)
-	WHERE %s = :compound_id
+	SET id = IF(id IS NULL, :sub_id, id)
+	WHERE %s = :sub_compound_id
 	LIMIT 1`, b.MemberDB(), string(whereCol))
 }
 
@@ -96,16 +111,16 @@ func (b Builder) MemberSnapshot() string {
 	SET id = :snapshot_id,
 		reason = :reason,
 		created_utc = UTC_TIMESTAMP(),
-		member_id = :member_id,
-		compound_id = :compound_id,
-		ftc_user_id = :ftc_id,
-		wx_union_id = :union_id,
+		member_id = :sub_id,
+		compound_id = :sub_compound_id,
+		ftc_user_id = :sub_ftc_id,
+		wx_union_id = :sub_union_id,
 		tier = :tier,
 		cycle = :cycle,
-		expire_date = :expire_date,
-		payment_method = :payment_method,
+		expire_date = :sub_expire_date,
+		payment_method = :sub_pay_method,
 		stripe_subscription_id = :stripe_sub_id,
 		stripe_plan_id = :stripe_plan_id,
-		auto_renewal = :auto_renewal,
+		auto_renewal = :sub_auto_renew,
 		sub_status = :sub_status`, b.MemberDB())
 }
