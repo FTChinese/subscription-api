@@ -193,7 +193,7 @@ func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) 
 	}
 
 	snapshot := paywall.NewMemberSnapshot(member, paywall.SubsKindUpgrade)
-	order.MemberSnapshotID = null.StringFrom(snapshot.ID)
+	order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
 
 	if err := tx.SaveOrder(order); err != nil {
 		_ = tx.Rollback()
