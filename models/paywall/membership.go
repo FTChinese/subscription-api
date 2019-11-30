@@ -2,6 +2,7 @@ package paywall
 
 import (
 	"errors"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"time"
 
 	"github.com/FTChinese/go-rest/rand"
@@ -27,7 +28,7 @@ type Membership struct {
 	reader.MemberID
 	LegacyTier   null.Int `json:"-" db:"vip_type"`
 	LegacyExpire null.Int `json:"-" db:"expire_time"`
-	Coordinate
+	plan.BasePlan
 	ExpireDate    chrono.Date    `json:"expireDate" db:"sub_expire_date"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"sub_pay_method"`
 	StripeSubID   null.String    `json:"-" db:"stripe_sub_id"`
@@ -125,7 +126,7 @@ func (m Membership) NewStripe(id reader.MemberID, p StripeSubParams, s *stripe.S
 	return Membership{
 		ID:       m.ID,
 		MemberID: id,
-		Coordinate: Coordinate{
+		BasePlan: plan.BasePlan{
 			Tier:  p.Tier,
 			Cycle: p.Cycle,
 		},
@@ -271,7 +272,7 @@ func (m Membership) IsValidPremium() bool {
 }
 
 // SubsKind determines what kind of order a user is creating.
-func (m Membership) SubsKind(p Plan) (SubsKind, error) {
+func (m Membership) SubsKind(p plan.Plan) (SubsKind, error) {
 	if m.IsZero() {
 		return SubsKindCreate, nil
 	}

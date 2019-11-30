@@ -3,6 +3,7 @@ package paywall
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 )
 
 // The default banner message used on web version of pay wall.
@@ -33,7 +34,7 @@ type ProductCard struct {
 	Benefits   []string    `json:"benefits"`
 	SmallPrint null.String `json:"smallPrint"`
 	Tier       enum.Tier   `json:"tier"`
-	Plans      []Plan      `json:"plans"`
+	Plans      []plan.Plan `json:"plans"`
 }
 
 type PayWall struct {
@@ -42,7 +43,7 @@ type PayWall struct {
 }
 
 // BuildPayWall constructs the data used to show pay wall.
-func BuildPayWall(banner Banner, plans FtcPlans) (PayWall, error) {
+func BuildPayWall(banner Banner, plans plan.FtcPlans) (PayWall, error) {
 	planStdYear, err := plans.FindPlan("standard_year")
 	if err != nil {
 		return PayWall{}, err
@@ -73,7 +74,7 @@ func BuildPayWall(banner Banner, plans FtcPlans) (PayWall, error) {
 				},
 				SmallPrint: null.String{},
 				Tier:       enum.TierStandard,
-				Plans: []Plan{
+				Plans: []plan.Plan{
 					planStdYear,
 					planStdMonth,
 				},
@@ -88,7 +89,7 @@ func BuildPayWall(banner Banner, plans FtcPlans) (PayWall, error) {
 				},
 				SmallPrint: null.StringFrom("注：所有活动门票不可折算现金、不能转让、不含差旅与食宿"),
 				Tier:       enum.TierPremium,
-				Plans: []Plan{
+				Plans: []plan.Plan{
 					planPrmYear,
 				},
 			},

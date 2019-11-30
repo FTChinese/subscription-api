@@ -3,6 +3,7 @@ package letter
 import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	plan2 "gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"strings"
 	"text/template"
@@ -15,7 +16,7 @@ func NewSubParcel(a reader.Account, order paywall.Order) (postoffice.Parcel, err
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := paywall.FindFtcPlan(order.NamedKey())
+	plan, err := plan2.FindFtcPlan(order.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -23,7 +24,7 @@ func NewSubParcel(a reader.Account, order paywall.Order) (postoffice.Parcel, err
 	data := struct {
 		User reader.Account
 		Sub  paywall.Order
-		Plan paywall.Plan
+		Plan plan2.Plan
 	}{
 		User: a,
 		Sub:  order,
@@ -54,7 +55,7 @@ func NewRenewalParcel(a reader.Account, order paywall.Order) (postoffice.Parcel,
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := paywall.FindFtcPlan(order.NamedKey())
+	plan, err := plan2.FindFtcPlan(order.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -62,7 +63,7 @@ func NewRenewalParcel(a reader.Account, order paywall.Order) (postoffice.Parcel,
 	data := struct {
 		User reader.Account
 		Sub  paywall.Order
-		Plan paywall.Plan
+		Plan plan2.Plan
 	}{
 		User: a,
 		Sub:  order,
@@ -93,7 +94,7 @@ func NewUpgradeParcel(a reader.Account, order paywall.Order, up paywall.UpgradeP
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := paywall.FindFtcPlan(order.NamedKey())
+	plan, err := plan2.FindFtcPlan(order.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -101,7 +102,7 @@ func NewUpgradeParcel(a reader.Account, order paywall.Order, up paywall.UpgradeP
 	data := struct {
 		User    reader.Account
 		Sub     paywall.Order
-		Plan    paywall.Plan
+		Plan    plan2.Plan
 		Upgrade paywall.UpgradePlan
 	}{
 		User:    a,

@@ -1,6 +1,7 @@
 package paywall
 
 import (
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -8,11 +9,11 @@ import (
 
 // Promotion is a scheduled promotion event.
 type Promotion struct {
-	StartUTC  chrono.Time `json:"startAt"`
-	EndUTC    chrono.Time `json:"endAt"`
-	Banner    Banner      `json:"banner"`
-	Plans     FtcPlans    `json:"plans"`
-	CreatedAt chrono.Time `json:"createdAt"`
+	StartUTC  chrono.Time   `json:"startAt"`
+	EndUTC    chrono.Time   `json:"endAt"`
+	Banner    Banner        `json:"banner"`
+	Plans     plan.FtcPlans `json:"plans"`
+	CreatedAt chrono.Time   `json:"createdAt"`
 }
 
 // IsInEffect tests if now falls within the range of

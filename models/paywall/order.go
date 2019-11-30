@@ -2,6 +2,7 @@ package paywall
 
 import (
 	"fmt"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"strconv"
 	"strings"
 	"time"
@@ -49,7 +50,7 @@ type Order struct {
 	//Charge
 	ListPrice float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
 	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
-	Coordinate
+	plan.BasePlan
 	Currency   null.String `json:"-"`
 	CycleCount int64       `json:"cycleCount" db:"cycle_count"` // Default to 1. Change it for upgrade
 	ExtraDays  int64       `json:"extraDays" db:"extra_days"`   // Default to 1. Change it for upgraded.
@@ -71,7 +72,7 @@ type Order struct {
 // upgrade it and returns a new instance with upgrading price.
 func NewOrder(
 	id reader.MemberID,
-	p Plan,
+	p plan.Plan,
 	method enum.PayMethod,
 	m Membership,
 ) (Order, error) {
@@ -91,7 +92,7 @@ func NewOrder(
 		MemberID:  id,
 		ListPrice: p.ListPrice,
 		Amount:    p.NetPrice, // Modified for upgrade
-		Coordinate: Coordinate{
+		BasePlan: plan.BasePlan{
 			Tier:  p.Tier,
 			Cycle: p.Cycle,
 		},
@@ -127,7 +128,7 @@ func NewFreeUpgradeOrder(id reader.MemberID, up UpgradePlan) (Order, error) {
 		MemberID:  id,
 		ListPrice: 0,
 		Amount:    0,
-		Coordinate: Coordinate{
+		BasePlan: plan.BasePlan{
 			Tier:  up.Plan.Tier,
 			Cycle: up.Plan.Cycle,
 		},

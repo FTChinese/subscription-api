@@ -2,7 +2,7 @@ package apple
 
 import (
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"strconv"
 )
 
@@ -63,7 +63,7 @@ func (r ReceiptInfo) IsCancelled() bool {
 }
 
 func (r ReceiptInfo) IsValidProduct() bool {
-	return paywall.AppleProductExists(r.ProductID)
+	return plan.AppleProductExists(r.ProductID)
 }
 
 // ExpiresUnix turns the milliseconds in string to a unix timestamp in seconds.

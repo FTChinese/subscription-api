@@ -2,6 +2,7 @@ package controller
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"net/http"
 
 	"github.com/FTChinese/go-rest/view"
@@ -35,7 +36,7 @@ func (router PaywallRouter) GetPaywall(w http.ResponseWriter, req *http.Request)
 func DefaultPaywall(w http.ResponseWriter, req *http.Request) {
 	pw, err := paywall.BuildPayWall(
 		paywall.GetDefaultBanner(),
-		paywall.GetFtcPlans(true))
+		plan.GetFtcPlans(true))
 
 	if err != nil {
 		_ = view.Render(w, view.NewInternalError(err.Error()))
@@ -59,7 +60,7 @@ func DefaultPricing(w http.ResponseWriter, req *http.Request) {
 		w,
 		view.NewResponse().
 			NoCache().
-			SetBody(paywall.GetFtcPlans(true)))
+			SetBody(plan.GetFtcPlans(true)))
 }
 
 // GetPromo gets the current effective promotion schedule.

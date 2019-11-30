@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"time"
 )
@@ -46,7 +47,7 @@ func (s *SubStore) Backdate(n int) *SubStore {
 	return s
 }
 
-func (s *SubStore) CreateOrder(p paywall.Plan) (paywall.Order, error) {
+func (s *SubStore) CreateOrder(p plan.Plan) (paywall.Order, error) {
 	order, err := paywall.NewOrder(
 		s.AccountID,
 		p,
@@ -83,7 +84,7 @@ func (s *SubStore) CreateOrder(p paywall.Plan) (paywall.Order, error) {
 	return order, nil
 }
 
-func (s *SubStore) MustCreate(p paywall.Plan) paywall.Order {
+func (s *SubStore) MustCreate(p plan.Plan) paywall.Order {
 	order, err := s.CreateOrder(p)
 	if err != nil {
 		panic(err)
@@ -133,7 +134,7 @@ func (s *SubStore) MustConfirm(id string) paywall.Order {
 
 // RenewN creates a new membership and renew it multiple times.
 //
-func (s *SubStore) RenewN(p paywall.Plan, n int) ([]paywall.Order, error) {
+func (s *SubStore) RenewN(p plan.Plan, n int) ([]paywall.Order, error) {
 
 	orders := []paywall.Order{}
 
@@ -154,7 +155,7 @@ func (s *SubStore) RenewN(p paywall.Plan, n int) ([]paywall.Order, error) {
 	return orders, nil
 }
 
-func (s *SubStore) MustRenewN(p paywall.Plan, n int) []paywall.Order {
+func (s *SubStore) MustRenewN(p plan.Plan, n int) []paywall.Order {
 	orders, err := s.RenewN(p, n)
 	if err != nil {
 		panic(err)
@@ -164,7 +165,7 @@ func (s *SubStore) MustRenewN(p paywall.Plan, n int) []paywall.Order {
 }
 
 // RenewalOrder creates an order used for renewal
-func (s *SubStore) RenewalOrder(p paywall.Plan) (paywall.Order, error) {
+func (s *SubStore) RenewalOrder(p plan.Plan) (paywall.Order, error) {
 	order, err := s.CreateOrder(p)
 	if err != nil {
 		return paywall.Order{}, err
@@ -183,7 +184,7 @@ func (s *SubStore) RenewalOrder(p paywall.Plan) (paywall.Order, error) {
 	return order2, nil
 }
 
-func (s *SubStore) MustRenewal(p paywall.Plan) paywall.Order {
+func (s *SubStore) MustRenewal(p plan.Plan) paywall.Order {
 	order, err := s.RenewalOrder(p)
 	if err != nil {
 		panic(err)

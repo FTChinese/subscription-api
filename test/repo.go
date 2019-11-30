@@ -3,6 +3,7 @@ package test
 import (
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
@@ -91,7 +92,7 @@ func (r Repo) SaveBalanceSources(p []paywall.ProrationSource) {
 func (r Repo) SaveUpgradePlan(up paywall.UpgradePlan) {
 	var data = struct {
 		paywall.UpgradePlan
-		paywall.Plan
+		plan.Plan
 	}{
 		UpgradePlan: up,
 		Plan:        up.Plan,

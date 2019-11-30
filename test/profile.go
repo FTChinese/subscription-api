@@ -8,6 +8,7 @@ import (
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 	"time"
@@ -110,7 +111,7 @@ func (p Profile) Membership(k reader.AccountKind) paywall.Membership {
 		MemberID:     p.AccountID(reader.AccountKindFtc),
 		LegacyTier:   null.Int{},
 		LegacyExpire: null.Int{},
-		Coordinate: paywall.Coordinate{
+		BasePlan: plan.BasePlan{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,
 		},
