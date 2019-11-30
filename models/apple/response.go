@@ -166,7 +166,7 @@ func (v *VerificationResponseBody) Subscription(ids reader.MemberID, r ReceiptIn
 
 	p := v.findPendingRenewal(r)
 
-	plan, _ := paywall.GetPlanForAppleProduct(r.ProductID)
+	plan, _ := paywall.FindPlanForApple(r.ProductID)
 	pd := MustParseInt64(r.PurchaseDateMs) / 1000
 
 	return Subscription{

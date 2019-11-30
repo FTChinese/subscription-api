@@ -131,7 +131,7 @@ func (p Profile) Membership(kind reader.AccountKind, pm enum.PayMethod, expired 
 
 	if pm == enum.PayMethodStripe {
 		m.StripeSubID = null.StringFrom(GenSubID())
-		m.StripePlanID = null.StringFrom(stripePlanIDsTest["standard_year"])
+		//m.StripePlanID = null.StringFrom(stripePlanIDsTest["standard_year"])
 		m.AutoRenewal = true
 		m.Status = SubStatusActive
 	}
