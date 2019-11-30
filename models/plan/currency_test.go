@@ -1,6 +1,8 @@
-package paywall
+package plan
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestCurrency_Symbol(t *testing.T) {
 	tests := []struct {
