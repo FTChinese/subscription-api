@@ -3,7 +3,7 @@ package paywall
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
-	"gitlab.com/ftchinese/subscription-api/models/rand"
+	"github.com/FTChinese/go-rest/rand"
 	"math"
 	"time"
 )
