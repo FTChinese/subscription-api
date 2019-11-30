@@ -57,28 +57,34 @@ func stripeDBFailure(err error) view.Response {
 }
 
 // GetPlan retrieves a stripe plan.
+// GET /stripe/plans/<standard_month | standard_year | premium_year>
 func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 	key, err := GetURLParam(req, "id").ToString()
 	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	ftcPlan, err := paywall.GetFtcPlans(router.env.Live()).
-		FindPlan(key)
+	ftcPlan, err := paywall.FindFtcPlan(key)
+
+	//ftcPlan, err := paywall.GetFtcPlans(router.env.Live()).
+	//	FindPlan(key)
 
 	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
-	p, err := plan.Get(ftcPlan.StripeID, nil)
+	p, err := plan.Get(
+		ftcPlan.GetStripePlanID(router.env.Live()),
+		nil)
+
 	if err != nil {
-		view.Render(w, stripeBadRequest(err))
+		_ = view.Render(w, stripeBadRequest(err))
 		return
 	}
 
-	view.Render(w, view.NewResponse().SetBody(p))
+	_ = view.Render(w, view.NewResponse().SetBody(p))
 }
 
 // CreateCustomer send client stripe's customer id.

@@ -113,12 +113,13 @@ func (i StripeInvoice) BuildFtcPlan() (Plan, error) {
 
 	stripePlan := i.Lines.Data[0].Plan
 
-	ftcPlan, err := GetFtcPlansWithStripe(i.Livemode).FindPlan(stripePlan.ID)
+	ftcPlan, err := FindPlanForStripe(stripePlan.ID, i.Livemode)
+
 	if err != nil {
 		return Plan{}, err
 	}
 
-	return ftcPlan.WithStripe(*stripePlan), nil
+	return ftcPlan.WithStripePrice(*stripePlan), nil
 }
 
 func (i StripeInvoice) Price() string {
