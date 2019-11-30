@@ -3,12 +3,13 @@ package paywall
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"testing"
 )
 
 func TestStripeSubParams_SetStripePlanID(t *testing.T) {
 	type fields struct {
-		Coordinate           Coordinate
+		Coordinate           plan.BasePlan
 		Customer             string
 		Coupon               null.String
 		DefaultPaymentMethod null.String
@@ -27,7 +28,7 @@ func TestStripeSubParams_SetStripePlanID(t *testing.T) {
 		{
 			name: "Standard Month",
 			fields: fields{
-				Coordinate: Coordinate{
+				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleMonth,
 				},
@@ -38,7 +39,7 @@ func TestStripeSubParams_SetStripePlanID(t *testing.T) {
 		{
 			name: "Standard Year",
 			fields: fields{
-				Coordinate: Coordinate{
+				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -49,7 +50,7 @@ func TestStripeSubParams_SetStripePlanID(t *testing.T) {
 		{
 			name: "Premium Year",
 			fields: fields{
-				Coordinate: Coordinate{
+				Coordinate: plan.BasePlan{
 					Tier:  enum.TierPremium,
 					Cycle: enum.CycleYear,
 				},
@@ -59,7 +60,7 @@ func TestStripeSubParams_SetStripePlanID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &StripeSubParams{
-				Coordinate:           tt.fields.Coordinate,
+				BasePlan:             tt.fields.Coordinate,
 				Customer:             tt.fields.Customer,
 				Coupon:               tt.fields.Coupon,
 				DefaultPaymentMethod: tt.fields.DefaultPaymentMethod,

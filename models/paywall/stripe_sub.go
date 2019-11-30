@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/stripe/stripe-go"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"strings"
 	"time"
@@ -14,7 +15,7 @@ import (
 // Used as response when client asks for subscription data.
 type StripeSub struct {
 	AccountID reader.MemberID `json:"-"`
-	Coordinate
+	plan.BasePlan
 	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time `json:"created"`
 	CurrentPeriodEnd   chrono.Time `json:"currentPeriodEnd"`
@@ -102,21 +103,21 @@ func (i StripeInvoice) CreationTime() chrono.Time {
 	return chrono.TimeFrom(canonicalizeUnix(i.Created))
 }
 
-func (i StripeInvoice) BuildFtcPlan() (Plan, error) {
+func (i StripeInvoice) BuildFtcPlan() (plan.Plan, error) {
 	if i.Lines == nil {
-		return Plan{}, errors.New("empty lines")
+		return plan.Plan{}, errors.New("empty lines")
 	}
 
 	if len(i.Lines.Data) == 0 {
-		return Plan{}, errors.New("empty lines.data")
+		return plan.Plan{}, errors.New("empty lines.data")
 	}
 
 	stripePlan := i.Lines.Data[0].Plan
 
-	ftcPlan, err := FindPlanForStripe(stripePlan.ID, i.Livemode)
+	ftcPlan, err := plan.FindPlanForStripe(stripePlan.ID, i.Livemode)
 
 	if err != nil {
-		return Plan{}, err
+		return plan.Plan{}, err
 	}
 
 	return ftcPlan.WithStripePrice(*stripePlan), nil

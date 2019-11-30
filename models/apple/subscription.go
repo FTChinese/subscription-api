@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
 
@@ -31,7 +32,7 @@ func (s Subscription) Membership() paywall.Membership {
 		MemberID:     s.MemberID,
 		LegacyTier:   null.Int{},
 		LegacyExpire: null.Int{},
-		Coordinate: paywall.Coordinate{
+		BasePlan: plan.BasePlan{
 			Tier:  s.Tier,
 			Cycle: s.Cycle,
 		},
