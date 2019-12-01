@@ -48,8 +48,8 @@ type Order struct {
 	ID string `json:"id" db:"order_id"`
 	reader.MemberID
 	//Charge
-	ListPrice float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
-	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
+	Price  float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
+	Amount float64 `json:"amount" db:"amount"` // Actually paid amount.
 	plan.BasePlan
 	Currency   null.String `json:"-"`
 	CycleCount int64       `json:"cycleCount" db:"cycle_count"` // Default to 1. Change it for upgrade
@@ -88,10 +88,10 @@ func NewOrder(
 	}
 
 	return Order{
-		ID:        orderID,
-		MemberID:  id,
-		ListPrice: p.ListPrice,
-		Amount:    p.NetPrice, // Modified for upgrade
+		ID:       orderID,
+		MemberID: id,
+		Price:    p.ListPrice,
+		Amount:   p.NetPrice, // Modified for upgrade
 		BasePlan: plan.BasePlan{
 			Tier:  p.Tier,
 			Cycle: p.Cycle,
@@ -124,10 +124,10 @@ func NewFreeUpgradeOrder(id reader.MemberID, up plan.UpgradePlan) (Order, error)
 	}
 
 	return Order{
-		ID:        orderID,
-		MemberID:  id,
-		ListPrice: 0,
-		Amount:    0,
+		ID:       orderID,
+		MemberID: id,
+		Price:    0,
+		Amount:   0,
 		BasePlan: plan.BasePlan{
 			Tier:  up.Plan.Tier,
 			Cycle: up.Plan.Cycle,
