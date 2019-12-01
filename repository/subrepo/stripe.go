@@ -15,10 +15,10 @@ import (
 
 // CreateStripeCustomer create a customer under ftc account
 // for user with `ftcID`.
-func (env Env) CreateStripeCustomer(ftcID string) (reader.Account, error) {
+func (env SubEnv) CreateStripeCustomer(ftcID string) (reader.Account, error) {
 	tx, err := env.db.Beginx()
 	if err != nil {
-		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		logger.WithField("trace", "SubEnv.CreateStripeCustomer").Error(err)
 		return reader.Account{}, err
 	}
 
@@ -26,7 +26,7 @@ func (env Env) CreateStripeCustomer(ftcID string) (reader.Account, error) {
 	err = tx.Get(&account, query.LockFtcUser, ftcID)
 	if err != nil {
 		_ = tx.Rollback()
-		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		logger.WithField("trace", "SubEnv.CreateStripeCustomer").Error(err)
 		return reader.Account{}, err
 	}
 
@@ -38,7 +38,7 @@ func (env Env) CreateStripeCustomer(ftcID string) (reader.Account, error) {
 	stripeID, err := createCustomer(account.Email)
 	if err != nil {
 		_ = tx.Rollback()
-		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		logger.WithField("trace", "SubEnv.CreateStripeCustomer").Error(err)
 		return reader.Account{}, err
 	}
 
@@ -47,12 +47,12 @@ func (env Env) CreateStripeCustomer(ftcID string) (reader.Account, error) {
 	_, err = tx.NamedExec(query.SaveStripeID, account)
 	if err != nil {
 		_ = tx.Rollback()
-		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		logger.WithField("trace", "SubEnv.CreateStripeCustomer").Error(err)
 		return reader.Account{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		logger.WithField("trace", "Env.CreateStripeCustomer").Error(err)
+		logger.WithField("trace", "SubEnv.CreateStripeCustomer").Error(err)
 		return reader.Account{}, err
 	}
 
@@ -78,12 +78,12 @@ func createCustomer(email string) (string, error) {
 // util.ErrNonStripeValidSub
 // util.ErrActiveStripeSub
 // util.ErrUnknownSubState
-func (env Env) CreateStripeSub(
+func (env SubEnv) CreateStripeSub(
 	id reader.MemberID,
 	params subscription.StripeSubParams,
 ) (*stripe.Subscription, error) {
 
-	log := logger.WithField("trace", "Env.CreateStripeSub")
+	log := logger.WithField("trace", "SubEnv.CreateStripeSub")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
@@ -145,8 +145,8 @@ func (env Env) CreateStripeSub(
 }
 
 // GetStripeSub refresh stripe subscription data if stale.
-func (env Env) GetStripeSub(id reader.MemberID) (*stripe.Subscription, error) {
-	log := logger.WithField("trace", "Env.GetStripeSub")
+func (env SubEnv) GetStripeSub(id reader.MemberID) (*stripe.Subscription, error) {
+	log := logger.WithField("trace", "SubEnv.GetStripeSub")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
@@ -210,12 +210,12 @@ func (env Env) GetStripeSub(id reader.MemberID) (*stripe.Subscription, error) {
 }
 
 // UpgradeStripeSubs switches subscription plan.
-func (env Env) UpgradeStripeSubs(
+func (env SubEnv) UpgradeStripeSubs(
 	id reader.MemberID,
 	params subscription.StripeSubParams,
 ) (*stripe.Subscription, error) {
 
-	log := logger.WithField("trace", "Env.CreateStripeCustomer")
+	log := logger.WithField("trace", "SubEnv.CreateStripeCustomer")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
@@ -327,7 +327,7 @@ func upgradeStripeSub(p subscription.StripeSubParams, subID string) (*stripe.Sub
 }
 
 // SaveStripeError saves any error in stripe response.
-func (env Env) SaveStripeError(id reader.MemberID, e *stripe.Error) error {
+func (env SubEnv) SaveStripeError(id reader.MemberID, e *stripe.Error) error {
 	_, err := env.db.Exec(query.InsertStripeError,
 		id.FtcID,
 		null.NewString(e.ChargeID, e.ChargeID != ""),
@@ -340,7 +340,7 @@ func (env Env) SaveStripeError(id reader.MemberID, e *stripe.Error) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "Env.SaveStripeError").Error(err)
+		logger.WithField("trace", "SubEnv.SaveStripeError").Error(err)
 		return err
 	}
 
@@ -349,7 +349,7 @@ func (env Env) SaveStripeError(id reader.MemberID, e *stripe.Error) error {
 
 // WebHookSaveStripeSub saved a user's membership derived from
 // stripe subscription data.
-func (env Env) WebHookSaveStripeSub(s *stripe.Subscription) (reader.Account, error) {
+func (env SubEnv) WebHookSaveStripeSub(s *stripe.Subscription) (reader.Account, error) {
 
 	// Find the ftc user associated with stripe custoemr id.
 	ftcUser, err := env.FindStripeCustomer(s.Customer.ID)
@@ -359,7 +359,7 @@ func (env Env) WebHookSaveStripeSub(s *stripe.Subscription) (reader.Account, err
 
 	userID := ftcUser.ID()
 
-	log := logger.WithField("trace", "Env.CreateStripeSub")
+	log := logger.WithField("trace", "SubEnv.CreateStripeSub")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {

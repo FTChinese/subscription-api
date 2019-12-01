@@ -11,11 +11,11 @@ import (
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	model subrepo.Env
+	model subrepo.SubEnv
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(m subrepo.Env) PaywallRouter {
+func NewPaywallRouter(m subrepo.SubEnv) PaywallRouter {
 	return PaywallRouter{
 		model: m,
 	}

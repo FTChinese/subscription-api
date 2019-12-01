@@ -7,7 +7,7 @@ import (
 )
 
 // AddMemberID set a membership's id column if it is empty.
-func (env Env) AddMemberID(m subscription.Membership) error {
+func (env SubEnv) AddMemberID(m subscription.Membership) error {
 	_, err := env.db.NamedExec(
 		env.query.AddMemberID(m.MemberColumn()),
 		m)
@@ -20,7 +20,7 @@ func (env Env) AddMemberID(m subscription.Membership) error {
 }
 
 // BackUpMember saves a member's snapshot at a specific moment.
-func (env Env) BackUpMember(m subscription.MemberSnapshot) error {
+func (env SubEnv) BackUpMember(m subscription.MemberSnapshot) error {
 	_, err := env.db.NamedExec(
 		env.query.MemberSnapshot(),
 		m)
@@ -33,7 +33,7 @@ func (env Env) BackUpMember(m subscription.MemberSnapshot) error {
 }
 
 // RetrieveMember retrieves membership from database.
-func (env Env) RetrieveMember(id reader.MemberID) (subscription.Membership, error) {
+func (env SubEnv) RetrieveMember(id reader.MemberID) (subscription.Membership, error) {
 	var m subscription.Membership
 
 	err := env.db.Get(
@@ -53,7 +53,7 @@ func (env Env) RetrieveMember(id reader.MemberID) (subscription.Membership, erro
 // FindBalanceSources creates a snapshot for orders with
 // unused portion.
 // This is identical to OrderTx.FindBalanceSources without a transaction.
-func (env Env) FindBalanceSources(id reader.MemberID) ([]plan.ProrationSource, error) {
+func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]plan.ProrationSource, error) {
 	var sources = []plan.ProrationSource{}
 
 	err := env.db.Select(
@@ -63,7 +63,7 @@ func (env Env) FindBalanceSources(id reader.MemberID) ([]plan.ProrationSource, e
 		id.UnionID)
 
 	if err != nil {
-		logger.WithField("trace", "Env.FindBalanceSources").Error(err)
+		logger.WithField("trace", "SubEnv.FindBalanceSources").Error(err)
 		return sources, err
 	}
 
@@ -71,7 +71,7 @@ func (env Env) FindBalanceSources(id reader.MemberID) ([]plan.ProrationSource, e
 }
 
 // RetrieveUpgradePlan retrieves an upgrade plan to be used in email sent to user.
-func (env Env) RetrieveUpgradePlan(upgradeID string) (plan.UpgradePlan, error) {
+func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (plan.UpgradePlan, error) {
 
 	var data = struct {
 		plan.UpgradePlan
@@ -84,7 +84,7 @@ func (env Env) RetrieveUpgradePlan(upgradeID string) (plan.UpgradePlan, error) {
 		upgradeID)
 
 	if err != nil {
-		logger.WithField("trace", "Env.RetrieveUpgradePlan").Error(err)
+		logger.WithField("trace", "SubEnv.RetrieveUpgradePlan").Error(err)
 		return plan.UpgradePlan{}, err
 	}
 
@@ -99,7 +99,7 @@ func (env Env) RetrieveUpgradePlan(upgradeID string) (plan.UpgradePlan, error) {
 
 // RetrieveProratedOrders retrieves all orders prorated from
 // proration table. Used to send user an email after upgrade.
-func (env Env) RetrieveProratedOrders(upgradeID string) ([]plan.ProrationSource, error) {
+func (env SubEnv) RetrieveProratedOrders(upgradeID string) ([]plan.ProrationSource, error) {
 	var sources = []plan.ProrationSource{}
 
 	err := env.db.Select(
@@ -108,7 +108,7 @@ func (env Env) RetrieveProratedOrders(upgradeID string) ([]plan.ProrationSource,
 		upgradeID)
 
 	if err != nil {
-		logger.WithField("trace", "Env.RetrieveProratedOrders").Error(err)
+		logger.WithField("trace", "SubEnv.RetrieveProratedOrders").Error(err)
 		return sources, err
 	}
 

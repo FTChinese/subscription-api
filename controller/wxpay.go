@@ -24,7 +24,7 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(m subrepo.Env, p postoffice.Postman) WxPayRouter {
+func NewWxRouter(m subrepo.SubEnv, p postoffice.Postman) WxPayRouter {
 	r := WxPayRouter{
 		clients: createWxpayClients(),
 	}
