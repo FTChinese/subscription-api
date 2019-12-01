@@ -28,7 +28,7 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(m subrepo.Env, p postoffice.Postman) AliPayRouter {
+func NewAliRouter(m subrepo.SubEnv, p postoffice.Postman) AliPayRouter {
 
 	app := getAliPayApp()
 

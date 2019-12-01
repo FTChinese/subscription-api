@@ -19,7 +19,7 @@ type UpgradeRouter struct {
 	PayRouter
 }
 
-func NewUpgradeRouter(env subrepo.Env) UpgradeRouter {
+func NewUpgradeRouter(env subrepo.SubEnv) UpgradeRouter {
 	r := UpgradeRouter{}
 	r.env = env
 

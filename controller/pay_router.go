@@ -18,7 +18,7 @@ const (
 
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
-	env     subrepo.Env
+	env     subrepo.SubEnv
 	postman postoffice.Postman
 }
 

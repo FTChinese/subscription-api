@@ -4,7 +4,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
-func (env Env) SaveConfirmationResult(r *subscription.ConfirmationResult) error {
+func (env SubEnv) SaveConfirmationResult(r *subscription.ConfirmationResult) error {
 	_, err := env.db.Exec(
 		env.query.ConfirmationResult(),
 		r.OrderID,

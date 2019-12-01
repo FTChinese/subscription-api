@@ -10,7 +10,7 @@ import (
 )
 
 func TestEnv_SaveAliNotification(t *testing.T) {
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -33,14 +33,14 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			if err := env.SaveAliNotification(tt.args.n); (err != nil) != tt.wantErr {
-				t.Errorf("Env.SaveAliNotification() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SubEnv.SaveAliNotification() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
 func TestEnv_SavePrepayResp(t *testing.T) {
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -71,7 +71,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 }
 
 func TestEnv_SaveWxNotification(t *testing.T) {
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}

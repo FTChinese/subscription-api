@@ -9,11 +9,11 @@ import (
 )
 
 type GiftCardRouter struct {
-	model subrepo.Env
+	model subrepo.SubEnv
 }
 
 // NewGiftCardRouter create a new instance of GiftCardRouter.
-func NewGiftCardRouter(m subrepo.Env) GiftCardRouter {
+func NewGiftCardRouter(m subrepo.SubEnv) GiftCardRouter {
 	return GiftCardRouter{
 		model: m,
 	}

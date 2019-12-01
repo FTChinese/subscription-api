@@ -6,7 +6,7 @@ import (
 )
 
 // FindFtcUser retrieves an FTC account's basic info.
-func (env Env) FindFtcUser(ftcId string) (reader.Account, error) {
+func (env SubEnv) FindFtcUser(ftcId string) (reader.Account, error) {
 
 	var u reader.Account
 	err := env.db.Get(
@@ -16,7 +16,7 @@ func (env Env) FindFtcUser(ftcId string) (reader.Account, error) {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "Env.FindFtcUser").Error(err)
+		logger.WithField("trace", "SubEnv.FindFtcUser").Error(err)
 
 		return u, err
 	}
@@ -24,7 +24,7 @@ func (env Env) FindFtcUser(ftcId string) (reader.Account, error) {
 	return u, nil
 }
 
-func (env Env) FindStripeCustomer(cusID string) (reader.Account, error) {
+func (env SubEnv) FindStripeCustomer(cusID string) (reader.Account, error) {
 	var u reader.Account
 	err := env.db.QueryRow(query.SelectStripeCustomer, cusID).Scan(
 		&u.FtcID,
@@ -35,7 +35,7 @@ func (env Env) FindStripeCustomer(cusID string) (reader.Account, error) {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "Env.FindStripeCustomer").Error(err)
+		logger.WithField("trace", "SubEnv.FindStripeCustomer").Error(err)
 
 		return u, err
 	}

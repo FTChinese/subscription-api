@@ -14,7 +14,7 @@ func TestEnv_FindFtcUser(t *testing.T) {
 	account := profile.Account(reader.AccountKindFtc)
 	test.NewRepo().SaveAccount(account)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -56,7 +56,7 @@ func TestEnv_FindStripeCustomer(t *testing.T) {
 	account := profile.Account(reader.AccountKindFtc)
 	test.NewRepo().SaveAccount(account)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}

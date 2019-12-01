@@ -5,7 +5,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
-func (env Env) FindGiftCard(code string) (redeem.GiftCard, error) {
+func (env SubEnv) FindGiftCard(code string) (redeem.GiftCard, error) {
 	query := `
 	SELECT auth_code AS redeemCode,
 		tier AS tier,
@@ -32,7 +32,7 @@ func (env Env) FindGiftCard(code string) (redeem.GiftCard, error) {
 	return c, nil
 }
 
-func (env Env) RedeemGiftCard(c redeem.GiftCard, m subscription.Membership) error {
+func (env SubEnv) RedeemGiftCard(c redeem.GiftCard, m subscription.Membership) error {
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "RedeemGiftCard").Error(err)

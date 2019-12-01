@@ -4,7 +4,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/util"
 )
 
-func (env Env) SaveOrderClient(orderID string, app util.ClientApp) error {
+func (env SubEnv) SaveOrderClient(orderID string, app util.ClientApp) error {
 	data := struct {
 		OrderID string `db:"order_id"`
 		util.ClientApp

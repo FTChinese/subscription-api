@@ -24,7 +24,7 @@ type StripeRouter struct {
 	PayRouter
 }
 
-func NewStripeRouter(m subrepo.Env, p postoffice.Postman, sk string) StripeRouter {
+func NewStripeRouter(m subrepo.SubEnv, p postoffice.Postman, sk string) StripeRouter {
 	r := StripeRouter{
 		signingKey: sk,
 	}
