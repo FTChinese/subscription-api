@@ -3,19 +3,19 @@ package controller
 import (
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 
 	"github.com/FTChinese/go-rest/view"
-	"gitlab.com/ftchinese/subscription-api/repository"
 )
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	model repository.Env
+	model subrepo.Env
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(m repository.Env) PaywallRouter {
+func NewPaywallRouter(m subrepo.Env) PaywallRouter {
 	return PaywallRouter{
 		model: m,
 	}

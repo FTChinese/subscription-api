@@ -11,7 +11,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository"
+	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
 
@@ -19,7 +19,7 @@ type UpgradeRouter struct {
 	PayRouter
 }
 
-func NewUpgradeRouter(env repository.Env) UpgradeRouter {
+func NewUpgradeRouter(env subrepo.Env) UpgradeRouter {
 	r := UpgradeRouter{}
 	r.env = env
 

@@ -6,7 +6,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository"
+	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 	"time"
@@ -14,7 +14,7 @@ import (
 
 func mockOrderAndConfirm(id reader.MemberID) subscription.Order {
 	router := PayRouter{
-		env: repository.New(test.DB, test.Cache, util.BuildConfig{
+		env: subrepo.New(test.DB, test.Cache, util.BuildConfig{
 			Sandbox:    false,
 			Production: false,
 		}),

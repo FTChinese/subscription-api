@@ -11,7 +11,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository"
+	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
 
@@ -28,7 +28,7 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(m repository.Env, p postoffice.Postman) AliPayRouter {
+func NewAliRouter(m subrepo.Env, p postoffice.Postman) AliPayRouter {
 
 	app := getAliPayApp()
 

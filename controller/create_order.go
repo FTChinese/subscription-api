@@ -57,11 +57,16 @@ func (router PayRouter) createOrder(
 		}()
 	}
 
+	subKind, err := member.SubsKind(p)
+	if err != nil {
+		return subscription.Order{}, err
+	}
+
 	// Step 2: Build an order for the user's chosen plan
 	// with chosen payment method based on previous
 	// membership so that we could how this order
 	// is used: create, renew or upgrade.
-	order, err := subscription.NewOrder(id, p, method, member)
+	order, err := subscription.NewOrder(id, p, method, subKind)
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
@@ -72,7 +77,7 @@ func (router PayRouter) createOrder(
 
 	// Step 3: required only if this order is used for
 	// upgrading.
-	if order.Usage == subscription.SubsKindUpgrade {
+	if subKind == subscription.SubsKindUpgrade {
 		// Step 3.1: find previous orders with balance
 		// remaining.
 		// DO not save sources directly. The balance is not

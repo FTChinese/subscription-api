@@ -4,16 +4,16 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository"
+	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
 
 type GiftCardRouter struct {
-	model repository.Env
+	model subrepo.Env
 }
 
 // NewGiftCardRouter create a new instance of GiftCardRouter.
-func NewGiftCardRouter(m repository.Env) GiftCardRouter {
+func NewGiftCardRouter(m subrepo.Env) GiftCardRouter {
 	return GiftCardRouter{
 		model: m,
 	}

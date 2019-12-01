@@ -14,7 +14,7 @@ import (
 	plan2 "gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository"
+	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"io/ioutil"
 	"net/http"
 )
@@ -24,7 +24,7 @@ type StripeRouter struct {
 	PayRouter
 }
 
-func NewStripeRouter(m repository.Env, p postoffice.Postman, sk string) StripeRouter {
+func NewStripeRouter(m subrepo.Env, p postoffice.Postman, sk string) StripeRouter {
 	r := StripeRouter{
 		signingKey: sk,
 	}
