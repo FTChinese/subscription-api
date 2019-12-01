@@ -4,7 +4,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
@@ -20,8 +19,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 	test.NewRepo().SaveMember(store.Member)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -74,8 +72,7 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 	)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -140,8 +137,7 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 	test.NewRepo().SaveOrder(order2)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -201,8 +197,7 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 	order = store.MustConfirm(order.ID)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -251,8 +246,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 	)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -306,8 +300,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 	store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -363,8 +356,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 	}
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -416,8 +408,7 @@ func TestOrderTx_SaveUpgradePlan(t *testing.T) {
 	store.MustCreate(test.YearlyPremium)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -462,8 +453,7 @@ func TestOrderTx_SaveProration(t *testing.T) {
 	store.MustCreate(test.YearlyPremium)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -507,8 +497,7 @@ func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 	store.MustCreate(test.YearlyPremium)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {

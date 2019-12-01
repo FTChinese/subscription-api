@@ -2,6 +2,7 @@ package subrepo
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 func (env SubEnv) SaveOrderClient(orderID string, app util.ClientApp) error {
@@ -14,7 +15,7 @@ func (env SubEnv) SaveOrderClient(orderID string, app util.ClientApp) error {
 	}
 
 	_, err := env.db.NamedExec(
-		env.query.InsertClientApp(),
+		query.BuildInsertClientApp(env.Sandbox),
 		data)
 
 	if err != nil {

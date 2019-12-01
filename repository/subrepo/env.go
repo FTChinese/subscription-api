@@ -2,11 +2,9 @@ package subrepo
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
-
-	"github.com/patrickmn/go-cache"
 )
 
 // SubEnv wraps database connection
@@ -14,7 +12,6 @@ type SubEnv struct {
 	util.BuildConfig
 	db    *sqlx.DB
 	cache *cache.Cache
-	query query.Builder
 }
 
 // New creates a new instance of SubEnv.
@@ -24,7 +21,6 @@ func New(db *sqlx.DB, c *cache.Cache, b util.BuildConfig) SubEnv {
 		BuildConfig: b,
 		db:          db,
 		cache:       c,
-		query:       query.NewBuilder(b.Sandbox),
 	}
 }
 
@@ -36,9 +32,8 @@ func (env SubEnv) BeginOrderTx() (OrderTx, error) {
 	}
 
 	return OrderTx{
-		tx:    tx,
-		live:  env.Live(),
-		query: env.query,
+		tx:      tx,
+		sandbox: env.Sandbox,
 	}, nil
 }
 

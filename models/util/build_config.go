@@ -21,16 +21,19 @@ type BuildConfig struct {
 	Production bool // it determines which database should be used;
 }
 
+func (c BuildConfig) isDev() bool {
+	return !c.Production
+}
+
 func (c BuildConfig) Live() bool {
 	return c.Production && !c.Sandbox
 }
 
 func (c BuildConfig) GetReceiptVerificationURL() string {
 
-	if c.Live() {
-
-		return "https://buy.itunes.apple.com/verifyReceipt"
+	if c.isDev() || c.Sandbox {
+		return "https://sandbox.itunes.apple.com/verifyReceipt"
 	}
 
-	return "https://sandbox.itunes.apple.com/verifyReceipt"
+	return "https://buy.itunes.apple.com/verifyReceipt"
 }

@@ -4,9 +4,9 @@ import "github.com/guregu/null"
 
 // ConfirmationResult logs the result of confirmation.
 type ConfirmationResult struct {
-	OrderID   string
-	Succeeded bool
-	Failed    null.String
+	OrderID   string      `db:"order_id"`
+	Succeeded bool        `db:"succeeded"`
+	Failed    null.String `db:"failed"`
 	Retry     bool
 }
 
