@@ -23,12 +23,11 @@ func GenerateMembershipIndex() string {
 
 // Membership contains a user's membership details
 // This is actually called subscription by Stripe.
-// TODO: rename ID to avoid conflict when embedded.
 type Membership struct {
 	ID null.String `json:"id" db:"sub_id"` // A random string. Not used yet.
 	reader.MemberID
-	LegacyExpire null.Int `json:"-" db:"expire_time"`
 	plan.BasePlan
+	LegacyExpire  null.Int       `json:"-" db:"expire_time"`
 	ExpireDate    chrono.Date    `json:"expireDate" db:"sub_expire_date"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"sub_pay_method"`
 	StripeSubID   null.String    `json:"-" db:"stripe_sub_id"`
