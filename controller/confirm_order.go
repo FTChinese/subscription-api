@@ -47,7 +47,7 @@ func (router PayRouter) confirmPayment(result subscription.PaymentResult) (subsc
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
-	member, err := tx.RetrieveMember(order.GetAccountID())
+	member, err := tx.RetrieveMember(order.MemberID)
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()

@@ -15,6 +15,8 @@ var (
 		},
 		ListPrice: 28.00,
 		NetPrice:  28.00,
+		Price:     28.00,
+		Amount:    28.00,
 		Duration: Duration{
 			CycleCount: 1,
 			ExtraDays:  1,
@@ -34,6 +36,8 @@ var (
 		},
 		ListPrice: 258.00,
 		NetPrice:  258.00,
+		Price:     258.00,
+		Amount:    258.00,
 		Duration: Duration{
 			CycleCount: 1,
 			ExtraDays:  1,
@@ -53,6 +57,8 @@ var (
 		},
 		ListPrice: 1998.00,
 		NetPrice:  1998.00,
+		Price:     1998.00,
+		Amount:    1998.00,
 		Duration: Duration{
 			CycleCount: 1,
 			ExtraDays:  1,

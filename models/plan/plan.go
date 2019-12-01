@@ -29,8 +29,10 @@ func (c BasePlan) NamedKey() string {
 // The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
 	BasePlan
-	ListPrice float64 `json:"listPrice" db:"price"`
-	NetPrice  float64 `json:"netPrice" db:"amount"`
+	ListPrice float64 `json:"listPrice"`          // Deprecate
+	NetPrice  float64 `json:"netPrice"`           // Deprecate
+	Price     float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
+	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
 	Duration
 	Currency         string `json:"currency" db:"currency"`
 	Title            string `json:"description"`
