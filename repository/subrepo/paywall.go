@@ -9,7 +9,7 @@ import (
 )
 
 // RetrievePromo tries to retrieve a promotion schedule.
-func (env Env) RetrievePromo() (paywall.Promotion, error) {
+func (env SubEnv) RetrievePromo() (paywall.Promotion, error) {
 	// Retrieve a lastest promotion schedule
 	// which is enabled,
 	// ending time is equal to or greater than current time,
@@ -67,14 +67,14 @@ func (env Env) RetrievePromo() (paywall.Promotion, error) {
 	return p, nil
 }
 
-func (env Env) cachePromo(p paywall.Promotion) {
+func (env SubEnv) cachePromo(p paywall.Promotion) {
 	logger.WithField("trace", "cachePromo").Infof("Caching promo %+v", p)
 
 	env.cache.Set(keyPromo, p, cache.NoExpiration)
 }
 
 // LoadCachedPromo gets promo from cache.
-func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
+func (env SubEnv) LoadCachedPromo() (paywall.Promotion, bool) {
 	x, found := env.cache.Get(keyPromo)
 
 	if !found {
@@ -92,7 +92,7 @@ func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
 }
 
 // GetCurrentPlans get current effective pricing plans.
-func (env Env) GetCurrentPlans() plan.FtcPlans {
+func (env SubEnv) GetCurrentPlans() plan.FtcPlans {
 
 	live := env.Live()
 	if !env.Live() {
@@ -116,7 +116,7 @@ func (env Env) GetCurrentPlans() plan.FtcPlans {
 	return promo.Plans
 }
 
-func (env Env) GetPayWall() (paywall.PayWall, error) {
+func (env SubEnv) GetPayWall() (paywall.PayWall, error) {
 	promo, found := env.LoadCachedPromo()
 
 	// If promo is not found, or is found but not in effective

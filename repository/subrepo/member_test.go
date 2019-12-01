@@ -20,7 +20,7 @@ func TestEnv_AddMemberID(t *testing.T) {
 
 	t.Logf("Saved member %+v", m)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -55,7 +55,7 @@ func TestEnv_AddMemberID(t *testing.T) {
 func TestEnv_BackUpMember(t *testing.T) {
 	m := test.NewProfile().Membership(reader.AccountKindFtc)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -93,7 +93,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 
 	test.NewRepo().SaveMember(store.Member)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -134,7 +134,7 @@ func TestEnv_FindBalanceSources(t *testing.T) {
 		testRepo.SaveOrder(v)
 	}
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -181,7 +181,7 @@ func TestEnv_RetrieveUpgradePlan(t *testing.T) {
 
 	test.NewRepo().SaveUpgradePlan(store.UpgradePlan)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -225,7 +225,7 @@ func TestEnv_RetrieveProratedOrders(t *testing.T) {
 
 	test.NewRepo().SaveBalanceSources(store.UpgradePlan.Data)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}

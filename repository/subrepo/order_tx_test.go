@@ -19,7 +19,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 
 	test.NewRepo().SaveMember(store.Member)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -73,7 +73,7 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 		reader.AccountKindFtc,
 	)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -139,7 +139,7 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 	order2 := store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
 	test.NewRepo().SaveOrder(order2)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -200,7 +200,7 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 
 	order = store.MustConfirm(order.ID)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -250,7 +250,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 		store.MustCreate(test.YearlyStandard).ID,
 	)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -305,7 +305,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 	// Create another order and confirm it.
 	store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -362,7 +362,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 		repo.SaveOrder(v)
 	}
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -415,7 +415,7 @@ func TestOrderTx_SaveUpgradePlan(t *testing.T) {
 	store.MustRenewN(test.YearlyStandard, 3)
 	store.MustCreate(test.YearlyPremium)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -461,7 +461,7 @@ func TestOrderTx_SaveProration(t *testing.T) {
 	store.MustRenewN(test.YearlyStandard, 3)
 	store.MustCreate(test.YearlyPremium)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
@@ -506,7 +506,7 @@ func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 	store.MustRenewN(test.YearlyStandard, 3)
 	store.MustCreate(test.YearlyPremium)
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}

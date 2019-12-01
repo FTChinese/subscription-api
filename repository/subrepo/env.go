@@ -9,18 +9,18 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-// Env wraps database connection
-type Env struct {
+// SubEnv wraps database connection
+type SubEnv struct {
 	util.BuildConfig
 	db    *sqlx.DB
 	cache *cache.Cache
 	query query.Builder
 }
 
-// New creates a new instance of Env.
+// New creates a new instance of SubEnv.
 // `sandbox` is used to determine which table to write subscription data.
-func New(db *sqlx.DB, c *cache.Cache, b util.BuildConfig) Env {
-	return Env{
+func New(db *sqlx.DB, c *cache.Cache, b util.BuildConfig) SubEnv {
+	return SubEnv{
 		BuildConfig: b,
 		db:          db,
 		cache:       c,
@@ -28,7 +28,7 @@ func New(db *sqlx.DB, c *cache.Cache, b util.BuildConfig) Env {
 	}
 }
 
-func (env Env) BeginOrderTx() (OrderTx, error) {
+func (env SubEnv) BeginOrderTx() (OrderTx, error) {
 	tx, err := env.db.Beginx()
 
 	if err != nil {

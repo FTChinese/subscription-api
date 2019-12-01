@@ -8,7 +8,7 @@ import (
 )
 
 func TestEnv_SaveOrderClient(t *testing.T) {
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}

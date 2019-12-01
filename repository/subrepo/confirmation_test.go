@@ -11,7 +11,7 @@ import (
 
 func TestEnv_SaveConfirmationResult(t *testing.T) {
 
-	env := Env{
+	env := SubEnv{
 		db:    test.DB,
 		query: query.NewBuilder(false),
 	}
