@@ -1,4 +1,4 @@
-package subscription
+package paywall
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/plan"
