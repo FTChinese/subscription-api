@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"time"
 )
 
@@ -22,11 +22,11 @@ import (
 type SubStore struct {
 	Profile       Profile
 	AccountID     reader.MemberID
-	Orders        map[string]paywall.Order // A user could have multiple orders.
-	Member        paywall.Membership       // But only one membership.
+	Orders        map[string]subscription.Order // A user could have multiple orders.
+	Member        subscription.Membership       // But only one membership.
 	balanceAnchor time.Time
-	UpgradePlan   plan.UpgradePlan       // To have data populated, you must call MustRenewN() and then call MustCreate(PremiumPlan).
-	Snapshot      paywall.MemberSnapshot // This will be populated and updated for any order other than `create`.
+	UpgradePlan   plan.UpgradePlan            // To have data populated, you must call MustRenewN() and then call MustCreate(PremiumPlan).
+	Snapshot      subscription.MemberSnapshot // This will be populated and updated for any order other than `create`.
 }
 
 // NewSubStore creates a new storage for a user's membership.
@@ -35,8 +35,8 @@ func NewSubStore(p Profile, k reader.AccountKind) *SubStore {
 	return &SubStore{
 		Profile:       p,
 		AccountID:     p.AccountID(k),
-		Orders:        make(map[string]paywall.Order), // Initially user has no orders.
-		Member:        paywall.Membership{},           // and zero membership.
+		Orders:        make(map[string]subscription.Order), // Initially user has no orders.
+		Member:        subscription.Membership{},           // and zero membership.
 		balanceAnchor: time.Now(),
 	}
 }
@@ -47,8 +47,8 @@ func (s *SubStore) Backdate(n int) *SubStore {
 	return s
 }
 
-func (s *SubStore) CreateOrder(p plan.Plan) (paywall.Order, error) {
-	order, err := paywall.NewOrder(
+func (s *SubStore) CreateOrder(p plan.Plan) (subscription.Order, error) {
+	order, err := subscription.NewOrder(
 		s.AccountID,
 		p,
 		RandomPayMethod(),
@@ -58,7 +58,7 @@ func (s *SubStore) CreateOrder(p plan.Plan) (paywall.Order, error) {
 		return order, err
 	}
 
-	if order.Usage == paywall.SubsKindUpgrade {
+	if order.Usage == subscription.SubsKindUpgrade {
 		sources := s.GetBalanceSource()
 
 		up := plan.NewUpgradePlan(sources)
@@ -73,7 +73,7 @@ func (s *SubStore) CreateOrder(p plan.Plan) (paywall.Order, error) {
 	}
 
 	if !s.Member.IsZero() {
-		snapshot := paywall.NewMemberSnapshot(s.Member, order.Usage)
+		snapshot := subscription.NewMemberSnapshot(s.Member, order.Usage)
 		order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
 
 		s.Snapshot = snapshot
@@ -84,7 +84,7 @@ func (s *SubStore) CreateOrder(p plan.Plan) (paywall.Order, error) {
 	return order, nil
 }
 
-func (s *SubStore) MustCreate(p plan.Plan) paywall.Order {
+func (s *SubStore) MustCreate(p plan.Plan) subscription.Order {
 	order, err := s.CreateOrder(p)
 	if err != nil {
 		panic(err)
@@ -94,7 +94,7 @@ func (s *SubStore) MustCreate(p plan.Plan) paywall.Order {
 }
 
 // ConfirmOrder confirms an existing order
-func (s *SubStore) ConfirmOrder(id string) (paywall.Order, error) {
+func (s *SubStore) ConfirmOrder(id string) (subscription.Order, error) {
 	o, err := s.GetOrder(id)
 	if err != nil {
 		return o, err
@@ -122,7 +122,7 @@ func (s *SubStore) ConfirmOrder(id string) (paywall.Order, error) {
 	return o, nil
 }
 
-func (s *SubStore) MustConfirm(id string) paywall.Order {
+func (s *SubStore) MustConfirm(id string) subscription.Order {
 	order, err := s.ConfirmOrder(id)
 
 	if err != nil {
@@ -134,9 +134,9 @@ func (s *SubStore) MustConfirm(id string) paywall.Order {
 
 // RenewN creates a new membership and renew it multiple times.
 //
-func (s *SubStore) RenewN(p plan.Plan, n int) ([]paywall.Order, error) {
+func (s *SubStore) RenewN(p plan.Plan, n int) ([]subscription.Order, error) {
 
-	orders := []paywall.Order{}
+	orders := []subscription.Order{}
 
 	for i := 0; i < n; i++ {
 		o, err := s.CreateOrder(p)
@@ -155,7 +155,7 @@ func (s *SubStore) RenewN(p plan.Plan, n int) ([]paywall.Order, error) {
 	return orders, nil
 }
 
-func (s *SubStore) MustRenewN(p plan.Plan, n int) []paywall.Order {
+func (s *SubStore) MustRenewN(p plan.Plan, n int) []subscription.Order {
 	orders, err := s.RenewN(p, n)
 	if err != nil {
 		panic(err)
@@ -165,26 +165,26 @@ func (s *SubStore) MustRenewN(p plan.Plan, n int) []paywall.Order {
 }
 
 // RenewalOrder creates an order used for renewal
-func (s *SubStore) RenewalOrder(p plan.Plan) (paywall.Order, error) {
+func (s *SubStore) RenewalOrder(p plan.Plan) (subscription.Order, error) {
 	order, err := s.CreateOrder(p)
 	if err != nil {
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	_, err = s.ConfirmOrder(order.ID)
 	if err != nil {
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	order2, err := s.CreateOrder(p)
 	if err != nil {
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	return order2, nil
 }
 
-func (s *SubStore) MustRenewal(p plan.Plan) paywall.Order {
+func (s *SubStore) MustRenewal(p plan.Plan) subscription.Order {
 	order, err := s.RenewalOrder(p)
 	if err != nil {
 		panic(err)
@@ -194,26 +194,26 @@ func (s *SubStore) MustRenewal(p plan.Plan) paywall.Order {
 }
 
 // UpgradingOrder creates an order used for upgrading.
-func (s *SubStore) UpgradingOrder() (paywall.Order, error) {
+func (s *SubStore) UpgradingOrder() (subscription.Order, error) {
 	order, err := s.CreateOrder(YearlyStandard)
 	if err != nil {
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	_, err = s.ConfirmOrder(order.ID)
 	if err != nil {
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	order2, err := s.CreateOrder(YearlyPremium)
 	if err != nil {
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	return order2, nil
 }
 
-func (s *SubStore) MustUpgrading() paywall.Order {
+func (s *SubStore) MustUpgrading() subscription.Order {
 	order, err := s.UpgradingOrder()
 	if err != nil {
 		panic(err)
@@ -223,10 +223,10 @@ func (s *SubStore) MustUpgrading() paywall.Order {
 }
 
 // GetOrder retrieves a previously saved order.
-func (s *SubStore) GetOrder(id string) (paywall.Order, error) {
+func (s *SubStore) GetOrder(id string) (subscription.Order, error) {
 	o, ok := s.Orders[id]
 	if !ok {
-		return paywall.Order{}, fmt.Errorf("order %s is not found", id)
+		return subscription.Order{}, fmt.Errorf("order %s is not found", id)
 	}
 
 	return o, nil

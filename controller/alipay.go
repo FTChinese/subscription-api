@@ -9,7 +9,7 @@ import (
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/models"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"net/http"
@@ -268,7 +268,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	go func() {
-		if err := router.env.SaveConfirmationResult(paywall.NewConfirmationSucceeded(payResult.OrderID)); err != nil {
+		if err := router.env.SaveConfirmationResult(subscription.NewConfirmationSucceeded(payResult.OrderID)); err != nil {
 			logger.Error(err)
 		}
 	}()

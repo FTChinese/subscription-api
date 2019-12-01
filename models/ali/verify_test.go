@@ -3,13 +3,13 @@ package ali
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"testing"
 	"time"
 )
 
 func TestGetPaymentResult(t *testing.T) {
-	orderID, err := paywall.GenerateOrderID()
+	orderID, err := subscription.GenerateOrderID()
 	if err != nil {
 		t.Error(err)
 	}
@@ -27,7 +27,7 @@ func TestGetPaymentResult(t *testing.T) {
 
 	t.Logf("%+v", payResult)
 
-	order := paywall.Order{
+	order := subscription.Order{
 		Amount: 258.00,
 	}
 

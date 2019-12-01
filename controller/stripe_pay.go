@@ -11,8 +11,8 @@ import (
 	"github.com/stripe/stripe-go/ephemeralkey"
 	"github.com/stripe/stripe-go/plan"
 	"github.com/stripe/stripe-go/webhook"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	plan2 "gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"io/ioutil"
@@ -224,7 +224,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	userID, _ := GetUserID(req.Header)
 
 	// "plan_FOEFa7c1zLOtJW"
-	var params paywall.StripeSubParams
+	var params subscription.StripeSubParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -266,7 +266,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	resp, err := paywall.BuildStripeSubResponse(s)
+	resp, err := subscription.BuildStripeSubResponse(s)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -301,7 +301,7 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 
 	log.Infof("Subscription id %s, status %s", s.ID, s.Status)
 
-	view.Render(w, view.NewResponse().SetBody(paywall.NewStripeSub(s)))
+	view.Render(w, view.NewResponse().SetBody(subscription.NewStripeSub(s)))
 }
 
 // UpgradeSubscription create a stripe subscription.
@@ -319,7 +319,7 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 	userID, _ := GetUserID(req.Header)
 
 	// "plan_FOEFa7c1zLOtJW"
-	var params paywall.StripeSubParams
+	var params subscription.StripeSubParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -352,7 +352,7 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		return
 	}
 
-	resp, err := paywall.BuildStripeSubResponse(s)
+	resp, err := subscription.BuildStripeSubResponse(s)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return

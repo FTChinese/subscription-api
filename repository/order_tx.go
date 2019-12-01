@@ -3,10 +3,10 @@ package repository
 import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
 // OrderTx check a user's member status and create an order
@@ -20,8 +20,8 @@ type OrderTx struct {
 // RetrieveMember retrieves a user's membership info by ftc id
 // or wechat union id.
 // Returns zero value of membership if not found.
-func (otx OrderTx) RetrieveMember(id reader.MemberID) (paywall.Membership, error) {
-	var m paywall.Membership
+func (otx OrderTx) RetrieveMember(id reader.MemberID) (subscription.Membership, error) {
+	var m subscription.Membership
 
 	err := otx.tx.Get(
 		&m,
@@ -45,7 +45,7 @@ func (otx OrderTx) RetrieveMember(id reader.MemberID) (paywall.Membership, error
 // SaveOrder saves an order to db.
 // This is only limited to alipay and wechat pay.
 // Stripe pay does not generate any orders on our side.
-func (otx OrderTx) SaveOrder(order paywall.Order) error {
+func (otx OrderTx) SaveOrder(order subscription.Order) error {
 
 	_, err := otx.tx.NamedExec(
 		otx.query.InsertOrder(),
@@ -61,8 +61,8 @@ func (otx OrderTx) SaveOrder(order paywall.Order) error {
 
 // RetrieveOrder loads a previously saved order that is not
 // confirmed yet.
-func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Order, error) {
-	var order paywall.Order
+func (otx OrderTx) RetrieveOrder(orderID string) (subscription.Order, error) {
+	var order subscription.Order
 
 	err := otx.tx.Get(
 		&order,
@@ -80,7 +80,7 @@ func (otx OrderTx) RetrieveOrder(orderID string) (paywall.Order, error) {
 }
 
 // ConfirmOrder set an order's confirmation time.
-func (otx OrderTx) ConfirmOrder(order paywall.Order) error {
+func (otx OrderTx) ConfirmOrder(order subscription.Order) error {
 	_, err := otx.tx.NamedExec(
 		otx.query.ConfirmOrder(),
 		order,
@@ -95,7 +95,7 @@ func (otx OrderTx) ConfirmOrder(order paywall.Order) error {
 	return nil
 }
 
-func (otx OrderTx) CreateMember(m paywall.Membership) error {
+func (otx OrderTx) CreateMember(m subscription.Membership) error {
 	m.Normalize()
 
 	_, err := otx.tx.NamedExec(
@@ -111,7 +111,7 @@ func (otx OrderTx) CreateMember(m paywall.Membership) error {
 	return nil
 }
 
-func (otx OrderTx) UpdateMember(m paywall.Membership) error {
+func (otx OrderTx) UpdateMember(m subscription.Membership) error {
 	m.Normalize()
 
 	_, err := otx.tx.NamedExec(

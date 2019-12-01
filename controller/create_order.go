@@ -5,9 +5,9 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 )
 
@@ -18,17 +18,17 @@ func (router PayRouter) createOrder(
 	method enum.PayMethod,
 	app util.ClientApp,
 	wxAppId null.String,
-) (paywall.Order, error) {
+) (subscription.Order, error) {
 	log := logrus.WithField("trace", "PayRouter.createOrder")
 
 	if method != enum.PayMethodWx && method != enum.PayMethodAli {
-		return paywall.Order{}, errors.New("only used by alipay or wxpay")
+		return subscription.Order{}, errors.New("only used by alipay or wxpay")
 	}
 
 	otx, err := router.env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	// Step 1: Retrieve membership for this user.
@@ -39,7 +39,7 @@ func (router PayRouter) createOrder(
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 	log.Infof("Membership retrieved %+v", member)
 
@@ -61,18 +61,18 @@ func (router PayRouter) createOrder(
 	// with chosen payment method based on previous
 	// membership so that we could how this order
 	// is used: create, renew or upgrade.
-	order, err := paywall.NewOrder(id, p, method, member)
+	order, err := subscription.NewOrder(id, p, method, member)
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	log.Infof("Created an order %s for %s", order.ID, order.Usage)
 
 	// Step 3: required only if this order is used for
 	// upgrading.
-	if order.Usage == paywall.SubsKindUpgrade {
+	if order.Usage == subscription.SubsKindUpgrade {
 		// Step 3.1: find previous orders with balance
 		// remaining.
 		// DO not save sources directly. The balance is not
@@ -82,7 +82,7 @@ func (router PayRouter) createOrder(
 		if err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
-			return paywall.Order{}, err
+			return subscription.Order{}, err
 		}
 		log.Infof("Find balance source: %+v", sources)
 
@@ -97,7 +97,7 @@ func (router PayRouter) createOrder(
 		if err := otx.SaveUpgradePlan(up); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
-			return paywall.Order{}, err
+			return subscription.Order{}, err
 		}
 		log.Info("Upgrading plan saved")
 
@@ -105,7 +105,7 @@ func (router PayRouter) createOrder(
 		if err := otx.SaveProration(up.Data); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
-			return paywall.Order{}, err
+			return subscription.Order{}, err
 		}
 		log.Info("Prorated orders saved")
 	}
@@ -115,7 +115,7 @@ func (router PayRouter) createOrder(
 	// Back up membership state the moment the order is created.
 	if !member.IsZero() {
 
-		snapshot := paywall.NewMemberSnapshot(member, order.Usage)
+		snapshot := subscription.NewMemberSnapshot(member, order.Usage)
 
 		order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
 
@@ -132,13 +132,13 @@ func (router PayRouter) createOrder(
 	if err := otx.SaveOrder(order); err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 	log.Infof("Order saved %s", order.ID)
 
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	// Not vital. Perform in background.

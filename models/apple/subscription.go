@@ -4,9 +4,9 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
 type Subscription struct {
@@ -26,9 +26,9 @@ type Subscription struct {
 
 // Membership build ftc's membership based on subscription
 // from apple.
-func (s Subscription) Membership() paywall.Membership {
-	m := paywall.Membership{
-		ID:           null.StringFrom(paywall.GenerateMembershipIndex()),
+func (s Subscription) Membership() subscription.Membership {
+	m := subscription.Membership{
+		ID:           null.StringFrom(subscription.GenerateMembershipIndex()),
 		MemberID:     s.MemberID,
 		LegacyTier:   null.Int{},
 		LegacyExpire: null.Int{},
@@ -41,7 +41,7 @@ func (s Subscription) Membership() paywall.Membership {
 		StripeSubID:   null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   s.AutoRenewal.ValueOrZero(),
-		Status:        paywall.SubStatusNull,
+		Status:        subscription.SubStatusNull,
 	}
 
 	m.Normalize()

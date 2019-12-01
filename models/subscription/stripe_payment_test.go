@@ -1,4 +1,4 @@
-package paywall
+package subscription
 
 import (
 	"github.com/FTChinese/go-rest/enum"

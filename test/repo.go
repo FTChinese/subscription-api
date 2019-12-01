@@ -2,10 +2,10 @@ package test
 
 import (
 	"github.com/jmoiron/sqlx"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
 const stmtInsertAccount = `
@@ -36,7 +36,7 @@ func (r Repo) SaveAccount(a reader.Account) {
 	}
 }
 
-func (r Repo) SaveOrder(order paywall.Order) {
+func (r Repo) SaveOrder(order subscription.Order) {
 
 	var stmt = r.query.InsertOrder() + `,
 		confirmed_utc = :confirmed_at,
@@ -52,7 +52,7 @@ func (r Repo) SaveOrder(order paywall.Order) {
 	}
 }
 
-func (r Repo) SaveMember(m paywall.Membership) {
+func (r Repo) SaveMember(m subscription.Membership) {
 	m.Normalize()
 
 	_, err := r.db.NamedExec(
@@ -64,7 +64,7 @@ func (r Repo) SaveMember(m paywall.Membership) {
 	}
 }
 
-func (r Repo) UpdateMember(m paywall.Membership) {
+func (r Repo) UpdateMember(m subscription.Membership) {
 	m.Normalize()
 
 	_, err := r.db.NamedExec(

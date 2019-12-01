@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/view"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"net/http"
@@ -58,7 +58,7 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Update membership from based on gift card info.
-	member, err := paywall.NewMember(userID).FromGiftCard(card)
+	member, err := subscription.NewMember(userID).FromGiftCard(card)
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return

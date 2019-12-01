@@ -5,8 +5,8 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/letter"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"net/http"
@@ -71,7 +71,7 @@ func (router PayRouter) wxCallbackURL() string {
 }
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
-func (router PayRouter) sendConfirmationEmail(order paywall.Order) error {
+func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 	logger := logrus.WithFields(logrus.Fields{
 		"trace": "PayRouter.sendConfirmationEmail",
 	})
@@ -91,13 +91,13 @@ func (router PayRouter) sendConfirmationEmail(order paywall.Order) error {
 
 	var parcel postoffice.Parcel
 	switch order.Usage {
-	case paywall.SubsKindCreate:
+	case subscription.SubsKindCreate:
 		parcel, err = letter.NewSubParcel(account, order)
 
-	case paywall.SubsKindRenew:
+	case subscription.SubsKindRenew:
 		parcel, err = letter.NewRenewalParcel(account, order)
 
-	case paywall.SubsKindUpgrade:
+	case subscription.SubsKindUpgrade:
 		up, err := router.loadUpgradePlan(order.UpgradeID.String)
 		if err != nil {
 			return err

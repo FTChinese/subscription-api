@@ -10,8 +10,8 @@ import (
 	"github.com/icrowley/fake"
 	"github.com/objcoding/wxpay"
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/redeem"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"log"
@@ -35,7 +35,7 @@ func GenVersion() string {
 }
 
 func MustGenOrderID() string {
-	id, err := paywall.GenerateOrderID()
+	id, err := subscription.GenerateOrderID()
 	if err != nil {
 		panic(err)
 	}

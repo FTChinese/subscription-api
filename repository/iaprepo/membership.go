@@ -3,12 +3,12 @@ package iaprepo
 import (
 	"database/sql"
 	"fmt"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
-func (env IAPEnv) RetrieveMembership(id reader.MemberID) (paywall.Membership, error) {
-	var m paywall.Membership
+func (env IAPEnv) RetrieveMembership(id reader.MemberID) (subscription.Membership, error) {
+	var m subscription.Membership
 
 	err := env.db.Get(
 		&m,

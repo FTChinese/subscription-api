@@ -7,9 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 	"time"
 )
@@ -105,9 +105,9 @@ func (p Profile) Account(k reader.AccountKind) reader.Account {
 	return reader.Account{}
 }
 
-func (p Profile) Membership(k reader.AccountKind) paywall.Membership {
-	return paywall.Membership{
-		ID:           null.StringFrom(paywall.GenerateMembershipIndex()),
+func (p Profile) Membership(k reader.AccountKind) subscription.Membership {
+	return subscription.Membership{
+		ID:           null.StringFrom(subscription.GenerateMembershipIndex()),
 		MemberID:     p.AccountID(reader.AccountKindFtc),
 		LegacyTier:   null.Int{},
 		LegacyExpire: null.Int{},
@@ -120,7 +120,7 @@ func (p Profile) Membership(k reader.AccountKind) paywall.Membership {
 		StripeSubID:   null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
-		Status:        paywall.SubStatusNull,
+		Status:        subscription.SubStatusNull,
 	}
 }
 
