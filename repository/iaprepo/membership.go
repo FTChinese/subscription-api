@@ -2,7 +2,6 @@ package iaprepo
 
 import (
 	"database/sql"
-	"fmt"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
@@ -12,7 +11,7 @@ func (env IAPEnv) RetrieveMembership(id reader.MemberID) (subscription.Membershi
 
 	err := env.db.Get(
 		&m,
-		fmt.Sprintf(selectMember, id.MemberColumn()),
+		selectMember,
 		id.CompoundID,
 	)
 

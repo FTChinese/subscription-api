@@ -3,9 +3,9 @@ package test
 import (
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 const stmtInsertAccount = `
