@@ -18,14 +18,12 @@ SET user_id = :ftc_id,
 	password = '12345678'`
 
 type Repo struct {
-	db    *sqlx.DB
-	query query.Builder
+	db *sqlx.DB
 }
 
 func NewRepo() Repo {
 	return Repo{
-		db:    DB,
-		query: query.NewBuilder(false),
+		db: DB,
 	}
 }
 
@@ -38,7 +36,7 @@ func (r Repo) SaveAccount(a reader.Account) {
 
 func (r Repo) SaveOrder(order subscription.Order) {
 
-	var stmt = r.query.InsertOrder() + `,
+	var stmt = query.BuildInsertOrder(false) + `,
 		confirmed_utc = :confirmed_at,
 		start_date = :start_date,
 		end_date = :end_date`
@@ -56,7 +54,7 @@ func (r Repo) SaveMember(m subscription.Membership) {
 	m.Normalize()
 
 	_, err := r.db.NamedExec(
-		r.query.InsertMember(),
+		query.BuildInsertMembership(false),
 		m)
 
 	if err != nil {
@@ -68,7 +66,7 @@ func (r Repo) UpdateMember(m subscription.Membership) {
 	m.Normalize()
 
 	_, err := r.db.NamedExec(
-		r.query.UpdateMember(m.MemberColumn()),
+		query.BuildUpdateMembership(false),
 		m)
 
 	if err != nil {
@@ -80,7 +78,7 @@ func (r Repo) UpdateMember(m subscription.Membership) {
 func (r Repo) SaveBalanceSources(p []plan.ProrationSource) {
 	for _, v := range p {
 		_, err := r.db.NamedExec(
-			r.query.InsertProration(),
+			query.BuildInsertProration(false),
 			v)
 
 		if err != nil {
@@ -99,7 +97,7 @@ func (r Repo) SaveUpgradePlan(up plan.UpgradePlan) {
 	}
 
 	_, err := r.db.NamedExec(
-		r.query.InsertUpgradePlan(),
+		query.BuildInsertUpgradePlan(false),
 		data)
 
 	if err != nil {

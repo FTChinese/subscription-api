@@ -4,7 +4,6 @@ import (
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
@@ -21,8 +20,7 @@ func TestEnv_AddMemberID(t *testing.T) {
 	t.Logf("Saved member %+v", m)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -56,8 +54,7 @@ func TestEnv_BackUpMember(t *testing.T) {
 	m := test.NewProfile().Membership(reader.AccountKindFtc)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -94,8 +91,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 	test.NewRepo().SaveMember(store.Member)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 	type args struct {
 		id reader.MemberID
@@ -135,8 +131,7 @@ func TestEnv_FindBalanceSources(t *testing.T) {
 	}
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -182,8 +177,7 @@ func TestEnv_RetrieveUpgradePlan(t *testing.T) {
 	test.NewRepo().SaveUpgradePlan(store.UpgradePlan)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -226,8 +220,7 @@ func TestEnv_RetrieveProratedOrders(t *testing.T) {
 	test.NewRepo().SaveBalanceSources(store.UpgradePlan.Data)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {

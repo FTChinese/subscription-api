@@ -11,7 +11,7 @@ func (env SubEnv) FindFtcUser(ftcId string) (reader.Account, error) {
 	var u reader.Account
 	err := env.db.Get(
 		&u,
-		query.SelectFtcUser,
+		query.BuildSelectReader(false, false),
 		ftcId,
 	)
 
@@ -26,13 +26,9 @@ func (env SubEnv) FindFtcUser(ftcId string) (reader.Account, error) {
 
 func (env SubEnv) FindStripeCustomer(cusID string) (reader.Account, error) {
 	var u reader.Account
-	err := env.db.QueryRow(query.SelectStripeCustomer, cusID).Scan(
-		&u.FtcID,
-		&u.UnionID,
-		&u.StripeID,
-		&u.UserName,
-		&u.Email,
-	)
+	err := env.db.Get(&u,
+		query.BuildSelectReader(true, false),
+		cusID)
 
 	if err != nil {
 		logger.WithField("trace", "SubEnv.FindStripeCustomer").Error(err)

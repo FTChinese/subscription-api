@@ -1,6 +1,6 @@
-package subrepo
+package query
 
-const stmtSelectMembership = `
+const selectMembership = `
 SELECT id AS sub_id, 
 	vip_id AS sub_compound_id,
 	NULLIF(vip_id, vip_id_alias) AS sub_ftc_id,
@@ -31,7 +31,7 @@ stripe_plan_id = :stripe_plan_id,
 auto_renewal = :sub_auto_renew,
 sub_status = :sub_status`
 
-const stmtInsertMembership = `
+const insertMembership = `
 INSERT INTO %s.ftc_vip
 SET id = :sub_id,
 	vip_id = :sub_compound_id,
@@ -40,19 +40,19 @@ SET id = :sub_id,
 	wx_union_id = :sub_union_id,
 ` + colsUpsertMembership
 
-const stmtUpdateMembership = `
+const updateMembership = `
 UPDATE %s.ftc_vip
 SET ` + colsUpsertMembership + `
 WHERE vip_id = :sub_compound_id
 LIMIT 1`
 
-const stmtUpdateMembershipID = `
+const updateMembershipID = `
 UPDATE %s.ftc_vip
 SET id = IF(id IS NULL, :sub_id, id)
 WHERE vip_id = :sub_compound_id
 LIMIT 1`
 
-const stmtInsertMemberSnapshot = `
+const insertMemberSnapshot = `
 INSERT INTO %s.member_snapshot
 SET id = :snapshot_id,
 	reason = :reason,

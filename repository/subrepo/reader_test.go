@@ -2,7 +2,6 @@ package subrepo
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
@@ -15,8 +14,7 @@ func TestEnv_FindFtcUser(t *testing.T) {
 	test.NewRepo().SaveAccount(account)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -57,8 +55,7 @@ func TestEnv_FindStripeCustomer(t *testing.T) {
 	test.NewRepo().SaveAccount(account)
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
