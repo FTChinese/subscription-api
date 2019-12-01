@@ -1,13 +1,13 @@
 package repository
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
 // AddMemberID set a membership's id column if it is empty.
-func (env Env) AddMemberID(m paywall.Membership) error {
+func (env Env) AddMemberID(m subscription.Membership) error {
 	_, err := env.db.NamedExec(
 		env.query.AddMemberID(m.MemberColumn()),
 		m)
@@ -20,7 +20,7 @@ func (env Env) AddMemberID(m paywall.Membership) error {
 }
 
 // BackUpMember saves a member's snapshot at a specific moment.
-func (env Env) BackUpMember(m paywall.MemberSnapshot) error {
+func (env Env) BackUpMember(m subscription.MemberSnapshot) error {
 	_, err := env.db.NamedExec(
 		env.query.MemberSnapshot(),
 		m)
@@ -33,8 +33,8 @@ func (env Env) BackUpMember(m paywall.MemberSnapshot) error {
 }
 
 // RetrieveMember retrieves membership from database.
-func (env Env) RetrieveMember(id reader.MemberID) (paywall.Membership, error) {
-	var m paywall.Membership
+func (env Env) RetrieveMember(id reader.MemberID) (subscription.Membership, error) {
+	var m subscription.Membership
 
 	err := env.db.Get(
 		&m,

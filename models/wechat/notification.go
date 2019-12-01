@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 )
@@ -103,13 +103,13 @@ func (n Notification) IsPriceMatched(cent int64) bool {
 	return n.TotalFee.Int64 == cent
 }
 
-func (n Notification) GetPaymentResult() (paywall.PaymentResult, error) {
+func (n Notification) GetPaymentResult() (subscription.PaymentResult, error) {
 	if n.TotalFee.IsZero() {
-		return paywall.PaymentResult{}, errors.New("no payment amount found in wx webhook")
+		return subscription.PaymentResult{}, errors.New("no payment amount found in wx webhook")
 	}
 
 	if n.FTCOrderID.IsZero() {
-		return paywall.PaymentResult{}, errors.New("no order id in wx webhook")
+		return subscription.PaymentResult{}, errors.New("no order id in wx webhook")
 	}
 
 	confirmedAt, err := util.ParseWxTime(n.TimeEnd.String)
@@ -117,7 +117,7 @@ func (n Notification) GetPaymentResult() (paywall.PaymentResult, error) {
 		confirmedAt = time.Now()
 	}
 
-	return paywall.PaymentResult{
+	return subscription.PaymentResult{
 		Amount:      n.TotalFee.Int64,
 		OrderID:     n.FTCOrderID.String,
 		ConfirmedAt: confirmedAt,

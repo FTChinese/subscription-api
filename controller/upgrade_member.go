@@ -7,9 +7,9 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"net/http"
@@ -123,69 +123,69 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 	_ = view.Render(w, view.NewNoContent())
 }
 
-func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) (paywall.Order, error) {
+func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) (subscription.Order, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.freeUpgrade")
 
 	tx, err := router.env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	member, err := tx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	// To upgrade, membership must exist, not expired yet,
 	// must be alipay or wxpay, and must not be premium.
 	if member.IsZero() {
 		_ = tx.Rollback()
-		return paywall.Order{}, sql.ErrNoRows
+		return subscription.Order{}, sql.ErrNoRows
 	}
 
 	if member.IsExpired() {
 		_ = tx.Rollback()
-		return paywall.Order{}, util.ErrMemberExpired
+		return subscription.Order{}, util.ErrMemberExpired
 	}
 
 	if member.PaymentMethod == enum.PayMethodStripe {
 		_ = tx.Rollback()
-		return paywall.Order{}, util.ErrValidStripeSwitching
+		return subscription.Order{}, util.ErrValidStripeSwitching
 	}
 
 	if member.Tier == enum.TierPremium {
 		_ = tx.Rollback()
-		return paywall.Order{}, util.ErrAlreadyUpgraded
+		return subscription.Order{}, util.ErrAlreadyUpgraded
 	}
 
 	sources, err := tx.FindBalanceSources(id)
 	if err != nil {
 		_ = tx.Rollback()
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	up := plan.NewUpgradePlan(sources)
 	if up.Plan.NetPrice > 0 {
-		return paywall.Order{}, errors.New("you cannot upgrade for free since payment is required")
+		return subscription.Order{}, errors.New("you cannot upgrade for free since payment is required")
 	}
 
 	if err := tx.SaveUpgradePlan(up); err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
 	if err := tx.SaveProration(up.Data); err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
 
-		return paywall.Order{}, err
+		return subscription.Order{}, err
 	}
 
-	order, err := paywall.NewFreeUpgradeOrder(id, up)
+	order, err := subscription.NewFreeUpgradeOrder(id, up)
 
 	if err != nil {
 		log.Error(err)
@@ -193,7 +193,7 @@ func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) 
 		return order, err
 	}
 
-	snapshot := paywall.NewMemberSnapshot(member, paywall.SubsKindUpgrade)
+	snapshot := subscription.NewMemberSnapshot(member, subscription.SubsKindUpgrade)
 	order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
 
 	if err := tx.SaveOrder(order); err != nil {

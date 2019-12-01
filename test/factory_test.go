@@ -1,12 +1,12 @@
 package test
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"testing"
 )
 
 func TestMockWxXMLNotification(t *testing.T) {
-	orderID, _ := paywall.GenerateOrderID()
+	orderID, _ := subscription.GenerateOrderID()
 
 	noti := WxXMLNotification(orderID)
 
@@ -14,7 +14,7 @@ func TestMockWxXMLNotification(t *testing.T) {
 }
 
 func TestWxNotification(t *testing.T) {
-	orderID, _ := paywall.GenerateOrderID()
+	orderID, _ := subscription.GenerateOrderID()
 
 	noti := WxNotification(orderID)
 

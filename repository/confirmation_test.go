@@ -3,8 +3,8 @@ package repository
 import (
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/query"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
@@ -17,7 +17,7 @@ func TestEnv_SaveConfirmationResult(t *testing.T) {
 	}
 
 	type args struct {
-		r *paywall.ConfirmationResult
+		r *subscription.ConfirmationResult
 	}
 	tests := []struct {
 		name    string
@@ -27,7 +27,7 @@ func TestEnv_SaveConfirmationResult(t *testing.T) {
 		{
 			name: "Save Failed Confirmation Result",
 			args: args{
-				r: &paywall.ConfirmationResult{
+				r: &subscription.ConfirmationResult{
 					OrderID:   test.MustGenOrderID(),
 					Succeeded: false,
 					Failed:    null.StringFrom(fake.Sentence()),
@@ -39,7 +39,7 @@ func TestEnv_SaveConfirmationResult(t *testing.T) {
 		{
 			name: "Save Succeeded Confirmation Result",
 			args: args{
-				r: &paywall.ConfirmationResult{
+				r: &subscription.ConfirmationResult{
 					OrderID:   test.MustGenOrderID(),
 					Succeeded: true,
 					Failed:    null.String{},

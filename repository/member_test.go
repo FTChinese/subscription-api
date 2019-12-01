@@ -2,9 +2,9 @@ package repository
 
 import (
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
@@ -26,7 +26,7 @@ func TestEnv_AddMemberID(t *testing.T) {
 	}
 
 	type args struct {
-		m paywall.Membership
+		m subscription.Membership
 	}
 	tests := []struct {
 		name    string
@@ -61,7 +61,7 @@ func TestEnv_BackUpMember(t *testing.T) {
 	}
 
 	type args struct {
-		m paywall.MemberSnapshot
+		m subscription.MemberSnapshot
 	}
 	tests := []struct {
 		name    string
@@ -71,7 +71,7 @@ func TestEnv_BackUpMember(t *testing.T) {
 		{
 			name: "Backup Membership",
 			args: args{
-				m: paywall.NewMemberSnapshot(m, paywall.SubsKindRenew),
+				m: subscription.NewMemberSnapshot(m, subscription.SubsKindRenew),
 			},
 		},
 	}
