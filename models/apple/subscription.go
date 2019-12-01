@@ -30,7 +30,6 @@ func (s Subscription) Membership() subscription.Membership {
 	m := subscription.Membership{
 		ID:           null.StringFrom(subscription.GenerateMembershipIndex()),
 		MemberID:     s.MemberID,
-		LegacyTier:   null.Int{},
 		LegacyExpire: null.Int{},
 		BasePlan: plan.BasePlan{
 			Tier:  s.Tier,
