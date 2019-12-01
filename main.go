@@ -6,6 +6,7 @@ import (
 	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
+	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/wxoauth"
 	"log"
 	"net/http"
@@ -20,7 +21,6 @@ import (
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/controller"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository"
 )
 
 var (
@@ -151,7 +151,7 @@ func main() {
 		emailConn.User,
 		emailConn.Pass)
 
-	repo := repository.New(db, c, config)
+	repo := subrepo.New(db, c, config)
 
 	wxRouter := controller.NewWxRouter(repo, post)
 	aliRouter := controller.NewAliRouter(repo, post)
