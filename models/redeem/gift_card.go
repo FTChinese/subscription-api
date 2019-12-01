@@ -1,4 +1,4 @@
-package paywall
+package redeem
 
 import (
 	"errors"

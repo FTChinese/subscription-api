@@ -11,6 +11,7 @@ import (
 	"github.com/objcoding/wxpay"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/redeem"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"log"
@@ -173,10 +174,10 @@ func GenCardSerial() string {
 	return fmt.Sprintf("%d%02d%04d", anni, now.Month(), suffix)
 }
 
-func GiftCard() paywall.GiftCard {
+func GiftCard() redeem.GiftCard {
 	code, _ := gorest.RandomHex(8)
 
-	return paywall.GiftCard{
+	return redeem.GiftCard{
 		Code:       strings.ToUpper(code),
 		Tier:       enum.TierStandard,
 		CycleUnit:  enum.CycleYear,
