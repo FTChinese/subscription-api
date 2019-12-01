@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"net/http"
 
 	"github.com/FTChinese/go-rest/view"
@@ -34,8 +34,8 @@ func (router PaywallRouter) GetPaywall(w http.ResponseWriter, req *http.Request)
 
 // DefaultPaywall loads default paywall data.
 func DefaultPaywall(w http.ResponseWriter, req *http.Request) {
-	pw, err := paywall.BuildPayWall(
-		paywall.GetDefaultBanner(),
+	pw, err := subscription.BuildPayWall(
+		subscription.GetDefaultBanner(),
 		plan.GetFtcPlans(true))
 
 	if err != nil {

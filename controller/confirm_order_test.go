@@ -3,8 +3,8 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository"
 	"gitlab.com/ftchinese/subscription-api/test"
@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func mockOrderAndConfirm(id reader.MemberID) paywall.Order {
+func mockOrderAndConfirm(id reader.MemberID) subscription.Order {
 	router := PayRouter{
 		env: repository.New(test.DB, test.Cache, util.BuildConfig{
 			Sandbox:    false,
@@ -33,7 +33,7 @@ func mockOrderAndConfirm(id reader.MemberID) paywall.Order {
 		panic(err)
 	}
 
-	paymentResult := paywall.PaymentResult{
+	paymentResult := subscription.PaymentResult{
 		Amount:      int64(test.YearlyStandardLive.NetPrice * 100),
 		OrderID:     order.ID,
 		ConfirmedAt: time.Now(),

@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/redeem"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
 func (env Env) FindGiftCard(code string) (redeem.GiftCard, error) {
@@ -32,7 +32,7 @@ func (env Env) FindGiftCard(code string) (redeem.GiftCard, error) {
 	return c, nil
 }
 
-func (env Env) RedeemGiftCard(c redeem.GiftCard, m paywall.Membership) error {
+func (env Env) RedeemGiftCard(c redeem.GiftCard, m subscription.Membership) error {
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "RedeemGiftCard").Error(err)

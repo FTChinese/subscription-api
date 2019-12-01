@@ -2,14 +2,14 @@ package letter
 
 import (
 	"github.com/FTChinese/go-rest/postoffice"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	plan2 "gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"strings"
 	"text/template"
 )
 
-func NewSubParcel(a reader.Account, order paywall.Order) (postoffice.Parcel, error) {
+func NewSubParcel(a reader.Account, order subscription.Order) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterNewSub)
 
 	if err != nil {
@@ -23,7 +23,7 @@ func NewSubParcel(a reader.Account, order paywall.Order) (postoffice.Parcel, err
 
 	data := struct {
 		User reader.Account
-		Sub  paywall.Order
+		Sub  subscription.Order
 		Plan plan2.Plan
 	}{
 		User: a,
@@ -48,7 +48,7 @@ func NewSubParcel(a reader.Account, order paywall.Order) (postoffice.Parcel, err
 	}, nil
 }
 
-func NewRenewalParcel(a reader.Account, order paywall.Order) (postoffice.Parcel, error) {
+func NewRenewalParcel(a reader.Account, order subscription.Order) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterRenewalSub)
 
 	if err != nil {
@@ -62,7 +62,7 @@ func NewRenewalParcel(a reader.Account, order paywall.Order) (postoffice.Parcel,
 
 	data := struct {
 		User reader.Account
-		Sub  paywall.Order
+		Sub  subscription.Order
 		Plan plan2.Plan
 	}{
 		User: a,
@@ -87,7 +87,7 @@ func NewRenewalParcel(a reader.Account, order paywall.Order) (postoffice.Parcel,
 	}, nil
 }
 
-func NewUpgradeParcel(a reader.Account, order paywall.Order, up plan2.UpgradePlan) (postoffice.Parcel, error) {
+func NewUpgradeParcel(a reader.Account, order subscription.Order, up plan2.UpgradePlan) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterUpgradeSub)
 
 	if err != nil {
@@ -101,7 +101,7 @@ func NewUpgradeParcel(a reader.Account, order paywall.Order, up plan2.UpgradePla
 
 	data := struct {
 		User    reader.Account
-		Sub     paywall.Order
+		Sub     subscription.Order
 		Plan    plan2.Plan
 		Upgrade plan2.UpgradePlan
 	}{

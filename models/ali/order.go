@@ -2,18 +2,18 @@ package ali
 
 import (
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
 // BrowserOrder represents an order creates for alipay inside
 // browsers
 type BrowserOrder struct {
-	paywall.Order
+	subscription.Order
 	PayURL      string `json:"payUrl"` // Deprecate
 	RedirectURL string `json:"redirectUrl"`
 }
 
-func NewBrowserOrder(subs paywall.Order, redirect string) BrowserOrder {
+func NewBrowserOrder(subs subscription.Order, redirect string) BrowserOrder {
 	return BrowserOrder{
 		Order:       subs,
 		PayURL:      redirect,
@@ -23,12 +23,12 @@ func NewBrowserOrder(subs paywall.Order, redirect string) BrowserOrder {
 
 // AppOrder is an order created inside a native app.
 type AppOrder struct {
-	paywall.Order
+	subscription.Order
 	FtcOrderID string `json:"ftcOrderId"` // Deprecate
 	Param      string `json:"param"`
 }
 
-func NewAppOrder(subs paywall.Order, query string) AppOrder {
+func NewAppOrder(subs subscription.Order, query string) AppOrder {
 	return AppOrder{
 		Order:      subs,
 		FtcOrderID: subs.ID,

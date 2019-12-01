@@ -1,4 +1,4 @@
-package paywall
+package subscription
 
 import "testing"
 

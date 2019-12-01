@@ -1,10 +1,10 @@
 package repository
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
-func (env Env) SaveConfirmationResult(r *paywall.ConfirmationResult) error {
+func (env Env) SaveConfirmationResult(r *subscription.ConfirmationResult) error {
 	_, err := env.db.Exec(
 		env.query.ConfirmationResult(),
 		r.OrderID,

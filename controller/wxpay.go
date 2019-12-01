@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"gitlab.com/ftchinese/subscription-api/repository"
@@ -345,7 +345,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	go func() {
-		if err := router.env.SaveConfirmationResult(paywall.NewConfirmationSucceeded(noti.FTCOrderID.String)); err != nil {
+		if err := router.env.SaveConfirmationResult(subscription.NewConfirmationSucceeded(noti.FTCOrderID.String)); err != nil {
 			logger.Error(err)
 		}
 	}()

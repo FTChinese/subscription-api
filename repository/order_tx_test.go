@@ -1,10 +1,10 @@
 package repository
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
@@ -79,7 +79,7 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 	}
 
 	type args struct {
-		order paywall.Order
+		order subscription.Order
 	}
 	tests := []struct {
 		name    string
@@ -206,7 +206,7 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 	}
 
 	type args struct {
-		order paywall.Order
+		order subscription.Order
 	}
 	tests := []struct {
 		name    string
@@ -256,7 +256,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 	}
 
 	type args struct {
-		m paywall.Membership
+		m subscription.Membership
 	}
 	tests := []struct {
 		name    string
@@ -311,7 +311,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 	}
 
 	type args struct {
-		m paywall.Membership
+		m subscription.Membership
 	}
 	tests := []struct {
 		name    string
