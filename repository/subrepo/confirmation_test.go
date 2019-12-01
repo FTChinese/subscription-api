@@ -4,7 +4,6 @@ import (
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
@@ -12,8 +11,7 @@ import (
 func TestEnv_SaveConfirmationResult(t *testing.T) {
 
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {

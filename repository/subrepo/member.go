@@ -4,12 +4,13 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 // AddMemberID set a membership's id column if it is empty.
 func (env SubEnv) AddMemberID(m subscription.Membership) error {
 	_, err := env.db.NamedExec(
-		buildUpdateMembershipID(env.Sandbox),
+		query.BuildUpdateMembershipID(env.Sandbox),
 		m)
 
 	if err != nil {
@@ -22,7 +23,7 @@ func (env SubEnv) AddMemberID(m subscription.Membership) error {
 // BackUpMember saves a member's snapshot at a specific moment.
 func (env SubEnv) BackUpMember(m subscription.MemberSnapshot) error {
 	_, err := env.db.NamedExec(
-		buildInsertMemberSnapshot(env.Sandbox),
+		query.BuildInsertMemberSnapshot(env.Sandbox),
 		m)
 
 	if err != nil {
@@ -38,7 +39,7 @@ func (env SubEnv) RetrieveMember(id reader.MemberID) (subscription.Membership, e
 
 	err := env.db.Get(
 		&m,
-		buildSelectMembership(env.Sandbox, false),
+		query.BuildSelectMembership(env.Sandbox, false),
 		id.CompoundID)
 
 	if err != nil {
@@ -58,7 +59,7 @@ func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]plan.ProrationSource
 
 	err := env.db.Select(
 		&sources,
-		env.query.SelectProrationSource(),
+		query.BuildSelectBalanceSource(env.Sandbox),
 		id.CompoundID,
 		id.UnionID)
 
@@ -80,7 +81,7 @@ func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (plan.UpgradePlan, error
 
 	err := env.db.Get(
 		&data,
-		env.query.SelectUpgradePlan(),
+		query.BuildSelectUpgradePlan(env.Sandbox),
 		upgradeID)
 
 	if err != nil {
@@ -104,7 +105,7 @@ func (env SubEnv) RetrieveProratedOrders(upgradeID string) ([]plan.ProrationSour
 
 	err := env.db.Select(
 		&sources,
-		env.query.SelectProratedOrders(),
+		query.BuildSelectProration(env.Sandbox),
 		upgradeID)
 
 	if err != nil {

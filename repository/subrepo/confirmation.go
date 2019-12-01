@@ -2,14 +2,13 @@ package subrepo
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 func (env SubEnv) SaveConfirmationResult(r *subscription.ConfirmationResult) error {
-	_, err := env.db.Exec(
-		env.query.ConfirmationResult(),
-		r.OrderID,
-		r.Succeeded,
-		r.Failed)
+	_, err := env.db.NamedExec(
+		query.InsertConfirmationResult,
+		r)
 
 	if err != nil {
 		return err

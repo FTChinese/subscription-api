@@ -2,15 +2,13 @@ package subrepo
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 
 func TestEnv_SaveOrderClient(t *testing.T) {
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {

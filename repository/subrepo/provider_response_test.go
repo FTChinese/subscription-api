@@ -2,7 +2,6 @@ package subrepo
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 
@@ -11,8 +10,7 @@ import (
 
 func TestEnv_SaveAliNotification(t *testing.T) {
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -41,8 +39,7 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 
 func TestEnv_SavePrepayResp(t *testing.T) {
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {
@@ -72,8 +69,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 
 func TestEnv_SaveWxNotification(t *testing.T) {
 	env := SubEnv{
-		db:    test.DB,
-		query: query.NewBuilder(false),
+		db: test.DB,
 	}
 
 	type args struct {

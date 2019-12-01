@@ -13,9 +13,7 @@ import (
 // if allowed.
 type OrderTx struct {
 	tx      *sqlx.Tx
-	live    bool
 	sandbox bool // Indicates whether we should use the sandbox DB.
-	query   query.Builder
 }
 
 // RetrieveMember retrieves a user's membership info by ftc id
@@ -26,7 +24,7 @@ func (otx OrderTx) RetrieveMember(id reader.MemberID) (subscription.Membership, 
 
 	err := otx.tx.Get(
 		&m,
-		buildSelectMembership(otx.sandbox, true),
+		query.BuildSelectMembership(otx.sandbox, true),
 		id.CompoundID,
 	)
 
@@ -49,7 +47,7 @@ func (otx OrderTx) RetrieveMember(id reader.MemberID) (subscription.Membership, 
 func (otx OrderTx) SaveOrder(order subscription.Order) error {
 
 	_, err := otx.tx.NamedExec(
-		otx.query.InsertOrder(),
+		query.BuildInsertOrder(otx.sandbox),
 		order)
 
 	if err != nil {
@@ -67,7 +65,7 @@ func (otx OrderTx) RetrieveOrder(orderID string) (subscription.Order, error) {
 
 	err := otx.tx.Get(
 		&order,
-		otx.query.SelectSubsLock(),
+		query.BuildSelectOrder(otx.sandbox),
 		orderID,
 	)
 
@@ -83,7 +81,7 @@ func (otx OrderTx) RetrieveOrder(orderID string) (subscription.Order, error) {
 // ConfirmOrder set an order's confirmation time.
 func (otx OrderTx) ConfirmOrder(order subscription.Order) error {
 	_, err := otx.tx.NamedExec(
-		otx.query.ConfirmOrder(),
+		query.BuildConfirmOrder(otx.sandbox),
 		order,
 	)
 
@@ -100,7 +98,7 @@ func (otx OrderTx) CreateMember(m subscription.Membership) error {
 	m.Normalize()
 
 	_, err := otx.tx.NamedExec(
-		buildInsertMembership(otx.sandbox),
+		query.BuildInsertMembership(otx.sandbox),
 		m,
 	)
 
@@ -116,7 +114,7 @@ func (otx OrderTx) UpdateMember(m subscription.Membership) error {
 	m.Normalize()
 
 	_, err := otx.tx.NamedExec(
-		buildUpdateMembership(otx.sandbox),
+		query.BuildUpdateMembership(otx.sandbox),
 		m)
 
 	if err != nil {
@@ -135,7 +133,7 @@ func (otx OrderTx) FindBalanceSources(accountID reader.MemberID) ([]plan.Prorati
 
 	err := otx.tx.Select(
 		&sources,
-		otx.query.SelectProrationSource(),
+		query.BuildSelectBalanceSource(otx.sandbox),
 		accountID.CompoundID,
 		accountID.UnionID)
 
@@ -156,7 +154,7 @@ func (otx OrderTx) FindBalanceSources(accountID reader.MemberID) ([]plan.Prorati
 func (otx OrderTx) SaveProration(p []plan.ProrationSource) error {
 	for _, v := range p {
 		_, err := otx.tx.NamedExec(
-			otx.query.InsertProration(),
+			query.BuildInsertProration(otx.sandbox),
 			v)
 
 		if err != nil {
@@ -179,7 +177,7 @@ func (otx OrderTx) SaveUpgradePlan(up plan.UpgradePlan) error {
 		Plan:        up.Plan,
 	}
 	_, err := otx.tx.NamedExec(
-		otx.query.InsertUpgradePlan(),
+		query.BuildInsertUpgradePlan(otx.sandbox),
 		data)
 
 	if err != nil {
@@ -192,7 +190,7 @@ func (otx OrderTx) SaveUpgradePlan(up plan.UpgradePlan) error {
 // ConfirmUpgrade set an upgrade's confirmation time.
 func (otx OrderTx) ConfirmUpgrade(upgradeID string) error {
 	_, err := otx.tx.Exec(
-		otx.query.ProrationConsumed(),
+		query.BuildProrationUsed(otx.sandbox),
 		upgradeID,
 	)
 	if err != nil {
@@ -207,7 +205,9 @@ func (otx OrderTx) ConfirmUpgrade(upgradeID string) error {
 // The following are used by gift card
 
 func (otx OrderTx) ActivateGiftCard(code string) error {
-	_, err := otx.tx.Exec(otx.query.ActivateGiftCard(), code)
+	_, err := otx.tx.Exec(
+		query.BuildActivateGiftCard(otx.sandbox),
+		code)
 
 	if err != nil {
 		return err

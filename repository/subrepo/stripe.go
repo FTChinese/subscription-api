@@ -23,7 +23,7 @@ func (env SubEnv) CreateStripeCustomer(ftcID string) (reader.Account, error) {
 	}
 
 	var account reader.Account
-	err = tx.Get(&account, query.LockFtcUser, ftcID)
+	err = tx.Get(&account, query.BuildSelectReader(false, true), ftcID)
 	if err != nil {
 		_ = tx.Rollback()
 		logger.WithField("trace", "SubEnv.CreateStripeCustomer").Error(err)
