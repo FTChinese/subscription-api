@@ -1,4 +1,4 @@
-package repository
+package subrepo
 
 import (
 	"encoding/json"

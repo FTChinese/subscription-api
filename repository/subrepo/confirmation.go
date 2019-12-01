@@ -1,4 +1,4 @@
-package repository
+package subrepo
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"

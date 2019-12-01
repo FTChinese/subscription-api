@@ -3,14 +3,14 @@ package controller
 import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository"
+	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 
 func TestPayRouter_sendConfirmationEmail(t *testing.T) {
 	router := PayRouter{
-		env: repository.New(
+		env: subrepo.New(
 			test.DB,
 			test.Cache,
 			util.BuildConfig{},

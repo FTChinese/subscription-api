@@ -13,7 +13,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
-	"gitlab.com/ftchinese/subscription-api/repository"
+	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
 
@@ -24,7 +24,7 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(m repository.Env, p postoffice.Postman) WxPayRouter {
+func NewWxRouter(m subrepo.Env, p postoffice.Postman) WxPayRouter {
 	r := WxPayRouter{
 		clients: createWxpayClients(),
 	}
