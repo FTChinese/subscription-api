@@ -2,14 +2,14 @@ package repository
 
 import (
 	"encoding/json"
+	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 
 	"github.com/patrickmn/go-cache"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
 // RetrievePromo tries to retrieve a promotion schedule.
-func (env Env) RetrievePromo() (subscription.Promotion, error) {
+func (env Env) RetrievePromo() (paywall.Promotion, error) {
 	// Retrieve a lastest promotion schedule
 	// which is enabled,
 	// ending time is equal to or greater than current time,
@@ -32,7 +32,7 @@ func (env Env) RetrievePromo() (subscription.Promotion, error) {
 	ORDER BY created_utc DESC
 	LIMIT 1`
 
-	var p subscription.Promotion
+	var p paywall.Promotion
 	var plans string
 	var banner string
 
@@ -67,28 +67,28 @@ func (env Env) RetrievePromo() (subscription.Promotion, error) {
 	return p, nil
 }
 
-func (env Env) cachePromo(p subscription.Promotion) {
+func (env Env) cachePromo(p paywall.Promotion) {
 	logger.WithField("trace", "cachePromo").Infof("Caching promo %+v", p)
 
 	env.cache.Set(keyPromo, p, cache.NoExpiration)
 }
 
 // LoadCachedPromo gets promo from cache.
-func (env Env) LoadCachedPromo() (subscription.Promotion, bool) {
+func (env Env) LoadCachedPromo() (paywall.Promotion, bool) {
 	x, found := env.cache.Get(keyPromo)
 
 	if !found {
 		logger.WithField("trace", "LoadCachedPromo").Info("No cached promo found")
-		return subscription.Promotion{}, false
+		return paywall.Promotion{}, false
 	}
 
-	if promo, ok := x.(subscription.Promotion); ok {
+	if promo, ok := x.(paywall.Promotion); ok {
 		logger.WithField("trace", "LoadCachedPromo").Infof("Cached promo found %+v", promo)
 
 		return promo, true
 	}
 
-	return subscription.Promotion{}, false
+	return paywall.Promotion{}, false
 }
 
 // GetCurrentPlans get current effective pricing plans.
@@ -116,18 +116,18 @@ func (env Env) GetCurrentPlans() plan.FtcPlans {
 	return promo.Plans
 }
 
-func (env Env) GetPayWall() (subscription.PayWall, error) {
+func (env Env) GetPayWall() (paywall.PayWall, error) {
 	promo, found := env.LoadCachedPromo()
 
 	// If promo is not found, or is found but not in effective
 	// time range.
 	if !found || !promo.IsInEffect() {
-		return subscription.BuildPayWall(
-			subscription.GetDefaultBanner(),
+		return paywall.BuildPayWall(
+			paywall.GetDefaultBanner(),
 			plan.GetFtcPlans(true))
 	}
 
-	return subscription.BuildPayWall(
+	return paywall.BuildPayWall(
 		promo.Banner,
 		promo.Plans)
 }
