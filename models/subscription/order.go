@@ -47,6 +47,7 @@ type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
 	reader.MemberID
+	Plan plan.Plan
 	//Charge
 	Price  float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
 	Amount float64 `json:"amount" db:"amount"` // Actually paid amount.
@@ -70,6 +71,7 @@ type Order struct {
 // NewOrder creates a new subscription order.
 // If later it is found that this order is used for upgrading,
 // upgrade it and returns a new instance with upgrading price.
+// TODO: replace Membership with SubKind
 func NewOrder(
 	id reader.MemberID,
 	p plan.Plan,
@@ -90,6 +92,7 @@ func NewOrder(
 	return Order{
 		ID:       orderID,
 		MemberID: id,
+		Plan:     p,
 		Price:    p.ListPrice,
 		Amount:   p.NetPrice, // Modified for upgrade
 		BasePlan: plan.BasePlan{
@@ -136,7 +139,7 @@ func NewFreeUpgradeOrder(id reader.MemberID, up plan.UpgradePlan) (Order, error)
 		CycleCount:       up.Plan.CycleCount,
 		ExtraDays:        up.Plan.ExtraDays,
 		Usage:            SubsKindUpgrade,
-		PaymentMethod:    enum.InvalidPay,
+		PaymentMethod:    enum.PayMethodNull,
 		WxAppID:          null.String{},
 		StartDate:        chrono.DateFrom(startTime),
 		EndDate:          chrono.DateFrom(endTime),
@@ -176,14 +179,6 @@ func (s Order) ReadableAmount() string {
 
 func (s Order) IsConfirmed() bool {
 	return !s.ConfirmedAt.IsZero()
-}
-
-func (s Order) GetAccountID() reader.MemberID {
-	return reader.MemberID{
-		CompoundID: s.CompoundID,
-		FtcID:      s.FtcID,
-		UnionID:    s.UnionID,
-	}
 }
 
 func (s Order) getStartDate(m Membership, confirmedAt time.Time) time.Time {
@@ -241,32 +236,4 @@ func (s Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
 	s.EndDate = chrono.DateFrom(endTime)
 
 	return s, nil
-}
-
-// ConfirmationResult logs the result of confirmation.
-type ConfirmationResult struct {
-	OrderID   string
-	Succeeded bool
-	Failed    null.String
-	Retry     bool
-}
-
-func (r ConfirmationResult) Error() string {
-	return r.Failed.String
-}
-
-// NewConfirmationSucceeded createa a new instance of ConfirmationResult for success.
-func NewConfirmationSucceeded(orderID string) *ConfirmationResult {
-	return &ConfirmationResult{
-		OrderID:   orderID,
-		Succeeded: true,
-	}
-}
-
-func NewConfirmationFailed(orderID string, reason error, retry bool) *ConfirmationResult {
-	return &ConfirmationResult{
-		OrderID: orderID,
-		Failed:  null.StringFrom(reason.Error()),
-		Retry:   retry,
-	}
 }

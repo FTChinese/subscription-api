@@ -90,7 +90,7 @@ func (m *Membership) Normalize() {
 		m.LegacyExpire = null.IntFrom(m.ExpireDate.Unix())
 	}
 
-	if m.LegacyTier.Valid && m.Tier == enum.InvalidTier {
+	if m.LegacyTier.Valid && m.Tier == enum.TierNull {
 		switch m.LegacyTier.Int64 {
 		case 10:
 			m.Tier = enum.TierStandard
@@ -99,7 +99,7 @@ func (m *Membership) Normalize() {
 		}
 	}
 
-	if m.Tier != enum.InvalidTier && m.LegacyTier.IsZero() {
+	if m.Tier != enum.TierNull && m.LegacyTier.IsZero() {
 		switch m.Tier {
 		case enum.TierStandard:
 			m.LegacyTier = null.IntFrom(10)
@@ -111,7 +111,7 @@ func (m *Membership) Normalize() {
 
 // IsZero test whether the instance is empty.
 func (m Membership) IsZero() bool {
-	return m.CompoundID == "" && m.Tier == enum.InvalidTier
+	return m.CompoundID == "" && m.Tier == enum.TierNull
 }
 
 // NewStripe creates a new membership for stripe.
@@ -199,7 +199,7 @@ func (m Membership) FromGiftCard(c redeem.GiftCard) (Membership, error) {
 }
 
 func (m Membership) IsAliOrWxPay() bool {
-	if m.Tier != enum.InvalidTier && m.PaymentMethod == enum.InvalidPay {
+	if m.Tier != enum.TierNull && m.PaymentMethod == enum.PayMethodNull {
 		return true
 	}
 
