@@ -33,7 +33,7 @@ type Plan struct {
 	NetPrice  float64 `json:"netPrice" db:"amount"`
 	Duration
 	Currency         string `json:"currency" db:"currency"`
-	Title            string `json:"description" db:"title"`
+	Title            string `json:"description"`
 	stripeLivePlanID string `json:"-"`
 	stripeTestPlanID string `json:"-"`
 	AppleProductID   string `json:"-"`
