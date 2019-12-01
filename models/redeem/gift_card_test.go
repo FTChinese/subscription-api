@@ -1,4 +1,4 @@
-package paywall
+package redeem
 
 import (
 	"github.com/FTChinese/go-rest"
