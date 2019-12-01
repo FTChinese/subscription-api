@@ -2,9 +2,10 @@ package repository
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
+	"gitlab.com/ftchinese/subscription-api/models/redeem"
 )
 
-func (env Env) FindGiftCard(code string) (paywall.GiftCard, error) {
+func (env Env) FindGiftCard(code string) (redeem.GiftCard, error) {
 	query := `
 	SELECT auth_code AS redeemCode,
 		tier AS tier,
@@ -16,7 +17,7 @@ func (env Env) FindGiftCard(code string) (paywall.GiftCard, error) {
 		AND active_time = 0
 	LIMIT 1`
 
-	var c paywall.GiftCard
+	var c redeem.GiftCard
 	err := env.db.QueryRow(query, code).Scan(
 		&c.Code,
 		&c.Tier,
@@ -31,7 +32,7 @@ func (env Env) FindGiftCard(code string) (paywall.GiftCard, error) {
 	return c, nil
 }
 
-func (env Env) RedeemGiftCard(c paywall.GiftCard, m paywall.Membership) error {
+func (env Env) RedeemGiftCard(c redeem.GiftCard, m paywall.Membership) error {
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "RedeemGiftCard").Error(err)

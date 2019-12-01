@@ -3,6 +3,7 @@ package paywall
 import (
 	"errors"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/models/redeem"
 	"time"
 
 	"github.com/FTChinese/go-rest/rand"
@@ -181,7 +182,7 @@ func (m Membership) FromAliOrWx(sub Order) (Membership, error) {
 }
 
 // FromGiftCard creates a new instance based on a gift card.
-func (m Membership) FromGiftCard(c GiftCard) (Membership, error) {
+func (m Membership) FromGiftCard(c redeem.GiftCard) (Membership, error) {
 
 	var expTime time.Time
 
