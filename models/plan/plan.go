@@ -52,12 +52,15 @@ func (p Plan) GetStripePlanID(live bool) string {
 // withSandboxPrice returns the sandbox version of a plan.
 func (p Plan) withSandboxPrice() Plan {
 	p.NetPrice = 0.01
+	p.Amount = 0.01
 	return p
 }
 
 func (p Plan) WithStripePrice(sp stripe.Plan) Plan {
 	p.ListPrice = float64(sp.Amount / 100)
 	p.NetPrice = p.ListPrice
+	p.Price = p.ListPrice
+	p.Amount = p.NetPrice
 	p.Currency = string(sp.Currency)
 
 	return p
@@ -72,10 +75,12 @@ func (p Plan) WithUpgrade(balance float64) Plan {
 		p.NetPrice = 0
 	}
 
-	q := p.CalculateConversion(balance)
+	p.Amount = p.NetPrice
 
-	p.CycleCount = q.CycleCount
-	p.ExtraDays = q.ExtraDays
+	dur := p.CalculateConversion(balance)
+
+	p.CycleCount = dur.CycleCount
+	p.ExtraDays = dur.ExtraDays
 	p.Title = "FT中文网 - 升级高端会员"
 
 	return p
