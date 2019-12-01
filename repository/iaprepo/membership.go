@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 func (env IAPEnv) RetrieveMembership(id reader.MemberID) (subscription.Membership, error) {
@@ -11,7 +12,7 @@ func (env IAPEnv) RetrieveMembership(id reader.MemberID) (subscription.Membershi
 
 	err := env.db.Get(
 		&m,
-		selectMember,
+		query.BuildSelectMembership(false, false),
 		id.CompoundID,
 	)
 
