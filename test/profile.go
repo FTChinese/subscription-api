@@ -107,10 +107,8 @@ func (p Profile) Account(k reader.AccountKind) reader.Account {
 
 func (p Profile) Membership(k reader.AccountKind) subscription.Membership {
 	return subscription.Membership{
-		ID:           null.StringFrom(subscription.GenerateMembershipIndex()),
-		MemberID:     p.AccountID(reader.AccountKindFtc),
-		LegacyTier:   null.Int{},
-		LegacyExpire: null.Int{},
+		ID:       null.StringFrom(subscription.GenerateMembershipIndex()),
+		MemberID: p.AccountID(reader.AccountKindFtc),
 		BasePlan: plan.BasePlan{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,

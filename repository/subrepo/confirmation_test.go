@@ -3,8 +3,8 @@ package subrepo
 import (
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
-	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )

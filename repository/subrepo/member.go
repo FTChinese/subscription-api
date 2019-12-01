@@ -9,7 +9,7 @@ import (
 // AddMemberID set a membership's id column if it is empty.
 func (env SubEnv) AddMemberID(m subscription.Membership) error {
 	_, err := env.db.NamedExec(
-		env.query.AddMemberID(m.MemberColumn()),
+		buildUpdateMembershipID(env.Sandbox),
 		m)
 
 	if err != nil {
@@ -22,7 +22,7 @@ func (env SubEnv) AddMemberID(m subscription.Membership) error {
 // BackUpMember saves a member's snapshot at a specific moment.
 func (env SubEnv) BackUpMember(m subscription.MemberSnapshot) error {
 	_, err := env.db.NamedExec(
-		env.query.MemberSnapshot(),
+		buildInsertMemberSnapshot(env.Sandbox),
 		m)
 
 	if err != nil {
@@ -38,7 +38,7 @@ func (env SubEnv) RetrieveMember(id reader.MemberID) (subscription.Membership, e
 
 	err := env.db.Get(
 		&m,
-		env.query.SelectMember(id.MemberColumn()),
+		buildSelectMembership(env.Sandbox, false),
 		id.CompoundID)
 
 	if err != nil {

@@ -1,8 +1,8 @@
 package subrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 

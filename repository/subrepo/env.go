@@ -3,8 +3,8 @@ package subrepo
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 
 	"github.com/patrickmn/go-cache"
 )
