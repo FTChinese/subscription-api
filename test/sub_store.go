@@ -48,11 +48,12 @@ func (s *SubStore) Backdate(n int) *SubStore {
 }
 
 func (s *SubStore) CreateOrder(p plan.Plan) (subscription.Order, error) {
+	kind, _ := s.Member.SubsKind(p)
 	order, err := subscription.NewOrder(
 		s.AccountID,
 		p,
 		RandomPayMethod(),
-		s.Member)
+		kind)
 
 	if err != nil {
 		return order, err

@@ -3,7 +3,6 @@ package reader
 import (
 	"errors"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/query"
 )
 
 // FtcID is used to identify an FTC user.
@@ -35,18 +34,4 @@ func NewMemberID(ftcID, unionID string) (MemberID, error) {
 		return id, errors.New("ftcID and unionID should not both be null")
 	}
 	return id, nil
-}
-
-// MemberColumn determines which column will be used to
-// retrieve membership.
-func (i MemberID) MemberColumn() query.MemberCol {
-	if i.FtcID.Valid {
-		return query.MemberColCompoundID
-	}
-
-	if i.UnionID.Valid {
-		return query.MemberColUnionID
-	}
-
-	return query.MemberColCompoundID
 }

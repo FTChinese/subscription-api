@@ -120,7 +120,7 @@ SELECT id AS sub_id,
 	auto_renewal AS sub_auto_renew,
 	sub_status
 FROM premium.ftc_vip
-	WHERE %s = ?
+	WHERE vip_id = ?
 	LIMIT 1
 	FOR UPDATE`
 

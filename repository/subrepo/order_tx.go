@@ -4,17 +4,18 @@ import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/query"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 // OrderTx check a user's member status and create an order
 // if allowed.
 type OrderTx struct {
-	tx    *sqlx.Tx
-	live  bool
-	query query.Builder
+	tx      *sqlx.Tx
+	live    bool
+	sandbox bool // Indicates whether we should use the sandbox DB.
+	query   query.Builder
 }
 
 // RetrieveMember retrieves a user's membership info by ftc id
@@ -25,7 +26,7 @@ func (otx OrderTx) RetrieveMember(id reader.MemberID) (subscription.Membership, 
 
 	err := otx.tx.Get(
 		&m,
-		otx.query.SelectMemberLock(id.MemberColumn()),
+		buildSelectMembership(otx.sandbox, true),
 		id.CompoundID,
 	)
 
@@ -99,7 +100,7 @@ func (otx OrderTx) CreateMember(m subscription.Membership) error {
 	m.Normalize()
 
 	_, err := otx.tx.NamedExec(
-		otx.query.InsertMember(),
+		buildInsertMembership(otx.sandbox),
 		m,
 	)
 
@@ -115,7 +116,7 @@ func (otx OrderTx) UpdateMember(m subscription.Membership) error {
 	m.Normalize()
 
 	_, err := otx.tx.NamedExec(
-		otx.query.UpdateMember(m.MemberColumn()),
+		buildUpdateMembership(otx.sandbox),
 		m)
 
 	if err != nil {
