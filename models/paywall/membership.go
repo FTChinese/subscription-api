@@ -27,7 +27,6 @@ func GenerateMembershipIndex() string {
 type Membership struct {
 	ID null.String `json:"id" db:"sub_id"` // A random string. Not used yet.
 	reader.MemberID
-	LegacyTier   null.Int `json:"-" db:"vip_type"`
 	LegacyExpire null.Int `json:"-" db:"expire_time"`
 	plan.BasePlan
 	ExpireDate    chrono.Date    `json:"expireDate" db:"sub_expire_date"`
