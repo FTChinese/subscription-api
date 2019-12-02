@@ -21,10 +21,10 @@ func (env SubEnv) AddMemberID(m subscription.Membership) error {
 }
 
 // BackUpMember saves a member's snapshot at a specific moment.
-func (env SubEnv) BackUpMember(m subscription.MemberSnapshot) error {
+func (env SubEnv) BackUpMember(snapshot subscription.MemberSnapshot) error {
 	_, err := env.db.NamedExec(
 		query.BuildInsertMemberSnapshot(env.Sandbox),
-		m)
+		snapshot)
 
 	if err != nil {
 		return err
