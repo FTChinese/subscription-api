@@ -100,6 +100,16 @@ func (router PayRouter) confirmPayment(result subscription.PaymentResult) (subsc
 			return subscription.Order{}, subscription.NewConfirmationFailed(result.OrderID, err, true)
 		}
 	} else {
+		// Take a snapshot of current membership upon updating.
+		snapshot := subscription.NewMemberSnapshot(
+			member,
+			order.Usage.SnapshotReason())
+
+		go func() {
+			_ = router.subEnv.BackUpMember(snapshot)
+		}()
+
+		// Update Membership.
 		if err := tx.UpdateMember(newMember); err != nil {
 			log.Error(err)
 			_ = tx.Rollback()
