@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/FTChinese/go-rest/enum"
 )
 
 type SubsKind int
@@ -50,6 +51,19 @@ func (x SubsKind) String() string {
 	return ""
 }
 
+// SnapshotReason converts to SnapshotReason for renew or upgrade.
+func (x SubsKind) SnapshotReason() enum.SnapshotReason {
+	switch x {
+	case SubsKindRenew:
+		return enum.SnapshotReasonRenew
+
+	case SubsKindUpgrade:
+		return enum.SnapshotReasonUpgrade
+
+	default:
+		return enum.SnapshotReasonNull
+	}
+}
 func (x *SubsKind) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
