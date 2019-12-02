@@ -14,9 +14,9 @@ type SubEnv struct {
 	cache *cache.Cache
 }
 
-// New creates a new instance of SubEnv.
+// NewSubEnv creates a new instance of SubEnv.
 // `sandbox` is used to determine which table to write subscription data.
-func New(db *sqlx.DB, c *cache.Cache, b util.BuildConfig) SubEnv {
+func NewSubEnv(db *sqlx.DB, c *cache.Cache, b util.BuildConfig) SubEnv {
 	return SubEnv{
 		BuildConfig: b,
 		db:          db,
