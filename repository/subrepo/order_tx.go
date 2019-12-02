@@ -167,14 +167,14 @@ func (otx OrderTx) SaveProration(p []plan.ProrationSource) error {
 
 // SaveUpgradePlan saved user's current total balance
 // the the upgrade plan at this moment.
-func (otx OrderTx) SaveUpgradePlan(up plan.UpgradePlan) error {
+func (otx OrderTx) SaveUpgradePlan(up plan.UpgradeIntent) error {
 
 	var data = struct {
-		plan.UpgradePlan
+		plan.UpgradeIntent
 		plan.Plan
 	}{
-		UpgradePlan: up,
-		Plan:        up.Plan,
+		UpgradeIntent: up,
+		Plan:          up.Plan,
 	}
 	_, err := otx.tx.NamedExec(
 		query.BuildInsertUpgradePlan(otx.sandbox),

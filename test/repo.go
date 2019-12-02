@@ -87,13 +87,13 @@ func (r Repo) SaveBalanceSources(p []plan.ProrationSource) {
 	}
 }
 
-func (r Repo) SaveUpgradePlan(up plan.UpgradePlan) {
+func (r Repo) SaveUpgradePlan(up plan.UpgradeIntent) {
 	var data = struct {
-		plan.UpgradePlan
+		plan.UpgradeIntent
 		plan.Plan
 	}{
-		UpgradePlan: up,
-		Plan:        up.Plan,
+		UpgradeIntent: up,
+		Plan:          up.Plan,
 	}
 
 	_, err := r.db.NamedExec(
