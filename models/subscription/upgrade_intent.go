@@ -20,9 +20,10 @@ func GenerateUpgradeID() string {
 // to `proration` table.
 type UpgradeIntent struct {
 	ID        string            `json:"id" db:"upgrade_id"`
-	Balance   float64           `json:"balance" db:"balance"` // Accumulated on all BalanceSource.Balance
+	Balance   float64           `json:"balance" db:"balance"` // Deprecate. Accumulated on all BalanceSource.Balance
 	CreatedAt chrono.Time       `json:"createdAt" db:"created_at"`
-	Data      []ProrationSource `json:"data"`
+	Data      []ProrationSource `json:"data"` // Deprecate
+	Wallet    Wallet            `json:"wallet"`
 	Plan      plan.Plan         `json:"plan"`
 }
 
@@ -45,6 +46,27 @@ func NewUpgradeIntent(sources []ProrationSource) UpgradeIntent {
 	// This is hardcoded. Should refactor in the future.
 	up.Plan = plan.premiumYearlyPlan.WithUpgrade(up.Balance)
 	return up
+}
+
+func (up UpgradeIntent) ProrationSources() []ProrationSource {
+	sources := make([]ProrationSource, 0)
+
+	for _, v := range up.Wallet.Source {
+		s := ProrationSource{
+			OrderID:     v.OrderID,
+			PaidAmount:  v.Amount,
+			StartDate:   v.StartDate,
+			EndDate:     v.EndDate,
+			Balance:     v.Balance,
+			CreatedUTC:  chrono.TimeNow(),
+			ConsumedUTC: chrono.Time{},
+			UpgradeID:   up.ID,
+		}
+
+		sources = append(sources, s)
+	}
+
+	return sources
 }
 
 // ReadableBalance produces a string describing the total balance
