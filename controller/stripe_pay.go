@@ -29,7 +29,7 @@ func NewStripeRouter(m subrepo.SubEnv, p postoffice.Postman, sk string) StripeRo
 		signingKey: sk,
 	}
 
-	r.env = m
+	r.subEnv = m
 	r.postman = p
 
 	return r
@@ -77,7 +77,7 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 	}
 
 	p, err := plan.Get(
-		ftcPlan.GetStripePlanID(router.env.Live()),
+		ftcPlan.GetStripePlanID(router.subEnv.Live()),
 		nil)
 
 	if err != nil {
@@ -92,7 +92,7 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(ftcIDKey)
 
-	account, err := router.env.CreateStripeCustomer(ftcID)
+	account, err := router.subEnv.CreateStripeCustomer(ftcID)
 
 	if err != nil {
 		view.Render(w, stripeDBFailure(err))
@@ -231,7 +231,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	}
 
 	// Attach Stripe plan id.
-	err := params.SetStripePlanID(router.env.Live())
+	err := params.SetStripePlanID(router.subEnv.Live())
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -240,14 +240,14 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	log.Infof("Stripe param: %+v", params)
 
 	// Create stripe subscription.
-	s, err := router.env.CreateStripeSub(userID, params)
+	s, err := router.subEnv.CreateStripeSub(userID, params)
 
 	if err != nil {
 		if sErr := CastStripeError(err); sErr != nil {
 			view.Render(w, BuildStripeResponse(sErr))
 
 			go func() {
-				err := router.env.SaveStripeError(userID, sErr)
+				err := router.subEnv.SaveStripeError(userID, sErr)
 				if err != nil {
 					log.Error(err)
 				}
@@ -286,7 +286,7 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 
 	userID, _ := GetUserID(req.Header)
 
-	s, err := router.env.GetStripeSub(userID)
+	s, err := router.subEnv.GetStripeSub(userID)
 	if err != nil {
 		logrus.WithField("trace", "StripeRouter.GetSubscription").Error(err)
 
@@ -325,7 +325,7 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		return
 	}
 
-	err := params.SetStripePlanID(router.env.Live())
+	err := params.SetStripePlanID(router.subEnv.Live())
 	if err != nil {
 		view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -333,14 +333,14 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 
 	log.Infof("Subscription params: %+v", params)
 
-	s, err := router.env.UpgradeStripeSubs(userID, params)
+	s, err := router.subEnv.UpgradeStripeSubs(userID, params)
 
 	if err != nil {
 		if sErr := CastStripeError(err); sErr != nil {
 			view.Render(w, BuildStripeResponse(sErr))
 
 			go func() {
-				err := router.env.SaveStripeError(userID, sErr)
+				err := router.subEnv.SaveStripeError(userID, sErr)
 				if err != nil {
 					log.Error(err)
 				}
@@ -366,7 +366,7 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 func (router StripeRouter) onSubscription(s *stripe.Subscription) error {
 	logger := logrus.WithField("trace", "StripeRouter.onSubscription")
 
-	_, err := router.env.WebHookSaveStripeSub(s)
+	_, err := router.subEnv.WebHookSaveStripeSub(s)
 
 	if err != nil {
 		logger.Error(err)

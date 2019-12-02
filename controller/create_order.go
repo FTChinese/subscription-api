@@ -25,7 +25,7 @@ func (router PayRouter) createOrder(
 		return subscription.Order{}, errors.New("only used by alipay or wxpay")
 	}
 
-	otx, err := router.env.BeginOrderTx()
+	otx, err := router.subEnv.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
 		return subscription.Order{}, err
@@ -51,7 +51,7 @@ func (router PayRouter) createOrder(
 		log.Infof("Membership does not have an id. Generated and add it %s", member.ID.String)
 
 		go func() {
-			if err := router.env.AddMemberID(member); err != nil {
+			if err := router.subEnv.AddMemberID(member); err != nil {
 				log.Error(err)
 			}
 		}()
@@ -127,7 +127,7 @@ func (router PayRouter) createOrder(
 		log.Infof("Membership is not empty. Take a snapshot of its current status %s", snapshot.SnapshotID)
 
 		go func() {
-			if err := router.env.BackUpMember(snapshot); err != nil {
+			if err := router.subEnv.BackUpMember(snapshot); err != nil {
 				log.Error(err)
 			}
 		}()
@@ -148,12 +148,12 @@ func (router PayRouter) createOrder(
 
 	// Not vital. Perform in background.
 	go func() {
-		if err := router.env.SaveOrderClient(order.ID, app); err != nil {
+		if err := router.subEnv.SaveOrderClient(order.ID, app); err != nil {
 			log.Error(err)
 		}
 	}()
 
-	if !router.env.Live() {
+	if !router.subEnv.Live() {
 		order.Amount = 0.01
 	}
 

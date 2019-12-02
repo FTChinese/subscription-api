@@ -14,7 +14,7 @@ import (
 
 func mockOrderAndConfirm(id reader.MemberID) subscription.Order {
 	router := PayRouter{
-		env: subrepo.New(test.DB, test.Cache, util.BuildConfig{
+		subEnv: subrepo.New(test.DB, test.Cache, util.BuildConfig{
 			Sandbox:    false,
 			Production: false,
 		}),
