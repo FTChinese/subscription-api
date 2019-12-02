@@ -4,16 +4,15 @@ import (
 	"errors"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/redeem"
-	"time"
-
-	"github.com/FTChinese/go-rest/rand"
-	"github.com/stripe/stripe-go"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/rand"
 	"github.com/guregu/null"
+	"github.com/stripe/stripe-go"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
 
 // GenerateMembershipIndex generates a random string to membership id.
@@ -64,18 +63,6 @@ func (m *Membership) GenerateID() {
 	m.ID = null.StringFrom(GenerateMembershipIndex())
 }
 
-// Deprecate
-func (m Membership) TierCode() int64 {
-	switch m.Tier {
-	case enum.TierStandard:
-		return 10
-	case enum.TierPremium:
-		return 100
-	}
-
-	return 0
-}
-
 // Normalize turns legacy vip_type and expire_time into
 // member_tier and expire_date columns, or vice versus.
 func (m *Membership) Normalize() {
@@ -111,6 +98,195 @@ func (m *Membership) Normalize() {
 // IsZero test whether the instance is empty.
 func (m Membership) IsZero() bool {
 	return m.CompoundID == "" && m.Tier == enum.TierNull
+}
+
+func (m Membership) IsAliOrWxPay() bool {
+	if m.Tier != enum.TierNull && m.PaymentMethod == enum.PayMethodNull {
+		return true
+	}
+
+	return m.PaymentMethod == enum.PayMethodAli || m.PaymentMethod == enum.PayMethodWx
+}
+
+// IsExpired tests if the membership's expiration date is before now.
+func (m Membership) IsExpired() bool {
+	// If membership does not exist, it is treated as expired.
+	if m.IsZero() {
+		return true
+	}
+
+	// If expire date is before now, AND auto renew is false,
+	// we treat this one as actually expired.
+	// If ExpireDate is passed, but auto renew is true, we still
+	// treat this one as not expired.
+	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
+}
+
+func (m Membership) IsValid() bool {
+	if m.IsZero() {
+		return false
+	}
+
+	// If it is expired, check whether auto renew is on.
+	if m.IsExpired() {
+		if !m.AutoRenewal {
+			return false
+		}
+
+		return true
+	}
+
+	return true
+}
+
+func (m Membership) IsValidPremium() bool {
+	return m.Tier == enum.TierPremium && !m.IsExpired()
+}
+
+// PermitStripeCreate checks whether subscription
+// via stripe is permitted or not.
+// Cases for permission:
+// 1. Membership does not exist;
+// 2. Membership exists via alipay or wxpay but expired;
+// 3. Membership exits via stripe but is expired and it is not auto renewable.
+// 4. A stripe subscription that is not expired, auto renewable, but its current status is not active.
+// Returns errors indicates permission not allowed and gives reason:
+// 1. ErrNonStripeValidSub - a valid subscription not paid via stripe
+// 2. ErrActiveStripeSub - a valid stripe subscription.
+// 3. ErrUnknownSubState
+func (m Membership) PermitStripeCreate() error {
+	// If a membership does not exist, allow create stripe
+	// subscription
+	if m.IsZero() {
+		return nil
+	}
+
+	if m.IsAliOrWxPay() {
+		if m.IsExpired() {
+			return nil
+		}
+		return util.ErrNonStripeValidSub
+	}
+
+	if m.PaymentMethod == enum.PayMethodStripe {
+		// An expired member that is not auto renewal.
+		if m.IsExpired() && !m.AutoRenewal {
+			return nil
+		}
+		// Member is not expired, or is auto renewal.
+		// Deny such request.
+		// If status is active, deny it.
+		if m.Status.ShouldCreate() {
+			return nil
+		}
+
+		// Now it is not expired, or auto renewal,
+		// and status is active.
+		return util.ErrActiveStripeSub
+	}
+
+	// Member is either not expired, or auto renewal
+	// Deny any other cases.
+	return util.ErrUnknownSubState
+}
+
+// PermitStripeUpgrade tests whether a stripe customer with
+// standard membership should be allowed to upgrade to premium.
+func (m Membership) PermitStripeUpgrade() bool {
+	if m.IsZero() {
+		return false
+	}
+
+	if m.PaymentMethod != enum.PayMethodStripe {
+		return false
+	}
+
+	if m.IsExpired() {
+		return false
+	}
+
+	// Membership is not expired, or is auto renewable, but status is not active.
+	if m.Status != SubStatusActive {
+		return false
+	}
+
+	return m.Tier == enum.TierStandard
+}
+
+// inRenewalPeriod tests if a membership is allowed to renew subscription for alipay or wecaht pay.
+// A member could only renew its subscription when remaining duration of a membership is shorter than a billing cycle.
+// Expire date - now > cycle  --- Renewal is not allowed
+// Expire date - now <= cycle --- Can renew
+//         now--------------------| Allow
+//      |-------- A cycle --------| Expires
+// now----------------------------| Deny
+// Algorithm changed to membership duration not larger than 3 years.
+func (m Membership) inRenewalPeriod() bool {
+	today := time.Now().Truncate(24 * time.Hour)
+	threeYearsLater := today.AddDate(3, 0, 0)
+
+	// If today is after expiration date, it means the membership
+	// is already expired.
+	// expire date >= today
+	if today.After(m.ExpireDate.Time) {
+		return false
+	}
+
+	// expire date <= three years later
+	if threeYearsLater.Before(m.ExpireDate.Time) {
+		return false
+	}
+
+	return true
+}
+
+// PermitRenewal test if current membership is allowed to renew.
+// now ---------3 years ---------> Expire date
+// expire date - now <= 3 years
+func (m Membership) PermitRenewal() bool {
+	if m.ExpireDate.IsZero() {
+		return false
+	}
+
+	if m.AutoRenewal {
+		return false
+	}
+
+	if !m.IsAliOrWxPay() {
+		return false
+	}
+
+	return m.inRenewalPeriod()
+}
+
+// SubsKind determines what kind of order a user is creating.
+func (m Membership) SubsKind(p plan.Plan) (SubsKind, error) {
+	if m.IsZero() {
+		return SubsKindCreate, nil
+	}
+
+	if m.Status != SubStatusNull && m.Status.ShouldCreate() {
+		return SubsKindCreate, nil
+	}
+
+	if m.IsExpired() {
+		return SubsKindCreate, nil
+	}
+
+	// Renewal.
+	if m.Tier == p.Tier {
+		if m.inRenewalPeriod() {
+			return SubsKindRenew, nil
+		} else {
+			return SubsKindDeny, errors.New("current membership expiration date is beyond max renewal period")
+		}
+	}
+
+	if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
+		return SubsKindUpgrade, nil
+	}
+
+	return SubsKindDeny, errors.New("unknown subscription usage")
 }
 
 // NewStripe creates a new membership for stripe.
@@ -195,177 +371,4 @@ func (m Membership) FromGiftCard(c redeem.GiftCard) (Membership, error) {
 	m.ExpireDate = chrono.DateFrom(expTime)
 
 	return m, nil
-}
-
-func (m Membership) IsAliOrWxPay() bool {
-	if m.Tier != enum.TierNull && m.PaymentMethod == enum.PayMethodNull {
-		return true
-	}
-
-	return m.PaymentMethod == enum.PayMethodAli || m.PaymentMethod == enum.PayMethodWx
-}
-
-// IsExpired tests if the membership's expiration date is before now.
-func (m Membership) IsExpired() bool {
-	// If membership does not exist, it is treated as expired.
-	if m.IsZero() {
-		return true
-	}
-
-	// If expire date is before now, AND auto renew is false,
-	// we treat this one as actually expired.
-	// If ExpireDate is passed, but auto renew is true, we still
-	// treat this one as not expired.
-	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
-}
-
-// CanRenew tests if a membership is allowed to renew subscription.
-// A member could only renew its subscription when remaining duration of a membership is shorter than a billing cycle.
-// Expire date - now > cycle  --- Renewal is not allowed
-// Expire date - now <= cycle --- Can renew
-//         now--------------------| Allow
-//      |-------- A cycle --------| Expires
-// now----------------------------| Deny
-// Algorithm changed to membership duration not larger than 3 years.
-
-func (m Membership) inRenewalPeriod() bool {
-	today := time.Now().Truncate(24 * time.Hour)
-	threeYearsLater := today.AddDate(3, 0, 0)
-
-	// If today is after expiration date, it means the membership
-	// is already expired.
-	// expire date >= today
-	if today.After(m.ExpireDate.Time) {
-		return false
-	}
-
-	// expire date <= three years later
-	if threeYearsLater.Before(m.ExpireDate.Time) {
-		return false
-	}
-
-	return true
-}
-
-// PermitRenewal test if current membership is allowed to renew.
-// now ---------3 years ---------> Expire date
-// expire date - now <= 3 years
-func (m Membership) PermitRenewal() bool {
-	if m.ExpireDate.IsZero() {
-		return false
-	}
-
-	if m.AutoRenewal {
-		return false
-	}
-
-	if !m.IsAliOrWxPay() {
-		return false
-	}
-
-	return m.inRenewalPeriod()
-}
-
-func (m Membership) IsValidPremium() bool {
-	return m.Tier == enum.TierPremium && !m.IsExpired()
-}
-
-// SubsKind determines what kind of order a user is creating.
-func (m Membership) SubsKind(p plan.Plan) (SubsKind, error) {
-	if m.IsZero() {
-		return SubsKindCreate, nil
-	}
-
-	if m.Status != SubStatusNull && m.Status.ShouldCreate() {
-		return SubsKindCreate, nil
-	}
-
-	if m.IsExpired() {
-		return SubsKindCreate, nil
-	}
-
-	// Renewal.
-	if m.Tier == p.Tier {
-		if m.inRenewalPeriod() {
-			return SubsKindRenew, nil
-		} else {
-			return SubsKindDeny, errors.New("current membership expiration date is beyond max renewal period")
-		}
-	}
-
-	if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
-		return SubsKindUpgrade, nil
-	}
-
-	return SubsKindDeny, errors.New("unknown subscription usage")
-}
-
-// PermitStripeCreate checks whether subscription
-// via stripe is permitted or not.
-// Cases for permission:
-// 1. Membership does not exist;
-// 2. Membership exists via alipay or wxpay but expired;
-// 3. Membership exits via stripe but is expired and it is not auto renewable.
-// 4. A stripe subscription that is not expired, auto renewable, but its current status is not active.
-// Returns errors indicates permission not allowed and gives reason:
-// 1. ErrNonStripeValidSub - a valid subscription not paid via stripe
-// 2. ErrActiveStripeSub - a valid stripe subscription.
-// 3. ErrUnknownSubState
-func (m Membership) PermitStripeCreate() error {
-	// If a membership does not exist, allow create stripe
-	// subscription
-	if m.IsZero() {
-		return nil
-	}
-
-	if m.IsAliOrWxPay() {
-		if m.IsExpired() {
-			return nil
-		}
-		return util.ErrNonStripeValidSub
-	}
-
-	if m.PaymentMethod == enum.PayMethodStripe {
-		// An expired member that is not auto renewal.
-		if m.IsExpired() && !m.AutoRenewal {
-			return nil
-		}
-		// Member is not expired, or is auto renewal.
-		// Deny such request.
-		// If status is active, deny it.
-		if m.Status.ShouldCreate() {
-			return nil
-		}
-
-		// Now it is not expired, or auto renewal,
-		// and status is active.
-		return util.ErrActiveStripeSub
-	}
-
-	// Member is either not expired, or auto renewal
-	// Deny any other cases.
-	return util.ErrUnknownSubState
-}
-
-// PermitStripeUpgrade tests whether a stripe customer with
-// standard membership should be allowed to upgrade to premium.
-func (m Membership) PermitStripeUpgrade() bool {
-	if m.IsZero() {
-		return false
-	}
-
-	if m.PaymentMethod != enum.PayMethodStripe {
-		return false
-	}
-
-	if m.IsExpired() {
-		return false
-	}
-
-	// Membership is not expired, or is auto renewable, but status is not active.
-	if m.Status != SubStatusActive {
-		return false
-	}
-
-	return m.Tier == enum.TierStandard
 }
