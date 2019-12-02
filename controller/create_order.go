@@ -117,22 +117,6 @@ func (router PayRouter) createOrder(
 
 	order.WxAppID = wxAppId
 
-	// Back up membership state the moment the order is created.
-	if !member.IsZero() {
-
-		snapshot := subscription.NewMemberSnapshot(member, order.Usage)
-
-		order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
-
-		log.Infof("Membership is not empty. Take a snapshot of its current status %s", snapshot.SnapshotID)
-
-		go func() {
-			if err := router.subEnv.BackUpMember(snapshot); err != nil {
-				log.Error(err)
-			}
-		}()
-	}
-
 	// Step 4: Save this order.
 	if err := otx.SaveOrder(order); err != nil {
 		log.Error(err)
