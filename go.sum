@@ -7,6 +7,8 @@ github.com/FTChinese/go-rest v0.1.1 h1:v4BRRFTl8LqeFpHzZ2M5MQC/vSik9KF40SEERQUm5
 github.com/FTChinese/go-rest v0.1.1/go.mod h1:maZLcH5Os/34qV4Fs2cw9Di0lgECYZ6bpqSLQx2h/Dc=
 github.com/FTChinese/go-rest v0.2.0 h1:QShlkpxyHNiJ/4iqLhLvSj05gM4NeYPp7l4nR9hq5sA=
 github.com/FTChinese/go-rest v0.2.0/go.mod h1:maZLcH5Os/34qV4Fs2cw9Di0lgECYZ6bpqSLQx2h/Dc=
+github.com/FTChinese/go-rest v0.2.1 h1:Ojq5WabtBDPWXVapW2MIxviw+QCCOKO4lRshxUuiHvA=
+github.com/FTChinese/go-rest v0.2.1/go.mod h1:maZLcH5Os/34qV4Fs2cw9Di0lgECYZ6bpqSLQx2h/Dc=
 github.com/Masterminds/squirrel v1.1.0 h1:baP1qLdoQCeTw3ifCdOq2dkYc6vGcmRdaociKLbEJXs=
 github.com/Masterminds/squirrel v1.1.0/go.mod h1:yaPeOnPG5ZRwL9oKdTsO/prlkPbXWZlRVMQ/gGlzIuA=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
