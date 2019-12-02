@@ -41,7 +41,7 @@ func TestNewUpgradePlan(t *testing.T) {
 		},
 	}
 
-	up := NewUpgradePlan(sources)
+	up := NewUpgradeIntent(sources)
 
 	t.Logf("Upgrade plan: %+v", up)
 }

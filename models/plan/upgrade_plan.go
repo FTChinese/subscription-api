@@ -25,7 +25,7 @@ type UpgradeIntent struct {
 	Plan      Plan              `json:"plan"`
 }
 
-func NewUpgradePlan(sources []ProrationSource) UpgradeIntent {
+func NewUpgradeIntent(sources []ProrationSource) UpgradeIntent {
 	up := UpgradeIntent{
 		ID: GenerateUpgradeID(),
 		//SourceIDs: []string{},
