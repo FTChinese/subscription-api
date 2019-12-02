@@ -7,7 +7,6 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
@@ -26,56 +25,56 @@ func NewUpgradeRouter(env subrepo.SubEnv) UpgradeRouter {
 	return r
 }
 
-func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (plan.UpgradeIntent, error) {
+func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (subscription.UpgradeIntent, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.getUpgradePlan")
 
 	otx, err := router.subEnv.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return plan.UpgradeIntent{}, err
+		return subscription.UpgradeIntent{}, err
 	}
 
 	member, err := otx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return plan.UpgradeIntent{}, err
+		return subscription.UpgradeIntent{}, err
 	}
 
 	// To upgrade, membership must exist, not expired yet,
 	// must be alipay or wxpay, and must not be premium.
 	if member.IsZero() {
 		_ = otx.Rollback()
-		return plan.UpgradeIntent{}, sql.ErrNoRows
+		return subscription.UpgradeIntent{}, sql.ErrNoRows
 	}
 
 	if member.IsExpired() {
 		_ = otx.Rollback()
-		return plan.UpgradeIntent{}, util.ErrMemberExpired
+		return subscription.UpgradeIntent{}, util.ErrMemberExpired
 	}
 
 	if member.PaymentMethod == enum.PayMethodStripe {
 		_ = otx.Rollback()
-		return plan.UpgradeIntent{}, util.ErrValidStripeSwitching
+		return subscription.UpgradeIntent{}, util.ErrValidStripeSwitching
 	}
 
 	if member.Tier == enum.TierPremium {
 		_ = otx.Rollback()
-		return plan.UpgradeIntent{}, util.ErrAlreadyUpgraded
+		return subscription.UpgradeIntent{}, util.ErrAlreadyUpgraded
 	}
 
 	sources, err := otx.FindBalanceSources(id)
 	if err != nil {
 		_ = otx.Rollback()
-		return plan.UpgradeIntent{}, err
+		return subscription.UpgradeIntent{}, err
 	}
 
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
-		return plan.UpgradeIntent{}, err
+		return subscription.UpgradeIntent{}, err
 	}
 
-	up := plan.NewUpgradeIntent(sources)
+	up := subscription.NewUpgradeIntent(sources)
 
 	return up, nil
 }
@@ -167,7 +166,7 @@ func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) 
 		return subscription.Order{}, err
 	}
 
-	up := plan.NewUpgradeIntent(sources)
+	up := subscription.NewUpgradeIntent(sources)
 	if up.Plan.NetPrice > 0 {
 		return subscription.Order{}, errors.New("you cannot upgrade for free since payment is required")
 	}

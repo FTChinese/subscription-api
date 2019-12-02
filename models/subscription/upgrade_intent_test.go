@@ -1,4 +1,4 @@
-package plan
+package subscription
 
 import (
 	"github.com/FTChinese/go-rest/chrono"

@@ -25,7 +25,7 @@ type SubStore struct {
 	Orders        map[string]subscription.Order // A user could have multiple orders.
 	Member        subscription.Membership       // But only one membership.
 	balanceAnchor time.Time
-	UpgradePlan   plan.UpgradeIntent          // To have data populated, you must call MustRenewN() and then call MustCreate(PremiumPlan).
+	UpgradePlan   subscription.UpgradeIntent  // To have data populated, you must call MustRenewN() and then call MustCreate(PremiumPlan).
 	Snapshot      subscription.MemberSnapshot // This will be populated and updated for any order other than `create`.
 }
 
@@ -62,7 +62,7 @@ func (s *SubStore) CreateOrder(p plan.Plan) (subscription.Order, error) {
 	if order.Usage == subscription.SubsKindUpgrade {
 		sources := s.GetBalanceSource()
 
-		up := plan.NewUpgradeIntent(sources)
+		up := subscription.NewUpgradeIntent(sources)
 
 		order = order.WithUpgrade(up)
 
@@ -233,8 +233,8 @@ func (s *SubStore) GetOrder(id string) (subscription.Order, error) {
 	return o, nil
 }
 
-func (s *SubStore) GetBalanceSource() []plan.ProrationSource {
-	sources := []plan.ProrationSource{}
+func (s *SubStore) GetBalanceSource() []subscription.ProrationSource {
+	sources := []subscription.ProrationSource{}
 
 	for _, v := range s.Orders {
 		if !v.IsConfirmed() {
@@ -253,7 +253,7 @@ func (s *SubStore) GetBalanceSource() []plan.ProrationSource {
 			continue
 		}
 
-		sources = append(sources, plan.ProrationSource{
+		sources = append(sources, subscription.ProrationSource{
 			OrderID:    v.ID,
 			PaidAmount: v.Amount,
 			StartDate:  v.StartDate,

@@ -54,8 +54,8 @@ func (env SubEnv) RetrieveMember(id reader.MemberID) (subscription.Membership, e
 // FindBalanceSources creates a snapshot for orders with
 // unused portion.
 // This is identical to OrderTx.FindBalanceSources without a transaction.
-func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]plan.ProrationSource, error) {
-	var sources = []plan.ProrationSource{}
+func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]subscription.ProrationSource, error) {
+	var sources = []subscription.ProrationSource{}
 
 	err := env.db.Select(
 		&sources,
@@ -72,10 +72,10 @@ func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]plan.ProrationSource
 }
 
 // RetrieveUpgradePlan retrieves an upgrade plan to be used in email sent to user.
-func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (plan.UpgradeIntent, error) {
+func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeIntent, error) {
 
 	var data = struct {
-		plan.UpgradeIntent
+		subscription.UpgradeIntent
 		plan.Plan
 	}{}
 
@@ -86,10 +86,10 @@ func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (plan.UpgradeIntent, err
 
 	if err != nil {
 		logger.WithField("trace", "SubEnv.RetrieveUpgradePlan").Error(err)
-		return plan.UpgradeIntent{}, err
+		return subscription.UpgradeIntent{}, err
 	}
 
-	return plan.UpgradeIntent{
+	return subscription.UpgradeIntent{
 		ID:        data.ID,
 		Balance:   data.Balance,
 		CreatedAt: data.CreatedAt,
@@ -100,8 +100,8 @@ func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (plan.UpgradeIntent, err
 
 // RetrieveProratedOrders retrieves all orders prorated from
 // proration table. Used to send user an email after upgrade.
-func (env SubEnv) RetrieveProratedOrders(upgradeID string) ([]plan.ProrationSource, error) {
-	var sources = []plan.ProrationSource{}
+func (env SubEnv) RetrieveProratedOrders(upgradeID string) ([]subscription.ProrationSource, error) {
+	var sources = []subscription.ProrationSource{}
 
 	err := env.db.Select(
 		&sources,
