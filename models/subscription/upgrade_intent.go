@@ -1,9 +1,10 @@
-package plan
+package subscription
 
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 )
 
 func GenerateUpgradeID() string {
@@ -22,7 +23,7 @@ type UpgradeIntent struct {
 	Balance   float64           `json:"balance" db:"balance"` // Accumulated on all BalanceSource.Balance
 	CreatedAt chrono.Time       `json:"createdAt" db:"created_at"`
 	Data      []ProrationSource `json:"data"`
-	Plan      Plan              `json:"plan"`
+	Plan      plan.Plan         `json:"plan"`
 }
 
 func NewUpgradeIntent(sources []ProrationSource) UpgradeIntent {
@@ -42,7 +43,7 @@ func NewUpgradeIntent(sources []ProrationSource) UpgradeIntent {
 	}
 
 	// This is hardcoded. Should refactor in the future.
-	up.Plan = premiumYearlyPlan.WithUpgrade(up.Balance)
+	up.Plan = plan.premiumYearlyPlan.WithUpgrade(up.Balance)
 	return up
 }
 

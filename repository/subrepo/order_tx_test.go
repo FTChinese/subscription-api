@@ -1,7 +1,6 @@
 package subrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/test"
@@ -412,7 +411,7 @@ func TestOrderTx_SaveUpgradePlan(t *testing.T) {
 	}
 
 	type args struct {
-		up plan.UpgradeIntent
+		up subscription.UpgradeIntent
 	}
 	tests := []struct {
 		name    string
@@ -457,7 +456,7 @@ func TestOrderTx_SaveProration(t *testing.T) {
 	}
 
 	type args struct {
-		p []plan.ProrationSource
+		p []subscription.ProrationSource
 	}
 	tests := []struct {
 		name    string
