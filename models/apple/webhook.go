@@ -4,6 +4,10 @@ import (
 	"github.com/guregu/null"
 )
 
+type WHLatestReceiptInfo struct {
+	AppItemID int64 `json:"app_item_id"`
+}
+
 // WebHook contains the JSON data sent in the server notification from the App Store.
 type WebHook struct {
 	// An identifier that App Store Connect generates and the App Store uses to uniquely identify the auto-renewable subscription that the user's subscription renews
@@ -33,12 +37,12 @@ type WebHook struct {
 	ExpirationIntent null.String `json:"expiration_intent"`
 
 	// The latest Base64-encoded transaction receipt
-	LatestExpiredReceipt     string           `json:"latest_expired_receipt"`
-	LatestExpiredReceiptInfo []ReceiptInfo    `json:"latest_expired_receipt_info"`
-	LatestReceipt            string           `json:"latest_receipt"` // Store it as a token to verify the user's subscription status at any time.
-	LatestReceiptInfo        []ReceiptInfo    `json:"latest_receipt_info"`
-	NotificationType         NotificationType `json:"notification_type"`
-	Password                 string           `json:"password"`
+	LatestExpiredReceipt     string              `json:"latest_expired_receipt"`
+	LatestExpiredReceiptInfo []ReceiptInfo       `json:"latest_expired_receipt_info"`
+	LatestReceipt            string              `json:"latest_receipt"` // Store it as a token to verify the user's subscription status at any time.
+	LatestReceiptInfo        WHLatestReceiptInfo `json:"latest_receipt_info"`
+	NotificationType         NotificationType    `json:"notification_type"`
+	Password                 string              `json:"password"`
 	// An object that contains information about the most recent in-app purchase transactions for the app.
 	UnifiedReceipt UnifiedReceipt `json:"unified_receipt"`
 }
