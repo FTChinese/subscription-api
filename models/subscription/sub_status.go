@@ -100,7 +100,7 @@ func (x SubStatus) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 
-	return []byte(`""` + s + `""`), nil
+	return []byte(`"` + s + `"`), nil
 }
 
 func (x *SubStatus) Scan(src interface{}) error {
