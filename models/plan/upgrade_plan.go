@@ -10,14 +10,14 @@ func GenerateUpgradeID() string {
 	return "up_" + rand.String(12)
 }
 
-// UpgradePlan specifies how a standard product is upgraded to premium.
+// UpgradeIntent specifies how a standard product is upgraded to premium.
 // The plan is dynamic since it has to be calculated based on
 // current valid renewal orders' balance.
 // This plan is saved to `upgrade_plan` table.
 // The data field is an array of each order's balance containing a
 // upgrade id referring to the ID field. Each data element is saved
 // to `proration` table.
-type UpgradePlan struct {
+type UpgradeIntent struct {
 	ID        string            `json:"id" db:"upgrade_id"`
 	Balance   float64           `json:"balance" db:"balance"` // Accumulated on all BalanceSource.Balance
 	CreatedAt chrono.Time       `json:"createdAt" db:"created_at"`
@@ -25,8 +25,8 @@ type UpgradePlan struct {
 	Plan      Plan              `json:"plan"`
 }
 
-func NewUpgradePlan(sources []ProrationSource) UpgradePlan {
-	up := UpgradePlan{
+func NewUpgradePlan(sources []ProrationSource) UpgradeIntent {
+	up := UpgradeIntent{
 		ID: GenerateUpgradeID(),
 		//SourceIDs: []string{},
 		CreatedAt: chrono.TimeNow(),
@@ -48,6 +48,6 @@ func NewUpgradePlan(sources []ProrationSource) UpgradePlan {
 
 // ReadableBalance produces a string describing the total balance
 // in the format: CNY99.00 in email sent to user.
-func (up UpgradePlan) ReadableBalance() string {
+func (up UpgradeIntent) ReadableBalance() string {
 	return fmt.Sprintf("%s%.2f", "CNY", up.Balance)
 }
