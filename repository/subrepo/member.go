@@ -72,10 +72,10 @@ func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]plan.ProrationSource
 }
 
 // RetrieveUpgradePlan retrieves an upgrade plan to be used in email sent to user.
-func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (plan.UpgradePlan, error) {
+func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (plan.UpgradeIntent, error) {
 
 	var data = struct {
-		plan.UpgradePlan
+		plan.UpgradeIntent
 		plan.Plan
 	}{}
 
@@ -86,10 +86,10 @@ func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (plan.UpgradePlan, error
 
 	if err != nil {
 		logger.WithField("trace", "SubEnv.RetrieveUpgradePlan").Error(err)
-		return plan.UpgradePlan{}, err
+		return plan.UpgradeIntent{}, err
 	}
 
-	return plan.UpgradePlan{
+	return plan.UpgradeIntent{
 		ID:        data.ID,
 		Balance:   data.Balance,
 		CreatedAt: data.CreatedAt,

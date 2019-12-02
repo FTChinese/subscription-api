@@ -412,7 +412,7 @@ func TestOrderTx_SaveUpgradePlan(t *testing.T) {
 	}
 
 	type args struct {
-		up plan.UpgradePlan
+		up plan.UpgradeIntent
 	}
 	tests := []struct {
 		name    string
