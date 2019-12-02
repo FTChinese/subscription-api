@@ -10,7 +10,7 @@ import (
 
 func TestPayRouter_sendConfirmationEmail(t *testing.T) {
 	router := PayRouter{
-		env: subrepo.New(
+		subEnv: subrepo.New(
 			test.DB,
 			test.Cache,
 			util.BuildConfig{},

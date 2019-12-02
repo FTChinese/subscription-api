@@ -28,7 +28,7 @@ func NewWxRouter(m subrepo.SubEnv, p postoffice.Postman) WxPayRouter {
 	r := WxPayRouter{
 		clients: createWxpayClients(),
 	}
-	r.env = m
+	r.subEnv = m
 	r.postman = p
 
 	return r
@@ -184,7 +184,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		uor := wechat.NewUnifiedOrderResp(order.ID, resp)
 
 		go func() {
-			if err := router.env.SavePrepayResp(uor); err != nil {
+			if err := router.subEnv.SavePrepayResp(uor); err != nil {
 				logger.Error(err)
 			}
 		}()
@@ -287,7 +287,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// Log the response, regardless of whether it is an error
 	// or not.
 	go func() {
-		if err := router.env.SaveWxNotification(noti); err != nil {
+		if err := router.subEnv.SaveWxNotification(noti); err != nil {
 			logger.Error(err)
 		}
 	}()
@@ -320,7 +320,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		logger.Error(err)
 
 		go func() {
-			if err := router.env.SaveConfirmationResult(result); err != nil {
+			if err := router.subEnv.SaveConfirmationResult(result); err != nil {
 				logger.Error(err)
 			}
 		}()
@@ -345,7 +345,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	go func() {
-		if err := router.env.SaveConfirmationResult(subscription.NewConfirmationSucceeded(noti.FTCOrderID.String)); err != nil {
+		if err := router.subEnv.SaveConfirmationResult(subscription.NewConfirmationSucceeded(noti.FTCOrderID.String)); err != nil {
 			logger.Error(err)
 		}
 	}()
@@ -411,7 +411,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	// {message: "", {field: result, code: "ORDERNOTEXIST" | "SYSTEMERROR"} }
 	resp := wechat.NewOrderQueryResp(respParams)
 	go func() {
-		if err := router.env.SaveWxQueryResp(resp); err != nil {
+		if err := router.subEnv.SaveWxQueryResp(resp); err != nil {
 			logger.Error(err)
 		}
 	}()

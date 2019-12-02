@@ -12,12 +12,12 @@ import (
 )
 
 type IAPRouter struct {
-	env iaprepo.IAPEnv
+	iapEnv iaprepo.IAPEnv
 }
 
 func NewIAPRouter(db *sqlx.DB, c util.BuildConfig) IAPRouter {
 	return IAPRouter{
-		env: iaprepo.NewIAPEnv(db, c),
+		iapEnv: iaprepo.NewIAPEnv(db, c),
 	}
 }
 
@@ -38,7 +38,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	resp, err := router.env.VerifyReceipt(receiptReq)
+	resp, err := router.iapEnv.VerifyReceipt(receiptReq)
 	if err != nil {
 		_ = view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -51,7 +51,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	if !resp.Validate() {
 		logger.WithField("trace", "IAPRouter.VerifyReceipt").Info("Verification response is not valid")
 
-		err := router.env.SaveVerificationFailure(resp.Failure(receiptReq.ReceiptData))
+		err := router.iapEnv.SaveVerificationFailure(resp.Failure(receiptReq.ReceiptData))
 
 		if err != nil {
 			logger.WithField("trace", "IAPRouter.VerifyReceipt").Error(err)
@@ -67,34 +67,34 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	r := resp.FindLatestReceipt()
 
 	go func() {
-		_ = router.env.SaveVerificationSession(resp.SessionSchema(r))
+		_ = router.iapEnv.SaveVerificationSession(resp.SessionSchema(r))
 	}()
 
 	// save latest receipt array
 	go func() {
 		for _, v := range resp.LatestReceiptInfo {
-			_ = router.env.SaveCustomerReceipt(v.Schema(resp.Environment))
+			_ = router.iapEnv.SaveCustomerReceipt(v.Schema(resp.Environment))
 		}
 	}()
 
 	// Save pending renewal array
 	go func() {
 		for _, v := range resp.PendingRenewalInfo {
-			_ = router.env.SavePendingRenewal(v.Schema(resp.Environment))
+			_ = router.iapEnv.SavePendingRenewal(v.Schema(resp.Environment))
 		}
 	}()
 
 	// Save the receipt as a token for status polling.
 	receiptToken := resp.ReceiptToken(r.OriginalTransactionID)
 	go func() {
-		_ = router.env.SaveReceiptToken(receiptToken)
+		_ = router.iapEnv.SaveReceiptToken(receiptToken)
 	}()
 
 	// Create a subscription.
 	// Here we do not have reader's ids
 	sub := resp.Subscription(reader.MemberID{}, r)
 	go func() {
-		_ = router.env.CreateSubscription(sub)
+		_ = router.iapEnv.CreateSubscription(sub)
 	}()
 
 	_ = view.Render(w, view.NewResponse().SetBody(map[string]bool{
@@ -108,8 +108,27 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 }
 
 // Link associates apple subscription to FTC reader id or wechat union id.
+// User id could be either FTC id or wechat union id.
+// FTC id should take precedence over wechat union id to avoid a situation that we linked membership only while account is
+// not linked.
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
+	log := logger.WithField("trace", "IAPRouter.Link")
+
 	// Get ftc id or union id
+	memberID, err := reader.NewMemberID(
+		req.Header.Get(ftcIDKey),
+		req.Header.Get(unionIDKey))
+
+	if err != nil {
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
+		return
+	}
+
+	tx, err := router.iapEnv.BeginOrderTx()
+	if err != nil {
+		_ = view.Render(w, view.NewInternalError(err.Error()))
+		return
+	}
 
 	// Retrieve current membership. Chances are it is empty.
 	// The membership must be empty or invalid to permit proceeding.
@@ -117,7 +136,29 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	// Expired for alipay and wechat pay
 	// Expired for stripe pay and not auto-renewal
 	// Expires for apple pay and not auto-renewal
+	member, err := tx.RetrieveMember(memberID)
+	if err != nil {
+		log.Error(err)
+		_ = tx.Rollback()
+		_ = view.Render(w, view.NewDBFailure(err))
+		return
+	}
 
+	if member.IsValid() {
+		r := view.NewReason()
+		r.Field = "membership"
+		r.Code = view.CodeAlreadyExists
+		r.SetMessage("Account already has a valid membership through non-apple subscription")
+		_ = tx.Rollback()
+		_ = view.Render(w, view.NewUnprocessable(r))
+	}
+
+	if !member.IsZero() && member.ID.IsZero() {
+		member.GenerateID()
+		go func() {
+
+		}()
+	}
 	// Verify receipt to get the original transaction id
 
 	// Perform CRUD in background
@@ -129,4 +170,11 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	// Build paywall.Membership from apple.Subscription.
 
 	// Upsert paywall.Membership.
+
+	if err := tx.Commit(); err != nil {
+		_ = view.Render(w, view.NewInternalError(err.Error()))
+		return
+	}
+
+	_ = view.Render(w, view.NewNoContent())
 }
