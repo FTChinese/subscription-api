@@ -92,7 +92,7 @@ func (router PayRouter) createOrder(
 		log.Infof("Find balance source: %+v", sources)
 
 		// Step 3.2: Build upgrade plan
-		up := plan.NewUpgradePlan(sources)
+		up := plan.NewUpgradeIntent(sources)
 		log.Infof("Upgrading plan: %+v", up)
 
 		// Step 3.3: Update order based on upgrade plan.
