@@ -26,56 +26,56 @@ func NewUpgradeRouter(env subrepo.SubEnv) UpgradeRouter {
 	return r
 }
 
-func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (plan.UpgradePlan, error) {
+func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (plan.UpgradeIntent, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.getUpgradePlan")
 
 	otx, err := router.subEnv.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return plan.UpgradePlan{}, err
+		return plan.UpgradeIntent{}, err
 	}
 
 	member, err := otx.RetrieveMember(id)
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return plan.UpgradePlan{}, err
+		return plan.UpgradeIntent{}, err
 	}
 
 	// To upgrade, membership must exist, not expired yet,
 	// must be alipay or wxpay, and must not be premium.
 	if member.IsZero() {
 		_ = otx.Rollback()
-		return plan.UpgradePlan{}, sql.ErrNoRows
+		return plan.UpgradeIntent{}, sql.ErrNoRows
 	}
 
 	if member.IsExpired() {
 		_ = otx.Rollback()
-		return plan.UpgradePlan{}, util.ErrMemberExpired
+		return plan.UpgradeIntent{}, util.ErrMemberExpired
 	}
 
 	if member.PaymentMethod == enum.PayMethodStripe {
 		_ = otx.Rollback()
-		return plan.UpgradePlan{}, util.ErrValidStripeSwitching
+		return plan.UpgradeIntent{}, util.ErrValidStripeSwitching
 	}
 
 	if member.Tier == enum.TierPremium {
 		_ = otx.Rollback()
-		return plan.UpgradePlan{}, util.ErrAlreadyUpgraded
+		return plan.UpgradeIntent{}, util.ErrAlreadyUpgraded
 	}
 
 	sources, err := otx.FindBalanceSources(id)
 	if err != nil {
 		_ = otx.Rollback()
-		return plan.UpgradePlan{}, err
+		return plan.UpgradeIntent{}, err
 	}
 
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
-		return plan.UpgradePlan{}, err
+		return plan.UpgradeIntent{}, err
 	}
 
-	up := plan.NewUpgradePlan(sources)
+	up := plan.NewUpgradeIntent(sources)
 
 	return up, nil
 }
@@ -167,7 +167,7 @@ func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) 
 		return subscription.Order{}, err
 	}
 
-	up := plan.NewUpgradePlan(sources)
+	up := plan.NewUpgradeIntent(sources)
 	if up.Plan.NetPrice > 0 {
 		return subscription.Order{}, errors.New("you cannot upgrade for free since payment is required")
 	}
@@ -193,7 +193,7 @@ func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) 
 		return order, err
 	}
 
-	snapshot := subscription.NewMemberSnapshot(member, subscription.SubsKindUpgrade)
+	snapshot := subscription.NewMemberSnapshot(member, subscription.SubsKindUpgrade.SnapshotReason())
 	order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
 
 	if err := tx.SaveOrder(order); err != nil {

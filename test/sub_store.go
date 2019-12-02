@@ -62,7 +62,7 @@ func (s *SubStore) CreateOrder(p plan.Plan) (subscription.Order, error) {
 	if order.Usage == subscription.SubsKindUpgrade {
 		sources := s.GetBalanceSource()
 
-		up := plan.NewUpgradePlan(sources)
+		up := plan.NewUpgradeIntent(sources)
 
 		order = order.WithUpgrade(up)
 
@@ -74,7 +74,7 @@ func (s *SubStore) CreateOrder(p plan.Plan) (subscription.Order, error) {
 	}
 
 	if !s.Member.IsZero() {
-		snapshot := subscription.NewMemberSnapshot(s.Member, order.Usage)
+		snapshot := subscription.NewMemberSnapshot(s.Member, order.Usage.SnapshotReason())
 		order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
 
 		s.Snapshot = snapshot

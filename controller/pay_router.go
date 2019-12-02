@@ -120,7 +120,7 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 	return nil
 }
 
-func (router PayRouter) loadUpgradePlan(upgradeID string) (plan.UpgradePlan, error) {
+func (router PayRouter) loadUpgradePlan(upgradeID string) (plan.UpgradeIntent, error) {
 	up, err := router.subEnv.RetrieveUpgradePlan(upgradeID)
 	if err != nil {
 		return up, err
