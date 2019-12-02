@@ -85,7 +85,7 @@ func NewOrder(
 	}, nil
 }
 
-func NewFreeUpgradeOrder(id reader.MemberID, up plan.UpgradeIntent) (Order, error) {
+func NewFreeUpgradeOrder(id reader.MemberID, up UpgradeIntent) (Order, error) {
 
 	startTime := time.Now()
 	endTime, err := up.Plan.GetPeriodEnd(startTime)
@@ -112,7 +112,7 @@ func NewFreeUpgradeOrder(id reader.MemberID, up plan.UpgradeIntent) (Order, erro
 	return order, nil
 }
 
-func (s Order) WithUpgrade(up plan.UpgradeIntent) Order {
+func (s Order) WithUpgrade(up UpgradeIntent) Order {
 
 	s.Amount = up.Plan.NetPrice
 	s.CycleCount = up.Plan.CycleCount
