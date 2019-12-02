@@ -6,6 +6,7 @@ import (
 	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
+	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/wxoauth"
 	"log"
@@ -151,15 +152,16 @@ func main() {
 		emailConn.User,
 		emailConn.Pass)
 
-	repo := subrepo.New(db, c, config)
+	subEnv := subrepo.NewSubEnv(db, c, config)
+	iapEnv := iaprepo.NewIAPEnv(db, config)
 
-	wxRouter := controller.NewWxRouter(repo, post)
-	aliRouter := controller.NewAliRouter(repo, post)
-	giftCardRouter := controller.NewGiftCardRouter(repo)
-	paywallRouter := controller.NewPaywallRouter(repo)
-	upgradeRouter := controller.NewUpgradeRouter(repo)
-	stripeRouter := controller.NewStripeRouter(repo, post, getStripeSigningKey())
-	iapRouter := controller.NewIAPRouter(db, config)
+	wxRouter := controller.NewWxRouter(subEnv, post)
+	aliRouter := controller.NewAliRouter(subEnv, post)
+	giftCardRouter := controller.NewGiftCardRouter(subEnv)
+	paywallRouter := controller.NewPaywallRouter(subEnv)
+	upgradeRouter := controller.NewUpgradeRouter(subEnv)
+	stripeRouter := controller.NewStripeRouter(subEnv, post, getStripeSigningKey())
+	iapRouter := controller.NewIAPRouter(iapEnv, subEnv, post)
 
 	wxAuth := controller.NewWxAuth(wxoauth.New(db))
 
