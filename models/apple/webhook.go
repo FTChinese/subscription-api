@@ -1,32 +1,14 @@
 package apple
 
-import "github.com/guregu/null"
-
-type NotificationType string
-
-const (
-	NotificationTypeCancel                 NotificationType = "CANCEL"                    // Indicates that either Apple customer support canceled the subscription or the user upgraded their subscription
-	NotificationTypeDidChangeRenewalPref                    = "DID_CHANGE_RENEWAL_PREF"   // DID_CHANGE_RENEWAL_PREF
-	NotificationTypeDidChangeRenewalStatus                  = "DID_CHANGE_RENEWAL_STATUS" // Indicates a change in the subscription renewal status.
-	NotificationTypeDidFailToRenew                          = "DID_FAIL_TO_RENEW"         // Indicates a subscription that failed to renew due to a billing issue.
-	NotificationTypeDidRecover                              = "DID_RECOVER"               // Indicates successful automatic renewal of an expired subscription that failed to renew in the past.
-	NotificationTypeInitialBuy                              = "INITIAL_BUY"               // Occurs at the initial purchase of the subscription
-	NotificationTypeInteractiveRenewal                      = "INTERACTIVE_RENEWAL"       // Indicates the customer renewed a subscription interactively, either by using your app’s interface, or on the App Store in the account's Subscriptions settings.
-	NotificationTypeRenewal                                 = "RENEWAL"                   // Indicates successful automatic renewal of an expired subscription that failed to renew in the past.
+import (
+	"github.com/guregu/null"
 )
-
-// UnifiedReceipt is an object that contains information about the most recent in-app purchase transactions for the app.
-type UnifiedReceipt struct {
-	Environment        Environment      `json:"environment"`
-	LatestReceipt      string           `json:"latest_receipt"`
-	LatestReceiptInfo  []ReceiptInfo    `json:"latest_receipt_info"`
-	PendingRenewalInfo []PendingRenewal `json:"pending_renewal_info"`
-	Status             int64            `json:"status"`
-}
 
 // WebHook contains the JSON data sent in the server notification from the App Store.
 type WebHook struct {
-	AutoRenewAdamID    int64  `json:"auto_renew_adam_id"`
+	// An identifier that App Store Connect generates and the App Store uses to uniquely identify the auto-renewable subscription that the user's subscription renews
+	AutoRenewAdamID int64 `json:"auto_renew_adam_id"`
+	// The product identifier of the auto-renewable subscription that the user's subscription renews.
 	AutoRenewProductID string `json:"auto_renew_product_id"`
 	// The current renewal status for an auto-renewable subscription product.
 	// Note that these values are different from those of the auto_renew_status in the receipt.
@@ -59,4 +41,21 @@ type WebHook struct {
 	Password                 string           `json:"password"`
 	// An object that contains information about the most recent in-app purchase transactions for the app.
 	UnifiedReceipt UnifiedReceipt `json:"unified_receipt"`
+}
+
+func (w WebHook) Schema(originalTransactionID string) WebHookSchema {
+	return WebHookSchema{
+		Environment:           w.Environment,
+		OriginalTransactionID: originalTransactionID,
+		AutoRenewAdamID:       w.AutoRenewAdamID,
+		AutoRenewProductID:    w.AutoRenewProductID,
+		AutoRenewStatus: null.NewBool(
+			MustParseBoolean(w.AutoRenewStatus),
+			w.AutoRenewStatus != ""),
+		AutoRenewStatusChangeDateMs: MustParseInt64(w.AutoRenewStatusChangeDateMs),
+		ExpirationIntent:            w.ExpirationIntent,
+		NotificationType:            w.NotificationType,
+		Password:                    w.Password,
+		Status:                      w.UnifiedReceipt.Status,
+	}
 }

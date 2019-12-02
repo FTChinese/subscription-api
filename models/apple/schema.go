@@ -73,3 +73,17 @@ type ReceiptToken struct {
 	OriginalTransactionID string      `db:"original_transaction_id"`
 	LatestReceipt         string      `db:"latest_receipt"`
 }
+
+type WebHookSchema struct {
+	Environment                 Environment      `db:"environment"`
+	OriginalTransactionID       string           `db:"original_transaction_id"`
+	TransactionID               string           `db:"transaction_id"`
+	AutoRenewAdamID             int64            `db:"auto_renew_adam_id"`
+	AutoRenewProductID          string           `json:"auto_renew_product_id"`
+	AutoRenewStatus             null.Bool        `db:"auto_renew_status"`
+	AutoRenewStatusChangeDateMs int64            `db:"auto_renew_status_change_date_ms"`
+	ExpirationIntent            null.String      `json:"expiration_intent"`
+	NotificationType            NotificationType `db:"notification_type"`
+	Password                    string           `db:"password"`
+	Status                      int64            `db:"status"`
+}
