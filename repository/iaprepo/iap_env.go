@@ -9,6 +9,12 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/util"
 )
 
+var logger = logrus.
+	WithField("project", "subscription-api").
+	WithField("package", "iaprepo")
+
+var request = gorequest.New()
+
 func getReceiptPassword() (string, error) {
 	pw := viper.GetString("apple.receipt_password")
 	if pw == "" {
@@ -29,9 +35,3 @@ func NewIAPEnv(db *sqlx.DB, c util.BuildConfig) IAPEnv {
 		db: db,
 	}
 }
-
-var logger = logrus.
-	WithField("project", "subscription-api").
-	WithField("package", "iaprepo")
-
-var request = gorequest.New()
