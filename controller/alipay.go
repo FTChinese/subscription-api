@@ -28,7 +28,7 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(m subrepo.SubEnv, p postoffice.Postman) AliPayRouter {
+func NewAliRouter(subEnv subrepo.SubEnv, p postoffice.Postman) AliPayRouter {
 
 	app := getAliPayApp()
 
@@ -38,7 +38,7 @@ func NewAliRouter(m subrepo.SubEnv, p postoffice.Postman) AliPayRouter {
 		appID:  app.ID,
 		client: client,
 	}
-	r.subEnv = m
+	r.subEnv = subEnv
 	r.postman = p
 
 	return r
@@ -80,7 +80,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		if err != nil {
 			logger.Error(err)
 
-			view.Render(w, view.NewBadRequest(err.Error()))
+			_ = view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
 
