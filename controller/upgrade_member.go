@@ -21,7 +21,7 @@ type UpgradeRouter struct {
 
 func NewUpgradeRouter(env subrepo.SubEnv) UpgradeRouter {
 	r := UpgradeRouter{}
-	r.env = env
+	r.subEnv = env
 
 	return r
 }
@@ -29,7 +29,7 @@ func NewUpgradeRouter(env subrepo.SubEnv) UpgradeRouter {
 func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (plan.UpgradePlan, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.getUpgradePlan")
 
-	otx, err := router.env.BeginOrderTx()
+	otx, err := router.subEnv.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
 		return plan.UpgradePlan{}, err
@@ -126,7 +126,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) (subscription.Order, error) {
 	log := logrus.WithField("trace", "UpgradeRouter.freeUpgrade")
 
-	tx, err := router.env.BeginOrderTx()
+	tx, err := router.subEnv.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
 		return subscription.Order{}, err
@@ -216,13 +216,13 @@ func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) 
 
 	// Save client app info
 	go func() {
-		if err := router.env.SaveOrderClient(order.ID, app); err != nil {
+		if err := router.subEnv.SaveOrderClient(order.ID, app); err != nil {
 			log.Error(err)
 		}
 	}()
 
 	go func() {
-		if err := router.env.BackUpMember(snapshot); err != nil {
+		if err := router.subEnv.BackUpMember(snapshot); err != nil {
 			log.Error()
 		}
 	}()

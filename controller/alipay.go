@@ -38,7 +38,7 @@ func NewAliRouter(m subrepo.SubEnv, p postoffice.Postman) AliPayRouter {
 		appID:  app.ID,
 		client: client,
 	}
-	r.env = m
+	r.subEnv = m
 	r.postman = p
 
 	return r
@@ -59,7 +59,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		err := req.ParseForm()
 		if err != nil {
 			logger.Error(err)
-			view.Render(w, view.NewBadRequest(err.Error()))
+			_ = view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
 
@@ -69,7 +69,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		if err := models.AllowAndroidPurchase(clientApp); err != nil {
 			logger.Error(err)
-			view.Render(w, view.NewBadRequest(err.Error()))
+			_ = view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
 
@@ -207,7 +207,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		if err := router.env.SaveAliNotification(*noti); err != nil {
+		if err := router.subEnv.SaveAliNotification(*noti); err != nil {
 			logger.Error(err)
 		}
 	}()
@@ -242,7 +242,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		logger.Error(err)
 
 		go func() {
-			err := router.env.SaveConfirmationResult(result)
+			err := router.subEnv.SaveConfirmationResult(result)
 			if err != nil {
 				logger.Error(err)
 			}
@@ -268,7 +268,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	go func() {
-		if err := router.env.SaveConfirmationResult(subscription.NewConfirmationSucceeded(payResult.OrderID)); err != nil {
+		if err := router.subEnv.SaveConfirmationResult(subscription.NewConfirmationSucceeded(payResult.OrderID)); err != nil {
 			logger.Error(err)
 		}
 	}()

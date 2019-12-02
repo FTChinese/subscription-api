@@ -18,7 +18,7 @@ const (
 
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
-	env     subrepo.SubEnv
+	subEnv  subrepo.SubEnv
 	postman postoffice.Postman
 }
 
@@ -33,7 +33,7 @@ func (router PayRouter) findPlan(req *http.Request) (plan.Plan, error) {
 		return plan.Plan{}, err
 	}
 
-	return router.env.GetCurrentPlans().FindPlan(t + "_" + c)
+	return router.subEnv.GetCurrentPlans().FindPlan(t + "_" + c)
 }
 
 func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
@@ -55,7 +55,7 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 
 // Returns notification URL for Alipay based on whether the api is run for sandbox.
 func (router PayRouter) aliCallbackURL() string {
-	if router.env.Sandbox {
+	if router.subEnv.Sandbox {
 		return apiBaseURL + "/sandbox/webhook/alipay"
 	}
 
@@ -63,7 +63,7 @@ func (router PayRouter) aliCallbackURL() string {
 }
 
 func (router PayRouter) wxCallbackURL() string {
-	if router.env.Sandbox {
+	if router.subEnv.Sandbox {
 		return apiBaseURL + "/sandbox/webhook/wxpay"
 	}
 
@@ -83,7 +83,7 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := router.env.FindFtcUser(order.FtcID.String)
+	account, err := router.subEnv.FindFtcUser(order.FtcID.String)
 
 	if err != nil {
 		return err
@@ -121,12 +121,12 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 }
 
 func (router PayRouter) loadUpgradePlan(upgradeID string) (plan.UpgradePlan, error) {
-	up, err := router.env.RetrieveUpgradePlan(upgradeID)
+	up, err := router.subEnv.RetrieveUpgradePlan(upgradeID)
 	if err != nil {
 		return up, err
 	}
 
-	sources, err := router.env.RetrieveProratedOrders(upgradeID)
+	sources, err := router.subEnv.RetrieveProratedOrders(upgradeID)
 	if err != nil {
 		return up, err
 	}

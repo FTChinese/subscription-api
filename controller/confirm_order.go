@@ -11,7 +11,7 @@ import (
 func (router PayRouter) confirmPayment(result subscription.PaymentResult) (subscription.Order, *subscription.ConfirmationResult) {
 	log := logrus.WithField("trace", "PayRouter.confirmPayment")
 
-	tx, err := router.env.BeginOrderTx()
+	tx, err := router.subEnv.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
 		return subscription.Order{}, subscription.NewConfirmationFailed(result.OrderID, err, true)
