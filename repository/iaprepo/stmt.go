@@ -104,3 +104,17 @@ SET environment = :environment,
 ON DUPLICATE KEY UPDATE
 	latest_receipt = :latest_receipt,
 	updated_utc = UTC_TIMESTAMP()`
+
+const insertWebHook = `
+INSERT INTO premium.apple_webhook
+SET environment = :environment,
+	original_transaction_id = :original_transaction_id,
+	auto_renew_adam_id = :auto_renew_adam_id,
+	auto_renew_product_id = :auto_renew_product_id,
+	auto_renew_status = :auto_renew_status,
+	auto_renew_status_change_date_ms = :auto_renew_status_change_date_ms,
+	expiration_intent = :expiration_intent,
+	notification_type = :notification_type,
+	encryption_password = :password,
+	response_status = :status,
+	created_utc = UTC_TIMESTAMP()`
