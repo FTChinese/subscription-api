@@ -40,23 +40,25 @@ type PendingRenewal struct {
 	ProductID          string      `json:"product_id"`
 }
 
-func (p PendingRenewal) IsAutoRenew() null.Bool {
+func (p PendingRenewal) IsAutoRenew() bool {
 	ok, err := strconv.ParseBool(p.AutoRenewStatus)
 	if err != nil {
-		return null.Bool{}
+		return false
 	}
 
-	return null.BoolFrom(ok)
+	return ok
 }
 
 func (p PendingRenewal) Schema(e Environment) PendingRenewalSchema {
 	return PendingRenewalSchema{
-		Environment:           e,
-		OriginalTransactionID: p.OriginalTransactionID,
-		ProductID:             p.ProductID,
-		AutoRenewStatus:       p.AutoRenewStatus,
-		ExpirationIntent:      p.ExpirationIntent,
-		AutoRenewProductID:    p.AutoRenewProductID,
+		BaseSchema: BaseSchema{
+			Environment:           e,
+			OriginalTransactionID: p.OriginalTransactionID,
+		},
+		ProductID:          p.ProductID,
+		AutoRenewStatus:    p.AutoRenewStatus,
+		ExpirationIntent:   p.ExpirationIntent,
+		AutoRenewProductID: p.AutoRenewProductID,
 		IsInBillingRetryPeriod: null.NewBool(
 			MustParseBoolean(p.IsInBillingRetryPeriod.String),
 			p.IsInBillingRetryPeriod.Valid),

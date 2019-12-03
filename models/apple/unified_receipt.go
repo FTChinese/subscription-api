@@ -16,11 +16,11 @@ type UnifiedReceipt struct {
 	// The latest Base64-encoded app receipt.
 	// For verification, this is the latest encoded receipt.
 	// This is a string, not byte as specified by Apple doc. It can be decoded into bytes, which does not mean it IS byte.
-	LatestReceipt string `json:"latest_receipt"`
+	LatestToken string `json:"latest_receipt"`
 	// An array that contains the latest 100 in-app purchase transactions of the decoded value in latest_receipt.
 	//  For verification, an array that contains all the transactions for the subscription, including the initial purchase and subsequent renewals but not including any restores.
 	// Use this to get the status of the most recent renewal
-	LatestReceiptInfo []ReceiptInfo `json:"latest_receipt_info"`
+	LatestTransactions []Transaction `json:"latest_receipt_info"`
 	// An array where each element contains the pending renewal information for each auto-renewable subscription identified in product_id.
 	// each element contains the pending renewal information for each auto-renewable subscription identified by the product_id.
 	PendingRenewalInfo []PendingRenewal `json:"pending_renewal_info"`
@@ -46,7 +46,7 @@ type UnifiedReceipt struct {
 }
 
 func (u *UnifiedReceipt) Validate() bool {
-	if u.LatestReceiptInfo == nil || len(u.LatestReceiptInfo) == 0 {
+	if u.LatestTransactions == nil || len(u.LatestTransactions) == 0 {
 		return false
 	}
 
@@ -54,36 +54,47 @@ func (u *UnifiedReceipt) Validate() bool {
 }
 
 func (u *UnifiedReceipt) SortLatestReceiptsDesc() {
-	sort.SliceStable(u.LatestReceiptInfo, func(i, j int) bool {
-		return u.LatestReceiptInfo[i].ExpiresDateMs > u.LatestReceiptInfo[j].ExpiresDateMs
+	sort.SliceStable(u.LatestTransactions, func(i, j int) bool {
+		return u.LatestTransactions[i].ExpiresDateMs > u.LatestTransactions[j].ExpiresDateMs
 	})
 }
 
-func (u *UnifiedReceipt) FindLatestReceipt() ReceiptInfo {
+func (u *UnifiedReceipt) FindLatestTransaction() Transaction {
 	u.SortLatestReceiptsDesc()
 
-	l := len(u.LatestReceiptInfo)
+	l := len(u.LatestTransactions)
 
 	nowUnix := time.Now().Unix()
 
+	// It is questionable to check the if it is cancelled.
+	// I think the most recent receipt is always reliable.
+	// Those record should be generated linearly.
+	// If you cancelled a subscription, later re-subscribed,
+	// the cancelled receipt cannot be one the top.
+	// It would be unreasonable if the the most recent one
+	// is cancelled while a previous one is still valid.
+	// If the above is true, it only indicates the design of
+	// your product and pricing system have problems.
 	i := sort.Search(l, func(i int) bool {
-		r := u.LatestReceiptInfo[i]
+		r := u.LatestTransactions[i]
 
-		return r.ExpiresUnix() >= nowUnix && !r.IsCancelled() && r.IsValidProduct()
+		return r.ExpiresUnix() >= nowUnix && r.IsValidProduct()
 	})
 
 	if i < l {
-		return u.LatestReceiptInfo[i]
+		return u.LatestTransactions[i]
 	}
 
-	return u.LatestReceiptInfo[0]
+	return u.LatestTransactions[0]
 }
 
 func (u *UnifiedReceipt) ReceiptToken(originalTransactionID string) ReceiptToken {
 	return ReceiptToken{
-		Environment:           u.Environment,
-		OriginalTransactionID: originalTransactionID,
-		LatestReceipt:         u.LatestReceipt,
+		BaseSchema: BaseSchema{
+			Environment:           u.Environment,
+			OriginalTransactionID: originalTransactionID,
+		},
+		LatestReceipt: u.LatestToken,
 	}
 }
 
@@ -92,7 +103,7 @@ func (u *UnifiedReceipt) ReceiptToken(originalTransactionID string) ReceiptToken
 // Returns a zero instance if not found.
 // The zero value if valid since we're only interested in
 // the auto renew field which should default to false.
-func (u *UnifiedReceipt) findPendingRenewal(r ReceiptInfo) PendingRenewal {
+func (u *UnifiedReceipt) findPendingRenewal(r Transaction) PendingRenewal {
 	if u.PendingRenewalInfo == nil {
 		return PendingRenewal{}
 	}
@@ -108,8 +119,14 @@ func (u *UnifiedReceipt) findPendingRenewal(r ReceiptInfo) PendingRenewal {
 
 // Subscription builds a subscription for a user based on
 // the receipt information available.
-func (u *UnifiedReceipt) Subscription(ids reader.MemberID, r ReceiptInfo) Subscription {
+// TODO: What if the Transaction is a cancelled one?
+func (u *UnifiedReceipt) Subscription(ids reader.MemberID, r Transaction) Subscription {
 	pendingRenewal := u.findPendingRenewal(r)
+
+	autoRenew := pendingRenewal.IsAutoRenew()
+	if r.IsCancelled() {
+		autoRenew = false
+	}
 
 	p := r.FindPlan()
 
@@ -127,6 +144,6 @@ func (u *UnifiedReceipt) Subscription(ids reader.MemberID, r ReceiptInfo) Subscr
 		MemberID:    ids,
 		Tier:        p.Tier,
 		Cycle:       p.Cycle,
-		AutoRenewal: pendingRenewal.IsAutoRenew(),
+		AutoRenewal: autoRenew,
 	}
 }

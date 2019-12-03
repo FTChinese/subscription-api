@@ -3,6 +3,18 @@ package apple
 import "github.com/guregu/null"
 
 // ClientReceipt is the receipt data from device.
+// This is the value of `receipt` field from
+// a verification endpoint.
+// It actually contains all receipts.
+// This is a very weired design since it represents a single
+// transactions contains all data of transactions.
+// I think the core problem is with its naming.
+// Apple tries to use the word receipt naming everything.
+// It does not distinguish between a receipt and a transaction.
+// Its `in_app` array, `latest_receipt_info` should actually be
+// taken as the history of transactions.
+// They are recording of user's actions, rather than a snapshot
+// of current subscription status.
 type ClientReceipt struct {
 	AdamID             int64       `json:"adam_id"`
 	AppItemID          int64       `json:"app_item_id"` // uniquely identify the app purchased. only in production. O for sandbox.
@@ -17,7 +29,7 @@ type ClientReceipt struct {
 	// Use this array to:
 	// Check for an empty array in a valid receipt, indicating that the App Store has made no in-app purchase charges.
 	// Determine which products the user purchased. Purchases for non-consumable products, auto-renewable subscriptions, and non-renewing subscriptions remain in the receipt indefinitely.
-	InApp                      []ReceiptInfo `json:"in_app"`
+	InAppTransactions          []Transaction `json:"in_app"`
 	OriginalApplicationVersion string        `json:"original_application_version"` // The version of the app that the user originally purchased
 	OriginalPurchaseDate       string        `json:"original_purchase_date"`
 	OriginalPurchaseDateMs     string        `json:"original_purchase_date_ms"`
