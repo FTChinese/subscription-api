@@ -127,12 +127,13 @@ func (otx OrderTx) UpdateMember(m subscription.Membership) error {
 
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
-func (otx OrderTx) FindBalanceSources(accountID reader.MemberID) ([]subscription.ProrationSource, error) {
+// TODO: change sql statement.
+func (otx OrderTx) FindBalanceSources(accountID reader.MemberID) ([]subscription.ProratedOrder, error) {
 
-	var sources = []subscription.ProrationSource{}
+	var orders = make([]subscription.ProratedOrder, 0)
 
 	err := otx.tx.Select(
-		&sources,
+		&orders,
 		query.BuildSelectBalanceSource(otx.sandbox),
 		accountID.CompoundID,
 		accountID.UnionID)
@@ -142,16 +143,16 @@ func (otx OrderTx) FindBalanceSources(accountID reader.MemberID) ([]subscription
 		return nil, err
 	}
 
-	return sources, nil
+	return orders, nil
 }
 
-// SaveProration saves all orders with unused portion to calculate each order's balance.
+// SaveProratedOrders saves all orders with unused portion to calculate each order's balance.
 // Go's SQL does not support batch insert now.
 // We use a loop here to insert all record.
 // Most users won't have much  valid orders
 // at a specific moment, so this should not pose a severe
 // performance issue.
-func (otx OrderTx) SaveProration(p []subscription.ProrationSource) error {
+func (otx OrderTx) SaveProratedOrders(p []subscription.ProrationSource) error {
 	for _, v := range p {
 		_, err := otx.tx.NamedExec(
 			query.BuildInsertProration(otx.sandbox),
@@ -165,9 +166,9 @@ func (otx OrderTx) SaveProration(p []subscription.ProrationSource) error {
 	return nil
 }
 
-// SaveUpgradePlan saved user's current total balance
+// SaveUpgradeIntent saved user's current total balance
 // the the upgrade plan at this moment.
-func (otx OrderTx) SaveUpgradePlan(up subscription.UpgradeIntent) error {
+func (otx OrderTx) SaveUpgradeIntent(up subscription.UpgradeIntent) error {
 
 	var data = struct {
 		subscription.UpgradeIntent

@@ -432,8 +432,8 @@ func TestOrderTx_SaveUpgradePlan(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			if err := otx.SaveUpgradePlan(tt.args.up); (err != nil) != tt.wantErr {
-				t.Errorf("SaveUpgradePlan() error = %v, wantErr %v", err, tt.wantErr)
+			if err := otx.SaveUpgradeIntent(tt.args.up); (err != nil) != tt.wantErr {
+				t.Errorf("SaveUpgradeIntent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err := otx.Commit(); err != nil {
@@ -478,8 +478,8 @@ func TestOrderTx_SaveProration(t *testing.T) {
 				t.Error(err)
 			}
 
-			if err := otx.SaveProration(tt.args.p); (err != nil) != tt.wantErr {
-				t.Errorf("SaveProration() error = %v, wantErr %v", err, tt.wantErr)
+			if err := otx.SaveProratedOrders(tt.args.p); (err != nil) != tt.wantErr {
+				t.Errorf("SaveProratedOrders() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err := otx.Commit(); err != nil {
@@ -520,7 +520,7 @@ func TestOrderTx_ConfirmUpgrade(t *testing.T) {
 				t.Error(err)
 			}
 
-			if err := otx.SaveProration(store.UpgradePlan.Data); err != nil {
+			if err := otx.SaveProratedOrders(store.UpgradePlan.Data); err != nil {
 				t.Error(err)
 			}
 

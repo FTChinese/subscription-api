@@ -9,6 +9,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"time"
 )
 
 // createOrder creates an order for ali or wx pay.
@@ -83,23 +84,24 @@ func (router PayRouter) createOrder(
 		// DO not save sources directly. The balance is not
 		// calculated at this point.
 		log.Infof("Get balance sources for an upgrading order")
-		sources, err := otx.FindBalanceSources(id)
+		orders, err := otx.FindBalanceSources(id)
 		if err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
 			return subscription.Order{}, err
 		}
-		log.Infof("Find balance source: %+v", sources)
+		log.Infof("Find prorated orders: %+v", orders)
 
 		// Step 3.2: Build upgrade plan
-		up := subscription.NewUpgradeIntent(sources)
-		log.Infof("Upgrading plan: %+v", up)
+		wallet := subscription.NewWallet(orders, time.Now())
+		upgradeIntent := subscription.NewUpgradeIntent(wallet, p)
+		log.Infof("Upgrading intent: %+v", upgradeIntent)
 
-		// Step 3.3: Update order based on upgrade plan.
-		order = order.WithUpgrade(up)
+		// Step 3.3: Update order based on upgrade intent.
+		order = order.WithUpgrade(upgradeIntent)
 
 		// Step 3.4: Save the upgrade plan
-		if err := otx.SaveUpgradePlan(up); err != nil {
+		if err := otx.SaveUpgradeIntent(upgradeIntent); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
 			return subscription.Order{}, err
@@ -107,7 +109,7 @@ func (router PayRouter) createOrder(
 		log.Info("Upgrading plan saved")
 
 		// Step 3.5: Save prorated orders
-		if err := otx.SaveProration(up.Data); err != nil {
+		if err := otx.SaveProratedOrders(upgradeIntent.ProrationSources()); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
 			return subscription.Order{}, err
