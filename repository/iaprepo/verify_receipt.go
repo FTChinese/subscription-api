@@ -62,8 +62,8 @@ func (env IAPEnv) SaveVerificationFailure(f apple.VerificationFailed) error {
 	return nil
 }
 
-func (env IAPEnv) SaveCustomerReceipt(r apple.ReceiptSchema) error {
-	_, err := env.db.NamedExec(insertCustomerReceipt, r)
+func (env IAPEnv) SaveCustomerReceipt(r apple.TransactionSchema) error {
+	_, err := env.db.NamedExec(insertTransaction, r)
 
 	if err != nil {
 		logger.WithField("trace", "IAPEnv.SaveCustomerReceipt").Error(err)
