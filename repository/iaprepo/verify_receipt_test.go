@@ -157,8 +157,8 @@ const mockReceipt = `
       "subscription_group_identifier": "20423285"
 }`
 
-func createMockReceipt() apple.ReceiptInfo {
-	var r apple.ReceiptInfo
+func createMockReceipt() apple.Transaction {
+	var r apple.Transaction
 	if err := json.Unmarshal([]byte(mockReceipt), &r); err != nil {
 		panic(err)
 	}
@@ -223,7 +223,7 @@ func TestIAPEnv_SaveCustomerReceipt(t *testing.T) {
 	}
 
 	type args struct {
-		r apple.ReceiptSchema
+		r apple.TransactionSchema
 	}
 	tests := []struct {
 		name    string
