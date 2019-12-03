@@ -27,7 +27,7 @@ const mockReceipt = `
 }`
 
 func TestUnmarshalReceiptInfo(t *testing.T) {
-	var r ReceiptInfo
+	var r Transaction
 
 	if err := json.Unmarshal([]byte(mockReceipt), &r); err != nil {
 		t.Error(err)

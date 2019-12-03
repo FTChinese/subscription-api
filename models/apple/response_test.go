@@ -1087,7 +1087,7 @@ func TestVerificationResponseBody_Unmarshal(t *testing.T) {
 }
 
 func TestVerificationResponseBody_SortLatestReceipts(t *testing.T) {
-	receipts := []ReceiptInfo{
+	receipts := []Transaction{
 		{
 			ExpiresDateMs: "1574407915000",
 		},
