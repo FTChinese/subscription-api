@@ -1,13 +1,11 @@
 package controller
 
 import (
-	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"gitlab.com/ftchinese/subscription-api/models/apple"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
@@ -80,7 +78,7 @@ func (router IAPRouter) doVerification(req *http.Request) verificationResult {
 
 		go func() {
 			_ = router.iapEnv.SaveVerificationFailure(
-				resp.Failure(receiptReq.ReceiptData),
+				resp.FailureSchema(receiptReq.ReceiptData),
 			)
 		}()
 
@@ -100,41 +98,49 @@ func (router IAPRouter) doVerification(req *http.Request) verificationResult {
 	}
 }
 
-func (router IAPRouter) handleVerificationResponse(resp apple.VerificationResponseBody, id reader.MemberID) apple.Subscription {
+func (router IAPRouter) handleTransactions(ur apple.UnifiedReceipt, id reader.MemberID) apple.Subscription {
 
 	// Save verification session
-	r := resp.FindLatestReceipt()
+	transaction := ur.FindLatestTransaction()
 
-	go func() {
-		_ = router.iapEnv.SaveVerificationSession(resp.SessionSchema(r))
-	}()
+	// TODO: how to save verification session?
+	//go func() {
+	//	_ = router.iapEnv.SaveVerificationSession(
+	//		resp.SessionSchema(transaction),
+	//	)
+	//}()
 
 	// save latest receipt array
 	go func() {
-		for _, v := range resp.LatestReceiptInfo {
-			_ = router.iapEnv.SaveCustomerReceipt(v.Schema(resp.Environment))
+		for _, v := range ur.LatestTransactions {
+			_ = router.iapEnv.SaveCustomerReceipt(
+				v.Schema(ur.Environment),
+			)
 		}
 	}()
 
 	// Save pending renewal array
 	go func() {
-		for _, v := range resp.PendingRenewalInfo {
-			_ = router.iapEnv.SavePendingRenewal(v.Schema(resp.Environment))
+		for _, v := range ur.PendingRenewalInfo {
+			_ = router.iapEnv.SavePendingRenewal(
+				v.Schema(ur.Environment),
+			)
 		}
 	}()
 
 	// Save the receipt as a token for status polling.
-	receiptToken := resp.ReceiptToken(r.OriginalTransactionID)
+	receiptToken := ur.ReceiptToken(transaction.OriginalTransactionID)
 	go func() {
 		_ = router.iapEnv.SaveReceiptToken(receiptToken)
 	}()
 
 	// Create a subscription.
 	// Here we do not have reader's ids
-	sub := resp.Subscription(id, r)
-	go func() {
-		_ = router.iapEnv.CreateSubscription(sub)
-	}()
+	sub := ur.Subscription(id, transaction)
+	// TODO: CreateSubscription in main thread.
+	//go func() {
+	//	_ = router.iapEnv.CreateSubscription(sub)
+	//}()
 
 	return sub
 }
@@ -160,127 +166,14 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	_ = router.handleVerificationResponse(result.resp, reader.MemberID{})
+	_ = router.handleTransactions(
+		result.resp.UnifiedReceipt,
+		reader.MemberID{},
+	)
 
 	_ = view.Render(w, view.NewResponse().SetBody(map[string]bool{
 		"isValid": true,
 	}))
-}
-
-// Link associates apple subscription to FTC reader id or wechat union id.
-// User id could be either FTC id or wechat union id.
-// FTC id should take precedence over wechat union id to avoid a situation that we linked membership only while account is
-// not linked.
-func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
-	log := logger.WithField("trace", "IAPRouter.Link")
-
-	// Get ftc id or union id
-	memberID, err := reader.NewMemberID(
-		req.Header.Get(ftcIDKey),
-		req.Header.Get(unionIDKey))
-
-	if err != nil {
-		_ = view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
-
-	tx, err := router.subEnv.BeginOrderTx()
-	if err != nil {
-		_ = view.Render(w, view.NewInternalError(err.Error()))
-		return
-	}
-
-	// Retrieve current membership. Chances are it is empty.
-	// The membership must be empty or invalid to permit proceeding.
-	// Invalid means:
-	// Expired for alipay and wechat pay
-	// Expired for stripe pay and not auto-renewal
-	// Expires for apple pay and not auto-renewal
-	currMembership, err := tx.RetrieveMember(memberID)
-	if err != nil {
-		log.Error(err)
-		_ = tx.Rollback()
-		_ = view.Render(w, view.NewDBFailure(err))
-		return
-	}
-
-	// If target membership is valid, stop processing.
-	if currMembership.IsValid() {
-		r := view.NewReason()
-		r.Field = "membership"
-		r.Code = view.CodeAlreadyExists
-		r.SetMessage("Account already has a valid membership through non-apple subscription")
-		_ = tx.Rollback()
-		_ = view.Render(w, view.NewUnprocessable(r))
-	}
-
-	// Verify receipt to get the original transaction id
-	result := router.doVerification(req)
-
-	switch {
-	case result.err != nil:
-		_ = tx.Rollback()
-		_ = view.Render(w, view.NewBadRequest(result.err.Error()))
-		return
-
-	case result.invalidRequest != nil:
-		_ = tx.Rollback()
-		_ = view.Render(w, view.NewUnprocessable(result.invalidRequest))
-		return
-
-	case result.invalidResponse:
-		_ = tx.Rollback()
-
-		r := view.NewReason()
-		r.Field = "receipt-data"
-		r.Code = view.CodeInvalid
-		r.SetMessage("receipt data is not valid")
-
-		_ = view.Render(w, view.NewUnprocessable(r))
-		return
-	}
-
-	// Here we use the member id retrieved from db to avoid
-	// accidentally perform wechat-ftc linking.
-	sub := router.handleVerificationResponse(result.resp, currMembership.MemberID)
-
-	iapMembership := sub.Membership()
-
-	// Upsert paywall.Membership.
-	if currMembership.IsZero() {
-		if err := tx.CreateMember(iapMembership); err != nil {
-			_ = tx.Rollback()
-			_ = view.Render(w, view.NewDBFailure(err))
-			return
-		}
-	} else {
-		// Take a snapshot of current membership.
-		if currMembership.ID.IsZero() {
-			currMembership.ID = iapMembership.ID
-		}
-
-		snapshot := subscription.NewMemberSnapshot(
-			currMembership,
-			enum.SnapshotReasonDelete)
-
-		go func() {
-			_ = router.subEnv.BackUpMember(snapshot)
-		}()
-
-		// Update membership.
-		if err := tx.UpdateMember(iapMembership); err != nil {
-			_ = tx.Rollback()
-			_ = view.Render(w, view.NewDBFailure(err))
-			return
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		_ = view.Render(w, view.NewInternalError(err.Error()))
-		return
-	}
-
-	_ = view.Render(w, view.NewNoContent())
 }
 
 // WebHook receives app store server-to-server notification.
@@ -291,5 +184,19 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err := router.iapEnv.SaveNotification(wh.Schema())
+	_ = router.iapEnv.SaveNotification(wh.Schema())
+
+	// Upsert each transaction
+	// Upsert each pending renewal
+	// Upsert verification token.
+	// Upsert apple subscription.
+	//sub := router.handleTransactions(wh.UnifiedReceipt, reader.MemberID{})
+
+	// Retrieve apple subscription by original transaction id.
+	// together with membership.
+	// If apple subscription is not linked, stop.
+	// If apple subscription is linked, update the membership,
+	// continue to find the membership by linked id,
+	// and take a snapshot of membership, and then
+	// update it.
 }
