@@ -7,11 +7,13 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
+	"time"
 )
 
 type UpgradeRouter struct {
@@ -63,7 +65,7 @@ func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (subscription.Upg
 		return subscription.UpgradeIntent{}, util.ErrAlreadyUpgraded
 	}
 
-	sources, err := otx.FindBalanceSources(id)
+	orders, err := otx.FindBalanceSources(id)
 	if err != nil {
 		_ = otx.Rollback()
 		return subscription.UpgradeIntent{}, err
@@ -74,11 +76,16 @@ func (router UpgradeRouter) getUpgradePlan(id reader.MemberID) (subscription.Upg
 		return subscription.UpgradeIntent{}, err
 	}
 
-	up := subscription.NewUpgradeIntent(sources)
+	wallet := subscription.NewWallet(orders, time.Now())
+
+	premiumPlan, _ := plan.FindFtcPlan("premium_year")
+
+	up := subscription.NewUpgradeIntent(wallet, premiumPlan)
 
 	return up, nil
 }
 
+// TODO: change to UpgradeIntent
 func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
 
@@ -160,24 +167,26 @@ func (router UpgradeRouter) freeUpgrade(id reader.MemberID, app util.ClientApp) 
 		return subscription.Order{}, util.ErrAlreadyUpgraded
 	}
 
-	sources, err := tx.FindBalanceSources(id)
+	orders, err := tx.FindBalanceSources(id)
 	if err != nil {
 		_ = tx.Rollback()
 		return subscription.Order{}, err
 	}
 
-	up := subscription.NewUpgradeIntent(sources)
+	wallet := subscription.NewWallet(orders, time.Now())
+	premiumPlan, _ := plan.FindFtcPlan("premium_year")
+	up := subscription.NewUpgradeIntent(wallet, premiumPlan)
 	if up.Plan.NetPrice > 0 {
 		return subscription.Order{}, errors.New("you cannot upgrade for free since payment is required")
 	}
 
-	if err := tx.SaveUpgradePlan(up); err != nil {
+	if err := tx.SaveUpgradeIntent(up); err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
 		return subscription.Order{}, err
 	}
 
-	if err := tx.SaveProration(up.Data); err != nil {
+	if err := tx.SaveProratedOrders(up.Data); err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
 

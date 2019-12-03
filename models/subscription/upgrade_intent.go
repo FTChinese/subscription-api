@@ -20,32 +20,22 @@ func GenerateUpgradeID() string {
 // to `proration` table.
 type UpgradeIntent struct {
 	ID        string            `json:"id" db:"upgrade_id"`
-	Balance   float64           `json:"balance" db:"balance"` // Deprecate. Accumulated on all BalanceSource.Balance
+	Balance   float64           `json:"balance" db:"balance"` // Deprecate: use Wallet.Balance instead.
 	CreatedAt chrono.Time       `json:"createdAt" db:"created_at"`
 	Data      []ProrationSource `json:"data"` // Deprecate
 	Wallet    Wallet            `json:"wallet"`
 	Plan      plan.Plan         `json:"plan"`
 }
 
-func NewUpgradeIntent(sources []ProrationSource) UpgradeIntent {
-	up := UpgradeIntent{
-		ID: GenerateUpgradeID(),
-		//SourceIDs: []string{},
+func NewUpgradeIntent(wallet Wallet, p plan.Plan) UpgradeIntent {
+	return UpgradeIntent{
+		ID:        GenerateUpgradeID(),
+		Balance:   wallet.Balance,
 		CreatedAt: chrono.TimeNow(),
 		Data:      []ProrationSource{}, // This initializes to an empty array, rather than nil so that when marshaling into JSON, it is [], not null.
+		Wallet:    wallet,
+		Plan:      p.WithUpgrade(wallet.Balance),
 	}
-
-	for _, v := range sources {
-		v.Balance = v.Prorate()
-		up.Balance = up.Balance + v.Balance
-		//up.SourceIDs = append(up.SourceIDs, v.OrderID)
-		v.UpgradeID = up.ID
-		up.Data = append(up.Data, v)
-	}
-
-	// This is hardcoded. Should refactor in the future.
-	up.Plan = plan.premiumYearlyPlan.WithUpgrade(up.Balance)
-	return up
 }
 
 func (up UpgradeIntent) ProrationSources() []ProrationSource {
@@ -53,14 +43,10 @@ func (up UpgradeIntent) ProrationSources() []ProrationSource {
 
 	for _, v := range up.Wallet.Source {
 		s := ProrationSource{
-			OrderID:     v.OrderID,
-			PaidAmount:  v.Amount,
-			StartDate:   v.StartDate,
-			EndDate:     v.EndDate,
-			Balance:     v.Balance,
-			CreatedUTC:  chrono.TimeNow(),
-			ConsumedUTC: chrono.Time{},
-			UpgradeID:   up.ID,
+			ProratedOrder: v,
+			CreatedUTC:    chrono.TimeNow(),
+			ConsumedUTC:   chrono.Time{},
+			UpgradeID:     up.ID,
 		}
 
 		sources = append(sources, s)
@@ -71,6 +57,7 @@ func (up UpgradeIntent) ProrationSources() []ProrationSource {
 
 // ReadableBalance produces a string describing the total balance
 // in the format: CNY99.00 in email sent to user.
+// Deprecate
 func (up UpgradeIntent) ReadableBalance() string {
 	return fmt.Sprintf("%s%.2f", "CNY", up.Balance)
 }

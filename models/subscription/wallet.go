@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"math"
 	"time"
@@ -72,4 +73,23 @@ func (p ProratedOrder) Prorate(asOf time.Time) float64 {
 	}
 
 	return math.Ceil(remains)
+}
+
+func (p ProratedOrder) ReadableBalance() string {
+	return fmt.Sprintf("%s%.2f", "CNY", p.Balance)
+}
+
+// ProrationSource gets the unused portion of an order.
+// This is the balance of each valid order the moment user
+// is requesting upgrade.
+// Once the webhook received notification, each record
+// will have ConsumedUTC set, indicating this order won't be
+// included the nex time user requesting upgrade, which might
+// happen if user stopped premium subscription, re-subscribed
+// to standard product, and then upgrade again.
+type ProrationSource struct {
+	ProratedOrder
+	CreatedUTC  chrono.Time `db:"created_at"`  // The moment this record is created. Retrieval only
+	ConsumedUTC chrono.Time `db:"consumed_at"` // The moment the upgrading order is confirmed. Retrieval only.
+	UpgradeID   string      `db:"upgrade_id"`
 }

@@ -114,7 +114,7 @@ func NewFreeUpgradeOrder(id reader.MemberID, up UpgradeIntent) (Order, error) {
 
 func (s Order) WithUpgrade(up UpgradeIntent) Order {
 
-	s.Amount = up.Plan.NetPrice
+	s.Amount = up.Plan.Amount
 	s.CycleCount = up.Plan.CycleCount
 	s.ExtraDays = up.Plan.ExtraDays
 	s.UpgradeID = null.StringFrom(up.ID)
