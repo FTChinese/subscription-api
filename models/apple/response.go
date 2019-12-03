@@ -33,7 +33,7 @@ func (v *VerificationResponseBody) Validate() bool {
 		return false
 	}
 
-	if v.LatestReceiptInfo == nil || len(v.LatestReceiptInfo) == 0 {
+	if v.LatestTransactions == nil || len(v.LatestTransactions) == 0 {
 		logger.Infof("latest_receipt_info field is either nil or empty")
 		return false
 	}
@@ -42,7 +42,7 @@ func (v *VerificationResponseBody) Validate() bool {
 }
 
 // Failure builds the schema to record why the verification failed.
-func (v *VerificationResponseBody) Failure(receiptData string) VerificationFailed {
+func (v *VerificationResponseBody) FailureSchema(receiptData string) VerificationFailed {
 	m := getStatusMessage(v.Status)
 
 	return VerificationFailed{
@@ -53,34 +53,37 @@ func (v *VerificationResponseBody) Failure(receiptData string) VerificationFaile
 	}
 }
 
-// SessionSchema builds the schema to record the details of this
-// request.
-func (v *VerificationResponseBody) SessionSchema(r ReceiptInfo) VerificationSessionSchema {
+// SessionSchema builds the schema by merging the root elements
+// of verification, the Receipt top fields and the latest transaction ids.
+func (v *VerificationResponseBody) SessionSchema(r Transaction) VerificationSessionSchema {
 
 	receiptType, _ := ParseReceiptType(v.Receipt.ReceiptType)
 
 	return VerificationSessionSchema{
-		Status:                    v.Status,
-		Environment:               v.Environment,
-		OriginalTransactionID:     r.OriginalTransactionID,
-		TransactionID:             r.TransactionID,
-		ReceiptType:               receiptType,
-		AppItemID:                 v.Receipt.AppItemID,
-		BundleID:                  v.Receipt.BundleID,
-		ApplicationVersion:        v.Receipt.ApplicationVersion,
-		DownloadID:                v.Receipt.DownloadID,
-		VersionExternalIdentifier: v.Receipt.VersionExternalIdentifier,
-		ReceiptCreationDateMs:     MustParseInt64(v.Receipt.ReceiptCreationDateMs),
-		RequestDateMs:             MustParseInt64(v.Receipt.RequestDateMs),
-		OriginalPurchaseDateMs:    MustParseInt64(v.Receipt.OriginalPurchaseDateMs),
+		BaseSchema: BaseSchema{
+			Environment:           v.Environment,
+			OriginalTransactionID: r.OriginalTransactionID,
+		},
+		TransactionID: r.TransactionID,
+
+		AppItemID:          v.Receipt.AppItemID,
+		ApplicationVersion: v.Receipt.ApplicationVersion,
+		BundleID:           v.Receipt.BundleID,
+		DownloadID:         v.Receipt.DownloadID,
 		ExpirationDateMs: null.NewInt(
 			MustParseInt64(v.Receipt.ExpirationDateMs.String),
 			v.Receipt.ExpirationDateMs.Valid,
 		),
+		OriginalPurchaseDateMs:     MustParseInt64(v.Receipt.OriginalPurchaseDateMs),
 		OriginalApplicationVersion: v.Receipt.OriginalApplicationVersion,
 		PreorderDateMs: null.NewInt(
 			MustParseInt64(v.Receipt.PreorderDateMs.String),
 			v.Receipt.PreorderDateMs.Valid,
 		),
+		ReceiptCreationDateMs:     MustParseInt64(v.Receipt.ReceiptCreationDateMs),
+		ReceiptType:               receiptType,
+		RequestDateMs:             MustParseInt64(v.Receipt.RequestDateMs),
+		Status:                    v.Status,
+		VersionExternalIdentifier: v.Receipt.VersionExternalIdentifier,
 	}
 }

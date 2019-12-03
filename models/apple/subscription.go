@@ -16,12 +16,10 @@ type Subscription struct {
 	ProductID             string      `db:"product_id"`
 	PurchaseDateUTC       chrono.Time `db:"purchase_date_utc"`
 	ExpiresDateUTC        chrono.Time `db:"expires_date_utc"`
-	//FtcID                 null.String `db:"ftc_id"`
-	//UnionID               null.String `db:"union_id"`
 	reader.MemberID
 	Tier        enum.Tier  `db:"tier"`
 	Cycle       enum.Cycle `db:"cycle"`
-	AutoRenewal null.Bool  `db:"auto_renewal"`
+	AutoRenewal bool       `db:"auto_renewal"`
 }
 
 // Membership build ftc's membership based on subscription
