@@ -38,7 +38,8 @@ type Membership struct {
 	// might be extended to apple users.
 	// Only `active` should be treated as valid member.
 	// Wechat and alipay defaults to `active` for backward compatibility.
-	Status SubStatus `json:"status" db:"sub_status"`
+	Status     SubStatus   `json:"status" db:"sub_status"`
+	AppleSubID null.String `json:"-" db:"apple_sub_id"`
 }
 
 // NewMember creates a membership directly for a user.
