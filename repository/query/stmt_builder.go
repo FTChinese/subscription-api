@@ -21,7 +21,16 @@ func BuildSelectMembership(sandbox bool, lock bool) string {
 	return fmt.Sprintf(
 		selectMembership,
 		getMembershipDB(sandbox),
+		"vip_id",
 		suffix)
+}
+
+func BuildSelectAppleMembership(sandbox bool) string {
+	return fmt.Sprintf(
+		selectMembership,
+		getMembershipDB(sandbox),
+		"apple_subscription_id",
+		"FOR UPDATE")
 }
 
 func BuildInsertMembership(sandbox bool) string {
@@ -34,6 +43,12 @@ func BuildInsertMembership(sandbox bool) string {
 func BuildUpdateMembership(sandbox bool) string {
 	return fmt.Sprintf(
 		updateMembership,
+		getMembershipDB(sandbox))
+}
+
+func BuildDeleteMembership(sandbox bool) string {
+	return fmt.Sprintf(
+		deleteFtcMembership,
 		getMembershipDB(sandbox))
 }
 
