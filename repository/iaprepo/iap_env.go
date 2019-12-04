@@ -6,6 +6,7 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"gitlab.com/ftchinese/subscription-api/models/apple"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 )
 
@@ -34,4 +35,17 @@ func NewIAPEnv(db *sqlx.DB, c util.BuildConfig) IAPEnv {
 		c:  c,
 		db: db,
 	}
+}
+
+func (env IAPEnv) BeginTx(e apple.Environment) (MembershipTx, error) {
+	tx, err := env.db.Beginx()
+
+	if err != nil {
+		return MembershipTx{}, err
+	}
+
+	return MembershipTx{
+		tx:      tx,
+		sandbox: e == apple.EnvSandbox,
+	}, nil
 }
