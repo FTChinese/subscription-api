@@ -103,7 +103,7 @@ func (otx OrderTx) CreateMember(m subscription.Membership) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "MemberTx.CreateMember").Error(err)
+		logger.WithField("trace", "OrderTx.CreateMember").Error(err)
 		return err
 	}
 
