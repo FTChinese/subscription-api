@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"gitlab.com/ftchinese/subscription-api/models/apple"
@@ -207,6 +208,17 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	newMember := sub.NewMembership(currMember.MemberID)
 	newMember.ID = currMember.ID
+
+	// Take a snapshot.
+	go func() {
+		_ = router.iapEnv.BackUpMember(
+			subscription.NewMemberSnapshot(
+				currMember,
+				enum.SnapshotReasonAppleIAP,
+			),
+			sub.Environment,
+		)
+	}()
 
 	if err := tx.UpdateMember(newMember); err != nil {
 		_ = tx.Rollback()
