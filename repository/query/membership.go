@@ -13,9 +13,10 @@ SELECT id AS sub_id,
 	payment_method AS sub_pay_method,
 	stripe_subscription_id AS stripe_sub_id,
 	auto_renewal AS sub_auto_renew,
-	sub_status
+	sub_status,
+	apple_subscription_id AS apple_sub_id
 FROM %s.ftc_vip
-WHERE vip_id = ?
+WHERE %s = ?
 LIMIT 1
 %s`
 
@@ -29,7 +30,8 @@ payment_method = :sub_pay_method,
 stripe_subscription_id = :stripe_sub_id,
 stripe_plan_id = :stripe_plan_id,
 auto_renewal = :sub_auto_renew,
-sub_status = :sub_status`
+sub_status = :sub_status,
+apple_subscription_id = :apple_sub_id`
 
 const insertMembership = `
 INSERT INTO %s.ftc_vip
@@ -51,6 +53,11 @@ const updateMembershipID = `
 UPDATE %s.ftc_vip
 SET id = IFNULL(id, :sub_id)
 WHERE vip_id = :sub_compound_id
+LIMIT 1`
+
+const deleteFtcMembership = `
+DELETE FROM %s.ftc_vip
+WHERE  vip_id = :sub_compound_id
 LIMIT 1`
 
 const insertMemberSnapshot = `
