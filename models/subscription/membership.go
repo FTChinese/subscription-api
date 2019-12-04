@@ -96,17 +96,22 @@ func (m *Membership) Normalize() {
 	}
 }
 
-// IsZero test whether the instance is empty.
-func (m Membership) IsZero() bool {
-	return m.CompoundID == "" && m.Tier == enum.TierNull
-}
-
 func (m Membership) IsAliOrWxPay() bool {
 	if m.Tier != enum.TierNull && m.PaymentMethod == enum.PayMethodNull {
 		return true
 	}
 
 	return m.PaymentMethod == enum.PayMethodAli || m.PaymentMethod == enum.PayMethodWx
+}
+
+// IsIAP tests whether this membership comes from Apple.
+func (m Membership) IsIAP() bool {
+	return m.AppleSubID.Valid
+}
+
+// IsZero test whether the instance is empty.
+func (m Membership) IsZero() bool {
+	return m.CompoundID == "" && m.Tier == enum.TierNull
 }
 
 // IsExpired tests if the membership's expiration date is before now.
@@ -121,6 +126,14 @@ func (m Membership) IsExpired() bool {
 	// If ExpireDate is passed, but auto renew is true, we still
 	// treat this one as not expired.
 	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
+}
+
+func (m Membership) IsEqual(other Membership) bool {
+	if m.IsZero() && other.IsZero() {
+		return true
+	}
+
+	return m.CompoundID == other.CompoundID && m.AppleSubID.String == other.AppleSubID.String
 }
 
 func (m Membership) IsValid() bool {
@@ -138,6 +151,35 @@ func (m Membership) IsValid() bool {
 	}
 
 	return true
+}
+
+// PermitLinkApple checks if the membership is allowed to
+// link to apple iap subscription.
+// `iap` is the current membership retrieve from database by
+// apple's original transaction id.
+func (m Membership) PermitLinkApple(iap Membership) error {
+
+	// If those two memberships are equal, it indicates you
+	// retrieved the same row from database.
+	// Since the memberships already linked, you can simply
+	// update it based on apple's latest transaction.
+	if m.IsEqual(iap) {
+		return nil
+	}
+
+	// The two memberships are distinct.
+	// At least one of them is not zero value.
+	// If the membership retrieved from the ftc side has
+	// apple subscription is still valid, forbid linking.
+	// We do not need to take into account whether the ftc
+	// membership is linked to apple subscription or not;
+	// if it is, the apple id must be different from the
+	// ones of iap.
+	if m.IsValid() {
+		return ErrValidFTCMember
+	}
+
+	return nil
 }
 
 func (m Membership) IsValidPremium() bool {
