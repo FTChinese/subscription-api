@@ -90,7 +90,8 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) error {
 	}
 
 	newMember := s.NewMembership(id)
-	// TODO: we need to reuse the Membership.ID value
+	// TODO: choose an id
+	newMember.ID = iapMember.ID
 
 	if err := tx.CreateMember(newMember); err != nil {
 		_ = tx.Rollback()
