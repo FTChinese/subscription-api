@@ -2,7 +2,6 @@ package apple
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"sort"
 	"time"
 )
@@ -120,28 +119,27 @@ func (u *UnifiedReceipt) findPendingRenewal(r Transaction) PendingRenewal {
 // Subscription builds a subscription for a user based on
 // the receipt information available.
 // TODO: What if the Transaction is a cancelled one?
-func (u *UnifiedReceipt) Subscription(ids reader.MemberID, r Transaction) Subscription {
-	pendingRenewal := u.findPendingRenewal(r)
+func (u *UnifiedReceipt) Subscription(t Transaction) Subscription {
+	pendingRenewal := u.findPendingRenewal(t)
 
 	autoRenew := pendingRenewal.IsAutoRenew()
-	if r.IsCancelled() {
+	if t.IsCancelled() {
 		autoRenew = false
 	}
 
-	p := r.FindPlan()
+	p := t.FindPlan()
 
 	return Subscription{
 		Environment:           u.Environment,
-		OriginalTransactionID: r.OriginalTransactionID,
-		LastTransactionID:     r.TransactionID,
-		ProductID:             r.ProductID,
+		OriginalTransactionID: t.OriginalTransactionID,
+		LastTransactionID:     t.TransactionID,
+		ProductID:             t.ProductID,
 		PurchaseDateUTC: chrono.TimeFrom(
-			time.Unix(r.PurchaseDateUnix(), 0),
+			time.Unix(t.PurchaseDateUnix(), 0),
 		),
 		ExpiresDateUTC: chrono.TimeFrom(
-			time.Unix(r.ExpiresUnix(), 0),
+			time.Unix(t.ExpiresUnix(), 0),
 		),
-		MemberID:    ids,
 		Tier:        p.Tier,
 		Cycle:       p.Cycle,
 		AutoRenewal: autoRenew,
