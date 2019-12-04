@@ -27,8 +27,10 @@ func (v VerificationRequestBody) Validate() *view.Reason {
 
 func (v VerificationRequestBody) ReceiptToken(e Environment, originalTransactionID string) ReceiptToken {
 	return ReceiptToken{
-		Environment:           e,
-		OriginalTransactionID: originalTransactionID,
-		LatestReceipt:         v.ReceiptData,
+		BaseSchema: BaseSchema{
+			Environment:           e,
+			OriginalTransactionID: originalTransactionID,
+		},
+		LatestReceipt: v.ReceiptData,
 	}
 }
