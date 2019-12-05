@@ -22,7 +22,8 @@ type Subscription struct {
 }
 
 // Membership build ftc's membership based on subscription
-// from apple.
+// from apple if this subscription is not linked
+// to an ftc account.
 func (s Subscription) NewMembership(id reader.MemberID) subscription.Membership {
 	m := subscription.Membership{
 		ID:           null.StringFrom(subscription.GenerateMembershipIndex()),
@@ -41,6 +42,21 @@ func (s Subscription) NewMembership(id reader.MemberID) subscription.Membership 
 	}
 
 	m.Normalize()
+
+	return m
+}
+
+// BuildOn updates an existing IAP membership based on this
+// transaction.
+func (s Subscription) BuildOn(m subscription.Membership) subscription.Membership {
+	m.Tier = s.Tier
+	m.Cycle = s.Cycle
+	m.ExpireDate = chrono.DateFrom(s.ExpiresDateUTC.Time)
+	m.PaymentMethod = enum.PayMethodApple
+	m.StripeSubID = null.String{}
+	m.StripePlanID = null.String{}
+	m.AutoRenewal = s.AutoRenewal
+	m.Status = subscription.SubStatusNull
 
 	return m
 }
