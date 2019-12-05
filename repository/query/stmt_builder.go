@@ -52,6 +52,12 @@ func BuildDeleteMembership(sandbox bool) string {
 		getMembershipDB(sandbox))
 }
 
+func BuildUnlinkIAP(sandbox bool) string {
+	return fmt.Sprintf(
+		unlinkIAP,
+		getMembershipDB(sandbox))
+}
+
 func BuildUpdateMembershipID(sandbox bool) string {
 	return fmt.Sprintf(
 		updateMembershipID,
