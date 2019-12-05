@@ -101,6 +101,19 @@ func (mtx MembershipTx) DeleteMember(id reader.MemberID) error {
 	return nil
 }
 
+func (mtx MembershipTx) UnlinkIAP(id reader.MemberID) error {
+	_, err := mtx.tx.NamedExec(
+		query.BuildUnlinkIAP(mtx.sandbox),
+		id)
+
+	if err != nil {
+		logger.WithField("trace", "MembershipTx.UnlinkIAP").Error(err)
+
+		return err
+	}
+
+	return nil
+}
 func (mtx MembershipTx) Rollback() error {
 	return mtx.tx.Rollback()
 }

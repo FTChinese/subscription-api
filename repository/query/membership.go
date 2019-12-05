@@ -55,9 +55,16 @@ SET id = IFNULL(id, :sub_id)
 WHERE vip_id = :sub_compound_id
 LIMIT 1`
 
+// Delete old membership when linking to IAP.
 const deleteFtcMembership = `
 DELETE FROM %s.ftc_vip
 WHERE  vip_id = :sub_compound_id
+LIMIT 1`
+
+const unlinkIAP = `
+UPDATE %s.ftc_vip
+SET apple_subscription_id = NULL
+WHERE vip_id = :sub_compound_id
 LIMIT 1`
 
 const insertMemberSnapshot = `
