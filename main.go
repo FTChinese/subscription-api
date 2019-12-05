@@ -161,7 +161,7 @@ func main() {
 	paywallRouter := controller.NewPaywallRouter(subEnv)
 	upgradeRouter := controller.NewUpgradeRouter(subEnv)
 	stripeRouter := controller.NewStripeRouter(subEnv, post, getStripeSigningKey())
-	iapRouter := controller.NewIAPRouter(iapEnv, subEnv, post)
+	iapRouter := controller.NewIAPRouter(iapEnv, post)
 
 	wxAuth := controller.NewWxAuth(wxoauth.New(db))
 
@@ -242,6 +242,7 @@ func main() {
 
 	r.Route("/apple", func(r chi.Router) {
 		r.Post("/verify-receipt", iapRouter.VerifyReceipt)
+		r.Delete("/link", iapRouter.Unlink)
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
