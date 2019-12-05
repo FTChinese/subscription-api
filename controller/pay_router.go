@@ -98,7 +98,7 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 		parcel, err = letter.NewRenewalParcel(account, order)
 
 	case subscription.SubsKindUpgrade:
-		up, err := router.loadUpgradePlan(order.UpgradeID.String)
+		up, err := router.loadUpgradePlan(order.UpgradeIntentID.String)
 		if err != nil {
 			return err
 		}

@@ -56,7 +56,7 @@ type Order struct {
 	EndDate          chrono.Date    `json:"-" db:"end_date"`   // Membership end date for this order. Depends on start date.
 	CreatedAt        chrono.Time    `json:"createdAt" db:"created_at"`
 	ConfirmedAt      chrono.Time    `json:"-" db:"confirmed_at"` // When the payment is confirmed.
-	UpgradeID        null.String    `json:"-" db:"upgrade_id"`
+	UpgradeIntentID  null.String    `json:"-" db:"upgrade_id"`
 	MemberSnapshotID null.String    `json:"-" db:"member_snapshot_id"` // Member data the moment this order is created. Null for a new member.
 }
 
@@ -107,7 +107,7 @@ func NewFreeUpgradeOrder(id reader.MemberID, up UpgradeIntent) (Order, error) {
 	order.EndDate = chrono.DateFrom(endTime)
 	order.CreatedAt = chrono.TimeNow()
 	order.ConfirmedAt = chrono.TimeNow()
-	order.UpgradeID = null.StringFrom(up.ID)
+	order.UpgradeIntentID = null.StringFrom(up.ID)
 
 	return order, nil
 }
@@ -117,7 +117,7 @@ func (s Order) WithUpgrade(up UpgradeIntent) Order {
 	s.Amount = up.Plan.Amount
 	s.CycleCount = up.Plan.CycleCount
 	s.ExtraDays = up.Plan.ExtraDays
-	s.UpgradeID = null.StringFrom(up.ID)
+	s.UpgradeIntentID = null.StringFrom(up.ID)
 
 	return s
 }

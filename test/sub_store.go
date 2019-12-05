@@ -261,7 +261,7 @@ func (s *SubStore) GetBalanceSource() []subscription.ProrationSource {
 			//Balance:     0,
 			//CreatedUTC:  chrono.Time{},
 			//ConsumedUTC: chrono.Time{},
-			//UpgradeID:   "",
+			//UpgradeIntentID:   "",
 		})
 	}
 
