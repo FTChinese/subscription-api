@@ -24,23 +24,23 @@ import (
 //	Apple ID A + FTC ID A
 //	Apple ID A + FTC ID B
 // This is a suspicious operation that should always be denied.
-// Return error could be ErrLinkTargetAlreadyTaken,
-// ErrLinkToExistingMember
-func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) error {
+// Return error could be ErrTargetLinkedToOtherIAP,
+// ErrHasValidNonIAPMember
+func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.Membership, error) {
 	tx, err := env.BeginTx(s.Environment)
 	if err != nil {
-		return err
+		return subscription.Membership{}, err
 	}
 
 	iapMember, err := tx.RetrieveAppleMember(s.OriginalTransactionID)
 	if err != nil {
 		_ = tx.Rollback()
-		return err
+		return subscription.Membership{}, err
 	}
 	ftcMember, err := tx.RetrieveMember(id)
 	if err != nil {
 		_ = tx.Rollback()
-		return err
+		return subscription.Membership{}, err
 	}
 
 	merged, err := ftcMember.MergeIAPMembership(iapMember)
@@ -57,17 +57,17 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) error {
 				)
 			}()
 
-			if err := tx.UpdateMember(newIAPMember); err != nil {
+			if e := tx.UpdateMember(newIAPMember); e != nil {
 				_ = tx.Rollback()
+			} else {
+				_ = tx.Commit()
 			}
-			if err := tx.Commit(); err != nil {
-				return err
-			}
-			return nil
+
+			return subscription.Membership{}, err
 		}
 
 		_ = tx.Rollback()
-		return err
+		return subscription.Membership{}, err
 	}
 
 	if merged.IsZero() {
@@ -91,7 +91,7 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) error {
 
 		if err := tx.DeleteMember(iapMember.MemberID); err != nil {
 			_ = tx.Rollback()
-			return err
+			return subscription.Membership{}, err
 		}
 	}
 
@@ -108,18 +108,18 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) error {
 
 		if err := tx.DeleteMember(ftcMember.MemberID); err != nil {
 			_ = tx.Rollback()
-			return err
+			return subscription.Membership{}, err
 		}
 	}
 
 	if err := tx.CreateMember(merged); err != nil {
 		_ = tx.Rollback()
-		return err
+		return subscription.Membership{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return subscription.Membership{}, err
 	}
 
-	return nil
+	return merged, nil
 }
