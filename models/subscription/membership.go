@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/redeem"
+	stripe2 "gitlab.com/ftchinese/subscription-api/models/stripe"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 
@@ -367,11 +368,11 @@ func (m Membership) SubsKind(p plan.Plan) (SubsKind, error) {
 }
 
 // NewStripe creates a new membership for stripe.
-func (m Membership) NewStripe(id reader.MemberID, p StripeSubParams, s *stripe.Subscription) Membership {
+func (m Membership) NewStripe(id reader.MemberID, p stripe2.StripeSubParams, s *stripe.Subscription) Membership {
 
 	m.GenerateID()
 
-	periodEnd := canonicalizeUnix(s.CurrentPeriodEnd)
+	periodEnd := stripe2.canonicalizeUnix(s.CurrentPeriodEnd)
 
 	status, _ := ParseSubStatus(string(s.Status))
 
@@ -397,7 +398,7 @@ func (m Membership) WithStripe(id reader.MemberID, s *stripe.Subscription) (Memb
 
 	m.GenerateID()
 
-	periodEnd := canonicalizeUnix(s.CurrentPeriodEnd)
+	periodEnd := stripe2.canonicalizeUnix(s.CurrentPeriodEnd)
 
 	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
 	m.AutoRenewal = !s.CancelAtPeriodEnd

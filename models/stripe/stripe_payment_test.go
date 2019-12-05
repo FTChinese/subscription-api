@@ -1,4 +1,4 @@
-package subscription
+package stripe
 
 import (
 	"github.com/FTChinese/go-rest/enum"
