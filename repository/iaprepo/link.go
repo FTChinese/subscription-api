@@ -7,6 +7,25 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
+// Link links an apple subscription to an ftc account.
+// We should first retrieves membership by
+// apple original transaction id and by ftc ftc separately
+// to see if the two sides have existing records.
+// We need to pay special attention to those two case:
+//
+// 1. User changes apple ID while trying to link to the same
+// ftc account:
+//
+// 	Apple ID A + FTC ID A
+// 	Apple ID B + FTC ID A
+//
+// 2. One apple id is trying to link to multiple ftc id:
+//
+//	Apple ID A + FTC ID A
+//	Apple ID A + FTC ID B
+// This is a suspicious operation that should always be denied.
+// Return error could be ErrLinkTargetAlreadyTaken,
+// ErrLinkToExistingMember
 func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) error {
 	tx, err := env.BeginTx(s.Environment)
 	if err != nil {
@@ -24,33 +43,37 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) error {
 		return err
 	}
 
-	// If the ftc membership is not allowed to link to
-	// iap.
-	// PermitLinkApple indicates the two are not equal
-	// and ftcMember is valid.
-	// If iapMember is not zero, we should update it based
-	// on apple transaction but do not perform the linking
-	// process.
-	if err := ftcMember.PermitLinkApple(iapMember); err != nil {
-		if iapMember.IsZero() {
-			_ = tx.Commit()
-			return err
+	merged, err := ftcMember.MergeIAPMembership(iapMember)
+	if err != nil {
+		if err == subscription.ErrLinkToMultipleFTC {
+			newIAPMember := s.BuildOn(iapMember)
+			go func() {
+				_ = env.BackUpMember(
+					subscription.NewMemberSnapshot(
+						iapMember,
+						enum.SnapshotReasonAppleIAP,
+					),
+					s.Environment,
+				)
+			}()
+
+			if err := tx.UpdateMember(newIAPMember); err != nil {
+				_ = tx.Rollback()
+			}
+			if err := tx.Commit(); err != nil {
+				return err
+			}
+			return nil
 		}
 
-		go func() {
-			_ = env.BackUpMember(
-				subscription.NewMemberSnapshot(
-					iapMember,
-					enum.SnapshotReasonAppleIAP,
-				),
-				s.Environment,
-			)
-		}()
-
-		_ = tx.UpdateMember(s.NewMembership(iapMember.MemberID))
-
-		_ = tx.Commit()
+		_ = tx.Rollback()
 		return err
+	}
+
+	if merged.IsZero() {
+		merged = s.NewMembership(id)
+	} else {
+		merged = s.BuildOn(merged)
 	}
 
 	// Backup current iap membership and ftc membership
@@ -89,11 +112,7 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) error {
 		}
 	}
 
-	newMember := s.NewMembership(id)
-	// TODO: choose an id
-	newMember.ID = iapMember.ID
-
-	if err := tx.CreateMember(newMember); err != nil {
+	if err := tx.CreateMember(merged); err != nil {
 		_ = tx.Rollback()
 		return err
 	}
