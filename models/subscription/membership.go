@@ -153,33 +153,67 @@ func (m Membership) IsValid() bool {
 	return true
 }
 
-// PermitLinkApple checks if the membership is allowed to
-// link to apple iap subscription.
-// `iap` is the current membership retrieve from database by
-// apple's original transaction id.
-func (m Membership) PermitLinkApple(iap Membership) error {
-
-	// If those two memberships are equal, it indicates you
-	// retrieved the same row from database.
-	// Since the memberships already linked, you can simply
-	// update it based on apple's latest transaction.
-	if m.IsEqual(iap) {
-		return nil
+// MergeIAPMembership merges iap membership into an FTC membership.
+// Only two cases are allowed to merge:
+// * Both sides are refer to the same membership (including zero value);
+// * IAP side is zero and FTC side non-zero but invalid.
+// Let's imagine there are two numbers: a and b
+func (m Membership) MergeIAPMembership(iapMember Membership) (Membership, error) {
+	// a == b, a and b could be both 0 or non-0.
+	// Equal means either both are zero values, or they
+	// refer to the same instance.
+	// In such case it is fine to return any of them.
+	// The caller should then check whether the returned value
+	// is zero.
+	// For zero value, build a new membership based on IAP
+	// transaction; otherwise just update it.
+	if iapMember.IsEqual(m) {
+		return m, nil
 	}
 
-	// The two memberships are distinct.
-	// At least one of them is not zero value.
-	// If the membership retrieved from the ftc side has
-	// apple subscription is still valid, forbid linking.
-	// We do not need to take into account whether the ftc
-	// membership is linked to apple subscription or not;
-	// if it is, the apple id must be different from the
-	// ones of iap.
-	if m.IsValid() {
-		return ErrValidFTCMember
+	// a != b:
+	// a == 0, b != 0;
+	// a != 0, b == 0;
+	// a != 0, b != 0.
+	// The two sides are not equal. They must be totally
+	// different memberships.
+	// If the IAP side is non-zero, this means it is
+	// already linked to an FTC account and now  is trying
+	// to link to another FTC  account which should be forbidden
+	// regardless of the FTC side is zero or not.
+	// This is suspicious fraud.
+	// We still need to update the IAP side membership based on
+	// apple latest transaction.
+	if !iapMember.IsZero() {
+		// Here
+		// b != 0, a == 0 or
+		// b != 0, a != 0.
+		// It includes both non-zero cases.
+		return Membership{}, ErrLinkToMultipleFTC
 	}
 
-	return nil
+	// Here b == 0, a != 0.
+	// Now the IAP side is zero while the FTC side is not-zero.
+	// If the FTC side is no longer valid, it is allowed to have
+	// apple_subscription_id set to apple's original transaction id.
+	// This might erase previous original transaction id
+	// set on the FTC side. It's ok since it is already invalid.
+
+	if !m.IsValid() {
+		return m, nil
+	}
+
+	// FTC side is already linked an apple id.
+	// This might occur when user changed apple id and is trying
+	// to link to the same FTC account which is linked to old
+	// apple id.
+	if m.IsIAP() {
+		return Membership{}, ErrLinkTargetAlreadyTaken
+	}
+
+	// FTC side have a valid membership purchased via
+	// non-apple channel.
+	return Membership{}, ErrLinkToExistingMember
 }
 
 func (m Membership) IsValidPremium() bool {
