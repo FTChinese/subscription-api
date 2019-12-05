@@ -9,26 +9,20 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
-	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
 
 type IAPRouter struct {
-	PayRouter
 	iapEnv iaprepo.IAPEnv
 }
 
-func NewIAPRouter(iapEnv iaprepo.IAPEnv, subEnv subrepo.SubEnv, p postoffice.Postman) IAPRouter {
+func NewIAPRouter(iapEnv iaprepo.IAPEnv, p postoffice.Postman) IAPRouter {
 	return IAPRouter{
-		PayRouter: PayRouter{
-			subEnv:  subEnv,
-			postman: p,
-		},
 		iapEnv: iapEnv,
 	}
 }
 
-func (router IAPRouter) handleTransactions(ur apple.UnifiedReceipt, originalTransactionID string) {
+func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt, originalTransactionID string) {
 
 	// save latest receipt array
 	go func() {
@@ -57,9 +51,7 @@ func (router IAPRouter) handleTransactions(ur apple.UnifiedReceipt, originalTran
 	}()
 }
 
-// VerifyReceipt perform app store receipt verification
-// Input {"receipt-data": string}
-func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) {
+func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request) (apple.Subscription, bool) {
 	log := logger.WithField("trace", "IAPRouter.VerifyReceipt")
 
 	// Parse input data.
@@ -67,20 +59,20 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	if err := gorest.ParseJSON(req.Body, &receiptReq); err != nil {
 		log.Error(err)
 		_ = view.Render(w, view.NewBadRequest(err.Error()))
-		return
+		return apple.Subscription{}, false
 	}
 
 	// Validate input.
 	if r := receiptReq.Validate(); r != nil {
 		_ = view.Render(w, view.NewUnprocessable(r))
-		return
+		return apple.Subscription{}, false
 	}
 
 	// Verify
 	resp, err := router.iapEnv.VerifyReceipt(receiptReq)
 	if err != nil {
 		_ = view.Render(w, view.NewBadRequest(err.Error()))
-		return
+		return apple.Subscription{}, false
 	}
 
 	log.Infof("Environment %s, is retryable %t, status %d", resp.Environment, resp.IsRetryable, resp.Status)
@@ -100,7 +92,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 		r.Code = view.CodeInvalid
 		r.SetMessage("receipt data is not valid")
 		_ = view.Render(w, view.NewUnprocessable(r))
-		return
+		return apple.Subscription{}, false
 	}
 
 	// Save verification session
@@ -111,8 +103,24 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 		)
 	}()
 
+	router.saveReceiptData(
+		resp.UnifiedReceipt,
+		transaction.OriginalTransactionID)
+
 	sub := resp.Subscription(transaction)
 	_ = router.iapEnv.CreateSubscription(sub)
+
+	return sub, true
+}
+
+// VerifyReceipt perform app store receipt verification
+// Input {"receipt-data": string}
+func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) {
+
+	sub, ok := router.doVerification(w, req)
+	if !ok {
+		return
+	}
 
 	// Check user's ids.
 	memberID, err := reader.NewMemberID(
@@ -123,9 +131,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	// If reader ids not found, it indicates this is not
 	// used to link membership.
 	if err != nil {
-		_ = view.Render(w, view.NewResponse().SetBody(map[string]bool{
-			"isValid": true,
-		}))
+		_ = view.Render(w, view.NewNoContent())
 		return
 	}
 
@@ -167,6 +173,21 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	_ = view.Render(w, view.NewResponse().SetBody(m))
 }
 
+// Unlink removes apple subscription id from a user's membership
+func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
+	sub, ok := router.doVerification(w, req)
+	if !ok {
+		return
+	}
+
+	if err := router.iapEnv.Unlink(sub); err != nil {
+		_ = view.Render(w, view.NewDBFailure(err))
+		return
+	}
+
+	_ = view.Render(w, view.NewNoContent())
+}
+
 // WebHook receives app store server-to-server notification.
 func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	var wh apple.WebHook
@@ -183,7 +204,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// history.
 	transaction := wh.UnifiedReceipt.FindLatestTransaction()
 
-	router.handleTransactions(
+	router.saveReceiptData(
 		wh.UnifiedReceipt,
 		transaction.OriginalTransactionID,
 	)
