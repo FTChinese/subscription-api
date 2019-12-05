@@ -208,12 +208,12 @@ func (m Membership) MergeIAPMembership(iapMember Membership) (Membership, error)
 	// to link to the same FTC account which is linked to old
 	// apple id.
 	if m.IsIAP() {
-		return Membership{}, ErrLinkTargetAlreadyTaken
+		return Membership{}, ErrTargetLinkedToOtherIAP
 	}
 
 	// FTC side have a valid membership purchased via
 	// non-apple channel.
-	return Membership{}, ErrLinkToExistingMember
+	return Membership{}, ErrHasValidNonIAPMember
 }
 
 func (m Membership) IsValidPremium() bool {
