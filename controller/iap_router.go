@@ -130,26 +130,41 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Start to link apple subscription to ftc membership.
-	err = router.iapEnv.Link(sub, memberID)
+	m, err := router.iapEnv.Link(sub, memberID)
 
-	switch err {
+	if err != nil {
+		switch err {
+		case subscription.ErrLinkToMultipleFTC:
+			r := view.NewReason()
+			r.Field = "link_source"
+			r.Code = "already_linked"
+			r.SetMessage(err.Error())
+			_ = view.Render(w, view.NewUnprocessable(r))
+			return
 
-	case subscription.ErrValidFTCMember:
-		r := view.NewReason()
-		r.Field = "link"
-		r.Code = "target_valid"
-		r.SetMessage("Cannot linking iap subscription to your logged in account since your ftc account already has a valid membership.")
-		_ = view.Render(w, view.NewUnprocessable(r))
-		return
+		case subscription.ErrTargetLinkedToOtherIAP:
+			r := view.NewReason()
+			r.Field = "link_target"
+			r.Code = "already_linked"
+			r.SetMessage(err.Error())
+			_ = view.Render(w, view.NewUnprocessable(r))
+			return
 
-	case nil:
-		_ = view.Render(w, view.NewNoContent())
-		return
+		case subscription.ErrHasValidNonIAPMember:
+			r := view.NewReason()
+			r.Field = "link_target"
+			r.Code = "valid_non_iap"
+			r.SetMessage(err.Error())
+			_ = view.Render(w, view.NewUnprocessable(r))
+			return
 
-	default:
-		_ = view.Render(w, view.NewDBFailure(err))
-		return
+		default:
+			_ = view.Render(w, view.NewDBFailure(err))
+			return
+		}
 	}
+
+	_ = view.Render(w, view.NewResponse().SetBody(m))
 }
 
 // WebHook receives app store server-to-server notification.
