@@ -8,7 +8,7 @@ import (
 	"github.com/stripe/stripe-go/customer"
 	"github.com/stripe/stripe-go/sub"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	stripe2 "gitlab.com/ftchinese/subscription-api/models/stripe"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
@@ -80,7 +80,7 @@ func createCustomer(email string) (string, error) {
 // util.ErrUnknownSubState
 func (env SubEnv) CreateStripeSub(
 	id reader.MemberID,
-	params subscription.StripeSubParams,
+	params stripe2.StripeSubParams,
 ) (*stripe.Subscription, error) {
 
 	log := logger.WithField("trace", "SubEnv.CreateStripeSub")
@@ -212,7 +212,7 @@ func (env SubEnv) GetStripeSub(id reader.MemberID) (*stripe.Subscription, error)
 // UpgradeStripeSubs switches subscription plan.
 func (env SubEnv) UpgradeStripeSubs(
 	id reader.MemberID,
-	params subscription.StripeSubParams,
+	params stripe2.StripeSubParams,
 ) (*stripe.Subscription, error) {
 
 	log := logger.WithField("trace", "SubEnv.CreateStripeCustomer")
@@ -264,7 +264,7 @@ func (env SubEnv) UpgradeStripeSubs(
 	return s, nil
 }
 
-func createStripeSub(p subscription.StripeSubParams) (*stripe.Subscription, error) {
+func createStripeSub(p stripe2.StripeSubParams) (*stripe.Subscription, error) {
 
 	params := &stripe.SubscriptionParams{
 		Customer: stripe.String(p.Customer),
@@ -299,7 +299,7 @@ func createStripeSub(p subscription.StripeSubParams) (*stripe.Subscription, erro
 	return sub.New(params)
 }
 
-func upgradeStripeSub(p subscription.StripeSubParams, subID string) (*stripe.Subscription, error) {
+func upgradeStripeSub(p stripe2.StripeSubParams, subID string) (*stripe.Subscription, error) {
 	params := &stripe.SubscriptionParams{
 		Items: []*stripe.SubscriptionItemsParams{
 			{
