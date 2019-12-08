@@ -33,12 +33,20 @@ type Plan struct {
 	NetPrice  float64 `json:"netPrice"`           // Deprecate
 	Price     float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
 	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
-	Duration
+	Duration // This should be removed.
 	Currency         string `json:"currency" db:"currency"`
 	Title            string `json:"description"`
 	stripeLivePlanID string `json:"-"`
 	stripeTestPlanID string `json:"-"`
 	AppleProductID   string `json:"-"`
+}
+
+// GetTitle compose the message shown for wxpay or alipay.
+// * 订阅FT中文网标准会员/年
+// * 续订FT中文网标准会员/年
+// * 升级订阅FT中文网高端会员/年
+func (p Plan) GetTitle(k SubsKind) string {
+	return fmt.Sprintf("%sFT中文网%s/%s", k.StringCN(), p.Tier.StringCN(), p.Cycle.StringCN())
 }
 
 func (p Plan) GetStripePlanID(live bool) string {
@@ -69,13 +77,13 @@ func (p Plan) WithStripePrice(sp stripe.Plan) Plan {
 // WithUpgrade creates an upgrading plan.
 func (p Plan) WithUpgrade(balance float64) Plan {
 
-	if balance < p.NetPrice {
-		p.NetPrice = p.NetPrice - balance
+	if balance < p.Price {
+		p.Price = p.Price - balance
 	} else {
-		p.NetPrice = 0
+		p.Price = 0
 	}
 
-	p.Amount = p.NetPrice
+	p.Amount = p.Price
 
 	dur := p.CalculateConversion(balance)
 
@@ -90,7 +98,7 @@ func (p Plan) WithUpgrade(balance float64) Plan {
 // days a user's balance could be exchanged.
 func (p Plan) CalculateConversion(balance float64) Duration {
 
-	if balance <= p.NetPrice {
+	if balance <= p.Amount {
 		return Duration{
 			CycleCount: 1,
 			ExtraDays:  1,

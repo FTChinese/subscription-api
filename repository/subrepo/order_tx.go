@@ -3,7 +3,6 @@ package subrepo
 import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/repository/query"
@@ -152,7 +151,7 @@ func (otx OrderTx) FindBalanceSources(accountID reader.MemberID) ([]subscription
 // Most users won't have much  valid orders
 // at a specific moment, so this should not pose a severe
 // performance issue.
-func (otx OrderTx) SaveProratedOrders(p []subscription.ProrationSource) error {
+func (otx OrderTx) SaveProratedOrders(p []subscription.ProratedOrderSchema) error {
 	for _, v := range p {
 		_, err := otx.tx.NamedExec(
 			query.BuildInsertProration(otx.sandbox),
@@ -168,18 +167,12 @@ func (otx OrderTx) SaveProratedOrders(p []subscription.ProrationSource) error {
 
 // SaveUpgradeIntent saved user's current total balance
 // the the upgrade plan at this moment.
-func (otx OrderTx) SaveUpgradeIntent(up subscription.UpgradeIntent) error {
+// TODO: check sql
+func (otx OrderTx) SaveUpgradeIntent(up subscription.UpgradeSchema) error {
 
-	var data = struct {
-		subscription.UpgradeIntent
-		plan.Plan
-	}{
-		UpgradeIntent: up,
-		Plan:          up.Plan,
-	}
 	_, err := otx.tx.NamedExec(
 		query.BuildInsertUpgradePlan(otx.sandbox),
-		data)
+		up)
 
 	if err != nil {
 		return err

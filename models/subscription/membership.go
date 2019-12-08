@@ -16,7 +16,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
 
-// GenerateMembershipIndex generates a random string to membership id.
+// GenerateMembershipIndex generates a random string to membership memberID.
 func GenerateMembershipIndex() string {
 	return "mmb_" + rand.String(12)
 }
@@ -24,7 +24,7 @@ func GenerateMembershipIndex() string {
 // Membership contains a user's membership details
 // This is actually called subscription by Stripe.
 type Membership struct {
-	ID null.String `json:"id" db:"sub_id"` // A random string. Not used yet.
+	ID null.String `json:"memberID" db:"sub_id"` // A random string. Not used yet.
 	reader.MemberID
 	plan.BasePlan
 	LegacyExpire  null.Int       `json:"-" db:"expire_time"`
@@ -54,8 +54,8 @@ func NewMember(accountID reader.MemberID) Membership {
 	}
 }
 
-// GenerateID generates a unique id for this membership if
-// it is not set. This id is mostly used to identify a row
+// GenerateID generates a unique memberID for this membership if
+// it is not set. This memberID is mostly used to identify a row
 // in restful api.
 func (m *Membership) GenerateID() {
 	if m.ID.Valid {
@@ -129,6 +129,26 @@ func (m Membership) IsExpired() bool {
 	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
 }
 
+func (m Membership) PermitAliWxUpgrade() error {
+	if m.IsZero() {
+		return errors.New("no a member yet")
+	}
+
+	if !m.IsAliOrWxPay() {
+		return errors.New("membership not purchased via alipay or wxpay")
+	}
+
+	if m.IsExpired() {
+		return errors.New("expired membership cannot upgrade")
+	}
+
+	if m.Tier != enum.TierStandard {
+		return errors.New("only standard membership is allowed to upgrade")
+	}
+
+	return nil
+}
+
 func (m Membership) IsEqual(other Membership) bool {
 	if m.IsZero() && other.IsZero() {
 		return true
@@ -196,18 +216,18 @@ func (m Membership) MergeIAPMembership(iapMember Membership) (Membership, error)
 	// Here b == 0, a != 0.
 	// Now the IAP side is zero while the FTC side is not-zero.
 	// If the FTC side is no longer valid, it is allowed to have
-	// apple_subscription_id set to apple's original transaction id.
-	// This might erase previous original transaction id
+	// apple_subscription_id set to apple's original transaction memberID.
+	// This might erase previous original transaction memberID
 	// set on the FTC side. It's ok since it is already invalid.
 
 	if !m.IsValid() {
 		return m, nil
 	}
 
-	// FTC side is already linked an apple id.
-	// This might occur when user changed apple id and is trying
+	// FTC side is already linked an apple memberID.
+	// This might occur when user changed apple memberID and is trying
 	// to link to the same FTC account which is linked to old
-	// apple id.
+	// apple memberID.
 	if m.IsIAP() {
 		return Membership{}, ErrTargetLinkedToOtherIAP
 	}
@@ -338,33 +358,33 @@ func (m Membership) PermitRenewal() bool {
 }
 
 // SubsKind determines what kind of order a user is creating.
-func (m Membership) SubsKind(p plan.Plan) (SubsKind, error) {
+func (m Membership) SubsKind(p plan.Plan) (plan.SubsKind, error) {
 	if m.IsZero() {
-		return SubsKindCreate, nil
+		return plan.SubsKindCreate, nil
 	}
 
 	if m.Status != SubStatusNull && m.Status.ShouldCreate() {
-		return SubsKindCreate, nil
+		return plan.SubsKindCreate, nil
 	}
 
 	if m.IsExpired() {
-		return SubsKindCreate, nil
+		return plan.SubsKindCreate, nil
 	}
 
 	// Renewal.
 	if m.Tier == p.Tier {
 		if m.inRenewalPeriod() {
-			return SubsKindRenew, nil
+			return plan.SubsKindRenew, nil
 		} else {
-			return SubsKindDeny, errors.New("current membership expiration date is beyond max renewal period")
+			return plan.SubsKindNull, errors.New("current membership expiration date is beyond max renewal period")
 		}
 	}
 
 	if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
-		return SubsKindUpgrade, nil
+		return plan.SubsKindUpgrade, nil
 	}
 
-	return SubsKindDeny, errors.New("unknown subscription usage")
+	return plan.SubsKindNull, errors.New("unknown subscription usage")
 }
 
 // NewStripe creates a new membership for stripe.

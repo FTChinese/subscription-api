@@ -25,7 +25,7 @@ type SubStore struct {
 	Orders        map[string]subscription.Order // A user could have multiple orders.
 	Member        subscription.Membership       // But only one membership.
 	balanceAnchor time.Time
-	UpgradePlan   subscription.UpgradeIntent  // To have data populated, you must call MustRenewN() and then call MustCreate(PremiumPlan).
+	UpgradePlan   subscription.UpgradeSchema  // To have data populated, you must call MustRenewN() and then call MustCreate(PremiumPlan).
 	Snapshot      subscription.MemberSnapshot // This will be populated and updated for any order other than `create`.
 }
 
@@ -59,7 +59,7 @@ func (s *SubStore) CreateOrder(p plan.Plan) (subscription.Order, error) {
 		return order, err
 	}
 
-	if order.Usage == subscription.SubsKindUpgrade {
+	if order.Usage == plan.SubsKindUpgrade {
 		sources := s.GetBalanceSource()
 
 		up := subscription.NewUpgradeIntent(sources)
@@ -233,8 +233,8 @@ func (s *SubStore) GetOrder(id string) (subscription.Order, error) {
 	return o, nil
 }
 
-func (s *SubStore) GetBalanceSource() []subscription.ProrationSource {
-	sources := []subscription.ProrationSource{}
+func (s *SubStore) GetBalanceSource() []subscription.ProratedOrderSchema {
+	sources := []subscription.ProratedOrderSchema{}
 
 	for _, v := range s.Orders {
 		if !v.IsConfirmed() {
@@ -253,7 +253,7 @@ func (s *SubStore) GetBalanceSource() []subscription.ProrationSource {
 			continue
 		}
 
-		sources = append(sources, subscription.ProrationSource{
+		sources = append(sources, subscription.ProratedOrderSchema{
 			OrderID:    v.ID,
 			PaidAmount: v.Amount,
 			StartDate:  v.StartDate,
@@ -261,7 +261,7 @@ func (s *SubStore) GetBalanceSource() []subscription.ProrationSource {
 			//Balance:     0,
 			//CreatedUTC:  chrono.Time{},
 			//ConsumedUTC: chrono.Time{},
-			//UpgradeIntentID:   "",
+			//UpgradeSchemaID:   "",
 		})
 	}
 

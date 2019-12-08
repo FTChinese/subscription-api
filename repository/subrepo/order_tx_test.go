@@ -411,7 +411,7 @@ func TestOrderTx_SaveUpgradePlan(t *testing.T) {
 	}
 
 	type args struct {
-		up subscription.UpgradeIntent
+		up subscription.UpgradeSchema
 	}
 	tests := []struct {
 		name    string
@@ -456,7 +456,7 @@ func TestOrderTx_SaveProration(t *testing.T) {
 	}
 
 	type args struct {
-		p []subscription.ProrationSource
+		p []subscription.ProratedOrderSchema
 	}
 	tests := []struct {
 		name    string

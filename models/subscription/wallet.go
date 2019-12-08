@@ -3,6 +3,8 @@ package subscription
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"math"
 	"time"
 )
@@ -34,6 +36,27 @@ func NewWallet(orders []ProratedOrder, asOf time.Time) Wallet {
 	}
 
 	return w
+}
+
+func (w Wallet) ConvertBalance(p plan.Plan) plan.Duration {
+	if w.Balance == 0 || w.Balance <= p.Price {
+		return plan.Duration{
+			CycleCount: 1,
+			ExtraDays:  1,
+		}
+	}
+
+	// Balance is greater than product price.
+	// User do not need to pay.
+	// Convert balance directly to subscription period.
+	cycles, remains := util.Division(w.Balance, p.Price)
+
+	days := math.Ceil(remains * 365 / p.Price)
+
+	return plan.Duration{
+		CycleCount: cycles,
+		ExtraDays:  int64(days),
+	}
 }
 
 // ProratedOrder is used to retrieve paid order with balance.
@@ -79,7 +102,7 @@ func (p ProratedOrder) ReadableBalance() string {
 	return fmt.Sprintf("%s%.2f", "CNY", p.Balance)
 }
 
-// ProrationSource gets the unused portion of an order.
+// ProratedOrderSchema gets the unused portion of an order.
 // This is the balance of each valid order the moment user
 // is requesting upgrade.
 // Once the webhook received notification, each record
@@ -87,7 +110,7 @@ func (p ProratedOrder) ReadableBalance() string {
 // included the nex time user requesting upgrade, which might
 // happen if user stopped premium subscription, re-subscribed
 // to standard product, and then upgrade again.
-type ProrationSource struct {
+type ProratedOrderSchema struct {
 	ProratedOrder
 	CreatedUTC  chrono.Time `db:"created_at"`  // The moment this record is created. Retrieval only
 	ConsumedUTC chrono.Time `db:"consumed_at"` // The moment the upgrading order is confirmed. Retrieval only.
