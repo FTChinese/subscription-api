@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/pkg/errors"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 
@@ -16,8 +16,8 @@ import (
 	"github.com/guregu/null"
 )
 
-// GenerateOrderID creates an order id.
-// The id has a total length of 18 chars.
+// GenerateOrderID creates an order memberID.
+// The memberID has a total length of 18 chars.
 // If we use this generator:
 // `FT` takes 2, followed by year-month-date-hour-minute
 // FT201905191139, then only 4 chars left for random number
@@ -45,18 +45,26 @@ func GenerateOrderID() (string, error) {
 // All those combination add up to 3 * 2 * 3 * 3 = 54
 type Order struct {
 	// Fields common to all.
-	ID string `json:"id" db:"order_id"`
+	ID string `json:"memberID" db:"order_id"`
 	reader.MemberID
-	plan.Plan
-	Usage SubsKind `json:"usageType" db:"usage_type"` // The usage of this order: creat new, renew, or upgrade?
+	Tier       enum.Tier  `json:"tier" db:"sub_tier"`
+	Cycle      enum.Cycle `json:"cycle" db:"sub_cycle"`
+	Price     float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
+	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
+	Currency string `json:"currency"`
+	CycleCount int64 `json:"cycle_count" db:"cycle_count"`
+	ExtraDays  int64 `json:"extra_days" db:"extra_days"`
+	//plan.Plan
+	Usage plan.SubsKind `json:"usageType" db:"usage_type"` // The usage of this order: creat new, renew, or upgrade?
 	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
-	PaymentMethod    enum.PayMethod `json:"payMethod" db:"payment_method"`
-	WxAppID          null.String    `json:"-" db:"wx_app_id"`  // Wechat specific
-	StartDate        chrono.Date    `json:"-" db:"start_date"` // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	EndDate          chrono.Date    `json:"-" db:"end_date"`   // Membership end date for this order. Depends on start date.
-	CreatedAt        chrono.Time    `json:"createdAt" db:"created_at"`
-	ConfirmedAt      chrono.Time    `json:"-" db:"confirmed_at"` // When the payment is confirmed.
-	UpgradeIntentID  null.String    `json:"-" db:"upgrade_id"`
+	PaymentMethod   enum.PayMethod `json:"payMethod" db:"payment_method"`
+	WxAppID         null.String    `json:"-" db:"wx_app_id"`  // Wechat specific
+	UpgradeSchemaID null.String    `json:"-" db:"upgrade_id"`
+	CreatedAt       chrono.Time    `json:"createdAt" db:"created_at"`
+	ConfirmedAt     chrono.Time    `json:"-" db:"confirmed_at"` // When the payment is confirmed.
+	StartDate       chrono.Date    `json:"-" db:"start_date"` // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
+	EndDate         chrono.Date    `json:"-" db:"end_date"`   // Membership end date for this order. Depends on start date.
+
 	MemberSnapshotID null.String    `json:"-" db:"member_snapshot_id"` // Member data the moment this order is created. Null for a new member.
 }
 
@@ -67,7 +75,7 @@ func NewOrder(
 	id reader.MemberID,
 	p plan.Plan,
 	method enum.PayMethod,
-	kind SubsKind,
+	kind plan.SubsKind,
 ) (Order, error) {
 	orderID, err := GenerateOrderID()
 
@@ -78,14 +86,13 @@ func NewOrder(
 	return Order{
 		ID:            orderID,
 		MemberID:      id,
-		Plan:          p,
 		Usage:         kind,
 		PaymentMethod: method,
 		CreatedAt:     chrono.TimeNow(),
 	}, nil
 }
 
-func NewFreeUpgradeOrder(id reader.MemberID, up UpgradeIntent) (Order, error) {
+func NewFreeUpgradeOrder(id reader.MemberID, up UpgradeSchema) (Order, error) {
 
 	startTime := time.Now()
 	endTime, err := up.Plan.GetPeriodEnd(startTime)
@@ -97,7 +104,7 @@ func NewFreeUpgradeOrder(id reader.MemberID, up UpgradeIntent) (Order, error) {
 		id,
 		up.Plan,
 		enum.PayMethodNull,
-		SubsKindUpgrade)
+		plan.SubsKindUpgrade)
 
 	if err != nil {
 		return order, err
@@ -107,17 +114,17 @@ func NewFreeUpgradeOrder(id reader.MemberID, up UpgradeIntent) (Order, error) {
 	order.EndDate = chrono.DateFrom(endTime)
 	order.CreatedAt = chrono.TimeNow()
 	order.ConfirmedAt = chrono.TimeNow()
-	order.UpgradeIntentID = null.StringFrom(up.ID)
+	order.UpgradeSchemaID = null.StringFrom(up.ID)
 
 	return order, nil
 }
 
-func (s Order) WithUpgrade(up UpgradeIntent) Order {
+func (s Order) WithUpgrade(up UpgradeSchema) Order {
 
 	s.Amount = up.Plan.Amount
 	s.CycleCount = up.Plan.CycleCount
 	s.ExtraDays = up.Plan.ExtraDays
-	s.UpgradeIntentID = null.StringFrom(up.ID)
+	s.UpgradeSchemaID = null.StringFrom(up.ID)
 
 	return s
 }
@@ -156,7 +163,7 @@ func (s Order) getStartDate(m Membership, confirmedAt time.Time) time.Time {
 		// For renewal, we use current membership's
 		// expiration date;
 		// For upgrade, we use confirmation time.
-		if s.Usage == SubsKindUpgrade {
+		if s.Usage == plan.SubsKindUpgrade {
 			startTime = confirmedAt
 		} else {
 			startTime = m.ExpireDate.Time
@@ -199,3 +206,4 @@ func (s Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
 
 	return s, nil
 }
+

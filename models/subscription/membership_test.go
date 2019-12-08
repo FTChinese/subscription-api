@@ -270,7 +270,7 @@ func TestMembership_SubsKind(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    SubsKind
+		want    plan.SubsKind
 		wantErr bool
 	}{
 		{
@@ -279,7 +279,7 @@ func TestMembership_SubsKind(t *testing.T) {
 			args: args{
 				p: plan.standardYearlyPlan,
 			},
-			want:    SubsKindCreate,
+			want:    plan.SubsKindCreate,
 			wantErr: false,
 		},
 		{
@@ -288,7 +288,7 @@ func TestMembership_SubsKind(t *testing.T) {
 				Status: SubStatusIncompleteExpired,
 			},
 			args:    args{p: plan.standardYearlyPlan},
-			want:    SubsKindCreate,
+			want:    plan.SubsKindCreate,
 			wantErr: false,
 		},
 		{
@@ -297,7 +297,7 @@ func TestMembership_SubsKind(t *testing.T) {
 				ExpireDate: chrono.DateFrom(time.Now().AddDate(1, -1, 0)),
 			},
 			args:    args{p: plan.standardYearlyPlan},
-			want:    SubsKindCreate,
+			want:    plan.SubsKindCreate,
 			wantErr: false,
 		},
 		{
@@ -311,7 +311,7 @@ func TestMembership_SubsKind(t *testing.T) {
 				ExpireDate: chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 			},
 			args:    args{p: plan.standardYearlyPlan},
-			want:    SubsKindRenew,
+			want:    plan.SubsKindRenew,
 			wantErr: false,
 		},
 		{
@@ -325,7 +325,7 @@ func TestMembership_SubsKind(t *testing.T) {
 				ExpireDate: chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 			},
 			args:    args{p: plan.premiumYearlyPlan},
-			want:    SubsKindUpgrade,
+			want:    plan.SubsKindUpgrade,
 			wantErr: false,
 		},
 	}

@@ -54,8 +54,8 @@ func (env SubEnv) RetrieveMember(id reader.MemberID) (subscription.Membership, e
 // FindBalanceSources creates a snapshot for orders with
 // unused portion.
 // This is identical to OrderTx.FindBalanceSources without a transaction.
-func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]subscription.ProrationSource, error) {
-	var sources = []subscription.ProrationSource{}
+func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]subscription.ProratedOrderSchema, error) {
+	var sources = []subscription.ProratedOrderSchema{}
 
 	err := env.db.Select(
 		&sources,
@@ -72,10 +72,10 @@ func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]subscription.Prorati
 }
 
 // RetrieveUpgradePlan retrieves an upgrade plan to be used in email sent to user.
-func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeIntent, error) {
+func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeSchema, error) {
 
 	var data = struct {
-		subscription.UpgradeIntent
+		subscription.UpgradeSchema
 		plan.Plan
 	}{}
 
@@ -86,10 +86,10 @@ func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeInt
 
 	if err != nil {
 		logger.WithField("trace", "SubEnv.RetrieveUpgradePlan").Error(err)
-		return subscription.UpgradeIntent{}, err
+		return subscription.UpgradeSchema{}, err
 	}
 
-	return subscription.UpgradeIntent{
+	return subscription.UpgradeSchema{
 		ID:        data.ID,
 		Balance:   data.Balance,
 		CreatedAt: data.CreatedAt,
@@ -100,8 +100,8 @@ func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeInt
 
 // RetrieveProratedOrders retrieves all orders prorated from
 // proration table. Used to send user an email after upgrade.
-func (env SubEnv) RetrieveProratedOrders(upgradeID string) ([]subscription.ProrationSource, error) {
-	var sources = []subscription.ProrationSource{}
+func (env SubEnv) RetrieveProratedOrders(upgradeID string) ([]subscription.ProratedOrderSchema, error) {
+	var sources = []subscription.ProratedOrderSchema{}
 
 	err := env.db.Select(
 		&sources,

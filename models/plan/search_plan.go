@@ -110,6 +110,12 @@ func FindFtcPlan(id string) (Plan, error) {
 	return ftcPlansLive.FindPlan(id)
 }
 
+func FindPlan(tier enum.Tier, cycle enum.Cycle) (Plan, error) {
+	key := tier.String() + "_" + cycle.String()
+
+	return ftcPlansLive.FindPlan(key)
+}
+
 var stripeLivePlans = FtcPlans{
 	standardMonthlyPlan.stripeLivePlanID: standardMonthlyPlan,
 	standardYearlyPlan.stripeLivePlanID:  standardYearlyPlan,

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest"
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"time"
 )
 
@@ -41,34 +40,34 @@ func (a AppOrderParams) ToMap() wxpay.Params {
 }
 
 // AppOrder creates an order used by native apps.
-type AppOrder struct {
-	subscription.Order
-	FtcOrderID     string         `json:"ftcOrderId"` // Deprecate
-	AppOrderParams                // Deprecate
-	Params         AppOrderParams `json:"params"`
-}
+//type AppOrder struct {
+//	subscription.Order
+	//FtcOrderID     string         `json:"ftcOrderId"` // Deprecate
+	//AppOrderParams                // Deprecate
+//	Params         AppOrderParams `json:"params"`
+//}
 
 // BuildAppOrder creates an order that can be used inside
 // a native app.
-func (c Client) BuildAppOrder(u UnifiedOrderResp, subs subscription.Order) AppOrder {
-	p := AppOrderParams{
-		AppID:     subs.WxAppID.String,
-		PartnerID: u.MID.String,
-		PrepayID:  u.PrepayID.String,
-		Timestamp: GenerateTimestamp(),
-		Nonce:     GenerateNonce(),
-		Package:   "Sign=WXPay",
-	}
-	p.Signature = c.Sign(p.ToMap())
-
-	o := AppOrder{
-		Order:          subs,
-		FtcOrderID:     subs.ID,
-		AppOrderParams: p,
-		Params:         p,
-	}
-	return o
-}
+//func (c Client) BuildAppOrder(u UnifiedOrderResp, subs subscription.Order) AppOrder {
+//	p := AppOrderParams{
+//		AppID:     subs.WxAppID.String,
+//		PartnerID: u.MID.String,
+//		PrepayID:  u.PrepayID.String,
+//		Timestamp: GenerateTimestamp(),
+//		Nonce:     GenerateNonce(),
+//		Package:   "Sign=WXPay",
+//	}
+//	p.Signature = c.Sign(p.ToMap())
+//
+//	o := AppOrder{
+//		Order:          subs,
+//		//FtcOrderID:     subs.ID,
+//		//AppOrderParams: p,
+//		Params:         p,
+//	}
+//	return o
+//}
 
 type InWxBrowserParams struct {
 	Timestamp string `json:"timestamp"`
@@ -95,34 +94,32 @@ func (w InWxBrowserParams) ToMap(appID string) wxpay.Params {
 // perform actions inside wechat app.
 // It's a shame wechat cannot even use the same data structure
 // for such insignificant differences.
-type InAppBrowserOrder struct {
-	subscription.Order
-	InWxBrowserParams
-	Params InWxBrowserParams
-}
+//type InAppBrowserOrder struct {
+//	subscription.Order
+	//InWxBrowserParams
+//	Params InWxBrowserParams `json:"params"`
+//}
 
 // BuildInAppBrowserOrder creates an order for payment inside
 // wechat embedded browser.
-func (c Client) BuildInAppBrowserOrder(u UnifiedOrderResp, subs subscription.Order) InAppBrowserOrder {
-
-	p := InWxBrowserParams{
-		Timestamp: GenerateTimestamp(),
-		Nonce:     GenerateNonce(),
-		Package:   "prepay_id=" + u.PrepayID.String,
-		SignType:  "MD5",
-	}
-	p.Signature = c.Sign(p.ToMap(subs.WxAppID.String))
-
-	o := InAppBrowserOrder{
-		Order:             subs,
-		InWxBrowserParams: p,
-		Params:            p,
-	}
-
-	//o.Signature = c.Sign(o.Params())
-
-	return o
-}
+//func (c Client) BuildInAppBrowserOrder(u UnifiedOrderResp, subs subscription.Order) InAppBrowserOrder {
+//
+//	p := InWxBrowserParams{
+//		Timestamp: GenerateTimestamp(),
+//		Nonce:     GenerateNonce(),
+//		Package:   "prepay_id=" + u.PrepayID.String,
+//		SignType:  "MD5",
+//	}
+//	p.Signature = c.Sign(p.ToMap(c.app.AppID))
+//
+//	o := InAppBrowserOrder{
+//		Order:             subs,
+//		//InWxBrowserParams: p,
+//		Params:            p,
+//	}
+//
+//	return o
+//}
 
 // BrowserOrder creates order for browsers.
 // For desktop browser, wechat send back a custom url
@@ -130,23 +127,22 @@ func (c Client) BuildInAppBrowserOrder(u UnifiedOrderResp, subs subscription.Ord
 // For mobile browser, wechat sends back a canonical url
 // that can be redirected to.
 // and MobileOrder into a single data structure.
-type BrowserOrder struct {
-	subscription.Order
-	// TODO: rename json tag codeUrl to qrCode
-	QRCode  string `json:"qrCodeUrl,omitempty"`         // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
-	MWebURL string `json:"mobileRedirectUrl,omitempty"` // This is a standard url that can be redirected to.
-}
+//type BrowserOrder struct {
+//	subscription.Order
+//	QRCode  string `json:"qrCodeUrl,omitempty"`         // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
+//	MWebURL string `json:"mobileRedirectUrl,omitempty"` // This is a standard url that can be redirected to.
+//}
 
-func BuildDesktopOrder(resp UnifiedOrderResp, subs subscription.Order) BrowserOrder {
-	return BrowserOrder{
-		Order:  subs,
-		QRCode: resp.QRCode.String,
-	}
-}
+//func BuildDesktopOrder(resp UnifiedOrderResp, subs subscription.Order) BrowserOrder {
+//	return BrowserOrder{
+//		Order:  subs,
+//		QRCode: resp.QRCode.String,
+//	}
+//}
 
-func BuildMobileOrder(resp UnifiedOrderResp, subs subscription.Order) BrowserOrder {
-	return BrowserOrder{
-		Order:   subs,
-		MWebURL: resp.MWebURL.String,
-	}
-}
+//func BuildMobileOrder(resp UnifiedOrderResp, subs subscription.Order) BrowserOrder {
+//	return BrowserOrder{
+//		Order:   subs,
+//		MWebURL: resp.MWebURL.String,
+//	}
+//}

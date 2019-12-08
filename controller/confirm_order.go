@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 )
@@ -58,7 +59,7 @@ func (router PayRouter) confirmPayment(result subscription.PaymentResult) (subsc
 	// This order might be invalid for upgrading.
 	// If user is already a premium member and this order is used
 	// for upgrading, decline retry.
-	if order.Usage == subscription.SubsKindUpgrade && member.IsValidPremium() {
+	if order.Usage == plan.SubsKindUpgrade && member.IsValidPremium() {
 		log.Infof("Order %s is trying to upgrade a premium member %s", order.ID, member.ID.String)
 		_ = tx.Rollback()
 		return subscription.Order{}, subscription.NewConfirmationFailed(result.OrderID, util.ErrDuplicateUpgrading, false)

@@ -43,6 +43,34 @@ func (c Client) GetApp() PayApp {
 	return c.app
 }
 
+func (c Client) InWxBrowserParams(u UnifiedOrderResp) InWxBrowserParams {
+	p := InWxBrowserParams{
+		Timestamp: GenerateTimestamp(),
+		Nonce:     GenerateNonce(),
+		Package:   "prepay_id=" + u.PrepayID.String,
+		SignType:  "MD5",
+	}
+
+	p.Signature = c.Sign(p.ToMap(c.app.AppID))
+
+	return p
+}
+
+// AppParams build the parameters required by native app pay.
+func (c Client) AppParams(u UnifiedOrderResp) AppOrderParams {
+	p := AppOrderParams{
+		AppID:     c.app.AppID,
+		PartnerID: u.MID.String,
+		PrepayID:  u.PrepayID.String,
+		Timestamp: GenerateTimestamp(),
+		Nonce:     GenerateNonce(),
+		Package:   "Sign=WXPay",
+	}
+	p.Signature = c.Sign(p.ToMap())
+
+	return p
+}
+
 // ValidateResponse checks if wechat response is generated for our app.
 // NOTE: this sdk treat return_code == FAIL as valid.
 // Possible return_msg:
@@ -115,95 +143,3 @@ func (c Client) VerifyNotification(n Notification) error {
 	return nil
 }
 
-//func (c Client) ValidateUnifiedOrder(resp UnifiedOrderResp) *view.Reason {
-
-//if resp.StatusCode == wxpay.Fail {
-//	reason := &view.Reason{
-//		Field: "status",
-//		Code:  "fail",
-//	}
-//	reason.SetMessage(resp.StatusMessage)
-//
-//	return reason
-//}
-//
-//if resp.ResultCode.String == wxpay.Fail {
-//	reason := &view.Reason{
-//		Field: "result",
-//		Code:  resp.ErrorCode.String,
-//	}
-//	reason.SetMessage(resp.ErrorMessage.String)
-//
-//	return reason
-//}
-
-//if resp.AppID.IsZero() || resp.AppID.String != c.appID {
-//	reason := &view.Reason{
-//		Field: "app_id",
-//		Code:  view.CodeInvalid,
-//	}
-//	reason.SetMessage("Missing or wrong app id")
-//
-//	return reason
-//}
-//
-//if resp.MID.IsZero() || resp.MID.String != c.mchID {
-//	reason := &view.Reason{
-//		Field: "mch_id",
-//		Code:  view.CodeInvalid,
-//	}
-//	reason.SetMessage("Missing or wrong merchant id")
-//
-//	return reason
-//}
-
-//return nil
-//}
-
-// NewPrepay creates a new Prepay instance from client appID, mchID,
-// prepayID and subscription id and price.
-// Signature required by wechat is not calculated at this point.
-//func (c Client) NewPrepay(prepayID string, subs paywall.Subscription) AppPay {
-//	nonce, _ := gorest.RandomHex(10)
-//	pkg := "Sign=WXPay"
-//	timestamp := fmt.Sprintf("%d", time.Now().Unix())
-//
-//	return AppPay{
-//		FtcOrderID: subs.ID,
-//		Price:      subs.ListPrice,
-//		ListPrice:  subs.ListPrice,
-//		Amount:   subs.Amount,
-//		AppID:      c.app.AppID,
-//		PartnerID:  c.app.MchID,
-//		PrepayID:   prepayID,
-//		Package:    pkg,
-//		Nonce:      nonce,
-//		Timestamp:  timestamp,
-//	}
-//}
-
-// ParseResponse parses and validate wechat response.
-//func (c Client) ParseResponse(r io.Reader) (wxpay.Params, error) {
-//	var returnCode string
-//	params := DecodeXML(r)
-//
-//	if params.ContainsKey("return_code") {
-//		returnCode = params.GetString("return_code")
-//	} else {
-//		return nil, errors.New("no return_code in XML")
-//	}
-//
-//	switch returnCode {
-//	case wxpay.Fail:
-//		return params, nil
-//
-//	case wxpay.Success:
-//		if c.ValidSign(params) {
-//			return params, nil
-//		}
-//		return nil, errors.New("invalid sign value in XML")
-//
-//	default:
-//		return nil, errors.New("return_code value is invalid in XML")
-//	}
-//}

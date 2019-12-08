@@ -75,7 +75,7 @@ func (r Repo) UpdateMember(m subscription.Membership) {
 }
 
 // SaveBalanceSources populate data to the proration table.
-func (r Repo) SaveBalanceSources(p []subscription.ProrationSource) {
+func (r Repo) SaveBalanceSources(p []subscription.ProratedOrderSchema) {
 	for _, v := range p {
 		_, err := r.db.NamedExec(
 			query.BuildInsertProration(false),
@@ -87,12 +87,12 @@ func (r Repo) SaveBalanceSources(p []subscription.ProrationSource) {
 	}
 }
 
-func (r Repo) SaveUpgradePlan(up subscription.UpgradeIntent) {
+func (r Repo) SaveUpgradePlan(up subscription.UpgradeSchema) {
 	var data = struct {
-		subscription.UpgradeIntent
+		subscription.UpgradeSchema
 		plan.Plan
 	}{
-		UpgradeIntent: up,
+		UpgradeSchema: up,
 		Plan:          up.Plan,
 	}
 

@@ -1,4 +1,4 @@
-package subscription
+package plan
 
 import (
 	"database/sql/driver"
@@ -11,7 +11,7 @@ import (
 type SubsKind int
 
 const (
-	SubsKindDeny SubsKind = iota // If user remaining subs period exceed max allowable one, or any other error.
+	SubsKindNull SubsKind = iota // If user remaining subs period exceed max allowable one, or any other error.
 	SubsKindCreate
 	SubsKindRenew
 	SubsKindUpgrade
@@ -41,7 +41,7 @@ func ParseSubsKind(name string) (SubsKind, error) {
 		return x, nil
 	}
 
-	return SubsKindDeny, fmt.Errorf("%s is not valid SubsKind", name)
+	return SubsKindNull, fmt.Errorf("%s is not valid SubsKind", name)
 }
 
 func (x SubsKind) String() string {
@@ -49,6 +49,22 @@ func (x SubsKind) String() string {
 		return s
 	}
 	return ""
+}
+
+func (x SubsKind) StringCN() string {
+	switch x {
+	case SubsKindCreate:
+		return  "订阅"
+
+	case SubsKindRenew:
+		return "续订"
+
+	case SubsKindUpgrade:
+		return "升级订阅"
+
+	default:
+		return ""
+	}
 }
 
 // SnapshotReason converts to SnapshotReason for renew or upgrade.
@@ -89,7 +105,7 @@ func (x SubsKind) MarshalJSON() ([]byte, error) {
 
 func (x *SubsKind) Scan(src interface{}) error {
 	if src == nil {
-		*x = SubsKindDeny
+		*x = SubsKindNull
 		return nil
 	}
 
