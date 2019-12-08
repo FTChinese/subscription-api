@@ -222,8 +222,8 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 				t.Error(err)
 			}
 
-			if err := tx.ConfirmOrder(tt.args.order); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.ConfirmOrder() error = %v, wantErr %v", err, tt.wantErr)
+			if err := tx.UpdateConfirmedOrder(tt.args.order); (err != nil) != tt.wantErr {
+				t.Errorf("OrderTx.UpdateConfirmedOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err := tx.Commit(); err != nil {

@@ -12,29 +12,33 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
+	"time"
 )
 
 type OrderBuilder struct {
+	// Required fields.
 	memberID reader.MemberID
-	method   enum.PayMethod
-	wxAppID  string
 	plan     plan.Plan
-	client util.ClientApp
-	wxUnifiedParams wechat.UnifiedOrder
+	sandbox  bool // Whether this is under sandbox.
 
-	// Requires querying DB
-	wallet     Wallet
-	membership Membership
+	membership Membership // User's current membership. Needs querying DB.
+	wallet     Wallet     // Only required if kind == SubsKindUpgrade.
+
+	// Optional fields.
+	client          util.ClientApp      // Only requird when actually creating an order.
+	method          enum.PayMethod      // Should be enum.PayMethodNull for free upgrade.
+	wxAppID         null.String         // Only required for wechat pay.
+	wxUnifiedParams wechat.UnifiedOrder // Only for wechat pay.
 
 	// Calculated for previous fields set.
 	kind            plan.SubsKind
 	charge          Charge
 	duration        plan.Duration
 	orderID         string
-	upgradeSchemaID string
+	upgradeSchemaID null.String
+	snapshotID      null.String // The ID of current membership's snapshot. Only present when member is not zero.
 
 	isBuilt bool // A flag to ensure all fields are property initialized.
-	sandbox bool // Whether this is under sandbox.
 }
 
 func NewOrderBuilder(id reader.MemberID) *OrderBuilder {
@@ -49,7 +53,7 @@ func NewOrderBuilder(id reader.MemberID) *OrderBuilder {
 }
 
 func (b *OrderBuilder) SetWxAppID(appID string) *OrderBuilder {
-	b.wxAppID = appID
+	b.wxAppID = null.StringFrom(appID)
 	return b
 }
 
@@ -120,6 +124,14 @@ func (b *OrderBuilder) SetMembership(m Membership) *OrderBuilder {
 	return b
 }
 
+func (b *OrderBuilder) GetMembership() Membership {
+	return b.membership
+}
+
+// buildSubsKind determines what kind of subscripiton
+// it is deduced from user's current membership and
+// chosen plan.
+// Error: ErrRenewalForbidden, ErrSubsUsageUnclear, ErrPlanRequired.
 func (b *OrderBuilder) buildSubsKind() (err error) {
 	if b.kind != plan.SubsKindNull {
 		return
@@ -134,6 +146,9 @@ func (b *OrderBuilder) buildSubsKind() (err error) {
 	return
 }
 
+// GetSubsKind returns the SubsKind, or error if it is
+// cannot be deduced.
+// See errors returned from buildSubsKind.
 func (b *OrderBuilder) GetSubsKind() (plan.SubsKind, error) {
 	if err := b.buildSubsKind(); err != nil {
 		return plan.SubsKindNull, err
@@ -148,6 +163,15 @@ func (b *OrderBuilder) SetWallet(w Wallet) *OrderBuilder {
 	return b
 }
 
+// CanBalanceCoverPlan checks if user's current balance
+// is enough to cover chosen plan.
+func (b *OrderBuilder) CanBalanceCoverPlan() bool {
+	return b.wallet.Balance >= b.plan.Amount
+}
+
+// Build calculates subscription kind, the amount to pay,
+// billing cycles user purchased.
+// See buildSubsKind form returned errors.
 func (b *OrderBuilder) Build() error {
 
 	if b.isBuilt {
@@ -165,8 +189,18 @@ func (b *OrderBuilder) Build() error {
 		Currency: b.plan.Currency,
 	}
 
-	if b.kind == plan.SubsKindUpgrade && b.upgradeSchemaID == "" {
-		b.upgradeSchemaID = GenerateUpgradeID()
+	// If balance is larger than a plan's price,
+	// charged amount should be zero.
+	if b.charge.Amount < 0 {
+		b.charge.Amount = 0
+	}
+
+	if b.kind == plan.SubsKindUpgrade && b.upgradeSchemaID.IsZero() {
+		b.upgradeSchemaID = null.StringFrom(GenerateUpgradeID())
+	}
+
+	if !b.membership.IsZero() && b.snapshotID.IsZero() {
+		b.snapshotID = null.StringFrom(GenerateSnapshotID())
 	}
 
 	b.isBuilt = true
@@ -199,6 +233,7 @@ func (b *OrderBuilder) PaymentIntent() (PaymentIntent, error) {
 	}, nil
 }
 
+// Order creates a new order for
 func (b *OrderBuilder) Order() (Order, error) {
 
 	if err := b.ensureBuilt(); err != nil {
@@ -221,14 +256,46 @@ func (b *OrderBuilder) Order() (Order, error) {
 		ExtraDays:        b.duration.ExtraDays,
 		Usage:            b.kind,
 		PaymentMethod:    b.method,
-		WxAppID:          null.NewString(b.wxAppID, b.wxAppID != ""),
-		UpgradeSchemaID:  null.NewString(b.upgradeSchemaID, b.upgradeSchemaID != ""),
+		WxAppID:          b.wxAppID,
+		UpgradeSchemaID:  b.upgradeSchemaID,
 		StartDate:        chrono.Date{},
 		EndDate:          chrono.Date{},
 		CreatedAt:        chrono.TimeNow(),
 		ConfirmedAt:      chrono.Time{},
-		MemberSnapshotID: null.String{}, // Set when confirming order.
+		MemberSnapshotID: b.snapshotID, // Set when confirming order.
 	}, nil
+}
+
+func (b *OrderBuilder) FreeUpgradeOrder() (Order, Membership, error) {
+	o, err := b.Order()
+	if err != nil {
+		return Order{}, Membership{}, err
+	}
+
+	startTime := time.Now()
+	endTime, err := o.getEndDate(startTime)
+	if err != nil {
+		return Order{}, Membership{}, err
+	}
+	o.StartDate = chrono.DateFrom(startTime)
+	o.EndDate = chrono.DateFrom(endTime)
+	o.ConfirmedAt = chrono.TimeNow()
+
+	m := b.membership
+	m.Tier = o.Tier
+	m.Cycle = o.Cycle
+	m.ExpireDate = o.EndDate
+
+	return o, m, nil
+}
+
+func (b *OrderBuilder) MembershipSnapshot() MemberSnapshot {
+	return MemberSnapshot{
+		SnapshotID: b.snapshotID.String,
+		Reason:     b.kind.SnapshotReason(),
+		CreatedUTC: chrono.TimeNow(),
+		Membership: b.membership,
+	}
 }
 
 func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
@@ -242,7 +309,7 @@ func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
 	}
 
 	return UpgradeSchema{
-		ID:        b.upgradeSchemaID,
+		ID:        b.upgradeSchemaID.String,
 		CreatedAt: chrono.TimeNow(),
 		Balance:   b.wallet.Balance,
 		Plan:      b.plan,
@@ -257,7 +324,7 @@ func (b *OrderBuilder) ProratedOrdersSchema() []ProratedOrderSchema {
 			ProratedOrder: v,
 			CreatedUTC:    chrono.TimeNow(),
 			ConsumedUTC:   chrono.Time{},
-			UpgradeID:     b.upgradeSchemaID,
+			UpgradeID:     b.upgradeSchemaID.String,
 		}
 
 		orders = append(orders, s)

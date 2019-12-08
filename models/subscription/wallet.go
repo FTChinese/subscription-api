@@ -12,9 +12,9 @@ import (
 // Wallet show how much money a member still owns and
 // which orders constitutes the balance.
 type Wallet struct {
-	Balance       float64         `json:"balance"`
-	Source        []ProratedOrder `json:"-"`
-	EffectiveDate chrono.Time     `json:"effective_date"` // When the balance is calculated.
+	Balance  float64         `json:"balance"`
+	Source   []ProratedOrder `json:"-"`
+	AsOfDate chrono.Time     `json:"as_of_date"` // When the balance is calculated.
 }
 
 func NewWallet(orders []ProratedOrder, asOf time.Time) Wallet {
@@ -22,9 +22,9 @@ func NewWallet(orders []ProratedOrder, asOf time.Time) Wallet {
 	asOf = asOf.Truncate(24 * time.Hour)
 
 	w := Wallet{
-		Balance:       0,
-		Source:        []ProratedOrder{},
-		EffectiveDate: chrono.TimeFrom(asOf),
+		Balance:  0,
+		Source:   []ProratedOrder{},
+		AsOfDate: chrono.TimeFrom(asOf),
 	}
 
 	for _, v := range orders {

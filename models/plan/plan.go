@@ -19,9 +19,13 @@ type BasePlan struct {
 	LegacyTier null.Int   `json:"-" db:"vip_type"`
 }
 
+func (p BasePlan) IsZero() bool {
+	return p.Tier == enum.TierNull && p.Cycle == enum.CycleNull
+}
+
 // NamedKey create a unique name for the point in the plane.
-func (c BasePlan) NamedKey() string {
-	return c.Tier.String() + "_" + c.Cycle.String()
+func (p BasePlan) NamedKey() string {
+	return p.Tier.String() + "_" + p.Cycle.String()
 }
 
 // Plan is a pricing plan.
@@ -29,16 +33,16 @@ func (c BasePlan) NamedKey() string {
 // The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
 	BasePlan
-	ListPrice float64 `json:"listPrice"`          // Deprecate
-	NetPrice  float64 `json:"netPrice"`           // Deprecate
-	Price     float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
-	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
-	Duration // This should be removed.
-	Currency         string `json:"currency" db:"currency"`
-	Title            string `json:"description"`
-	stripeLivePlanID string `json:"-"`
-	stripeTestPlanID string `json:"-"`
-	AppleProductID   string `json:"-"`
+	ListPrice        float64 `json:"listPrice"`          // Deprecate
+	NetPrice         float64 `json:"netPrice"`           // Deprecate
+	Price            float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
+	Amount           float64 `json:"amount" db:"amount"` // Actually paid amount.
+	Duration                 // This should be removed.
+	Currency         string  `json:"currency" db:"currency"`
+	Title            string  `json:"description"`
+	stripeLivePlanID string  `json:"-"`
+	stripeTestPlanID string  `json:"-"`
+	AppleProductID   string  `json:"-"`
 }
 
 // GetTitle compose the message shown for wxpay or alipay.

@@ -2,6 +2,15 @@ package subscription
 
 import "github.com/guregu/null"
 
+type ConfirmError struct {
+	Err   error
+	Retry bool
+}
+
+func (c ConfirmError) Error() string {
+	return c.Err.Error()
+}
+
 // ConfirmationResult logs the result of confirmation.
 type ConfirmationResult struct {
 	OrderID   string      `db:"order_id"`
@@ -14,18 +23,18 @@ func (r ConfirmationResult) Error() string {
 	return r.Failed.String
 }
 
-// NewConfirmationSucceeded createa a new instance of ConfirmationResult for success.
-func NewConfirmationSucceeded(orderID string) *ConfirmationResult {
-	return &ConfirmationResult{
+func NewConfirmationResult(orderID string, err error) ConfirmationResult {
+	r := ConfirmationResult{
 		OrderID:   orderID,
-		Succeeded: true,
+		Succeeded: false,
+		Failed:    null.String{},
 	}
-}
 
-func NewConfirmationFailed(orderID string, reason error, retry bool) *ConfirmationResult {
-	return &ConfirmationResult{
-		OrderID: orderID,
-		Failed:  null.StringFrom(reason.Error()),
-		Retry:   retry,
+	if err != nil {
+		r.Failed = null.StringFrom(err.Error())
+	} else {
+		r.Succeeded = true
 	}
+
+	return r
 }

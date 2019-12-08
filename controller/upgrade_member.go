@@ -3,14 +3,11 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/view"
-	"github.com/guregu/null"
-	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
-	"time"
 )
 
 type UpgradeRouter struct {
@@ -24,9 +21,17 @@ func NewUpgradeRouter(env subrepo.SubEnv) UpgradeRouter {
 	return r
 }
 
-// TODO: change to UpgradeSchema
 func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
+
+	p, _ := plan.FindPlan(enum.TierPremium, enum.CycleYear)
+
+	builder := subscription.NewOrderBuilder(userID).
+		SetPlan(p)
+
+	if router.subEnv.UseSandbox() {
+		builder.SetSandbox()
+	}
 
 	otx, err := router.subEnv.BeginOrderTx()
 	if err != nil {
@@ -34,17 +39,16 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	member, err := otx.RetrieveMember(userID)
+	err = otx.PreviewUpgrade(builder)
 	if err != nil {
-		_ = otx.Rollback()
-		_ = view.Render(w, view.NewDBFailure(err))
-		return
-	}
+		switch err {
+		case subscription.ErrUpgradeInvalid:
+			_ = view.Render(w, view.NewBadRequest(err.Error()))
+		default:
+			_ = view.Render(w, view.NewDBFailure(err))
+		}
 
-	orders, err := otx.FindBalanceSources(userID)
-	if err != nil {
 		_ = otx.Rollback()
-		_ = view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
@@ -53,36 +57,10 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	wallet := subscription.NewWallet(orders, time.Now())
-	p, _ := plan.FindPlan(enum.TierPremium, enum.CycleYear)
+	pi, err := builder.PaymentIntent()
 
-	builder := subscription.NewOrderBuilder(userID).
-		SetPlan(p).
-		SetMembership(member).
-		SetWallet(wallet)
-
-	if router.subEnv.UseSandbox() {
-		builder.SetSandbox()
-	}
-
-	pi, _ := builder.PaymentIntent()
-
-	switch pi.SubsKind {
-	case plan.SubsKindNull:
-		_ = view.Render(w, view.NewBadRequest("Cannot determine your current subscription status"))
-		return
-
-	case plan.SubsKindCreate:
-		_ = view.Render(w, view.NewBadRequest("No a valid member yet."))
-		return
-
-	case plan.SubsKindRenew:
-		_ = view.Render(w, view.NewBadRequest("Not used for renewal."))
-		return
-	}
-
-	if !member.IsAliOrWxPay() {
-		_ = view.Render(w, view.NewBadRequest("Only payment made via alipay or wechat pay has balance"))
+	if err != nil {
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
@@ -109,90 +87,20 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	member, err := otx.RetrieveMember(userID)
+	order, err := otx.FreeUpgrade(builder)
 	if err != nil {
-		_ = otx.Rollback()
-		_ = view.Render(w, view.NewDBFailure(err))
-		return
-	}
+		switch err {
+		case subscription.ErrUpgradeInvalid:
+			_ = view.Render(w, view.NewBadRequest(err.Error()))
 
-	orders, err := otx.FindBalanceSources(userID)
-	if err != nil {
-		_ = otx.Rollback()
-		_ = view.Render(w, view.NewDBFailure(err))
-		return
-	}
+		case subscription.ErrBalanceCannotCoverUpgrade:
+			pi, _ := builder.PaymentIntent()
+			_ = view.Render(w, view.NewResponse().SetBody(pi))
 
-	wallet := subscription.NewWallet(orders, time.Now())
-	builder.SetMembership(member).
-		SetWallet(wallet)
+		default:
+			_ = view.Render(w, view.NewDBFailure(err))
+		}
 
-	pi, _ := builder.PaymentIntent()
-
-	switch pi.SubsKind {
-	case plan.SubsKindNull:
-		_  = otx.Rollback()
-		_ = view.Render(w, view.NewBadRequest("Cannot determine your current subscription status"))
-		return
-
-	case plan.SubsKindCreate:
-		_ = otx.Rollback()
-		_ = view.Render(w, view.NewBadRequest("No a valid member yet."))
-		return
-
-	case plan.SubsKindRenew:
-		_ = otx.Rollback()
-		_ = view.Render(w, view.NewBadRequest("Not used for renewal."))
-		return
-	}
-
-	if !member.IsAliOrWxPay() {
-		_ = otx.Rollback()
-		_ = view.Render(w, view.NewBadRequest("Only payment made via alipay or wechat pay has balance"))
-		return
-	}
-
-	// If user needs to pay any extra money.
-	if pi.Plan.Amount > pi.Wallet.Balance {
-		_ = view.Render(w, view.NewResponse().SetBody(pi))
-		return
-	}
-
-	upgradeSchema, _ := builder.UpgradeSchema()
-	if err := otx.SaveUpgradeIntent(upgradeSchema); err != nil {
-		_ = otx.Rollback()
-		return
-	}
-
-	if err := otx.SaveProratedOrders(builder.ProratedOrdersSchema()); err != nil {
-
-		_ = otx.Rollback()
-
-		return
-	}
-
-	order, err := builder.Order()
-
-	if err != nil {
-		_ = otx.Rollback()
-		return
-	}
-
-	snapshot := subscription.NewMemberSnapshot(
-		member,
-		plan.SubsKindUpgrade.SnapshotReason(),
-	)
-
-	order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
-
-	if err := otx.SaveOrder(order); err != nil {
-		_ = otx.Rollback()
-		return
-	}
-
-	newMember, err := member.FromAliOrWx(order)
-
-	if err := otx.UpdateMember(newMember); err != nil {
 		_ = otx.Rollback()
 		return
 	}
@@ -201,22 +109,20 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	orderClient := builder.ClientApp()
 	// Save client app info
 	go func() {
-		_ = router.subEnv.SaveOrderClient(builder.ClientApp())
+		_ = router.subEnv.SaveOrderClient(orderClient)
 	}()
 
+	snapshot := builder.MembershipSnapshot()
 	go func() {
 		_ = router.subEnv.BackUpMember(snapshot)
 	}()
 
 	go func() {
-		err := router.sendConfirmationEmail(order)
-		if err != nil {
-			logrus.WithField("trace", "UpgradeRouter.FreeUpgrade").Error(err)
-		}
+		_ = router.sendConfirmationEmail(order)
 	}()
 
 	_ = view.Render(w, view.NewNoContent())
 }
-

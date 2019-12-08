@@ -136,8 +136,8 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			SetWxAppID(payClient.GetApp().AppID).
 			SetClient(clientApp).
 			SetWxParams(wechat.UnifiedOrder{
-				TradeType:   tradeType,
-				OpenID:      openID,
+				TradeType: tradeType,
+				OpenID:    openID,
 			})
 
 		order, err := router.subEnv.CreateOrder(builder)
@@ -208,7 +208,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Desktop returns a url that can be turned to QR code
 		case wechat.TradeTypeDesktop:
 			_ = view.Render(w, view.NewResponse().SetBody(subscription.WxpayBrowserOrder{
-				Order: order,
+				Order:  order,
 				QRCode: uor.QRCode.String,
 			}))
 
@@ -317,7 +317,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	payResult, err := noti.GetPaymentResult()
+	payResult, err := subscription.NewPaymentResultWx(noti)
 	if err != nil {
 		logger.Error(err)
 		if _, err := w.Write([]byte(resp.OK())); err != nil {
@@ -327,19 +327,17 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	confirmedOrder, result := router.confirmPayment(payResult)
+	confirmedOrder, result := router.subEnv.ConfirmOrder(payResult)
 
 	if result != nil {
-		logger.Error(err)
-
 		go func() {
-			if err := router.subEnv.SaveConfirmationResult(result); err != nil {
-				logger.Error(err)
-			}
+			_ = router.subEnv.SaveConfirmationResult(subscription.NewConfirmationResult(
+				payResult.OrderID,
+				result.Err))
 		}()
 
 		if result.Retry {
-			if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
+			if _, err := w.Write([]byte(resp.NotOK(result.Error()))); err != nil {
 				logger.Error(err)
 			}
 		} else {
@@ -353,12 +351,6 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	go func() {
 		if err := router.sendConfirmationEmail(confirmedOrder); err != nil {
-			logger.Error(err)
-		}
-	}()
-
-	go func() {
-		if err := router.subEnv.SaveConfirmationResult(subscription.NewConfirmationSucceeded(noti.FTCOrderID.String)); err != nil {
 			logger.Error(err)
 		}
 	}()

@@ -1,12 +1,8 @@
 package wechat
 
 import (
-	"errors"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/models/util"
-	"time"
 )
 
 // Notification is the data sent by wechat after payment
@@ -101,25 +97,4 @@ func (n Notification) IsPriceMatched(cent int64) bool {
 	}
 
 	return n.TotalFee.Int64 == cent
-}
-
-func (n Notification) GetPaymentResult() (subscription.PaymentResult, error) {
-	if n.TotalFee.IsZero() {
-		return subscription.PaymentResult{}, errors.New("no payment amount found in wx webhook")
-	}
-
-	if n.FTCOrderID.IsZero() {
-		return subscription.PaymentResult{}, errors.New("no order id in wx webhook")
-	}
-
-	confirmedAt, err := util.ParseWxTime(n.TimeEnd.String)
-	if err != nil {
-		confirmedAt = time.Now()
-	}
-
-	return subscription.PaymentResult{
-		Amount:      n.TotalFee.Int64,
-		OrderID:     n.FTCOrderID.String,
-		ConfirmedAt: confirmedAt,
-	}, nil
 }
