@@ -33,7 +33,7 @@ type OrderBuilder struct {
 	// Calculated for previous fields set.
 	kind            plan.SubsKind
 	charge          Charge
-	duration        plan.Duration
+	duration        Duration
 	orderID         string
 	upgradeSchemaID null.String
 	snapshotID      null.String // The ID of current membership's snapshot. Only present when member is not zero.
@@ -44,7 +44,7 @@ type OrderBuilder struct {
 func NewOrderBuilder(id reader.MemberID) *OrderBuilder {
 	return &OrderBuilder{
 		memberID: id,
-		duration: plan.Duration{
+		duration: Duration{
 			CycleCount: 1,
 			ExtraDays:  1,
 		},
@@ -247,13 +247,10 @@ func (b *OrderBuilder) Order() (Order, error) {
 	return Order{
 		ID:               b.orderID,
 		MemberID:         b.memberID,
-		Tier:             b.plan.Tier,
-		Cycle:            b.plan.Cycle,
+		BasePlan:         b.plan.BasePlan,
 		Price:            b.plan.Price,
-		Amount:           b.charge.Amount,
-		Currency:         b.plan.Currency,
-		CycleCount:       b.duration.CycleCount,
-		ExtraDays:        b.duration.ExtraDays,
+		Charge:           b.charge,
+		Duration:         b.duration,
 		Usage:            b.kind,
 		PaymentMethod:    b.method,
 		WxAppID:          b.wxAppID,
