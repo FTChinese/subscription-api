@@ -26,6 +26,7 @@ type Membership struct {
 	ID null.String `json:"memberID" db:"sub_id"` // A random string. Not used yet.
 	reader.MemberID
 	plan.BasePlan
+	LegacyTier    null.Int       `json:"-" db:"vip_type"`
 	LegacyExpire  null.Int       `json:"-" db:"expire_time"`
 	ExpireDate    chrono.Date    `json:"expireDate" db:"sub_expire_date"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"sub_pay_method"`
