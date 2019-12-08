@@ -53,15 +53,6 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	}
 }
 
-// Returns notification URL for Alipay based on whether the api is run for sandbox.
-func (router PayRouter) aliCallbackURL() string {
-	if router.subEnv.Sandbox {
-		return apiBaseURL + "/sandbox/webhook/alipay"
-	}
-
-	return apiBaseURL + "/v1/webhook/alipay"
-}
-
 func (router PayRouter) wxCallbackURL() string {
 	if router.subEnv.Sandbox {
 		return apiBaseURL + "/sandbox/webhook/wxpay"
@@ -91,14 +82,14 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 
 	var parcel postoffice.Parcel
 	switch order.Usage {
-	case subscription.SubsKindCreate:
+	case plan.SubsKindCreate:
 		parcel, err = letter.NewSubParcel(account, order)
 
-	case subscription.SubsKindRenew:
+	case plan.SubsKindRenew:
 		parcel, err = letter.NewRenewalParcel(account, order)
 
-	case subscription.SubsKindUpgrade:
-		up, err := router.loadUpgradePlan(order.UpgradeIntentID.String)
+	case plan.SubsKindUpgrade:
+		up, err := router.loadUpgradePlan(order.UpgradeSchemaID.String)
 		if err != nil {
 			return err
 		}
@@ -120,7 +111,7 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 	return nil
 }
 
-func (router PayRouter) loadUpgradePlan(upgradeID string) (subscription.UpgradeIntent, error) {
+func (router PayRouter) loadUpgradePlan(upgradeID string) (subscription.UpgradeSchema, error) {
 	up, err := router.subEnv.RetrieveUpgradePlan(upgradeID)
 	if err != nil {
 		return up, err

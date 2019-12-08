@@ -2,6 +2,7 @@ package subrepo
 
 import (
 	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/test"
@@ -68,7 +69,7 @@ func TestEnv_BackUpMember(t *testing.T) {
 		{
 			name: "Backup Membership",
 			args: args{
-				m: subscription.NewMemberSnapshot(m, subscription.SubsKindRenew),
+				m: subscription.NewMemberSnapshot(m, plan.SubsKindRenew),
 			},
 		},
 	}

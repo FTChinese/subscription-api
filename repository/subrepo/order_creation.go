@@ -1,42 +1,29 @@
-package controller
+package subrepo
 
 import (
-	"errors"
-	"github.com/FTChinese/go-rest/enum"
-	"github.com/guregu/null"
-	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 )
 
-// createOrder creates an order for ali or wx pay.
-func (router PayRouter) createOrder(
-	id reader.MemberID,
-	p plan.Plan,
-	method enum.PayMethod,
-	app util.ClientApp,
-	wxAppId null.String,
-) (subscription.Order, error) {
-	log := logrus.WithField("trace", "PayRouter.createOrder")
+func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.Order, error) {
+	log := logger.WithField("trace", "PayRouter.createOrder")
 
-	if method != enum.PayMethodWx && method != enum.PayMethodAli {
-		return subscription.Order{}, errors.New("only used by alipay or wxpay")
-	}
-
-	otx, err := router.subEnv.BeginOrderTx()
+	otx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
 		return subscription.Order{}, err
 	}
 
+	if env.UseSandbox() {
+		builder.SetSandbox()
+	}
+
 	// Step 1: Retrieve membership for this user.
 	// The membership might be empty but the value is
 	// valid.
-	log.Infof("Start retrieving membership for reader %+v", id)
-	member, err := otx.RetrieveMember(id)
+	log.Infof("Start retrieving membership for reader %+v", builder.GetReaderID())
+	member, err := otx.RetrieveMember(builder.GetReaderID())
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
@@ -52,29 +39,25 @@ func (router PayRouter) createOrder(
 		log.Infof("Membership does not have an id. Generated and add it %s", member.ID.String)
 
 		go func() {
-			if err := router.subEnv.AddMemberID(member); err != nil {
+			if err := env.AddMemberID(member); err != nil {
 				log.Error(err)
 			}
 		}()
 	}
 
-	subKind, err := member.SubsKind(p)
+	builder.SetMembership(member)
+	subKind, err := builder.GetSubsKind()
 	if err != nil {
+		_ = otx.Rollback()
 		return subscription.Order{}, err
 	}
+
+	log.Infof("Subscription kind %s", subKind)
 
 	// Step 2: Build an order for the user's chosen plan
 	// with chosen payment method based on previous
 	// membership so that we could how this order
 	// is used: create, renew or upgrade.
-	order, err := subscription.NewOrder(id, p, method, subKind)
-	if err != nil {
-		log.Error(err)
-		_ = otx.Rollback()
-		return subscription.Order{}, err
-	}
-
-	log.Infof("Created an order %s for %s", order.ID, order.Usage)
 
 	// Step 3: required only if this order is used for
 	// upgrading.
@@ -84,7 +67,7 @@ func (router PayRouter) createOrder(
 		// DO not save sources directly. The balance is not
 		// calculated at this point.
 		log.Infof("Get balance sources for an upgrading order")
-		orders, err := otx.FindBalanceSources(id)
+		orders, err := otx.FindBalanceSources(builder.GetReaderID())
 		if err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
@@ -94,30 +77,38 @@ func (router PayRouter) createOrder(
 
 		// Step 3.2: Build upgrade plan
 		wallet := subscription.NewWallet(orders, time.Now())
-		upgradeIntent := subscription.NewUpgradeIntent(wallet, p)
-		log.Infof("Upgrading intent: %+v", upgradeIntent)
 
-		// Step 3.3: Update order based on upgrade intent.
-		order = order.WithUpgrade(upgradeIntent)
+		builder.SetWallet(wallet)
+	}
 
+	if err := builder.Build(); err != nil {
+		_ = otx.Rollback()
+		return subscription.Order{}, err
+	}
+
+	order, err := builder.Order()
+	if err != nil {
+		return subscription.Order{}, err
+	}
+
+	if subKind == plan.SubsKindUpgrade {
+		upIntent, _ := builder.UpgradeSchema()
 		// Step 3.4: Save the upgrade plan
-		if err := otx.SaveUpgradeIntent(upgradeIntent); err != nil {
+		if err := otx.SaveUpgradeIntent(upIntent); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
 			return subscription.Order{}, err
 		}
-		log.Info("Upgrading plan saved")
+		log.Info("Upgrade intent saved")
 
 		// Step 3.5: Save prorated orders
-		if err := otx.SaveProratedOrders(upgradeIntent.ProrationSources()); err != nil {
+		if err := otx.SaveProratedOrders(builder.ProratedOrdersSchema()); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
 			return subscription.Order{}, err
 		}
 		log.Info("Prorated orders saved")
 	}
-
-	order.WxAppID = wxAppId
 
 	// Step 4: Save this order.
 	if err := otx.SaveOrder(order); err != nil {
@@ -130,17 +121,6 @@ func (router PayRouter) createOrder(
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
 		return subscription.Order{}, err
-	}
-
-	// Not vital. Perform in background.
-	go func() {
-		if err := router.subEnv.SaveOrderClient(order.ID, app); err != nil {
-			log.Error(err)
-		}
-	}()
-
-	if !router.subEnv.Live() {
-		order.Amount = 0.01
 	}
 
 	return order, nil
