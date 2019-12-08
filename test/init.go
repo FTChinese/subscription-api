@@ -18,10 +18,10 @@ const (
 	MyEmail    = "neefrankie@gmail.com"
 )
 
-var YearlyStandard = plan.GetFtcPlans(false)["standard_year"]
-var YearlyPremium = plan.GetFtcPlans(false)["premium_year"]
-var YearlyStandardLive = plan.GetFtcPlans(true)["standard_year"]
-var YearlyPremiumLive = plan.GetFtcPlans(true)["premium_year"]
+var YearlyStandard = plan.GetFtcPlans()["standard_year"]
+var YearlyPremium = plan.GetFtcPlans()["premium_year"]
+var YearlyStandardLive = plan.GetFtcPlans()["standard_year"]
+var YearlyPremiumLive = plan.GetFtcPlans()["premium_year"]
 
 var (
 	DB          *sqlx.DB
