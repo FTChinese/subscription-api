@@ -34,7 +34,7 @@ type StripeSub struct {
 // Bridge between chrono pkg and unix timestamp.
 // Unix 0 represent year 1970, while Golang's zero time is really
 // 0.
-func canonicalizeUnix(s int64) time.Time {
+func CanonicalizeUnix(s int64) time.Time {
 	if s > 0 {
 		return time.Unix(s, 0)
 	}
@@ -49,15 +49,15 @@ func NewStripeSub(s *stripe.Subscription) StripeSub {
 
 	return StripeSub{
 		CancelAtPeriodEnd:  s.CancelAtPeriodEnd,
-		Created:            chrono.TimeFrom(canonicalizeUnix(s.Created)),
-		CurrentPeriodEnd:   chrono.TimeFrom(canonicalizeUnix(s.CurrentPeriodEnd)),
-		CurrentPeriodStart: chrono.TimeFrom(canonicalizeUnix(s.CurrentPeriodStart)),
+		Created:            chrono.TimeFrom(CanonicalizeUnix(s.Created)),
+		CurrentPeriodEnd:   chrono.TimeFrom(CanonicalizeUnix(s.CurrentPeriodEnd)),
+		CurrentPeriodStart: chrono.TimeFrom(CanonicalizeUnix(s.CurrentPeriodStart)),
 		CustomerID:         s.Customer.ID,
-		EndedAt:            chrono.TimeFrom(canonicalizeUnix(s.EndedAt)),
+		EndedAt:            chrono.TimeFrom(CanonicalizeUnix(s.EndedAt)),
 		ID:                 s.ID,
 		LatestInvoiceID:    s.LatestInvoice.ID,
 		Livemode:           s.Livemode,
-		StartDate:          chrono.TimeFrom(canonicalizeUnix(s.StartDate)),
+		StartDate:          chrono.TimeFrom(CanonicalizeUnix(s.StartDate)),
 		Status:             s.Status,
 	}
 }
@@ -100,7 +100,7 @@ type StripeInvoice struct {
 }
 
 func (i StripeInvoice) CreationTime() chrono.Time {
-	return chrono.TimeFrom(canonicalizeUnix(i.Created))
+	return chrono.TimeFrom(CanonicalizeUnix(i.Created))
 }
 
 func (i StripeInvoice) BuildFtcPlan() (plan.Plan, error) {

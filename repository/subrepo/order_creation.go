@@ -36,7 +36,6 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 	if !member.IsZero() && member.ID.IsZero() {
 
 		member.GenerateID()
-		log.Infof("Membership does not have an id. Generated and add it %s", member.ID.String)
 
 		go func() {
 			if err := env.AddMemberID(member); err != nil {
@@ -121,6 +120,13 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
 		return subscription.Order{}, err
+	}
+
+	if member.IsZero() {
+		snapshot := builder.MembershipSnapshot()
+		go func() {
+			_ = env.BackUpMember(snapshot)
+		}()
 	}
 
 	return order, nil

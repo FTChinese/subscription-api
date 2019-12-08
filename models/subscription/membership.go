@@ -1,10 +1,9 @@
 package subscription
 
 import (
-	"errors"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/redeem"
-	stripe2 "gitlab.com/ftchinese/subscription-api/models/stripe"
+	"gitlab.com/ftchinese/subscription-api/models/stripe"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/guregu/null"
-	"github.com/stripe/stripe-go"
+	stripesdk "github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
 
@@ -129,24 +128,24 @@ func (m Membership) IsExpired() bool {
 	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
 }
 
-func (m Membership) PermitAliWxUpgrade() error {
+func (m Membership) PermitAliWxUpgrade() bool {
 	if m.IsZero() {
-		return errors.New("no a member yet")
+		return false
 	}
 
 	if !m.IsAliOrWxPay() {
-		return errors.New("membership not purchased via alipay or wxpay")
+		return false
 	}
 
 	if m.IsExpired() {
-		return errors.New("expired membership cannot upgrade")
+		return false
 	}
 
 	if m.Tier != enum.TierStandard {
-		return errors.New("only standard membership is allowed to upgrade")
+		return false
 	}
 
-	return nil
+	return true
 }
 
 func (m Membership) IsEqual(other Membership) bool {
@@ -363,6 +362,10 @@ func (m Membership) SubsKind(p plan.Plan) (plan.SubsKind, error) {
 		return plan.SubsKindCreate, nil
 	}
 
+	if p.IsZero() {
+		return plan.SubsKindNull, ErrPlanRequired
+	}
+
 	if m.Status != SubStatusNull && m.Status.ShouldCreate() {
 		return plan.SubsKindCreate, nil
 	}
@@ -376,7 +379,7 @@ func (m Membership) SubsKind(p plan.Plan) (plan.SubsKind, error) {
 		if m.inRenewalPeriod() {
 			return plan.SubsKindRenew, nil
 		} else {
-			return plan.SubsKindNull, errors.New("current membership expiration date is beyond max renewal period")
+			return plan.SubsKindNull, ErrRenewalForbidden
 		}
 	}
 
@@ -384,15 +387,15 @@ func (m Membership) SubsKind(p plan.Plan) (plan.SubsKind, error) {
 		return plan.SubsKindUpgrade, nil
 	}
 
-	return plan.SubsKindNull, errors.New("unknown subscription usage")
+	return plan.SubsKindNull, ErrSubsUsageUnclear
 }
 
 // NewStripe creates a new membership for stripe.
-func (m Membership) NewStripe(id reader.MemberID, p stripe2.StripeSubParams, s *stripe.Subscription) Membership {
+func (m Membership) NewStripe(id reader.MemberID, p stripe.StripeSubParams, s *stripesdk.Subscription) Membership {
 
 	m.GenerateID()
 
-	periodEnd := stripe2.canonicalizeUnix(s.CurrentPeriodEnd)
+	periodEnd := stripe.CanonicalizeUnix(s.CurrentPeriodEnd)
 
 	status, _ := ParseSubStatus(string(s.Status))
 
@@ -414,11 +417,11 @@ func (m Membership) NewStripe(id reader.MemberID, p stripe2.StripeSubParams, s *
 
 // WithStripe update an existing stripe membership.
 // This is used in webhook.
-func (m Membership) WithStripe(id reader.MemberID, s *stripe.Subscription) (Membership, error) {
+func (m Membership) WithStripe(id reader.MemberID, s *stripesdk.Subscription) (Membership, error) {
 
 	m.GenerateID()
 
-	periodEnd := stripe2.canonicalizeUnix(s.CurrentPeriodEnd)
+	periodEnd := stripe.CanonicalizeUnix(s.CurrentPeriodEnd)
 
 	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
 	m.AutoRenewal = !s.CancelAtPeriodEnd
@@ -429,29 +432,29 @@ func (m Membership) WithStripe(id reader.MemberID, s *stripe.Subscription) (Memb
 
 // FromAliOrWx builds a new membership based on a confirmed
 // order.
-func (m Membership) FromAliOrWx(sub Order) (Membership, error) {
-	if !sub.IsConfirmed() {
-		return m, errors.New("only confirmed order could be used to build membership")
-	}
-
-	m.GenerateID()
-
-	if m.IsZero() {
-		m.CompoundID = sub.CompoundID
-		m.FtcID = sub.FtcID
-		m.UnionID = sub.UnionID
-	}
-
-	m.Tier = sub.Tier
-	m.Cycle = sub.Cycle
-	m.ExpireDate = sub.EndDate
-	m.PaymentMethod = sub.PaymentMethod
-	m.StripeSubID = null.String{}
-	m.StripePlanID = null.String{}
-	m.AutoRenewal = false
-
-	return m, nil
-}
+//func (m Membership) FromAliOrWx(sub Order) (Membership, error) {
+//	if !sub.IsConfirmed() {
+//		return m, errors.New("only confirmed order could be used to build membership")
+//	}
+//
+//	m.GenerateID()
+//
+//	if m.IsZero() {
+//		m.CompoundID = sub.CompoundID
+//		m.FtcID = sub.FtcID
+//		m.UnionID = sub.UnionID
+//	}
+//
+//	m.Tier = sub.Tier
+//	m.Cycle = sub.Cycle
+//	m.ExpireDate = sub.EndDate
+//	m.PaymentMethod = sub.PaymentMethod
+//	m.StripeSubID = null.String{}
+//	m.StripePlanID = null.String{}
+//	m.AutoRenewal = false
+//
+//	return m, nil
+//}
 
 // FromGiftCard creates a new instance based on a gift card.
 func (m Membership) FromGiftCard(c redeem.GiftCard) (Membership, error) {

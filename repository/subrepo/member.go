@@ -1,7 +1,6 @@
 package subrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/repository/query"
@@ -74,10 +73,7 @@ func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]subscription.Prorate
 // RetrieveUpgradePlan retrieves an upgrade plan to be used in email sent to user.
 func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeSchema, error) {
 
-	var data = struct {
-		subscription.UpgradeSchema
-		plan.Plan
-	}{}
+	var data subscription.UpgradeSchema
 
 	err := env.db.Get(
 		&data,
@@ -89,13 +85,7 @@ func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeSch
 		return subscription.UpgradeSchema{}, err
 	}
 
-	return subscription.UpgradeSchema{
-		ID:        data.ID,
-		Balance:   data.Balance,
-		CreatedAt: data.CreatedAt,
-		Data:      nil,
-		Plan:      data.Plan,
-	}, nil
+	return data, nil
 }
 
 // RetrieveProratedOrders retrieves all orders prorated from

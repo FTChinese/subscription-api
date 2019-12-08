@@ -49,108 +49,85 @@ type Order struct {
 	reader.MemberID
 	Tier       enum.Tier  `json:"tier" db:"sub_tier"`
 	Cycle      enum.Cycle `json:"cycle" db:"sub_cycle"`
-	Price     float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
-	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
-	Currency string `json:"currency"`
-	CycleCount int64 `json:"cycle_count" db:"cycle_count"`
-	ExtraDays  int64 `json:"extra_days" db:"extra_days"`
+	Price      float64    `json:"price" db:"price"`   // Price of a plan, prior to discount.
+	Amount     float64    `json:"amount" db:"amount"` // Actually paid amount.
+	Currency   string     `json:"currency"`
+	CycleCount int64      `json:"cycle_count" db:"cycle_count"`
+	ExtraDays  int64      `json:"extra_days" db:"extra_days"`
 	//plan.Plan
 	Usage plan.SubsKind `json:"usageType" db:"usage_type"` // The usage of this order: creat new, renew, or upgrade?
 	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
 	PaymentMethod   enum.PayMethod `json:"payMethod" db:"payment_method"`
-	WxAppID         null.String    `json:"-" db:"wx_app_id"`  // Wechat specific
+	WxAppID         null.String    `json:"-" db:"wx_app_id"` // Wechat specific
 	UpgradeSchemaID null.String    `json:"-" db:"upgrade_id"`
 	CreatedAt       chrono.Time    `json:"createdAt" db:"created_at"`
 	ConfirmedAt     chrono.Time    `json:"-" db:"confirmed_at"` // When the payment is confirmed.
-	StartDate       chrono.Date    `json:"-" db:"start_date"` // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	EndDate         chrono.Date    `json:"-" db:"end_date"`   // Membership end date for this order. Depends on start date.
+	StartDate       chrono.Date    `json:"-" db:"start_date"`   // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
+	EndDate         chrono.Date    `json:"-" db:"end_date"`     // Membership end date for this order. Depends on start date.
 
-	MemberSnapshotID null.String    `json:"-" db:"member_snapshot_id"` // Member data the moment this order is created. Null for a new member.
+	MemberSnapshotID null.String `json:"-" db:"member_snapshot_id"` // Member data the moment this order is created. Null for a new member.
+}
+
+func (o Order) IsZero() bool {
+	return o.ID == ""
 }
 
 // NewOrder creates a new subscription order.
 // If later it is found that this order is used for upgrading,
 // upgrade it and returns a new instance with upgrading price.
-func NewOrder(
-	id reader.MemberID,
-	p plan.Plan,
-	method enum.PayMethod,
-	kind plan.SubsKind,
-) (Order, error) {
-	orderID, err := GenerateOrderID()
+//func NewOrder(
+//	id reader.MemberID,
+//	p plan.Plan,
+//	method enum.PayMethod,
+//	kind plan.SubsKind,
+//) (Order, error) {
+//	orderID, err := GenerateOrderID()
+//
+//	if err != nil {
+//		return Order{}, err
+//	}
+//
+//	return Order{
+//		ID:            orderID,
+//		MemberID:      id,
+//		Usage:         kind,
+//		PaymentMethod: method,
+//		CreatedAt:     chrono.TimeNow(),
+//	}, nil
+//}
 
-	if err != nil {
-		return Order{}, err
-	}
-
-	return Order{
-		ID:            orderID,
-		MemberID:      id,
-		Usage:         kind,
-		PaymentMethod: method,
-		CreatedAt:     chrono.TimeNow(),
-	}, nil
-}
-
-func NewFreeUpgradeOrder(id reader.MemberID, up UpgradeSchema) (Order, error) {
-
-	startTime := time.Now()
-	endTime, err := up.Plan.GetPeriodEnd(startTime)
-	if err != nil {
-		return Order{}, err
-	}
-
-	order, err := NewOrder(
-		id,
-		up.Plan,
-		enum.PayMethodNull,
-		plan.SubsKindUpgrade)
-
-	if err != nil {
-		return order, err
-	}
-
-	order.StartDate = chrono.DateFrom(startTime)
-	order.EndDate = chrono.DateFrom(endTime)
-	order.CreatedAt = chrono.TimeNow()
-	order.ConfirmedAt = chrono.TimeNow()
-	order.UpgradeSchemaID = null.StringFrom(up.ID)
-
-	return order, nil
-}
-
-func (s Order) WithUpgrade(up UpgradeSchema) Order {
-
-	s.Amount = up.Plan.Amount
-	s.CycleCount = up.Plan.CycleCount
-	s.ExtraDays = up.Plan.ExtraDays
-	s.UpgradeSchemaID = null.StringFrom(up.ID)
-
-	return s
-}
+//func (o Order) WithUpgrade(up UpgradeSchema) Order {
+//
+//	o.Amount = up.Plan.Amount
+//	o.CycleCount = up.Plan.CycleCount
+//	o.ExtraDays = up.Plan.ExtraDays
+//	o.UpgradeSchemaID = null.StringFrom(up.ID)
+//
+//	return o
+//}
 
 // AliPrice converts Charged price to ailpay format
-func (s Order) AliPrice() string {
-	return strconv.FormatFloat(s.Amount, 'f', 2, 32)
+func (o Order) AliPrice() string {
+	return strconv.FormatFloat(o.Amount, 'f', 2, 32)
 }
 
 // AmountInCent converts Charged price to int64 in cent for comparison with wx notification.
-func (s Order) AmountInCent() int64 {
-	return int64(s.Amount * 100)
+func (o Order) AmountInCent() int64 {
+	return int64(o.Amount * 100)
 }
 
-func (s Order) ReadableAmount() string {
+func (o Order) ReadableAmount() string {
 	return fmt.Sprintf("%s%.2f",
-		strings.ToUpper(s.Currency),
-		s.Amount,
+		strings.ToUpper(o.Currency),
+		o.Amount,
 	)
 }
 
-func (s Order) IsConfirmed() bool {
-	return !s.ConfirmedAt.IsZero()
+func (o Order) IsConfirmed() bool {
+	return !o.ConfirmedAt.IsZero()
 }
 
-func (s Order) getStartDate(m Membership, confirmedAt time.Time) time.Time {
+func (o Order) getStartDate(m Membership, confirmedAt time.Time) time.Time {
 	var startTime time.Time
 
 	// If membership is expired, always use the confirmation
@@ -163,7 +140,7 @@ func (s Order) getStartDate(m Membership, confirmedAt time.Time) time.Time {
 		// For renewal, we use current membership's
 		// expiration date;
 		// For upgrade, we use confirmation time.
-		if s.Usage == plan.SubsKindUpgrade {
+		if o.Usage == plan.SubsKindUpgrade {
 			startTime = confirmedAt
 		} else {
 			startTime = m.ExpireDate.Time
@@ -173,15 +150,15 @@ func (s Order) getStartDate(m Membership, confirmedAt time.Time) time.Time {
 	return startTime
 }
 
-func (s Order) getEndDate(startTime time.Time) (time.Time, error) {
+func (o Order) getEndDate(startTime time.Time) (time.Time, error) {
 	var endTime time.Time
 
-	switch s.Cycle {
+	switch o.Cycle {
 	case enum.CycleYear:
-		endTime = startTime.AddDate(int(s.CycleCount), 0, int(s.ExtraDays))
+		endTime = startTime.AddDate(int(o.CycleCount), 0, int(o.ExtraDays))
 
 	case enum.CycleMonth:
-		endTime = startTime.AddDate(0, int(s.CycleCount), int(s.ExtraDays))
+		endTime = startTime.AddDate(0, int(o.CycleCount), int(o.ExtraDays))
 
 	default:
 		return endTime, errors.New("invalid billing cycle")
@@ -192,18 +169,17 @@ func (s Order) getEndDate(startTime time.Time) (time.Time, error) {
 
 // Confirm updates an order with existing membership.
 // Zero membership is a valid value.
-func (s Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
-
-	startTime := s.getStartDate(m, confirmedAt)
-	endTime, err := s.getEndDate(startTime)
-	if err != nil {
-		return s, err
-	}
-
-	s.ConfirmedAt = chrono.TimeFrom(confirmedAt)
-	s.StartDate = chrono.DateFrom(startTime)
-	s.EndDate = chrono.DateFrom(endTime)
-
-	return s, nil
-}
-
+//func (o Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
+//
+//	startTime := o.getStartDate(m, confirmedAt)
+//	endTime, err := o.getEndDate(startTime)
+//	if err != nil {
+//		return o, err
+//	}
+//
+//	o.ConfirmedAt = chrono.TimeFrom(confirmedAt)
+//	o.StartDate = chrono.DateFrom(startTime)
+//	o.EndDate = chrono.DateFrom(endTime)
+//
+//	return o, nil
+//}
