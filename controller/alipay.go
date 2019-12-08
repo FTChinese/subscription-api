@@ -150,7 +150,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			logger.Infof("Ali desktop browser redirect url: %+v\n", redirectURL)
 
 			_ = view.Render(w, view.NewResponse().SetBody(subscription.AlipayBrowserOrder{
-				Order: order,
+				Order:       order,
 				RedirectURL: redirectURL.String(),
 			}))
 
@@ -166,8 +166,8 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			logger.Infof("Ali mobile browser redirect url: %+v\n", redirectURL)
 
 			_ = view.Render(w, view.NewResponse().SetBody(subscription.AlipayBrowserOrder{
-				Order: order,
-				RedirectURL:returnURL,
+				Order:       order,
+				RedirectURL: returnURL,
 			}))
 		}
 	}
@@ -245,20 +245,20 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	payResult, err := ali.GetPaymentResult(noti)
+	payResult, err := subscription.NewPaymentResultAli(noti)
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
-	confirmedOrder, result := router.confirmPayment(payResult)
+	confirmedOrder, result := router.subEnv.ConfirmOrder(payResult)
 
 	if result != nil {
-		logger.Error(err)
 
 		go func() {
-			err := router.subEnv.SaveConfirmationResult(result)
-			if err != nil {
-				logger.Error(err)
-			}
+			_ = router.subEnv.SaveConfirmationResult(
+				subscription.NewConfirmationResult(
+					payResult.OrderID,
+					result.Err),
+			)
 		}()
 
 		if result.Retry {
@@ -276,12 +276,6 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	go func() {
 		if err := router.sendConfirmationEmail(confirmedOrder); err != nil {
-			logger.Error(err)
-		}
-	}()
-
-	go func() {
-		if err := router.subEnv.SaveConfirmationResult(subscription.NewConfirmationSucceeded(payResult.OrderID)); err != nil {
 			logger.Error(err)
 		}
 	}()

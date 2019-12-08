@@ -94,7 +94,7 @@ func (s *SubStore) MustCreate(p plan.Plan) subscription.Order {
 	return order
 }
 
-// ConfirmOrder confirms an existing order
+// UpdateConfirmedOrder confirms an existing order
 func (s *SubStore) ConfirmOrder(id string) (subscription.Order, error) {
 	o, err := s.GetOrder(id)
 	if err != nil {

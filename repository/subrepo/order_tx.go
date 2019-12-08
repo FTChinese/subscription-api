@@ -77,15 +77,15 @@ func (otx OrderTx) RetrieveOrder(orderID string) (subscription.Order, error) {
 	return order, nil
 }
 
-// ConfirmOrder set an order's confirmation time.
-func (otx OrderTx) ConfirmOrder(order subscription.Order) error {
+// UpdateConfirmedOrder set an order's confirmation time.
+func (otx OrderTx) UpdateConfirmedOrder(order subscription.Order) error {
 	_, err := otx.tx.NamedExec(
 		query.BuildConfirmOrder(otx.sandbox),
 		order,
 	)
 
 	if err != nil {
-		logger.WithField("trace", "OrderTx.ConfirmOrder").Error(err)
+		logger.WithField("trace", "OrderTx.UpdateConfirmedOrder").Error(err)
 
 		return err
 	}

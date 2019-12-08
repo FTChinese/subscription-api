@@ -1,36 +1,69 @@
 package subrepo
 
 import (
-	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"time"
 )
 
-func (env SubEnv) PreviewUpgrade(id reader.MemberID) error {
+// See errors returned from Membership.PermitAliWxUpgrade.
+func (otx OrderTx) PreviewUpgrade(builder *subscription.OrderBuilder) error {
 
-	tx, err := env.BeginOrderTx()
+	member, err := otx.RetrieveMember(builder.GetReaderID())
 	if err != nil {
 		return err
 	}
 
-	member, err := tx.RetrieveMember(id)
-	if err != nil {
-		_ = tx.Rollback()
-		return err
+	if !member.PermitAliWxUpgrade() {
+		return subscription.ErrUpgradeInvalid
 	}
 
-	if err := member.PermitAliWxUpgrade(); err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-
-	orders, err := tx.FindBalanceSources(id)
+	orders, err := otx.FindBalanceSources(builder.GetReaderID())
 	if err != nil {
-		_ = tx.Rollback()
 		return err
 	}
 
 	wallet := subscription.NewWallet(orders, time.Now())
+
+	builder.SetMembership(member).
+		SetWallet(wallet)
+
+	return nil
+}
+
+func (otx OrderTx) FreeUpgrade(builder *subscription.OrderBuilder) (subscription.Order, error) {
+
+	if err := otx.PreviewUpgrade(builder); err != nil {
+		return subscription.Order{}, err
+	}
+
+	if err := builder.Build(); err != nil {
+		return subscription.Order{}, err
+	}
+
+	if !builder.CanBalanceCoverPlan() {
+		return subscription.Order{}, subscription.ErrBalanceCannotCoverUpgrade
+	}
+
+	// Save order
+	order, member, err := builder.FreeUpgradeOrder()
+	if err != nil {
+		return subscription.Order{}, err
+	}
+
+	// Save upgrade plan.
+	upgradeSchema, _ := builder.UpgradeSchema()
+	if err := otx.SaveUpgradeIntent(upgradeSchema); err != nil {
+		return subscription.Order{}, err
+	}
+
+	// Save balance source.
+	if err := otx.SaveProratedOrders(builder.ProratedOrdersSchema()); err != nil {
+		return subscription.Order{}, err
+	}
+
+	if err := otx.UpdateMember(member); err != nil {
+		return subscription.Order{}, err
+	}
+
+	return order, nil
 }
