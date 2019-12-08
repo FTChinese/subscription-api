@@ -38,9 +38,9 @@ func NewWallet(orders []ProratedOrder, asOf time.Time) Wallet {
 	return w
 }
 
-func (w Wallet) ConvertBalance(p plan.Plan) plan.Duration {
+func (w Wallet) ConvertBalance(p plan.Plan) Duration {
 	if w.Balance == 0 || w.Balance <= p.Price {
-		return plan.Duration{
+		return Duration{
 			CycleCount: 1,
 			ExtraDays:  1,
 		}
@@ -53,7 +53,7 @@ func (w Wallet) ConvertBalance(p plan.Plan) plan.Duration {
 
 	days := math.Ceil(remains * 365 / p.Price)
 
-	return plan.Duration{
+	return Duration{
 		CycleCount: cycles,
 		ExtraDays:  int64(days),
 	}
