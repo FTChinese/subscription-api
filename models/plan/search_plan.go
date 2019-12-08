@@ -3,24 +3,23 @@ package plan
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/guregu/null"
 )
 
 var (
 	standardMonthlyPlan = Plan{
 		BasePlan: BasePlan{
-			Tier:       enum.TierStandard,
-			Cycle:      enum.CycleMonth,
-			LegacyTier: null.IntFrom(5),
+			Tier:  enum.TierStandard,
+			Cycle: enum.CycleMonth,
+			//LegacyTier: null.IntFrom(5),
 		},
 		ListPrice: 28.00,
 		NetPrice:  28.00,
 		Price:     28.00,
 		Amount:    28.00,
-		Duration: Duration{
-			CycleCount: 1,
-			ExtraDays:  1,
-		},
+		//Duration: Duration{
+		//	CycleCount: 1,
+		//	ExtraDays:  1,
+		//},
 		Title:            "FT中文网 - 月度标准会员",
 		Currency:         "cny",
 		stripeLivePlanID: "plan_FXZYLOEbcvj5Tx",
@@ -30,18 +29,18 @@ var (
 
 	standardYearlyPlan = Plan{
 		BasePlan: BasePlan{
-			Tier:       enum.TierStandard,
-			Cycle:      enum.CycleYear,
-			LegacyTier: null.IntFrom(10),
+			Tier:  enum.TierStandard,
+			Cycle: enum.CycleYear,
+			//LegacyTier: null.IntFrom(10),
 		},
 		ListPrice: 258.00,
 		NetPrice:  258.00,
 		Price:     258.00,
 		Amount:    258.00,
-		Duration: Duration{
-			CycleCount: 1,
-			ExtraDays:  1,
-		},
+		//Duration: Duration{
+		//	CycleCount: 1,
+		//	ExtraDays:  1,
+		//},
 		Title:            "FT中文网 - 年度标准会员",
 		Currency:         "cny",
 		stripeLivePlanID: "plan_FXZZUEDpToPlZK",
@@ -51,18 +50,18 @@ var (
 
 	premiumYearlyPlan = Plan{
 		BasePlan: BasePlan{
-			Tier:       enum.TierPremium,
-			Cycle:      enum.CycleYear,
-			LegacyTier: null.IntFrom(100),
+			Tier:  enum.TierPremium,
+			Cycle: enum.CycleYear,
+			//LegacyTier: null.IntFrom(100),
 		},
 		ListPrice: 1998.00,
 		NetPrice:  1998.00,
 		Price:     1998.00,
 		Amount:    1998.00,
-		Duration: Duration{
-			CycleCount: 1,
-			ExtraDays:  1,
-		},
+		//Duration: Duration{
+		//	CycleCount: 1,
+		//	ExtraDays:  1,
+		//},
 		Title:            "FT中文网 - 年度高端会员",
 		Currency:         "cny",
 		stripeLivePlanID: "plan_FXZbv1cDTsUKOg",
@@ -91,19 +90,8 @@ var ftcPlansLive = FtcPlans{
 	"premium_year":   premiumYearlyPlan,
 }
 
-func GetFtcPlans(live bool) FtcPlans {
-	if live {
-		return ftcPlansLive
-	}
-
-	plans := FtcPlans{}
-
-	for key, plan := range ftcPlansLive {
-		p := plan.withSandboxPrice()
-		plans[key] = p
-	}
-
-	return plans
+func GetFtcPlans() FtcPlans {
+	return ftcPlansLive
 }
 
 func FindFtcPlan(id string) (Plan, error) {
