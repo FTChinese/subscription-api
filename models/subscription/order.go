@@ -3,7 +3,6 @@ package subscription
 import (
 	"fmt"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"strconv"
 	"strings"
 	"time"
 
@@ -47,14 +46,10 @@ type Order struct {
 	// Fields common to all.
 	ID string `json:"memberID" db:"order_id"`
 	reader.MemberID
-	Tier       enum.Tier  `json:"tier" db:"sub_tier"`
-	Cycle      enum.Cycle `json:"cycle" db:"sub_cycle"`
-	Price      float64    `json:"price" db:"price"`   // Price of a plan, prior to discount.
-	Amount     float64    `json:"amount" db:"amount"` // Actually paid amount.
-	Currency   string     `json:"currency"`
-	CycleCount int64      `json:"cycle_count" db:"cycle_count"`
-	ExtraDays  int64      `json:"extra_days" db:"extra_days"`
-	//plan.Plan
+	plan.BasePlan
+	Price float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
+	Charge
+	Duration
 	Usage plan.SubsKind `json:"usageType" db:"usage_type"` // The usage of this order: creat new, renew, or upgrade?
 	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
 	PaymentMethod   enum.PayMethod `json:"payMethod" db:"payment_method"`
@@ -107,11 +102,12 @@ func (o Order) IsZero() bool {
 //}
 
 // AliPrice converts Charged price to ailpay format
-func (o Order) AliPrice() string {
-	return strconv.FormatFloat(o.Amount, 'f', 2, 32)
-}
+//func (o Order) AliPrice() string {
+//	return strconv.FormatFloat(o.Amount, 'f', 2, 32)
+//}
 
 // AmountInCent converts Charged price to int64 in cent for comparison with wx notification.
+// Deprecated:
 func (o Order) AmountInCent() int64 {
 	return int64(o.Amount * 100)
 }
