@@ -2,7 +2,7 @@ package letter
 
 import (
 	"github.com/FTChinese/go-rest/postoffice"
-	plan2 "gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"strings"
@@ -16,19 +16,19 @@ func NewSubParcel(a reader.Account, order subscription.Order) (postoffice.Parcel
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := plan2.FindFtcPlan(order.NamedKey())
+	p, err := plan.FindPlan(order.Tier, order.Cycle)
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
 	data := struct {
-		User reader.Account
-		Sub  subscription.Order
-		Plan plan2.Plan
+		User  reader.Account
+		Order subscription.Order
+		Plan  plan.Plan
 	}{
-		User: a,
-		Sub:  order,
-		Plan: plan,
+		User:  a,
+		Order: order,
+		Plan:  p,
 	}
 
 	var body strings.Builder
@@ -55,19 +55,19 @@ func NewRenewalParcel(a reader.Account, order subscription.Order) (postoffice.Pa
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := plan2.FindFtcPlan(order.NamedKey())
+	p, err := plan.FindFtcPlan(order.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
 	data := struct {
-		User reader.Account
-		Sub  subscription.Order
-		Plan plan2.Plan
+		User  reader.Account
+		Order subscription.Order
+		Plan  plan.Plan
 	}{
-		User: a,
-		Sub:  order,
-		Plan: plan,
+		User:  a,
+		Order: order,
+		Plan:  p,
 	}
 
 	var body strings.Builder
@@ -94,7 +94,7 @@ func NewUpgradeParcel(a reader.Account, order subscription.Order, up subscriptio
 		return postoffice.Parcel{}, err
 	}
 
-	plan, err := plan2.FindFtcPlan(order.NamedKey())
+	p, err := plan.FindFtcPlan(order.NamedKey())
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -102,12 +102,12 @@ func NewUpgradeParcel(a reader.Account, order subscription.Order, up subscriptio
 	data := struct {
 		User    reader.Account
 		Sub     subscription.Order
-		Plan    plan2.Plan
+		Plan    plan.Plan
 		Upgrade subscription.UpgradeSchema
 	}{
 		User:    a,
 		Sub:     order,
-		Plan:    plan,
+		Plan:    p,
 		Upgrade: up,
 	}
 
@@ -138,11 +138,11 @@ func NewUpgradeParcel(a reader.Account, order subscription.Order, up subscriptio
 //	plan, _ := BuildFtcPlanForStripe(s)
 //	data := struct {
 //		User Account
-//		Sub  StripeSub
+//		Order  StripeSub
 //		Plan Plan
 //	}{
 //		User: a,
-//		Sub:  NewStripeSub(s),
+//		Order:  NewStripeSub(s),
 //		Plan: plan,
 //	}
 //
