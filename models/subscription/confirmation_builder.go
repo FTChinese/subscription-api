@@ -18,6 +18,7 @@ import (
 // membership needs to be inspected to see
 // when shall the membership starts.
 type ConfirmationBuilder struct {
+	live          bool // Determines the price.
 	paymentResult PaymentResult
 	membership    Membership // Current membership.
 	order         Order      // The order corresponding to a webhook.
@@ -26,8 +27,9 @@ type ConfirmationBuilder struct {
 	endTime   time.Time
 }
 
-func NewConfirmationBuilder(result PaymentResult) *ConfirmationBuilder {
+func NewConfirmationBuilder(result PaymentResult, live bool) *ConfirmationBuilder {
 	return &ConfirmationBuilder{
+		live:          live,
 		paymentResult: result,
 		membership:    Membership{},
 		order:         Order{},
@@ -43,11 +45,6 @@ func (b *ConfirmationBuilder) SetMembership(m Membership) *ConfirmationBuilder {
 
 func (b *ConfirmationBuilder) SetOrder(o Order) *ConfirmationBuilder {
 	b.order = o
-	return b
-}
-
-func (b *ConfirmationBuilder) SetPaymentResult(r PaymentResult) *ConfirmationBuilder {
-	b.paymentResult = r
 	return b
 }
 
@@ -79,9 +76,9 @@ func (b *ConfirmationBuilder) ValidateOrder() *ConfirmError {
 		}
 	}
 
-	if b.order.AmountInCent() != b.paymentResult.Amount {
+	if b.order.AmountInCent(b.live) != b.paymentResult.Amount {
 		return &ConfirmError{
-			Err:   fmt.Errorf("amount mismatched: expected: %d, actual: %d", b.order.AmountInCent(), b.paymentResult.Amount),
+			Err:   fmt.Errorf("amount mismatched: expected: %d, actual: %d", b.order.AmountInCent(b.live), b.paymentResult.Amount),
 			Retry: false,
 		}
 	}
@@ -102,8 +99,13 @@ func (b *ConfirmationBuilder) ValidateDuplicateUpgrading() *ConfirmError {
 
 func (b *ConfirmationBuilder) Build() error {
 
-	b.startTime = b.pickStartTime()
-	end, err := b.order.getEndDate(b.startTime)
+	startTime := b.pickStartTime()
+	if startTime.IsZero() {
+		return errors.New("cannot determine order start time")
+	}
+
+	b.startTime = startTime
+	end, err := b.order.getEndDate(startTime)
 	if err != nil {
 		return err
 	}
@@ -111,6 +113,14 @@ func (b *ConfirmationBuilder) Build() error {
 	b.endTime = end
 
 	return nil
+}
+
+func (b *ConfirmationBuilder) MustBuild() *ConfirmationBuilder {
+	if err := b.Build(); err != nil {
+		panic(err)
+	}
+
+	return b
 }
 
 func (b *ConfirmationBuilder) ConfirmedOrder() Order {
@@ -134,7 +144,7 @@ func (b *ConfirmationBuilder) ConfirmedMembership() Membership {
 
 	m.Tier = b.order.Tier
 	m.Cycle = b.order.Cycle
-	m.ExpireDate = b.order.EndDate
+	m.ExpireDate = chrono.DateFrom(b.endTime)
 	m.PaymentMethod = b.order.PaymentMethod
 	m.StripeSubID = null.String{}
 	m.StripePlanID = null.String{}
