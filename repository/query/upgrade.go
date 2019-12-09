@@ -9,7 +9,7 @@ SET order_id = :order_id,
 
 const selectBalanceSource = `
 SELECT o.trade_no AS order_id,
-	o.trade_amount AS paid_amount,
+	o.trade_amount AS amount,
 	CASE o.trade_subs
 		WHEN 0 THEN o.start_date
 		WHEN 10 THEN IF(
@@ -52,14 +52,8 @@ INSERT INTO %s.upgrade_plan
 SET id = :upgrade_id,
 	balance = :balance,
 	created_utc = UTC_TIMESTAMP(),
-	plan_tier = :sub_tier,
-	plan_cycle = :sub_cycle,
 	plan_price = :price,
-	plan_amount = :amount,
-	plan_cycle_count = :cycle_count,
-	plan_extra_days = :extra_days,
-	plan_currency = :currency,
-	plan_title = :title`
+	plan_amount = :amount`
 
 const selectUpgradePlan = `
 SELECT id AS upgrade_id,
