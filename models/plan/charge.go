@@ -1,6 +1,10 @@
 package plan
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 type Charge struct {
 	Amount   float64 `json:"amount" db:"amount"`     // Actual price paid.
@@ -23,4 +27,12 @@ func (c Charge) AmountInCent(live bool) int64 {
 	}
 
 	return 1
+}
+
+// ReadableAmount turns the charged amount to human readable format.
+func (c Charge) ReadableAmount() string {
+	return fmt.Sprintf("%s%.2f",
+		strings.ToUpper(c.Currency),
+		c.Amount,
+	)
 }
