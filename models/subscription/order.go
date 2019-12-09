@@ -1,7 +1,6 @@
 package subscription
 
 import (
-	"fmt"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"strings"
 	"time"
@@ -67,83 +66,8 @@ func (o Order) IsZero() bool {
 	return o.ID == ""
 }
 
-// NewOrder creates a new subscription order.
-// If later it is found that this order is used for upgrading,
-// upgrade it and returns a new instance with upgrading price.
-//func NewOrder(
-//	id reader.MemberID,
-//	p plan.Plan,
-//	method enum.PayMethod,
-//	kind plan.SubsKind,
-//) (Order, error) {
-//	orderID, err := GenerateOrderID()
-//
-//	if err != nil {
-//		return Order{}, err
-//	}
-//
-//	return Order{
-//		ID:            orderID,
-//		MemberID:      id,
-//		Usage:         kind,
-//		PaymentMethod: method,
-//		CreatedAt:     chrono.TimeNow(),
-//	}, nil
-//}
-
-//func (o Order) WithUpgrade(up UpgradeSchema) Order {
-//
-//	o.Amount = up.Plan.Amount
-//	o.CycleCount = up.Plan.CycleCount
-//	o.ExtraDays = up.Plan.ExtraDays
-//	o.UpgradeSchemaID = null.StringFrom(up.ID)
-//
-//	return o
-//}
-
-// AliPrice converts Charged price to ailpay format
-//func (o Order) AliPrice() string {
-//	return strconv.FormatFloat(o.Amount, 'f', 2, 32)
-//}
-
-// AmountInCent converts Charged price to int64 in cent for comparison with wx notification.
-// Deprecated:
-//func (o Order) AmountInCent() int64 {
-//	return int64(o.Amount * 100)
-//}
-
-func (o Order) ReadableAmount() string {
-	return fmt.Sprintf("%s%.2f",
-		strings.ToUpper(o.Currency),
-		o.Amount,
-	)
-}
-
 func (o Order) IsConfirmed() bool {
 	return !o.ConfirmedAt.IsZero()
-}
-
-func (o Order) getStartDate(m Membership, confirmedAt time.Time) time.Time {
-	var startTime time.Time
-
-	// If membership is expired, always use the confirmation
-	// time as start time.
-	if m.IsExpired() {
-		startTime = confirmedAt
-	} else {
-		// If membership is not expired, this order might be
-		// used to either renew or upgrade.
-		// For renewal, we use current membership's
-		// expiration date;
-		// For upgrade, we use confirmation time.
-		if o.Usage == plan.SubsKindUpgrade {
-			startTime = confirmedAt
-		} else {
-			startTime = m.ExpireDate.Time
-		}
-	}
-
-	return startTime
 }
 
 func (o Order) getEndDate(startTime time.Time) (time.Time, error) {
