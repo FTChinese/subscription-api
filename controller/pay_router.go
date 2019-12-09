@@ -89,7 +89,7 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 		parcel, err = letter.NewRenewalParcel(account, order)
 
 	case plan.SubsKindUpgrade:
-		up, err := router.loadUpgradePlan(order.UpgradeSchemaID.String)
+		up, err := router.loadUpgradeWallet(order.UpgradeSchemaID.String)
 		if err != nil {
 			return err
 		}
@@ -111,18 +111,16 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 	return nil
 }
 
-func (router PayRouter) loadUpgradePlan(upgradeID string) (subscription.UpgradeSchema, error) {
-	up, err := router.subEnv.RetrieveUpgradePlan(upgradeID)
+func (router PayRouter) loadUpgradeWallet(upgradeID string) (subscription.Wallet, error) {
+	balance, err := router.subEnv.RetrieveUpgradeBalance(upgradeID)
 	if err != nil {
-		return up, err
+		return subscription.Wallet{}, err
 	}
 
 	sources, err := router.subEnv.RetrieveProratedOrders(upgradeID)
 	if err != nil {
-		return up, err
+		return subscription.Wallet{}, err
 	}
 
-	up.Data = sources
-
-	return up, nil
+	return balance.BuildWallet(sources), nil
 }

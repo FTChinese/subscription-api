@@ -87,28 +87,32 @@ func NewRenewalParcel(a reader.Account, order subscription.Order) (postoffice.Pa
 	}, nil
 }
 
-func NewUpgradeParcel(a reader.Account, order subscription.Order, up subscription.UpgradeSchema) (postoffice.Parcel, error) {
+func NewUpgradeParcel(
+	a reader.Account,
+	order subscription.Order,
+	wallet subscription.Wallet,
+) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterUpgradeSub)
 
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
-	p, err := plan.FindFtcPlan(order.NamedKey())
+	p, err := plan.FindPlan(order.Tier, order.Cycle)
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
 
 	data := struct {
-		User    reader.Account
-		Sub     subscription.Order
-		Plan    plan.Plan
-		Upgrade subscription.UpgradeSchema
+		User   reader.Account
+		Order  subscription.Order
+		Plan   plan.Plan
+		Wallet subscription.Wallet
 	}{
-		User:    a,
-		Sub:     order,
-		Plan:    p,
-		Upgrade: up,
+		User:   a,
+		Order:  order,
+		Plan:   p,
+		Wallet: wallet,
 	}
 
 	var body strings.Builder
