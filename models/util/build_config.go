@@ -1,14 +1,5 @@
 package util
 
-// RunEnv determines
-type RunEnv int
-
-const (
-	RunEnvProduction RunEnv = 1 // Using production db
-	RunEnvLocal             = 2 // Using localhost.
-	RunEnvSandbox           = 4 // Using production db's sandbox tables
-)
-
 // BuildConfig set up deploy environment.
 // For production server, the `-production` flag is passed from
 // command line argument.
@@ -21,11 +12,22 @@ type BuildConfig struct {
 	Production bool // it determines which database should be used;
 }
 
+// Live specifies:
+// * Which stripe key should be used: true for live key;
+// * How much should user pay: true for normal, false for 1 cent;
+// * Which webhook url should be used: true for produciton url.
+// Matrix to determine what to use: (test == sandbox)
+// 				Stripe Key 	WebHook		DB		Price
+// Local		test		sandbox		live	sandbox
+// Production	live		live		live	live
+// Sandbox		test		sandbox		sandbox	sandbox
 func (c BuildConfig) Live() bool {
 	return c.Production && !c.Sandbox
 }
 
-func (c BuildConfig) UseSandbox() bool {
+// UseSandboxDB tells whether the sandbox db should be used.
+// Not this is not the opposite of Live.
+func (c BuildConfig) UseSandboxDB() bool {
 	if c.Sandbox {
 		return true
 	}
@@ -34,11 +36,13 @@ func (c BuildConfig) UseSandbox() bool {
 		return false
 	}
 
-	return true
+	// Not sandbox, not production, it should be local development. Use the same environment as production.
+	return false
 }
+
 func (c BuildConfig) GetReceiptVerificationURL() string {
 
-	if c.UseSandbox() {
+	if c.UseSandboxDB() {
 		return "https://sandbox.itunes.apple.com/verifyReceipt"
 	}
 
