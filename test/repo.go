@@ -2,7 +2,6 @@ package test
 
 import (
 	"github.com/jmoiron/sqlx"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/repository/query"
@@ -88,17 +87,10 @@ func (r Repo) SaveBalanceSources(p []subscription.ProratedOrderSchema) {
 }
 
 func (r Repo) SaveUpgradePlan(up subscription.UpgradeSchema) {
-	var data = struct {
-		subscription.UpgradeSchema
-		plan.Plan
-	}{
-		UpgradeSchema: up,
-		Plan:          up.Plan,
-	}
 
 	_, err := r.db.NamedExec(
 		query.BuildInsertUpgradePlan(false),
-		data)
+		up)
 
 	if err != nil {
 		panic(err)
