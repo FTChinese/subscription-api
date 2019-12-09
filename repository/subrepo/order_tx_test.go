@@ -1,6 +1,7 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/test"
@@ -8,18 +9,14 @@ import (
 )
 
 func TestOrderTx_RetrieveMember(t *testing.T) {
-	store := test.NewSubStore(
-		test.NewProfile(),
-		reader.AccountKindFtc,
-	)
 
-	store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
+	profile := test.NewProfile()
 
-	test.NewRepo().SaveMember(store.Member)
+	test.NewRepo().SaveMember(profile.Membership(reader.AccountKindFtc))
 
-	env := SubEnv{
-		db: test.DB,
-	}
+	env := SubEnv{db: test.DB}
+
+	otx, _ := env.BeginOrderTx()
 
 	type args struct {
 		id reader.MemberID
@@ -30,49 +27,42 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Empty member",
+			name: "Retrieve Empty member",
 			args: args{
 				id: test.NewProfile().AccountID(reader.AccountKindFtc),
 			},
-			wantErr: false,
 		},
 		{
-			name: "Existing member",
+			name: "Retrieve existing member",
 			args: args{
-				id: store.Member.MemberID,
+				id: profile.AccountID(reader.AccountKindFtc),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
-			got, err := tx.RetrieveMember(tt.args.id)
+
+			got, err := otx.RetrieveMember(tt.args.id)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
+				_ = otx.Rollback()
+				t.Errorf("RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if err := tx.Commit(); err != nil {
-				t.Error(err)
-			}
-
-			t.Logf("%+v", got)
+			t.Logf("Got: %+v", got)
 		})
 	}
+
+	_ = otx.Commit()
 }
 
 func TestOrderTx_SaveOrder(t *testing.T) {
-	store := test.NewSubStore(
-		test.NewProfile(),
-		reader.AccountKindFtc,
-	)
 
-	env := SubEnv{
-		db: test.DB,
-	}
+	store := test.NewSubStore(test.NewProfile())
+
+	env := SubEnv{db: test.DB}
+
+	otx, _ := env.BeginOrderTx()
 
 	type args struct {
 		order subscription.Order
@@ -83,61 +73,36 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "FTC account new order",
+			name: "Save Order",
 			args: args{
-				order: store.MustCreate(test.YearlyStandard),
+				order: store.MustCreateOrder(),
 			},
-			wantErr: false,
-		},
-		{
-			name: "FTC account renew order",
-			args: args{
-				order: store.MustRenewal(test.YearlyStandard),
-			},
-			wantErr: false,
-		},
-		{
-			name: "FTC account upgrading",
-			args: args{
-				order: store.MustUpgrading(),
-			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			otx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
 
 			if err := otx.SaveOrder(tt.args.order); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.SaveOrder() error = %v, wantErr %v", err, tt.wantErr)
+				_ = otx.Rollback()
+				t.Errorf("SaveOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := otx.Commit(); err != nil {
-				t.Error(err)
-			}
+			t.Logf("Saved order %s", tt.args.order.ID)
 		})
 	}
+
+	_ = otx.Commit()
 }
 
 func TestOrderTx_RetrieveOrder(t *testing.T) {
 
-	store := test.NewSubStore(
-		test.NewProfile(),
-		reader.AccountKindFtc,
-	)
+	store := test.NewSubStore(test.NewProfile())
 
-	order1 := store.MustCreate(test.YearlyStandard)
-	test.NewRepo().SaveOrder(order1)
+	order := store.MustCreateOrder()
+	test.NewRepo().SaveOrder(order)
 
-	order2 := store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
-	test.NewRepo().SaveOrder(order2)
-
-	env := SubEnv{
-		db: test.DB,
-	}
+	env := SubEnv{db: test.DB}
+	otx, _ := env.BeginOrderTx()
 
 	type args struct {
 		orderID string
@@ -148,56 +113,47 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Retrieve an unconfirmed order",
+			name: "Retrieve empty order",
 			args: args{
-				orderID: order1.ID,
+				orderID: test.MustGenOrderID(),
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
-			name: "Retrieve a confirmed order",
+			name: "Retrieve order",
 			args: args{
-				orderID: order2.ID,
+				orderID: order.ID,
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			otx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
 
 			got, err := otx.RetrieveOrder(tt.args.orderID)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.RetrieveOrder() error = %v, wantErr %v", err, tt.wantErr)
+				_ = otx.Rollback()
+				t.Errorf("RetrieveOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-
-			if err := otx.Commit(); err != nil {
-				t.Error(err)
 			}
 
 			t.Logf("%+v", got)
 		})
 	}
+
+	_ = otx.Commit()
 }
 
-func TestOrderTx_ConfirmOrder(t *testing.T) {
+func TestOrderTx_UpdateConfirmedOrder(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile())
 
-	store := test.NewSubStore(
-		test.NewProfile(),
-		reader.AccountKindFtc,
-	)
-
-	order := store.MustCreate(test.YearlyStandard)
+	order := store.MustCreateOrder()
 	test.NewRepo().SaveOrder(order)
 
-	order = store.MustConfirm(order.ID)
+	order = store.MustConfirmOrder(order.ID)
 
-	env := SubEnv{
-		db: test.DB,
-	}
+	env := SubEnv{db: test.DB}
+	otx, _ := env.BeginOrderTx()
 
 	type args struct {
 		order subscription.Order
@@ -208,7 +164,7 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Confirm an order",
+			name: "Update Confirmed Order",
 			args: args{
 				order: order,
 			},
@@ -217,36 +173,28 @@ func TestOrderTx_ConfirmOrder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
+
+			if err := otx.UpdateConfirmedOrder(tt.args.order); (err != nil) != tt.wantErr {
+				_ = otx.Rollback()
+				t.Errorf("UpdateConfirmedOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := tx.UpdateConfirmedOrder(tt.args.order); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.UpdateConfirmedOrder() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if err := tx.Commit(); err != nil {
-				t.Error(err)
-			}
+			t.Logf("Confirmed: %+v", tt.args.order)
+			_ = otx.Commit()
 		})
 	}
+
+	_ = otx.Commit()
 }
 
 func TestOrderTx_CreateMember(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile())
 
-	store := test.NewSubStore(
-		test.NewProfile(),
-		reader.AccountKindFtc,
-	)
+	order := store.MustCreateOrder()
+	store.MustConfirmOrder(order.ID)
 
-	store.MustConfirm(
-		store.MustCreate(test.YearlyStandard).ID,
-	)
-
-	env := SubEnv{
-		db: test.DB,
-	}
+	env := SubEnv{db: test.DB}
+	otx, _ := env.BeginOrderTx()
 
 	type args struct {
 		m subscription.Membership
@@ -257,50 +205,38 @@ func TestOrderTx_CreateMember(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Create a new member",
+			name: "Save membership",
 			args: args{
 				m: store.Member,
 			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			otx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
 
 			if err := otx.CreateMember(tt.args.m); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.CreateMember() error = %v, wantErr %v", err, tt.wantErr)
+				_ = otx.Rollback()
+				t.Errorf("CreateMember() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := otx.Commit(); err != nil {
-				t.Error(err)
-			}
-
-			t.Logf("Created new member %+v", tt.args.m)
+			t.Logf("Saved membership: %s", tt.args.m.ID.String)
 		})
 	}
+
+	_ = otx.Commit()
 }
 
 func TestOrderTx_UpdateMember(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile())
 
-	store := test.NewSubStore(
-		test.NewProfile(),
-		reader.AccountKindFtc,
-	)
-
-	// Create a new order and confirm it.
-	store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
+	order := store.MustCreateOrder()
+	store.MustConfirmOrder(order.ID)
 	test.NewRepo().SaveMember(store.Member)
 
-	// Create another order and confirm it.
-	store.MustConfirm(store.MustCreate(test.YearlyStandard).ID)
+	store.Member.Tier = enum.TierPremium
 
-	env := SubEnv{
-		db: test.DB,
-	}
+	env := SubEnv{db: test.DB}
+	otx, _ := env.BeginOrderTx()
 
 	type args struct {
 		m subscription.Membership
@@ -311,226 +247,23 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Update member",
+			name: "Update membership",
 			args: args{
 				m: store.Member,
 			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			otx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
 
 			if err := otx.UpdateMember(tt.args.m); (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.UpdateMember() error = %v, wantErr %v", err, tt.wantErr)
+				_ = otx.Rollback()
+				t.Errorf("UpdateMember() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err := otx.Commit(); err != nil {
-				t.Error(err)
-			}
-
-			t.Logf("Update member: %+v", tt.args.m)
+			t.Logf("Updated member id: %s", tt.args.m.ID.String)
 		})
 	}
-}
 
-func TestOrderTx_FindBalanceSources(t *testing.T) {
-
-	profile := test.NewProfile()
-
-	store := test.NewSubStore(
-		profile,
-		reader.AccountKindFtc,
-	)
-
-	orders := store.MustRenewN(test.YearlyStandard, 5)
-
-	repo := test.NewRepo()
-	for _, v := range orders {
-		repo.SaveOrder(v)
-	}
-
-	env := SubEnv{
-		db: test.DB,
-	}
-
-	type args struct {
-		accountID reader.MemberID
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Find Balance Sources",
-			args: args{
-				accountID: store.AccountID,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			tx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
-
-			got, err := tx.FindBalanceSources(tt.args.accountID)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("OrderTx.FindBalanceSources() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if err := tx.Commit(); err != nil {
-				t.Error(err)
-			}
-
-			t.Logf("Balance sources: %+v", got)
-		})
-	}
-}
-
-func TestOrderTx_SaveUpgradePlan(t *testing.T) {
-
-	store := test.NewSubStore(
-		test.NewProfile(),
-		reader.AccountKindFtc,
-	)
-	store.MustRenewN(test.YearlyStandard, 3)
-	store.MustCreate(test.YearlyPremium)
-
-	env := SubEnv{
-		db: test.DB,
-	}
-
-	type args struct {
-		up subscription.UpgradeSchema
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Save Upgrade Plan",
-			args: args{
-				up: store.UpgradePlan,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			otx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
-			if err := otx.SaveUpgradeIntent(tt.args.up); (err != nil) != tt.wantErr {
-				t.Errorf("SaveUpgradeIntent() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if err := otx.Commit(); err != nil {
-				t.Error(err)
-			}
-
-			t.Logf("Save upgrade plan: %+v", tt.args.up)
-		})
-	}
-}
-
-func TestOrderTx_SaveProration(t *testing.T) {
-	store := test.NewSubStore(test.NewProfile(), reader.AccountKindFtc)
-
-	store.MustRenewN(test.YearlyStandard, 3)
-	store.MustCreate(test.YearlyPremium)
-
-	env := SubEnv{
-		db: test.DB,
-	}
-
-	type args struct {
-		p []subscription.ProratedOrderSchema
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Save Proration",
-			args: args{
-				p: store.UpgradePlan.Data,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			otx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
-
-			if err := otx.SaveProratedOrders(tt.args.p); (err != nil) != tt.wantErr {
-				t.Errorf("SaveProratedOrders() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if err := otx.Commit(); err != nil {
-				t.Error(err)
-			}
-		})
-	}
-}
-
-func TestOrderTx_ConfirmUpgrade(t *testing.T) {
-	store := test.NewSubStore(test.NewProfile(), reader.AccountKindFtc)
-
-	store.MustRenewN(test.YearlyStandard, 3)
-	store.MustCreate(test.YearlyPremium)
-
-	env := SubEnv{
-		db: test.DB,
-	}
-
-	type args struct {
-		upgradeID string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name:    "Confirm Upgrade",
-			args:    args{upgradeID: store.UpgradePlan.ID},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			otx, err := env.BeginOrderTx()
-			if err != nil {
-				t.Error(err)
-			}
-
-			if err := otx.SaveProratedOrders(store.UpgradePlan.Data); err != nil {
-				t.Error(err)
-			}
-
-			if err := otx.ConfirmUpgrade(tt.args.upgradeID); (err != nil) != tt.wantErr {
-				t.Errorf("ConfirmUpgrade() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if err := otx.Commit(); err != nil {
-				t.Error(err)
-			}
-		})
-	}
+	_ = otx.Commit()
 }
