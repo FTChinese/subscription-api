@@ -44,7 +44,7 @@ SET id = :sub_id,
 
 const updateMembership = `
 UPDATE %s.ftc_vip
-SET id = IFNULL(id, :sub_id)
+SET id = IFNULL(id, :sub_id),
 ` + colsUpsertMembership + `
 WHERE vip_id = :sub_compound_id
 LIMIT 1`
