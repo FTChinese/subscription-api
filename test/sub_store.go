@@ -3,7 +3,6 @@ package test
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
@@ -20,221 +19,51 @@ import (
 // It mimics the working flow of user's order and membership
 // creation and updating inside a real db.
 type SubStore struct {
-	Profile       Profile
-	AccountID     reader.MemberID
-	Orders        map[string]subscription.Order // A user could have multiple orders.
-	Member        subscription.Membership       // But only one membership.
+	Profile Profile
+	Orders  map[string]subscription.Order // A user could have multiple orders.
+	Member  subscription.Membership       // But only one membership.
+
+	Snapshot subscription.MemberSnapshot // This will be populated and updated for any order other than `create`.
+
 	balanceAnchor time.Time
-	UpgradePlan   subscription.UpgradeSchema  // To have data populated, you must call MustRenewN() and then call MustCreate(PremiumPlan).
-	Snapshot      subscription.MemberSnapshot // This will be populated and updated for any order other than `create`.
+	accountKind   reader.AccountKind
+	payMethod     enum.PayMethod
+	plan          plan.Plan
 }
 
 // NewSubStore creates a new storage for a user's membership.
-func NewSubStore(p Profile, k reader.AccountKind) *SubStore {
+func NewSubStore(p Profile) *SubStore {
 
 	return &SubStore{
-		Profile:       p,
-		AccountID:     p.AccountID(k),
-		Orders:        make(map[string]subscription.Order), // Initially user has no orders.
-		Member:        subscription.Membership{},           // and zero membership.
+		Profile: p,
+		Orders:  make(map[string]subscription.Order), // Initially user has no orders.
+		Member:  subscription.Membership{},
+
+		// Control behavior of orders and membership.
+		accountKind:   reader.AccountKindFtc,
 		balanceAnchor: time.Now(),
+		payMethod:     RandomPayMethod(),
+		plan:          YearlyStandard,
 	}
 }
 
-func (s *SubStore) Backdate(n int) *SubStore {
-	s.balanceAnchor = s.balanceAnchor.AddDate(0, 0, n)
-
+func (s *SubStore) SetAccountKind(k reader.AccountKind) *SubStore {
+	s.accountKind = k
 	return s
 }
 
-func (s *SubStore) CreateOrder(p plan.Plan) (subscription.Order, error) {
-	kind, _ := s.Member.SubsKind(p)
-	order, err := subscription.NewOrder(
-		s.AccountID,
-		p,
-		RandomPayMethod(),
-		kind)
-
-	if err != nil {
-		return order, err
-	}
-
-	if order.Usage == plan.SubsKindUpgrade {
-		sources := s.GetBalanceSource()
-
-		up := subscription.NewUpgradeIntent(sources)
-
-		order = order.WithUpgrade(up)
-
-		s.UpgradePlan = up
-	}
-
-	if order.PaymentMethod == enum.PayMethodWx {
-		order.WxAppID = null.StringFrom(WxPayApp.AppID)
-	}
-
-	if !s.Member.IsZero() {
-		snapshot := subscription.NewMemberSnapshot(s.Member, order.Usage.SnapshotReason())
-		order.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
-
-		s.Snapshot = snapshot
-	}
-
-	s.Orders[order.ID] = order
-
-	return order, nil
+func (s *SubStore) SetBalanceAnchor(t time.Time) *SubStore {
+	s.balanceAnchor = t
+	return s
 }
 
-func (s *SubStore) MustCreate(p plan.Plan) subscription.Order {
-	order, err := s.CreateOrder(p)
-	if err != nil {
-		panic(err)
-	}
-
-	return order
-}
-
-// UpdateConfirmedOrder confirms an existing order
-func (s *SubStore) ConfirmOrder(id string) (subscription.Order, error) {
-	o, err := s.GetOrder(id)
-	if err != nil {
-		return o, err
-	}
-
-	if o.IsConfirmed() {
-		return o, fmt.Errorf("order %s is already confirmed", id)
-	}
-
-	o, err = o.Confirm(s.Member, time.Now())
-	if err != nil {
-		return o, err
-	}
-
-	// Add the confirmed order back to store.
-	s.Orders[o.ID] = o
-
-	m, err := s.Member.FromAliOrWx(o)
-	if err != nil {
-		return o, err
-	}
-
-	s.Member = m
-
-	return o, nil
-}
-
-func (s *SubStore) MustConfirm(id string) subscription.Order {
-	order, err := s.ConfirmOrder(id)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return order
-}
-
-// RenewN creates a new membership and renew it multiple times.
-//
-func (s *SubStore) RenewN(p plan.Plan, n int) ([]subscription.Order, error) {
-
-	orders := []subscription.Order{}
-
-	for i := 0; i < n; i++ {
-		o, err := s.CreateOrder(p)
-		if err != nil {
-			return nil, err
-		}
-
-		o, err = s.ConfirmOrder(o.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		orders = append(orders, o)
-	}
-
-	return orders, nil
-}
-
-func (s *SubStore) MustRenewN(p plan.Plan, n int) []subscription.Order {
-	orders, err := s.RenewN(p, n)
-	if err != nil {
-		panic(err)
-	}
-
-	return orders
-}
-
-// RenewalOrder creates an order used for renewal
-func (s *SubStore) RenewalOrder(p plan.Plan) (subscription.Order, error) {
-	order, err := s.CreateOrder(p)
-	if err != nil {
-		return subscription.Order{}, err
-	}
-
-	_, err = s.ConfirmOrder(order.ID)
-	if err != nil {
-		return subscription.Order{}, err
-	}
-
-	order2, err := s.CreateOrder(p)
-	if err != nil {
-		return subscription.Order{}, err
-	}
-
-	return order2, nil
-}
-
-func (s *SubStore) MustRenewal(p plan.Plan) subscription.Order {
-	order, err := s.RenewalOrder(p)
-	if err != nil {
-		panic(err)
-	}
-
-	return order
-}
-
-// UpgradingOrder creates an order used for upgrading.
-func (s *SubStore) UpgradingOrder() (subscription.Order, error) {
-	order, err := s.CreateOrder(YearlyStandard)
-	if err != nil {
-		return subscription.Order{}, err
-	}
-
-	_, err = s.ConfirmOrder(order.ID)
-	if err != nil {
-		return subscription.Order{}, err
-	}
-
-	order2, err := s.CreateOrder(YearlyPremium)
-	if err != nil {
-		return subscription.Order{}, err
-	}
-
-	return order2, nil
-}
-
-func (s *SubStore) MustUpgrading() subscription.Order {
-	order, err := s.UpgradingOrder()
-	if err != nil {
-		panic(err)
-	}
-
-	return order
-}
-
-// GetOrder retrieves a previously saved order.
-func (s *SubStore) GetOrder(id string) (subscription.Order, error) {
-	o, ok := s.Orders[id]
-	if !ok {
-		return subscription.Order{}, fmt.Errorf("order %s is not found", id)
-	}
-
-	return o, nil
+func (s *SubStore) SetPlan(p plan.Plan) *SubStore {
+	s.plan = p
+	return s
 }
 
 func (s *SubStore) GetBalanceSource() []subscription.ProratedOrderSchema {
-	sources := []subscription.ProratedOrderSchema{}
+	sources := make([]subscription.ProratedOrderSchema, 0)
 
 	for _, v := range s.Orders {
 		if !v.IsConfirmed() {
@@ -253,17 +82,141 @@ func (s *SubStore) GetBalanceSource() []subscription.ProratedOrderSchema {
 			continue
 		}
 
-		sources = append(sources, subscription.ProratedOrderSchema{
-			OrderID:    v.ID,
-			PaidAmount: v.Amount,
-			StartDate:  v.StartDate,
-			EndDate:    v.EndDate,
-			//Balance:     0,
-			//CreatedUTC:  chrono.Time{},
-			//ConsumedUTC: chrono.Time{},
-			//UpgradeSchemaID:   "",
-		})
+		sources = append(sources, subscription.ProratedOrderSchema{})
 	}
 
 	return sources
+}
+
+func (s *SubStore) GetWallet() subscription.Wallet {
+	orders := make([]subscription.ProratedOrder, 0)
+
+	if s.balanceAnchor.IsZero() {
+		s.balanceAnchor = time.Now()
+	}
+
+	for _, v := range s.Orders {
+		if v.IsZero() || !v.IsConfirmed() {
+			continue
+		}
+
+		if v.Tier != enum.TierStandard {
+			continue
+		}
+
+		if v.EndDate.Time.Before(s.balanceAnchor) {
+			continue
+		}
+
+		o := subscription.ProratedOrder{
+			OrderID:   v.ID,
+			Amount:    v.Amount,
+			StartDate: v.StartDate,
+			EndDate:   v.EndDate,
+			Balance:   0,
+		}
+
+		orders = append(orders, o)
+	}
+
+	return subscription.NewWallet(orders, time.Now())
+}
+
+func (s *SubStore) MustCreateOrder() subscription.Order {
+
+	builder := subscription.NewOrderBuilder(s.Profile.AccountID(s.accountKind)).
+		SetPlan(s.plan).
+		SetPayMethod(s.payMethod).
+		SetMembership(s.Member).
+		SetClient(RandomClientApp()).
+		SetWallet(s.GetWallet())
+
+	if s.payMethod == enum.PayMethodWx {
+		builder.SetWxAppID(WxPayApp.AppID)
+	}
+
+	builder.MustBuild()
+
+	order, _ := builder.Order()
+
+	s.Orders[order.ID] = order
+
+	return order
+}
+
+func (s *SubStore) MustConfirmOrder(id string) subscription.Order {
+	o, err := s.getOrder(id)
+
+	if err != nil {
+		panic(err)
+	}
+
+	builder := subscription.
+		NewConfirmationBuilder(subscription.PaymentResult{
+			Amount:      o.AmountInCent(true),
+			OrderID:     o.ID,
+			ConfirmedAt: time.Now(),
+		}, true).
+		SetOrder(o).
+		SetMembership(s.Member)
+
+	if err := builder.ValidateOrder(); err != nil {
+		panic(err)
+	}
+
+	builder.MustBuild()
+
+	order := builder.ConfirmedOrder()
+	member := builder.ConfirmedMembership()
+
+	// Add the confirmed order back to store.
+	s.Orders[o.ID] = order
+
+	s.Member = member
+
+	return order
+}
+
+func (s *SubStore) MustRenewN(n int) []subscription.Order {
+	orders := make([]subscription.Order, 0)
+
+	for i := 0; i < n; i++ {
+		o := s.MustCreateOrder()
+
+		o = s.MustConfirmOrder(o.ID)
+
+		orders = append(orders, o)
+	}
+
+	return orders
+}
+
+func (s *SubStore) MustRenewalOrder() subscription.Order {
+	order := s.MustCreateOrder()
+
+	order = s.MustConfirmOrder(order.ID)
+
+	order2 := s.MustCreateOrder()
+
+	return order2
+}
+
+func (s *SubStore) MustUpgradingOrder() subscription.Order {
+	order := s.MustCreateOrder()
+
+	order = s.MustConfirmOrder(order.ID)
+
+	order2 := s.MustCreateOrder()
+
+	return order2
+}
+
+// getOrder retrieves a previously saved order.
+func (s *SubStore) getOrder(id string) (subscription.Order, error) {
+	o, ok := s.Orders[id]
+	if !ok {
+		return subscription.Order{}, fmt.Errorf("order %s is not found", id)
+	}
+
+	return o, nil
 }
