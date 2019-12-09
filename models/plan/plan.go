@@ -27,12 +27,10 @@ func (p BasePlan) NamedKey() string {
 // The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
 	BasePlan
-	ListPrice float64 `json:"listPrice"`          // Deprecate
-	NetPrice  float64 `json:"netPrice"`           // Deprecate
-	Price     float64 `json:"price" db:"price"`   // Price of a plan, prior to discount.
-	Amount    float64 `json:"amount" db:"amount"` // Actually paid amount.
-	//Duration                 // This should be removed.
-	Currency         string `json:"currency" db:"currency"`
+	ListPrice float64 `json:"listPrice"` // Deprecated
+	NetPrice  float64 `json:"netPrice"`  // Deprecated
+	Price     float64 `json:"price"`     // Price of a plan, prior to discount.
+	Charge
 	Title            string `json:"description"`
 	stripeLivePlanID string `json:"-"`
 	stripeTestPlanID string `json:"-"`
@@ -55,63 +53,17 @@ func (p Plan) GetStripePlanID(live bool) string {
 	return p.stripeTestPlanID
 }
 
-// withSandboxPrice returns the sandbox version of a plan.
-//func (p Plan) withSandboxPrice() Plan {
-//	p.NetPrice = 0.01
-//	p.Amount = 0.01
-//	return p
-//}
-
 func (p Plan) WithStripePrice(sp stripe.Plan) Plan {
-	p.ListPrice = float64(sp.Amount / 100)
-	p.NetPrice = p.ListPrice
-	p.Price = p.ListPrice
-	p.Amount = p.NetPrice
+
+	p.Price = float64(sp.Amount / 100)
+	p.Amount = p.Price
 	p.Currency = string(sp.Currency)
+
+	p.ListPrice = p.Price
+	p.NetPrice = p.Price
 
 	return p
 }
-
-// WithUpgrade creates an upgrading plan.
-//func (p Plan) WithUpgrade(balance float64) Plan {
-//
-//	if balance < p.Price {
-//		p.Price = p.Price - balance
-//	} else {
-//		p.Price = 0
-//	}
-//
-//	p.Amount = p.Price
-//
-//	dur := p.CalculateConversion(balance)
-//
-//	//p.CycleCount = dur.CycleCount
-//	//p.ExtraDays = dur.ExtraDays
-//	p.Title = "FT中文网 - 升级高端会员"
-//
-//	return p
-//}
-
-// ConvertBalance checks to see how many cycles and extra
-// days a user's balance could be exchanged.
-//func (p Plan) CalculateConversion(balance float64) Duration {
-//
-//	if balance <= p.Amount {
-//		return Duration{
-//			CycleCount: 1,
-//			ExtraDays:  1,
-//		}
-//	}
-//
-//	cycles, r := util.Division(balance, p.NetPrice)
-//
-//	days := math.Ceil(r * 365 / p.NetPrice)
-//
-//	return Duration{
-//		CycleCount: cycles,
-//		ExtraDays:  int64(days),
-//	}
-//}
 
 // Desc is used for displaying to user.
 // The price show here is not the final price user paid.
@@ -120,7 +72,7 @@ func (p Plan) Desc() string {
 		"%s %s%.2f/%s",
 		p.Tier.StringCN(),
 		strings.ToUpper(p.Currency),
-		p.ListPrice,
+		p.Price,
 		p.Cycle.StringCN(),
 	)
 }
