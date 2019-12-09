@@ -51,7 +51,7 @@ func (otx OrderTx) FreeUpgrade(builder *subscription.OrderBuilder) (subscription
 	}
 
 	// Save upgrade plan.
-	upgradeSchema, _ := builder.UpgradeSchema()
+	upgradeSchema, _ := builder.UpgradeBalanceSchema()
 	if err := otx.SaveUpgradeIntent(upgradeSchema); err != nil {
 		return subscription.Order{}, err
 	}

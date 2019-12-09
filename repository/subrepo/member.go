@@ -70,10 +70,10 @@ func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]subscription.Prorate
 	return sources, nil
 }
 
-// RetrieveUpgradePlan retrieves an upgrade plan to be used in email sent to user.
-func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeSchema, error) {
+// RetrieveUpgradeBalance retrieves an upgrade plan to be used in email sent to user.
+func (env SubEnv) RetrieveUpgradeBalance(upgradeID string) (subscription.UpgradeBalanceSchema, error) {
 
-	var data subscription.UpgradeSchema
+	var data subscription.UpgradeBalanceSchema
 
 	err := env.db.Get(
 		&data,
@@ -81,8 +81,8 @@ func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeSch
 		upgradeID)
 
 	if err != nil {
-		logger.WithField("trace", "SubEnv.RetrieveUpgradePlan").Error(err)
-		return subscription.UpgradeSchema{}, err
+		logger.WithField("trace", "SubEnv.RetrieveUpgradeBalance").Error(err)
+		return subscription.UpgradeBalanceSchema{}, err
 	}
 
 	return data, nil
@@ -91,7 +91,7 @@ func (env SubEnv) RetrieveUpgradePlan(upgradeID string) (subscription.UpgradeSch
 // RetrieveProratedOrders retrieves all orders prorated from
 // proration table. Used to send user an email after upgrade.
 func (env SubEnv) RetrieveProratedOrders(upgradeID string) ([]subscription.ProratedOrderSchema, error) {
-	var sources = []subscription.ProratedOrderSchema{}
+	var sources = make([]subscription.ProratedOrderSchema, 0)
 
 	err := env.db.Select(
 		&sources,

@@ -63,6 +63,13 @@ func (w Wallet) ConvertBalance(p plan.Plan) Duration {
 	}
 }
 
+// ReadableBalance produces a string describing the total balance
+// in the format: CNY99.00 in email sent to user.
+// Deprecate
+func (w Wallet) ReadableBalance() string {
+	return fmt.Sprintf("%s%.2f", "CNY", w.Balance)
+}
+
 // ProratedOrder is used to retrieve paid order with balance.
 type ProratedOrder struct {
 	OrderID   string      `db:"order_id"`
@@ -104,19 +111,4 @@ func (p ProratedOrder) Prorate(asOf time.Time) float64 {
 
 func (p ProratedOrder) ReadableBalance() string {
 	return fmt.Sprintf("%s%.2f", "CNY", p.Balance)
-}
-
-// ProratedOrderSchema gets the unused portion of an order.
-// This is the balance of each valid order the moment user
-// is requesting upgrade.
-// Once the webhook received notification, each record
-// will have ConsumedUTC set, indicating this order won't be
-// included the nex time user requesting upgrade, which might
-// happen if user stopped premium subscription, re-subscribed
-// to standard product, and then upgrade again.
-type ProratedOrderSchema struct {
-	ProratedOrder
-	CreatedUTC  chrono.Time `db:"created_at"`  // The moment this record is created. Retrieval only
-	ConsumedUTC chrono.Time `db:"consumed_at"` // The moment the upgrading order is confirmed. Retrieval only.
-	UpgradeID   string      `db:"upgrade_id"`
 }

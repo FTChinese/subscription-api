@@ -89,7 +89,7 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 	}
 
 	if subKind == plan.SubsKindUpgrade {
-		upIntent, _ := builder.UpgradeSchema()
+		upIntent, _ := builder.UpgradeBalanceSchema()
 		// Step 3.4: Save the upgrade plan
 		if err := otx.SaveUpgradeIntent(upIntent); err != nil {
 			log.Error(err)

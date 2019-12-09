@@ -46,9 +46,9 @@ FT中文网用户 {{.User.NormalizeName}},
 支付金额 {{.Order.ReadableAmount}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
-本次升级前余额 {{.Upgrade.ReadableBalance}}，余额来自如下订单未使用部分：
+本次升级前余额 {{.UpgradeBalance.ReadableBalance}}，余额来自如下订单未使用部分：
 
-{{range .Upgrade.Data}}
+{{range .UpgradeBalance.Data}}
 {{.OrderID}}: {{.Balance}}
 {{end}}
 
