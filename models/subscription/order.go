@@ -48,7 +48,7 @@ type Order struct {
 	reader.MemberID
 	plan.BasePlan
 	Price float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
-	Charge
+	plan.Charge
 	Duration
 	Usage plan.SubsKind `json:"usageType" db:"usage_type"` // The usage of this order: creat new, renew, or upgrade?
 	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
@@ -108,9 +108,9 @@ func (o Order) IsZero() bool {
 
 // AmountInCent converts Charged price to int64 in cent for comparison with wx notification.
 // Deprecated:
-func (o Order) AmountInCent() int64 {
-	return int64(o.Amount * 100)
-}
+//func (o Order) AmountInCent() int64 {
+//	return int64(o.Amount * 100)
+//}
 
 func (o Order) ReadableAmount() string {
 	return fmt.Sprintf("%s%.2f",
