@@ -126,7 +126,6 @@ func (otx OrderTx) UpdateMember(m subscription.Membership) error {
 
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
-// TODO: change sql statement.
 func (otx OrderTx) FindBalanceSources(accountID reader.MemberID) ([]subscription.ProratedOrder, error) {
 
 	var orders = make([]subscription.ProratedOrder, 0)
@@ -167,7 +166,6 @@ func (otx OrderTx) SaveProratedOrders(p []subscription.ProratedOrderSchema) erro
 
 // SaveUpgradeIntent saved user's current total balance
 // the the upgrade plan at this moment.
-// TODO: check sql
 func (otx OrderTx) SaveUpgradeIntent(up subscription.UpgradeSchema) error {
 
 	_, err := otx.tx.NamedExec(
