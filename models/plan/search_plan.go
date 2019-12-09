@@ -15,13 +15,11 @@ var (
 		ListPrice: 28.00,
 		NetPrice:  28.00,
 		Price:     28.00,
-		Amount:    28.00,
-		//Duration: Duration{
-		//	CycleCount: 1,
-		//	ExtraDays:  1,
-		//},
-		Title:            "FT中文网 - 月度标准会员",
-		Currency:         "cny",
+		Charge: Charge{
+			Amount:   28.00,
+			Currency: "cny",
+		},
+		Title:            "FT中文网标准会员",
 		stripeLivePlanID: "plan_FXZYLOEbcvj5Tx",
 		stripeTestPlanID: "plan_FOdgPTznDwHU4i",
 		AppleProductID:   "com.ft.ftchinese.mobile.subscription.member.monthly",
@@ -36,13 +34,11 @@ var (
 		ListPrice: 258.00,
 		NetPrice:  258.00,
 		Price:     258.00,
-		Amount:    258.00,
-		//Duration: Duration{
-		//	CycleCount: 1,
-		//	ExtraDays:  1,
-		//},
-		Title:            "FT中文网 - 年度标准会员",
-		Currency:         "cny",
+		Charge: Charge{
+			Amount:   258.00,
+			Currency: "cny",
+		},
+		Title:            "FT中文网标准会员",
 		stripeLivePlanID: "plan_FXZZUEDpToPlZK",
 		stripeTestPlanID: "plan_FOdfeaqzczp6Ag",
 		AppleProductID:   "com.ft.ftchinese.mobile.subscription.member",
@@ -57,13 +53,11 @@ var (
 		ListPrice: 1998.00,
 		NetPrice:  1998.00,
 		Price:     1998.00,
-		Amount:    1998.00,
-		//Duration: Duration{
-		//	CycleCount: 1,
-		//	ExtraDays:  1,
-		//},
-		Title:            "FT中文网 - 年度高端会员",
-		Currency:         "cny",
+		Charge: Charge{
+			Amount:   1998.00,
+			Currency: "cny",
+		},
+		Title:            "FT中文网高端会员",
 		stripeLivePlanID: "plan_FXZbv1cDTsUKOg",
 		stripeTestPlanID: "plan_FOde0uAr0V4WmT",
 		AppleProductID:   "com.ft.ftchinese.mobile.subscription.vip",
@@ -84,24 +78,24 @@ func (plans FtcPlans) FindPlan(id string) (Plan, error) {
 }
 
 // Index FTC plans by plan name.
-var ftcPlansLive = FtcPlans{
+var ftcPlans = FtcPlans{
 	"standard_year":  standardYearlyPlan,
 	"standard_month": standardMonthlyPlan,
 	"premium_year":   premiumYearlyPlan,
 }
 
 func GetFtcPlans() FtcPlans {
-	return ftcPlansLive
+	return ftcPlans
 }
 
 func FindFtcPlan(id string) (Plan, error) {
-	return ftcPlansLive.FindPlan(id)
+	return ftcPlans.FindPlan(id)
 }
 
 func FindPlan(tier enum.Tier, cycle enum.Cycle) (Plan, error) {
 	key := tier.String() + "_" + cycle.String()
 
-	return ftcPlansLive.FindPlan(key)
+	return ftcPlans.FindPlan(key)
 }
 
 var stripeLivePlans = FtcPlans{
