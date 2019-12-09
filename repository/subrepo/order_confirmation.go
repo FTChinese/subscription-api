@@ -5,6 +5,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
+// TODO: flag prorated orders as consumed.
 func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.Order, *subscription.ConfirmError) {
 	log := logger.WithField("trace", "SubEnv.ConfirmOrder")
 
@@ -33,7 +34,8 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 		}
 	}
 
-	builder := subscription.NewConfirmationBuilder(result).
+	builder := subscription.
+		NewConfirmationBuilder(result, env.Live()).
 		SetOrder(order)
 
 	if err := builder.ValidateOrder(); err != nil {
