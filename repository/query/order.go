@@ -58,7 +58,7 @@ LIMIT 1`
 
 const InsertConfirmationResult = `
 INSERT INTO premium.confirmation_result
-SET order_id = ?,
-	succeeded = ?,
-	failed = ?,
+SET order_id = :order_id,
+	succeeded = :succeeded,
+	failed = :failed,
 	created_utc = UTC_TIMESTAMP()`

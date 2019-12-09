@@ -2,20 +2,18 @@ package subrepo
 
 import (
 	"github.com/guregu/null"
-	"github.com/icrowley/fake"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 
-func TestEnv_SaveConfirmationResult(t *testing.T) {
-
+func TestSubEnv_SaveConfirmationResult(t *testing.T) {
 	env := SubEnv{
 		db: test.DB,
 	}
 
 	type args struct {
-		r *subscription.ConfirmationResult
+		r subscription.ConfirmationResult
 	}
 	tests := []struct {
 		name    string
@@ -23,28 +21,15 @@ func TestEnv_SaveConfirmationResult(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save Failed Confirmation Result",
+			name: "Save confirmation result",
 			args: args{
-				r: &subscription.ConfirmationResult{
-					OrderID:   test.MustGenOrderID(),
-					Succeeded: false,
-					Failed:    null.StringFrom(fake.Sentence()),
-					Retry:     false,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Save Succeeded Confirmation Result",
-			args: args{
-				r: &subscription.ConfirmationResult{
+				r: subscription.ConfirmationResult{
 					OrderID:   test.MustGenOrderID(),
 					Succeeded: true,
 					Failed:    null.String{},
 					Retry:     false,
 				},
 			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
