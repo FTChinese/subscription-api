@@ -54,7 +54,7 @@ func (env SubEnv) RetrieveMember(id reader.MemberID) (subscription.Membership, e
 // unused portion.
 // This is identical to OrderTx.FindBalanceSources without a transaction.
 func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]subscription.ProratedOrderSchema, error) {
-	var sources = []subscription.ProratedOrderSchema{}
+	var sources = make([]subscription.ProratedOrderSchema, 0)
 
 	err := env.db.Select(
 		&sources,
