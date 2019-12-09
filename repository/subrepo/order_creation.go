@@ -15,9 +15,7 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 		return subscription.Order{}, err
 	}
 
-	if env.UseSandbox() {
-		builder.SetSandbox()
-	}
+	builder.SetEnvironment(env.Live())
 
 	// Step 1: Retrieve membership for this user.
 	// The membership might be empty but the value is
