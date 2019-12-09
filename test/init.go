@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
@@ -18,10 +19,17 @@ const (
 	MyEmail    = "neefrankie@gmail.com"
 )
 
-var YearlyStandard = plan.GetFtcPlans()["standard_year"]
-var YearlyPremium = plan.GetFtcPlans()["premium_year"]
-var YearlyStandardLive = plan.GetFtcPlans()["standard_year"]
-var YearlyPremiumLive = plan.GetFtcPlans()["premium_year"]
+func mustFindPlan(tier enum.Tier, cycle enum.Cycle) plan.Plan {
+	p, err := plan.FindPlan(tier, cycle)
+	if err != nil {
+		panic(err)
+	}
+
+	return p
+}
+
+var YearlyStandard = mustFindPlan(enum.TierStandard, enum.CycleYear)
+var YearlyPremium = mustFindPlan(enum.TierPremium, enum.CycleYear)
 
 var (
 	DB          *sqlx.DB
@@ -31,10 +39,6 @@ var (
 	WxPayApp    wechat.PayApp
 	WxPayClient wechat.Client
 	StripeKey   string
-
-	PlanStandardMonthly, _ = plan.FindFtcPlan("standard_month")
-	PlanStandardYearly, _  = plan.FindFtcPlan("standard_year")
-	PlanPremiumYearly, _   = plan.FindFtcPlan("premium_year")
 )
 
 func init() {
