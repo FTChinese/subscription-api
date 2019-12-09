@@ -12,7 +12,7 @@ import (
 // Wallet show how much money a member still owns and
 // which orders constitutes the balance.
 type Wallet struct {
-	Balance  float64         `json:"balance"`
+	Balance  float64         `json:"balance"` // TODO: unexport it.
 	Source   []ProratedOrder `json:"-"`
 	AsOfDate chrono.Time     `json:"as_of_date"` // When the balance is calculated.
 }
@@ -36,6 +36,10 @@ func NewWallet(orders []ProratedOrder, asOf time.Time) Wallet {
 	}
 
 	return w
+}
+
+func (w Wallet) GetBalance() float64 {
+	return w.Balance
 }
 
 func (w Wallet) ConvertBalance(p plan.Plan) Duration {
