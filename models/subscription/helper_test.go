@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
-	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"time"
 )
@@ -137,8 +136,4 @@ func (p Profile) Membership(kind reader.AccountKind, pm enum.PayMethod, expired 
 	}
 
 	return m
-}
-
-func GetWxAppID() string {
-	return viper.GetString("wxapp.m_subs.app_id")
 }
