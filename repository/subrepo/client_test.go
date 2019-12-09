@@ -1,19 +1,19 @@
 package subrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 
-func TestEnv_SaveOrderClient(t *testing.T) {
+func TestSubEnv_SaveOrderClient(t *testing.T) {
+
 	env := SubEnv{
 		db: test.DB,
 	}
 
 	type args struct {
-		orderID string
-		app     util.ClientApp
+		c subscription.OrderClient
 	}
 	tests := []struct {
 		name    string
@@ -21,21 +21,23 @@ func TestEnv_SaveOrderClient(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save Order Client",
+			name: "Save client app of an order",
 			args: args{
-				orderID: test.MustGenOrderID(),
-				app:     test.RandomClientApp(),
+				c: subscription.OrderClient{
+					OrderID:   test.MustGenOrderID(),
+					ClientApp: test.RandomClientApp(),
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if err := env.SaveOrderClient(tt.args.orderID, tt.args.app); (err != nil) != tt.wantErr {
+			if err := env.SaveOrderClient(tt.args.c); (err != nil) != tt.wantErr {
 				t.Errorf("SaveOrderClient() error = %v, wantErr %v", err, tt.wantErr)
 			}
-		})
 
-		t.Logf("Save client for order %s", tt.args.orderID)
+			t.Logf("Order id %s", tt.args.c.OrderID)
+		})
 	}
 }
