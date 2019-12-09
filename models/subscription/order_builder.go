@@ -312,17 +312,18 @@ func (b *OrderBuilder) MembershipSnapshot() MemberSnapshot {
 	}
 }
 
-func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
+// UpgradeBalanceSchema converts wallet to save the total balance part of data.
+func (b *OrderBuilder) UpgradeBalanceSchema() (UpgradeBalanceSchema, error) {
 
 	if err := b.ensureBuilt(); err != nil {
-		return UpgradeSchema{}, err
+		return UpgradeBalanceSchema{}, err
 	}
 
 	if b.kind != plan.SubsKindUpgrade {
-		return UpgradeSchema{}, errors.New("not an upgrade subscription")
+		return UpgradeBalanceSchema{}, errors.New("not an upgrade subscription")
 	}
 
-	return UpgradeSchema{
+	return UpgradeBalanceSchema{
 		ID:         b.upgradeSchemaID.String,
 		CreatedAt:  chrono.TimeNow(),
 		Balance:    b.wallet.GetBalance(),
@@ -331,6 +332,8 @@ func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
 	}, nil
 }
 
+// ProratedOrdersSchema wallet to save what make up of a
+// wallet's total balance.
 func (b *OrderBuilder) ProratedOrdersSchema() []ProratedOrderSchema {
 	orders := make([]ProratedOrderSchema, 0)
 

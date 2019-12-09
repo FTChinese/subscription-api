@@ -86,7 +86,7 @@ func (r Repo) SaveBalanceSources(p []subscription.ProratedOrderSchema) {
 	}
 }
 
-func (r Repo) SaveUpgradePlan(up subscription.UpgradeSchema) {
+func (r Repo) SaveUpgradePlan(up subscription.UpgradeBalanceSchema) {
 
 	_, err := r.db.NamedExec(
 		query.BuildInsertUpgradePlan(false),

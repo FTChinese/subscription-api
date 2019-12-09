@@ -166,7 +166,7 @@ func (otx OrderTx) SaveProratedOrders(p []subscription.ProratedOrderSchema) erro
 
 // SaveUpgradeIntent saved user's current total balance
 // the the upgrade plan at this moment.
-func (otx OrderTx) SaveUpgradeIntent(up subscription.UpgradeSchema) error {
+func (otx OrderTx) SaveUpgradeIntent(up subscription.UpgradeBalanceSchema) error {
 
 	_, err := otx.tx.NamedExec(
 		query.BuildInsertUpgradePlan(otx.sandbox),
