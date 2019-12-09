@@ -27,11 +27,7 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 	p, _ := plan.FindPlan(enum.TierPremium, enum.CycleYear)
 
 	builder := subscription.NewOrderBuilder(userID).
-		SetPlan(p)
-
-	if router.subEnv.UseSandbox() {
-		builder.SetSandbox()
-	}
+		SetPlan(p).SetEnvironment(router.subEnv.Live())
 
 	otx, err := router.subEnv.BeginOrderTx()
 	if err != nil {
@@ -75,11 +71,8 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 
 	builder := subscription.NewOrderBuilder(userID).
 		SetPlan(p).
-		SetClient(clientApp)
-
-	if router.subEnv.UseSandbox() {
-		builder.SetSandbox()
-	}
+		SetClient(clientApp).
+		SetEnvironment(router.subEnv.Live())
 
 	otx, err := router.subEnv.BeginOrderTx()
 	if err != nil {
