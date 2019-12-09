@@ -19,7 +19,7 @@ type OrderBuilder struct {
 	// Required fields.
 	memberID reader.MemberID
 	plan     plan.Plan
-	sandbox  bool // Whether this is under sandbox.
+	live     bool // Use live webhool or sandbox.
 
 	membership Membership // User's current membership. Needs querying DB.
 	wallet     Wallet     // Only required if kind == SubsKindUpgrade.
@@ -32,7 +32,7 @@ type OrderBuilder struct {
 
 	// Calculated for previous fields set.
 	kind            plan.SubsKind
-	charge          Charge
+	charge          plan.Charge
 	duration        Duration
 	orderID         string
 	upgradeSchemaID null.String
@@ -61,8 +61,8 @@ func (b *OrderBuilder) GetReaderID() reader.MemberID {
 	return b.memberID
 }
 
-func (b *OrderBuilder) SetSandbox() *OrderBuilder {
-	b.sandbox = true
+func (b *OrderBuilder) SetEnvironment(live bool) *OrderBuilder {
+	b.live = live
 	return b
 }
 
@@ -86,12 +86,15 @@ func (b *OrderBuilder) SetWxParams(p wechat.UnifiedOrder) *OrderBuilder {
 	return b
 }
 
+// getWebHookURL determines which url to use.
+// For local development, we need a weird combination:
+// use production db layout while using sandbox url.
 func (b *OrderBuilder) getWebHookURL() string {
 	baseURL := "http://www.ftacademy.cn/api"
-	if b.sandbox {
-		baseURL = baseURL + "/sandbox"
-	} else {
+	if b.live {
 		baseURL = baseURL + "/v1"
+	} else {
+		baseURL = baseURL + "/sandbox"
 	}
 
 	switch b.method {
@@ -166,7 +169,7 @@ func (b *OrderBuilder) SetWallet(w Wallet) *OrderBuilder {
 // CanBalanceCoverPlan checks if user's current balance
 // is enough to cover chosen plan.
 func (b *OrderBuilder) CanBalanceCoverPlan() bool {
-	return b.wallet.Balance >= b.plan.Amount
+	return b.wallet.GetBalance() >= b.plan.Amount
 }
 
 // Build calculates subscription kind, the amount to pay,
@@ -183,9 +186,16 @@ func (b *OrderBuilder) Build() error {
 		return err
 	}
 
+	// Wallet should exist only for upgrading order.
+	if b.kind != plan.SubsKindUpgrade {
+		b.wallet = Wallet{}
+	}
+
+	// A zero wallet still produces valid Duration value,
+	// which default to 1 cycle plus 1 day.
 	b.duration = b.wallet.ConvertBalance(b.plan)
-	b.charge = Charge{
-		Amount:   b.plan.Price - b.wallet.Balance,
+	b.charge = plan.Charge{
+		Amount:   b.plan.Price - b.wallet.GetBalance(),
 		Currency: b.plan.Currency,
 	}
 
@@ -207,6 +217,13 @@ func (b *OrderBuilder) Build() error {
 	return nil
 }
 
+func (b *OrderBuilder) MustBuild() *OrderBuilder {
+	if err := b.Build(); err != nil {
+		panic(err)
+	}
+
+	return b
+}
 func (b *OrderBuilder) ensureBuilt() error {
 	if b.isBuilt {
 		return nil
@@ -306,10 +323,11 @@ func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
 	}
 
 	return UpgradeSchema{
-		ID:        b.upgradeSchemaID.String,
-		CreatedAt: chrono.TimeNow(),
-		Balance:   b.wallet.Balance,
-		Plan:      b.plan,
+		ID:         b.upgradeSchemaID.String,
+		CreatedAt:  chrono.TimeNow(),
+		Balance:    b.wallet.GetBalance(),
+		PlanPrice:  b.plan.Price,
+		PlanAmount: b.plan.Amount,
 	}, nil
 }
 
@@ -343,7 +361,7 @@ func (b *OrderBuilder) AliAppPayParams() alipay.AliPayTradeAppPay {
 			NotifyURL:   b.getWebHookURL(),
 			Subject:     b.plan.GetTitle(b.kind),
 			OutTradeNo:  b.orderID,
-			TotalAmount: b.charge.AliPrice(b.sandbox),
+			TotalAmount: b.charge.AliPrice(b.live),
 			ProductCode: ali.ProductCodeApp.String(),
 			GoodsType:   "0",
 		},
@@ -357,7 +375,7 @@ func (b *OrderBuilder) AliDesktopPayParams(retURL string) alipay.AliPayTradePage
 			ReturnURL:   retURL,
 			Subject:     b.plan.GetTitle(b.kind),
 			OutTradeNo:  b.orderID,
-			TotalAmount: b.charge.AliPrice(b.sandbox),
+			TotalAmount: b.charge.AliPrice(b.live),
 			ProductCode: ali.ProductCodeWeb.String(),
 			GoodsType:   "0",
 		},
@@ -371,7 +389,7 @@ func (b *OrderBuilder) AliWapPayParams(retURL string) alipay.AliPayTradeWapPay {
 			ReturnURL:   retURL,
 			Subject:     b.plan.GetTitle(b.kind),
 			OutTradeNo:  b.orderID,
-			TotalAmount: b.charge.AliPrice(b.sandbox),
+			TotalAmount: b.charge.AliPrice(b.live),
 			ProductCode: ali.ProductCodeWeb.String(),
 			GoodsType:   "0",
 		},
@@ -382,7 +400,7 @@ func (b *OrderBuilder) WxpayParams() wxpay.Params {
 	p := make(wxpay.Params)
 	p.SetString("body", b.plan.GetTitle(b.kind))
 	p.SetString("out_trade_no", b.orderID)
-	p.SetInt64("total_fee", b.charge.AmountInCent(b.sandbox))
+	p.SetInt64("total_fee", b.charge.AmountInCent(b.live))
 	p.SetString("spbill_create_ip", b.client.UserIP.String)
 	p.SetString("notify_url", b.getWebHookURL())
 	// APP for native app
