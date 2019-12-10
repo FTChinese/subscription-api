@@ -46,8 +46,8 @@ type Order struct {
 	ID string `json:"memberID" db:"order_id"`
 	reader.MemberID
 	plan.BasePlan
-	Price float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
-	plan.Charge
+	Price float64 `json:"price" db:"plan_price"` // Price of a plan, prior to discount.
+	Charge
 	Duration
 	Usage plan.SubsKind `json:"usageType" db:"usage_type"` // The usage of this order: creat new, renew, or upgrade?
 	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`

@@ -9,8 +9,8 @@ import (
 
 // BasePlan includes a product and a plan billing cycle to identify the plan to subscribe.
 type BasePlan struct {
-	Tier  enum.Tier  `json:"tier" db:"sub_tier"`
-	Cycle enum.Cycle `json:"cycle" db:"sub_cycle"`
+	Tier  enum.Tier  `json:"tier" db:"plan_tier"`
+	Cycle enum.Cycle `json:"cycle" db:"plan_cycle"`
 }
 
 func (p BasePlan) IsZero() bool {
@@ -27,14 +27,16 @@ func (p BasePlan) NamedKey() string {
 // The net price of a product or service is the actual price that customers pay for the product or service.
 type Plan struct {
 	BasePlan
+	Price            float64 `json:"price" db:"plan_price"`       // Price of a plan, prior to discount.
+	Amount           float64 `json:"amount" db:"plan_amount"`     // Actual price paid.
+	Currency         string  `json:"currency" db:"plan_currency"` // in which currency.
+	Title            string  `json:"description"`
+	stripeLivePlanID string  `json:"-"`
+	stripeTestPlanID string  `json:"-"`
+	AppleProductID   string  `json:"-"`
+
 	ListPrice float64 `json:"listPrice"` // Deprecated
 	NetPrice  float64 `json:"netPrice"`  // Deprecated
-	Price     float64 `json:"price"`     // Price of a plan, prior to discount.
-	Charge
-	Title            string `json:"description"`
-	stripeLivePlanID string `json:"-"`
-	stripeTestPlanID string `json:"-"`
-	AppleProductID   string `json:"-"`
 }
 
 // GetTitle compose the message shown for wxpay or alipay.
