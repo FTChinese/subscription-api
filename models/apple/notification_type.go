@@ -63,5 +63,5 @@ func (x NotificationType) Value() (driver.Value, error) {
 		return nil, nil
 	}
 
-	return x, nil
+	return string(x), nil
 }
