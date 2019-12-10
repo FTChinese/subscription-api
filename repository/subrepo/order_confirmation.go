@@ -2,10 +2,12 @@ package subrepo
 
 import (
 	"database/sql"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 )
 
-// TODO: flag prorated orders as consumed.
+// ConfirmOrder updates the order received from webhook,
+// create or update membership, and optionally flag prorated orders as consumed.
 func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.Order, *subscription.ConfirmError) {
 	log := logger.WithField("trace", "SubEnv.ConfirmOrder")
 
@@ -85,6 +87,19 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 		return subscription.Order{}, &subscription.ConfirmError{
 			Err:   err,
 			Retry: false,
+		}
+	}
+
+	// Flag upgrade balance source as consumed.
+	if confirmedOrder.Usage == plan.SubsKindUpgrade {
+		err := tx.ProratedOrdersUsed(confirmedOrder.UpgradeSchemaID.String)
+
+		if err != nil {
+			_ = tx.Rollback()
+			return subscription.Order{}, &subscription.ConfirmError{
+				Err:   err,
+				Retry: true,
+			}
 		}
 	}
 
