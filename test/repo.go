@@ -2,7 +2,6 @@ package test
 
 import (
 	"github.com/jmoiron/sqlx"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
@@ -17,24 +16,42 @@ SET user_id = :ftc_id,
 	password = '12345678'`
 
 type Repo struct {
-	db *sqlx.DB
+	store *SubStore
+	db    *sqlx.DB
 }
 
-func NewRepo() Repo {
-	return Repo{
-		db: DB,
+func NewRepo(store *SubStore) *Repo {
+	return &Repo{
+		store: store,
+		db:    DB,
 	}
 }
 
-func (r Repo) SaveAccount(a reader.Account) {
-	_, err := r.db.NamedExec(stmtInsertAccount, a)
+func (r *Repo) MustCreateAccount() {
+	_, err := r.db.NamedExec(stmtInsertAccount, r.store.GetAccount())
+
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (r Repo) SaveOrder(order subscription.Order) {
+func (r *Repo) MustSaveMembership() subscription.Membership {
+	m := r.store.MustGetMembership()
 
+	m.Normalize()
+
+	_, err := r.db.NamedExec(
+		query.BuildInsertMembership(false),
+		m)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return m
+}
+
+func (r *Repo) mustSaveOrder(order subscription.Order) {
 	var stmt = query.BuildInsertOrder(false) + `,
 		confirmed_utc = :confirmed_at,
 		start_date = :start_date,
@@ -49,33 +66,30 @@ func (r Repo) SaveOrder(order subscription.Order) {
 	}
 }
 
-func (r Repo) SaveMember(m subscription.Membership) {
-	m.Normalize()
+func (r *Repo) MustCreateOrder() subscription.Order {
 
-	_, err := r.db.NamedExec(
-		query.BuildInsertMembership(false),
-		m)
+	o := r.store.MustCreateOrder()
 
-	if err != nil {
-		panic(err)
+	r.mustSaveOrder(o)
+
+	return o
+}
+
+// MustRenewN prepares data to test FindBalanceSources
+func (r *Repo) MustRenewN(n int) {
+	orders := r.store.MustRenewN(n)
+
+	for _, v := range orders {
+		r.mustSaveOrder(v)
 	}
 }
 
-func (r Repo) UpdateMember(m subscription.Membership) {
-	m.Normalize()
+// SaveProratedOrders inserts prorated orders
+// to test ProratedOrdersUsed.
+func (r *Repo) SaveProratedOrders(n int) subscription.UpgradeSchema {
+	upgrade, _ := r.store.MustUpgrade(n)
 
-	_, err := r.db.NamedExec(
-		query.BuildUpdateMembership(false),
-		m)
-
-	if err != nil {
-		panic(err)
-	}
-}
-
-// SaveBalanceSources populate data to the proration table.
-func (r Repo) SaveBalanceSources(p []subscription.ProratedOrderSchema) {
-	for _, v := range p {
+	for _, v := range upgrade.Sources {
 		_, err := r.db.NamedExec(
 			query.BuildInsertProration(false),
 			v)
@@ -84,15 +98,6 @@ func (r Repo) SaveBalanceSources(p []subscription.ProratedOrderSchema) {
 			panic(err)
 		}
 	}
-}
 
-func (r Repo) SaveUpgradePlan(up subscription.UpgradeBalanceSchema) {
-
-	_, err := r.db.NamedExec(
-		query.BuildInsertUpgradePlan(false),
-		up)
-
-	if err != nil {
-		panic(err)
-	}
+	return upgrade
 }
