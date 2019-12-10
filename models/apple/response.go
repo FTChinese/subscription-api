@@ -17,6 +17,14 @@ type VerificationResponseBody struct {
 	Receipt ClientReceipt `json:"receipt"`
 }
 
+func (v *VerificationResponseBody) GetStatusMessage() string {
+	if v.Status >= 21100 && v.Status <= 21199 {
+		return "Internal data access errors"
+	}
+
+	return statusMessage[v.Status]
+}
+
 // Validate ensures the response from Apple API is correct.
 func (v *VerificationResponseBody) Validate() bool {
 	logger := logrus.WithField("project", "subscription-api").
@@ -41,30 +49,18 @@ func (v *VerificationResponseBody) Validate() bool {
 	return true
 }
 
-// Failure builds the schema to record why the verification failed.
-func (v *VerificationResponseBody) FailureSchema(receiptData string) VerificationFailed {
-	m := getStatusMessage(v.Status)
-
-	return VerificationFailed{
-		Environment: v.Environment,
-		Status:      v.Status,
-		Message:     null.NewString(m, m != ""),
-		ReceiptData: receiptData,
-	}
-}
-
 // SessionSchema builds the schema by merging the root elements
 // of verification, the Receipt top fields and the latest transaction ids.
-func (v *VerificationResponseBody) SessionSchema(r Transaction) VerificationSessionSchema {
+func (v *VerificationResponseBody) SessionSchema() VerificationSessionSchema {
 
 	receiptType, _ := ParseReceiptType(v.Receipt.ReceiptType)
 
 	return VerificationSessionSchema{
 		BaseSchema: BaseSchema{
 			Environment:           v.Environment,
-			OriginalTransactionID: r.OriginalTransactionID,
+			OriginalTransactionID: v.latestTransaction.OriginalTransactionID,
 		},
-		TransactionID: r.TransactionID,
+		TransactionID: v.latestTransaction.TransactionID,
 
 		AppItemID:          v.Receipt.AppItemID,
 		ApplicationVersion: v.Receipt.ApplicationVersion,
