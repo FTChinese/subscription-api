@@ -89,9 +89,10 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 	}
 
 	if subKind == plan.SubsKindUpgrade {
-		upIntent, _ := builder.UpgradeBalanceSchema()
+		upgrade, _ := builder.UpgradeSchema()
+
 		// Step 3.4: Save the upgrade plan
-		if err := otx.SaveUpgradeIntent(upIntent); err != nil {
+		if err := otx.SaveUpgradeBalance(upgrade.UpgradeBalanceSchema); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
 			return subscription.Order{}, err
@@ -99,7 +100,7 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 		log.Info("Upgrade intent saved")
 
 		// Step 3.5: Save prorated orders
-		if err := otx.SaveProratedOrders(builder.ProratedOrdersSchema()); err != nil {
+		if err := otx.SaveProratedOrders(upgrade.Sources); err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
 			return subscription.Order{}, err
