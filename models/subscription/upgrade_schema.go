@@ -4,20 +4,32 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 )
 
 func GenerateUpgradeID() string {
 	return "up_" + rand.String(12)
 }
 
+// UpgradeSchema mimics SQL structure of storing
+// upgrading info.
+// The are split into two tables:
+// one row of UpgradeBalanceSchema maps to multiple
+// rows ProratedOrderSchema.
+type UpgradeSchema struct {
+	UpgradeBalanceSchema
+	Sources []ProratedOrderSchema // The orders with balance.
+}
+
 // UpgradeBalanceSchema records the balance the moment user
 // starts upgrading and the upgraded plan.
+// This is a snapshot of Wallet the moment user
+// initialize upgrading.
 type UpgradeBalanceSchema struct {
-	ID         string      `db:"upgrade_id"`
-	Balance    float64     `db:"balance"`    // Wallet.Balance
-	CreatedAt  chrono.Time `db:"created_at"` // Wallet.AsOfDate
-	PlanPrice  float64     `db:"plan_price"`
-	PlanAmount float64     `db:"plan_amount"`
+	ID        string      `db:"upgrade_id"`
+	Balance   float64     `db:"balance"`    // Wallet.Balance
+	CreatedAt chrono.Time `db:"created_at"` // Wallet.AsOfDate
+	plan.Plan             // Save the plan's tier, cycle, price, amount and currency the moment user upgrades.
 }
 
 // BuildWallet turns the upgrading balance data back to wallet.
