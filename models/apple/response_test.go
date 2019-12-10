@@ -2,7 +2,6 @@ package apple
 
 import (
 	"encoding/json"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"sort"
 	"testing"
 )
@@ -1119,9 +1118,9 @@ func TestVerificationResponseBody_Validate(t *testing.T) {
 
 func TestVerificationResponseBody_Subscription(t *testing.T) {
 	resp := createResponse()
-	resp.SortLatestReceiptsDesc()
+	resp.sortLatestReceiptsDesc()
 
-	sub := resp.Subscription(reader.MemberID{})
+	sub := resp.Subscription()
 
 	t.Logf("Subscription: %+v", sub)
 }
