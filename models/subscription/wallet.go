@@ -11,6 +11,7 @@ import (
 
 // Wallet show how much money a member still owns and
 // which orders constitutes the balance.
+// Wallet is dynamic and changes as time passed.
 type Wallet struct {
 	Balance  float64         `json:"balance"` // TODO: unexport it.
 	Source   []ProratedOrder `json:"-"`
@@ -73,10 +74,10 @@ func (w Wallet) ReadableBalance() string {
 // ProratedOrder is used to retrieve paid order with balance.
 type ProratedOrder struct {
 	OrderID   string      `db:"order_id"`
-	Amount    float64     `db:"amount"`
-	StartDate chrono.Date `db:"start_date"`
-	EndDate   chrono.Date `db:"end_date"`
-	Balance   float64     `db:"balance"` // For insert only.
+	Amount    float64     `db:"charged_amount"` // Retrieve only
+	StartDate chrono.Date `db:"start_date"`     // Retrieval only
+	EndDate   chrono.Date `db:"end_date"`       // Retrieval only
+	Balance   float64     `db:"balance"`        // For insert only.
 }
 
 // Balance calculates the unused portion of an order up to
