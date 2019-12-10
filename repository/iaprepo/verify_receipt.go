@@ -40,6 +40,24 @@ func (env IAPEnv) VerifyReceipt(r apple.VerificationRequestBody) (apple.Verifica
 	return resp, nil
 }
 
+// When a receipt is verified, or webhook is triggered,
+// we dissects the data
+// and records those data derived from it:
+//
+// FailureSchema
+// SessionSchema
+// only specific to verification.
+//
+// and WebHookSchema specific to notification.
+//
+// And all should record those data:
+// Transaction array
+// PendingRenewal array
+// ReceiptToken
+// Subscription
+
+// SaveVerificationSession saves the root fields
+// of VerificationResponseBody.
 func (env IAPEnv) SaveVerificationSession(v apple.VerificationSessionSchema) error {
 	_, err := env.db.NamedExec(insertVerificationSession, v)
 
@@ -51,28 +69,21 @@ func (env IAPEnv) SaveVerificationSession(v apple.VerificationSessionSchema) err
 	return nil
 }
 
-func (env IAPEnv) SaveVerificationFailure(f apple.VerificationFailed) error {
-	_, err := env.db.NamedExec(insertVerificationFailure, f)
-
-	if err != nil {
-		logger.WithField("trace", "IAPEnv.SaveVerificationFailure").Error(err)
-		return err
-	}
-
-	return nil
-}
-
-func (env IAPEnv) SaveCustomerReceipt(r apple.TransactionSchema) error {
+// Save transaction save an entry of user's transaction
+// history.
+// UnifiedReceipt.LatestTransactions field.
+func (env IAPEnv) SaveTransaction(r apple.TransactionSchema) error {
 	_, err := env.db.NamedExec(insertTransaction, r)
 
 	if err != nil {
-		logger.WithField("trace", "IAPEnv.SaveCustomerReceipt").Error(err)
+		logger.WithField("trace", "IAPEnv.SaveTransaction").Error(err)
 		return err
 	}
 
 	return nil
 }
 
+// SavePendingRenewal saves the UnifiedReceipt.PendingRenewalInfo array.
 func (env IAPEnv) SavePendingRenewal(p apple.PendingRenewalSchema) error {
 	_, err := env.db.NamedExec(insertPendingRenewal, p)
 
@@ -84,6 +95,8 @@ func (env IAPEnv) SavePendingRenewal(p apple.PendingRenewalSchema) error {
 	return nil
 }
 
+// CreateSubscription saves an Subscription instance
+// built from the latest transaction.
 func (env IAPEnv) CreateSubscription(s apple.Subscription) error {
 	_, err := env.db.NamedExec(insertIAPSubscription, s)
 
@@ -95,6 +108,9 @@ func (env IAPEnv) CreateSubscription(s apple.Subscription) error {
 	return nil
 }
 
+// SaveReceiptToken saves the base-64 encoded receipt data
+// for one original transaction id.
+// TODO: do not save in MySQL.
 func (env IAPEnv) SaveReceiptToken(r apple.ReceiptToken) error {
 	_, err := env.db.NamedExec(insertReceiptToken, r)
 
