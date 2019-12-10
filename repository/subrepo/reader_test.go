@@ -1,7 +1,6 @@
 package subrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
@@ -10,8 +9,9 @@ func TestEnv_FindFtcUser(t *testing.T) {
 
 	profile := test.NewProfile()
 
-	account := profile.Account(reader.AccountKindFtc)
-	test.NewRepo().SaveAccount(account)
+	store := test.NewSubStore(profile)
+	test.NewRepo(store).
+		MustCreateAccount()
 
 	env := SubEnv{
 		db: test.DB,
@@ -28,7 +28,7 @@ func TestEnv_FindFtcUser(t *testing.T) {
 		{
 			name: "Find FTC Account",
 			args: args{
-				ftcId: account.FtcID,
+				ftcId: profile.FtcID,
 			},
 			wantErr: false,
 		},
@@ -51,8 +51,9 @@ func TestEnv_FindStripeCustomer(t *testing.T) {
 
 	profile := test.NewProfile()
 
-	account := profile.Account(reader.AccountKindFtc)
-	test.NewRepo().SaveAccount(account)
+	store := test.NewSubStore(profile)
+
+	test.NewRepo(store).MustCreateAccount()
 
 	env := SubEnv{
 		db: test.DB,
