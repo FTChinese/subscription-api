@@ -125,14 +125,14 @@ func BuildSelectProration(sandbox bool) string {
 		getMembershipDB(sandbox))
 }
 
-func BuildInsertUpgradePlan(sandbox bool) string {
+func BuildInsertUpgradeBalance(sandbox bool) string {
 	return fmt.Sprintf(
-		insertUpgradePlan,
+		insertUpgradeSchema,
 		getMembershipDB(sandbox))
 }
 
 func BuildSelectUpgradePlan(sandbox bool) string {
 	return fmt.Sprintf(
-		selectUpgradePlan,
+		selectUpgradeSchema,
 		getMembershipDB(sandbox))
 }
