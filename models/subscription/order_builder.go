@@ -32,7 +32,7 @@ type OrderBuilder struct {
 
 	// Calculated for previous fields set.
 	kind            plan.SubsKind
-	charge          plan.Charge
+	charge          Charge
 	duration        Duration
 	orderID         string
 	upgradeSchemaID null.String
@@ -194,7 +194,7 @@ func (b *OrderBuilder) Build() error {
 	// A zero wallet still produces valid Duration value,
 	// which default to 1 cycle plus 1 day.
 	b.duration = b.wallet.ConvertBalance(b.plan)
-	b.charge = plan.Charge{
+	b.charge = Charge{
 		Amount:   b.plan.Price - b.wallet.GetBalance(),
 		Currency: b.plan.Currency,
 	}
@@ -217,13 +217,6 @@ func (b *OrderBuilder) Build() error {
 	return nil
 }
 
-func (b *OrderBuilder) MustBuild() *OrderBuilder {
-	if err := b.Build(); err != nil {
-		panic(err)
-	}
-
-	return b
-}
 func (b *OrderBuilder) ensureBuilt() error {
 	if b.isBuilt {
 		return nil
@@ -312,29 +305,30 @@ func (b *OrderBuilder) MembershipSnapshot() MemberSnapshot {
 	}
 }
 
-// UpgradeBalanceSchema converts wallet to save the total balance part of data.
-func (b *OrderBuilder) UpgradeBalanceSchema() (UpgradeBalanceSchema, error) {
-
+// UpgradeSchema takes a snapshot of wallet upon upgrading.
+func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
 	if err := b.ensureBuilt(); err != nil {
-		return UpgradeBalanceSchema{}, err
+		return UpgradeSchema{}, err
 	}
 
 	if b.kind != plan.SubsKindUpgrade {
-		return UpgradeBalanceSchema{}, errors.New("not an upgrade subscription")
+		return UpgradeSchema{}, errors.New("not an upgrade subscription")
 	}
 
-	return UpgradeBalanceSchema{
-		ID:         b.upgradeSchemaID.String,
-		CreatedAt:  chrono.TimeNow(),
-		Balance:    b.wallet.GetBalance(),
-		PlanPrice:  b.plan.Price,
-		PlanAmount: b.plan.Amount,
+	return UpgradeSchema{
+		UpgradeBalanceSchema: UpgradeBalanceSchema{
+			ID:        b.upgradeSchemaID.String,
+			CreatedAt: chrono.TimeNow(),
+			Balance:   b.wallet.GetBalance(),
+			Plan:      b.plan,
+		},
+		Sources: b.proratedOrdersSchema(),
 	}, nil
 }
 
 // ProratedOrdersSchema wallet to save what make up of a
 // wallet's total balance.
-func (b *OrderBuilder) ProratedOrdersSchema() []ProratedOrderSchema {
+func (b *OrderBuilder) proratedOrdersSchema() []ProratedOrderSchema {
 	orders := make([]ProratedOrderSchema, 0)
 
 	for _, v := range b.wallet.Source {
