@@ -12,17 +12,15 @@ var (
 			Cycle: enum.CycleMonth,
 			//LegacyTier: null.IntFrom(5),
 		},
-		ListPrice: 28.00,
-		NetPrice:  28.00,
-		Price:     28.00,
-		Charge: Charge{
-			Amount:   28.00,
-			Currency: "cny",
-		},
+		Price:            28.00,
+		Amount:           28.00,
+		Currency:         "cny",
 		Title:            "FT中文网标准会员",
 		stripeLivePlanID: "plan_FXZYLOEbcvj5Tx",
 		stripeTestPlanID: "plan_FOdgPTznDwHU4i",
 		AppleProductID:   "com.ft.ftchinese.mobile.subscription.member.monthly",
+		ListPrice:        28.00,
+		NetPrice:         28.00,
 	}
 
 	standardYearlyPlan = Plan{
@@ -31,36 +29,31 @@ var (
 			Cycle: enum.CycleYear,
 			//LegacyTier: null.IntFrom(10),
 		},
-		ListPrice: 258.00,
-		NetPrice:  258.00,
-		Price:     258.00,
-		Charge: Charge{
-			Amount:   258.00,
-			Currency: "cny",
-		},
+		Price:            258.00,
+		Amount:           258.00,
+		Currency:         "cny",
 		Title:            "FT中文网标准会员",
 		stripeLivePlanID: "plan_FXZZUEDpToPlZK",
 		stripeTestPlanID: "plan_FOdfeaqzczp6Ag",
 		AppleProductID:   "com.ft.ftchinese.mobile.subscription.member",
+		ListPrice:        258.00,
+		NetPrice:         258.00,
 	}
 
 	premiumYearlyPlan = Plan{
 		BasePlan: BasePlan{
 			Tier:  enum.TierPremium,
 			Cycle: enum.CycleYear,
-			//LegacyTier: null.IntFrom(100),
 		},
-		ListPrice: 1998.00,
-		NetPrice:  1998.00,
-		Price:     1998.00,
-		Charge: Charge{
-			Amount:   1998.00,
-			Currency: "cny",
-		},
+		Price:            1998.00,
+		Amount:           1998.00,
+		Currency:         "cny",
 		Title:            "FT中文网高端会员",
 		stripeLivePlanID: "plan_FXZbv1cDTsUKOg",
 		stripeTestPlanID: "plan_FOde0uAr0V4WmT",
 		AppleProductID:   "com.ft.ftchinese.mobile.subscription.vip",
+		ListPrice:        1998.00,
+		NetPrice:         1998.00,
 	}
 )
 
