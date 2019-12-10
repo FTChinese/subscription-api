@@ -17,14 +17,6 @@ SET response_status = :status,
 	preorder_date_ms = :preorder_date_ms,
 	created_utc = UTC_TIMESTAMP()`
 
-const insertVerificationFailure = `
-INSERT INTO premium.apple_verification_error
-SET environment = :environment,
-	response_status = :status,
-	status_message = :message,
-	receipt_data = :receipt_data,
-	created_utc = UTC_TIMESTAMP()`
-
 const transactionBaseCols = `
 environment = :environment,
 	original_transaction_id = :original_transaction_id,
@@ -40,7 +32,7 @@ environment = :environment,
 `
 
 const insertTransaction = `
-INSERT IGNORE INTO premium.apple_customer_receipt
+INSERT IGNORE INTO premium.apple_transaction
 SET ` + transactionBaseCols + `,
 	cancellation_date_ms = :cancellation_date_ms,
 	cancellation_reason = :cancellation_reason,
@@ -91,10 +83,8 @@ last_transaction_id = :last_transaction_id,
 product_id = :product_id,
 purchase_date_utc = :purchase_date_utc,
 expires_date_utc = :expires_date_utc,
-ftc_id = IFNULL(ftc_id, :ftc_id),
-wx_union_id = IFNULL(wx_union_id, :union_id),
-tier = :tier,
-cycle = :cycle,
+tier = :plan_tier,
+cycle = :plan_cycle,
 auto_renewal = :auto_renewal,
 updated_utc = UTC_TIMESTAMP()
 `
