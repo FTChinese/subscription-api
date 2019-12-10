@@ -10,9 +10,10 @@ import (
 
 func TestOrderTx_RetrieveMember(t *testing.T) {
 
-	profile := test.NewProfile()
+	store := test.NewSubStore(test.NewProfile())
 
-	test.NewRepo().SaveMember(profile.Membership(reader.AccountKindFtc))
+	test.NewRepo(store).
+		MustSaveMembership()
 
 	env := SubEnv{db: test.DB}
 
@@ -35,7 +36,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 		{
 			name: "Retrieve existing member",
 			args: args{
-				id: profile.AccountID(reader.AccountKindFtc),
+				id: store.GetMemberID(),
 			},
 		},
 	}
@@ -98,8 +99,7 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 
 	store := test.NewSubStore(test.NewProfile())
 
-	order := store.MustCreateOrder()
-	test.NewRepo().SaveOrder(order)
+	order := test.NewRepo(store).MustCreateOrder()
 
 	env := SubEnv{db: test.DB}
 	otx, _ := env.BeginOrderTx()
@@ -147,8 +147,8 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 func TestOrderTx_UpdateConfirmedOrder(t *testing.T) {
 	store := test.NewSubStore(test.NewProfile())
 
-	order := store.MustCreateOrder()
-	test.NewRepo().SaveOrder(order)
+	order := test.NewRepo(store).
+		MustCreateOrder()
 
 	order = store.MustConfirmOrder(order.ID)
 
@@ -190,8 +190,7 @@ func TestOrderTx_UpdateConfirmedOrder(t *testing.T) {
 func TestOrderTx_CreateMember(t *testing.T) {
 	store := test.NewSubStore(test.NewProfile())
 
-	order := store.MustCreateOrder()
-	store.MustConfirmOrder(order.ID)
+	member := store.MustGetMembership()
 
 	env := SubEnv{db: test.DB}
 	otx, _ := env.BeginOrderTx()
@@ -207,8 +206,9 @@ func TestOrderTx_CreateMember(t *testing.T) {
 		{
 			name: "Save membership",
 			args: args{
-				m: store.Member,
+				m: member,
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -229,11 +229,10 @@ func TestOrderTx_CreateMember(t *testing.T) {
 func TestOrderTx_UpdateMember(t *testing.T) {
 	store := test.NewSubStore(test.NewProfile())
 
-	order := store.MustCreateOrder()
-	store.MustConfirmOrder(order.ID)
-	test.NewRepo().SaveMember(store.Member)
+	m := test.NewRepo(store).
+		MustSaveMembership()
 
-	store.Member.Tier = enum.TierPremium
+	m.Tier = enum.TierPremium
 
 	env := SubEnv{db: test.DB}
 	otx, _ := env.BeginOrderTx()
@@ -249,7 +248,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 		{
 			name: "Update membership",
 			args: args{
-				m: store.Member,
+				m: m,
 			},
 		},
 	}
@@ -262,6 +261,161 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 			}
 
 			t.Logf("Updated member id: %s", tt.args.m.ID.String)
+		})
+	}
+
+	_ = otx.Commit()
+}
+
+func TestOrderTx_FindBalanceSources(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile())
+
+	test.NewRepo(store).MustRenewN(3)
+
+	env := SubEnv{db: test.DB}
+	otx, _ := env.BeginOrderTx()
+
+	type args struct {
+		accountID reader.MemberID
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Find balance sources",
+			args: args{
+				accountID: store.GetMemberID(),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := otx.FindBalanceSources(tt.args.accountID)
+			if (err != nil) != tt.wantErr {
+				_ = otx.Rollback()
+				t.Errorf("FindBalanceSources() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			t.Logf("Balance sources: %+v", got)
+		})
+	}
+
+	_ = otx.Commit()
+}
+
+func TestOrderTx_SaveProratedOrders(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile())
+
+	upgrade, order := store.MustUpgrade(3)
+	t.Logf("Upgrading order: %+v", order)
+
+	env := SubEnv{db: test.DB}
+	otx, _ := env.BeginOrderTx()
+
+	type args struct {
+		p []subscription.ProratedOrderSchema
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Save Prorated Orders",
+			args: args{
+				p: upgrade.Sources,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := otx.SaveProratedOrders(tt.args.p); (err != nil) != tt.wantErr {
+				_ = otx.Rollback()
+
+				t.Errorf("SaveProratedOrders() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			_ = otx.Commit()
+		})
+	}
+}
+
+func TestOrderTx_SaveUpgradeBalance(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile())
+
+	upgrade, order := store.MustUpgrade(3)
+	t.Logf("Upgrading order: %+v", order)
+
+	env := SubEnv{db: test.DB}
+	otx, _ := env.BeginOrderTx()
+
+	type args struct {
+		up subscription.UpgradeBalanceSchema
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Save upgrade balance",
+			args: args{
+				up: upgrade.UpgradeBalanceSchema,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := otx.SaveUpgradeBalance(tt.args.up); (err != nil) != tt.wantErr {
+				_ = otx.Rollback()
+				t.Errorf("SaveUpgradeBalance() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+
+		_ = otx.Commit()
+	}
+}
+
+func TestOrderTx_ProratedOrdersUsed(t *testing.T) {
+	store := test.NewSubStore(test.NewProfile())
+
+	upgrade := test.NewRepo(store).SaveProratedOrders(3)
+
+	t.Logf("Upgrading schema id: %s", upgrade.ID)
+
+	env := SubEnv{db: test.DB}
+	otx, _ := env.BeginOrderTx()
+
+	type args struct {
+		upgradeID string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Flag prorated orders as used",
+			args: args{
+				upgradeID: upgrade.ID,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := otx.ProratedOrdersUsed(tt.args.upgradeID); (err != nil) != tt.wantErr {
+				_ = otx.Rollback()
+				t.Errorf("ProratedOrdersUsed() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 
