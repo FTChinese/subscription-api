@@ -58,6 +58,18 @@ FT中文网用户 {{.User.NormalizeName}},
 
 FT中文网`
 
+const iapLinked = `
+FT中文网用户 {{.Reader.NormalizeName}},
+
+您的FT中文网账号 {{.Reader.Email}} 已经关联了在iOS平台上订阅的FT中文网会员服务。
+
+订阅产品：标准会员/年
+到期日期：
+
+在其他平台使用FT中文网账号登录即可实现跨平台阅读。
+
+感谢您对FT中文网的支持。如需帮助，请联系客服：subscriber.service@ftchinese.com。`
+
 // Data used to compile this template:
 // Account to get user name;
 // StripeSub to get period start and end
