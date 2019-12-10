@@ -16,9 +16,8 @@ type Subscription struct {
 	ProductID             string      `db:"product_id"`
 	PurchaseDateUTC       chrono.Time `db:"purchase_date_utc"`
 	ExpiresDateUTC        chrono.Time `db:"expires_date_utc"`
-	Tier                  enum.Tier   `db:"tier"`
-	Cycle                 enum.Cycle  `db:"cycle"`
-	AutoRenewal           bool        `db:"auto_renewal"`
+	plan.BasePlan
+	AutoRenewal bool `db:"auto_renewal"`
 }
 
 // Membership build ftc's membership based on subscription
