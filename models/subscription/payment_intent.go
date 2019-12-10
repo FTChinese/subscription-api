@@ -5,7 +5,7 @@ import (
 )
 
 type PaymentIntent struct {
-	plan.Charge
+	Charge
 	Duration
 
 	SubsKind plan.SubsKind `json:"subscriptionKind"`
