@@ -93,6 +93,7 @@ func (otx OrderTx) UpdateConfirmedOrder(order subscription.Order) error {
 	return nil
 }
 
+// CreateMember creates a new membership.
 func (otx OrderTx) CreateMember(m subscription.Membership) error {
 	m.Normalize()
 
@@ -109,6 +110,7 @@ func (otx OrderTx) CreateMember(m subscription.Membership) error {
 	return nil
 }
 
+// UpdateMember updates existing membership.
 func (otx OrderTx) UpdateMember(m subscription.Membership) error {
 	m.Normalize()
 
@@ -164,12 +166,12 @@ func (otx OrderTx) SaveProratedOrders(p []subscription.ProratedOrderSchema) erro
 	return nil
 }
 
-// SaveUpgradeIntent saved user's current total balance
+// SaveUpgradeBalance saved user's current total balance
 // the the upgrade plan at this moment.
-func (otx OrderTx) SaveUpgradeIntent(up subscription.UpgradeBalanceSchema) error {
+func (otx OrderTx) SaveUpgradeBalance(up subscription.UpgradeBalanceSchema) error {
 
 	_, err := otx.tx.NamedExec(
-		query.BuildInsertUpgradePlan(otx.sandbox),
+		query.BuildInsertUpgradeBalance(otx.sandbox),
 		up)
 
 	if err != nil {
@@ -179,14 +181,15 @@ func (otx OrderTx) SaveUpgradeIntent(up subscription.UpgradeBalanceSchema) error
 	return nil
 }
 
-// ConfirmUpgrade set an upgrade's confirmation time.
-func (otx OrderTx) ConfirmUpgrade(upgradeID string) error {
+// ProratedOrdersUsed set the consumed time on all the
+// prorated order for an upgrade operation.
+func (otx OrderTx) ProratedOrdersUsed(upgradeID string) error {
 	_, err := otx.tx.Exec(
 		query.BuildProrationUsed(otx.sandbox),
 		upgradeID,
 	)
 	if err != nil {
-		logger.WithField("trace", "OrderTx.ConfirmUpgrade").Error(err)
+		logger.WithField("trace", "OrderTx.ProratedOrdersUsed").Error(err)
 		return err
 	}
 
