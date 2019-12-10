@@ -41,7 +41,8 @@ type UnifiedReceipt struct {
 	// 21010 The user account cannot be found or has been deleted.
 	// 21100-21199 are various internal data access errors.
 	// For notification the status code, where 0 indicates that the notification is valid.
-	Status int64 `json:"status"`
+	Status            int64       `json:"status"`
+	latestTransaction Transaction // hold the latest transaction sorted from LatestTransactions array.
 }
 
 func (u *UnifiedReceipt) Validate() bool {
@@ -52,14 +53,14 @@ func (u *UnifiedReceipt) Validate() bool {
 	return true
 }
 
-func (u *UnifiedReceipt) SortLatestReceiptsDesc() {
+func (u *UnifiedReceipt) sortLatestReceiptsDesc() {
 	sort.SliceStable(u.LatestTransactions, func(i, j int) bool {
 		return u.LatestTransactions[i].ExpiresDateMs > u.LatestTransactions[j].ExpiresDateMs
 	})
 }
 
-func (u *UnifiedReceipt) FindLatestTransaction() Transaction {
-	u.SortLatestReceiptsDesc()
+func (u *UnifiedReceipt) findLatestTransaction() Transaction {
+	u.sortLatestReceiptsDesc()
 
 	l := len(u.LatestTransactions)
 
@@ -87,11 +88,15 @@ func (u *UnifiedReceipt) FindLatestTransaction() Transaction {
 	return u.LatestTransactions[0]
 }
 
-func (u *UnifiedReceipt) ReceiptToken(originalTransactionID string) ReceiptToken {
+func (u *UnifiedReceipt) Parse() {
+	u.latestTransaction = u.findLatestTransaction()
+}
+
+func (u *UnifiedReceipt) ReceiptToken() ReceiptToken {
 	return ReceiptToken{
 		BaseSchema: BaseSchema{
 			Environment:           u.Environment,
-			OriginalTransactionID: originalTransactionID,
+			OriginalTransactionID: u.latestTransaction.OriginalTransactionID,
 		},
 		LatestReceipt: u.LatestToken,
 	}
@@ -102,13 +107,13 @@ func (u *UnifiedReceipt) ReceiptToken(originalTransactionID string) ReceiptToken
 // Returns a zero instance if not found.
 // The zero value if valid since we're only interested in
 // the auto renew field which should default to false.
-func (u *UnifiedReceipt) findPendingRenewal(r Transaction) PendingRenewal {
+func (u *UnifiedReceipt) findPendingRenewal() PendingRenewal {
 	if u.PendingRenewalInfo == nil {
 		return PendingRenewal{}
 	}
 
 	for _, v := range u.PendingRenewalInfo {
-		if v.OriginalTransactionID == r.OriginalTransactionID && (v.ProductID == r.ProductID) {
+		if v.OriginalTransactionID == u.latestTransaction.OriginalTransactionID && (v.ProductID == u.latestTransaction.ProductID) {
 			return v
 		}
 	}
@@ -119,29 +124,28 @@ func (u *UnifiedReceipt) findPendingRenewal(r Transaction) PendingRenewal {
 // Subscription builds a subscription for a user based on
 // the receipt information available.
 // TODO: What if the Transaction is a cancelled one?
-func (u *UnifiedReceipt) Subscription(t Transaction) Subscription {
-	pendingRenewal := u.findPendingRenewal(t)
+func (u *UnifiedReceipt) Subscription() Subscription {
+	pendingRenewal := u.findPendingRenewal()
 
 	autoRenew := pendingRenewal.IsAutoRenew()
-	if t.IsCancelled() {
+	if u.latestTransaction.IsCancelled() {
 		autoRenew = false
 	}
 
-	p := t.FindPlan()
+	p := u.latestTransaction.FindPlan()
 
 	return Subscription{
 		Environment:           u.Environment,
-		OriginalTransactionID: t.OriginalTransactionID,
-		LastTransactionID:     t.TransactionID,
-		ProductID:             t.ProductID,
+		OriginalTransactionID: u.latestTransaction.OriginalTransactionID,
+		LastTransactionID:     u.latestTransaction.TransactionID,
+		ProductID:             u.latestTransaction.ProductID,
 		PurchaseDateUTC: chrono.TimeFrom(
-			time.Unix(t.PurchaseDateUnix(), 0),
+			time.Unix(u.latestTransaction.PurchaseDateUnix(), 0),
 		),
 		ExpiresDateUTC: chrono.TimeFrom(
-			time.Unix(t.ExpiresUnix(), 0),
+			time.Unix(u.latestTransaction.ExpiresUnix(), 0),
 		),
-		Tier:        p.Tier,
-		Cycle:       p.Cycle,
+		BasePlan:    p.BasePlan,
 		AutoRenewal: autoRenew,
 	}
 }
