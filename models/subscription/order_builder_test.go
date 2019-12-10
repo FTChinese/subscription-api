@@ -56,7 +56,7 @@ func TestOrderBuilder_Build(t *testing.T) {
 	}
 	type want struct {
 		kind   plan.SubsKind
-		charge plan.Charge
+		charge Charge
 	}
 	tests := []struct {
 		name    string
@@ -80,7 +80,7 @@ func TestOrderBuilder_Build(t *testing.T) {
 			},
 			want: want{
 				kind: plan.SubsKindCreate,
-				charge: plan.Charge{
+				charge: Charge{
 					Amount:   yearlyStandard.Amount,
 					Currency: yearlyStandard.Currency,
 				},
@@ -103,7 +103,7 @@ func TestOrderBuilder_Build(t *testing.T) {
 			},
 			want: want{
 				kind: plan.SubsKindCreate,
-				charge: plan.Charge{
+				charge: Charge{
 					Amount:   yearlyStandard.Amount,
 					Currency: yearlyStandard.Currency,
 				},
@@ -138,7 +138,7 @@ func TestOrderBuilder_Build(t *testing.T) {
 			},
 			want: want{
 				kind: plan.SubsKindRenew,
-				charge: plan.Charge{
+				charge: Charge{
 					Amount:   yearlyStandard.Amount,
 					Currency: yearlyStandard.Currency,
 				},
@@ -175,7 +175,7 @@ func TestOrderBuilder_Build(t *testing.T) {
 			},
 			want: want{
 				kind: plan.SubsKindUpgrade,
-				charge: plan.Charge{
+				charge: Charge{
 					Amount:   yearlyPremium.Amount - 200,
 					Currency: yearlyPremium.Currency,
 				},
