@@ -1,4 +1,4 @@
-package plan
+package subscription
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 )
 
 type Charge struct {
-	Amount   float64 `json:"amount" db:"amount"`     // Actual price paid.
-	Currency string  `json:"currency" db:"currency"` // in which currency.
+	Amount   float64 `json:"amount" db:"charged_amount"` // Actual price paid.
+	Currency string  `json:"currency" db:"currency"`     // in which currency.
 }
 
 // AliPrice converts Charged price to ailpay format
