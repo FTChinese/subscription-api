@@ -22,35 +22,6 @@ func NewIAPRouter(iapEnv iaprepo.IAPEnv, p postoffice.Postman) IAPRouter {
 	}
 }
 
-func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt, originalTransactionID string) {
-
-	// save latest receipt array
-	go func() {
-		for _, v := range ur.LatestTransactions {
-			_ = router.iapEnv.SaveCustomerReceipt(
-				v.Schema(ur.Environment),
-			)
-		}
-	}()
-
-	// Save pending renewal array
-	go func() {
-		for _, v := range ur.PendingRenewalInfo {
-			_ = router.iapEnv.SavePendingRenewal(
-				v.Schema(ur.Environment),
-			)
-		}
-	}()
-
-	// Save the receipt as a token for status polling.
-	receiptToken := ur.ReceiptToken(
-		originalTransactionID,
-	)
-	go func() {
-		_ = router.iapEnv.SaveReceiptToken(receiptToken)
-	}()
-}
-
 func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request) (apple.Subscription, bool) {
 	log := logger.WithField("trace", "IAPRouter.VerifyReceipt")
 
@@ -81,11 +52,11 @@ func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request)
 	if !resp.Validate() {
 		log.Info("Verification response is not valid")
 
-		go func() {
-			_ = router.iapEnv.SaveVerificationFailure(
-				resp.FailureSchema(receiptReq.ReceiptData),
-			)
-		}()
+		log.WithField("environment", resp.Environment).
+			WithField("status", resp.Status).
+			WithField("message", resp.GetStatusMessage()).
+			WithField("receiptData", receiptReq.ReceiptData).
+			Info("IAP verification failed")
 
 		r := view.NewReason()
 		r.Field = "receipt-data"
@@ -96,21 +67,51 @@ func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Save verification session
-	transaction := resp.FindLatestTransaction()
+	//transaction := resp.findLatestTransaction()
+
+	resp.Parse()
+
+	// Save this verification session.
 	go func() {
 		_ = router.iapEnv.SaveVerificationSession(
-			resp.SessionSchema(transaction),
+			resp.SessionSchema(),
 		)
 	}()
 
-	router.saveReceiptData(
-		resp.UnifiedReceipt,
-		transaction.OriginalTransactionID)
+	router.saveReceiptData(resp.UnifiedReceipt)
 
-	sub := resp.Subscription(transaction)
+	sub := resp.Subscription()
 	_ = router.iapEnv.CreateSubscription(sub)
 
 	return sub, true
+}
+
+func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt) {
+
+	// save latest receipt array
+	go func() {
+		for _, v := range ur.LatestTransactions {
+			_ = router.iapEnv.SaveTransaction(
+				v.Schema(ur.Environment),
+			)
+		}
+	}()
+
+	// Save pending renewal array
+	go func() {
+		for _, v := range ur.PendingRenewalInfo {
+			_ = router.iapEnv.SavePendingRenewal(
+				v.Schema(ur.Environment),
+			)
+		}
+	}()
+
+	// Save the receipt as a token for status polling.
+	receiptToken := ur.ReceiptToken()
+
+	go func() {
+		_ = router.iapEnv.SaveReceiptToken(receiptToken)
+	}()
 }
 
 // VerifyReceipt perform app store receipt verification
@@ -202,15 +203,14 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	// Find the latest transaction and save transaction
 	// history.
-	transaction := wh.UnifiedReceipt.FindLatestTransaction()
+	//transaction := wh.UnifiedReceipt.findLatestTransaction()
 
-	router.saveReceiptData(
-		wh.UnifiedReceipt,
-		transaction.OriginalTransactionID,
-	)
+	wh.UnifiedReceipt.Parse()
+
+	router.saveReceiptData(wh.UnifiedReceipt)
 
 	// Build apple's subscription and save it.
-	sub := wh.UnifiedReceipt.Subscription(transaction)
+	sub := wh.UnifiedReceipt.Subscription()
 	if err := router.iapEnv.CreateSubscription(sub); err != nil {
 		_ = view.Render(w, view.NewBadRequest(""))
 	}
