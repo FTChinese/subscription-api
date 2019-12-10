@@ -9,7 +9,7 @@ SET order_id = :order_id,
 
 const selectBalanceSource = `
 SELECT o.trade_no AS order_id,
-	o.trade_amount AS amount,
+	o.trade_amount AS charged_amount,
 	CASE o.trade_subs
 		WHEN 0 THEN o.start_date
 		WHEN 10 THEN IF(
@@ -47,26 +47,26 @@ SELECT order_id,
 FROM %s.proration
 WHERE upgrade_id = ?`
 
-const insertUpgradePlan = `
+const insertUpgradeSchema = `
 INSERT INTO %s.upgrade_plan
 SET id = :upgrade_id,
 	balance = :balance,
 	created_utc = UTC_TIMESTAMP(),
-	plan_price = :price,
-	plan_amount = :amount`
+	plan_tier = :plan_tier,
+	plan_cycle = :plan_cycle,
+	plan_price = :plan_price,
+	plan_amount = :plan_amount,
+	plan_currency = :plan_currency`
 
-const selectUpgradePlan = `
+const selectUpgradeSchema = `
 SELECT id AS upgrade_id,
 	balance,
 	created_utc AS created_at,
-	plan_tier AS sub_tier,
-	plan_cycle AS sub_cycle,
-	plan_price AS price,
-	plan_amount AS amount,
-	plan_cycle_count AS cycle_count,
-	plan_extra_days AS extra_days,
-	plan_currency AS currency,
-	plan_title AS title
+	plan_tier AS plan_tier,
+	plan_cycle AS plan_cycle,
+	plan_price AS plan_price,
+	plan_amount AS plan_amount,
+	plan_currency AS plan_currency
 FROM %s.upgrade_plan
 WHERE id = ?
 LIMIT 1`
