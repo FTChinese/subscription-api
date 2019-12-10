@@ -42,13 +42,6 @@ type VerificationSessionSchema struct {
 	VersionExternalIdentifier  int64       `db:"version_external_identifier"`
 }
 
-type VerificationFailed struct {
-	Environment Environment `db:"environment"`
-	Status      int64       `db:"status"`
-	Message     null.String `db:"message"`
-	ReceiptData string      `db:"receipt_data"`
-}
-
 // WebHookSchema saves the value of WebHook root fields and the values of its LatestTransaction fields.
 type WebHookSchema struct {
 	BaseTransactionSchema
