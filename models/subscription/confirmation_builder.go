@@ -22,9 +22,6 @@ type ConfirmationBuilder struct {
 	paymentResult PaymentResult
 	membership    Membership // Current membership.
 	order         Order      // The order corresponding to a webhook.
-
-	startTime time.Time
-	endTime   time.Time
 }
 
 func NewConfirmationBuilder(result PaymentResult, live bool) *ConfirmationBuilder {
@@ -33,8 +30,6 @@ func NewConfirmationBuilder(result PaymentResult, live bool) *ConfirmationBuilde
 		paymentResult: result,
 		membership:    Membership{},
 		order:         Order{},
-		startTime:     time.Time{},
-		endTime:       time.Time{},
 	}
 }
 
@@ -97,55 +92,56 @@ func (b *ConfirmationBuilder) ValidateDuplicateUpgrading() *ConfirmError {
 	return nil
 }
 
-func (b *ConfirmationBuilder) Build() error {
+func (b *ConfirmationBuilder) Build() (ConfirmationResult, error) {
 
 	startTime := b.pickStartTime()
 	if startTime.IsZero() {
-		return errors.New("cannot determine order start time")
+		return ConfirmationResult{}, errors.New("cannot determine order start time")
 	}
 
-	b.startTime = startTime
-	end, err := b.order.getEndDate(startTime)
+	endTime, err := b.order.getEndDate(startTime)
 	if err != nil {
-		return err
+		return ConfirmationResult{}, err
 	}
 
-	b.endTime = end
+	snapshot := b.membership.Snapshot(b.order.Usage.SnapshotReason())
 
-	return nil
-}
+	order := b.confirmedOrder(startTime, endTime, snapshot.SnapshotID)
 
-func (b *ConfirmationBuilder) MustBuild() *ConfirmationBuilder {
-	if err := b.Build(); err != nil {
-		panic(err)
+	m, err := b.membership.FromAliWxOrder(order)
+	if err != nil {
+		return ConfirmationResult{}, err
 	}
 
-	return b
+	return ConfirmationResult{
+		Order:      order,
+		Membership: m,
+		Snapshot:   snapshot,
+	}, nil
 }
 
-func (b *ConfirmationBuilder) ConfirmedOrder() Order {
+func (b *ConfirmationBuilder) confirmedOrder(start time.Time, end time.Time, snapshotID string) Order {
 	order := b.order
 
 	order.ConfirmedAt = chrono.TimeFrom(b.paymentResult.ConfirmedAt)
-	order.StartDate = chrono.DateFrom(b.startTime)
-	order.EndDate = chrono.DateFrom(b.endTime)
+	order.StartDate = chrono.DateFrom(start)
+	order.EndDate = chrono.DateFrom(end)
+	order.MemberSnapshotID = null.NewString(snapshotID, snapshotID != "")
 
 	return order
 }
 
-func (b *ConfirmationBuilder) ConfirmedMembership() Membership {
+func (b *ConfirmationBuilder) ConfirmedMembership(order Order) Membership {
 	m := b.membership
 
-	m.GenerateID()
-
 	if b.membership.IsZero() {
-		m.MemberID = b.order.MemberID
+		m.MemberID = order.MemberID
 	}
 
-	m.Tier = b.order.Tier
-	m.Cycle = b.order.Cycle
-	m.ExpireDate = chrono.DateFrom(b.endTime)
-	m.PaymentMethod = b.order.PaymentMethod
+	m.Tier = order.Tier
+	m.Cycle = order.Cycle
+	m.ExpireDate = chrono.DateFrom(order.EndDate.Time)
+	m.PaymentMethod = order.PaymentMethod
 	m.StripeSubID = null.String{}
 	m.StripePlanID = null.String{}
 	m.AutoRenewal = false
