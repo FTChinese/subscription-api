@@ -331,9 +331,8 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	if result != nil {
 		go func() {
-			_ = router.subEnv.SaveConfirmationResult(subscription.NewConfirmationResult(
-				payResult.OrderID,
-				result.Err))
+			_ = router.subEnv.SaveConfirmationResult(
+				result.Schema(payResult.OrderID))
 		}()
 
 		if result.Retry {
