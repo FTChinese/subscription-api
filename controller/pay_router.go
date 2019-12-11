@@ -111,16 +111,19 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 	return nil
 }
 
-func (router PayRouter) loadUpgradeWallet(upgradeID string) (subscription.Wallet, error) {
+func (router PayRouter) loadUpgradeWallet(upgradeID string) (subscription.UpgradeSchema, error) {
 	balance, err := router.subEnv.RetrieveUpgradeBalance(upgradeID)
 	if err != nil {
-		return subscription.Wallet{}, err
+		return subscription.UpgradeSchema{}, err
 	}
 
 	sources, err := router.subEnv.RetrieveProratedOrders(upgradeID)
 	if err != nil {
-		return subscription.Wallet{}, err
+		return subscription.UpgradeSchema{}, err
 	}
 
-	return balance.BuildWallet(sources), nil
+	return subscription.UpgradeSchema{
+		UpgradeBalanceSchema: balance,
+		Sources:              sources,
+	}, nil
 }
