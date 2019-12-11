@@ -249,19 +249,17 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
-	confirmedOrder, result := router.subEnv.ConfirmOrder(payResult)
+	confirmedOrder, confirmErr := router.subEnv.ConfirmOrder(payResult)
 
-	if result != nil {
+	if confirmErr != nil {
 
 		go func() {
 			_ = router.subEnv.SaveConfirmationResult(
-				subscription.NewConfirmationResult(
-					payResult.OrderID,
-					result.Err),
+				confirmErr.Schema(payResult.OrderID),
 			)
 		}()
 
-		if result.Retry {
+		if confirmErr.Retry {
 			if b, err := w.Write([]byte(fail)); err != nil {
 				logger.WithField("byte_output", b).Error(err)
 			}
