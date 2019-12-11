@@ -36,9 +36,11 @@ func TestConfirmationBuilder_Build(t *testing.T) {
 		SetMembership(Membership{}).
 		SetOrder(order)
 
-	if err := cBuilder.Build(); err != nil {
+	confirmed, err := cBuilder.Build()
+
+	if err != nil {
 		t.Error(err)
 	}
 
-	t.Logf("%+v", cBuilder.ConfirmedOrder())
+	t.Logf("%+v", confirmed.Order)
 }
