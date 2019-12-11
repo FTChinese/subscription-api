@@ -121,12 +121,5 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 		return subscription.Order{}, err
 	}
 
-	if member.IsZero() {
-		snapshot := builder.MembershipSnapshot()
-		go func() {
-			_ = env.BackUpMember(snapshot)
-		}()
-	}
-
 	return order, nil
 }
