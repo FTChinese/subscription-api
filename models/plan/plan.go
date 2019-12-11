@@ -22,6 +22,14 @@ func (p BasePlan) NamedKey() string {
 	return p.Tier.String() + "_" + p.Cycle.String()
 }
 
+// Desc produces a human readable string of this plan.
+// * 标准会员/年
+// * 标准会员/月
+// * 高端会员/年
+func (p BasePlan) Desc() string {
+	return p.Tier.StringCN() + "/" + p.Cycle.StringCN()
+}
+
 // Plan is a pricing plan.
 // The list price is the price that buyers pay for your product or service without any discounts.
 // The net price of a product or service is the actual price that customers pay for the product or service.
@@ -49,14 +57,13 @@ func (p Plan) GetTitle(k SubsKind) string {
 
 // Desc is used for displaying to user.
 // The price show here is not the final price user paid.
-// 标准会员 CNY258.00/年
+// 标准会员/年 CNY258.00
 func (p Plan) Desc() string {
 	return fmt.Sprintf(
-		"%s %s%.2f/%s",
-		p.Tier.StringCN(),
+		"%s %s%.2f",
+		p.BasePlan.Desc(),
 		strings.ToUpper(p.Currency),
 		p.Price,
-		p.Cycle.StringCN(),
 	)
 }
 
