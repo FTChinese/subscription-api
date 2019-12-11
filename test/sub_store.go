@@ -18,6 +18,10 @@ import (
 // SubStore is a mock database for a single member.
 // It mimics the working flow of user's order and membership
 // creation and updating inside a real db.
+// WARNING: SubStore is only used to mimic subscription
+// paid via alipay or wxpay.
+// For Stripe and Apple, they do not create orders on our side,
+// so use Profile to generate mock data.
 type SubStore struct {
 	Profile *Profile
 	Orders  map[string]subscription.Order // A user could have multiple orders.
@@ -165,17 +169,17 @@ func (s *SubStore) MustConfirmOrder(id string) subscription.Order {
 		panic(err)
 	}
 
-	builder.MustBuild()
-
-	order := builder.ConfirmedOrder()
-	member := builder.ConfirmedMembership()
+	confirmed, err := builder.Build()
+	if err != nil {
+		panic(err)
+	}
 
 	// Add the confirmed order back to store.
-	s.Orders[o.ID] = order
+	s.Orders[o.ID] = confirmed.Order
 
-	s.Member = member
+	s.Member = confirmed.Membership
 
-	return order
+	return confirmed.Order
 }
 
 // MustGetMembership returns the current membership data.
