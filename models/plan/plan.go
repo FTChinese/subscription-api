@@ -47,6 +47,19 @@ func (p Plan) GetTitle(k SubsKind) string {
 	return fmt.Sprintf("%sFT中文网%s/%s", k.StringCN(), p.Tier.StringCN(), p.Cycle.StringCN())
 }
 
+// Desc is used for displaying to user.
+// The price show here is not the final price user paid.
+// 标准会员 CNY258.00/年
+func (p Plan) Desc() string {
+	return fmt.Sprintf(
+		"%s %s%.2f/%s",
+		p.Tier.StringCN(),
+		strings.ToUpper(p.Currency),
+		p.Price,
+		p.Cycle.StringCN(),
+	)
+}
+
 func (p Plan) GetStripePlanID(live bool) string {
 	if live {
 		return p.stripeLivePlanID
@@ -65,16 +78,4 @@ func (p Plan) WithStripePrice(sp stripe.Plan) Plan {
 	p.NetPrice = p.Price
 
 	return p
-}
-
-// Desc is used for displaying to user.
-// The price show here is not the final price user paid.
-func (p Plan) Desc() string {
-	return fmt.Sprintf(
-		"%s %s%.2f/%s",
-		p.Tier.StringCN(),
-		strings.ToUpper(p.Currency),
-		p.Price,
-		p.Cycle.StringCN(),
-	)
 }
