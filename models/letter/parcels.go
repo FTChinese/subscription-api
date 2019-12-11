@@ -48,7 +48,10 @@ func NewSubParcel(a reader.Account, order subscription.Order) (postoffice.Parcel
 	}, nil
 }
 
-func NewRenewalParcel(a reader.Account, order subscription.Order) (postoffice.Parcel, error) {
+func NewRenewalParcel(
+	a reader.Account,
+	order subscription.Order,
+) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterRenewalSub)
 
 	if err != nil {
@@ -90,7 +93,7 @@ func NewRenewalParcel(a reader.Account, order subscription.Order) (postoffice.Pa
 func NewUpgradeParcel(
 	a reader.Account,
 	order subscription.Order,
-	wallet subscription.Wallet,
+	us subscription.UpgradeSchema,
 ) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterUpgradeSub)
 
@@ -98,21 +101,14 @@ func NewUpgradeParcel(
 		return postoffice.Parcel{}, err
 	}
 
-	p, err := plan.FindPlan(order.Tier, order.Cycle)
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
 	data := struct {
-		User   reader.Account
-		Order  subscription.Order
-		Plan   plan.Plan
-		Wallet subscription.Wallet
+		User          reader.Account
+		Order         subscription.Order
+		UpgradeSchema subscription.UpgradeSchema
 	}{
-		User:   a,
-		Order:  order,
-		Plan:   p,
-		Wallet: wallet,
+		User:          a,
+		Order:         order,
+		UpgradeSchema: us,
 	}
 
 	var body strings.Builder
@@ -128,6 +124,38 @@ func NewUpgradeParcel(
 		ToAddress:   a.Email,
 		ToName:      a.NormalizeName(),
 		Subject:     "会员升级",
+		Body:        body.String(),
+	}, nil
+}
+
+func NewIAPLinkParcel(account reader.Account, m subscription.Membership) (postoffice.Parcel, error) {
+	tmpl, err := template.New("order").Parse(letterIAPLinked)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	var data = struct {
+		Reader     reader.Account
+		Membership subscription.Membership
+	}{
+		account,
+		m,
+	}
+
+	var body strings.Builder
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	return postoffice.Parcel{
+		FromAddress: "no-reply@ftchinese.com",
+		FromName:    "FT中文网会员订阅",
+		ToAddress:   account.Email,
+		ToName:      account.NormalizeName(),
+		Subject:     "关联iOS订阅",
 		Body:        body.String(),
 	}, nil
 }
