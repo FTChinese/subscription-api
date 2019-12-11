@@ -26,21 +26,21 @@ import (
 // This is a suspicious operation that should always be denied.
 // Return error could be ErrTargetLinkedToOtherIAP,
 // ErrHasValidNonIAPMember
-func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.Membership, error) {
+func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.Membership, bool, error) {
 	tx, err := env.BeginTx()
 	if err != nil {
-		return subscription.Membership{}, err
+		return subscription.Membership{}, false, err
 	}
 
 	iapMember, err := tx.RetrieveAppleMember(s.OriginalTransactionID)
 	if err != nil {
 		_ = tx.Rollback()
-		return subscription.Membership{}, err
+		return subscription.Membership{}, false, err
 	}
 	ftcMember, err := tx.RetrieveMember(id)
 	if err != nil {
 		_ = tx.Rollback()
-		return subscription.Membership{}, err
+		return subscription.Membership{}, false, err
 	}
 
 	// Merge two memberships.
@@ -63,11 +63,11 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 				_ = tx.Commit()
 			}
 
-			return subscription.Membership{}, err
+			return subscription.Membership{}, false, err
 		}
 
 		_ = tx.Rollback()
-		return subscription.Membership{}, err
+		return subscription.Membership{}, false, err
 	}
 
 	if merged.IsZero() {
@@ -88,7 +88,7 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 
 		if err := tx.DeleteMember(iapMember.MemberID); err != nil {
 			_ = tx.Rollback()
-			return subscription.Membership{}, err
+			return subscription.Membership{}, false, err
 		}
 	}
 
@@ -102,19 +102,19 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 
 		if err := tx.DeleteMember(ftcMember.MemberID); err != nil {
 			_ = tx.Rollback()
-			return subscription.Membership{}, err
+			return subscription.Membership{}, false, err
 		}
 	}
 
 	// Insert the merged one.
 	if err := tx.CreateMember(merged); err != nil {
 		_ = tx.Rollback()
-		return subscription.Membership{}, err
+		return subscription.Membership{}, false, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return subscription.Membership{}, err
+		return subscription.Membership{}, false, err
 	}
 
-	return merged, nil
+	return merged, iapMember.IsZero(), nil
 }
