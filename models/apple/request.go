@@ -19,6 +19,7 @@ func (v VerificationRequestBody) Validate() *view.Reason {
 		r := view.NewReason()
 		r.Field = "receipt-data"
 		r.Code = view.CodeMissingField
+		r.SetMessage("receipt-data missing")
 		return r
 	}
 
