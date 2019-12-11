@@ -18,12 +18,3 @@ type MemberSnapshot struct {
 	CreatedUTC chrono.Time         `db:"created_utc"`
 	Membership
 }
-
-func NewMemberSnapshot(m Membership, reason enum.SnapshotReason) MemberSnapshot {
-	return MemberSnapshot{
-		SnapshotID: GenerateSnapshotID(),
-		Reason:     reason,
-		CreatedUTC: chrono.TimeNow(),
-		Membership: m,
-	}
-}
