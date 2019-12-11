@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"fmt"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/redeem"
 	"gitlab.com/ftchinese/subscription-api/models/stripe"
@@ -431,32 +432,6 @@ func (m Membership) WithStripe(id reader.MemberID, s *stripesdk.Subscription) (M
 	return m, nil
 }
 
-// FromAliOrWx builds a new membership based on a confirmed
-// order.
-//func (m Membership) FromAliOrWx(sub Order) (Membership, error) {
-//	if !sub.IsConfirmed() {
-//		return m, errors.New("only confirmed order could be used to build membership")
-//	}
-//
-//	m.GenerateID()
-//
-//	if m.IsZero() {
-//		m.CompoundID = sub.CompoundID
-//		m.FtcID = sub.FtcID
-//		m.UnionID = sub.UnionID
-//	}
-//
-//	m.Tier = sub.Tier
-//	m.Cycle = sub.Cycle
-//	m.ExpireDate = sub.EndDate
-//	m.PaymentMethod = sub.PaymentMethod
-//	m.StripeSubID = null.String{}
-//	m.StripePlanID = null.String{}
-//	m.AutoRenewal = false
-//
-//	return m, nil
-//}
-
 // FromGiftCard creates a new instance based on a gift card.
 func (m Membership) FromGiftCard(c redeem.GiftCard) (Membership, error) {
 
@@ -471,6 +446,49 @@ func (m Membership) FromGiftCard(c redeem.GiftCard) (Membership, error) {
 	m.Tier = c.Tier
 	m.Cycle = c.CycleUnit
 	m.ExpireDate = chrono.DateFrom(expTime)
+
+	return m, nil
+}
+
+// Snapshot takes a snapshot of membership, usually before modifying it.
+func (m Membership) Snapshot(reason enum.SnapshotReason) MemberSnapshot {
+	if m.IsZero() {
+		return MemberSnapshot{}
+	}
+
+	return MemberSnapshot{
+		SnapshotID: GenerateSnapshotID(),
+		Reason:     reason,
+		CreatedUTC: chrono.TimeNow(),
+		Membership: m,
+	}
+}
+
+// FromAliWxOrder build/create a new membership based on an confirmed order.
+func (m Membership) FromAliWxOrder(order Order) (Membership, error) {
+	if !order.IsConfirmed() {
+		return m, fmt.Errorf("payment order %s is not confirmed yet", order.ID)
+	}
+
+	if order.PaymentMethod != enum.PayMethodAli && order.PaymentMethod != enum.PayMethodWx {
+		return m, fmt.Errorf("order %s is not paid via alipay or wxpay")
+	}
+
+	if m.IsZero() {
+		m.MemberID = order.MemberID
+	}
+
+	if m.ID.IsZero() {
+		m.ID = null.StringFrom(GenerateMembershipIndex())
+	}
+
+	m.Tier = order.Tier
+	m.Cycle = order.Cycle
+	m.ExpireDate = chrono.DateFrom(order.EndDate.Time)
+	m.PaymentMethod = order.PaymentMethod
+	m.StripeSubID = null.String{}
+	m.StripePlanID = null.String{}
+	m.AutoRenewal = false
 
 	return m, nil
 }
