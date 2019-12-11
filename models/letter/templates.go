@@ -40,15 +40,15 @@ FT中文网用户 {{.User.NormalizeName}},
 
 感谢您升级订阅FT中文网高端会员。
 
-您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 从标准会员升级到 {{.Plan.Desc}}。
+您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 从标准会员升级到 {{.Order.Desc}}。
 
 订单号 {{.Order.ID}}
 支付金额 {{.Order.ReadableAmount}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
-本次升级前余额 {{.Wallet.ReadableBalance}}，余额来自如下订单未使用部分：
+本次升级前余额 {{.UpgradeSchema.ReadableBalance}}，余额来自如下订单未使用部分：
 
-{{range .Wallet.Source}}
+{{range .UpgradeSchema.Sources}}
 {{.OrderID}}: {{.ReadableBalance}}
 {{end}}
 
@@ -58,13 +58,13 @@ FT中文网用户 {{.User.NormalizeName}},
 
 FT中文网`
 
-const iapLinked = `
+const letterIAPLinked = `
 FT中文网用户 {{.Reader.NormalizeName}},
 
 您的FT中文网账号 {{.Reader.Email}} 已经关联了在iOS平台上订阅的FT中文网会员服务。
 
-订阅产品：标准会员/年
-到期日期：
+订阅产品：{{.Membership.Desc}}
+到期日期：{{.Membership.ExpireDate}}
 
 在其他平台使用FT中文网账号登录即可实现跨平台阅读。
 
