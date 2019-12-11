@@ -1,9 +1,10 @@
 module gitlab.com/ftchinese/subscription-api
 
 require (
-	github.com/FTChinese/go-rest v0.2.2
+	github.com/FTChinese/go-rest v0.3.1
 	github.com/Masterminds/squirrel v1.1.0
 	github.com/Pallinder/go-randomdata v1.1.0
+	github.com/brianvoe/gofakeit/v4 v4.2.0
 	github.com/corpix/uarand v0.0.0 // indirect
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a // indirect
 	github.com/go-chi/chi v4.0.2+incompatible
@@ -11,7 +12,6 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/guregu/null v3.4.0+incompatible
-	github.com/icrowley/fake v0.0.0-20180203215853-4178557ae428
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
