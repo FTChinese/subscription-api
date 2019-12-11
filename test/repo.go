@@ -2,6 +2,7 @@ package test
 
 import (
 	"github.com/jmoiron/sqlx"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
@@ -16,27 +17,24 @@ SET user_id = :ftc_id,
 	password = '12345678'`
 
 type Repo struct {
-	store *SubStore
-	db    *sqlx.DB
+	db *sqlx.DB
 }
 
-func NewRepo(store *SubStore) *Repo {
+func NewRepo() *Repo {
 	return &Repo{
-		store: store,
-		db:    DB,
+		db: DB,
 	}
 }
 
-func (r *Repo) MustCreateAccount() {
-	_, err := r.db.NamedExec(stmtInsertAccount, r.store.GetAccount())
+func (r *Repo) MustCreateAccount(a reader.Account) {
+	_, err := r.db.NamedExec(stmtInsertAccount, a)
 
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (r *Repo) MustSaveMembership() subscription.Membership {
-	m := r.store.MustGetMembership()
+func (r *Repo) MustSaveMembership(m subscription.Membership) {
 
 	m.Normalize()
 
@@ -47,11 +45,10 @@ func (r *Repo) MustSaveMembership() subscription.Membership {
 	if err != nil {
 		panic(err)
 	}
-
-	return m
 }
 
-func (r *Repo) mustSaveOrder(order subscription.Order) {
+func (r *Repo) MustSaveOrder(order subscription.Order) {
+
 	var stmt = query.BuildInsertOrder(false) + `,
 		confirmed_utc = :confirmed_at,
 		start_date = :start_date,
@@ -66,28 +63,15 @@ func (r *Repo) mustSaveOrder(order subscription.Order) {
 	}
 }
 
-func (r *Repo) MustCreateOrder() subscription.Order {
-
-	o := r.store.MustCreateOrder()
-
-	r.mustSaveOrder(o)
-
-	return o
-}
-
-// MustRenewN prepares data to test FindBalanceSources
-func (r *Repo) MustRenewN(n int) {
-	orders := r.store.MustRenewN(n)
-
+func (r *Repo) MustSaveRenewalOrders(orders []subscription.Order) {
 	for _, v := range orders {
-		r.mustSaveOrder(v)
+		r.MustSaveOrder(v)
 	}
 }
 
 // SaveProratedOrders inserts prorated orders
 // to test ProratedOrdersUsed.
-func (r *Repo) SaveProratedOrders(n int) subscription.UpgradeSchema {
-	upgrade, _ := r.store.MustUpgrade(n)
+func (r *Repo) SaveProratedOrders(upgrade subscription.UpgradeSchema) {
 
 	for _, v := range upgrade.Sources {
 		_, err := r.db.NamedExec(
@@ -98,6 +82,4 @@ func (r *Repo) SaveProratedOrders(n int) subscription.UpgradeSchema {
 			panic(err)
 		}
 	}
-
-	return upgrade
 }
