@@ -12,8 +12,10 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 
 	store := test.NewSubStore(test.NewProfile())
 
-	test.NewRepo(store).
-		MustSaveMembership()
+	m := store.MustGetMembership()
+
+	test.NewRepo().
+		MustSaveMembership(m)
 
 	env := SubEnv{db: test.DB}
 
@@ -30,7 +32,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 		{
 			name: "Retrieve Empty member",
 			args: args{
-				id: test.NewProfile().AccountID(reader.AccountKindFtc),
+				id: test.NewProfile().AccountID(),
 			},
 		},
 		{
@@ -99,7 +101,9 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 
 	store := test.NewSubStore(test.NewProfile())
 
-	order := test.NewRepo(store).MustCreateOrder()
+	order := store.MustCreateOrder()
+
+	test.NewRepo().MustSaveOrder(order)
 
 	env := SubEnv{db: test.DB}
 	otx, _ := env.BeginOrderTx()
@@ -147,8 +151,10 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 func TestOrderTx_UpdateConfirmedOrder(t *testing.T) {
 	store := test.NewSubStore(test.NewProfile())
 
-	order := test.NewRepo(store).
-		MustCreateOrder()
+	order := store.MustCreateOrder()
+
+	test.NewRepo().
+		MustSaveOrder(order)
 
 	order = store.MustConfirmOrder(order.ID)
 
@@ -229,8 +235,9 @@ func TestOrderTx_CreateMember(t *testing.T) {
 func TestOrderTx_UpdateMember(t *testing.T) {
 	store := test.NewSubStore(test.NewProfile())
 
-	m := test.NewRepo(store).
-		MustSaveMembership()
+	m := store.MustGetMembership()
+	test.NewRepo().
+		MustSaveMembership(m)
 
 	m.Tier = enum.TierPremium
 
@@ -270,7 +277,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 func TestOrderTx_FindBalanceSources(t *testing.T) {
 	store := test.NewSubStore(test.NewProfile())
 
-	test.NewRepo(store).MustRenewN(3)
+	test.NewRepo().MustSaveRenewalOrders(store.MustRenewN(3))
 
 	env := SubEnv{db: test.DB}
 	otx, _ := env.BeginOrderTx()
@@ -386,7 +393,9 @@ func TestOrderTx_SaveUpgradeBalance(t *testing.T) {
 func TestOrderTx_ProratedOrdersUsed(t *testing.T) {
 	store := test.NewSubStore(test.NewProfile())
 
-	upgrade := test.NewRepo(store).SaveProratedOrders(3)
+	upgrade, _ := store.MustUpgrade(3)
+	test.NewRepo().
+		SaveProratedOrders(upgrade)
 
 	t.Logf("Upgrading schema id: %s", upgrade.ID)
 
