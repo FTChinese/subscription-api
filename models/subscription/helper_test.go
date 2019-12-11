@@ -5,13 +5,24 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/rand"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/brianvoe/gofakeit/v4"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
+	"github.com/spf13/viper"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"time"
 )
+
+func init() {
+	viper.SetConfigName("api")
+	viper.AddConfigPath("$HOME/config")
+	if err := viper.ReadInConfig(); err != nil {
+		panic(err)
+	}
+}
 
 var gender = []string{"men", "women"}
 
@@ -37,38 +48,95 @@ func GenCusID() string {
 	return "cus_" + id
 }
 
-type Profile struct {
-	FtcID    string
-	UnionID  string
-	StripeID string
-	Email    string
-	Password string
-	UserName string
-	Nickname string
-	Avatar   string
-	OpenID   string
-	IP       string
+func GenAppleSubID() string {
+	return "1000000" + rand.StringWithCharset(9, "0123456789")
 }
 
-func NewProfile() Profile {
-	return Profile{
-		FtcID:    uuid.New().String(),
-		UnionID:  GenWxID(),
-		StripeID: GenCusID(),
-		Email:    gofakeit.Email(),
-		Password: gofakeit.Password(true, false, true, false, false, 8),
-		UserName: gofakeit.Username(),
-		Nickname: gofakeit.Name(),
-		Avatar:   GenAvatar(),
-		OpenID:   GenWxID(),
-		IP:       gofakeit.IPv4Address(),
+func SimplePassword() string {
+	return gofakeit.Password(true, false, true, false, false, 8)
+}
+
+func mustFindPlan(tier enum.Tier, cycle enum.Cycle) plan.Plan {
+	p, err := plan.FindPlan(tier, cycle)
+	if err != nil {
+		panic(err)
+	}
+
+	return p
+}
+
+func getWxAppID() string {
+	return viper.GetString("wxapp.m_subs.app_id")
+}
+
+var yearlyStandard = mustFindPlan(enum.TierStandard, enum.CycleYear)
+var yearlyPremium = mustFindPlan(enum.TierPremium, enum.CycleYear)
+
+type Profile struct {
+	FtcID      string
+	UnionID    string
+	StripeID   string
+	Email      string
+	Password   string
+	UserName   string
+	Nickname   string
+	Avatar     string
+	OpenID     string
+	IP         string
+	AppleSubID string
+
+	kind        reader.AccountKind
+	plan        plan.Plan
+	expiresDate time.Time
+	payMethod   enum.PayMethod
+}
+
+func NewProfile() *Profile {
+	return &Profile{
+		FtcID:      uuid.New().String(),
+		UnionID:    GenWxID(),
+		StripeID:   GenCusID(),
+		Email:      gofakeit.Email(),
+		Password:   SimplePassword(),
+		UserName:   gofakeit.Username(),
+		Nickname:   gofakeit.Name(),
+		Avatar:     GenAvatar(),
+		OpenID:     GenWxID(),
+		IP:         gofakeit.IPv4Address(),
+		AppleSubID: GenAppleSubID(),
+
+		kind:        reader.AccountKindFtc,
+		plan:        yearlyStandard,
+		expiresDate: time.Now(),
+		payMethod:   enum.PayMethodAli,
 	}
 }
 
-func (p Profile) AccountID(kind reader.AccountKind) reader.MemberID {
+func (p *Profile) SetAccountKind(k reader.AccountKind) *Profile {
+	p.kind = k
+	return p
+}
+
+func (p *Profile) SetPlan(subPlan plan.Plan) *Profile {
+	p.plan = subPlan
+	return p
+}
+
+func (p *Profile) SetExpireDate(t time.Time) *Profile {
+	p.expiresDate = t
+	return p
+}
+
+func (p *Profile) SetPayMethod(m enum.PayMethod) *Profile {
+	p.payMethod = m
+	return p
+}
+
+func (p Profile) AccountID() reader.MemberID {
+
 	var id reader.MemberID
 
-	switch kind {
+	switch p.kind {
 	case reader.AccountKindFtc:
 		id, _ = reader.NewMemberID(p.FtcID, "")
 
@@ -82,8 +150,8 @@ func (p Profile) AccountID(kind reader.AccountKind) reader.MemberID {
 	return id
 }
 
-func (p Profile) Account(k reader.AccountKind) reader.Account {
-	switch k {
+func (p Profile) Account() reader.Account {
+	switch p.kind {
 	case reader.AccountKindFtc:
 		return reader.Account{
 			FtcID:    p.FtcID,
@@ -115,24 +183,22 @@ func (p Profile) Account(k reader.AccountKind) reader.Account {
 	return reader.Account{}
 }
 
-func (p Profile) Membership(kind reader.AccountKind, pm enum.PayMethod, expired bool) Membership {
-	m := NewMember(p.AccountID(kind))
-	m.Tier = enum.TierStandard
-	m.Cycle = enum.CycleYear
-
-	if expired {
-		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, 0, -7))
-	} else {
-		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(1, 0, 1))
+func (p Profile) Membership() Membership {
+	m := Membership{
+		ID:            null.StringFrom(GenerateMembershipIndex()),
+		MemberID:      p.AccountID(),
+		BasePlan:      p.plan.BasePlan,
+		ExpireDate:    chrono.DateFrom(p.expiresDate),
+		PaymentMethod: p.payMethod,
+		StripeSubID:   null.String{},
+		StripePlanID:  null.String{},
+		AutoRenewal:   false,
+		Status:        SubStatusNull,
 	}
 
-	m.PaymentMethod = pm
-
-	if pm == enum.PayMethodStripe {
-		m.StripeSubID = null.StringFrom(GenSubID())
-		//m.StripePlanID = null.StringFrom(stripePlanIDsTest["standard_year"])
+	if p.payMethod == enum.PayMethodApple {
+		m.AppleSubID = null.StringFrom(p.AppleSubID)
 		m.AutoRenewal = true
-		m.Status = SubStatusActive
 	}
 
 	return m

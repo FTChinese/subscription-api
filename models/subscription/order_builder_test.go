@@ -6,36 +6,11 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"testing"
 	"time"
 )
-
-func init() {
-	viper.SetConfigName("api")
-	viper.AddConfigPath("$HOME/config")
-	if err := viper.ReadInConfig(); err != nil {
-		panic(err)
-	}
-}
-
-func mustFindPlan(tier enum.Tier, cycle enum.Cycle) plan.Plan {
-	p, err := plan.FindPlan(tier, cycle)
-	if err != nil {
-		panic(err)
-	}
-
-	return p
-}
-
-func getWxAppID() string {
-	return viper.GetString("wxapp.m_subs.app_id")
-}
-
-var yearlyStandard = mustFindPlan(enum.TierStandard, enum.CycleYear)
-var yearlyPremium = mustFindPlan(enum.TierPremium, enum.CycleYear)
 
 func TestWxAppID(t *testing.T) {
 	t.Logf("Wx app id: %s", getWxAppID())

@@ -6,6 +6,7 @@ import (
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -43,7 +44,7 @@ func TestMembership_IsExpired(t *testing.T) {
 		{
 			name: "Expired",
 			fields: fields{
-				AccountID: profile.AccountID(reader.AccountKindFtc),
+				AccountID: profile.AccountID(),
 				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
@@ -55,7 +56,7 @@ func TestMembership_IsExpired(t *testing.T) {
 		{
 			name: "Expired but auto renewal",
 			fields: fields{
-				AccountID: profile.AccountID(reader.AccountKindFtc),
+				AccountID: profile.AccountID(),
 				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
@@ -303,7 +304,7 @@ func TestMembership_SubsKind(t *testing.T) {
 		{
 			name: "Renewal",
 			fields: fields{
-				AccountID: profile.AccountID(reader.AccountKindFtc),
+				AccountID: profile.AccountID(),
 				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
@@ -317,7 +318,7 @@ func TestMembership_SubsKind(t *testing.T) {
 		{
 			name: "Upgrading",
 			fields: fields{
-				AccountID: profile.AccountID(reader.AccountKindFtc),
+				AccountID: profile.AccountID(),
 				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
@@ -386,7 +387,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 		{
 			name: "Expired Alipay",
 			fields: fields{
-				AccountID: profile.AccountID(reader.AccountKindFtc),
+				AccountID: profile.AccountID(),
 				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
@@ -398,7 +399,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 		{
 			name: "Not Expired Wx",
 			fields: fields{
-				AccountID: profile.AccountID(reader.AccountKindFtc),
+				AccountID: profile.AccountID(),
 				Coordinate: plan.BasePlan{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
@@ -410,7 +411,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 		{
 			name: "Valid Stripe",
 			fields: fields{
-				AccountID:     profile.AccountID(reader.AccountKindFtc),
+				AccountID:     profile.AccountID(),
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 				PaymentMethod: enum.PayMethodStripe,
 				AutoRenewal:   true,
@@ -421,7 +422,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 		{
 			name: "Stripe Incomplete Expired",
 			fields: fields{
-				AccountID:     profile.AccountID(reader.AccountKindFtc),
+				AccountID:     profile.AccountID(),
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 				PaymentMethod: enum.PayMethodStripe,
 				AutoRenewal:   true,
@@ -432,7 +433,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 		{
 			name: "Expired stripe but auto renewal",
 			fields: fields{
-				AccountID:     profile.AccountID(reader.AccountKindFtc),
+				AccountID:     profile.AccountID(),
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, -1, 0)),
 				PaymentMethod: enum.PayMethodStripe,
 				AutoRenewal:   true,
@@ -443,7 +444,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 		{
 			name: "Expired stripe auto renewal but inactive",
 			fields: fields{
-				AccountID:     profile.AccountID(reader.AccountKindFtc),
+				AccountID:     profile.AccountID(),
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, -1, 0)),
 				PaymentMethod: enum.PayMethodStripe,
 				AutoRenewal:   true,
@@ -469,6 +470,105 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 			}
 			if err := m.PermitStripeCreate(); (err != nil) != tt.wantErr {
 				t.Errorf("PermitStripeCreate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestMembership_MergeIAPMembership(t *testing.T) {
+	profile := NewProfile()
+
+	iapMember := profile.
+		SetPayMethod(enum.PayMethodApple).
+		Membership()
+
+	expired := NewProfile().Membership()
+	expired.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, 0, -1))
+
+	type fields struct {
+		m Membership
+	}
+	type args struct {
+		iapMember Membership
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    Membership
+		wantErr bool
+	}{
+		{
+			name: "Both empty",
+			fields: fields{
+				m: Membership{},
+			},
+			args: args{
+				iapMember: Membership{},
+			},
+			want:    Membership{},
+			wantErr: false,
+		},
+		{
+			name: "Same one",
+			fields: fields{
+				m: iapMember,
+			},
+			args: args{
+				iapMember: iapMember,
+			},
+			want:    iapMember,
+			wantErr: false,
+		},
+		{
+			name: "FTC exists, iap exists, not same one",
+			fields: fields{
+				m: NewProfile().Membership(),
+			},
+			args: args{
+				iapMember: iapMember,
+			},
+			want:    Membership{},
+			wantErr: true,
+		},
+		{
+			name: "FTC side is expired, iap empty",
+			fields: fields{
+				m: expired,
+			},
+			args: args{
+				iapMember: Membership{},
+			},
+		},
+		{
+			name: "Two different IAPs",
+			fields: fields{
+				m: NewProfile().SetPayMethod(enum.PayMethodApple).Membership(),
+			},
+			args: args{
+				iapMember: iapMember,
+			},
+		},
+		{
+			name: "FTC is valid but not iap",
+			fields: fields{
+				m: NewProfile().Membership(),
+			},
+			args: args{
+				iapMember: iapMember,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tt.fields.m
+			got, err := m.MergeIAPMembership(tt.args.iapMember)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MergeIAPMembership() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MergeIAPMembership() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
