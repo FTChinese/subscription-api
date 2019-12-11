@@ -24,7 +24,7 @@ func GenerateMembershipIndex() string {
 // Membership contains a user's membership details
 // This is actually called subscription by Stripe.
 type Membership struct {
-	ID null.String `json:"memberID" db:"sub_id"` // A random string. Not used yet.
+	ID null.String `json:"id" db:"sub_id"` // A random string. Not used yet.
 	reader.MemberID
 	plan.BasePlan
 	LegacyTier    null.Int       `json:"-" db:"vip_type"`
