@@ -27,6 +27,34 @@ func NewIAPRouter(iapEnv iaprepo.IAPEnv, p postoffice.Postman) IAPRouter {
 	}
 }
 
+func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt) {
+
+	// save latest receipt array
+	go func() {
+		for _, v := range ur.LatestTransactions {
+			_ = router.iapEnv.SaveTransaction(
+				v.Schema(ur.Environment),
+			)
+		}
+	}()
+
+	// Save pending renewal array
+	go func() {
+		for _, v := range ur.PendingRenewalInfo {
+			_ = router.iapEnv.SavePendingRenewal(
+				v.Schema(ur.Environment),
+			)
+		}
+	}()
+
+	// Save the receipt as a token for status polling.
+	receiptToken := ur.ReceiptToken()
+
+	go func() {
+		_ = router.iapEnv.SaveReceiptToken(receiptToken)
+	}()
+}
+
 func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request) (apple.Subscription, bool) {
 	log := logger.WithField("trace", "IAPRouter.VerifyReceipt")
 
@@ -66,7 +94,7 @@ func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request)
 		r := view.NewReason()
 		r.Field = "receipt-data"
 		r.Code = view.CodeInvalid
-		r.SetMessage("receipt data is not valid")
+		r.SetMessage("verification response is not valid")
 		_ = view.Render(w, view.NewUnprocessable(r))
 		return apple.Subscription{}, false
 	}
@@ -89,34 +117,6 @@ func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request)
 	_ = router.iapEnv.CreateSubscription(sub)
 
 	return sub, true
-}
-
-func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt) {
-
-	// save latest receipt array
-	go func() {
-		for _, v := range ur.LatestTransactions {
-			_ = router.iapEnv.SaveTransaction(
-				v.Schema(ur.Environment),
-			)
-		}
-	}()
-
-	// Save pending renewal array
-	go func() {
-		for _, v := range ur.PendingRenewalInfo {
-			_ = router.iapEnv.SavePendingRenewal(
-				v.Schema(ur.Environment),
-			)
-		}
-	}()
-
-	// Save the receipt as a token for status polling.
-	receiptToken := ur.ReceiptToken()
-
-	go func() {
-		_ = router.iapEnv.SaveReceiptToken(receiptToken)
-	}()
 }
 
 // VerifyReceipt perform app store receipt verification
