@@ -9,9 +9,8 @@ func TestEnv_FindFtcUser(t *testing.T) {
 
 	profile := test.NewProfile()
 
-	store := test.NewSubStore(profile)
-	test.NewRepo(store).
-		MustCreateAccount()
+	test.NewRepo().
+		MustCreateAccount(profile.Account())
 
 	env := SubEnv{
 		db: test.DB,
@@ -51,9 +50,7 @@ func TestEnv_FindStripeCustomer(t *testing.T) {
 
 	profile := test.NewProfile()
 
-	store := test.NewSubStore(profile)
-
-	test.NewRepo(store).MustCreateAccount()
+	test.NewRepo().MustCreateAccount(profile.Account())
 
 	env := SubEnv{
 		db: test.DB,
