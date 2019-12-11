@@ -1066,7 +1066,7 @@ const mockReceiptResponse = `
   ]
 }`
 
-func createResponse() VerificationResponseBody {
+func getReceiptResponse() VerificationResponseBody {
 	var v VerificationResponseBody
 	if err := json.Unmarshal([]byte(mockReceiptResponse), &v); err != nil {
 		panic(err)
@@ -1109,7 +1109,7 @@ func TestVerificationResponseBody_SortLatestReceipts(t *testing.T) {
 }
 
 func TestVerificationResponseBody_Validate(t *testing.T) {
-	resp := createResponse()
+	resp := getReceiptResponse()
 
 	isValid := resp.Validate()
 
@@ -1117,7 +1117,7 @@ func TestVerificationResponseBody_Validate(t *testing.T) {
 }
 
 func TestVerificationResponseBody_Subscription(t *testing.T) {
-	resp := createResponse()
+	resp := getReceiptResponse()
 	resp.sortLatestReceiptsDesc()
 
 	sub := resp.Subscription()
