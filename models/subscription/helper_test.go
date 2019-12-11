@@ -6,9 +6,9 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/Pallinder/go-randomdata"
+	"github.com/brianvoe/gofakeit/v4"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"github.com/icrowley/fake"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"time"
 )
@@ -55,13 +55,13 @@ func NewProfile() Profile {
 		FtcID:    uuid.New().String(),
 		UnionID:  GenWxID(),
 		StripeID: GenCusID(),
-		Email:    fake.EmailAddress(),
-		Password: fake.SimplePassword(),
-		UserName: fake.UserName(),
-		Nickname: fake.UserName(),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, false, true, false, false, 8),
+		UserName: gofakeit.Username(),
+		Nickname: gofakeit.Name(),
 		Avatar:   GenAvatar(),
 		OpenID:   GenWxID(),
-		IP:       fake.IPv4(),
+		IP:       gofakeit.IPv4Address(),
 	}
 }
 
