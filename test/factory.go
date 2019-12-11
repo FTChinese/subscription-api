@@ -5,7 +5,9 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/rand"
 	"github.com/Pallinder/go-randomdata"
+	"github.com/brianvoe/gofakeit/v4"
 	"github.com/guregu/null"
 	"github.com/icrowley/fake"
 	"github.com/objcoding/wxpay"
@@ -71,6 +73,19 @@ func GenAvatar() string {
 	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
 }
 
+const charset = "0123456789"
+
+func randNumericString() string {
+	return rand.StringWithCharset(9, charset)
+}
+
+func GenAppleSubID() string {
+	return "1000000" + randNumericString()
+}
+
+func SimplePassword() string {
+	return gofakeit.Password(true, false, true, false, false, 8)
+}
 func WxXMLNotification(orderID string) string {
 	openID, _ := gorest.RandomBase64(21)
 	nonce, _ := gorest.RandomHex(16)

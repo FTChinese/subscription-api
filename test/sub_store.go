@@ -19,7 +19,7 @@ import (
 // It mimics the working flow of user's order and membership
 // creation and updating inside a real db.
 type SubStore struct {
-	Profile Profile
+	Profile *Profile
 	Orders  map[string]subscription.Order // A user could have multiple orders.
 	Member  subscription.Membership       // But only one membership.
 
@@ -34,7 +34,7 @@ type SubStore struct {
 }
 
 // NewSubStore represents all the data stored for a single user.
-func NewSubStore(p Profile) *SubStore {
+func NewSubStore(p *Profile) *SubStore {
 
 	return &SubStore{
 		Profile: p,
@@ -51,7 +51,9 @@ func NewSubStore(p Profile) *SubStore {
 }
 
 func (s *SubStore) GetAccount() reader.Account {
-	return s.Profile.Account(s.accountKind)
+	s.Profile.SetAccountKind(s.accountKind)
+
+	return s.Profile.Account()
 }
 
 func (s *SubStore) SetAccountKind(k reader.AccountKind) *SubStore {
@@ -60,7 +62,7 @@ func (s *SubStore) SetAccountKind(k reader.AccountKind) *SubStore {
 }
 
 func (s *SubStore) GetMemberID() reader.MemberID {
-	return s.Profile.AccountID(s.accountKind)
+	return s.Profile.AccountID()
 }
 
 func (s *SubStore) SetBalanceAnchor(t time.Time) *SubStore {
@@ -108,7 +110,8 @@ func (s *SubStore) GetWallet() subscription.Wallet {
 }
 
 func (s *SubStore) createOrderBuilder() *subscription.OrderBuilder {
-	builder := subscription.NewOrderBuilder(s.Profile.AccountID(s.accountKind)).
+	builder := subscription.
+		NewOrderBuilder(s.Profile.AccountID()).
 		SetPlan(s.plan).
 		SetPayMethod(s.payMethod).
 		SetMembership(s.Member).
@@ -122,7 +125,7 @@ func (s *SubStore) createOrderBuilder() *subscription.OrderBuilder {
 	return builder
 }
 
-// MustCreateOrder creates a new order and save it in
+// MustSaveOrder creates a new order and save it in
 // Orders array indexed by the order id.
 func (s *SubStore) MustCreateOrder() subscription.Order {
 	builder := s.createOrderBuilder()

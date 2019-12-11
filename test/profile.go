@@ -4,9 +4,9 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/Pallinder/go-randomdata"
+	"github.com/brianvoe/gofakeit/v4"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"github.com/icrowley/fake"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
@@ -15,30 +15,42 @@ import (
 )
 
 type Profile struct {
-	FtcID    string
-	UnionID  string
-	StripeID string
-	Email    string
-	Password string
-	UserName string
-	Nickname string
-	Avatar   string
-	OpenID   string
-	IP       string
+	FtcID      string
+	UnionID    string
+	StripeID   string
+	Email      string
+	Password   string
+	UserName   string
+	Nickname   string
+	Avatar     string
+	OpenID     string
+	IP         string
+	AppleSubID string
+
+	kind        reader.AccountKind
+	plan        plan.Plan
+	expiresDate time.Time
+	payMethod   enum.PayMethod
 }
 
-func NewProfile() Profile {
-	return Profile{
-		FtcID:    uuid.New().String(),
-		UnionID:  GenWxID(),
-		StripeID: GetCusID(),
-		Email:    fake.EmailAddress(),
-		Password: fake.SimplePassword(),
-		UserName: fake.UserName(),
-		Nickname: fake.UserName(),
-		Avatar:   GenAvatar(),
-		OpenID:   GenWxID(),
-		IP:       fake.IPv4(),
+func NewProfile() *Profile {
+	return &Profile{
+		FtcID:      uuid.New().String(),
+		UnionID:    GenWxID(),
+		StripeID:   GetCusID(),
+		Email:      gofakeit.Email(),
+		Password:   SimplePassword(),
+		UserName:   gofakeit.Username(),
+		Nickname:   gofakeit.Name(),
+		Avatar:     GenAvatar(),
+		OpenID:     GenWxID(),
+		IP:         gofakeit.IPv4Address(),
+		AppleSubID: GenAppleSubID(),
+
+		kind:        reader.AccountKindFtc,
+		plan:        YearlyStandard,
+		expiresDate: time.Now(),
+		payMethod:   enum.PayMethodAli,
 	}
 }
 
@@ -49,16 +61,36 @@ var MyProfile = Profile{
 	Email:    MyEmail,
 	Password: "12345678",
 	UserName: "weiguo.ni",
-	Nickname: fake.UserName(),
+	Nickname: gofakeit.Username(),
 	Avatar:   "http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIibCfVIicoNXZ15Af6nWkXwq5QgFcrNdkEKMHT7P1oJVI6McLT2qFia2ialF4FSMnm33yS0eAq7MK1cA/132",
-	IP:       fake.IPv4(),
+	IP:       gofakeit.IPv4Address(),
 }
 
-func (p Profile) AccountID(kind reader.AccountKind) reader.MemberID {
+func (p *Profile) SetAccountKind(k reader.AccountKind) *Profile {
+	p.kind = k
+	return p
+}
+
+func (p *Profile) SetPlan(subPlan plan.Plan) *Profile {
+	p.plan = subPlan
+	return p
+}
+
+func (p *Profile) SetExpireDate(t time.Time) *Profile {
+	p.expiresDate = t
+	return p
+}
+
+func (p *Profile) SetPayMethod(m enum.PayMethod) *Profile {
+	p.payMethod = m
+	return p
+}
+
+func (p Profile) AccountID() reader.MemberID {
 
 	var id reader.MemberID
 
-	switch kind {
+	switch p.kind {
 	case reader.AccountKindFtc:
 		id, _ = reader.NewMemberID(p.FtcID, "")
 
@@ -72,8 +104,8 @@ func (p Profile) AccountID(kind reader.AccountKind) reader.MemberID {
 	return id
 }
 
-func (p Profile) Account(k reader.AccountKind) reader.Account {
-	switch k {
+func (p Profile) Account() reader.Account {
+	switch p.kind {
 	case reader.AccountKindFtc:
 		return reader.Account{
 			FtcID:    p.FtcID,
@@ -105,21 +137,25 @@ func (p Profile) Account(k reader.AccountKind) reader.Account {
 	return reader.Account{}
 }
 
-func (p Profile) Membership(k reader.AccountKind) subscription.Membership {
-	return subscription.Membership{
-		ID:       null.StringFrom(subscription.GenerateMembershipIndex()),
-		MemberID: p.AccountID(k),
-		BasePlan: plan.BasePlan{
-			Tier:  enum.TierStandard,
-			Cycle: enum.CycleYear,
-		},
-		ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
-		PaymentMethod: enum.PayMethodWx,
+func (p Profile) Membership() subscription.Membership {
+	m := subscription.Membership{
+		ID:            null.StringFrom(subscription.GenerateMembershipIndex()),
+		MemberID:      p.AccountID(),
+		BasePlan:      p.plan.BasePlan,
+		ExpireDate:    chrono.DateFrom(p.expiresDate),
+		PaymentMethod: p.payMethod,
 		StripeSubID:   null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
 		Status:        subscription.SubStatusNull,
 	}
+
+	if p.payMethod == enum.PayMethodApple {
+		m.AppleSubID = null.StringFrom(p.AppleSubID)
+		m.AutoRenewal = true
+	}
+
+	return m
 }
 
 func (p Profile) WxAccess() wxlogin.OAuthAccess {
