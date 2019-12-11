@@ -40,11 +40,15 @@ func (c BuildConfig) UseSandboxDB() bool {
 	return false
 }
 
+// GetReceiptVerificationURL selects apple receipt verification
+// endpoint depending on the deployment environment.
+// This is the same to stripe key selection.
+// MUST not use the UsedSandboxDB!
 func (c BuildConfig) GetReceiptVerificationURL() string {
 
-	if c.UseSandboxDB() {
-		return "https://sandbox.itunes.apple.com/verifyReceipt"
+	if c.Live() {
+		return "https://buy.itunes.apple.com/verifyReceipt"
 	}
 
-	return "https://buy.itunes.apple.com/verifyReceipt"
+	return "https://sandbox.itunes.apple.com/verifyReceipt"
 }
