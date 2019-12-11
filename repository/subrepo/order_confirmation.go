@@ -70,7 +70,8 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 	// STEP 4: Confirm this order
 	// Populate the ConfirmedAt, StartDate and EndDate.
 	// If there are calculation errors, allow retry.
-	if err := builder.Build(); err != nil {
+	confirmed, err := builder.Build()
+	if err != nil {
 		_ = tx.Rollback()
 		return subscription.Order{}, &subscription.ConfirmError{
 			Err:   err,
@@ -80,9 +81,7 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 
 	// STEP 5: Update confirmed order
 	// For any errors, allow retry.
-	confirmedOrder := builder.ConfirmedOrder()
-
-	if err := tx.UpdateConfirmedOrder(builder.ConfirmedOrder()); err != nil {
+	if err := tx.UpdateConfirmedOrder(confirmed.Order); err != nil {
 		_ = tx.Rollback()
 		return subscription.Order{}, &subscription.ConfirmError{
 			Err:   err,
@@ -91,8 +90,8 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 	}
 
 	// Flag upgrade balance source as consumed.
-	if confirmedOrder.Usage == plan.SubsKindUpgrade {
-		err := tx.ProratedOrdersUsed(confirmedOrder.UpgradeSchemaID.String)
+	if confirmed.Order.Usage == plan.SubsKindUpgrade {
+		err := tx.ProratedOrdersUsed(confirmed.Order.UpgradeSchemaID.String)
 
 		if err != nil {
 			_ = tx.Rollback()
@@ -103,10 +102,17 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 		}
 	}
 
+	// Backup old membership.
+	if !confirmed.Snapshot.IsZero() {
+		go func() {
+			_ = env.BackUpMember(confirmed.Snapshot)
+		}()
+	}
+
 	// STEP 7: Insert or update membership.
 	// This error should allow retry
 	if member.IsZero() {
-		if err := tx.CreateMember(builder.ConfirmedMembership()); err != nil {
+		if err := tx.CreateMember(confirmed.Membership); err != nil {
 			_ = tx.Rollback()
 			return subscription.Order{}, &subscription.ConfirmError{
 				Err:   err,
@@ -115,7 +121,7 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 		}
 	} else {
 		// Update Membership.
-		if err := tx.UpdateMember(builder.ConfirmedMembership()); err != nil {
+		if err := tx.UpdateMember(confirmed.Membership); err != nil {
 			_ = tx.Rollback()
 			return subscription.Order{}, &subscription.ConfirmError{
 				Err:   err,
@@ -133,5 +139,5 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 
 	log.Infof("Order %s confirmed", result.OrderID)
 
-	return confirmedOrder, nil
+	return confirmed.Order, nil
 }
