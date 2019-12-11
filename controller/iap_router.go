@@ -6,19 +6,24 @@ import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"gitlab.com/ftchinese/subscription-api/models/apple"
+	"gitlab.com/ftchinese/subscription-api/models/letter"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
+	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
 	"net/http"
 )
 
 type IAPRouter struct {
-	iapEnv iaprepo.IAPEnv
+	iapEnv    iaprepo.IAPEnv
+	readerEnv rederrepo.ReaderEnv
+	postman   postoffice.Postman
 }
 
 func NewIAPRouter(iapEnv iaprepo.IAPEnv, p postoffice.Postman) IAPRouter {
 	return IAPRouter{
-		iapEnv: iapEnv,
+		iapEnv:  iapEnv,
+		postman: p,
 	}
 }
 
@@ -137,7 +142,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Start to link apple subscription to ftc membership.
-	m, err := router.iapEnv.Link(sub, memberID)
+	m, isNewLink, err := router.iapEnv.Link(sub, memberID)
 
 	if err != nil {
 		switch err {
@@ -169,6 +174,12 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 			_ = view.Render(w, view.NewDBFailure(err))
 			return
 		}
+	}
+
+	if isNewLink {
+		go func() {
+			_ = router.sendLinkedLetter(m)
+		}()
 	}
 
 	_ = view.Render(w, view.NewResponse().SetBody(m))
@@ -260,4 +271,31 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	_ = tx.Commit()
 
 	_ = view.Render(w, view.NewResponse())
+}
+
+func (router IAPRouter) sendLinkedLetter(m subscription.Membership) error {
+	if m.FtcID.IsZero() {
+		logger.
+			WithField("trace", "IAPRouter.sendLinkedLetter").
+			Info("not an ftc account")
+
+		return nil
+	}
+
+	account, err := router.readerEnv.FindAccountByFtcID(m.FtcID.String)
+	if err != nil {
+		return err
+	}
+
+	parcel, err := letter.NewIAPLinkParcel(account, m)
+	if err != nil {
+		return err
+	}
+
+	err = router.postman.Deliver(parcel)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
