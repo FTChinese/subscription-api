@@ -74,13 +74,8 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		SetClient(clientApp).
 		SetEnvironment(router.subEnv.Live())
 
-	otx, err := router.subEnv.BeginOrderTx()
-	if err != nil {
-		_ = view.Render(w, view.NewDBFailure(err))
-		return
-	}
+	order, err := router.subEnv.FreeUpgrade(builder)
 
-	order, err := otx.FreeUpgrade(builder)
 	if err != nil {
 		switch err {
 		case subscription.ErrUpgradeInvalid:
@@ -94,11 +89,6 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 			_ = view.Render(w, view.NewDBFailure(err))
 		}
 
-		_ = otx.Rollback()
-		return
-	}
-
-	if err := otx.Commit(); err != nil {
 		return
 	}
 
@@ -106,11 +96,6 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 	// Save client app info
 	go func() {
 		_ = router.subEnv.SaveOrderClient(orderClient)
-	}()
-
-	snapshot := builder.MembershipSnapshot()
-	go func() {
-		_ = router.subEnv.BackUpMember(snapshot)
 	}()
 
 	go func() {
