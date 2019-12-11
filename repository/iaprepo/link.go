@@ -27,7 +27,7 @@ import (
 // Return error could be ErrTargetLinkedToOtherIAP,
 // ErrHasValidNonIAPMember
 func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.Membership, error) {
-	tx, err := env.BeginTx(s.Environment)
+	tx, err := env.BeginTx()
 	if err != nil {
 		return subscription.Membership{}, err
 	}
@@ -43,17 +43,17 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 		return subscription.Membership{}, err
 	}
 
+	// Merge two memberships.
+	// If iap membership is already linked, the merged
+	// membership won't be changed and we only need to
+	// update it based on apple transaction.
 	merged, err := ftcMember.MergeIAPMembership(iapMember)
 	if err != nil {
 		if err == subscription.ErrLinkToMultipleFTC {
 			newIAPMember := s.BuildOn(iapMember)
 			go func() {
 				_ = env.BackUpMember(
-					subscription.NewMemberSnapshot(
-						iapMember,
-						enum.SnapshotReasonAppleIAP,
-					),
-					s.Environment,
+					iapMember.Snapshot(enum.SnapshotReasonAppleLink),
 				)
 			}()
 
@@ -79,13 +79,10 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 	// Backup current iap membership and ftc membership
 	if !iapMember.IsZero() {
 		// Back up
+		iapMember.GenerateID()
 		go func() {
 			_ = env.BackUpMember(
-				subscription.NewMemberSnapshot(
-					iapMember,
-					enum.SnapshotReasonAppleIAP,
-				),
-				s.Environment,
+				iapMember.Snapshot(enum.SnapshotReasonAppleLink),
 			)
 		}()
 
@@ -96,13 +93,10 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 	}
 
 	if !ftcMember.IsZero() {
+		ftcMember.GenerateID()
 		go func() {
 			_ = env.BackUpMember(
-				subscription.NewMemberSnapshot(
-					ftcMember,
-					enum.SnapshotReasonAppleIAP,
-				),
-				s.Environment,
+				ftcMember.Snapshot(enum.SnapshotReasonAppleLink),
 			)
 		}()
 
@@ -112,6 +106,7 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 		}
 	}
 
+	// Insert the merged one.
 	if err := tx.CreateMember(merged); err != nil {
 		_ = tx.Rollback()
 		return subscription.Membership{}, err
