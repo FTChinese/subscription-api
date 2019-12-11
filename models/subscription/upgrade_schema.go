@@ -32,24 +32,8 @@ type UpgradeBalanceSchema struct {
 	plan.Plan             // Save the plan's tier, cycle, price, amount and currency the moment user upgrades.
 }
 
-// BuildWallet turns the upgrading balance data back to wallet.
-func (u UpgradeBalanceSchema) BuildWallet(orders []ProratedOrderSchema) Wallet {
-	sources := make([]ProratedOrder, 0)
-
-	for _, v := range orders {
-		sources = append(sources, v.ProratedOrder)
-	}
-
-	return Wallet{
-		Balance:  u.Balance,
-		Source:   sources,
-		AsOfDate: u.CreatedAt,
-	}
-}
-
 // ReadableBalance produces a string describing the total balance
 // in the format: CNY99.00 in email sent to user.
-// Deprecate
 func (u UpgradeBalanceSchema) ReadableBalance() string {
 	return fmt.Sprintf("%s%.2f", "CNY", u.Balance)
 }
