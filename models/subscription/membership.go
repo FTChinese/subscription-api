@@ -206,10 +206,14 @@ func (m Membership) MergeIAPMembership(iapMember Membership) (Membership, error)
 	// This is suspicious fraud.
 	// We still need to update the IAP side membership based on
 	// apple latest transaction.
+	// There is a possibility that the FTC side is expired
+	// we take it as error because if we allow it,
+	// then cheater might be using the same apple id to link
+	// to multiple invalid FTC memberships.
 	if !iapMember.IsZero() {
 		// Here
-		// b != 0, a == 0 or
-		// b != 0, a != 0.
+		// b != 0, a == 0 iap already exists while ftc is zero;
+		// b != 0, a != 0 iap already exists and ftc is not zero.
 		// It includes both non-zero cases.
 		return Membership{}, ErrLinkToMultipleFTC
 	}
@@ -220,7 +224,6 @@ func (m Membership) MergeIAPMembership(iapMember Membership) (Membership, error)
 	// apple_subscription_id set to apple's original transaction memberID.
 	// This might erase previous original transaction memberID
 	// set on the FTC side. It's ok since it is already invalid.
-
 	if !m.IsValid() {
 		return m, nil
 	}
@@ -471,7 +474,7 @@ func (m Membership) FromAliWxOrder(order Order) (Membership, error) {
 	}
 
 	if order.PaymentMethod != enum.PayMethodAli && order.PaymentMethod != enum.PayMethodWx {
-		return m, fmt.Errorf("order %s is not paid via alipay or wxpay")
+		return m, fmt.Errorf("order %s is not paid via alipay or wxpay", order.ID)
 	}
 
 	if m.IsZero() {
