@@ -215,12 +215,14 @@ func TestOrderBuilder_Build(t *testing.T) {
 				SetMembership(tt.fields.membership).
 				SetOrder(order)
 
-			if err := confirm.Build(); err != nil {
+			confirmed, err := confirm.Build()
+
+			if err != nil {
 				t.Log(err)
 			}
 
-			t.Logf("Confirmed order: %+v", confirm.ConfirmedOrder())
-			t.Logf("Confirmed membership: %+v", confirm.ConfirmedMembership())
+			t.Logf("Confirmed order: %+v", confirmed.Order)
+			t.Logf("Confirmed membership: %+v", confirm.membership)
 		})
 	}
 }
