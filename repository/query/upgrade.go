@@ -1,12 +1,5 @@
 package query
 
-const insertProration = `
-INSERT INTO %s.proration
-SET order_id = :order_id,
-	balance = :balance,
-	created_utc = UTC_TIMESTAMP(),
-	upgrade_id = :upgrade_id`
-
 const selectBalanceSource = `
 SELECT o.trade_no AS order_id,
 	o.trade_amount AS charged_amount,
@@ -32,6 +25,14 @@ WHERE o.user_id IN (?, ?)
 	AND (o.confirmed_utc IS NOT NULL OR o.trade_end != 0)
 	AND p.consumed_utc IS NULL
 ORDER BY start_date ASC`
+
+const insertProration = `
+INSERT INTO %s.proration
+SET order_id = :order_id,
+	balance = :balance,
+	created_utc = :created_at,
+	consumed_utc = :consumed_at,
+	upgrade_id = :upgrade_id`
 
 const prorationUsed = `
 UPDATE %s.proration
