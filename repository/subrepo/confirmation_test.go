@@ -13,7 +13,7 @@ func TestSubEnv_SaveConfirmationResult(t *testing.T) {
 	}
 
 	type args struct {
-		r subscription.ConfirmationResult
+		r subscription.ConfirmErrSchema
 	}
 	tests := []struct {
 		name    string
@@ -23,11 +23,10 @@ func TestSubEnv_SaveConfirmationResult(t *testing.T) {
 		{
 			name: "Save confirmation result",
 			args: args{
-				r: subscription.ConfirmationResult{
+				r: subscription.ConfirmErrSchema{
 					OrderID:   test.MustGenOrderID(),
 					Succeeded: true,
 					Failed:    null.String{},
-					Retry:     false,
 				},
 			},
 		},
