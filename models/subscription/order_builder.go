@@ -15,6 +15,16 @@ import (
 	"time"
 )
 
+// OrderBuilder is used to builder an order based
+// on user's current membership, chosen plan, and current
+// wallet balance.
+//
+// For upgrading, some extra steps needs to be performed:
+// * Build upgrading balance and where those balance comes from
+//
+// For free upgrade, some extra steps needs to be performed:
+// * the created order is also confirmed;
+// * old membership updated;
 type OrderBuilder struct {
 	// Required fields.
 	memberID reader.MemberID
@@ -36,7 +46,8 @@ type OrderBuilder struct {
 	duration        Duration
 	orderID         string
 	upgradeSchemaID null.String
-	snapshotID      null.String // The ID of current membership's snapshot. Only present when member is not zero.
+
+	isFreeUpgrade bool
 
 	isBuilt bool // A flag to ensure all fields are property initialized.
 }
@@ -81,6 +92,8 @@ func (b *OrderBuilder) SetClient(c util.ClientApp) *OrderBuilder {
 	return b
 }
 
+// SetWxParams sets the unified order wechat created
+// so that we could build proper response to wechat pay.
 func (b *OrderBuilder) SetWxParams(p wechat.UnifiedOrder) *OrderBuilder {
 	b.wxUnifiedParams = p
 	return b
@@ -109,6 +122,7 @@ func (b *OrderBuilder) getWebHookURL() string {
 	}
 }
 
+//
 func (b *OrderBuilder) generateOrderID() (err error) {
 	if b.orderID != "" {
 		return
@@ -125,10 +139,6 @@ func (b *OrderBuilder) SetMembership(m Membership) *OrderBuilder {
 	b.membership = m
 
 	return b
-}
-
-func (b *OrderBuilder) GetMembership() Membership {
-	return b.membership
 }
 
 // buildSubsKind determines what kind of subscripiton
@@ -164,12 +174,6 @@ func (b *OrderBuilder) GetSubsKind() (plan.SubsKind, error) {
 func (b *OrderBuilder) SetWallet(w Wallet) *OrderBuilder {
 	b.wallet = w
 	return b
-}
-
-// CanBalanceCoverPlan checks if user's current balance
-// is enough to cover chosen plan.
-func (b *OrderBuilder) CanBalanceCoverPlan() bool {
-	return b.wallet.GetBalance() >= b.plan.Amount
 }
 
 // Build calculates subscription kind, the amount to pay,
@@ -209,9 +213,13 @@ func (b *OrderBuilder) Build() error {
 		b.upgradeSchemaID = null.StringFrom(GenerateUpgradeID())
 	}
 
-	if !b.membership.IsZero() && b.snapshotID.IsZero() {
-		b.snapshotID = null.StringFrom(GenerateSnapshotID())
+	if err := b.generateOrderID(); err != nil {
+		return err
 	}
+
+	// Only subscription kind is upgrade and wallet balance
+	// is greater or equal to plan's charged amount.
+	b.isFreeUpgrade = b.kind == plan.SubsKindUpgrade && b.wallet.GetBalance() >= b.plan.Amount
 
 	b.isBuilt = true
 	return nil
@@ -229,28 +237,18 @@ func (b *OrderBuilder) ensureBuilt() error {
 	return nil
 }
 
-func (b *OrderBuilder) PaymentIntent() (PaymentIntent, error) {
-	if err := b.ensureBuilt(); err != nil {
-		return PaymentIntent{}, err
-	}
+// The following methods should only be called after Build is called.
 
-	return PaymentIntent{
-		Charge:   b.charge,
-		Duration: b.duration,
-		SubsKind: b.kind,
-		Wallet:   b.wallet,
-		Plan:     b.plan,
-	}, nil
+// IsFreeUpgrade checks if user's current balance
+// is enough to cover chosen plan.
+func (b *OrderBuilder) IsFreeUpgrade() bool {
+	return b.isFreeUpgrade
 }
 
 // Order creates a new order for
 func (b *OrderBuilder) Order() (Order, error) {
 
 	if err := b.ensureBuilt(); err != nil {
-		return Order{}, err
-	}
-
-	if err := b.generateOrderID(); err != nil {
 		return Order{}, err
 	}
 
@@ -269,40 +267,71 @@ func (b *OrderBuilder) Order() (Order, error) {
 		EndDate:          chrono.Date{},
 		CreatedAt:        chrono.TimeNow(),
 		ConfirmedAt:      chrono.Time{},
-		MemberSnapshotID: b.snapshotID, // Set when confirming order.
+		MemberSnapshotID: null.String{}, // Set when confirming order.
 	}, nil
 }
 
-func (b *OrderBuilder) FreeUpgradeOrder() (Order, Membership, error) {
+// FreeUpgrade builds an order for free upgrade.
+// Returns error ErrBalanceCannotCoverUpgrade if balance
+// is lower than plan's required amount.
+func (b *OrderBuilder) FreeUpgrade() (ConfirmationResult, error) {
+	if err := b.ensureBuilt(); err != nil {
+		return ConfirmationResult{}, err
+	}
+
 	o, err := b.Order()
 	if err != nil {
-		return Order{}, Membership{}, err
+		return ConfirmationResult{}, err
 	}
+
+	if !b.IsFreeUpgrade() {
+		return ConfirmationResult{}, ErrBalanceCannotCoverUpgrade
+	}
+
+	b.membership.GenerateID()
+
+	// For free upgrade, there is no confirmation process,
+	// the order is confirmed here and membership snapshot
+	// taken here.
+	snapshot := b.membership.Snapshot(enum.SnapshotReasonUpgrade)
 
 	startTime := time.Now()
 	endTime, err := o.getEndDate(startTime)
 	if err != nil {
-		return Order{}, Membership{}, err
+		return ConfirmationResult{}, err
 	}
+
+	o.MemberSnapshotID = null.StringFrom(snapshot.SnapshotID)
 	o.StartDate = chrono.DateFrom(startTime)
 	o.EndDate = chrono.DateFrom(endTime)
 	o.ConfirmedAt = chrono.TimeNow()
 
+	// For upgrading, the existing membership must be exist
+	// and valid.
 	m := b.membership
 	m.Tier = o.Tier
 	m.Cycle = o.Cycle
 	m.ExpireDate = o.EndDate
 
-	return o, m, nil
+	return ConfirmationResult{
+		Order:      o,
+		Membership: m,
+		Snapshot:   snapshot,
+	}, nil
 }
 
-func (b *OrderBuilder) MembershipSnapshot() MemberSnapshot {
-	return MemberSnapshot{
-		SnapshotID: b.snapshotID.String,
-		Reason:     b.kind.SnapshotReason(),
-		CreatedUTC: chrono.TimeNow(),
-		Membership: b.membership,
+func (b *OrderBuilder) PaymentIntent() (PaymentIntent, error) {
+	if err := b.ensureBuilt(); err != nil {
+		return PaymentIntent{}, err
 	}
+
+	return PaymentIntent{
+		Charge:   b.charge,
+		Duration: b.duration,
+		SubsKind: b.kind,
+		Wallet:   b.wallet,
+		Plan:     b.plan,
+	}, nil
 }
 
 // UpgradeSchema takes a snapshot of wallet upon upgrading.
@@ -339,18 +368,26 @@ func (b *OrderBuilder) proratedOrdersSchema() []ProratedOrderSchema {
 			UpgradeID:     b.upgradeSchemaID.String,
 		}
 
+		if b.isFreeUpgrade {
+			s.ConsumedUTC = s.CreatedUTC
+		}
 		orders = append(orders, s)
 	}
 
 	return orders
 }
 
+// ClientApp records the client app information when
+// creating an order.
 func (b *OrderBuilder) ClientApp() OrderClient {
 	return OrderClient{
 		OrderID:   b.orderID,
 		ClientApp: b.client,
 	}
 }
+
+// The following methods builds various query parameters
+// send to payment provider.
 
 func (b *OrderBuilder) AliAppPayParams() alipay.AliPayTradeAppPay {
 	return alipay.AliPayTradeAppPay{
