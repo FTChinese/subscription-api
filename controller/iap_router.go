@@ -223,7 +223,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// and take a snapshot of membership, and then
 	// update it.
 
-	tx, err := router.iapEnv.BeginTx(sub.Environment)
+	tx, err := router.iapEnv.BeginTx()
 	if err != nil {
 		_ = view.Render(w, view.NewDBFailure(err))
 		return
@@ -243,16 +243,11 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	newMember := sub.NewMembership(currMember.MemberID)
-	newMember.ID = currMember.ID
 
 	// Take a snapshot.
 	go func() {
 		_ = router.iapEnv.BackUpMember(
-			subscription.NewMemberSnapshot(
-				currMember,
-				enum.SnapshotReasonAppleIAP,
-			),
-			sub.Environment,
+			currMember.Snapshot(enum.SnapshotReasonAppleLink),
 		)
 	}()
 
