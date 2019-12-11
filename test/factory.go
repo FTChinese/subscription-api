@@ -9,7 +9,6 @@ import (
 	"github.com/Pallinder/go-randomdata"
 	"github.com/brianvoe/gofakeit/v4"
 	"github.com/guregu/null"
-	"github.com/icrowley/fake"
 	"github.com/objcoding/wxpay"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/models/redeem"
@@ -96,7 +95,7 @@ func WxXMLNotification(orderID string) string {
 		TradeType:     null.StringFrom("APP"),
 		BankType:      null.StringFrom("CMC"),
 		TotalFee:      null.IntFrom(25800),
-		TransactionID: null.StringFrom(fake.CharactersN(28)),
+		TransactionID: null.StringFrom(rand.String(28)),
 		FTCOrderID:    null.StringFrom(orderID),
 		TimeEnd:       null.StringFrom("20060102150405"),
 	}
@@ -133,7 +132,7 @@ func WxXMLPrepay() string {
 	nonce, _ := gorest.RandomHex(16)
 
 	uni := wechat.UnifiedOrderResp{
-		PrepayID: null.StringFrom(fake.CharactersN(36)),
+		PrepayID: null.StringFrom(rand.String(36)),
 	}
 
 	uni.StatusCode = "SUCCESS"
@@ -168,14 +167,14 @@ func AliNoti() alipay.TradeNotification {
 	return alipay.TradeNotification{
 		NotifyTime: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
 		NotifyType: "trade_status_sync",
-		NotifyId:   fake.CharactersN(36),
+		NotifyId:   rand.String(36),
 		AppId:      os.Getenv("ALIPAY_APP_ID"),
 		Charset:    "utf-8",
 		Version:    "1.0",
 		SignType:   "RSA2",
-		Sign:       fake.CharactersN(256),
-		TradeNo:    fake.CharactersN(64),
-		OutTradeNo: fake.CharactersN(18),
+		Sign:       rand.String(256),
+		TradeNo:    rand.String(64),
+		OutTradeNo: rand.String(18),
 		GmtCreate:  time.Now().In(time.UTC).Format(chrono.SQLDateTime),
 		GmtPayment: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
 	}
