@@ -2,12 +2,13 @@ package iaprepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/models/apple"
 )
 
-// Unlink handles db operation to unlink iap from ftc account.
+// Unlink deletes a membership created from IAP.
 func (env IAPEnv) Unlink(s apple.Subscription) error {
-	tx, err := env.BeginTx(s.Environment)
+	tx, err := env.BeginTx()
 
 	if err != nil {
 		return err
@@ -24,7 +25,14 @@ func (env IAPEnv) Unlink(s apple.Subscription) error {
 		return sql.ErrNoRows
 	}
 
-	if err := tx.UnlinkIAP(m.MemberID); err != nil {
+	snapshot := m.Snapshot(enum.SnapshotReasonDelete)
+
+	if err := env.BackUpMember(snapshot); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if err := tx.DeleteMember(m.MemberID); err != nil {
 		_ = tx.Rollback()
 		return err
 	}
