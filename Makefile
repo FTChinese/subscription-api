@@ -16,32 +16,37 @@ build :
 run :
 	./$(build_dir)/${BINARY}
 
-# For CI/CD
 linux :
-	gvm install go1.13.4
-	gvm use go1.13.4
 	GOOS=linux GOARCH=amd64 /opt/server/go/bin/go build $(LDFLAGS) -o $(build_dir)/linux/$(BINARY) -v .
-
-publish :
-	scp -rp $(build_dir)/linux/$(BINARY)  ucloud:/home/node/go/bin/$(BINARY).bak
-
-downconfig :
-	rsync -v tk11:/home/node/config/$(config_file) ./$(build_dir)
-
-upconfig :
-	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
-
-restart :
-	ssh ucloud "cd /home/node/go/bin/ && \mv $(BINARY).bak $(BINARY)"
-	ssh ucloud supervisorctl restart $(BINARY)
 
 # From local machine to production server
 # Copy env varaible to server
 config :
 	rsync -v $(HOME)/config/$(config_file) tk11:/home/node/config
 
-deploy : linux config
+deploy : config linux
 	rsync -v $(build_dir)/linux/$(BINARY) tk11:/home/node/go/bin/
+
+# For CI/CD
+gvminstall :
+	gvm install go1.13.4
+
+gvmuse :
+	gvm use go1.13.4
+
+downconfig :
+	rsync -v tk11:/home/node/config/$(config_file) ./$(build_dir)
+
+# Publish artifacts.
+upconfig :
+	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
+
+publish :
+	scp -rp $(build_dir)/linux/$(BINARY) ucloud:/home/node/go/bin/$(BINARY).bak
+
+restart :
+	ssh ucloud "cd /home/node/go/bin/ && \mv $(BINARY).bak $(BINARY)"
+	ssh ucloud supervisorctl restart $(BINARY)
 
 clean :
 	go clean -x
