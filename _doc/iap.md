@@ -28,26 +28,11 @@ Client should take HTTP status above 400 as error. Error response always returne
 
 `error` is only present for `422` response. You can use the combination values of `error.field` and `error.code` to determine what goes wrong. 
 
-### Verify Receipt and Optionally Link Account
+### Verify Receipt
 
 ```
 POST /apple/verify-receipt
 ```
-
-#### Headers
-
-```
-X-User-Id: <ftc-uuid>
-X-Union-Id: <wechat-union-id>
-```
-
-These two headers are *optional*. If absent, it only performs receipt verification; otherwise it will try to link the IAP to FTC account as specified by the header.
-
-If user logged in with email, use the FTC uuid as the value of `X-User-Id`.
-
-If user logged in with Wechat, pass Wechat's union id to `X-Union-Id`.
-
-If email is linked to wechat, pass both of the two ids.
 
 #### Request Body
 
@@ -57,7 +42,7 @@ If email is linked to wechat, pass both of the two ids.
 }
 ```
 
-#### Response for Verification-only
+#### Response
 
 If none of the above headers are set.
 
@@ -97,13 +82,42 @@ If none of the above headers are set.
 
 If verification passed. It only indicates the receipt data itself is valid. It does not convey anything about the subscription status.
 
-#### Response for Account Linking
+### Link IAP
 
-##### `400 Bad Request` same as verification-only.
+```
+POST /apple/link
+```
+
+#### Headers
+
+```
+X-User-Id: <ftc-uuid>
+X-Union-Id: <wechat-union-id>
+```
+
+At least one of them must be present. 
+
+If user logged in with email, use the FTC uuid as the value of `X-User-Id`.
+
+If user logged in with Wechat, pass Wechat's union id to `X-Union-Id`.
+
+If email is linked to wechat, pass both of the two ids.
+
+#### Request Body
+
+```json
+{
+  "receipt-data": "the base64 encode apple receipt"
+}
+```
+
+#### Response
+
+##### `400 Bad Request` same as receipt verification
 
 ##### `422 Unprocessable`
 
-In addition to the `422` in verification-only response, there are other possible unprocessable errors:
+In addition to the `422` in the above Verify Receipt section, there are other possible unprocessable errors:
 
 * If this IAP is already linked to another FTC account, indicating user is trying to link one IAP to multiple FTC accounts. This is a possible cheat.
 
@@ -183,7 +197,7 @@ Response body is an instance `Membership`
 
 * `id: string` a unique index id in DB.
 * `ftcId: string | null` FTC's uuid
-* `unionId: string | null` Wechat's union id. `ftcId` and `unionId` won't both be `null`. At least one of them present.
+* `unionId: string | null` Wechat's union id. `ftcId` and `unionId` won't both be `null`. At least one of them will be available.
 * `tier: standard | premium` An enum for the subscription tier.
 * `cycle: year | month` An enum for billing cycle.
 * `expireDate: string`
@@ -213,12 +227,11 @@ If user switched Apple ID, we should allow user to link the new Apple ID to prev
 
 #### Response
 
-`400 Bad Request` and `422 Unprocessable` are identical to *Response for Verification-only* section.
+`400 Bad Request` and `422 Unprocessable` are identical to *Verify Receipt* section.
 
 `204 No Content` if deleted successfully.
 
-This is an idempotence operation. You always get `204` even if the data is already deleted. 
-
+This is an idempotence operation. You always get `204` no matter how many times the same user sends request to this endpoint. 
 
 ### WebHook
 
