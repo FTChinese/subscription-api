@@ -57,28 +57,25 @@ func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt) {
 	}()
 }
 
-func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request) (apple.Subscription, bool) {
+func (router IAPRouter) doVerification(req *http.Request) (apple.Subscription, view.Response) {
 	log := logger.WithField("trace", "IAPRouter.VerifyReceipt")
 
 	// Parse input data.
 	var receiptReq apple.VerificationRequestBody
 	if err := gorest.ParseJSON(req.Body, &receiptReq); err != nil {
 		log.Error(err)
-		_ = view.Render(w, view.NewBadRequest(err.Error()))
-		return apple.Subscription{}, false
+		return apple.Subscription{}, view.NewBadRequest(err.Error())
 	}
 
 	// Validate input.
 	if r := receiptReq.Validate(); r != nil {
-		_ = view.Render(w, view.NewUnprocessable(r))
-		return apple.Subscription{}, false
+		return apple.Subscription{}, view.NewUnprocessable(r)
 	}
 
 	// Verify
 	resp, err := router.iapEnv.VerifyReceipt(receiptReq)
 	if err != nil {
-		_ = view.Render(w, view.NewBadRequest(err.Error()))
-		return apple.Subscription{}, false
+		return apple.Subscription{}, view.NewBadRequest(err.Error())
 	}
 
 	log.Infof("Environment %s, is retryable %t, status %d", resp.Environment, resp.IsRetryable, resp.Status)
@@ -97,12 +94,8 @@ func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request)
 		r.Field = "receipt-data"
 		r.Code = view.CodeInvalid
 		r.SetMessage("verification response is not valid")
-		_ = view.Render(w, view.NewUnprocessable(r))
-		return apple.Subscription{}, false
+		return apple.Subscription{}, view.NewUnprocessable(r)
 	}
-
-	// Save verification session
-	//transaction := resp.findLatestTransaction()
 
 	resp.Parse()
 
@@ -113,20 +106,28 @@ func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request)
 		)
 	}()
 
+	// Dissect and save the receipt data in background.
 	router.saveReceiptData(resp.UnifiedReceipt)
 
+	// Crete a subscription from the receipt.
 	sub := resp.Subscription()
 	_ = router.iapEnv.CreateSubscription(sub)
 
-	return sub, true
+	return sub, view.NewResponse().SetBody(resp)
 }
 
 // VerifyReceipt perform app store receipt verification
 // Input {"receipt-data": string}
 func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) {
+	_, resp := router.doVerification(req)
+	_ = view.Render(w, resp)
+}
 
-	sub, ok := router.doVerification(w, req)
-	if !ok {
+func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
+	sub, resp := router.doVerification(req)
+	// If view.Response.StatusCode is not 200, there must be something wrong.
+	if resp.StatusCode != http.StatusOK {
+		_ = view.Render(w, resp)
 		return
 	}
 
@@ -189,8 +190,9 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 
 // Unlink removes apple subscription id from a user's membership
 func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
-	sub, ok := router.doVerification(w, req)
-	if !ok {
+	sub, resp := router.doVerification(req)
+	if resp.StatusCode != 200 {
+		_ = view.Render(w, resp)
 		return
 	}
 

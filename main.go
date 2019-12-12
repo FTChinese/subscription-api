@@ -252,6 +252,7 @@ func main() {
 
 	r.Route("/apple", func(r chi.Router) {
 		r.Post("/verify-receipt", iapRouter.VerifyReceipt)
+		r.Post("/link", iapRouter.Link)
 		r.Delete("/link", iapRouter.Unlink)
 	})
 
