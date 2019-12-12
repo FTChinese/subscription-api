@@ -144,7 +144,7 @@ func (b *ConfirmationBuilder) ConfirmedMembership(order Order) Membership {
 	m.PaymentMethod = order.PaymentMethod
 	m.StripeSubID = null.String{}
 	m.StripePlanID = null.String{}
-	m.AutoRenewal = false
+	m.AutoRenew = false
 
 	return m
 }
