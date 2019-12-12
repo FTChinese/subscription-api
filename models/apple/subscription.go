@@ -36,7 +36,7 @@ func (s Subscription) NewMembership(id reader.MemberID) subscription.Membership 
 		PaymentMethod: enum.PayMethodApple,
 		StripeSubID:   null.String{},
 		StripePlanID:  null.String{},
-		AutoRenewal:   s.AutoRenewal,
+		AutoRenew:     s.AutoRenewal,
 		Status:        subscription.SubStatusNull,
 		AppleSubID:    null.StringFrom(s.OriginalTransactionID),
 	}
@@ -55,7 +55,7 @@ func (s Subscription) BuildOn(m subscription.Membership) subscription.Membership
 	m.PaymentMethod = enum.PayMethodApple
 	m.StripeSubID = null.String{}
 	m.StripePlanID = null.String{}
-	m.AutoRenewal = s.AutoRenewal
+	m.AutoRenew = s.AutoRenewal
 	m.Status = subscription.SubStatusNull
 	m.AppleSubID = null.StringFrom(s.OriginalTransactionID)
 
