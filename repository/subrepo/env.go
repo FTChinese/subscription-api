@@ -33,7 +33,7 @@ func (env SubEnv) BeginOrderTx() (OrderTx, error) {
 
 	return OrderTx{
 		tx:      tx,
-		sandbox: env.Sandbox,
+		sandbox: env.UseSandboxDB(),
 	}, nil
 }
 

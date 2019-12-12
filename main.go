@@ -36,11 +36,15 @@ const (
 )
 
 func init() {
-	flag.BoolVar(&config.Production, "production", false, "Connect to production MySQL database if present. Default to localhost.")
-	flag.BoolVar(&config.Sandbox, "sandbox", false, "Use sandbox database to save subscription data if present.")
+	var production bool
+	var sandbox bool
+	flag.BoolVar(&production, "production", false, "Connect to production MySQL database if present. Default to localhost.")
+	flag.BoolVar(&sandbox, "sandbox", false, "Use sandbox database to save subscription data if present.")
 	var v = flag.Bool("v", false, "print current version")
 
 	flag.Parse()
+
+	config = util.NewBuildConfig(production, sandbox)
 
 	if *v {
 		fmt.Printf("%s\nBuild at %s\n", version, build)
@@ -50,8 +54,8 @@ func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
 	logrus.WithFields(logrus.Fields{
-		"sandbox":    config.Sandbox,
-		"production": config.Production,
+		"sandbox": config.UseSandboxDB(),
+		"live":    config.Live(),
 	}).Infof("Initializing environment")
 
 	viper.SetConfigName("api")
@@ -61,7 +65,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	if config.Production {
+	if config.Live() {
 		stripe.Key = viper.GetString("stripe.live_secret_key")
 	} else {
 		stripe.Key = viper.GetString("stripe.test_secret_key")
@@ -105,7 +109,7 @@ func getDBConn() util.Conn {
 	// Get DB connection config.
 	var conn util.Conn
 	var err error
-	if config.Production {
+	if config.Live() {
 		err = viper.UnmarshalKey("mysql.master", &conn)
 	} else {
 		err = viper.UnmarshalKey("mysql.dev", &conn)
@@ -320,7 +324,7 @@ func status(w http.ResponseWriter, _ *http.Request) {
 	}{
 		Version: version,
 		Build:   build,
-		Sandbox: config.Sandbox,
+		Sandbox: config.UseSandboxDB(),
 	}
 
 	_ = view.Render(w, view.NewResponse().NoCache().SetBody(data))
