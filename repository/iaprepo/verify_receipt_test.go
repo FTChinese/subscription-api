@@ -12,7 +12,7 @@ func TestIAPEnv_VerifyReceipt(t *testing.T) {
 	resp.Parse()
 
 	env := IAPEnv{
-		c:  util.BuildConfig{Production: false, Sandbox: false},
+		c:  util.NewBuildConfig(false, false),
 		db: nil,
 	}
 

@@ -8,8 +8,15 @@ package util
 // 2. On production server using production db but data are written to sandbox tables;
 // 3. Local machine for development only.
 type BuildConfig struct {
-	Sandbox    bool // indicates the it is running on a production server so that production db is used while the application is used only for testing.
-	Production bool // it determines which database should be used;
+	sandbox    bool // indicates the it is running on a production server so that production db is used while the application is used only for testing.
+	production bool // it determines which database should be used;
+}
+
+func NewBuildConfig(production, sandbox bool) BuildConfig {
+	return BuildConfig{
+		sandbox:    sandbox,
+		production: production,
+	}
 }
 
 // Live specifies:
@@ -22,17 +29,17 @@ type BuildConfig struct {
 // Production	live		live		live	live
 // Sandbox		test		sandbox		sandbox	sandbox
 func (c BuildConfig) Live() bool {
-	return c.Production && !c.Sandbox
+	return c.production && !c.sandbox
 }
 
 // UseSandboxDB tells whether the sandbox db should be used.
 // Not this is not the opposite of Live.
 func (c BuildConfig) UseSandboxDB() bool {
-	if c.Sandbox {
+	if c.sandbox {
 		return true
 	}
 
-	if c.Production {
+	if c.production {
 		return false
 	}
 
