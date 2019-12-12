@@ -112,7 +112,7 @@ func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request)
 		)
 	}()
 
-	router.saveReceiptData(resp.UnifiedReceipt)
+	//router.saveReceiptData(resp.UnifiedReceipt)
 
 	sub := resp.Subscription()
 	_ = router.iapEnv.CreateSubscription(sub)
