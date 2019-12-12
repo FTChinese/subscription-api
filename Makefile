@@ -2,35 +2,46 @@ build_dir := build
 config_file := api.toml
 BINARY := subscription-api
 
+DEV_OUT := $(build_dir)/$(BINARY)
+LINUX_OUT := $(build_dir)/linux/$(BINARY)
+
+LOCAL_CONFIG_FILE := $(HOME)/config/$(config_file)
+
 VERSION := `git describe --tags`
 BUILD := `date +%FT%T%z`
 COMMIT := `git log --max-count=1 --pretty=format:%aI_%h`
 
 LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD}"
 
-.PHONY: build run linux publish downconfig upconfig restart cofig upload deploy clean
+BUILD_LINUX := GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(LINUX_OUT) -v .
+
+.PHONY: local run linux config deploy build downconfig upconfig publish restart clean
 # Development
-build :
-	go build $(LDFLAGS) -o $(build_dir)/$(BINARY) -v .
+local :
+	go build $(LDFLAGS) -o $(DEV_OUT) -v .
 
+# Run development build
 run :
-	./$(build_dir)/${BINARY}
+	./$(DEV_OUT)
 
+# Cross compiling linux on for dev.
 linux :
-	GOOS=linux GOARCH=amd64 /opt/server/go/bin/go build $(LDFLAGS) -o $(build_dir)/linux/$(BINARY) -v .
+	$(BUILD_LINUX)
 
 # From local machine to production server
 # Copy env varaible to server
 config :
-	rsync -v $(HOME)/config/$(config_file) tk11:/home/node/config
+	rsync -v $(LOCAL_CONFIG_FILE) tk11:/home/node/config
 
 deploy : config linux
-	rsync -v $(build_dir)/linux/$(BINARY) tk11:/home/node/go/bin/
+	rsync -v $(LINUX_OUT) tk11:/home/node/go/bin/
+	ssh tk11 supervisorctl restart $(BINARY)
 
 # For CI/CD
-compiler :
+build :
 	gvm install go1.13.4
 	gvm use go1.13.4
+	$(BUILD_LINUX)
 
 downconfig :
 	rsync -v tk11:/home/node/config/$(config_file) ./$(build_dir)
@@ -40,7 +51,7 @@ upconfig :
 	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
 
 publish :
-	scp -rp $(build_dir)/linux/$(BINARY) ucloud:/home/node/go/bin/$(BINARY).bak
+	scp -rp $(LINUX_OUT) ucloud:/home/node/go/bin/$(BINARY).bak
 
 restart :
 	ssh ucloud "cd /home/node/go/bin/ && \mv $(BINARY).bak $(BINARY)"
