@@ -10,8 +10,8 @@ type Account struct {
 	FtcID    string      `db:"ftc_id"`
 	UnionID  null.String `db:"union_id"`
 	StripeID null.String `db:"stripe_id"`
-	Email    string      `db:"email"`
 	UserName null.String `db:"user_name"`
+	Email    string      `db:"email"`
 }
 
 func (a Account) ID() MemberID {
