@@ -47,6 +47,11 @@ func (c BuildConfig) UseSandboxDB() bool {
 	return false
 }
 
+// IsProduction determines which DB server to connect
+func (c BuildConfig) IsProduction() bool {
+	return c.production
+}
+
 // GetReceiptVerificationURL selects apple receipt verification
 // endpoint depending on the deployment environment.
 // This is the same to stripe key selection.
