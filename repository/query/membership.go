@@ -20,18 +20,22 @@ WHERE %s = ?
 LIMIT 1
 %s`
 
-const colsUpsertMembership = `
-vip_type = :vip_type,
-expire_time = :expire_time,
-member_tier = :plan_tier,
-billing_cycle = :plan_cycle,
+const colsBaseMembership = `
 expire_date = :sub_expire_date,
 payment_method = :sub_pay_method,
 stripe_subscription_id = :stripe_sub_id,
 stripe_plan_id = :stripe_plan_id,
 auto_renewal = :sub_auto_renew,
 sub_status = :sub_status,
-apple_subscription_id = :apple_sub_id`
+apple_subscription_id = :apple_sub_id
+`
+
+const colsUpsertMembership = `
+vip_type = :vip_type,
+expire_time = :expire_time,
+member_tier = :plan_tier,
+billing_cycle = :plan_cycle,
+` + colsBaseMembership
 
 const insertMembership = `
 INSERT INTO %s.ftc_vip
@@ -61,12 +65,6 @@ DELETE FROM %s.ftc_vip
 WHERE  vip_id = :sub_compound_id
 LIMIT 1`
 
-const unlinkIAP = `
-UPDATE %s.ftc_vip
-SET apple_subscription_id = NULL
-WHERE vip_id = :sub_compound_id
-LIMIT 1`
-
 const insertMemberSnapshot = `
 INSERT INTO %s.member_snapshot
 SET id = :snapshot_id,
@@ -78,9 +76,4 @@ SET id = :snapshot_id,
 	wx_union_id = :sub_union_id,
 	tier = :plan_tier,
 	cycle = :plan_cycle,
-	expire_date = :sub_expire_date,
-	payment_method = :sub_pay_method,
-	stripe_subscription_id = :stripe_sub_id,
-	stripe_plan_id = :stripe_plan_id,
-	auto_renewal = :sub_auto_renew,
-	sub_status = :sub_status`
+` + colsBaseMembership
