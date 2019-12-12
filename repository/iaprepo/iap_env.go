@@ -64,14 +64,20 @@ const receiptsDir = "iap_receipts"
 
 func SaveReceiptTokenFile(r apple.ReceiptToken) error {
 
+	log := logger.
+		WithField("trace", "SaveReceiptTokenFile").
+		WithField("originalTransactionId", r.OriginalTransactionID)
+
 	home, err := os.UserHomeDir()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
 	d := filepath.Join(home, receiptsDir)
 
 	if err := os.MkdirAll(d, 0755); err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -80,6 +86,7 @@ func SaveReceiptTokenFile(r apple.ReceiptToken) error {
 	err = ioutil.WriteFile(f, []byte(r.LatestReceipt), 0644)
 
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
