@@ -187,13 +187,13 @@ func (p Profile) Membership() Membership {
 		PaymentMethod: p.payMethod,
 		StripeSubID:   null.String{},
 		StripePlanID:  null.String{},
-		AutoRenewal:   false,
+		AutoRenew:     false,
 		Status:        SubStatusNull,
 	}
 
 	if p.payMethod == enum.PayMethodApple {
 		m.AppleSubID = null.StringFrom(p.AppleSubID)
-		m.AutoRenewal = true
+		m.AutoRenew = true
 	}
 
 	return m
