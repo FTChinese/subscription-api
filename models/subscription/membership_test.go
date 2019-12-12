@@ -539,24 +539,30 @@ func TestMembership_MergeIAPMembership(t *testing.T) {
 			args: args{
 				iapMember: Membership{},
 			},
+			want:    expired,
+			wantErr: false,
 		},
 		{
-			name: "Two different IAPs",
+			name: "FTC is valid with another IAP, iap side empty",
 			fields: fields{
 				m: NewProfile().SetPayMethod(enum.PayMethodApple).Membership(),
 			},
 			args: args{
-				iapMember: iapMember,
+				iapMember: Membership{},
 			},
+			want:    Membership{},
+			wantErr: true,
 		},
 		{
-			name: "FTC is valid but not iap",
+			name: "FTC is valid but not iap, iap side empty",
 			fields: fields{
 				m: NewProfile().Membership(),
 			},
 			args: args{
-				iapMember: iapMember,
+				iapMember: Membership{},
 			},
+			want:    Membership{},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
