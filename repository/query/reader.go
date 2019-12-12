@@ -3,10 +3,10 @@ package query
 import "fmt"
 
 const stmtSelectReader = `
-SELECT user_id AS userId,
-	wx_union_id AS unionId,
-	stripe_customer_id AS stripeId,
-	user_name AS userName,
+SELECT user_id AS ftc_id,
+	wx_union_id AS union_id,
+	stripe_customer_id AS stripe_id,
+	user_name AS user_name,
 	email
 FROM cmstmp01.userinfo
 WHERE %s = ?
