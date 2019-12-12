@@ -10,11 +10,10 @@ import (
 )
 
 // A linked IAP requesting link again.
-func TestIAPEnv_Link_Update(t *testing.T) {
+func TestIAPEnv_Link_MockNewFTC(t *testing.T) {
 	profile := test.NewProfile().SetPayMethod(enum.PayMethodApple)
 
-	test.NewRepo().MustSaveMembership(profile.Membership())
-
+	t.Logf("FTC id: %s", profile.FtcID)
 }
 
 func TestIAPEnv_Link(t *testing.T) {

@@ -79,7 +79,7 @@ func TestMembership_IsExpired(t *testing.T) {
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,
 				StripePlanID:  tt.fields.StripePlanID,
-				AutoRenewal:   tt.fields.AutoRenewal,
+				AutoRenew:     tt.fields.AutoRenewal,
 				Status:        tt.fields.Status,
 			}
 			if got := m.IsExpired(); got != tt.want {
@@ -161,7 +161,7 @@ func TestMembership_inRenewalPeriod(t *testing.T) {
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,
 				StripePlanID:  tt.fields.StripePlanID,
-				AutoRenewal:   tt.fields.AutoRenewal,
+				AutoRenew:     tt.fields.AutoRenewal,
 				Status:        tt.fields.Status,
 			}
 			if got := m.inRenewalPeriod(); got != tt.want {
@@ -237,7 +237,7 @@ func TestMembership_PermitRenewal(t *testing.T) {
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,
 				StripePlanID:  tt.fields.StripePlanID,
-				AutoRenewal:   tt.fields.AutoRenewal,
+				AutoRenew:     tt.fields.AutoRenewal,
 				Status:        tt.fields.Status,
 			}
 			if got := m.PermitRenewal(); got != tt.want {
@@ -342,7 +342,7 @@ func TestMembership_SubsKind(t *testing.T) {
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,
 				StripePlanID:  tt.fields.StripePlanID,
-				AutoRenewal:   tt.fields.AutoRenewal,
+				AutoRenew:     tt.fields.AutoRenewal,
 				Status:        tt.fields.Status,
 			}
 			got, err := m.SubsKind(tt.args.p)
@@ -465,7 +465,7 @@ func TestMembership_PermitStripeCreate(t *testing.T) {
 				PaymentMethod: tt.fields.PaymentMethod,
 				StripeSubID:   tt.fields.StripeSubID,
 				StripePlanID:  tt.fields.StripePlanID,
-				AutoRenewal:   tt.fields.AutoRenewal,
+				AutoRenew:     tt.fields.AutoRenewal,
 				Status:        tt.fields.Status,
 			}
 			if err := m.PermitStripeCreate(); (err != nil) != tt.wantErr {
