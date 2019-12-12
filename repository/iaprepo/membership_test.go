@@ -218,3 +218,37 @@ func TestMembershipTx_DeleteMember(t *testing.T) {
 		})
 	}
 }
+
+func TestIAPEnv_BackUpMember(t *testing.T) {
+	profile := test.NewProfile().SetPayMethod(enum.PayMethodApple)
+	m := profile.Membership()
+
+	env := IAPEnv{db: test.DB}
+
+	type args struct {
+		snapshot subscription.MemberSnapshot
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Take membership snapshot",
+			args: args{
+				snapshot: m.Snapshot(enum.SnapshotReasonAppleLink),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := env.BackUpMember(tt.args.snapshot); (err != nil) != tt.wantErr {
+				t.Errorf("BackUpMember() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			t.Logf("Snapshot ID: %s", tt.args.snapshot.SnapshotID)
+		})
+	}
+}
