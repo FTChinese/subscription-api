@@ -10,13 +10,13 @@ func GetReceiptToken() string {
 	return iapReceipt
 }
 
-func GetVerificationResponse() apple.VerificationResponseBody {
+func GetVerificationResponse() *apple.VerificationResponseBody {
 	var r apple.VerificationResponseBody
 	if err := json.Unmarshal([]byte(iapVerificationResponse), &r); err != nil {
 		panic(err)
 	}
 
-	return r
+	return &r
 }
 
 func GetIAPTransaction() apple.Transaction {
