@@ -35,6 +35,8 @@ type Profile struct {
 }
 
 func NewProfile() *Profile {
+	gofakeit.Seed(time.Now().UnixNano())
+
 	return &Profile{
 		FtcID:      uuid.New().String(),
 		UnionID:    GenWxID(),
@@ -147,13 +149,13 @@ func (p Profile) Membership() subscription.Membership {
 		PaymentMethod: p.payMethod,
 		StripeSubID:   null.String{},
 		StripePlanID:  null.String{},
-		AutoRenewal:   false,
+		AutoRenew:     false,
 		Status:        subscription.SubStatusNull,
 	}
 
 	if p.payMethod == enum.PayMethodApple {
 		m.AppleSubID = null.StringFrom(p.AppleSubID)
-		m.AutoRenewal = true
+		m.AutoRenew = true
 	}
 
 	return m
