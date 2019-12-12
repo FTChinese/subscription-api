@@ -3,7 +3,6 @@ package controller
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/objcoding/wxpay"
 	"github.com/pkg/errors"
@@ -12,7 +11,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
-	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
 
@@ -23,12 +21,11 @@ type WxPayRouter struct {
 }
 
 // NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(m subrepo.SubEnv, p postoffice.Postman) WxPayRouter {
+func NewWxRouter(baseRouter PayRouter) WxPayRouter {
 	r := WxPayRouter{
-		clients: createWxpayClients(),
+		clients:   createWxpayClients(),
+		PayRouter: baseRouter,
 	}
-	r.subEnv = m
-	r.postman = p
 
 	return r
 }

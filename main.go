@@ -7,6 +7,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
+	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/wxoauth"
 	"log"
@@ -153,15 +154,19 @@ func main() {
 		emailConn.Pass)
 
 	subEnv := subrepo.NewSubEnv(db, c, config)
+	readerEnv := rederrepo.NewReaderEnv(db)
 	iapEnv := iaprepo.NewIAPEnv(db, config)
 
-	wxRouter := controller.NewWxRouter(subEnv, post)
-	aliRouter := controller.NewAliRouter(subEnv, post)
+	baseRouter := controller.NewBasePayRouter(subEnv, readerEnv, post)
+
+	wxRouter := controller.NewWxRouter(baseRouter)
+	aliRouter := controller.NewAliRouter(baseRouter)
+	stripeRouter := controller.NewStripeRouter(baseRouter, getStripeSigningKey())
+	iapRouter := controller.NewIAPRouter(iapEnv, readerEnv, post)
+
 	giftCardRouter := controller.NewGiftCardRouter(subEnv)
 	paywallRouter := controller.NewPaywallRouter(subEnv)
 	upgradeRouter := controller.NewUpgradeRouter(subEnv)
-	stripeRouter := controller.NewStripeRouter(subEnv, post, getStripeSigningKey())
-	iapRouter := controller.NewIAPRouter(iapEnv, post)
 
 	wxAuth := controller.NewWxAuth(wxoauth.New(db))
 
