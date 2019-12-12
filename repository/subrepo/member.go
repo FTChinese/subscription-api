@@ -9,7 +9,7 @@ import (
 // AddMemberID set a membership's id column if it is empty.
 func (env SubEnv) AddMemberID(m subscription.Membership) error {
 	_, err := env.db.NamedExec(
-		query.BuildUpdateMembershipID(env.Sandbox),
+		query.BuildUpdateMembershipID(env.UseSandboxDB()),
 		m)
 
 	if err != nil {
@@ -22,7 +22,7 @@ func (env SubEnv) AddMemberID(m subscription.Membership) error {
 // BackUpMember saves a member's snapshot at a specific moment.
 func (env SubEnv) BackUpMember(snapshot subscription.MemberSnapshot) error {
 	_, err := env.db.NamedExec(
-		query.BuildInsertMemberSnapshot(env.Sandbox),
+		query.BuildInsertMemberSnapshot(env.UseSandboxDB()),
 		snapshot)
 
 	if err != nil {
@@ -40,7 +40,7 @@ func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]subscription.Prorate
 
 	err := env.db.Select(
 		&sources,
-		query.BuildSelectBalanceSource(env.Sandbox),
+		query.BuildSelectBalanceSource(env.UseSandboxDB()),
 		id.CompoundID,
 		id.UnionID)
 

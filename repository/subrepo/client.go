@@ -8,7 +8,7 @@ import (
 func (env SubEnv) SaveOrderClient(c subscription.OrderClient) error {
 
 	_, err := env.db.NamedExec(
-		query.BuildInsertClientApp(env.Sandbox),
+		query.BuildInsertClientApp(env.UseSandboxDB()),
 		c)
 
 	if err != nil {
