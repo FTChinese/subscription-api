@@ -149,7 +149,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 		switch err {
 		case subscription.ErrLinkToMultipleFTC:
 			r := view.NewReason()
-			r.Field = "link_source"
+			r.Field = "iap_membership"
 			r.Code = "already_linked"
 			r.SetMessage(err.Error())
 			_ = view.Render(w, view.NewUnprocessable(r))
@@ -157,7 +157,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 
 		case subscription.ErrTargetLinkedToOtherIAP:
 			r := view.NewReason()
-			r.Field = "link_target"
+			r.Field = "ftc_membership"
 			r.Code = "already_linked"
 			r.SetMessage(err.Error())
 			_ = view.Render(w, view.NewUnprocessable(r))
@@ -165,7 +165,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 
 		case subscription.ErrHasValidNonIAPMember:
 			r := view.NewReason()
-			r.Field = "link_target"
+			r.Field = "ftc_membership"
 			r.Code = "valid_non_iap"
 			r.SetMessage(err.Error())
 			_ = view.Render(w, view.NewUnprocessable(r))
