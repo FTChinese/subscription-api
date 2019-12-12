@@ -89,3 +89,7 @@ type ReceiptToken struct {
 	BaseSchema
 	LatestReceipt string `db:"latest_receipt"`
 }
+
+func (r ReceiptToken) FileName() string {
+	return r.OriginalTransactionID + "_" + r.Environment.String() + ".txt"
+}

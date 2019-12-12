@@ -6,7 +6,11 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"gitlab.com/ftchinese/subscription-api/models/apple"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 var logger = logrus.
@@ -53,4 +57,31 @@ func (env IAPEnv) BeginTx() (MembershipTx, error) {
 		tx:      tx,
 		sandbox: env.c.UseSandboxDB(),
 	}, nil
+}
+
+// Under the home directory of current user.
+const receiptsDir = "iap_receipts"
+
+func SaveReceiptTokenFile(r apple.ReceiptToken) error {
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	d := filepath.Join(home, receiptsDir)
+
+	if err := os.MkdirAll(d, 0755); err != nil {
+		return err
+	}
+
+	f := filepath.Join(d, r.FileName())
+
+	err = ioutil.WriteFile(f, []byte(r.LatestReceipt), 0644)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

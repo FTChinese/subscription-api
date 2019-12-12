@@ -4,6 +4,8 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/apple"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/test"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -211,9 +213,55 @@ func TestIAPEnv_SaveReceiptToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if err := env.SaveReceiptToken(tt.args.r); (err != nil) != tt.wantErr {
-				t.Errorf("SaveReceiptToken() error = %v, wantErr %v", err, tt.wantErr)
+			if err := env.SaveReceiptTokenDB(tt.args.r); (err != nil) != tt.wantErr {
+				t.Errorf("SaveReceiptTokenDB() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestIAPEnv_SaveReceiptTokenFile(t *testing.T) {
+	resp := test.GetVerificationResponse()
+
+	resp.Parse()
+
+	type args struct {
+		r apple.ReceiptToken
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Save receipt to file",
+			args: args{
+				r: resp.ReceiptToken(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := SaveReceiptTokenFile(tt.args.r); (err != nil) != tt.wantErr {
+				t.Errorf("SaveReceiptTokenFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestFilePath(t *testing.T) {
+	home, err := os.UserHomeDir()
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	d := filepath.Join(home, "iap_receipts")
+
+	t.Logf(d)
+
+	if err := os.MkdirAll(d, 0755); err != nil {
+		t.Error(err)
 	}
 }
