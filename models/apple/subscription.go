@@ -38,6 +38,7 @@ func (s Subscription) NewMembership(id reader.MemberID) subscription.Membership 
 		StripePlanID:  null.String{},
 		AutoRenewal:   s.AutoRenewal,
 		Status:        subscription.SubStatusNull,
+		AppleSubID:    null.StringFrom(s.OriginalTransactionID),
 	}
 
 	m.Normalize()
@@ -56,6 +57,7 @@ func (s Subscription) BuildOn(m subscription.Membership) subscription.Membership
 	m.StripePlanID = null.String{}
 	m.AutoRenewal = s.AutoRenewal
 	m.Status = subscription.SubStatusNull
+	m.AppleSubID = null.StringFrom(s.OriginalTransactionID)
 
 	return m
 }
