@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
 	stripesdk "github.com/stripe/stripe-go"
@@ -14,7 +13,6 @@ import (
 	ftcplan "gitlab.com/ftchinese/subscription-api/models/plan"
 	ftcstripe "gitlab.com/ftchinese/subscription-api/models/stripe"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"io/ioutil"
 	"net/http"
 )
@@ -24,13 +22,11 @@ type StripeRouter struct {
 	PayRouter
 }
 
-func NewStripeRouter(m subrepo.SubEnv, p postoffice.Postman, sk string) StripeRouter {
+func NewStripeRouter(baseRouter PayRouter, sk string) StripeRouter {
 	r := StripeRouter{
 		signingKey: sk,
+		PayRouter:  baseRouter,
 	}
-
-	r.subEnv = m
-	r.postman = p
 
 	return r
 }
@@ -363,7 +359,14 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 func (router StripeRouter) onSubscription(s *stripesdk.Subscription) error {
 	logger := logrus.WithField("trace", "StripeRouter.onSubscription")
 
-	_, err := router.subEnv.WebHookSaveStripeSub(s)
+	account, err := router.readerEnv.FindAccountByStripeID(s.Customer.ID)
+	if err != nil {
+		return err
+	}
+
+	memberID := account.ID()
+
+	err = router.subEnv.WebHookSaveStripeSub(memberID, s)
 
 	if err != nil {
 		logger.Error(err)

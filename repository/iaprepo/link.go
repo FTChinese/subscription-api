@@ -26,6 +26,7 @@ import (
 // This is a suspicious operation that should always be denied.
 // Return error could be ErrTargetLinkedToOtherIAP,
 // ErrHasValidNonIAPMember
+// The second returned value indicates whether this is initial linking and should send an email to user.
 func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.Membership, bool, error) {
 	tx, err := env.BeginTx()
 	if err != nil {

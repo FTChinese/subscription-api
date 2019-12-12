@@ -32,24 +32,6 @@ func (env SubEnv) BackUpMember(snapshot subscription.MemberSnapshot) error {
 	return nil
 }
 
-// RetrieveMember retrieves membership from database.
-func (env SubEnv) RetrieveMember(id reader.MemberID) (subscription.Membership, error) {
-	var m subscription.Membership
-
-	err := env.db.Get(
-		&m,
-		query.BuildSelectMembership(env.Sandbox, false),
-		id.CompoundID)
-
-	if err != nil {
-		return m, err
-	}
-
-	m.Normalize()
-
-	return m, nil
-}
-
 // FindBalanceSources creates a snapshot for orders with
 // unused portion.
 // This is identical to OrderTx.FindBalanceSources without a transaction.
@@ -71,37 +53,37 @@ func (env SubEnv) FindBalanceSources(id reader.MemberID) ([]subscription.Prorate
 }
 
 // RetrieveUpgradeBalance retrieves an upgrade plan to be used in email sent to user.
-func (env SubEnv) RetrieveUpgradeBalance(upgradeID string) (subscription.UpgradeBalanceSchema, error) {
-
-	var data subscription.UpgradeBalanceSchema
-
-	err := env.db.Get(
-		&data,
-		query.BuildSelectUpgradePlan(env.Sandbox),
-		upgradeID)
-
-	if err != nil {
-		logger.WithField("trace", "SubEnv.RetrieveUpgradeBalance").Error(err)
-		return subscription.UpgradeBalanceSchema{}, err
-	}
-
-	return data, nil
-}
+//func (env SubEnv) RetrieveUpgradeBalance(upgradeID string) (subscription.UpgradeBalanceSchema, error) {
+//
+//	var data subscription.UpgradeBalanceSchema
+//
+//	err := env.db.Get(
+//		&data,
+//		query.BuildSelectUpgradePlan(env.UseSandboxDB()),
+//		upgradeID)
+//
+//	if err != nil {
+//		logger.WithField("trace", "SubEnv.RetrieveUpgradeBalance").Error(err)
+//		return subscription.UpgradeBalanceSchema{}, err
+//	}
+//
+//	return data, nil
+//}
 
 // RetrieveProratedOrders retrieves all orders prorated from
 // proration table. Used to send user an email after upgrade.
-func (env SubEnv) RetrieveProratedOrders(upgradeID string) ([]subscription.ProratedOrderSchema, error) {
-	var sources = make([]subscription.ProratedOrderSchema, 0)
-
-	err := env.db.Select(
-		&sources,
-		query.BuildSelectProration(env.Sandbox),
-		upgradeID)
-
-	if err != nil {
-		logger.WithField("trace", "SubEnv.RetrieveProratedOrders").Error(err)
-		return sources, err
-	}
-
-	return sources, nil
-}
+//func (env SubEnv) RetrieveProratedOrders(upgradeID string) ([]subscription.ProratedOrderSchema, error) {
+//	var sources = make([]subscription.ProratedOrderSchema, 0)
+//
+//	err := env.db.Select(
+//		&sources,
+//		query.BuildSelectProration(env.UseSandboxDB()),
+//		upgradeID)
+//
+//	if err != nil {
+//		logger.WithField("trace", "SubEnv.RetrieveProratedOrders").Error(err)
+//		return sources, err
+//	}
+//
+//	return sources, nil
+//}
