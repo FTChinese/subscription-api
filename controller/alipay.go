@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/models"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
@@ -63,11 +62,11 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		logger.Infof("Client app: %+v", clientApp)
 
-		if err := models.AllowAndroidPurchase(clientApp); err != nil {
-			logger.Error(err)
-			_ = view.Render(w, view.NewBadRequest(err.Error()))
-			return
-		}
+		//if err := models.AllowAndroidPurchase(clientApp); err != nil {
+		//	logger.Error(err)
+		//	_ = view.Render(w, view.NewBadRequest(err.Error()))
+		//	return
+		//}
 
 		userID, _ := GetUserID(req.Header)
 
