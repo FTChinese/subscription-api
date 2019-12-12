@@ -7,6 +7,7 @@ import (
 	"github.com/brianvoe/gofakeit/v4"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
+	"gitlab.com/ftchinese/subscription-api/models/apple"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
@@ -49,7 +50,7 @@ func NewProfile() *Profile {
 
 		kind:        reader.AccountKindFtc,
 		plan:        YearlyStandard,
-		expiresDate: time.Now(),
+		expiresDate: time.Now().AddDate(1, 0, 0),
 		payMethod:   enum.PayMethodAli,
 	}
 }
@@ -156,6 +157,19 @@ func (p Profile) Membership() subscription.Membership {
 	}
 
 	return m
+}
+
+func (p Profile) IAPSubs() apple.Subscription {
+	return apple.Subscription{
+		Environment:           apple.EnvSandbox,
+		OriginalTransactionID: p.AppleSubID,
+		LastTransactionID:     GenAppleSubID(),
+		ProductID:             p.plan.AppleProductID,
+		PurchaseDateUTC:       chrono.TimeNow(),
+		ExpiresDateUTC:        chrono.TimeFrom(p.expiresDate),
+		BasePlan:              p.plan.BasePlan,
+		AutoRenewal:           true,
+	}
 }
 
 func (p Profile) WxAccess() wxlogin.OAuthAccess {
