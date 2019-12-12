@@ -108,14 +108,13 @@ func (env IAPEnv) CreateSubscription(s apple.Subscription) error {
 	return nil
 }
 
-// SaveReceiptToken saves the base-64 encoded receipt data
+// SaveReceiptTokenDB saves the base-64 encoded receipt data
 // for one original transaction id.
-// TODO: do not save in MySQL.
-func (env IAPEnv) SaveReceiptToken(r apple.ReceiptToken) error {
+func (env IAPEnv) SaveReceiptTokenDB(r apple.ReceiptToken) error {
 	_, err := env.db.NamedExec(insertReceiptToken, r)
 
 	if err != nil {
-		logger.WithField("trace", "IAPEnv.SaveReceiptToken").Error(err)
+		logger.WithField("trace", "IAPEnv.SaveReceiptTokenDB").Error(err)
 
 		return err
 	}
