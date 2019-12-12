@@ -482,8 +482,7 @@ func TestMembership_MergeIAPMembership(t *testing.T) {
 		SetPayMethod(enum.PayMethodApple).
 		Membership()
 
-	expired := NewProfile().Membership()
-	expired.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, 0, -1))
+	expiredFtc := NewProfile().SetExpireDate(time.Now().AddDate(0, -1, 0)).Membership()
 
 	type fields struct {
 		m Membership
@@ -499,51 +498,29 @@ func TestMembership_MergeIAPMembership(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Both empty",
-			fields: fields{
-				m: Membership{},
-			},
-			args: args{
-				iapMember: Membership{},
-			},
-			want:    Membership{},
-			wantErr: false,
-		},
-		{
-			name: "Same one",
-			fields: fields{
-				m: iapMember,
-			},
-			args: args{
-				iapMember: iapMember,
-			},
-			want:    iapMember,
-			wantErr: false,
-		},
-		{
-			name: "FTC exists, iap exists, not same one",
+			name: "Empty IAP to existing FTC",
 			fields: fields{
 				m: NewProfile().Membership(),
 			},
 			args: args{
-				iapMember: iapMember,
+				iapMember: Membership{},
 			},
 			want:    Membership{},
 			wantErr: true,
 		},
 		{
-			name: "FTC side is expired, iap empty",
+			name: "Empty IAP to expired FTC",
 			fields: fields{
-				m: expired,
+				m: expiredFtc,
 			},
 			args: args{
 				iapMember: Membership{},
 			},
-			want:    expired,
+			want:    expiredFtc,
 			wantErr: false,
 		},
 		{
-			name: "FTC is valid with another IAP, iap side empty",
+			name: "Empty IAP to existing IAP",
 			fields: fields{
 				m: NewProfile().SetPayMethod(enum.PayMethodApple).Membership(),
 			},
@@ -554,12 +531,34 @@ func TestMembership_MergeIAPMembership(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "FTC is valid but not iap, iap side empty",
+			name: "Empty IAP to empty FTC",
+			fields: fields{
+				m: Membership{},
+			},
+			args: args{
+				iapMember: Membership{},
+			},
+			want:    Membership{},
+			wantErr: false,
+		},
+		{
+			name: "Same membership",
+			fields: fields{
+				m: iapMember,
+			},
+			args: args{
+				iapMember: iapMember,
+			},
+			want:    iapMember,
+			wantErr: false,
+		},
+		{
+			name: "Existing IAP to new ftc is cheating",
 			fields: fields{
 				m: NewProfile().Membership(),
 			},
 			args: args{
-				iapMember: Membership{},
+				iapMember: iapMember,
 			},
 			want:    Membership{},
 			wantErr: true,
@@ -576,6 +575,47 @@ func TestMembership_MergeIAPMembership(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MergeIAPMembership() got = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestMembership_IsEqual(t *testing.T) {
+	profile := NewProfile().SetPayMethod(enum.PayMethodApple)
+
+	type fields struct {
+		m Membership
+	}
+	type args struct {
+		other Membership
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name:   "Both empty",
+			fields: fields{m: Membership{}},
+			args:   args{other: Membership{}},
+			want:   true,
+		},
+		{
+			name:   "Equal",
+			fields: fields{m: profile.Membership()},
+			args:   args{other: profile.Membership()},
+			want:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tt.fields.m
+			if got := m.IsEqual(tt.args.other); got != tt.want {
+				t.Errorf("IsEqual() = %v, want %v", got, tt.want)
+			}
+
+			t.Logf("Membership A: %+v", tt.fields.m)
+			t.Logf("Membership B: %+v", tt.args.other)
 		})
 	}
 }
