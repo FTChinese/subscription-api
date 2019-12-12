@@ -38,11 +38,6 @@ func GenAvatar() string {
 	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
 }
 
-func GenSubID() string {
-	id, _ := gorest.RandomBase64(9)
-	return "sub_" + id
-}
-
 func GenCusID() string {
 	id, _ := gorest.RandomBase64(9)
 	return "cus_" + id
