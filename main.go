@@ -54,8 +54,9 @@ func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
 	logrus.WithFields(logrus.Fields{
-		"sandbox": config.UseSandboxDB(),
-		"live":    config.Live(),
+		"sandbox":      config.UseSandboxDB(),
+		"live":         config.Live(),
+		"isProduction": config.IsProduction(),
 	}).Infof("Initializing environment")
 
 	viper.SetConfigName("api")
@@ -109,7 +110,7 @@ func getDBConn() util.Conn {
 	// Get DB connection config.
 	var conn util.Conn
 	var err error
-	if config.Live() {
+	if config.IsProduction() {
 		err = viper.UnmarshalKey("mysql.master", &conn)
 	} else {
 		err = viper.UnmarshalKey("mysql.dev", &conn)
