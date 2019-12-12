@@ -2,7 +2,6 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
@@ -10,7 +9,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
 
@@ -27,18 +25,17 @@ type AliPayRouter struct {
 }
 
 // NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(subEnv subrepo.SubEnv, p postoffice.Postman) AliPayRouter {
+func NewAliRouter(baseRouter PayRouter) AliPayRouter {
 
 	app := getAliPayApp()
 
 	client := alipay.New(app.ID, app.PublicKey, app.PrivateKey, true)
 
 	r := AliPayRouter{
-		appID:  app.ID,
-		client: client,
+		appID:     app.ID,
+		client:    client,
+		PayRouter: baseRouter,
 	}
-	r.subEnv = subEnv
-	r.postman = p
 
 	return r
 }

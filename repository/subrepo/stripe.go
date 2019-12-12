@@ -349,45 +349,37 @@ func (env SubEnv) SaveStripeError(id reader.MemberID, e *stripe.Error) error {
 
 // WebHookSaveStripeSub saved a user's membership derived from
 // stripe subscription data.
-func (env SubEnv) WebHookSaveStripeSub(s *stripe.Subscription) (reader.Account, error) {
-
-	// Find the ftc user associated with stripe custoemr id.
-	ftcUser, err := env.FindStripeCustomer(s.Customer.ID)
-	if err != nil {
-		return ftcUser, err
-	}
-
-	userID := ftcUser.ID()
+func (env SubEnv) WebHookSaveStripeSub(memberID reader.MemberID, s *stripe.Subscription) error {
 
 	log := logger.WithField("trace", "SubEnv.CreateStripeSub")
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return ftcUser, err
+		return err
 	}
 
-	m, err := tx.RetrieveMember(userID)
+	m, err := tx.RetrieveMember(memberID)
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
-		return ftcUser, nil
+		return nil
 	}
 
 	if m.PaymentMethod != enum.PayMethodStripe {
 		_ = tx.Rollback()
-		return ftcUser, sql.ErrNoRows
+		return sql.ErrNoRows
 	}
 
 	if m.StripeSubID.String != s.ID {
 		_ = tx.Rollback()
-		return ftcUser, sql.ErrNoRows
+		return sql.ErrNoRows
 	}
 
-	m, err = m.WithStripe(userID, s)
+	m, err = m.WithStripe(memberID, s)
 	if err != nil {
 		_ = tx.Rollback()
-		return ftcUser, err
+		return err
 	}
 
 	log.Infof("updating a stripe membership: %+v", m)
@@ -395,12 +387,12 @@ func (env SubEnv) WebHookSaveStripeSub(s *stripe.Subscription) (reader.Account, 
 	// update member
 	if err := tx.UpdateMember(m); err != nil {
 		_ = tx.Rollback()
-		return ftcUser, err
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return ftcUser, err
+		return err
 	}
 
-	return ftcUser, nil
+	return nil
 }

@@ -20,10 +20,11 @@ type IAPRouter struct {
 	postman   postoffice.Postman
 }
 
-func NewIAPRouter(iapEnv iaprepo.IAPEnv, p postoffice.Postman) IAPRouter {
+func NewIAPRouter(iapEnv iaprepo.IAPEnv, readerEnv rederrepo.ReaderEnv, p postoffice.Postman) IAPRouter {
 	return IAPRouter{
-		iapEnv:  iapEnv,
-		postman: p,
+		iapEnv:    iapEnv,
+		readerEnv: readerEnv,
+		postman:   p,
 	}
 }
 

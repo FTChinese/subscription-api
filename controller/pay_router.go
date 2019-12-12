@@ -8,18 +8,24 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
 
-const (
-	apiBaseURL = "http://www.ftacademy.cn/api"
-)
-
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
-	subEnv  subrepo.SubEnv
-	postman postoffice.Postman
+	subEnv    subrepo.SubEnv
+	readerEnv rederrepo.ReaderEnv
+	postman   postoffice.Postman
+}
+
+func NewBasePayRouter(subEnv subrepo.SubEnv, readerEnv rederrepo.ReaderEnv, p postoffice.Postman) PayRouter {
+	return PayRouter{
+		subEnv:    subEnv,
+		readerEnv: readerEnv,
+		postman:   p,
+	}
 }
 
 func (router PayRouter) findPlan(req *http.Request) (plan.Plan, error) {
@@ -53,14 +59,6 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	}
 }
 
-func (router PayRouter) wxCallbackURL() string {
-	if router.subEnv.Sandbox {
-		return apiBaseURL + "/sandbox/webhook/wxpay"
-	}
-
-	return apiBaseURL + "/v1/webhook/wxpay"
-}
-
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
 func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 	logger := logrus.WithFields(logrus.Fields{
@@ -74,7 +72,7 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := router.subEnv.FindFtcUser(order.FtcID.String)
+	account, err := router.readerEnv.FindAccountByFtcID(order.FtcID.String)
 
 	if err != nil {
 		return err
@@ -89,7 +87,7 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 		parcel, err = letter.NewRenewalParcel(account, order)
 
 	case plan.SubsKindUpgrade:
-		up, err := router.loadUpgradeWallet(order.UpgradeSchemaID.String)
+		up, err := router.readerEnv.LoadUpgradeSchema(order.UpgradeSchemaID.String)
 		if err != nil {
 			return err
 		}
@@ -109,21 +107,4 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 		return err
 	}
 	return nil
-}
-
-func (router PayRouter) loadUpgradeWallet(upgradeID string) (subscription.UpgradeSchema, error) {
-	balance, err := router.subEnv.RetrieveUpgradeBalance(upgradeID)
-	if err != nil {
-		return subscription.UpgradeSchema{}, err
-	}
-
-	sources, err := router.subEnv.RetrieveProratedOrders(upgradeID)
-	if err != nil {
-		return subscription.UpgradeSchema{}, err
-	}
-
-	return subscription.UpgradeSchema{
-		UpgradeBalanceSchema: balance,
-		Sources:              sources,
-	}, nil
 }
