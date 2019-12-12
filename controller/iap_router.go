@@ -52,7 +52,8 @@ func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt) {
 	receiptToken := ur.ReceiptToken()
 
 	go func() {
-		_ = router.iapEnv.SaveReceiptToken(receiptToken)
+		//_ = router.iapEnv.SaveReceiptTokenDB(receiptToken)
+		_ = iaprepo.SaveReceiptTokenFile(receiptToken)
 	}()
 }
 
@@ -112,7 +113,7 @@ func (router IAPRouter) doVerification(w http.ResponseWriter, req *http.Request)
 		)
 	}()
 
-	//router.saveReceiptData(resp.UnifiedReceipt)
+	router.saveReceiptData(resp.UnifiedReceipt)
 
 	sub := resp.Subscription()
 	_ = router.iapEnv.CreateSubscription(sub)
