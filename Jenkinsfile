@@ -6,8 +6,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'make compiler'
-                sh 'make linux'
+                sh 'make build'
                 sh 'make downconfig'
                 archiveArtifacts artifacts: 'build/linux/*', fingerprint: true
             }
