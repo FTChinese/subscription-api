@@ -33,7 +33,7 @@ type Membership struct {
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"sub_pay_method"`
 	StripeSubID   null.String    `json:"-" db:"stripe_sub_id"`
 	StripePlanID  null.String    `json:"-" db:"stripe_plan_id"`
-	AutoRenewal   bool           `json:"autoRenewal" db:"sub_auto_renew"`
+	AutoRenew     bool           `json:"autoRenew" db:"sub_auto_renew"`
 	// This is used to save stripe subscription status.
 	// Since wechat and alipay treats everything as one-time purchase, they do not have a complex state machine.
 	// If we could integrate apple in-app purchase, this column
@@ -127,7 +127,7 @@ func (m Membership) IsExpired() bool {
 	// we treat this one as actually expired.
 	// If ExpireDate is passed, but auto renew is true, we still
 	// treat this one as not expired.
-	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
+	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenew
 }
 
 func (m Membership) PermitAliWxUpgrade() bool {
@@ -165,7 +165,7 @@ func (m Membership) IsValid() bool {
 
 	// If it is expired, check whether auto renew is on.
 	if m.IsExpired() {
-		if !m.AutoRenewal {
+		if !m.AutoRenew {
 			return false
 		}
 
@@ -272,7 +272,7 @@ func (m Membership) PermitStripeCreate() error {
 
 	if m.PaymentMethod == enum.PayMethodStripe {
 		// An expired member that is not auto renewal.
-		if m.IsExpired() && !m.AutoRenewal {
+		if m.IsExpired() && !m.AutoRenew {
 			return nil
 		}
 		// Member is not expired, or is auto renewal.
@@ -350,7 +350,7 @@ func (m Membership) PermitRenewal() bool {
 		return false
 	}
 
-	if m.AutoRenewal {
+	if m.AutoRenew {
 		return false
 	}
 
@@ -415,7 +415,7 @@ func (m Membership) NewStripe(id reader.MemberID, p stripe.StripeSubParams, s *s
 		PaymentMethod: enum.PayMethodStripe,
 		StripeSubID:   null.StringFrom(s.ID),
 		StripePlanID:  null.StringFrom(p.GetStripePlanID()),
-		AutoRenewal:   !s.CancelAtPeriodEnd,
+		AutoRenew:     !s.CancelAtPeriodEnd,
 		Status:        status,
 	}
 }
@@ -429,7 +429,7 @@ func (m Membership) WithStripe(id reader.MemberID, s *stripesdk.Subscription) (M
 	periodEnd := stripe.CanonicalizeUnix(s.CurrentPeriodEnd)
 
 	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
-	m.AutoRenewal = !s.CancelAtPeriodEnd
+	m.AutoRenew = !s.CancelAtPeriodEnd
 	m.Status, _ = ParseSubStatus(string(s.Status))
 
 	return m, nil
@@ -491,7 +491,7 @@ func (m Membership) FromAliWxOrder(order Order) (Membership, error) {
 	m.PaymentMethod = order.PaymentMethod
 	m.StripeSubID = null.String{}
 	m.StripePlanID = null.String{}
-	m.AutoRenewal = false
+	m.AutoRenew = false
 
 	return m, nil
 }
