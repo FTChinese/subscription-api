@@ -28,10 +28,8 @@ deploy : config linux
 	rsync -v $(build_dir)/linux/$(BINARY) tk11:/home/node/go/bin/
 
 # For CI/CD
-gvminstall :
+compiler :
 	gvm install go1.13.4
-
-gvmuse :
 	gvm use go1.13.4
 
 downconfig :
