@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/stripe/stripe-go"
+	"gitlab.com/ftchinese/subscription-api/access"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
@@ -158,6 +159,8 @@ func main() {
 		emailConn.User,
 		emailConn.Pass)
 
+	guard := access.NewGuard(db)
+
 	subEnv := subrepo.NewSubEnv(db, c, config)
 	readerEnv := rederrepo.NewReaderEnv(db)
 	iapEnv := iaprepo.NewIAPEnv(db, config)
@@ -180,6 +183,7 @@ func main() {
 	r.Use(middleware.Recoverer)
 	r.Use(controller.LogRequest)
 	r.Use(controller.NoCache)
+	r.Use(guard.CheckToken)
 
 	r.Get("/__version", status)
 	// Inspect what pricing plans are in effect.
