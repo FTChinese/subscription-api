@@ -1,3 +1,8 @@
+## Base URL
+
+Sandbox: `https://www.ftacademy.cn/api/sandbox`
+Production: `https://www.ftacademy.cn/api/v1`
+
 ## Apple IAP
 
 All request must have access token set in its header using OAuth 2.0 Bearer Token, not including the webhook endpoints which are not used by us:
@@ -78,9 +83,11 @@ If none of the above headers are set.
 }
 ```
 
-##### `204 No Content`
+##### `200 OK`
 
-If verification passed. It only indicates the receipt data itself is valid. It does not convey anything about the subscription status.
+Apple's response is transferred to client as is. See https://developer.apple.com/documentation/appstorereceipts/responsebody.
+
+Please note there is an error in Apple's doc saying the type of`latest_receipt` is `byte`. It is a string type, a string representation of the underlying byte array. You can safely ignore this field.
 
 ### Link IAP
 
