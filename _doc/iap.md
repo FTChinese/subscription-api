@@ -1,7 +1,7 @@
 ## Base URL
 
-Sandbox: `https://www.ftacademy.cn/api/sandbox`
-Production: `https://www.ftacademy.cn/api/v1`
+* Sandbox: `https://www.ftacademy.cn/api/sandbox`
+* Production: `https://www.ftacademy.cn/api/v1`
 
 ## Apple IAP
 
