@@ -1,4 +1,4 @@
-package subrepo
+package query
 
 import (
 	"github.com/FTChinese/go-rest/enum"
@@ -17,9 +17,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 	test.NewRepo().
 		MustSaveMembership(m)
 
-	env := SubEnv{db: test.DB}
-
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		id reader.MemberID
@@ -63,9 +61,7 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 
 	store := test.NewSubStore(test.NewProfile())
 
-	env := SubEnv{db: test.DB}
-
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		order subscription.Order
@@ -105,8 +101,7 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 
 	test.NewRepo().MustSaveOrder(order)
 
-	env := SubEnv{db: test.DB}
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		orderID string
@@ -158,8 +153,7 @@ func TestOrderTx_UpdateConfirmedOrder(t *testing.T) {
 
 	order = store.MustConfirmOrder(order.ID)
 
-	env := SubEnv{db: test.DB}
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		order subscription.Order
@@ -198,8 +192,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 
 	member := store.MustGetMembership()
 
-	env := SubEnv{db: test.DB}
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		m subscription.Membership
@@ -241,8 +234,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 
 	m.Tier = enum.TierPremium
 
-	env := SubEnv{db: test.DB}
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		m subscription.Membership
@@ -279,8 +271,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 
 	test.NewRepo().MustSaveRenewalOrders(store.MustRenewN(3))
 
-	env := SubEnv{db: test.DB}
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		accountID reader.MemberID
@@ -321,8 +312,7 @@ func TestOrderTx_SaveProratedOrders(t *testing.T) {
 	upgrade, order := store.MustUpgrade(3)
 	t.Logf("Upgrading order: %+v", order)
 
-	env := SubEnv{db: test.DB}
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		p []subscription.ProratedOrderSchema
@@ -359,8 +349,7 @@ func TestOrderTx_SaveUpgradeBalance(t *testing.T) {
 	upgrade, order := store.MustUpgrade(3)
 	t.Logf("Upgrading order: %+v", order)
 
-	env := SubEnv{db: test.DB}
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		up subscription.UpgradeBalanceSchema
@@ -399,8 +388,7 @@ func TestOrderTx_ProratedOrdersUsed(t *testing.T) {
 
 	t.Logf("Upgrading schema id: %s", upgrade.ID)
 
-	env := SubEnv{db: test.DB}
-	otx, _ := env.BeginOrderTx()
+	otx := NewOrderTx(test.DB.MustBegin(), false)
 
 	type args struct {
 		upgradeID string
