@@ -1,5 +1,11 @@
 package util
 
+import (
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"os"
+)
+
 // BuildConfig set up deploy environment.
 // For production server, the `-production` flag is passed from
 // command line argument.
@@ -63,4 +69,61 @@ func (c BuildConfig) GetReceiptVerificationURL() string {
 	}
 
 	return "https://sandbox.itunes.apple.com/verifyReceipt"
+}
+
+func (c BuildConfig) GetStripeKey() string {
+	var key string
+	if c.Live() {
+		key = viper.GetString("stripe.live_signing_key")
+	} else {
+		key = viper.GetString("stripe.test_signing_key")
+	}
+
+	if key == "" {
+		logrus.WithField("trace", "BuildConfig.GetStripeKey").
+			Error("cannot find stripe signing key")
+		os.Exit(1)
+	}
+
+	return key
+}
+
+func (c BuildConfig) GetStripeSecretKey() string {
+	var key string
+
+	if c.Live() {
+		key = viper.GetString("stripe.live_secret_key")
+	} else {
+		key = viper.GetString("stripe.test_secret_key")
+	}
+
+	if key == "" {
+		logrus.WithField("trace", "BuildConfig.GetStripeSecretKey").
+			Error("cannot find stripe secret key")
+
+		os.Exit(1)
+	}
+
+	return key
+}
+
+func (c BuildConfig) GetDBConn() Conn {
+	var conn Conn
+	var err error
+	// Sandbox also uses production server.
+	if c.IsProduction() {
+		err = viper.UnmarshalKey("mysql.master", &conn)
+	} else {
+		err = viper.UnmarshalKey("mysql.dev", &conn)
+	}
+
+	if err != nil {
+		logrus.WithField("trace", "BuildConfig.GetDBConn").
+			Error(err)
+
+		os.Exit(1)
+	}
+
+	logrus.Infof("Using MySQL server %s", conn.Host)
+	return conn
 }
