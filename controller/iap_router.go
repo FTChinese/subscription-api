@@ -5,10 +5,12 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/apple"
 	"gitlab.com/ftchinese/subscription-api/models/letter"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
 	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
 	"net/http"
@@ -20,10 +22,10 @@ type IAPRouter struct {
 	postman   postoffice.Postman
 }
 
-func NewIAPRouter(iapEnv iaprepo.IAPEnv, readerEnv rederrepo.ReaderEnv, p postoffice.Postman) IAPRouter {
+func NewIAPRouter(db *sqlx.DB, config util.BuildConfig, p postoffice.Postman) IAPRouter {
 	return IAPRouter{
-		iapEnv:    iapEnv,
-		readerEnv: readerEnv,
+		iapEnv:    iaprepo.NewIAPEnv(db, config),
+		readerEnv: rederrepo.NewReaderEnv(db),
 		postman:   p,
 	}
 }

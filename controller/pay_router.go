@@ -3,6 +3,8 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/jmoiron/sqlx"
+	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/letter"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
@@ -20,10 +22,10 @@ type PayRouter struct {
 	postman   postoffice.Postman
 }
 
-func NewBasePayRouter(subEnv subrepo.SubEnv, readerEnv rederrepo.ReaderEnv, p postoffice.Postman) PayRouter {
+func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b util.BuildConfig, p postoffice.Postman) PayRouter {
 	return PayRouter{
-		subEnv:    subEnv,
-		readerEnv: readerEnv,
+		subEnv:    subrepo.NewSubEnv(db, c, b),
+		readerEnv: rederrepo.NewReaderEnv(db),
 		postman:   p,
 	}
 }
