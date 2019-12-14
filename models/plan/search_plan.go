@@ -77,7 +77,7 @@ var plans = FtcPlans{
 	"premium_year":   premiumYearlyPlan,
 }
 
-func GetFtcPlans() FtcPlans {
+func GetPlans() FtcPlans {
 	return plans
 }
 
