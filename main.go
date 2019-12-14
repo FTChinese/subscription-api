@@ -125,7 +125,6 @@ func main() {
 	r.Use(middleware.Recoverer)
 	r.Use(controller.LogRequest)
 	r.Use(controller.NoCache)
-	r.Use(guard.CheckToken)
 
 	r.Get("/__version", status)
 	// Inspect what pricing plans are in effect.
@@ -133,6 +132,8 @@ func main() {
 
 	// Requires user id.
 	r.Route("/wxpay", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+
 		r.Use(controller.UserOrUnionID)
 
 		// Create a new subscription.
@@ -155,6 +156,7 @@ func main() {
 
 	// Require user id.
 	r.Route("/alipay", func(r chi.Router) {
+		r.Use(guard.CheckToken)
 		r.Use(controller.UserOrUnionID)
 
 		r.Post("/desktop/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryDesktopWeb))
@@ -169,6 +171,7 @@ func main() {
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
+		r.Use(guard.CheckToken)
 		r.Use(controller.FtcID)
 
 		// Get a stripe plan.
@@ -197,12 +200,15 @@ func main() {
 	})
 
 	r.Route("/apple", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+
 		r.Post("/verify-receipt", iapRouter.VerifyReceipt)
 		r.Post("/link", iapRouter.Link)
 		r.Delete("/link", iapRouter.Unlink)
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
+		r.Use(guard.CheckToken)
 		r.Use(controller.UserOrUnionID)
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
 		// Deprecate
@@ -228,12 +234,14 @@ func main() {
 	})
 
 	r.Route("/gift-card", func(r chi.Router) {
+		r.Use(guard.CheckToken)
 		r.Use(controller.UserOrUnionID)
 
 		r.Put("/redeem", giftCardRouter.Redeem)
 	})
 
 	r.Route("/paywall", func(r chi.Router) {
+		r.Use(guard.CheckToken)
 		// Get promotion schedule, pricing plans and banner content
 		r.Get("/default", controller.DefaultPaywall)
 		r.Get("/current", paywallRouter.GetPaywall)
@@ -246,6 +254,7 @@ func main() {
 	})
 
 	r.Route("/wx", func(r chi.Router) {
+
 		r.Route("/oauth", func(r chi.Router) {
 
 			r.With(controller.RequireAppID).Post("/login", wxAuth.Login)
