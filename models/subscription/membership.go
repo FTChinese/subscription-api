@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/redeem"
-	"gitlab.com/ftchinese/subscription-api/models/stripe"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/guregu/null"
-	stripesdk "github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
 
@@ -393,46 +391,6 @@ func (m Membership) SubsKind(p plan.Plan) (plan.SubsKind, error) {
 	}
 
 	return plan.SubsKindNull, ErrSubsUsageUnclear
-}
-
-// NewStripe creates a new membership for stripe.
-func (m Membership) NewStripe(id reader.MemberID, p stripe.StripeSubParams, s *stripesdk.Subscription) Membership {
-
-	m.GenerateID()
-
-	periodEnd := stripe.CanonicalizeUnix(s.CurrentPeriodEnd)
-
-	status, _ := ParseSubStatus(string(s.Status))
-
-	return Membership{
-		ID:       m.ID,
-		MemberID: id,
-		BasePlan: plan.BasePlan{
-			Tier:  p.Tier,
-			Cycle: p.Cycle,
-		},
-		ExpireDate:    chrono.DateFrom(periodEnd.AddDate(0, 0, 1)),
-		PaymentMethod: enum.PayMethodStripe,
-		StripeSubID:   null.StringFrom(s.ID),
-		StripePlanID:  null.StringFrom(p.GetStripePlanID()),
-		AutoRenew:     !s.CancelAtPeriodEnd,
-		Status:        status,
-	}
-}
-
-// WithStripe update an existing stripe membership.
-// This is used in webhook.
-func (m Membership) WithStripe(id reader.MemberID, s *stripesdk.Subscription) (Membership, error) {
-
-	m.GenerateID()
-
-	periodEnd := stripe.CanonicalizeUnix(s.CurrentPeriodEnd)
-
-	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
-	m.AutoRenew = !s.CancelAtPeriodEnd
-	m.Status, _ = ParseSubStatus(string(s.Status))
-
-	return m, nil
 }
 
 // FromGiftCard creates a new instance based on a gift card.
