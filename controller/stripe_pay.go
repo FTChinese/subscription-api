@@ -53,7 +53,7 @@ func stripeDBFailure(err error) view.Response {
 	return view.NewDBFailure(err)
 }
 
-// GetPlan retrieves a stripe plan.
+// GetPlan retrieves a stripe plan by id.
 // GET /stripe/plans/<standard_month | standard_year | premium_year>
 func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 	key, err := GetURLParam(req, "id").ToString()
@@ -62,7 +62,7 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ftcPlan, err := ftcplan.FindFtcPlan(key)
+	ftcPlan, err := ftcplan.GetPlans().FindPlan(key)
 
 	if err != nil {
 		_ = view.Render(w, view.NewBadRequest(err.Error()))
