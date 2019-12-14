@@ -1,19 +1,16 @@
 package stripe
 
 import (
-	"errors"
-	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/stripe/stripe-go"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"strings"
 	"time"
 )
 
-// StripeSub is a reduced version of stripe.Subscription.
+// Subscription is a reduced version of stripe.Subscription.
 // Used as response when client asks for subscription data.
-type StripeSub struct {
+type Subscription struct {
 	AccountID reader.MemberID `json:"-"`
 	plan.BasePlan
 	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
@@ -42,12 +39,12 @@ func CanonicalizeUnix(s int64) time.Time {
 	return time.Time{}
 }
 
-func NewStripeSub(s *stripe.Subscription) StripeSub {
+func NewSubsResponse(s *stripe.Subscription) Subscription {
 	if s == nil {
-		return StripeSub{}
+		return Subscription{}
 	}
 
-	return StripeSub{
+	return Subscription{
 		CancelAtPeriodEnd:  s.CancelAtPeriodEnd,
 		Created:            chrono.TimeFrom(CanonicalizeUnix(s.Created)),
 		CurrentPeriodEnd:   chrono.TimeFrom(CanonicalizeUnix(s.CurrentPeriodEnd)),
@@ -62,7 +59,7 @@ func NewStripeSub(s *stripe.Subscription) StripeSub {
 	}
 }
 
-func (s StripeSub) ReadableStatus() string {
+func (s Subscription) ReadableStatus() string {
 	switch s.Status {
 	case stripe.SubscriptionStatusActive:
 		return "活跃"
@@ -91,62 +88,6 @@ func (s StripeSub) ReadableStatus() string {
 	return "未知"
 }
 
-func (s StripeSub) RequiresAction() bool {
+func (s Subscription) RequiresAction() bool {
 	return s.Status == stripe.SubscriptionStatusIncomplete
-}
-
-type StripeInvoice struct {
-	*stripe.Invoice
-}
-
-func (i StripeInvoice) CreationTime() chrono.Time {
-	return chrono.TimeFrom(CanonicalizeUnix(i.Created))
-}
-
-func (i StripeInvoice) BuildFtcPlan() (plan.Plan, error) {
-	if i.Lines == nil {
-		return plan.Plan{}, errors.New("empty lines")
-	}
-
-	if len(i.Lines.Data) == 0 {
-		return plan.Plan{}, errors.New("empty lines.data")
-	}
-
-	stripePlan := i.Lines.Data[0].Plan
-
-	ftcPlan, err := plan.FindPlanForStripe(stripePlan.ID, i.Livemode)
-
-	if err != nil {
-		return plan.Plan{}, err
-	}
-
-	return ftcPlan.WithStripePrice(*stripePlan), nil
-}
-
-func (i StripeInvoice) Price() string {
-	return fmt.Sprintf("%s%.2f", strings.ToUpper(string(i.Currency)), float64(i.Total/100))
-}
-
-// ReadableStatus turns stripe invoice status into human readable
-// text.
-// See https://stripe.com/docs/billing/invoices/workflow#workflow-overview
-func (i StripeInvoice) ReadableStatus() string {
-	switch i.Status {
-	case stripe.InvoiceBillingStatusDraft:
-		return "草稿"
-
-	case stripe.InvoiceBillingStatusOpen:
-		return "等待支付"
-
-	case stripe.InvoiceBillingStatusPaid:
-		return "已支付"
-
-	case stripe.InvoiceBillingStatusUncollectible:
-		return "无法收款"
-
-	case stripe.InvoiceBillingStatusVoid:
-		return "撤销"
-	}
-
-	return "未知"
 }
