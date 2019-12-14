@@ -71,24 +71,24 @@ func (plans FtcPlans) FindPlan(id string) (Plan, error) {
 }
 
 // Index FTC plans by plan name.
-var ftcPlans = FtcPlans{
+var plans = FtcPlans{
 	"standard_year":  standardYearlyPlan,
 	"standard_month": standardMonthlyPlan,
 	"premium_year":   premiumYearlyPlan,
 }
 
 func GetFtcPlans() FtcPlans {
-	return ftcPlans
+	return plans
 }
 
 func FindFtcPlan(id string) (Plan, error) {
-	return ftcPlans.FindPlan(id)
+	return plans.FindPlan(id)
 }
 
 func FindPlan(tier enum.Tier, cycle enum.Cycle) (Plan, error) {
 	key := tier.String() + "_" + cycle.String()
 
-	return ftcPlans.FindPlan(key)
+	return plans.FindPlan(key)
 }
 
 var stripeLivePlans = FtcPlans{
