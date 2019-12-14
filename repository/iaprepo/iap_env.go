@@ -15,7 +15,7 @@ import (
 
 var logger = logrus.
 	WithField("project", "subscription-api").
-	WithField("package", "iaprepo")
+	WithField("package", "iap_repo")
 
 var request = gorequest.New()
 
