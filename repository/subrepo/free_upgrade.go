@@ -1,52 +1,70 @@
 package subrepo
 
-import "gitlab.com/ftchinese/subscription-api/models/subscription"
+import (
+	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"time"
+)
 
 func (env SubEnv) FreeUpgrade(builder *subscription.OrderBuilder) (subscription.Order, error) {
 
-	otx, err := env.BeginOrderTx()
+	tx, err := env.BeginOrderTx()
 	if err != nil {
 		return subscription.Order{}, err
 	}
 
-	// The same process as preview upgrading balance.
-	if err := otx.PreviewUpgrade(builder); err != nil {
-		_ = otx.Rollback()
+	member, err := tx.RetrieveMember(builder.GetReaderID())
+	if err != nil {
+		_ = tx.Rollback()
 		return subscription.Order{}, err
 	}
 
+	if !member.PermitAliWxUpgrade() {
+		_ = tx.Rollback()
+		return subscription.Order{}, subscription.ErrUpgradeInvalid
+	}
+
+	orders, err := tx.FindBalanceSources(builder.GetReaderID())
+	if err != nil {
+		return subscription.Order{}, err
+	}
+
+	wallet := subscription.NewWallet(orders, time.Now())
+
+	builder.SetMembership(member).
+		SetWallet(wallet)
+
 	if err := builder.Build(); err != nil {
-		_ = otx.Rollback()
+		_ = tx.Rollback()
 		return subscription.Order{}, err
 	}
 
 	confirmed, err := builder.FreeUpgrade()
 	if err != nil {
-		_ = otx.Rollback()
+		_ = tx.Rollback()
 		return subscription.Order{}, err
 	}
 
 	// Save upgrading schema.
 	upgrade, _ := builder.UpgradeSchema()
-	if err := otx.SaveUpgradeBalance(upgrade.UpgradeBalanceSchema); err != nil {
-		_ = otx.Rollback()
+	if err := tx.SaveUpgradeBalance(upgrade.UpgradeBalanceSchema); err != nil {
+		_ = tx.Rollback()
 		return subscription.Order{}, err
 	}
 
-	if err := otx.SaveProratedOrders(upgrade.Sources); err != nil {
-		_ = otx.Rollback()
+	if err := tx.SaveProratedOrders(upgrade.Sources); err != nil {
+		_ = tx.Rollback()
 		return subscription.Order{}, err
 	}
 
 	// Save order
-	if err := otx.SaveOrder(confirmed.Order); err != nil {
-		_ = otx.Rollback()
+	if err := tx.SaveOrder(confirmed.Order); err != nil {
+		_ = tx.Rollback()
 		return subscription.Order{}, err
 	}
 
 	// Save updated membership.
-	if err := otx.UpdateMember(confirmed.Membership); err != nil {
-		_ = otx.Rollback()
+	if err := tx.UpdateMember(confirmed.Membership); err != nil {
+		_ = tx.Rollback()
 		return subscription.Order{}, err
 	}
 
@@ -55,7 +73,7 @@ func (env SubEnv) FreeUpgrade(builder *subscription.OrderBuilder) (subscription.
 		_ = env.BackUpMember(confirmed.Snapshot)
 	}()
 
-	if err := otx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return subscription.Order{}, err
 	}
 
