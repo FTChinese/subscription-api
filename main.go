@@ -7,9 +7,6 @@ import (
 	"gitlab.com/ftchinese/subscription-api/access"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
-	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
-	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
-	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/wxoauth"
 	"log"
 	"net/http"
@@ -74,58 +71,6 @@ func init() {
 	}
 }
 
-func getStripeSecretKey() string {
-	var key string
-
-	if config.Live() {
-		key = viper.GetString("stripe.live_secret_key")
-	} else {
-		key = viper.GetString("stripe.test_secret_key")
-	}
-
-	if key == "" {
-		logrus.Error("cannot find stripe secret key")
-		os.Exit(1)
-	}
-
-	return key
-}
-
-func getStripeSigningKey() string {
-	var key string
-	if config.Live() {
-		key = viper.GetString("stripe.live_signing_key")
-	} else {
-		key = viper.GetString("stripe.test_signing_key")
-	}
-
-	if key == "" {
-		logrus.Error("cannot find stripe signing key")
-		os.Exit(1)
-	}
-
-	return key
-}
-
-func getDBConn() util.Conn {
-	// Get DB connection config.
-	var conn util.Conn
-	var err error
-	if config.IsProduction() {
-		err = viper.UnmarshalKey("mysql.master", &conn)
-	} else {
-		err = viper.UnmarshalKey("mysql.dev", &conn)
-	}
-
-	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
-
-	logrus.Infof("Using MySQL server %s", conn.Host)
-	return conn
-}
-
 func getEmailConn() util.Conn {
 	var conn util.Conn
 	err := viper.UnmarshalKey("email.hanqi", &conn)
@@ -142,15 +87,15 @@ func main() {
 		"trace": "main",
 	})
 
-	stripe.Key = getStripeSecretKey()
+	stripe.Key = config.GetStripeSecretKey()
 
-	db, err := util.NewDB(getDBConn())
+	db, err := util.NewDB(config.GetDBConn())
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)
 	}
 
-	c := cache.New(cache.DefaultExpiration, 0)
+	promoCache := cache.New(cache.DefaultExpiration, 0)
 
 	emailConn := getEmailConn()
 	post := postoffice.NewPostman(
@@ -161,20 +106,17 @@ func main() {
 
 	guard := access.NewGuard(db)
 
-	subEnv := subrepo.NewSubEnv(db, c, config)
-	readerEnv := rederrepo.NewReaderEnv(db)
-	iapEnv := iaprepo.NewIAPEnv(db, config)
-
-	baseRouter := controller.NewBasePayRouter(subEnv, readerEnv, post)
+	baseRouter := controller.NewBasePayRouter(db, promoCache, config, post)
 
 	wxRouter := controller.NewWxRouter(baseRouter)
 	aliRouter := controller.NewAliRouter(baseRouter)
-	stripeRouter := controller.NewStripeRouter(baseRouter, getStripeSigningKey())
-	iapRouter := controller.NewIAPRouter(iapEnv, readerEnv, post)
+	upgradeRouter := controller.NewUpgradeRouter(baseRouter)
 
-	giftCardRouter := controller.NewGiftCardRouter(subEnv)
-	paywallRouter := controller.NewPaywallRouter(subEnv)
-	upgradeRouter := controller.NewUpgradeRouter(subEnv)
+	stripeRouter := controller.NewStripeRouter(db, config)
+	iapRouter := controller.NewIAPRouter(db, config, post)
+
+	giftCardRouter := controller.NewGiftCardRouter(db, config)
+	paywallRouter := controller.NewPaywallRouter(db, promoCache, config)
 
 	wxAuth := controller.NewWxAuth(wxoauth.New(db))
 
