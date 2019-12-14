@@ -98,12 +98,12 @@ func (env SubEnv) GetCurrentPlans() plan.FtcPlans {
 	if !found {
 		logger.WithField("trace", "GetCurrentPlans").Info("Promo not found. Use default plans")
 
-		return plan.GetFtcPlans()
+		return plan.GetPlans()
 	}
 	if !promo.IsInEffect() {
 		logger.WithField("trace", "GetCurrentPlans").Info("Promo is not in effective time range. Use default plans")
 
-		return plan.GetFtcPlans()
+		return plan.GetPlans()
 	}
 
 	logger.WithField("trace", "GetCurrentPlans").Info("Use promotion pricing plans")
@@ -119,7 +119,7 @@ func (env SubEnv) GetPayWall() (paywall.PayWall, error) {
 	if !found || !promo.IsInEffect() {
 		return paywall.BuildPayWall(
 			paywall.GetDefaultBanner(),
-			plan.GetFtcPlans())
+			plan.GetPlans())
 	}
 
 	return paywall.BuildPayWall(
