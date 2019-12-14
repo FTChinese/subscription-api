@@ -1,25 +1,42 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/go-rest/enum"
+	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"time"
 )
 
 // See errors returned from Membership.PermitAliWxUpgrade.
-func (otx OrderTx) PreviewUpgrade(builder *subscription.OrderBuilder) error {
+func (env SubEnv) PreviewUpgrade(userID reader.MemberID) (subscription.PaymentIntent, error) {
 
-	member, err := otx.RetrieveMember(builder.GetReaderID())
+	p, _ := plan.FindPlan(enum.TierPremium, enum.CycleYear)
+
+	builder := subscription.NewOrderBuilder(userID).
+		SetPlan(p).
+		SetEnvironment(env.Live())
+
+	tx, err := env.BeginOrderTx()
 	if err != nil {
-		return err
+		return subscription.PaymentIntent{}, err
+	}
+
+	member, err := tx.RetrieveMember(builder.GetReaderID())
+	if err != nil {
+		_ = tx.Rollback()
+		return subscription.PaymentIntent{}, err
 	}
 
 	if !member.PermitAliWxUpgrade() {
-		return subscription.ErrUpgradeInvalid
+		_ = tx.Rollback()
+		return subscription.PaymentIntent{}, subscription.ErrUpgradeInvalid
 	}
 
-	orders, err := otx.FindBalanceSources(builder.GetReaderID())
+	orders, err := tx.FindBalanceSources(userID)
 	if err != nil {
-		return err
+		_ = tx.Rollback()
+		return subscription.PaymentIntent{}, err
 	}
 
 	wallet := subscription.NewWallet(orders, time.Now())
@@ -27,5 +44,9 @@ func (otx OrderTx) PreviewUpgrade(builder *subscription.OrderBuilder) error {
 	builder.SetMembership(member).
 		SetWallet(wallet)
 
-	return nil
+	if err := tx.Commit(); err != nil {
+		return subscription.PaymentIntent{}, err
+	}
+
+	return builder.PaymentIntent()
 }
