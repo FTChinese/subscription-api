@@ -11,18 +11,12 @@ import (
 // See errors returned from Membership.PermitAliWxUpgrade.
 func (env SubEnv) PreviewUpgrade(userID reader.MemberID) (subscription.PaymentIntent, error) {
 
-	p, _ := plan.FindPlan(enum.TierPremium, enum.CycleYear)
-
-	builder := subscription.NewOrderBuilder(userID).
-		SetPlan(p).
-		SetEnvironment(env.Live())
-
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		return subscription.PaymentIntent{}, err
 	}
 
-	member, err := tx.RetrieveMember(builder.GetReaderID())
+	member, err := tx.RetrieveMember(userID)
 	if err != nil {
 		_ = tx.Rollback()
 		return subscription.PaymentIntent{}, err
@@ -41,7 +35,12 @@ func (env SubEnv) PreviewUpgrade(userID reader.MemberID) (subscription.PaymentIn
 
 	wallet := subscription.NewWallet(orders, time.Now())
 
-	builder.SetMembership(member).
+	p, _ := plan.FindPlan(enum.TierPremium, enum.CycleYear)
+
+	builder := subscription.NewOrderBuilder(userID).
+		SetPlan(p).
+		SetEnvironment(env.Live()).
+		SetMembership(member).
 		SetWallet(wallet)
 
 	if err := tx.Commit(); err != nil {
