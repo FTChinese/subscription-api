@@ -58,6 +58,28 @@ FT中文网用户 {{.User.NormalizeName}},
 
 FT中文网`
 
+const letterFreeUpgrade = `
+FT中文网用户 {{.User.NormalizeName}},
+
+感谢您升级订阅FT中文网高端会员。
+
+您于 {{.Order.CreatedAt.StringCN}} 从标准会员免费升级到 {{.Order.Desc}}。
+
+订单号 {{.Order.ID}}
+订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
+
+本次升级前余额 {{.Wallet.ReadableBalance}}，余额来自如下订单未使用部分：
+
+{{range .Wallet.Source}}
+{{.OrderID}}: {{.ReadableBalance}}
+{{end}}
+
+如有疑问，请联系客服：subscriber.service@ftchinese.com。
+
+再次感谢您对FT中文网的持续支持。
+
+FT中文网`
+
 const letterIAPLinked = `
 FT中文网用户 {{.Reader.NormalizeName}},
 

@@ -128,6 +128,44 @@ func NewUpgradeParcel(
 	}, nil
 }
 
+func NewFreeUpgradeParcel(
+	a reader.Account,
+	order subscription.Order,
+	wallet subscription.Wallet) (postoffice.Parcel, error) {
+
+	tmpl, err := template.New("order").Parse(letterFreeUpgrade)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	data := struct {
+		User   reader.Account
+		Order  subscription.Order
+		Wallet subscription.Wallet
+	}{
+		User:   a,
+		Order:  order,
+		Wallet: wallet,
+	}
+
+	var body strings.Builder
+	err = tmpl.Execute(&body, data)
+
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	return postoffice.Parcel{
+		FromAddress: "no-reply@ftchinese.com",
+		FromName:    "FT中文网会员订阅",
+		ToAddress:   a.Email,
+		ToName:      a.NormalizeName(),
+		Subject:     "会员升级",
+		Body:        body.String(),
+	}, nil
+}
+
 func NewIAPLinkParcel(account reader.Account, m subscription.Membership) (postoffice.Parcel, error) {
 	tmpl, err := template.New("order").Parse(letterIAPLinked)
 
