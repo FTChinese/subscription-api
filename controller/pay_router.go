@@ -24,7 +24,7 @@ type PayRouter struct {
 func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b util.BuildConfig, p postoffice.Postman) PayRouter {
 	return PayRouter{
 		subEnv:    subrepo.NewSubEnv(db, c, b),
-		readerEnv: rederrepo.NewReaderEnv(db),
+		readerEnv: rederrepo.NewReaderEnv(db, b),
 		postman:   p,
 	}
 }
