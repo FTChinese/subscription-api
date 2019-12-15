@@ -16,9 +16,10 @@ func GenerateUpgradeID() string {
 // The are split into two tables:
 // one row of UpgradeBalanceSchema maps to multiple
 // rows ProratedOrderSchema.
+// This is actually a snapshot of user's wallet persisted in DB.
 type UpgradeSchema struct {
-	UpgradeBalanceSchema
-	Sources []ProratedOrderSchema // The orders with balance.
+	UpgradeBalanceSchema                       // Current balance
+	Sources              []ProratedOrderSchema // The existing orders not consumed completely yet.
 }
 
 // UpgradeBalanceSchema records the balance the moment user
