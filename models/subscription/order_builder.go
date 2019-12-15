@@ -203,7 +203,7 @@ func (b *OrderBuilder) Build() error {
 	// which default to 1 cycle plus 1 day.
 	b.duration = b.wallet.ConvertBalance(b.plan)
 	b.charge = Charge{
-		Amount:   b.plan.Price - b.wallet.GetBalance(),
+		Amount:   b.plan.Price - b.wallet.Balance,
 		Currency: b.plan.Currency,
 	}
 
@@ -223,7 +223,7 @@ func (b *OrderBuilder) Build() error {
 
 	// Only subscription kind is upgrade and wallet balance
 	// is greater or equal to plan's charged amount.
-	b.isFreeUpgrade = b.kind == plan.SubsKindUpgrade && b.wallet.GetBalance() >= b.plan.Amount
+	b.isFreeUpgrade = b.kind == plan.SubsKindUpgrade && b.wallet.Balance >= b.plan.Amount
 
 	b.isBuilt = true
 	return nil
@@ -349,13 +349,10 @@ func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
 	}
 
 	return UpgradeSchema{
-		UpgradeBalanceSchema: UpgradeBalanceSchema{
-			ID:        b.upgradeSchemaID.String,
-			CreatedAt: chrono.TimeNow(),
-			Balance:   b.wallet.GetBalance(),
-			Plan:      b.plan,
-		},
-		Sources: b.proratedOrdersSchema(),
+		ID:         b.upgradeSchemaID.String,
+		BaseWallet: b.wallet.BaseWallet,
+		Plan:       b.plan,
+		Sources:    b.proratedOrdersSchema(),
 	}, nil
 }
 
@@ -364,7 +361,7 @@ func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
 func (b *OrderBuilder) proratedOrdersSchema() []ProratedOrderSchema {
 	orders := make([]ProratedOrderSchema, 0)
 
-	for _, v := range b.wallet.Source {
+	for _, v := range b.wallet.Sources {
 		s := ProratedOrderSchema{
 			ProratedOrder: v,
 			CreatedUTC:    chrono.TimeNow(),
