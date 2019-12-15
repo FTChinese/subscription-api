@@ -70,7 +70,7 @@ FT中文网用户 {{.User.NormalizeName}},
 
 本次升级前余额 {{.Wallet.ReadableBalance}}，余额来自如下订单未使用部分：
 
-{{range .Wallet.Source}}
+{{range .Wallet.Sources}}
 {{.OrderID}}: {{.ReadableBalance}}
 {{end}}
 
