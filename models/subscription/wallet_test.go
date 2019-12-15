@@ -48,7 +48,7 @@ func TestNewWallet(t *testing.T) {
 
 			t.Logf("Balance: %f", got.Balance)
 
-			for _, v := range got.Source {
+			for _, v := range got.Sources {
 				t.Logf("%+v", v)
 			}
 		})
