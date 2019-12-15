@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
-	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/letter"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
@@ -63,9 +62,7 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
 func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
-	logger := logrus.WithFields(logrus.Fields{
-		"trace": "PayRouter.sendConfirmationEmail",
-	})
+	log := logger.WithField("trace", "PayRouter.sendConfirmationEmail")
 
 	// If the FtcID field is null, it indicates this user
 	// does not have an FTC account linked. You cannot find out
@@ -97,15 +94,35 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 	}
 
 	if err != nil {
-		logger.Error(err)
+		log.Error(err)
 		return err
 	}
 
-	logger.Info("Send subscription confirmation letter")
+	log.Info("Send subscription confirmation letter")
 
 	err = router.postman.Deliver(parcel)
 	if err != nil {
-		logger.Error(err)
+		log.Error(err)
+		return err
+	}
+	return nil
+}
+
+func (router PayRouter) sendFreeUpgradeEmail(order subscription.Order, wallet subscription.Wallet) error {
+	log := logger.WithField("trace", "PayRouter.sendFreeUpgradeEmail")
+
+	// Find this user's personal data
+	account, err := router.readerEnv.FindAccountByFtcID(order.FtcID.String)
+
+	if err != nil {
+		return err
+	}
+
+	parcel, err := letter.NewFreeUpgradeParcel(account, order, wallet)
+
+	err = router.postman.Deliver(parcel)
+	if err != nil {
+		log.Error(err)
 		return err
 	}
 	return nil
