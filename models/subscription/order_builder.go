@@ -176,6 +176,10 @@ func (b *OrderBuilder) SetWallet(w Wallet) *OrderBuilder {
 	return b
 }
 
+func (b *OrderBuilder) GetWallet() Wallet {
+	return b.wallet
+}
+
 // Build calculates subscription kind, the amount to pay,
 // billing cycles user purchased.
 // See buildSubsKind form returned errors.
