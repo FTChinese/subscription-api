@@ -64,6 +64,10 @@ func (w Wallet) ConvertBalance(p plan.Plan) Duration {
 	}
 }
 
+func (w Wallet) ReadableBalance() string {
+	return fmt.Sprintf("%s%.2f", "CNY", w.Balance)
+}
+
 // ProratedOrder is used to retrieve paid order with balance.
 type ProratedOrder struct {
 	OrderID   string      `db:"order_id"`
