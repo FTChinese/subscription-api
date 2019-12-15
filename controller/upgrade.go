@@ -49,8 +49,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		SetClient(clientApp).
 		SetEnvironment(router.subEnv.Live())
 
-	order, err := router.subEnv.FreeUpgrade(builder)
-
+	confirmed, err := router.subEnv.FreeUpgrade(builder)
 	if err != nil {
 		switch err {
 		case subscription.ErrUpgradeInvalid:
@@ -67,14 +66,20 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	// Save snapshot.
+	go func() {
+		_ = router.subEnv.BackUpMember(confirmed.Snapshot)
+	}()
+
 	orderClient := builder.ClientApp()
 	// Save client app info
 	go func() {
 		_ = router.subEnv.SaveOrderClient(orderClient)
 	}()
 
+	wallet := builder.GetWallet()
 	go func() {
-		_ = router.sendConfirmationEmail(order)
+		_ = router.sendFreeUpgradeEmail(confirmed.Order, wallet)
 	}()
 
 	_ = view.Render(w, view.NewNoContent())
