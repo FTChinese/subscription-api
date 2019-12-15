@@ -25,7 +25,7 @@ type IAPRouter struct {
 func NewIAPRouter(db *sqlx.DB, config util.BuildConfig, p postoffice.Postman) IAPRouter {
 	return IAPRouter{
 		iapEnv:    iaprepo.NewIAPEnv(db, config),
-		readerEnv: rederrepo.NewReaderEnv(db),
+		readerEnv: rederrepo.NewReaderEnv(db, config),
 		postman:   p,
 	}
 }

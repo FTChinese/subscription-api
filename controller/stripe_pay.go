@@ -30,7 +30,7 @@ type StripeRouter struct {
 func NewStripeRouter(db *sqlx.DB, config util.BuildConfig) StripeRouter {
 	r := StripeRouter{
 		signingKey: config.GetStripeKey(),
-		readerEnv:  rederrepo.NewReaderEnv(db),
+		readerEnv:  rederrepo.NewReaderEnv(db, config),
 		stripeEnv:  striperepo.NewStripeEnv(db, config),
 	}
 
