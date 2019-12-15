@@ -4,7 +4,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
+	"gitlab.com/ftchinese/subscription-api/repository/txrepo"
 )
 
 // SubEnv wraps database connection
@@ -22,24 +22,24 @@ func NewStripeEnv(db *sqlx.DB, b util.BuildConfig) StripeEnv {
 	}
 }
 
-func (env StripeEnv) beginAccountTx() (query.AccountTx, error) {
+func (env StripeEnv) beginAccountTx() (txrepo.AccountTx, error) {
 	tx, err := env.db.Beginx()
 
 	if err != nil {
-		return query.AccountTx{}, err
+		return txrepo.AccountTx{}, err
 	}
 
-	return query.NewAccountTx(tx), nil
+	return txrepo.NewAccountTx(tx), nil
 }
 
-func (env StripeEnv) beginOrderTx() (query.OrderTx, error) {
+func (env StripeEnv) beginOrderTx() (txrepo.OrderTx, error) {
 	tx, err := env.db.Beginx()
 
 	if err != nil {
-		return query.OrderTx{}, err
+		return txrepo.OrderTx{}, err
 	}
 
-	return query.NewOrderTx(tx, env.UseSandboxDB()), nil
+	return txrepo.NewOrderTx(tx, env.UseSandboxDB()), nil
 }
 
 var logger = logrus.

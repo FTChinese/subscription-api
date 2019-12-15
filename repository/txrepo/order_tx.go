@@ -1,10 +1,11 @@
-package query
+package txrepo
 
 import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 // OrderTx check a user's member status and create an order
@@ -29,7 +30,7 @@ func (tx OrderTx) RetrieveMember(id reader.MemberID) (subscription.Membership, e
 
 	err := tx.Get(
 		&m,
-		BuildSelectMembership(tx.sandbox, true),
+		query.BuildSelectMembership(tx.sandbox, true),
 		id.CompoundID,
 	)
 
@@ -52,7 +53,7 @@ func (tx OrderTx) RetrieveMember(id reader.MemberID) (subscription.Membership, e
 func (tx OrderTx) SaveOrder(order subscription.Order) error {
 
 	_, err := tx.NamedExec(
-		BuildInsertOrder(tx.sandbox),
+		query.BuildInsertOrder(tx.sandbox),
 		order)
 
 	if err != nil {
@@ -70,7 +71,7 @@ func (tx OrderTx) RetrieveOrder(orderID string) (subscription.Order, error) {
 
 	err := tx.Get(
 		&order,
-		BuildSelectOrder(tx.sandbox),
+		query.BuildSelectOrder(tx.sandbox),
 		orderID,
 	)
 
@@ -86,7 +87,7 @@ func (tx OrderTx) RetrieveOrder(orderID string) (subscription.Order, error) {
 // UpdateConfirmedOrder set an order's confirmation time.
 func (tx OrderTx) UpdateConfirmedOrder(order subscription.Order) error {
 	_, err := tx.NamedExec(
-		BuildConfirmOrder(tx.sandbox),
+		query.BuildConfirmOrder(tx.sandbox),
 		order,
 	)
 
@@ -104,7 +105,7 @@ func (tx OrderTx) CreateMember(m subscription.Membership) error {
 	m.Normalize()
 
 	_, err := tx.NamedExec(
-		BuildInsertMembership(tx.sandbox),
+		query.BuildInsertMembership(tx.sandbox),
 		m,
 	)
 
@@ -121,7 +122,7 @@ func (tx OrderTx) UpdateMember(m subscription.Membership) error {
 	m.Normalize()
 
 	_, err := tx.NamedExec(
-		BuildUpdateMembership(tx.sandbox),
+		query.BuildUpdateMembership(tx.sandbox),
 		m)
 
 	if err != nil {
@@ -140,7 +141,7 @@ func (tx OrderTx) FindBalanceSources(accountID reader.MemberID) ([]subscription.
 
 	err := tx.Select(
 		&orders,
-		BuildSelectBalanceSource(tx.sandbox),
+		query.BuildSelectBalanceSource(tx.sandbox),
 		accountID.CompoundID,
 		accountID.UnionID)
 
@@ -152,36 +153,33 @@ func (tx OrderTx) FindBalanceSources(accountID reader.MemberID) ([]subscription.
 	return orders, nil
 }
 
-// SaveProratedOrders saves all orders with unused portion to calculate each order's balance.
+// SaveUpgradeSchema saved user's current total balance
+// the the upgrade plan at this moment.
+// It also saves all orders with unused portion to calculate each order's balance.
 // Go's SQL does not support batch insert now.
 // We use a loop here to insert all record.
 // Most users won't have much  valid orders
 // at a specific moment, so this should not pose a severe
 // performance issue.
-func (tx OrderTx) SaveProratedOrders(p []subscription.ProratedOrderSchema) error {
-	for _, v := range p {
-		_, err := tx.NamedExec(
-			BuildInsertProration(tx.sandbox),
-			v)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// SaveUpgradeBalance saved user's current total balance
-// the the upgrade plan at this moment.
-func (tx OrderTx) SaveUpgradeBalance(up subscription.UpgradeBalanceSchema) error {
-
+func (tx OrderTx) SaveUpgradeSchema(up subscription.UpgradeSchema) error {
 	_, err := tx.NamedExec(
-		BuildInsertUpgradeBalance(tx.sandbox),
+		query.BuildInsertUpgradeBalance(tx.sandbox),
 		up)
 
 	if err != nil {
+		logger.WithField("trace", "OrderTx.SaveUpgradeSchema").Error(err)
 		return err
+	}
+
+	for _, v := range up.Sources {
+		_, err := tx.NamedExec(
+			query.BuildInsertProration(tx.sandbox),
+			v)
+
+		if err != nil {
+			logger.WithField("trace", "OrderTx.SaveUpgradeSchema").Error(err)
+			return err
+		}
 	}
 
 	return nil
@@ -191,7 +189,7 @@ func (tx OrderTx) SaveUpgradeBalance(up subscription.UpgradeBalanceSchema) error
 // prorated order for an upgrade operation.
 func (tx OrderTx) ProratedOrdersUsed(upgradeID string) error {
 	_, err := tx.Exec(
-		BuildProrationUsed(tx.sandbox),
+		query.BuildProrationUsed(tx.sandbox),
 		upgradeID,
 	)
 	if err != nil {
@@ -207,7 +205,7 @@ func (tx OrderTx) ProratedOrdersUsed(upgradeID string) error {
 
 func (tx OrderTx) ActivateGiftCard(code string) error {
 	_, err := tx.Exec(
-		BuildActivateGiftCard(tx.sandbox),
+		query.BuildActivateGiftCard(tx.sandbox),
 		code)
 
 	if err != nil {
