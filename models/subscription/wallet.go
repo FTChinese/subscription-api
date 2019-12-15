@@ -9,13 +9,21 @@ import (
 	"time"
 )
 
+type BaseWallet struct {
+	Balance   float64     `json:"balance" db:"balance"`
+	CreatedAt chrono.Time `json:"as_of_date" db:"created_at"` // When the balance is calculated.
+}
+
+func (w BaseWallet) ReadableBalance() string {
+	return fmt.Sprintf("%s%.2f", "CNY", w.Balance)
+}
+
 // Wallet show how much money a member still owns and
 // which orders constitutes the balance.
 // Wallet is dynamic and changes as time passed.
 type Wallet struct {
-	Balance  float64         `json:"balance"` // TODO: unexport it.
-	Source   []ProratedOrder `json:"-"`
-	AsOfDate chrono.Time     `json:"as_of_date"` // When the balance is calculated.
+	BaseWallet
+	Sources []ProratedOrder `json:"-"`
 }
 
 func NewWallet(orders []ProratedOrder, asOf time.Time) Wallet {
@@ -23,24 +31,22 @@ func NewWallet(orders []ProratedOrder, asOf time.Time) Wallet {
 	asOf = asOf.Truncate(24 * time.Hour)
 
 	w := Wallet{
-		Balance:  0,
-		Source:   []ProratedOrder{},
-		AsOfDate: chrono.TimeFrom(asOf),
+		BaseWallet: BaseWallet{
+			Balance:   0,
+			CreatedAt: chrono.TimeFrom(asOf),
+		},
+		Sources: []ProratedOrder{},
 	}
 
 	for _, v := range orders {
 		v.Balance = v.Prorate(asOf)
-		w.Source = append(w.Source, v)
+		w.Sources = append(w.Sources, v)
 
 		// Aggregate each order's balance.
 		w.Balance = w.Balance + v.Balance
 	}
 
 	return w
-}
-
-func (w Wallet) GetBalance() float64 {
-	return w.Balance
 }
 
 func (w Wallet) ConvertBalance(p plan.Plan) Duration {
@@ -62,10 +68,6 @@ func (w Wallet) ConvertBalance(p plan.Plan) Duration {
 		CycleCount: cycles,
 		ExtraDays:  int64(days),
 	}
-}
-
-func (w Wallet) ReadableBalance() string {
-	return fmt.Sprintf("%s%.2f", "CNY", w.Balance)
 }
 
 // ProratedOrder is used to retrieve paid order with balance.
