@@ -62,12 +62,7 @@ func (env SubEnv) FreeUpgrade(builder *subscription.OrderBuilder) (subscription.
 
 	// Save upgrading schema.
 	upgrade, _ := builder.UpgradeSchema()
-	if err := tx.SaveUpgradeBalance(upgrade.UpgradeBalanceSchema); err != nil {
-		_ = tx.Rollback()
-		return subscription.ConfirmationResult{}, err
-	}
-
-	if err := tx.SaveProratedOrders(upgrade.Sources); err != nil {
+	if err := tx.SaveUpgradeSchema(upgrade); err != nil {
 		_ = tx.Rollback()
 		return subscription.ConfirmationResult{}, err
 	}
