@@ -1,4 +1,4 @@
-package query
+package txrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
@@ -306,16 +306,15 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 	_ = otx.Commit()
 }
 
-func TestOrderTx_SaveProratedOrders(t *testing.T) {
+func TestOrderTx_SaveUpgradeSchema(t *testing.T) {
 	store := test.NewSubStore(test.NewProfile())
 
-	upgrade, order := store.MustUpgrade(3)
-	t.Logf("Upgrading order: %+v", order)
+	upgrade, _ := store.MustUpgrade(3)
 
-	otx := NewOrderTx(test.DB.MustBegin(), false)
+	t.Logf("Upgrading schema id: %s", upgrade.ID)
 
 	type args struct {
-		p []subscription.ProratedOrderSchema
+		up subscription.UpgradeSchema
 	}
 	tests := []struct {
 		name    string
@@ -323,59 +322,24 @@ func TestOrderTx_SaveProratedOrders(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save Prorated Orders",
+			name: "Save Upgrade Schema",
 			args: args{
-				p: upgrade.Sources,
+				up: upgrade,
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tx := NewOrderTx(test.DB.MustBegin(), false)
 
-			if err := otx.SaveProratedOrders(tt.args.p); (err != nil) != tt.wantErr {
-				_ = otx.Rollback()
-
-				t.Errorf("SaveProratedOrders() error = %v, wantErr %v", err, tt.wantErr)
+			if err := tx.SaveUpgradeSchema(tt.args.up); (err != nil) != tt.wantErr {
+				_ = tx.Rollback()
+				t.Errorf("SaveUpgradeSchema() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			_ = otx.Commit()
+			_ = tx.Commit()
 		})
-	}
-}
-
-func TestOrderTx_SaveUpgradeBalance(t *testing.T) {
-	store := test.NewSubStore(test.NewProfile())
-
-	upgrade, order := store.MustUpgrade(3)
-	t.Logf("Upgrading order: %+v", order)
-
-	otx := NewOrderTx(test.DB.MustBegin(), false)
-
-	type args struct {
-		up subscription.UpgradeBalanceSchema
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Save upgrade balance",
-			args: args{
-				up: upgrade.UpgradeBalanceSchema,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			if err := otx.SaveUpgradeBalance(tt.args.up); (err != nil) != tt.wantErr {
-				_ = otx.Rollback()
-				t.Errorf("SaveUpgradeBalance() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-
-		_ = otx.Commit()
 	}
 }
 
