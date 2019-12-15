@@ -161,6 +161,40 @@ func (p Profile) Membership() subscription.Membership {
 	return m
 }
 
+// StandardOrdersN generates n orders for standard membership.
+func (p Profile) StandardOrdersN(n int) []subscription.Order {
+	orders := make([]subscription.Order, 0)
+	for i := 0; i < n; i++ {
+		o := subscription.Order{
+			ID:       MustGenOrderID(),
+			MemberID: p.AccountID(),
+			BasePlan: p.plan.BasePlan,
+			Price:    p.plan.Price,
+			Charge: subscription.Charge{
+				Amount:   p.plan.Amount,
+				Currency: p.plan.Currency,
+			},
+			Duration: subscription.Duration{
+				CycleCount: 1,
+				ExtraDays:  1,
+			},
+			Usage:            plan.SubsKindCreate,
+			PaymentMethod:    p.payMethod,
+			WxAppID:          null.String{},
+			UpgradeSchemaID:  null.String{},
+			CreatedAt:        chrono.TimeNow(),
+			ConfirmedAt:      chrono.TimeNow(),
+			StartDate:        chrono.DateFrom(time.Now()),
+			EndDate:          chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
+			MemberSnapshotID: null.String{},
+		}
+
+		orders = append(orders, o)
+	}
+
+	return orders
+}
+
 func (p Profile) IAPSubs() apple.Subscription {
 	return apple.Subscription{
 		Environment:           apple.EnvSandbox,
