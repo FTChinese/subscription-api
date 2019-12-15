@@ -5,7 +5,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
+	"gitlab.com/ftchinese/subscription-api/repository/txrepo"
 )
 
 // SubEnv wraps database connection
@@ -25,14 +25,14 @@ func NewSubEnv(db *sqlx.DB, c *cache.Cache, config util.BuildConfig) SubEnv {
 	}
 }
 
-func (env SubEnv) BeginOrderTx() (query.OrderTx, error) {
+func (env SubEnv) BeginOrderTx() (txrepo.OrderTx, error) {
 	tx, err := env.db.Beginx()
 
 	if err != nil {
-		return query.OrderTx{}, err
+		return txrepo.OrderTx{}, err
 	}
 
-	return query.NewOrderTx(tx, env.UseSandboxDB()), nil
+	return txrepo.NewOrderTx(tx, env.UseSandboxDB()), nil
 }
 
 var logger = logrus.
