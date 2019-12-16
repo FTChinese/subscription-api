@@ -51,7 +51,8 @@ upconfig :
 	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
 
 publish :
-	scp -rp $(LINUX_OUT) ucloud:/home/node/go/bin/$(BINARY).bak
+	rsync -v $(LINUX_OUT) ucloud:/home/node/go/bin/$(BINARY)
+#	scp -rp $(LINUX_OUT) ucloud:/home/node/go/bin/$(BINARY).bak
 
 restart :
 	ssh ucloud "cd /home/node/go/bin/ && \mv $(BINARY).bak $(BINARY)"
