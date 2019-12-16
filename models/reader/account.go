@@ -7,14 +7,14 @@ import (
 
 // Account contains the minimal data to identify a user.
 type Account struct {
-	FtcID    string      `db:"ftc_id"`
-	UnionID  null.String `db:"union_id"`
-	StripeID null.String `db:"stripe_id"`
-	UserName null.String `db:"user_name"`
-	Email    string      `db:"email"`
+	FtcID    string      `json:"ftcId" db:"ftc_id"`
+	UnionID  null.String `json:"unionId" db:"union_id"`
+	StripeID null.String `json:"stripeId" db:"stripe_id"`
+	UserName null.String `json:"userName" db:"user_name"`
+	Email    string      `json:"email" db:"email"`
 }
 
-func (a Account) ID() MemberID {
+func (a Account) MemberID() MemberID {
 	id, _ := NewMemberID(a.FtcID, a.UnionID.String)
 	return id
 }
