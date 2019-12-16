@@ -378,7 +378,7 @@ func (router StripeRouter) onSubscription(s *stripesdk.Subscription) error {
 		return err
 	}
 
-	memberID := account.ID()
+	memberID := account.MemberID()
 
 	return router.stripeEnv.WebHookOnSubscription(memberID, s)
 }
