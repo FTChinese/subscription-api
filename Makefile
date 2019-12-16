@@ -51,11 +51,12 @@ upconfig :
 	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
 
 publish :
-	rsync -v $(LINUX_OUT) ucloud:/home/node/go/bin/$(BINARY)
+	rsync -v $(LINUX_OUT) bj32:/home/node
+	ssh bj32 "rsync -v /home/node/$(BINARY) ucloud:/home/node/go/bin/$(BINARY)"
 #	scp -rp $(LINUX_OUT) ucloud:/home/node/go/bin/$(BINARY).bak
 
 restart :
-	ssh ucloud "cd /home/node/go/bin/ && \mv $(BINARY).bak $(BINARY)"
+#	ssh ucloud "cd /home/node/go/bin/ && \mv $(BINARY).bak $(BINARY)"
 	ssh ucloud supervisorctl restart $(BINARY)
 
 clean :
