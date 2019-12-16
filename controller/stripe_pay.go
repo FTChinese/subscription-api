@@ -12,6 +12,7 @@ import (
 	stripeplan "github.com/stripe/stripe-go/plan"
 	"github.com/stripe/stripe-go/webhook"
 	ftcplan "gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/models/reader"
 	ftcstripe "gitlab.com/ftchinese/subscription-api/models/stripe"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
@@ -99,23 +100,14 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	_ = view.Render(w, view.NewResponse().SetBody(map[string]string{
-		"id": account.StripeID.String,
-	}))
-}
-
-// CreateCustomerV2 returns the Account instance rather than just the stripe customer id.
-func (router StripeRouter) CreateCustomerV2(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(ftcIDKey)
-
-	account, err := router.stripeEnv.CreateStripeCustomer(ftcID)
-
-	if err != nil {
-		_ = view.Render(w, stripeDBFailure(err))
-		return
+	data := struct {
+		ID string `json:"id"` // Deprecated. Reserved for backward compatibility. Should be removed after Android version 3.3.0
+		reader.Account
+	}{
+		ID:      account.StripeID.String,
+		Account: account,
 	}
-
-	_ = view.Render(w, view.NewResponse().SetBody(account))
+	_ = view.Render(w, view.NewResponse().SetBody(data))
 }
 
 // GetDefaultPaymentMethod retrieves a user's invoice default payment method.
