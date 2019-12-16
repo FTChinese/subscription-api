@@ -180,8 +180,8 @@ func main() {
 		r.Route("/customers", func(r chi.Router) {
 			// Create a stripe customer if not exists yet, or
 			// just return the customer id if already exists.
+			// Deprecated
 			r.Put("/", stripeRouter.CreateCustomer)
-			r.Post("/", stripeRouter.CreateCustomerV2)
 			// Get stripe user's default payment method.
 			r.Get("/{id}/default_payment_method", stripeRouter.GetDefaultPaymentMethod)
 			// Set stripe user's default payment method.
