@@ -11,7 +11,7 @@ VERSION := `git describe --tags`
 BUILD := `date +%FT%T%z`
 COMMIT := `git log --max-count=1 --pretty=format:%aI_%h`
 
-LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD}"
+LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD} -X main.commit=${COMMIT}"
 
 BUILD_LINUX := GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(LINUX_OUT) -v .
 

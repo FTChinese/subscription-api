@@ -27,6 +27,7 @@ var (
 	config  util.BuildConfig
 	version string
 	build   string
+	commit  string
 )
 
 const (
@@ -278,10 +279,12 @@ func status(w http.ResponseWriter, _ *http.Request) {
 	data := struct {
 		Version string `json:"version"`
 		Build   string `json:"build"`
+		Commit  string `json:"commit"`
 		Sandbox bool   `json:"sandbox"`
 	}{
 		Version: version,
 		Build:   build,
+		Commit:  commit,
 		Sandbox: config.UseSandboxDB(),
 	}
 
