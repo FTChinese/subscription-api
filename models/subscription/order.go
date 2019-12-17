@@ -43,7 +43,7 @@ func GenerateOrderID() (string, error) {
 // All those combination add up to 3 * 2 * 3 * 3 = 54
 type Order struct {
 	// Fields common to all.
-	ID string `json:"memberID" db:"order_id"`
+	ID string `json:"id" db:"order_id"`
 	reader.MemberID
 	plan.BasePlan
 	Price float64 `json:"price" db:"plan_price"` // Price of a plan, prior to discount.
