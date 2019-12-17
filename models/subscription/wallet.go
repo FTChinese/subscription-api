@@ -11,7 +11,7 @@ import (
 
 type BaseWallet struct {
 	Balance   float64     `json:"balance" db:"balance"`
-	CreatedAt chrono.Time `json:"as_of_date" db:"created_at"` // When the balance is calculated.
+	CreatedAt chrono.Time `json:"createdAt" db:"created_at"` // When the balance is calculated.
 }
 
 func (w BaseWallet) ReadableBalance() string {
