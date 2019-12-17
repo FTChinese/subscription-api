@@ -224,9 +224,11 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 
 		// Create the json data used by native app.
 		case wechat.TradeTypeApp:
+			params := payClient.AppParams(uor)
 			_ = view.Render(w, view.NewResponse().SetBody(subscription.WxpayNativeAppOrder{
-				Order:  order,
-				Params: payClient.AppParams(uor),
+				Order:          order,
+				AppOrderParams: params,
+				Params:         payClient.AppParams(uor),
 			}))
 		}
 	}
