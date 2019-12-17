@@ -5,7 +5,8 @@ import "gitlab.com/ftchinese/subscription-api/models/wechat"
 // WxpayNativeAppOrder creates an order used by native apps.
 type WxpayNativeAppOrder struct {
 	Order
-	Params         wechat.AppOrderParams `json:"params"`
+	wechat.AppOrderParams                       // Deprecated
+	Params                wechat.AppOrderParams `json:"params"`
 }
 
 // WepayEmbedBrowserOrder responds to purchase made in wechat
@@ -44,5 +45,5 @@ type AlipayBrowserOrder struct {
 type AlipayNativeAppOrder struct {
 	Order
 	//FtcOrderID string `json:"ftcOrderId"` // Deprecate
-	Param      string `json:"param"`
+	Param string `json:"param"`
 }
