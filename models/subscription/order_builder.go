@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
+	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
@@ -391,9 +392,12 @@ func (b *OrderBuilder) ClientApp() OrderClient {
 // send to payment provider.
 
 func (b *OrderBuilder) AliAppPayParams() alipay.AliPayTradeAppPay {
+	webHook := b.getWebHookURL()
+	logrus.WithField("trace", "OrderBuilder.AliAppPayParams").Infof("Using web hook url: %s", webHook)
+
 	return alipay.AliPayTradeAppPay{
 		TradePay: alipay.TradePay{
-			NotifyURL:   b.getWebHookURL(),
+			NotifyURL:   webHook,
 			Subject:     b.plan.GetTitle(b.kind),
 			OutTradeNo:  b.orderID,
 			TotalAmount: b.charge.AliPrice(b.live),
@@ -432,12 +436,15 @@ func (b *OrderBuilder) AliWapPayParams(retURL string) alipay.AliPayTradeWapPay {
 }
 
 func (b *OrderBuilder) WxpayParams() wxpay.Params {
+	webHook := b.getWebHookURL()
+	logrus.WithField("trace", "OrderBuilder.AliAppPayParams").Infof("Using web hook url: %s", webHook)
+
 	p := make(wxpay.Params)
 	p.SetString("body", b.plan.GetTitle(b.kind))
 	p.SetString("out_trade_no", b.orderID)
 	p.SetInt64("total_fee", b.charge.AmountInCent(b.live))
 	p.SetString("spbill_create_ip", b.client.UserIP.String)
-	p.SetString("notify_url", b.getWebHookURL())
+	p.SetString("notify_url", webHook)
 	// APP for native app
 	// NATIVE for web site
 	// JSAPI for web page opend inside wechat browser
