@@ -41,12 +41,7 @@ func (v *VerificationResponseBody) Validate() bool {
 		return false
 	}
 
-	if v.LatestTransactions == nil || len(v.LatestTransactions) == 0 {
-		logger.Infof("latest_receipt_info field is either nil or empty")
-		return false
-	}
-
-	return true
+	return v.UnifiedReceipt.Validate()
 }
 
 // SessionSchema builds the schema by merging the root elements

@@ -218,10 +218,16 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	_ = router.iapEnv.SaveNotification(wh.Schema())
 
+	if !wh.UnifiedReceipt.Validate() {
+		reason := view.NewReason()
+		reason.Field = "unified_receipt"
+		reason.Code = view.CodeInvalid
+		reason.SetMessage("unified receipt field is not valid")
+		_ = view.Render(w, view.NewUnprocessable(reason))
+		return
+	}
 	// Find the latest transaction and save transaction
 	// history.
-	//transaction := wh.UnifiedReceipt.findLatestTransaction()
-
 	wh.UnifiedReceipt.Parse()
 
 	router.saveReceiptData(wh.UnifiedReceipt)
@@ -230,6 +236,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	sub := wh.UnifiedReceipt.Subscription()
 	if err := router.iapEnv.CreateSubscription(sub); err != nil {
 		_ = view.Render(w, view.NewBadRequest(""))
+		return
 	}
 
 	// Retrieve apple subscription by original transaction id.
