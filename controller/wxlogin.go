@@ -63,7 +63,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	appID := req.Header.Get("X-App-Id")
 	app, ok := router.apps[appID]
 	if !ok {
-		view.Render(w, view.NewBadRequest("Unknown app"))
+		_ = view.Render(w, view.NewBadRequest("Unknown app"))
 		return
 	}
 
@@ -74,7 +74,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		logger.Error(err)
-		view.Render(w, view.NewBadRequest(""))
+		_ = view.Render(w, view.NewBadRequest(""))
 		return
 	}
 	// Make sure `code` exists.
@@ -83,7 +83,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		reason := view.NewReason()
 		reason.Field = "code"
 		reason.Code = view.CodeMissingField
-		view.Render(w, view.NewUnprocessable(reason))
+		_ = view.Render(w, view.NewUnprocessable(reason))
 		return
 	}
 
@@ -93,7 +93,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	// Wechat error is still a 200 OK response.
 	acc, err := app.GetAccessToken(code)
 	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
 
 		return
 	}
@@ -104,13 +104,11 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 		// Log Wechat error response
 		go func() {
-			if err := router.env.SaveWxStatus(acc.Code, acc.Message); err != nil {
-				logger.Error(err)
-			}
+			_ = router.env.SaveWxStatus(acc.Code, acc.Message)
 		}()
 
 		r := acc.BuildReason()
-		view.Render(w, view.NewUnprocessable(r))
+		_ = view.Render(w, view.NewUnprocessable(r))
 		return
 	}
 
@@ -121,7 +119,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	user, err := app.GetUserInfo(acc.AccessToken, acc.OpenID)
 	// Request has error.
 	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
 
 		return
 	}
@@ -138,7 +136,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		}()
 
 		r := user.BuildReason()
-		view.Render(w, view.NewUnprocessable(r))
+		_ = view.Render(w, view.NewUnprocessable(r))
 		return
 	}
 
@@ -155,13 +153,13 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	err = router.env.SaveWxUser(user)
 
 	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
+		_ = view.Render(w, view.NewDBFailure(err))
 
 		return
 	}
 
 	// Send session data to client.
-	view.Render(w, view.NewResponse().NoCache().SetBody(acc.ToSession(user.UnionID)))
+	_ = view.Render(w, view.NewResponse().NoCache().SetBody(acc.ToSession(user.UnionID)))
 }
 
 // Refresh allows user to refresh userinfo.
@@ -176,7 +174,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	appID := req.Header.Get("X-App-Id")
 	app, ok := router.apps[appID]
 	if !ok {
-		view.Render(w, view.NewBadRequest("Unknown app"))
+		_ = view.Render(w, view.NewBadRequest("Unknown app"))
 		return
 	}
 
@@ -186,7 +184,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	acc, err := router.env.LoadWxAccess(appID, sessionID)
 	// Access token for this openID + appID + clientType is not found
 	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
+		_ = view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
@@ -198,7 +196,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 		user, err := app.GetUserInfo(acc.AccessToken, acc.OpenID)
 		// Request has error.
 		if err != nil {
-			view.Render(w, view.NewBadRequest(err.Error()))
+			_ = view.Render(w, view.NewBadRequest(err.Error()))
 
 			return
 		}
@@ -214,7 +212,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 			}()
 
 			r := user.BuildReason()
-			view.Render(w, view.NewUnprocessable(r))
+			_ = view.Render(w, view.NewUnprocessable(r))
 			return
 		}
 
@@ -222,21 +220,21 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 		err = router.env.UpdateWxUser(user)
 
 		if err != nil {
-			view.Render(w, view.NewDBFailure(err))
+			_ = view.Render(w, view.NewDBFailure(err))
 
 			return
 		}
 
 		// 204 indicates user info is updated successfully.
 		// Client can now request the updated account.
-		view.Render(w, view.NewNoContent())
+		_ = view.Render(w, view.NewNoContent())
 		return
 	}
 
 	// Access token is no longer valid. Refresh access token
 	refreshedAcc, err := app.RefreshAccess(acc.RefreshToken)
 	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
 		return
 	}
 
@@ -245,13 +243,11 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	// Client should ask user to re-authorize
 	if acc.HasError() {
 		go func() {
-			if err := router.env.SaveWxStatus(acc.Code, acc.Message); err != nil {
-				log.Error(err)
-			}
+			_ = router.env.SaveWxStatus(acc.Code, acc.Message)
 		}()
 
 		r := acc.BuildReason()
-		view.Render(w, view.NewUnprocessable(r))
+		_ = view.Render(w, view.NewUnprocessable(r))
 		return
 	}
 
@@ -259,7 +255,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	user, err := app.GetUserInfo(acc.AccessToken, acc.OpenID)
 	// Request has error.
 	if err != nil {
-		view.Render(w, view.NewBadRequest(err.Error()))
+		_ = view.Render(w, view.NewBadRequest(err.Error()))
 
 		return
 	}
@@ -269,32 +265,28 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	// Just ask user to retry.
 	if user.HasError() {
 		go func() {
-			if err := router.env.SaveWxStatus(user.Code, user.Message); err != nil {
-				log.Error(err)
-			}
+			_ = router.env.SaveWxStatus(user.Code, user.Message)
 		}()
 		r := user.BuildReason()
-		view.Render(w, view.NewUnprocessable(r))
+		_ = view.Render(w, view.NewUnprocessable(r))
 		return
 	}
 
 	// Save access token
 	go func() {
-		if err := router.env.UpdateWxAccess(sessionID, refreshedAcc.AccessToken); err != nil {
-			log.Error(err)
-		}
+		_ = router.env.UpdateWxAccess(sessionID, refreshedAcc.AccessToken)
 	}()
 
 	// Save userinfo
 	err = router.env.UpdateWxUser(user)
 
 	if err != nil {
-		view.Render(w, view.NewDBFailure(err))
+		_ = view.Render(w, view.NewDBFailure(err))
 
 		return
 	}
 
-	view.Render(w, view.NewNoContent())
+	_ = view.Render(w, view.NewNoContent())
 }
 
 // WebCallback is used to help web app to get OAuth 2.0 code.
