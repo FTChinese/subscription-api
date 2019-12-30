@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	wxOAuthCallback = "http://users.ftchinese.com/user/login/wechat/callback?"
+	wxOAuthCallback = "http://users.ftchinese.com/login/wechat/callback?"
 )
 
 var logger = logrus.WithField("project", "subscription-api").WithField("package", "controller")
