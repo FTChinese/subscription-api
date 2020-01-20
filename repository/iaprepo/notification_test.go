@@ -1,6 +1,7 @@
 package iaprepo
 
 import (
+	"encoding/json"
 	"github.com/guregu/null"
 	"gitlab.com/ftchinese/subscription-api/models/apple"
 	"gitlab.com/ftchinese/subscription-api/test"
@@ -57,4 +58,33 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateWebhook(t *testing.T) {
+	wh := apple.WebHook{
+		AutoRenewAdamID:              0,
+		AutoRenewProductID:           "com.ft.ftchinese.mobile.subscription.member.monthly",
+		AutoRenewStatus:              "0",
+		AutoRenewStatusChangeDate:    "",
+		AutoRenewStatusChangeDateMs:  "1532683981000",
+		AutoRenewStatusChangeDatePST: "",
+		Environment:                  apple.EnvSandbox,
+		ExpirationIntent:             null.StringFrom("1"),
+		LatestExpiredReceipt:         "",
+		LatestExpiredReceiptInfo:     nil,
+		LatestToken:                  "",
+		LatestTransaction:            apple.LatestTransaction{},
+		NotificationType:             apple.NotificationTypeInitialBuy,
+		Password:                     "12345678",
+		UnifiedReceipt: apple.UnifiedReceipt{
+			Status: 0,
+		},
+	}
+
+	b, err := json.Marshal(wh)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(string(b))
 }
