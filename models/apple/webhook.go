@@ -8,7 +8,7 @@ type LatestTransaction struct {
 	BaseTransaction
 
 	// An identifier that App Store Connect generates and the App Store uses to uniquely identify the app purchased.
-	AppItemID int64 `json:"app_item_id"`
+	AppItemID string `json:"app_item_id"`
 	// An identifier that App Store Connect generates and the App Store uses to uniquely identify the in-app product purchased.
 	ItemID string `json:"item_id"`
 
@@ -71,7 +71,7 @@ func (w WebHook) Schema() WebHookSchema {
 			w.LatestTransaction.ExpiresDate,
 		),
 
-		AppItemID: w.LatestTransaction.AppItemID,
+		AppItemID: MustParseInt64(w.LatestTransaction.AppItemID),
 		ItemID:    MustParseInt64(w.LatestTransaction.ItemID),
 
 		AutoRenewAdamID:    w.AutoRenewAdamID,
