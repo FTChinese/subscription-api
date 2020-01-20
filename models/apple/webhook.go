@@ -72,7 +72,7 @@ func (w WebHook) Schema() WebHookSchema {
 		),
 
 		AppItemID: w.LatestTransaction.AppItemID,
-		ItemID:    w.LatestTransaction.ItemID,
+		ItemID:    MustParseInt64(w.LatestTransaction.ItemID),
 
 		AutoRenewAdamID:    w.AutoRenewAdamID,
 		AutoRenewProductID: w.AutoRenewProductID,
