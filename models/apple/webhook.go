@@ -10,7 +10,7 @@ type LatestTransaction struct {
 	// An identifier that App Store Connect generates and the App Store uses to uniquely identify the app purchased.
 	AppItemID int64 `json:"app_item_id"`
 	// An identifier that App Store Connect generates and the App Store uses to uniquely identify the in-app product purchased.
-	ItemID int64 `json:"item_id"`
+	ItemID string `json:"item_id"`
 
 	// The time a subscription expires or when it will renew, in UNIX epoch time format, in milliseconds.
 	ExpiresDate             string `json:"expires_date"`
