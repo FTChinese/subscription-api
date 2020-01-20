@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
@@ -13,6 +14,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
 	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -208,9 +210,19 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 
 // WebHook receives app store server-to-server notification.
 func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
+	log := logger.WithField("trace", "IAPRouter.WebHook")
+
 	var wh apple.WebHook
-	if err := gorest.ParseJSON(req.Body, &wh); err != nil {
-		logger.WithField("trace", "IAPRouter.WebHook").Error(err)
+	b, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infof("Apple webhook raw: %s", b)
+
+	if err := json.Unmarshal(b, &wh); err != nil {
+		log.Error(err)
 
 		_ = view.Render(w, view.NewBadRequest(""))
 		return
@@ -223,6 +235,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		reason.Field = "unified_receipt"
 		reason.Code = view.CodeInvalid
 		reason.SetMessage("unified receipt field is not valid")
+		log.Infof("invalid webhook unified receipt")
 		_ = view.Render(w, view.NewUnprocessable(reason))
 		return
 	}
@@ -249,12 +262,14 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	tx, err := router.iapEnv.BeginTx()
 	if err != nil {
+		log.Error(err)
 		_ = view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
 	currMember, err := tx.RetrieveAppleMember(sub.OriginalTransactionID)
 	if err != nil {
+		log.Error(err)
 		_ = tx.Rollback()
 		_ = view.Render(w, view.NewBadRequest(""))
 		return
