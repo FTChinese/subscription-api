@@ -1,22 +1,14 @@
-package util
+package db
 
 import (
 	"fmt"
+	"github.com/FTChinese/go-rest/connect"
+	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"time"
-
-	"github.com/go-sql-driver/mysql"
 )
 
-// Conn represents a connection to a server or database.
-type Conn struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
-	User string `mapstructure:"user"`
-	Pass string `mapstructure:"pass"`
-}
-
-func (c Conn) DSN() string {
+func NewDB(c connect.Connect) (*sqlx.DB, error) {
 	cfg := &mysql.Config{
 		User:   c.User,
 		Passwd: c.Pass,
@@ -35,13 +27,7 @@ func (c Conn) DSN() string {
 		AllowNativePasswords: true,
 	}
 
-	return cfg.FormatDSN()
-}
-
-// NewDB creates a db connection
-func NewDB(c Conn) (*sqlx.DB, error) {
-
-	db, err := sqlx.Open("mysql", c.DSN())
+	db, err := sqlx.Open("mysql", cfg.FormatDSN())
 
 	if err != nil {
 		return nil, err
@@ -57,4 +43,13 @@ func NewDB(c Conn) (*sqlx.DB, error) {
 	// See https://github.com/go-sql-driver/mysql/issues/674
 	db.SetConnMaxLifetime(time.Second)
 	return db, nil
+}
+
+func MustNewDB(c connect.Connect) *sqlx.DB {
+	db, err := NewDB(c)
+	if err != nil {
+		panic(err)
+	}
+
+	return db
 }

@@ -1,15 +1,17 @@
 package test
 
 import (
+	"github.com/FTChinese/go-rest/connect"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
+	"gitlab.com/ftchinese/subscription-api/pkg/db"
 )
 
 const (
@@ -33,7 +35,7 @@ var YearlyPremium = mustFindPlan(enum.TierPremium, enum.CycleYear)
 
 var (
 	DB          *sqlx.DB
-	Postman     postoffice.Postman
+	Postman     postoffice.PostOffice
 	Cache       *cache.Cache
 	WxOAuthApp  wxlogin.WxApp
 	WxPayApp    wechat.PayApp
@@ -49,23 +51,15 @@ func init() {
 		panic(err)
 	}
 
-	var dbConn util.Conn
+	var dbConn connect.Connect
 	err = viper.UnmarshalKey("mysql.dev", &dbConn)
 	if err != nil {
 		panic(err)
 	}
 
-	DB, err = util.NewDB(dbConn)
-	if err != nil {
-		panic(err)
-	}
+	DB = db.MustNewDB(dbConn)
 
-	var conn util.Conn
-	err = viper.UnmarshalKey("email.hanqi", &conn)
-	if err != nil {
-		panic(err)
-	}
-	Postman = postoffice.New(conn.Host, conn.Port, conn.User, conn.Pass)
+	Postman = postoffice.New(config.MustGetHanqiConn())
 
 	Cache = cache.New(cache.DefaultExpiration, 0)
 

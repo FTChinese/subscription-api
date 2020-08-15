@@ -3,19 +3,19 @@ package striperepo
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/repository/txrepo"
 )
 
 // SubEnv wraps database connection
 type StripeEnv struct {
-	util.BuildConfig
+	config.BuildConfig
 	db *sqlx.DB
 }
 
 // NewSubEnv creates a new instance of SubEnv.
 // `sandbox` is used to determine which table to write subscription data.
-func NewStripeEnv(db *sqlx.DB, b util.BuildConfig) StripeEnv {
+func NewStripeEnv(db *sqlx.DB, b config.BuildConfig) StripeEnv {
 	return StripeEnv{
 		BuildConfig: b,
 		db:          db,

@@ -15,6 +15,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	ftcstripe "gitlab.com/ftchinese/subscription-api/models/stripe"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/striperepo"
 	"io/ioutil"
@@ -28,7 +29,7 @@ type StripeRouter struct {
 }
 
 // NewStripeRouter initializes StripeRouter.
-func NewStripeRouter(db *sqlx.DB, config util.BuildConfig) StripeRouter {
+func NewStripeRouter(db *sqlx.DB, config config.BuildConfig) StripeRouter {
 	r := StripeRouter{
 		signingKey: config.GetStripeKey(),
 		readerEnv:  rederrepo.NewReaderEnv(db, config),
