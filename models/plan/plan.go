@@ -39,9 +39,9 @@ type Plan struct {
 	Amount           float64 `json:"amount" db:"plan_amount"`     // Actual price paid.
 	Currency         string  `json:"currency" db:"plan_currency"` // in which currency.
 	Title            string  `json:"description"`
-	stripeLivePlanID string  `json:"-"`
-	stripeTestPlanID string  `json:"-"`
-	AppleProductID   string  `json:"-"`
+	stripeLivePlanID string
+	stripeTestPlanID string
+	AppleProductID   string `json:"-"`
 
 	ListPrice float64 `json:"listPrice"` // Deprecated
 	NetPrice  float64 `json:"netPrice"`  // Deprecated
