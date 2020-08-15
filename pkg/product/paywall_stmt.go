@@ -1,0 +1,20 @@
+package product
+
+const StmtBanner = `
+SELECT b.id AS banner_id,
+	b.heading,
+	b.cover_url,
+	b.sub_heading,
+	b.content,
+	p.id AS promo_id,
+	p.heading AS promo_heading,
+	p.cover_url AS promo_cover_url,
+	p.sub_heading AS promo_sub_heading,
+	p.content AS promo_content,
+	p.start_utc AS start_utc,
+	p.end_utc AS end_utc
+FROM subs_product.paywall_banner AS b
+	LEFT JOIN subs_product.paywall_promo AS p
+	ON b.promo_id = p.id
+WHERE id = ?
+LIMIT 1`
