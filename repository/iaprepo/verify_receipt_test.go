@@ -2,7 +2,7 @@ package iaprepo
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/apple"
-	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/test"
 	"os"
 	"path/filepath"
@@ -14,7 +14,7 @@ func TestIAPEnv_VerifyReceipt(t *testing.T) {
 	resp.Parse()
 
 	env := IAPEnv{
-		c:  util.NewBuildConfig(false, false),
+		c:  config.NewBuildConfig(false, false),
 		db: nil,
 	}
 
@@ -54,7 +54,7 @@ func TestIAPEnv_SaveVerificationSession(t *testing.T) {
 	resp.Parse()
 
 	env := IAPEnv{
-		c:  util.BuildConfig{},
+		c:  config.BuildConfig{},
 		db: test.DB,
 	}
 
@@ -89,7 +89,7 @@ func TestIAPEnv_SaveTransaction(t *testing.T) {
 	resp.Parse()
 
 	env := IAPEnv{
-		c:  util.BuildConfig{},
+		c:  config.BuildConfig{},
 		db: test.DB,
 	}
 
@@ -122,7 +122,7 @@ func TestIAPEnv_SaveTransaction(t *testing.T) {
 func TestIAPEnv_SavePendingRenewal(t *testing.T) {
 
 	env := IAPEnv{
-		c:  util.BuildConfig{},
+		c:  config.BuildConfig{},
 		db: test.DB,
 	}
 
@@ -157,7 +157,7 @@ func TestIAPEnv_CreateSubscription(t *testing.T) {
 	resp.Parse()
 
 	env := IAPEnv{
-		c:  util.BuildConfig{},
+		c:  config.BuildConfig{},
 		db: test.DB,
 	}
 
@@ -192,7 +192,7 @@ func TestIAPEnv_SaveReceiptToken(t *testing.T) {
 	resp.Parse()
 
 	env := IAPEnv{
-		c:  util.BuildConfig{},
+		c:  config.BuildConfig{},
 		db: test.DB,
 	}
 	type args struct {

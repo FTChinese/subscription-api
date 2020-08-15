@@ -5,7 +5,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 
@@ -18,7 +18,7 @@ type PaywallRouter struct {
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(db *sqlx.DB, c *cache.Cache, b util.BuildConfig) PaywallRouter {
+func NewPaywallRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig) PaywallRouter {
 	return PaywallRouter{
 		env: subrepo.NewSubEnv(db, c, b),
 	}

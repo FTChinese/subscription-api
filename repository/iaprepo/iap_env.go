@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/models/apple"
-	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -29,11 +29,11 @@ func getReceiptPassword() (string, error) {
 }
 
 type IAPEnv struct {
-	c  util.BuildConfig
+	c  config.BuildConfig
 	db *sqlx.DB
 }
 
-func NewIAPEnv(db *sqlx.DB, c util.BuildConfig) IAPEnv {
+func NewIAPEnv(db *sqlx.DB, c config.BuildConfig) IAPEnv {
 	return IAPEnv{
 		c:  c,
 		db: db,
