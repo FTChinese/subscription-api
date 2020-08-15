@@ -9,6 +9,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
@@ -18,10 +19,10 @@ import (
 type PayRouter struct {
 	subEnv    subrepo.SubEnv
 	readerEnv rederrepo.ReaderEnv
-	postman   postoffice.Postman
+	postman   postoffice.PostOffice
 }
 
-func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b util.BuildConfig, p postoffice.Postman) PayRouter {
+func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
 	return PayRouter{
 		subEnv:    subrepo.NewSubEnv(db, c, b),
 		readerEnv: rederrepo.NewReaderEnv(db, b),

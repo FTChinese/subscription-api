@@ -5,6 +5,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/repository/giftrepo"
 	"net/http"
 )
@@ -14,7 +15,7 @@ type GiftCardRouter struct {
 }
 
 // NewGiftCardRouter create a new instance of GiftCardRouter.
-func NewGiftCardRouter(db *sqlx.DB, config util.BuildConfig) GiftCardRouter {
+func NewGiftCardRouter(db *sqlx.DB, config config.BuildConfig) GiftCardRouter {
 	return GiftCardRouter{
 		env: giftrepo.NewGiftEnv(db, config),
 	}

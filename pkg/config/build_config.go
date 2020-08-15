@@ -1,10 +1,22 @@
-package util
+package config
 
 import (
+	"github.com/FTChinese/go-rest/connect"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"log"
 	"os"
 )
+
+func GetConn(key string) (connect.Connect, error) {
+	var conn connect.Connect
+	err := viper.UnmarshalKey(key, &conn)
+	if err != nil {
+		return connect.Connect{}, err
+	}
+
+	return conn, nil
+}
 
 // BuildConfig set up deploy environment.
 // For production server, the `-production` flag is passed from
@@ -41,16 +53,7 @@ func (c BuildConfig) Live() bool {
 // UseSandboxDB tells whether the sandbox db should be used.
 // Not this is not the opposite of Live.
 func (c BuildConfig) UseSandboxDB() bool {
-	if c.sandbox {
-		return true
-	}
-
-	if c.production {
-		return false
-	}
-
-	// Not sandbox, not production, it should be local development. Use the same environment as production.
-	return false
+	return c.sandbox
 }
 
 // IsProduction determines which DB server to connect
@@ -107,23 +110,30 @@ func (c BuildConfig) GetStripeSecretKey() string {
 	return key
 }
 
-func (c BuildConfig) GetDBConn() Conn {
-	var conn Conn
+func (c BuildConfig) MustGetDBConn(key string) connect.Connect {
+	var conn connect.Connect
 	var err error
-	// Sandbox also uses production server.
-	if c.IsProduction() {
-		err = viper.UnmarshalKey("mysql.master", &conn)
+
+	if c.production {
+		conn, err = GetConn(key)
 	} else {
-		err = viper.UnmarshalKey("mysql.dev", &conn)
+		conn, err = GetConn("mysql.dev")
 	}
 
 	if err != nil {
-		logrus.WithField("trace", "BuildConfig.GetDBConn").
-			Error(err)
-
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
-	logrus.Infof("Using MySQL server %s", conn.Host)
+	log.Printf("Using mysql server %s. Production: %t", conn.Host, c.production)
+
+	return conn
+}
+
+func MustGetHanqiConn() connect.Connect {
+	conn, err := GetConn("email.hanqi")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return conn
 }

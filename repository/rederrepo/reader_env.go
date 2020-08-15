@@ -4,7 +4,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
@@ -13,11 +13,11 @@ var logger = logrus.
 	WithField("package", "reader_repo")
 
 type ReaderEnv struct {
-	util.BuildConfig
+	config.BuildConfig
 	db *sqlx.DB
 }
 
-func NewReaderEnv(db *sqlx.DB, config util.BuildConfig) ReaderEnv {
+func NewReaderEnv(db *sqlx.DB, config config.BuildConfig) ReaderEnv {
 	return ReaderEnv{
 		BuildConfig: config,
 		db:          db,

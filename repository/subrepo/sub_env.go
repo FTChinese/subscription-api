@@ -4,20 +4,20 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/repository/txrepo"
 )
 
 // SubEnv wraps database connection
 type SubEnv struct {
-	util.BuildConfig
+	config.BuildConfig
 	db    *sqlx.DB
 	cache *cache.Cache
 }
 
 // NewSubEnv creates a new instance of SubEnv.
 // `sandbox` is used to determine which table to write subscription data.
-func NewSubEnv(db *sqlx.DB, c *cache.Cache, config util.BuildConfig) SubEnv {
+func NewSubEnv(db *sqlx.DB, c *cache.Cache, config config.BuildConfig) SubEnv {
 	return SubEnv{
 		BuildConfig: config,
 		db:          db,

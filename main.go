@@ -7,6 +7,8 @@ import (
 	"gitlab.com/ftchinese/subscription-api/access"
 	"gitlab.com/ftchinese/subscription-api/models/ali"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
+	"gitlab.com/ftchinese/subscription-api/pkg/config"
+	"gitlab.com/ftchinese/subscription-api/pkg/db"
 	"gitlab.com/ftchinese/subscription-api/repository/wxoauth"
 	"log"
 	"net/http"
@@ -20,11 +22,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gitlab.com/ftchinese/subscription-api/controller"
-	"gitlab.com/ftchinese/subscription-api/models/util"
 )
 
 var (
-	config  util.BuildConfig
+	cfg     config.BuildConfig
 	version string
 	build   string
 	commit  string
@@ -43,7 +44,7 @@ func init() {
 
 	flag.Parse()
 
-	config = util.NewBuildConfig(production, sandbox)
+	cfg = config.NewBuildConfig(production, sandbox)
 
 	if *v {
 		fmt.Printf("%s\nBuild at %s\n", version, build)
@@ -53,9 +54,9 @@ func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
 	logrus.WithFields(logrus.Fields{
-		"sandbox":      config.UseSandboxDB(),
-		"live":         config.Live(),
-		"isProduction": config.IsProduction(),
+		"sandbox":      cfg.UseSandboxDB(),
+		"live":         cfg.Live(),
+		"isProduction": cfg.IsProduction(),
 	}).Infof("Initializing environment")
 
 	viper.SetConfigName("api")
@@ -65,22 +66,11 @@ func init() {
 		os.Exit(1)
 	}
 
-	if config.Live() {
+	if cfg.Live() {
 		stripe.Key = viper.GetString("stripe.live_secret_key")
 	} else {
 		stripe.Key = viper.GetString("stripe.test_secret_key")
 	}
-}
-
-func getEmailConn() util.Conn {
-	var conn util.Conn
-	err := viper.UnmarshalKey("email.hanqi", &conn)
-	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
-
-	return conn
 }
 
 func main() {
@@ -88,38 +78,29 @@ func main() {
 		"trace": "main",
 	})
 
-	stripe.Key = config.GetStripeSecretKey()
+	stripe.Key = cfg.GetStripeSecretKey()
 
-	db, err := util.NewDB(config.GetDBConn())
-	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
+	myDB := db.MustNewDB(cfg.MustGetDBConn("mysql.master"))
 
 	promoCache := cache.New(cache.DefaultExpiration, 0)
 
-	emailConn := getEmailConn()
-	post := postoffice.NewPostman(
-		emailConn.Host,
-		emailConn.Port,
-		emailConn.User,
-		emailConn.Pass)
+	post := postoffice.New(config.MustGetHanqiConn())
 
-	guard := access.NewGuard(db)
+	guard := access.NewGuard(myDB)
 
-	baseRouter := controller.NewBasePayRouter(db, promoCache, config, post)
+	baseRouter := controller.NewBasePayRouter(myDB, promoCache, cfg, post)
 
 	wxRouter := controller.NewWxRouter(baseRouter)
 	aliRouter := controller.NewAliRouter(baseRouter)
 	upgradeRouter := controller.NewUpgradeRouter(baseRouter)
 
-	stripeRouter := controller.NewStripeRouter(db, config)
-	iapRouter := controller.NewIAPRouter(db, config, post)
+	stripeRouter := controller.NewStripeRouter(myDB, cfg)
+	iapRouter := controller.NewIAPRouter(myDB, cfg, post)
 
-	giftCardRouter := controller.NewGiftCardRouter(db, config)
-	paywallRouter := controller.NewPaywallRouter(db, promoCache, config)
+	giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
+	paywallRouter := controller.NewPaywallRouter(myDB, promoCache, cfg)
 
-	wxAuth := controller.NewWxAuth(wxoauth.New(db))
+	wxAuth := controller.NewWxAuth(wxoauth.New(myDB))
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -285,7 +266,7 @@ func status(w http.ResponseWriter, _ *http.Request) {
 		Version: version,
 		Build:   build,
 		Commit:  commit,
-		Sandbox: config.UseSandboxDB(),
+		Sandbox: cfg.UseSandboxDB(),
 	}
 
 	_ = view.Render(w, view.NewResponse().NoCache().SetBody(data))
