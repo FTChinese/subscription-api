@@ -6,6 +6,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/pkg/config"
+	"gitlab.com/ftchinese/subscription-api/repository/products"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 
@@ -14,25 +15,27 @@ import (
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	env subrepo.SubEnv
+	env  subrepo.SubEnv
+	repo products.Env
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
 func NewPaywallRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig) PaywallRouter {
 	return PaywallRouter{
-		env: subrepo.NewSubEnv(db, c, b),
+		env:  subrepo.NewSubEnv(db, c, b),
+		repo: products.NewEnv(db, c),
 	}
 }
 
-// GetPaywall loads current paywall in effect.
+// GetPaywall loads current paywall.
 func (router PaywallRouter) GetPaywall(w http.ResponseWriter, req *http.Request) {
-	pw, err := router.env.GetPayWall()
+	pw, err := router.repo.LoadPaywall()
 	if err != nil {
-		view.Render(w, view.NewInternalError(err.Error()))
+		_ = view.Render(w, view.NewDBFailure(err))
 		return
 	}
 
-	view.Render(w, view.NewResponse().SetBody(pw))
+	_ = view.Render(w, view.NewResponse().SetBody(pw))
 }
 
 // DefaultPaywall loads default paywall data.
