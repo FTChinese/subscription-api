@@ -16,7 +16,7 @@ import (
 	ftcstripe "gitlab.com/ftchinese/subscription-api/models/stripe"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
+	"gitlab.com/ftchinese/subscription-api/repository/readerrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/striperepo"
 	"io/ioutil"
 	"net/http"
@@ -24,7 +24,7 @@ import (
 
 type StripeRouter struct {
 	signingKey string
-	readerEnv  rederrepo.ReaderEnv
+	readerEnv  readerrepo.ReaderEnv
 	stripeEnv  striperepo.StripeEnv
 }
 
@@ -32,7 +32,7 @@ type StripeRouter struct {
 func NewStripeRouter(db *sqlx.DB, config config.BuildConfig) StripeRouter {
 	r := StripeRouter{
 		signingKey: config.GetStripeKey(),
-		readerEnv:  rederrepo.NewReaderEnv(db, config),
+		readerEnv:  readerrepo.NewReaderEnv(db, config),
 		stripeEnv:  striperepo.NewStripeEnv(db, config),
 	}
 

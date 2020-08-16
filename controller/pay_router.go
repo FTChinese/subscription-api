@@ -10,7 +10,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
+	"gitlab.com/ftchinese/subscription-api/repository/readerrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
@@ -18,14 +18,14 @@ import (
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
 	subEnv    subrepo.SubEnv
-	readerEnv rederrepo.ReaderEnv
+	readerEnv readerrepo.ReaderEnv
 	postman   postoffice.PostOffice
 }
 
 func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
 	return PayRouter{
 		subEnv:    subrepo.NewSubEnv(db, c, b),
-		readerEnv: rederrepo.NewReaderEnv(db, b),
+		readerEnv: readerrepo.NewReaderEnv(db, b),
 		postman:   p,
 	}
 }

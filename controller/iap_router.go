@@ -13,21 +13,21 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
-	"gitlab.com/ftchinese/subscription-api/repository/rederrepo"
+	"gitlab.com/ftchinese/subscription-api/repository/readerrepo"
 	"io/ioutil"
 	"net/http"
 )
 
 type IAPRouter struct {
 	iapEnv    iaprepo.IAPEnv
-	readerEnv rederrepo.ReaderEnv
+	readerEnv readerrepo.ReaderEnv
 	postman   postoffice.PostOffice
 }
 
 func NewIAPRouter(db *sqlx.DB, config config.BuildConfig, p postoffice.PostOffice) IAPRouter {
 	return IAPRouter{
 		iapEnv:    iaprepo.NewIAPEnv(db, config),
-		readerEnv: rederrepo.NewReaderEnv(db, config),
+		readerEnv: readerrepo.NewReaderEnv(db, config),
 		postman:   p,
 	}
 }
