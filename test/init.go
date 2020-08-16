@@ -12,6 +12,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"gitlab.com/ftchinese/subscription-api/pkg/db"
+	"log"
 )
 
 const (
@@ -46,9 +47,10 @@ var (
 func init() {
 	viper.SetConfigName("api")
 	viper.AddConfigPath("$HOME/config")
+
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	var dbConn connect.Connect
