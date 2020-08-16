@@ -104,6 +104,10 @@ func (env Env) cachePaywall(p product.Paywall) {
 	env.cache.Set(keyPaywall, p, cache.NoExpiration)
 }
 
+func (env Env) ClearCache() {
+	env.cache.Flush()
+}
+
 // LoadPaywall tries to load paywall from cache.
 // Fallback to db if not found in cache.
 func (env Env) LoadPaywall() (product.Paywall, error) {
