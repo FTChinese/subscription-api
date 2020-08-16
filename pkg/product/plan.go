@@ -1,22 +1,24 @@
 package product
 
-import (
-	"github.com/FTChinese/go-rest/enum"
-	"github.com/guregu/null"
-)
-
 type Plan struct {
-	ID          string      `json:"id" db:"plan_id"`
-	ProductID   string      `json:"productId" db:"product_id"`
-	Price       float64     `json:"price" db:"price"`
-	Tier        enum.Tier   `json:"tier" db:"tier"`
-	Cycle       enum.Cycle  `json:"cycle" db:"cycle"`
-	Description null.String `json:"description" db:"description"`
+	ID        string  `json:"id" db:"plan_id"`
+	ProductID string  `json:"productId" db:"product_id"`
+	Price     float64 `json:"price" db:"price"`
+	Edition
 }
 
 type ExpandedPlan struct {
 	Plan
 	Discount Discount `json:"discount"`
+}
+
+// Amount calculates how much a user should pay.
+func (e ExpandedPlan) Amount() float64 {
+	if e.Discount.IsValid() {
+		return e.Price - e.Discount.PriceOff.Float64
+	}
+
+	return e.Price
 }
 
 // ExpandedPlanSchema contains a plans and its discount.
@@ -25,7 +27,7 @@ type ExpandedPlanSchema struct {
 	Discount
 }
 
-func (s ExpandedPlanSchema) DiscountedPlan() ExpandedPlan {
+func (s ExpandedPlanSchema) ExpandedPlan() ExpandedPlan {
 	return ExpandedPlan{
 		Plan:     s.Plan,
 		Discount: s.Discount,
