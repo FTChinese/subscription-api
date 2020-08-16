@@ -28,7 +28,8 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.7.1
+	github.com/spf13/viper v1.7.0
+	github.com/stretchr/testify v1.4.0
 	github.com/stripe/stripe-go v67.9.0+incompatible
 	github.com/tidwall/gjson v1.6.0
 	github.com/tidwall/pretty v1.0.1 // indirect
@@ -39,9 +40,7 @@ require (
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
 	golang.org/x/sys v0.0.0-20200814200057-3d37ad5750ed // indirect
 	google.golang.org/appengine v1.6.6 // indirect
-	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/ini.v1 v1.58.0 // indirect
-	gopkg.in/mail.v2 v2.3.1 // indirect
 	moul.io/http2curl v1.0.0 // indirect
 )
 
