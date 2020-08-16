@@ -225,15 +225,8 @@ func main() {
 
 	r.Route("/paywall", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		// Get promotion schedule, pricing plans and banner content
-		r.Get("/default", controller.DefaultPaywall)
-		r.Get("/current", paywallRouter.GetPaywall)
 
-		// Get default pricing plans
-		r.Get("/pricing/default", controller.DefaultPricing)
-		r.Get("/pricing/current", paywallRouter.GetPricing)
-
-		r.Get("/promo", paywallRouter.GetPromo)
+		r.Get("/", controller.DefaultPaywall)
 	})
 
 	r.Route("/wx", func(r chi.Router) {
