@@ -16,5 +16,5 @@ SELECT b.id AS banner_id,
 FROM subs_product.paywall_banner AS b
 	LEFT JOIN subs_product.paywall_promo AS p
 	ON b.promo_id = p.id
-WHERE id = ?
+WHERE b.id = 1
 LIMIT 1`
