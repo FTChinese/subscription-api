@@ -1,23 +1,21 @@
 package product
 
-const colDiscountedPlan = `
+const colExpandedPlan = `
 SELECT p.id AS plan_id,
 	p.product_id,
 	p.product_id,
 	p.price,
 	p.tier,
 	p.cycle,
-	p.description,
 	d.id AS discount_id,
-	d.plan_id AS discounted_plan_id,
 	d.price_off,
 	d.percent,
 	d.start_utc,
 	d.end_utc
 `
 
-// StmtDiscountedPlan retrieves a single plan with discount by plan id.
-const StmtDiscountedPlan = colDiscountedPlan + `
+// StmtExpandedPlan retrieves a single plan with discount by plan id.
+const StmtExpandedPlan = colExpandedPlan + `
 FROM subs_product.plan AS p
 	LEFT JOIN subs_product.discount AS d
 	ON p.discount_id = d.id
@@ -26,7 +24,7 @@ LIMIT 1`
 
 // StmtPaywallPlans selects all active plans of products which are listed on paywall.
 // The plans has discount attached.
-const StmtPaywallPlans = colDiscountedPlan + `
+const StmtPaywallPlans = colExpandedPlan + `
 FROM subs_product.product_active_plans AS a
 	LEFT JOIN subs_product.plan AS p
 	ON a.plan_id = p.id
