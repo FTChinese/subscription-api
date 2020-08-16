@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/FTChinese/go-rest/render"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/models/paywall"
@@ -27,18 +28,43 @@ func NewPaywallRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig) Paywall
 	}
 }
 
-// GetPaywall loads current paywall.
-func (router PaywallRouter) GetPaywall(w http.ResponseWriter, req *http.Request) {
+// LoadPaywall loads paywall data from db or cache.
+func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request) {
 	pw, err := router.repo.LoadPaywall()
 	if err != nil {
-		_ = view.Render(w, view.NewDBFailure(err))
+		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_ = view.Render(w, view.NewResponse().SetBody(pw))
+	_ = render.New(w).JSON(http.StatusOK, pw)
+}
+
+func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) {
+	router.repo.ClearCache()
+
+	pw, err := router.repo.LoadPaywall()
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).JSON(http.StatusOK, pw)
+}
+
+// GetPaywall loads current paywall in effect.
+// Deprecated
+func (router PaywallRouter) GetPaywall(w http.ResponseWriter, req *http.Request) {
+	pw, err := router.env.GetPayWall()
+	if err != nil {
+		view.Render(w, view.NewInternalError(err.Error()))
+		return
+	}
+
+	view.Render(w, view.NewResponse().SetBody(pw))
 }
 
 // DefaultPaywall loads default paywall data.
+// Deprecated
 func DefaultPaywall(w http.ResponseWriter, req *http.Request) {
 	pw, err := paywall.BuildPayWall(
 		paywall.GetDefaultBanner(),
@@ -53,6 +79,7 @@ func DefaultPaywall(w http.ResponseWriter, req *http.Request) {
 }
 
 // GetPricing loads current pricing plans in effect.
+// Deprecated
 func (router PaywallRouter) GetPricing(w http.ResponseWriter, req *http.Request) {
 	p := router.env.GetCurrentPlans()
 
@@ -60,6 +87,7 @@ func (router PaywallRouter) GetPricing(w http.ResponseWriter, req *http.Request)
 }
 
 // DefaultPlans shows what our subscription plans are.
+// Deprecated
 func DefaultPricing(w http.ResponseWriter, req *http.Request) {
 
 	_ = view.Render(
@@ -70,6 +98,7 @@ func DefaultPricing(w http.ResponseWriter, req *http.Request) {
 }
 
 // GetPromo gets the current effective promotion schedule.
+// Deprecated
 func (router PaywallRouter) GetPromo(w http.ResponseWriter, req *http.Request) {
 	promo, found := router.env.LoadCachedPromo()
 
@@ -84,6 +113,7 @@ func (router PaywallRouter) GetPromo(w http.ResponseWriter, req *http.Request) {
 
 // RefreshPromo busts cache and retrieve a latest promotion schedule if exists.
 // The retrieved promotion is put into cache and also send back to the request.
+// Deprecated
 func (router PaywallRouter) RefreshPromo(w http.ResponseWriter, req *http.Request) {
 	promo, err := router.env.RetrievePromo()
 
