@@ -1,4 +1,4 @@
-package rederrepo
+package readerrepo
 
 import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"

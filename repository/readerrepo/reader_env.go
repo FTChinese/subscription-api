@@ -1,4 +1,4 @@
-package rederrepo
+package readerrepo
 
 import (
 	"github.com/jmoiron/sqlx"
