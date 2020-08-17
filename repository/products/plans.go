@@ -1,8 +1,6 @@
 package products
 
 import (
-	"database/sql"
-	"github.com/patrickmn/go-cache"
 	"gitlab.com/ftchinese/subscription-api/pkg/product"
 )
 
@@ -28,6 +26,7 @@ type plansResult struct {
 	error error
 }
 
+// asyncLoadPlans retrieves a plist of plans in a goroutine.
 func (env Env) asyncLoadPlans() <-chan plansResult {
 	ch := make(chan plansResult)
 
@@ -45,11 +44,11 @@ func (env Env) asyncLoadPlans() <-chan plansResult {
 	return ch
 }
 
-// LoadPlan retrieves a single plan with discount attached.
-func (env Env) retrievePlan(id string) (product.ExpandedPlan, error) {
+// PlanByID retrieves a plan with discount by ID.
+func (env Env) PlanByID(id string) (product.ExpandedPlan, error) {
 	var schema product.ExpandedPlanSchema
 
-	err := env.db.Get(&schema, product.StmtExpandedPlan, id)
+	err := env.db.Get(&schema, product.StmtExpandedPlanByID, id)
 	if err != nil {
 		return product.ExpandedPlan{}, nil
 	}
@@ -57,19 +56,14 @@ func (env Env) retrievePlan(id string) (product.ExpandedPlan, error) {
 	return schema.ExpandedPlan(), nil
 }
 
-func (env Env) cachePlan(p product.ExpandedPlan) {
-	env.cache.Set(p.ID, p, cache.DefaultExpiration)
-}
+// PlanByEdition retrieves an active plan by tier and cycle.
+func (env Env) PlanByEdition(e product.Edition) (product.ExpandedPlan, error) {
+	var schema product.ExpandedPlanSchema
 
-func (env Env) LoadPlan(id string) (product.ExpandedPlan, error) {
-	x, found := env.cache.Get(id)
-	if !found {
-		return env.retrievePlan(id)
+	err := env.db.Get(&schema, product.StmtExpandedPlanByEdition, e.Tier, e.Cycle)
+	if err != nil {
+		return product.ExpandedPlan{}, nil
 	}
 
-	if plan, ok := x.(product.ExpandedPlan); ok {
-		return plan, nil
-	}
-
-	return product.ExpandedPlan{}, sql.ErrNoRows
+	return schema.ExpandedPlan(), nil
 }
