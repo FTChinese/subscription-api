@@ -3,9 +3,9 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/view"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/product"
 	"net/http"
 )
 
@@ -41,7 +41,10 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
 
-	p, _ := plan.FindPlan(enum.TierPremium, enum.CycleYear)
+	p, _ := router.prodRepo.PlanByEdition(product.Edition{
+		Tier:  enum.TierPremium,
+		Cycle: enum.CycleYear,
+	})
 	clientApp := util.NewClientApp(req)
 
 	builder := subscription.NewOrderBuilder(userID).

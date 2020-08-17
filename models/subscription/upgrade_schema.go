@@ -3,7 +3,7 @@ package subscription
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"gitlab.com/ftchinese/subscription-api/pkg/product"
 )
 
 func GenerateUpgradeID() string {
@@ -19,7 +19,7 @@ func GenerateUpgradeID() string {
 type UpgradeSchema struct {
 	ID string `db:"upgrade_id"`
 	BaseWallet
-	plan.Plan
+	product.Plan
 	Sources []ProratedOrderSchema // The existing orders not consumed completely yet.
 }
 

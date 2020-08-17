@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/jmoiron/sqlx"
@@ -10,6 +11,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/pkg/config"
+	"gitlab.com/ftchinese/subscription-api/repository/products"
 	"gitlab.com/ftchinese/subscription-api/repository/readerrepo"
 	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
@@ -19,14 +21,18 @@ import (
 type PayRouter struct {
 	subEnv    subrepo.SubEnv
 	readerEnv readerrepo.ReaderEnv
+	prodRepo  products.Env
 	postman   postoffice.PostOffice
+	config    config.BuildConfig
 }
 
 func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
 	return PayRouter{
 		subEnv:    subrepo.NewSubEnv(db, c, b),
 		readerEnv: readerrepo.NewReaderEnv(db, b),
+		prodRepo:  products.NewEnv(db, c),
 		postman:   p,
+		config:    b,
 	}
 }
 
@@ -80,13 +86,13 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 
 	var parcel postoffice.Parcel
 	switch order.Usage {
-	case plan.SubsKindCreate:
+	case enum.OrderKindCreate:
 		parcel, err = letter.NewSubParcel(account, order)
 
-	case plan.SubsKindRenew:
+	case enum.OrderKindRenew:
 		parcel, err = letter.NewRenewalParcel(account, order)
 
-	case plan.SubsKindUpgrade:
+	case enum.OrderKindUpgrade:
 		up, err := router.readerEnv.LoadUpgradeSchema(order.UpgradeSchemaID.String)
 		if err != nil {
 			return err

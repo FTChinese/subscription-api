@@ -18,14 +18,14 @@ import (
 // Wechat never said you should do this.
 // But when combining their messy documentation, you must do it this way.
 type WxAuthRouter struct {
-	apps map[string]wxlogin.WxApp
+	apps map[string]wxlogin.OAuthApp
 	env  wxoauth.Env
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
 func NewWxAuth(env wxoauth.Env) WxAuthRouter {
 	return WxAuthRouter{
-		apps: getWxOAuthApps(),
+		apps: wxlogin.MustInitApps(),
 		env:  env,
 	}
 }
