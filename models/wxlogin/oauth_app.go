@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/spf13/viper"
 	"net/url"
 
 	"github.com/parnurzeal/gorequest"
@@ -20,14 +21,58 @@ const (
 	apiBaseURL = "https://api.weixin.qq.com/sns"
 )
 
-// WxApp contains essential credentials to call Wecaht API.
-type WxApp struct {
+var keys = []string{
+	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
+	"wxapp.native_app",
+	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
+	"wxapp.web_pay",
+	// 网站应用 -> FT中文网. This is used for web login
+	"wxapp.web_oauth",
+}
+
+func MustInitApps() map[string]OAuthApp {
+	apps := make(map[string]OAuthApp)
+
+	for _, k := range keys {
+		app := MustNewOAuthApp(k)
+
+		apps[app.AppID] = app
+	}
+
+	return apps
+}
+
+// OAuthApp contains essential credentials to call Wecaht API.
+type OAuthApp struct {
 	AppID     string `mapstructure:"app_id"`
 	AppSecret string `mapstructure:"secret"`
 }
 
-// Ensure makes sure AppID and AppSecret is properly configured.
-func (a WxApp) Ensure() error {
+func NewOAuthApp(key string) (OAuthApp, error) {
+	var app OAuthApp
+	err := viper.UnmarshalKey(key, &app)
+	if err != nil {
+		return OAuthApp{}, err
+	}
+
+	if err := app.Validate(); err != nil {
+		return OAuthApp{}, err
+	}
+
+	return app, nil
+}
+
+func MustNewOAuthApp(key string) OAuthApp {
+	app, err := NewOAuthApp(key)
+	if err != nil {
+		panic(err)
+	}
+
+	return app
+}
+
+// Validate makes sure AppID and AppSecret is properly configured.
+func (a OAuthApp) Validate() error {
 	if a.AppID == "" || a.AppSecret == "" {
 		return errors.New("wechat oauth app id or secret cannot be empty")
 	}
@@ -36,7 +81,7 @@ func (a WxApp) Ensure() error {
 }
 
 // Build url to get access token
-func (a WxApp) accessTokenURL(code string) string {
+func (a OAuthApp) accessTokenURL(code string) string {
 	q := url.Values{}
 	q.Set("appid", a.AppID)
 	q.Set("secret", a.AppSecret)
@@ -46,7 +91,7 @@ func (a WxApp) accessTokenURL(code string) string {
 	return fmt.Sprintf("%s/oauth2/access_token?%s", apiBaseURL, q.Encode())
 }
 
-func (a WxApp) userInfoURL(accessToken, openID string) string {
+func (a OAuthApp) userInfoURL(accessToken, openID string) string {
 	q := url.Values{}
 	q.Set("access_token", accessToken)
 	q.Set("openid", openID)
@@ -54,7 +99,7 @@ func (a WxApp) userInfoURL(accessToken, openID string) string {
 	return fmt.Sprintf("%s/userinfo?%s", apiBaseURL, q.Encode())
 }
 
-func (a WxApp) refreshTokeURL(token string) string {
+func (a OAuthApp) refreshTokeURL(token string) string {
 	q := url.Values{}
 	q.Set("appid", a.AppID)
 	q.Set("grant_type", "refresh_token")
@@ -63,7 +108,7 @@ func (a WxApp) refreshTokeURL(token string) string {
 	return fmt.Sprintf("%s/oauth2/refresh_token?%s", apiBaseURL, q.Encode())
 }
 
-func (a WxApp) accessValidityURL(accessToken, openID string) string {
+func (a OAuthApp) accessValidityURL(accessToken, openID string) string {
 	q := url.Values{}
 	q.Set("access_token", accessToken)
 	q.Set("openid", openID)
@@ -79,14 +124,14 @@ func (a WxApp) accessValidityURL(accessToken, openID string) string {
 // errcode: 40029, errmsg: "invalid code";
 // Response without error: errcode: 0, errmsg: "";
 // What will be returned if two different code under the same Wechat app applied for access token simutaneously?
-func (a WxApp) GetAccessToken(code string) (OAuthAccess, error) {
+func (a OAuthApp) GetAccessToken(code string) (OAuthAccess, error) {
 	u := a.accessTokenURL(code)
 
 	var acc OAuthAccess
 	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
 	if errs != nil {
-		logger.WithField("trace", "WxApp.GetAccessToken").Error(errs)
+		logger.WithField("trace", "OAuthApp.GetAccessToken").Error(errs)
 
 		return acc, errs[0]
 	}
@@ -97,10 +142,10 @@ func (a WxApp) GetAccessToken(code string) (OAuthAccess, error) {
 	// "openid":"ofP-k1LSVS-ObmrySM1aXKbv1Hjs",
 	// "scope":"snsapi_login",
 	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"}
-	logger.WithField("trace", "WxApp.GetAccessToken").Infof("Wechat response: %s\n", body)
+	logger.WithField("trace", "OAuthApp.GetAccessToken").Infof("Wechat response: %s\n", body)
 
 	if err := json.Unmarshal([]byte(body), &acc); err != nil {
-		logger.WithField("trace", "WxApp.GetAccessToken").Error(errs)
+		logger.WithField("trace", "OAuthApp.GetAccessToken").Error(errs)
 		return acc, err
 	}
 
@@ -114,7 +159,7 @@ func (a WxApp) GetAccessToken(code string) (OAuthAccess, error) {
 
 // GetUserInfo from Wechat by open id.
 // It seems wechat return empty fields as empty string.
-func (a WxApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
+func (a OAuthApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 	u := a.userInfoURL(accessToken, openID)
 
 	var info UserInfo
@@ -133,16 +178,16 @@ func (a WxApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 	// "privilege":[],
 	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"
 	// }
-	logger.WithField("trace", "WxApp.GetUserInfo").Infof("Wechat user info: %s", body)
+	logger.WithField("trace", "OAuthApp.GetUserInfo").Infof("Wechat user info: %s", body)
 
 	if errs != nil {
-		logger.WithField("trace", "WxApp.GetUserInfo").Error(errs)
+		logger.WithField("trace", "OAuthApp.GetUserInfo").Error(errs)
 
 		return info, errs[0]
 	}
 
 	if err := json.Unmarshal([]byte(body), &info); err != nil {
-		logger.WithField("trace", "WxApp.GetUserInfo").Error(errs)
+		logger.WithField("trace", "OAuthApp.GetUserInfo").Error(errs)
 		return info, err
 	}
 
@@ -150,22 +195,22 @@ func (a WxApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 }
 
 // RefreshAccess refresh access token.
-func (a WxApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
+func (a OAuthApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
 	u := a.refreshTokeURL(refreshToken)
 
 	var acc OAuthAccess
 	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
-	logger.WithField("trace", "WxApp.RefreshAccess").Infof("Response: %s", body)
+	logger.WithField("trace", "OAuthApp.RefreshAccess").Infof("Response: %s", body)
 
 	if errs != nil {
-		logger.WithField("trace", "WxApp.RefreshAccess").Error(errs)
+		logger.WithField("trace", "OAuthApp.RefreshAccess").Error(errs)
 
 		return acc, errs[0]
 	}
 
 	if err := json.Unmarshal([]byte(body), &acc); err != nil {
-		logger.WithField("trace", "WxApp.RefreshAccess").Error(err)
+		logger.WithField("trace", "OAuthApp.RefreshAccess").Error(err)
 
 		return acc, err
 	}
@@ -174,7 +219,7 @@ func (a WxApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
 }
 
 // IsValidAccess checks if an access token is valid.
-func (a WxApp) IsValidAccess(accessToken, openID string) bool {
+func (a OAuthApp) IsValidAccess(accessToken, openID string) bool {
 	u := a.accessValidityURL(accessToken, openID)
 
 	var resp RespStatus
@@ -182,14 +227,14 @@ func (a WxApp) IsValidAccess(accessToken, openID string) bool {
 	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
 
 	if errs != nil {
-		logger.WithField("trace", "WxApp.IsInvalidAccess").Error(errs)
+		logger.WithField("trace", "OAuthApp.IsInvalidAccess").Error(errs)
 		return false
 	}
 
-	logger.WithField("trace", "WxApp.IsValidAccess").Infof("Response: %s", body)
+	logger.WithField("trace", "OAuthApp.IsValidAccess").Infof("Response: %s", body)
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
-		logger.WithField("trace", "WxApp.IsValidAccess").Error(err)
+		logger.WithField("trace", "OAuthApp.IsValidAccess").Error(err)
 		return false
 	}
 
