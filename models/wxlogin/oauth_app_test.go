@@ -16,7 +16,7 @@ const (
 	myAvatar       = "http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTLB34sBwSiaL3GJmejqDUqJw4CZ8Qs0ztibsRu6wzMpg7jg5icxWKwxF73ssZUmXmee1MvSvaZ6iaqs1A/132"
 )
 
-var mockWxApp = WxApp{
+var mockWxApp = OAuthApp{
 	AppID:     os.Getenv("WXPAY_APPID"),
 	AppSecret: os.Getenv("WXPAY_APPSECRET"),
 }
