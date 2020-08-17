@@ -2,22 +2,65 @@ package wechat
 
 import (
 	"errors"
+	"fmt"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/objcoding/wxpay"
 )
 
-type PayApp struct {
-	AppID  string `mapstructure:"app_id"`
-	MchID  string `mapstructure:"mch_id"`
-	APIKey string `mapstructure:"api_key"`
+// PayClients put various weechat payment app
+// in one place.
+type PayClients struct {
+	clients         []Client
+	indexByPlatform map[TradeType]int
+	indexByID       map[string]int
 }
 
-func (a PayApp) Ensure() error {
-	if a.AppID == "" || a.MchID == "" || a.APIKey == "" {
-		return errors.New("wechat pay app_id, mch_id or secret cannot be empty")
+// InitPayClients reads wechat app configuration
+// from viper config.
+func InitPayClients() PayClients {
+	c := PayClients{
+		clients:         make([]Client, 0),
+		indexByPlatform: make(map[TradeType]int),
+		indexByID:       make(map[string]int),
 	}
 
-	return nil
+	for i, cfg := range appCfgs {
+		app := MustNewPayApp(cfg.Key)
+		c.clients = append(c.clients, NewClient(app))
+
+		c.indexByPlatform[cfg.Platform] = i
+		// Desktop and mobile browser use the same app.
+		if cfg.Platform == TradeTypeDesktop {
+			c.indexByPlatform[TradeTypeMobile] = i
+		}
+
+		c.indexByID[app.AppID] = i
+	}
+
+	return c
+}
+
+// GetClientByPlatform tries to find the client used for a certain trade type.
+// This is used when use is creating an order.
+func (c PayClients) GetClientByPlatform(t TradeType) (Client, error) {
+	i, ok := c.indexByPlatform[t]
+	if !ok {
+		return Client{}, fmt.Errorf("wxpay client for trade type %s not found", t)
+	}
+
+	return c.clients[i], nil
+}
+
+// GetClientByAppID searches a wechat pay app by id.
+// This is used by webhook.
+func (c PayClients) GetClientByAppID(id string) (Client, error) {
+	i, ok := c.indexByID[id]
+
+	if !ok {
+		return Client{}, fmt.Errorf("wxpay client for app id %s not found", id)
+	}
+
+	return c.clients[i], nil
 }
 
 // Client extends wxpay.Client
@@ -132,8 +175,8 @@ func (c Client) ValidateResponse(params wxpay.Params) *view.Reason {
 }
 
 func (c Client) VerifyNotification(n Notification) error {
-	if r := n.Validate(c.app); r != nil {
-		return errors.New(r.GetMessage())
+	if ve := n.Validate(c.app); ve != nil {
+		return errors.New(ve.Message)
 	}
 
 	if !c.ValidSign(n.params) {
@@ -142,4 +185,3 @@ func (c Client) VerifyNotification(n Notification) error {
 
 	return nil
 }
-
