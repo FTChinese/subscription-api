@@ -1,7 +1,7 @@
 package subrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"time"
 )
@@ -15,12 +15,13 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 		return subscription.Order{}, err
 	}
 
-	builder.SetEnvironment(env.Live())
+	//builder.SetEnvironment(env.Live())
 
 	// Step 1: Retrieve membership for this user.
 	// The membership might be empty but the value is
 	// valid.
 	log.Infof("Start retrieving membership for reader %+v", builder.GetReaderID())
+	// TODO: changed sql where clause.
 	member, err := otx.RetrieveMember(builder.GetReaderID())
 	if err != nil {
 		log.Error(err)
@@ -28,19 +29,6 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 		return subscription.Order{}, err
 	}
 	log.Infof("Membership retrieved %+v", member)
-
-	// Optional: add member id is this member exists but
-	// its id field is empty.
-	if !member.IsZero() && member.ID.IsZero() {
-
-		member.GenerateID()
-
-		go func() {
-			if err := env.AddMemberID(member); err != nil {
-				log.Error(err)
-			}
-		}()
-	}
 
 	builder.SetMembership(member)
 	subKind, err := builder.GetSubsKind()
@@ -58,7 +46,7 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 
 	// Step 3: required only if this order is used for
 	// upgrading.
-	if subKind == plan.SubsKindUpgrade {
+	if subKind == enum.OrderKindUpgrade {
 		// Step 3.1: find previous orders with balance
 		// remaining.
 		// DO not save sources directly. The balance is not
@@ -88,7 +76,7 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 		return subscription.Order{}, err
 	}
 
-	if subKind == plan.SubsKindUpgrade {
+	if subKind == enum.OrderKindUpgrade {
 		upgrade, _ := builder.UpgradeSchema()
 
 		// Step 3.4: Save the upgrade plan

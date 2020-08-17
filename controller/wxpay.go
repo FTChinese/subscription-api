@@ -1,180 +1,117 @@
 package controller
 
 import (
-	"fmt"
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/objcoding/wxpay"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/ftchinese/subscription-api/models/subscription"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 // WxPayRouter wraps wxpay and alipay sdk instances.
 type WxPayRouter struct {
-	clients map[string]wechat.Client
+	clients wechat.PayClients
 	PayRouter
 }
 
 // NewWxRouter creates a new instance or OrderRouter
 func NewWxRouter(baseRouter PayRouter) WxPayRouter {
 	r := WxPayRouter{
-		clients:   createWxpayClients(),
+		clients:   wechat.InitPayClients(),
 		PayRouter: baseRouter,
 	}
 
 	return r
 }
 
-// Select a pay client based on trade type.
-func (router WxPayRouter) selectClient(tradeType wechat.TradeType) (wechat.Client, error) {
-	var appID string
-
-	switch tradeType {
-	// Desktop and mobile browser
-	case wechat.TradeTypeDesktop,
-		wechat.TradeTypeMobile:
-		appID = wxAppWebPay
-
-	// Wechat in-house browser
-	case wechat.TradeTypeJSAPI:
-		appID = wxAppWeBrowserPay
-
-	// Native app.
-	case wechat.TradeTypeApp:
-		appID = wxAppNativeApp
-	}
-
-	if appID == "" {
-		return wechat.Client{}, errors.New("wechat app id is empty")
-	}
-
-	c, ok := router.clients[appID]
-
-	if !ok {
-		return c, fmt.Errorf("wxpay client for %s not found", appID)
-	}
-
-	return c, nil
-}
-
-// Select a pay client by app id.
-func (router WxPayRouter) findClient(appID string) (wechat.Client, error) {
-	c, ok := router.clients[appID]
-	if !ok {
-		return c, fmt.Errorf("wxpay client for %s not found", appID)
-	}
-
-	return c, nil
-}
-
 // PlaceOrder creates order for wechat pay.
 func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFunc {
-	logger := logrus.WithFields(logrus.Fields{
-		"trace": "WxPayRouter.PlaceOrder",
-		"type":  tradeType.String(),
-	})
+	logger, _ := zap.NewProduction()
+	sugar := logger.Sugar()
+	sugar.Infow("Create wxpay order",
+		"trace", "WxPayRouter.PlaceOrder",
+		"platform", tradeType.String(),
+	)
 
+	// Request input:
+	// OpenID?: string;
+	// TODO: put all those fields in request body
+	// tier: string;
+	// cycle: string;
+	// planId: string;
+	// ftcId: string;
+	// unionId: string;
 	return func(w http.ResponseWriter, req *http.Request) {
-		logger.Info("Start placing a wechat order")
+		defer logger.Sync()
+		sugar.Info("Start placing a wechat order")
 
 		clientApp := util.NewClientApp(req)
 
-		logger.Infof("Client app: %+v", clientApp)
+		sugar.Infof("Client app: %+v", clientApp)
 
-		//if err := models.AllowAndroidPurchase(clientApp); err != nil {
-		//	_ = view.Render(w, view.NewBadRequest(err.Error()))
-		//	return
-		//}
-
-		// Find the client to user for wxpay
-		//var appID string
-		// openID is required for JSAPI pay.
-		//var openID string
-		openID, _ := util.GetJSONString(req.Body, "openId")
-
-		if tradeType == wechat.TradeTypeJSAPI && openID == "" {
-			logger.Error("Requesting JSAPI without providing open id")
-			r := view.NewReason()
-			r.Field = "openId"
-			r.Code = view.CodeMissingField
-			r.SetMessage("You must provide open id to use wechat js api")
-			_ = view.Render(w, view.NewUnprocessable(r))
+		// Parse request body.
+		input := wechat.NewPayInput(tradeType)
+		if err := gorest.ParseJSON(req.Body, &input); err != nil {
+			_ = render.New(w).BadRequest(err.Error())
+			return
+		}
+		if ve := input.Validate(); ve != nil {
+			_ = render.New(w).Unprocessable(ve)
 			return
 		}
 
-		payClient, err := router.selectClient(tradeType)
-
+		edition, err := GetEdition(req)
 		if err != nil {
-			logger.Error(err)
-			_ = view.Render(w, view.NewInternalError(err.Error()))
+			_ = render.New(w).BadRequest(err.Error())
+			return
+		}
+
+		// Find the client to use for wxpay
+		payClient, err := router.clients.GetClientByPlatform(tradeType)
+		if err != nil {
+			sugar.Error(err.Error())
+			_ = render.New(w).InternalServerError(err.Error())
 			return
 		}
 
 		// Get ftc user id or wechat union id.
 		userID, _ := GetUserID(req.Header)
 
-		// Try to find a plan based on the tier and cycle.
-		plan, err := router.findPlan(req)
-		// If pricing plan is not found.
+		expPlan, err := router.prodRepo.PlanByEdition(edition)
 		if err != nil {
-			logger.Error(err)
-			_ = view.Render(w, view.NewBadRequest(err.Error()))
+			_ = render.New(w).DBError(err)
 			return
 		}
 
 		builder := subscription.NewOrderBuilder(userID).
-			SetPlan(plan).
+			SetPlan(expPlan).
 			SetPayMethod(enum.PayMethodWx).
 			SetWxAppID(payClient.GetApp().AppID).
 			SetClient(clientApp).
 			SetWxParams(wechat.UnifiedOrder{
 				TradeType: tradeType,
-				OpenID:    openID,
-			})
+				OpenID:    input.OpenID.String,
+			}).
+			SetEnvironment(router.config.Live())
 
 		order, err := router.subEnv.CreateOrder(builder)
-		// Save this subscription order.
-		//order, err := router.createOrder(
-		//	userID,
-		//	plan,
-		//	enum.PayMethodWx,
-		//	clientApp,
-		//	null.StringFrom(payClient.GetApp().AppID),
-		//)
 
 		if err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 			router.handleOrderErr(w, err)
 			return
 		}
 
-		logger.Infof("Created order: %+v", order)
+		sugar.Infof("Created order: %+v", order)
 
 		go func() {
 			_ = router.subEnv.SaveOrderClient(builder.ClientApp())
 		}()
-
-		// Wxpay specific handling.
-		// Prepare the data used to obtain prepay order from wechat.
-		//unifiedOrder := wechat.UnifiedOrder{
-		//	Body:        plan.Title,
-		//	OrderID:     order.ID,
-		//	Price:       order.AmountInCent(),
-		//	IP:          clientApp.UserIP.String,
-		//	CallbackURL: router.wxCallbackURL(),
-		//	TradeType:   tradeType,
-		//	ProductID:   plan.NamedKey(),
-		//	OpenID:      openID,
-		//}
-		// Build Wechat pay parameters.
-		// openID will be added conditionally.
-		//param := unifiedOrder.ToParam()
-
-		//logger.WithField("param", param).Info("Create parameter for wechat")
 
 		// Send order to wx
 		// UnifiedOrder checks if `return_code` is SUCCESS/FAIL,
@@ -183,8 +120,8 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		resp, err := payClient.UnifiedOrder(builder.WxpayParams())
 
 		if err != nil {
-			logger.Error(err)
-			_ = view.Render(w, view.NewBadRequest(err.Error()))
+			sugar.Error(err)
+			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
 
@@ -195,41 +132,41 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		}()
 
 		if r := uor.Validate(payClient.GetApp()); r != nil {
-			logger.Info("Invalid unified order response")
-			_ = view.Render(w, view.NewUnprocessable(r))
+			sugar.Info("Invalid unified order response")
+			_ = render.New(w).Unprocessable(r)
 			return
 		}
 
 		switch tradeType {
 		// Desktop returns a url that can be turned to QR code
 		case wechat.TradeTypeDesktop:
-			_ = view.Render(w, view.NewResponse().SetBody(subscription.WxpayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subscription.WxpayBrowserOrder{
 				Order:  order,
 				QRCode: uor.QRCode.String,
-			}))
+			})
 
 		// Mobile returns a url which is redirect in browser
 		case wechat.TradeTypeMobile:
-			_ = view.Render(w, view.NewResponse().SetBody(subscription.WxpayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subscription.WxpayBrowserOrder{
 				Order:   order,
 				MWebURL: uor.MWebURL.String,
-			}))
+			})
 
 		// Create the json data used by js api
 		case wechat.TradeTypeJSAPI:
-			_ = view.Render(w, view.NewResponse().SetBody(subscription.WxpayEmbedBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subscription.WxpayEmbedBrowserOrder{
 				Order:  order,
 				Params: payClient.InWxBrowserParams(uor),
-			}))
+			})
 
 		// Create the json data used by native app.
 		case wechat.TradeTypeApp:
 			params := payClient.AppParams(uor)
-			_ = view.Render(w, view.NewResponse().SetBody(subscription.WxpayNativeAppOrder{
+			_ = render.New(w).JSON(http.StatusOK, subscription.WxpayNativeAppOrder{
 				Order:          order,
 				AppOrderParams: params,
 				Params:         payClient.AppParams(uor),
-			}))
+			})
 		}
 	}
 }
@@ -280,7 +217,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Try to find out which app is in charge of the response.
-	payClient, err := router.findClient(noti.AppID.String)
+	payClient, err := router.clients.GetClientByAppID(noti.AppID.String)
 
 	if err != nil {
 		logger.WithFields(logrus.Fields{
@@ -359,31 +296,27 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 // OrderQuery implements 查询订单
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
-// Only transaction_id or out_trade_no is required.
+// {orderId}?app_id=<string>
 func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	logger := logrus.WithFields(logrus.Fields{
 		"trace": "WxPayRouter.OrderQuery()",
 	})
 
+	// Get ftc order id from URL
 	orderID, err := GetURLParam(req, "orderId").ToString()
 
 	if err != nil {
 		logger.Error(err)
-		_ = view.Render(w, view.NewBadRequest(err.Error()))
+		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	// Find out which app is used to create this order.
-	appID := req.Header.Get(appIDKey)
-	// For backward compatibility with Android <= 2.0.4
-	if appID == "" {
-		appID = wxAppNativeApp
-	}
+	appID := getWxAppID(req)
 
-	payClient, err := router.findClient(appID)
+	payClient, err := router.clients.GetClientByAppID(appID)
 	if err != nil {
 		logger.Error(err)
-		_ = view.Render(w, view.NewBadRequest(err.Error()))
+		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
@@ -400,9 +333,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	// If there are any errors when querying order.
 	if err != nil {
 		logger.Error(err)
-
-		_ = view.Render(w, view.NewInternalError(err.Error()))
-
+		_ = render.New(w).InternalServerError(err.Error())
 		return
 	}
 
@@ -422,13 +353,13 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 		logger.Info("Response invalid")
 
 		if r.Field == "result" && r.Code == "ORDERNOTEXIST" {
-			_ = view.Render(w, view.NewNotFound())
+			_ = render.New(w).NotFound()
 			return
 		}
 
-		_ = view.Render(w, view.NewUnprocessable(r))
+		_ = render.New(w).Unprocessable(r)
 		return
 	}
 
-	_ = view.Render(w, view.NewResponse().SetBody(resp.ToQueryResult()))
+	_ = render.New(w).JSON(http.StatusOK, resp.ToQueryResult())
 }

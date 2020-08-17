@@ -2,6 +2,7 @@ package wechat
 
 import (
 	"errors"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
@@ -105,63 +106,63 @@ func (r Resp) IsStatusValid() error {
 // But its check is incomplete since `return_code == FAIL`
 // is regarded as ok.
 // You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
-func (r Resp) Validate(app PayApp) *view.Reason {
+func (r Resp) Validate(app PayApp) *render.ValidationError {
 	if r.StatusCode == wxpay.Fail {
-		reason := &view.Reason{
-			Field: "status",
-			Code:  "fail",
+		reason := &render.ValidationError{
+			Message: r.StatusMessage,
+			Field:   "status",
+			Code:    "fail",
 		}
-		reason.SetMessage(r.StatusMessage)
 
 		return reason
 	}
 
 	if r.ResultCode.String == wxpay.Fail {
-		reason := &view.Reason{
-			Field: "result",
-			Code:  r.ErrorCode.String,
+		reason := &render.ValidationError{
+			Message: r.ErrorMessage.String,
+			Field:   "result",
+			Code:    render.InvalidCode(r.ErrorCode.String),
 		}
-		reason.SetMessage(r.ErrorMessage.String)
 
 		return reason
 	}
 
 	if r.AppID.IsZero() {
-		reason := &view.Reason{
-			Field: "app_id",
-			Code:  view.CodeInvalid,
+		reason := &render.ValidationError{
+			Message: "Missing app id",
+			Field:   "app_id",
+			Code:    view.CodeInvalid,
 		}
-		reason.SetMessage("Missing app id")
 
 		return reason
 	}
 
 	if r.MID.IsZero() {
-		reason := &view.Reason{
-			Field: "mch_id",
-			Code:  view.CodeInvalid,
+		reason := &render.ValidationError{
+			Message: "Missing merchant id",
+			Field:   "mch_id",
+			Code:    view.CodeInvalid,
 		}
-		reason.SetMessage("Missing merchant id")
 
 		return reason
 	}
 
 	if r.AppID.String != app.AppID {
-		reason := &view.Reason{
-			Field: "app_id",
-			Code:  view.CodeInvalid,
+		reason := &render.ValidationError{
+			Message: "Missing or wrong app id",
+			Field:   "app_id",
+			Code:    view.CodeInvalid,
 		}
-		reason.SetMessage("Missing or wrong app id")
 
 		return reason
 	}
 
 	if r.MID.String != app.MchID {
-		reason := &view.Reason{
-			Field: "mch_id",
-			Code:  view.CodeInvalid,
+		reason := &render.ValidationError{
+			Message: "Missing or wrong merchant id",
+			Field:   "mch_id",
+			Code:    view.CodeInvalid,
 		}
-		reason.SetMessage("Missing or wrong merchant id")
 
 		return reason
 	}

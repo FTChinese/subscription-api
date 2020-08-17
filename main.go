@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
@@ -82,7 +83,8 @@ func main() {
 
 	myDB := db.MustNewDB(cfg.MustGetDBConn("mysql.master"))
 
-	promoCache := cache.New(cache.DefaultExpiration, 0)
+	// Set the cache default expiration time to 2 hours.
+	promoCache := cache.New(2*time.Hour, 0)
 
 	post := postoffice.New(config.MustGetHanqiConn())
 

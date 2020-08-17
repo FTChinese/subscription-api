@@ -5,6 +5,7 @@ require (
 	github.com/Masterminds/squirrel v1.1.0
 	github.com/Pallinder/go-randomdata v1.1.0
 	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect
+	github.com/asaskevich/govalidator v0.0.0-20200817114649-df4adffc9d8c // indirect
 	github.com/brianvoe/gofakeit/v4 v4.2.0
 	github.com/corpix/uarand v0.0.0 // indirect
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a // indirect
@@ -36,6 +37,7 @@ require (
 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
 	github.com/ugorji/go v1.1.4 // indirect
 	github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77 // indirect
+	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
 	golang.org/x/sys v0.0.0-20200814200057-3d37ad5750ed // indirect

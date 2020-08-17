@@ -5,6 +5,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/redeem"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/product"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -359,38 +360,43 @@ func (m Membership) PermitRenewal() bool {
 	return m.inRenewalPeriod()
 }
 
-// SubsKind determines what kind of order a user is creating.
-func (m Membership) SubsKind(p plan.Plan) (plan.SubsKind, error) {
+// SubsKind determines what kind of order a user is creating based on existing membership.
+// SubsKind   |   Membership
+// ---------------------------
+// Create     |   Zero / Status is not active / Expired
+// Renewal    |   Tier === Plan.Tier
+// Upgrade    |   Tier is Standard while Plan.Tier is Premium
+func (m Membership) SubsKind(p product.ExpandedPlan) (enum.OrderKind, error) {
 	if m.IsZero() {
-		return plan.SubsKindCreate, nil
+		return enum.OrderKindCreate, nil
 	}
 
-	if p.IsZero() {
-		return plan.SubsKindNull, ErrPlanRequired
-	}
+	//if p.IsZero() {
+	//	return plan.SubsKindNull, ErrPlanRequired
+	//}
 
 	if m.Status != SubStatusNull && m.Status.ShouldCreate() {
-		return plan.SubsKindCreate, nil
+		return enum.OrderKindCreate, nil
 	}
 
 	if m.IsExpired() {
-		return plan.SubsKindCreate, nil
+		return enum.OrderKindCreate, nil
 	}
 
 	// Renewal.
 	if m.Tier == p.Tier {
 		if m.inRenewalPeriod() {
-			return plan.SubsKindRenew, nil
+			return enum.OrderKindRenew, nil
 		} else {
-			return plan.SubsKindNull, ErrRenewalForbidden
+			return enum.OrderKindNull, ErrRenewalForbidden
 		}
 	}
 
 	if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
-		return plan.SubsKindUpgrade, nil
+		return enum.OrderKindUpgrade, nil
 	}
 
-	return plan.SubsKindNull, ErrSubsUsageUnclear
+	return enum.OrderKindNull, ErrSubsUsageUnclear
 }
 
 // FromGiftCard creates a new instance based on a gift card.

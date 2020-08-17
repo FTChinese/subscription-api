@@ -49,7 +49,7 @@ type Order struct {
 	Price float64 `json:"price" db:"plan_price"` // Price of a plan, prior to discount.
 	Charge
 	Duration
-	Usage plan.SubsKind `json:"usageType" db:"usage_type"` // The usage of this order: creat new, renew, or upgrade?
+	Usage enum.OrderKind `json:"usageType" db:"usage_type"` // The usage of this order: creat new, renew, or upgrade?
 	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
 	PaymentMethod   enum.PayMethod `json:"payMethod" db:"payment_method"`
 	WxAppID         null.String    `json:"-" db:"wx_app_id"` // Wechat specific

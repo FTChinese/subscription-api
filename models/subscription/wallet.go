@@ -3,8 +3,8 @@ package subscription
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
 	"gitlab.com/ftchinese/subscription-api/models/util"
+	"gitlab.com/ftchinese/subscription-api/pkg/product"
 	"math"
 	"time"
 )
@@ -49,7 +49,7 @@ func NewWallet(orders []ProratedOrder, asOf time.Time) Wallet {
 	return w
 }
 
-func (w Wallet) ConvertBalance(p plan.Plan) Duration {
+func (w Wallet) ConvertBalance(p product.ExpandedPlan) Duration {
 	if w.Balance == 0 || w.Balance <= p.Price {
 		return Duration{
 			CycleCount: 1,
