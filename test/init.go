@@ -38,7 +38,7 @@ var (
 	DB          *sqlx.DB
 	Postman     postoffice.PostOffice
 	Cache       *cache.Cache
-	WxOAuthApp  wxlogin.WxApp
+	WxOAuthApp  wxlogin.OAuthApp
 	WxPayApp    wechat.PayApp
 	WxPayClient wechat.Client
 	StripeKey   string

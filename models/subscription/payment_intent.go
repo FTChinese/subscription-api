@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"gitlab.com/ftchinese/subscription-api/models/plan"
 )
 
@@ -10,7 +11,7 @@ type PaymentIntent struct {
 	Charge   // How much user should pay.
 	Duration // How long the membership this payment purchased.
 
-	SubsKind plan.SubsKind `json:"subscriptionKind"`
-	Wallet   Wallet        `json:"wallet"`
-	Plan     plan.Plan     `json:"plan"` // The plan to subscribe.
+	SubsKind enum.OrderKind `json:"subscriptionKind"`
+	Wallet   Wallet         `json:"wallet"`
+	Plan     plan.Plan      `json:"plan"` // The plan to subscribe.
 }

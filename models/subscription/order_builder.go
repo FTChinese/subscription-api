@@ -13,6 +13,7 @@ import (
 	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"gitlab.com/ftchinese/subscription-api/models/util"
 	"gitlab.com/ftchinese/subscription-api/models/wechat"
+	"gitlab.com/ftchinese/subscription-api/pkg/product"
 	"time"
 )
 
@@ -29,8 +30,8 @@ import (
 type OrderBuilder struct {
 	// Required fields.
 	memberID reader.MemberID
-	plan     plan.Plan
-	live     bool // Use live webhool or sandbox.
+	plan     product.ExpandedPlan
+	live     bool // Use live webhook or sandbox.
 
 	membership Membership // User's current membership. Needs querying DB.
 	wallet     Wallet     // Only required if kind == SubsKindUpgrade.
@@ -42,7 +43,7 @@ type OrderBuilder struct {
 	wxUnifiedParams wechat.UnifiedOrder // Only for wechat pay.
 
 	// Calculated for previous fields set.
-	kind            plan.SubsKind
+	kind            enum.OrderKind
 	charge          Charge
 	duration        Duration
 	orderID         string
@@ -50,7 +51,7 @@ type OrderBuilder struct {
 
 	isFreeUpgrade bool
 
-	isBuilt bool // A flag to ensure all fields are property initialized.
+	isBuilt bool // A flag to ensure all fields are properly initialized.
 }
 
 func NewOrderBuilder(id reader.MemberID) *OrderBuilder {
@@ -78,7 +79,7 @@ func (b *OrderBuilder) SetEnvironment(live bool) *OrderBuilder {
 	return b
 }
 
-func (b *OrderBuilder) SetPlan(p plan.Plan) *OrderBuilder {
+func (b *OrderBuilder) SetPlan(p product.ExpandedPlan) *OrderBuilder {
 	b.plan = p
 	return b
 }
@@ -147,7 +148,7 @@ func (b *OrderBuilder) SetMembership(m Membership) *OrderBuilder {
 // chosen plan.
 // Error: ErrRenewalForbidden, ErrSubsUsageUnclear, ErrPlanRequired.
 func (b *OrderBuilder) buildSubsKind() (err error) {
-	if b.kind != plan.SubsKindNull {
+	if b.kind != enum.OrderKindNull {
 		return
 	}
 
@@ -163,9 +164,9 @@ func (b *OrderBuilder) buildSubsKind() (err error) {
 // GetSubsKind returns the SubsKind, or error if it is
 // cannot be deduced.
 // See errors returned from buildSubsKind.
-func (b *OrderBuilder) GetSubsKind() (plan.SubsKind, error) {
+func (b *OrderBuilder) GetSubsKind() (enum.OrderKind, error) {
 	if err := b.buildSubsKind(); err != nil {
-		return plan.SubsKindNull, err
+		return enum.OrderKindNull, err
 	}
 
 	return b.kind, nil
@@ -196,7 +197,7 @@ func (b *OrderBuilder) Build() error {
 	}
 
 	// Wallet should exist only for upgrading order.
-	if b.kind != plan.SubsKindUpgrade {
+	if b.kind != enum.OrderKindUpgrade {
 		b.wallet = Wallet{}
 	}
 
@@ -204,8 +205,8 @@ func (b *OrderBuilder) Build() error {
 	// which default to 1 cycle plus 1 day.
 	b.duration = b.wallet.ConvertBalance(b.plan)
 	b.charge = Charge{
-		Amount:   b.plan.Price - b.wallet.Balance,
-		Currency: b.plan.Currency,
+		Amount: b.plan.Amount() - b.wallet.Balance,
+		//Currency: b.plan.Currency,
 	}
 
 	// If balance is larger than a plan's price,
@@ -214,7 +215,7 @@ func (b *OrderBuilder) Build() error {
 		b.charge.Amount = 0
 	}
 
-	if b.kind == plan.SubsKindUpgrade && b.upgradeSchemaID.IsZero() {
+	if b.kind == enum.OrderKindUpgrade && b.upgradeSchemaID.IsZero() {
 		b.upgradeSchemaID = null.StringFrom(GenerateUpgradeID())
 	}
 
@@ -224,7 +225,7 @@ func (b *OrderBuilder) Build() error {
 
 	// Only subscription kind is upgrade and wallet balance
 	// is greater or equal to plan's charged amount.
-	b.isFreeUpgrade = b.kind == plan.SubsKindUpgrade && b.wallet.Balance >= b.plan.Amount
+	b.isFreeUpgrade = b.kind == enum.OrderKindUpgrade && b.wallet.Balance >= b.plan.Price
 
 	b.isBuilt = true
 	return nil
@@ -258,9 +259,12 @@ func (b *OrderBuilder) Order() (Order, error) {
 	}
 
 	return Order{
-		ID:               b.orderID,
-		MemberID:         b.memberID,
-		BasePlan:         b.plan.BasePlan,
+		ID:       b.orderID,
+		MemberID: b.memberID,
+		BasePlan: plan.BasePlan{
+			Tier:  b.plan.Tier,
+			Cycle: b.plan.Cycle,
+		},
 		Price:            b.plan.Price,
 		Charge:           b.charge,
 		Duration:         b.duration,
@@ -335,7 +339,16 @@ func (b *OrderBuilder) PaymentIntent() (PaymentIntent, error) {
 		Duration: b.duration,
 		SubsKind: b.kind,
 		Wallet:   b.wallet,
-		Plan:     b.plan,
+		Plan: plan.Plan{
+			BasePlan: plan.BasePlan{
+				Tier:  b.plan.Tier,
+				Cycle: b.plan.Cycle,
+			},
+			Price:    b.plan.Price,
+			Amount:   b.plan.Amount(),
+			Currency: "cny",
+			Title:    "",
+		},
 	}, nil
 }
 
@@ -345,14 +358,14 @@ func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
 		return UpgradeSchema{}, err
 	}
 
-	if b.kind != plan.SubsKindUpgrade {
+	if b.kind != enum.OrderKindUpgrade {
 		return UpgradeSchema{}, errors.New("not an upgrade subscription")
 	}
 
 	return UpgradeSchema{
 		ID:         b.upgradeSchemaID.String,
 		BaseWallet: b.wallet.BaseWallet,
-		Plan:       b.plan,
+		Plan:       b.plan.Plan,
 		Sources:    b.proratedOrdersSchema(),
 	}, nil
 }
@@ -398,7 +411,7 @@ func (b *OrderBuilder) AliAppPayParams() alipay.AliPayTradeAppPay {
 	return alipay.AliPayTradeAppPay{
 		TradePay: alipay.TradePay{
 			NotifyURL:   webHook,
-			Subject:     b.plan.GetTitle(b.kind),
+			Subject:     b.plan.PaymentTitle(b.kind),
 			OutTradeNo:  b.orderID,
 			TotalAmount: b.charge.AliPrice(b.live),
 			ProductCode: ali.ProductCodeApp.String(),
@@ -412,7 +425,7 @@ func (b *OrderBuilder) AliDesktopPayParams(retURL string) alipay.AliPayTradePage
 		TradePay: alipay.TradePay{
 			NotifyURL:   b.getWebHookURL(),
 			ReturnURL:   retURL,
-			Subject:     b.plan.GetTitle(b.kind),
+			Subject:     b.plan.PaymentTitle(b.kind),
 			OutTradeNo:  b.orderID,
 			TotalAmount: b.charge.AliPrice(b.live),
 			ProductCode: ali.ProductCodeWeb.String(),
@@ -426,7 +439,7 @@ func (b *OrderBuilder) AliWapPayParams(retURL string) alipay.AliPayTradeWapPay {
 		TradePay: alipay.TradePay{
 			NotifyURL:   b.getWebHookURL(),
 			ReturnURL:   retURL,
-			Subject:     b.plan.GetTitle(b.kind),
+			Subject:     b.plan.PaymentTitle(b.kind),
 			OutTradeNo:  b.orderID,
 			TotalAmount: b.charge.AliPrice(b.live),
 			ProductCode: ali.ProductCodeWeb.String(),
@@ -440,7 +453,7 @@ func (b *OrderBuilder) WxpayParams() wxpay.Params {
 	logrus.WithField("trace", "OrderBuilder.AliAppPayParams").Infof("Using web hook url: %s", webHook)
 
 	p := make(wxpay.Params)
-	p.SetString("body", b.plan.GetTitle(b.kind))
+	p.SetString("body", b.plan.PaymentTitle(b.kind))
 	p.SetString("out_trade_no", b.orderID)
 	p.SetInt64("total_fee", b.charge.AmountInCent(b.live))
 	p.SetString("spbill_create_ip", b.client.UserIP.String)

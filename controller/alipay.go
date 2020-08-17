@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
@@ -26,7 +27,7 @@ type AliPayRouter struct {
 // NewAliRouter create a new instance of AliPayRouter
 func NewAliRouter(baseRouter PayRouter) AliPayRouter {
 
-	app := getAliPayApp()
+	app := ali.MustInitApp()
 
 	client := alipay.New(app.ID, app.PublicKey, app.PrivateKey, true)
 
@@ -60,6 +61,12 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		clientApp := util.NewClientApp(req)
 
+		edition, err := GetEdition(req)
+		if err != nil {
+			_ = render.New(w).BadRequest(err.Error())
+			return
+		}
+
 		logger.Infof("Client app: %+v", clientApp)
 
 		//if err := models.AllowAndroidPurchase(clientApp); err != nil {
@@ -70,11 +77,9 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		userID, _ := GetUserID(req.Header)
 
-		plan, err := router.findPlan(req)
-
+		plan, err := router.prodRepo.PlanByEdition(edition)
 		if err != nil {
 			logger.Error(err)
-
 			_ = view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
