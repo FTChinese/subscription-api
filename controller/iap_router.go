@@ -6,14 +6,15 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/letter"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/repository/iaprepo"
+	"github.com/FTChinese/subscription-api/repository/readerrepo"
 	"github.com/jmoiron/sqlx"
-	"gitlab.com/ftchinese/subscription-api/models/apple"
-	"gitlab.com/ftchinese/subscription-api/models/letter"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/repository/iaprepo"
-	"gitlab.com/ftchinese/subscription-api/repository/readerrepo"
 	"io/ioutil"
 	"net/http"
 )
@@ -301,7 +302,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	_ = view.Render(w, view.NewResponse())
 }
 
-func (router IAPRouter) sendLinkedLetter(m subscription.Membership) error {
+func (router IAPRouter) sendLinkedLetter(m subs.Membership) error {
 	if m.FtcID.IsZero() {
 		logger.
 			WithField("trace", "IAPRouter.sendLinkedLetter").

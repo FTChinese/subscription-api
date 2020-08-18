@@ -2,8 +2,8 @@ package paywall
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/models/plan"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
 )
 
 // The default banner message used on web version of pay wall.

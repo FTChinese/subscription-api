@@ -2,10 +2,12 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/go-rest/view"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/models/subscription"
+	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
+	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/product"
 	"net/http"
 )
 
@@ -22,7 +24,12 @@ func NewUpgradeRouter(baseRouter PayRouter) UpgradeRouter {
 func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
 
-	pi, err := router.subEnv.PreviewUpgrade(userID)
+	plan, err := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
+	if err != nil {
+		_ = render.New(w).DBError(err)
+	}
+
+	pi, err := router.subEnv.PreviewUpgrade(userID, plan)
 
 	if err != nil {
 		switch err {
@@ -45,9 +52,9 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		Tier:  enum.TierPremium,
 		Cycle: enum.CycleYear,
 	})
-	clientApp := util.NewClientApp(req)
+	clientApp := client.NewClientApp(req)
 
-	builder := subscription.NewOrderBuilder(userID).
+	builder := builder2.NewOrderBuilder(userID).
 		SetPlan(p).
 		SetClient(clientApp).
 		SetEnvironment(router.subEnv.Live())

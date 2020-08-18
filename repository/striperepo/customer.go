@@ -1,10 +1,10 @@
 package striperepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 )
 
 // createCustomer sends request to customer creation endpoint.

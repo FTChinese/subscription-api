@@ -1,7 +1,7 @@
 package paywall
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"github.com/FTChinese/subscription-api/models/plan"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"

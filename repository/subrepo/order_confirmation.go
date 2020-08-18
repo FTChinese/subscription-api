@@ -2,20 +2,23 @@ package subrepo
 
 import (
 	"database/sql"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/models/plan"
+	"github.com/FTChinese/subscription-api/models/subscription"
+	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
 // ConfirmOrder updates the order received from webhook,
 // create or update membership, and optionally flag prorated orders as consumed.
-func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.Order, *subscription.ConfirmError) {
+func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subs.Order, *subs.ConfirmError) {
 	log := logger.WithField("trace", "SubEnv.ConfirmOrder")
 
 	tx, err := env.BeginOrderTx()
 
 	if err != nil {
 		log.Error(err)
-		return subscription.Order{}, &subscription.ConfirmError{
+		return subs.Order{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
 		}
@@ -30,19 +33,18 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
-		return subscription.Order{}, &subscription.ConfirmError{
+		return subs.Order{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: err != sql.ErrNoRows,
 		}
 	}
 
-	builder := subscription.
-		NewConfirmationBuilder(result, env.Live()).
+	builder := builder2.NewConfirmationBuilder(result, env.Live()).
 		SetOrder(order)
 
 	if err := builder.ValidateOrder(); err != nil {
 		_ = tx.Rollback()
-		return subscription.Order{}, err
+		return subs.Order{}, err
 	}
 
 	// STEP 2: query membership
@@ -50,7 +52,7 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 	member, err := tx.RetrieveMember(order.MemberID)
 	if err != nil {
 		_ = tx.Rollback()
-		return subscription.Order{}, &subscription.ConfirmError{
+		return subs.Order{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
 		}
@@ -64,7 +66,7 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 	// for upgrading, decline retry.
 	if err := builder.ValidateDuplicateUpgrading(); err != nil {
 		_ = tx.Rollback()
-		return subscription.Order{}, err
+		return subs.Order{}, err
 	}
 
 	// STEP 4: Confirm this order
@@ -73,7 +75,7 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 	confirmed, err := builder.Build()
 	if err != nil {
 		_ = tx.Rollback()
-		return subscription.Order{}, &subscription.ConfirmError{
+		return subs.Order{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
 		}
@@ -81,21 +83,21 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 
 	// STEP 5: Update confirmed order
 	// For any errors, allow retry.
-	if err := tx.UpdateConfirmedOrder(confirmed.Order); err != nil {
+	if err := tx.ConfirmOrder(confirmed.Order); err != nil {
 		_ = tx.Rollback()
-		return subscription.Order{}, &subscription.ConfirmError{
+		return subs.Order{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: false,
 		}
 	}
 
 	// Flag upgrade balance source as consumed.
-	if confirmed.Order.Usage == plan.SubsKindUpgrade {
+	if confirmed.Order.Usage == enum.OrderKindUpgrade {
 		err := tx.ProratedOrdersUsed(confirmed.Order.UpgradeSchemaID.String)
 
 		if err != nil {
 			_ = tx.Rollback()
-			return subscription.Order{}, &subscription.ConfirmError{
+			return subs.Order{}, &subs.ConfirmError{
 				Err:   err,
 				Retry: true,
 			}
@@ -114,7 +116,7 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 	if member.IsZero() {
 		if err := tx.CreateMember(confirmed.Membership); err != nil {
 			_ = tx.Rollback()
-			return subscription.Order{}, &subscription.ConfirmError{
+			return subs.Order{}, &subs.ConfirmError{
 				Err:   err,
 				Retry: true,
 			}
@@ -123,7 +125,7 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 		// Update Membership.
 		if err := tx.UpdateMember(confirmed.Membership); err != nil {
 			_ = tx.Rollback()
-			return subscription.Order{}, &subscription.ConfirmError{
+			return subs.Order{}, &subs.ConfirmError{
 				Err:   err,
 				Retry: true,
 			}
@@ -131,7 +133,7 @@ func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subscription.
 	}
 
 	if err := tx.Commit(); err != nil {
-		return subscription.Order{}, &subscription.ConfirmError{
+		return subs.Order{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
 		}

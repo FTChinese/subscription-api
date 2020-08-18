@@ -1,10 +1,10 @@
 package giftrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/repository/txrepo"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/repository/txrepo"
 )
 
 var logger = logrus.WithField("package", "gift_repo")
@@ -21,12 +21,12 @@ func NewGiftEnv(db *sqlx.DB, config config.BuildConfig) GiftEnv {
 	}
 }
 
-func (env GiftEnv) beginOrderTx() (txrepo.OrderTx, error) {
+func (env GiftEnv) beginOrderTx() (txrepo.MemberTx, error) {
 	tx, err := env.db.Beginx()
 
 	if err != nil {
-		return txrepo.OrderTx{}, err
+		return txrepo.MemberTx{}, err
 	}
 
-	return txrepo.NewOrderTx(tx, env.UseSandboxDB()), nil
+	return txrepo.NewMemberTx(tx, env.BuildConfig), nil
 }

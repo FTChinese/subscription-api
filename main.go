@@ -3,13 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/FTChinese/subscription-api/access"
+	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"github.com/FTChinese/subscription-api/repository/wxoauth"
 	"github.com/stripe/stripe-go"
-	"gitlab.com/ftchinese/subscription-api/access"
-	"gitlab.com/ftchinese/subscription-api/models/ali"
-	"gitlab.com/ftchinese/subscription-api/models/wechat"
-	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/pkg/db"
-	"gitlab.com/ftchinese/subscription-api/repository/wxoauth"
 	"log"
 	"net/http"
 	"os"
@@ -17,12 +17,12 @@ import (
 
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/subscription-api/controller"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gitlab.com/ftchinese/subscription-api/controller"
 )
 
 var (
@@ -196,11 +196,6 @@ func main() {
 		r.Use(guard.CheckToken)
 		r.Use(controller.UserOrUnionID)
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
-		// Deprecate
-		//r.Put("/", upgradeRouter.DirectUpgrade)
-		// Deprecate
-		//r.Get("/preview", upgradeRouter.PreviewUpgrade)
-
 		r.Put("/free", upgradeRouter.FreeUpgrade)
 		r.Get("/balance", upgradeRouter.UpgradeBalance)
 	})

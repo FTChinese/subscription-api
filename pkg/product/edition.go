@@ -10,6 +10,13 @@ type Edition struct {
 	Cycle enum.Cycle `json:"cycle" db:"cycle"`
 }
 
+func NewPremiumEdition() Edition {
+	return Edition{
+		Tier:  enum.TierPremium,
+		Cycle: enum.CycleYear,
+	}
+}
+
 func (e Edition) PaymentTitle(k enum.OrderKind) string {
 	return fmt.Sprintf("%sFT中文网%s/%s", k.StringSC(), e.Tier.StringCN(), e.Cycle.StringCN())
 }

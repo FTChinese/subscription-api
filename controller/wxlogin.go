@@ -1,15 +1,16 @@
 package controller
 
 import (
+	client2 "github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/repository/wxoauth"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/repository/wxoauth"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/FTChinese/go-rest/view"
-	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
+	"github.com/FTChinese/subscription-api/models/util"
+	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 )
 
 // WxAuthRouter handles wechat login.
@@ -112,7 +113,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client := util.NewClientApp(req)
+	client := client2.NewClientApp(req)
 
 	// Step 2:
 	// Use access token to get userinfo from wechat

@@ -2,9 +2,9 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/models/apple"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/test"
+	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/test"
 	"testing"
 	"time"
 )

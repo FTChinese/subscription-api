@@ -6,23 +6,23 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
+	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/redeem"
+	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/brianvoe/gofakeit/v4"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/models/redeem"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"log"
 	"os"
 	"strings"
 	"time"
 )
 
-func RandomClientApp() util.ClientApp {
-	return util.ClientApp{
+func RandomClientApp() client.Client {
+	return client.Client{
 		ClientType: enum.Platform(randomdata.Number(1, 4)),
 		Version:    null.StringFrom(GenVersion()),
 		UserIP:     null.StringFrom(randomdata.IpV4Address()),
@@ -36,7 +36,7 @@ func GenVersion() string {
 }
 
 func MustGenOrderID() string {
-	id, err := subscription.GenerateOrderID()
+	id, err := subs.GenerateOrderID()
 	if err != nil {
 		panic(err)
 	}

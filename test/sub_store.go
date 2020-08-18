@@ -3,9 +3,11 @@ package test
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/models/plan"
+	"github.com/FTChinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/pkg/builder"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"time"
 )
 
@@ -24,17 +26,17 @@ import (
 // so use Profile to generate mock data.
 type SubStore struct {
 	Profile *Profile
-	Orders  map[string]subscription.Order // A user could have multiple orders.
-	Member  subscription.Membership       // But only one membership.
+	Orders  map[string]subs.Order // A user could have multiple orders.
+	Member  subs.Membership       // But only one membership.
 
-	Snapshot subscription.MemberSnapshot // This will be populated and updated for any order other than `create`.
+	Snapshot subs.MemberSnapshot // This will be populated and updated for any order other than `create`.
 
 	balanceAnchor time.Time
 	accountKind   reader.AccountKind
 	payMethod     enum.PayMethod
 	plan          plan.Plan
 	// Saves upgrade schema.
-	upgrade map[string]subscription.UpgradeSchema
+	upgrade map[string]subs.UpgradeSchema
 }
 
 // NewSubStore represents all the data stored for a single user.
@@ -42,15 +44,15 @@ func NewSubStore(p *Profile) *SubStore {
 
 	return &SubStore{
 		Profile: p,
-		Orders:  make(map[string]subscription.Order), // Initially user has no orders.
-		Member:  subscription.Membership{},
+		Orders:  make(map[string]subs.Order), // Initially user has no orders.
+		Member:  subs.Membership{},
 
 		// Control behavior of orders and membership.
 		accountKind:   reader.AccountKindFtc,
 		balanceAnchor: time.Now(),
 		payMethod:     RandomPayMethod(),
 		plan:          YearlyStandard,
-		upgrade:       make(map[string]subscription.UpgradeSchema),
+		upgrade:       make(map[string]subs.UpgradeSchema),
 	}
 }
 
@@ -79,8 +81,8 @@ func (s *SubStore) SetPlan(p plan.Plan) *SubStore {
 	return s
 }
 
-func (s *SubStore) GetWallet() subscription.Wallet {
-	orders := make([]subscription.ProratedOrder, 0)
+func (s *SubStore) GetWallet() subs.Wallet {
+	orders := make([]subs.ProratedOrder, 0)
 
 	if s.balanceAnchor.IsZero() {
 		s.balanceAnchor = time.Now()
@@ -99,7 +101,7 @@ func (s *SubStore) GetWallet() subscription.Wallet {
 			continue
 		}
 
-		o := subscription.ProratedOrder{
+		o := subs.ProratedOrder{
 			OrderID:   v.ID,
 			Amount:    v.Amount,
 			StartDate: v.StartDate,
@@ -110,12 +112,11 @@ func (s *SubStore) GetWallet() subscription.Wallet {
 		orders = append(orders, o)
 	}
 
-	return subscription.NewWallet(orders, time.Now())
+	return subs.NewWallet(orders, time.Now())
 }
 
-func (s *SubStore) createOrderBuilder() *subscription.OrderBuilder {
-	builder := subscription.
-		NewOrderBuilder(s.Profile.AccountID()).
+func (s *SubStore) createOrderBuilder() *builder.OrderBuilder {
+	builder := builder.NewOrderBuilder(s.Profile.AccountID()).
 		SetPlan(s.plan).
 		SetPayMethod(s.payMethod).
 		SetMembership(s.Member).
@@ -131,7 +132,7 @@ func (s *SubStore) createOrderBuilder() *subscription.OrderBuilder {
 
 // MustSaveOrder creates a new order and save it in
 // Orders array indexed by the order id.
-func (s *SubStore) MustCreateOrder() subscription.Order {
+func (s *SubStore) MustCreateOrder() subs.Order {
 	builder := s.createOrderBuilder()
 
 	err := builder.Build()
@@ -149,19 +150,18 @@ func (s *SubStore) MustCreateOrder() subscription.Order {
 
 // MustConfirmOrder confirms and order, save the updated version,
 // and then updated the membership based on this order.
-func (s *SubStore) MustConfirmOrder(id string) subscription.Order {
+func (s *SubStore) MustConfirmOrder(id string) subs.Order {
 	o, err := s.getOrder(id)
 
 	if err != nil {
 		panic(err)
 	}
 
-	builder := subscription.
-		NewConfirmationBuilder(subscription.PaymentResult{
-			Amount:      o.AmountInCent(true),
-			OrderID:     o.ID,
-			ConfirmedAt: time.Now(),
-		}, true).
+	builder := builder.NewConfirmationBuilder(subscription.PaymentResult{
+		Amount:      o.AmountInCent(true),
+		OrderID:     o.ID,
+		ConfirmedAt: time.Now(),
+	}, true).
 		SetOrder(o).
 		SetMembership(s.Member)
 
@@ -185,7 +185,7 @@ func (s *SubStore) MustConfirmOrder(id string) subscription.Order {
 // MustGetMembership returns the current membership data.
 // If the membership is zero, an order will be created,
 // confirmed, and resulting membership updated.
-func (s *SubStore) MustGetMembership() subscription.Membership {
+func (s *SubStore) MustGetMembership() subs.Membership {
 	if s.Member.IsZero() {
 		o := s.MustCreateOrder()
 		s.MustConfirmOrder(o.ID)
@@ -194,8 +194,8 @@ func (s *SubStore) MustGetMembership() subscription.Membership {
 	return s.Member
 }
 
-func (s *SubStore) MustRenewN(n int) []subscription.Order {
-	orders := make([]subscription.Order, 0)
+func (s *SubStore) MustRenewN(n int) []subs.Order {
+	orders := make([]subs.Order, 0)
 
 	for i := 0; i < n; i++ {
 		o := s.MustCreateOrder()
@@ -211,7 +211,7 @@ func (s *SubStore) MustRenewN(n int) []subscription.Order {
 // MustUpgrade gets the ProratedOrderSchema.
 // n specifies how many rounds you want the membership
 // renewed before upgrading.
-func (s *SubStore) MustUpgrade(n int) (subscription.UpgradeSchema, subscription.Order) {
+func (s *SubStore) MustUpgrade(n int) (subs.UpgradeSchema, subs.Order) {
 	// Must have an valid membership before upgrading.
 	// Otherwise this is a new member.
 	if n < 1 {
@@ -243,7 +243,7 @@ func (s *SubStore) MustUpgrade(n int) (subscription.UpgradeSchema, subscription.
 	return upgrade, order
 }
 
-func (s *SubStore) MustRenewalOrder() subscription.Order {
+func (s *SubStore) MustRenewalOrder() subs.Order {
 	order := s.MustCreateOrder()
 
 	order = s.MustConfirmOrder(order.ID)
@@ -253,7 +253,7 @@ func (s *SubStore) MustRenewalOrder() subscription.Order {
 	return order2
 }
 
-func (s *SubStore) MustUpgradingOrder() subscription.Order {
+func (s *SubStore) MustUpgradingOrder() subs.Order {
 	order := s.MustCreateOrder()
 
 	order = s.MustConfirmOrder(order.ID)
@@ -264,10 +264,10 @@ func (s *SubStore) MustUpgradingOrder() subscription.Order {
 }
 
 // getOrder retrieves a previously saved order.
-func (s *SubStore) getOrder(id string) (subscription.Order, error) {
+func (s *SubStore) getOrder(id string) (subs.Order, error) {
 	o, ok := s.Orders[id]
 	if !ok {
-		return subscription.Order{}, fmt.Errorf("order %s is not found", id)
+		return subs.Order{}, fmt.Errorf("order %s is not found", id)
 	}
 
 	return o, nil

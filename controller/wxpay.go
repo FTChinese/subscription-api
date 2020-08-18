@@ -4,11 +4,12 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/models/subscription"
+	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
+	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/objcoding/wxpay"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -50,7 +51,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		defer logger.Sync()
 		sugar.Info("Start placing a wechat order")
 
-		clientApp := util.NewClientApp(req)
+		clientApp := client.NewClientApp(req)
 
 		sugar.Infof("Client app: %+v", clientApp)
 
@@ -88,7 +89,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			return
 		}
 
-		builder := subscription.NewOrderBuilder(userID).
+		builder := builder2.NewOrderBuilder(userID).
 			SetPlan(expPlan).
 			SetPayMethod(enum.PayMethodWx).
 			SetWxAppID(payClient.GetApp().AppID).

@@ -1,12 +1,12 @@
 package wxoauth
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
+	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 )
 
 // SaveWxAccess saves the access token related data after acquired from wechat api.
-func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c util.ClientApp) error {
+func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c client.Client) error {
 
 	_, err := env.db.Exec(stmtInsertAccess,
 		acc.SessionID,

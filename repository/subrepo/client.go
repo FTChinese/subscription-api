@@ -1,14 +1,13 @@
 package subrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
+	"github.com/FTChinese/subscription-api/pkg/client"
 )
 
-func (env SubEnv) SaveOrderClient(c subscription.OrderClient) error {
+func (env SubEnv) SaveOrderClient(c client.OrderClient) error {
 
 	_, err := env.db.NamedExec(
-		query.BuildInsertClientApp(env.UseSandboxDB()),
+		client.StmtInsertOrderClient(env.GetSubsDB()),
 		c)
 
 	if err != nil {
