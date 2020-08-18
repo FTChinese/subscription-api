@@ -2,13 +2,8 @@ package subs
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/pkg/product"
 )
-
-func GenerateUpgradeID() string {
-	return "up_" + rand.String(12)
-}
 
 // UpgradeSchema mimics SQL structure of storing
 // upgrading info.
