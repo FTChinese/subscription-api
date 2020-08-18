@@ -2,10 +2,8 @@ package subs
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/product"
-	"strings"
 	"time"
 
-	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/pkg/errors"
 
@@ -14,29 +12,10 @@ import (
 	"github.com/guregu/null"
 )
 
-// GenerateOrderID creates an order memberID.
-// The memberID has a total length of 18 chars.
-// If we use this generator:
-// `FT` takes 2, followed by year-month-date-hour-minute
-// FT201905191139, then only 4 chars left for random number
-// 2^16 = 65536, which means only 60000 order could be created every minute.
-// To leave enough space for random number, 8 chars might be reasonable - 22 chars totally.
-// If we use current random number generator:
-// 2 ^ 64 = 1.8 * 10^19 orders.
-func GenerateOrderID() (string, error) {
-
-	id, err := gorest.RandomHex(8)
-	if err != nil {
-		return "", err
-	}
-
-	return "FT" + strings.ToUpper(id), nil
-}
-
 // Subscription contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 // An order could represents 12 status of user:
-// A user is allowed to to at max 2 ids - ftc or wechat, or both. This is 3 possible choices.;
+// A user is allowed to to at max 2 ids - ftc or wechat, or both. This is 3 possible choices.
 // A user could choose between 2 payment methods;
 // An order could create, renew or upgrade a member.
 // And tier + cycle have 3 combination.
@@ -45,9 +24,9 @@ type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
 	reader.MemberID
+	PlanID string `json:"plan_id" db:"plan_id"`
 	product.Edition
-	PlanID string  `json:"plan_id" db:"plan_id"`
-	Price  float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
+	Price float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
 	Charge
 	Duration
 	Usage enum.OrderKind `json:"usageType" db:"kind"` // The usage of this order: creat new, renew, or upgrade?
