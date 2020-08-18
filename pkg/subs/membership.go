@@ -10,7 +10,6 @@ import (
 
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
@@ -23,11 +22,6 @@ var tierToCode = map[enum.Tier]int64{
 var codeToTier = map[int64]enum.Tier{
 	10:  enum.TierStandard,
 	100: enum.TierPremium,
-}
-
-// GenerateMembershipIndex generates a random string to membership memberID.
-func GenerateMembershipIndex() string {
-	return "mmb_" + rand.String(12)
 }
 
 // Membership contains a user's membership details
