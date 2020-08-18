@@ -1,10 +1,10 @@
 package test
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/jmoiron/sqlx"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 const stmtInsertAccount = `
@@ -34,12 +34,12 @@ func (r *Repo) MustCreateAccount(a reader.Account) {
 	}
 }
 
-func (r *Repo) MustSaveMembership(m subscription.Membership) {
+func (r *Repo) MustSaveMembership(m subs.Membership) {
 
 	m.Normalize()
 
 	_, err := r.db.NamedExec(
-		query.BuildInsertMembership(false),
+		subs.StmtCreateMember(config.SubsDBProd),
 		m)
 
 	if err != nil {
@@ -47,9 +47,9 @@ func (r *Repo) MustSaveMembership(m subscription.Membership) {
 	}
 }
 
-func (r *Repo) MustSaveOrder(order subscription.Order) {
+func (r *Repo) MustSaveOrder(order subs.Order) {
 
-	var stmt = query.BuildInsertOrder(false) + `,
+	var stmt = subs.StmtCreateOrder(config.SubsDBProd) + `,
 		confirmed_utc = :confirmed_at,
 		start_date = :start_date,
 		end_date = :end_date`
@@ -63,7 +63,7 @@ func (r *Repo) MustSaveOrder(order subscription.Order) {
 	}
 }
 
-func (r *Repo) MustSaveRenewalOrders(orders []subscription.Order) {
+func (r *Repo) MustSaveRenewalOrders(orders []subs.Order) {
 	for _, v := range orders {
 		r.MustSaveOrder(v)
 	}
@@ -71,11 +71,11 @@ func (r *Repo) MustSaveRenewalOrders(orders []subscription.Order) {
 
 // SaveProratedOrders inserts prorated orders
 // to test ProratedOrdersUsed.
-func (r *Repo) SaveProratedOrders(upgrade subscription.UpgradeSchema) {
+func (r *Repo) SaveProratedOrders(upgrade subs.UpgradeSchema) {
 
 	for _, v := range upgrade.Sources {
 		_, err := r.db.NamedExec(
-			query.BuildInsertProration(false),
+			subs.StmtSaveProration(config.SubsDBProd),
 			v)
 
 		if err != nil {

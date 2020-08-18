@@ -2,9 +2,9 @@ package iaprepo
 
 import (
 	"encoding/json"
+	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/apple"
-	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 

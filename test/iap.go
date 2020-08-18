@@ -2,8 +2,8 @@ package test
 
 import (
 	"encoding/json"
+	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/Pallinder/go-randomdata"
-	"gitlab.com/ftchinese/subscription-api/models/apple"
 )
 
 func GetReceiptToken() string {

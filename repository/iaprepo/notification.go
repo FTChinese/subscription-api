@@ -1,6 +1,6 @@
 package iaprepo
 
-import "gitlab.com/ftchinese/subscription-api/models/apple"
+import "github.com/FTChinese/subscription-api/pkg/apple"
 
 func (env IAPEnv) SaveNotification(w apple.WebHookSchema) error {
 	_, err := env.db.NamedExec(insertWebHook, w)

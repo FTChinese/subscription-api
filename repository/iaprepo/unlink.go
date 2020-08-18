@@ -3,7 +3,7 @@ package iaprepo
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/models/apple"
+	"github.com/FTChinese/subscription-api/pkg/apple"
 )
 
 // Unlink deletes a membership created from IAP.

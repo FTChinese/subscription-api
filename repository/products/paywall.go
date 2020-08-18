@@ -2,8 +2,8 @@ package products
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/patrickmn/go-cache"
-	"gitlab.com/ftchinese/subscription-api/pkg/product"
 )
 
 // loadBanner retrieves a banner and promo. The banner id is fixed to 1.

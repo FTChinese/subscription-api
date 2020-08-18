@@ -1,14 +1,13 @@
 package giftrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/redeem"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
+	"github.com/FTChinese/subscription-api/pkg/redeem"
 )
 
 func (env GiftEnv) FindGiftCard(code string) (redeem.GiftCard, error) {
 
 	var c redeem.GiftCard
-	err := env.db.Get(&c, query.RetrieveGiftCard, code)
+	err := env.db.Get(&c, redeem.StmtGiftCard, code)
 
 	if err != nil {
 		logger.WithField("trace", "FindGiftCard").Error(err)

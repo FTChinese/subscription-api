@@ -1,11 +1,10 @@
 package readerrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 var logger = logrus.
@@ -28,7 +27,7 @@ func (env ReaderEnv) FindAccountByFtcID(id string) (reader.Account, error) {
 	var u reader.Account
 	err := env.db.Get(
 		&u,
-		query.BuildSelectReader(false, false),
+		reader.StmtAccountByFtcID,
 		id,
 	)
 
@@ -44,7 +43,7 @@ func (env ReaderEnv) FindAccountByFtcID(id string) (reader.Account, error) {
 func (env ReaderEnv) FindAccountByStripeID(cusID string) (reader.Account, error) {
 	var u reader.Account
 	err := env.db.Get(&u,
-		query.BuildSelectReader(true, false),
+		reader.StmtAccountByStripeID,
 		cusID)
 
 	if err != nil {

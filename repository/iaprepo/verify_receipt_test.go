@@ -1,9 +1,9 @@
 package iaprepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/apple"
-	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/test"
+	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/test"
 	"os"
 	"path/filepath"
 	"testing"

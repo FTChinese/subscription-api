@@ -1,8 +1,8 @@
 package subrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/test"
+	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
 
@@ -13,7 +13,7 @@ func TestSubEnv_SaveOrderClient(t *testing.T) {
 	}
 
 	type args struct {
-		c subscription.OrderClient
+		c client.OrderClient
 	}
 	tests := []struct {
 		name    string
@@ -23,9 +23,9 @@ func TestSubEnv_SaveOrderClient(t *testing.T) {
 		{
 			name: "Save client app of an order",
 			args: args{
-				c: subscription.OrderClient{
-					OrderID:   test.MustGenOrderID(),
-					ClientApp: test.RandomClientApp(),
+				c: client.OrderClient{
+					OrderID: test.MustGenOrderID(),
+					Client:  test.RandomClientApp(),
 				},
 			},
 		},

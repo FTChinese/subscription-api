@@ -1,7 +1,7 @@
-module gitlab.com/ftchinese/subscription-api
+module github.com/FTChinese/subscription-api
 
 require (
-	github.com/FTChinese/go-rest v0.5.0
+	github.com/FTChinese/go-rest v0.5.1
 	github.com/Masterminds/squirrel v1.1.0
 	github.com/Pallinder/go-randomdata v1.1.0
 	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect

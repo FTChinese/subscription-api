@@ -56,6 +56,14 @@ func (c BuildConfig) UseSandboxDB() bool {
 	return c.sandbox
 }
 
+func (c BuildConfig) GetSubsDB() SubsDB {
+	if c.sandbox {
+		return SubsDBSandbox
+	}
+
+	return SubsDBProd
+}
+
 // IsProduction determines which DB server to connect
 func (c BuildConfig) IsProduction() bool {
 	return c.production

@@ -2,7 +2,7 @@ package iaprepo
 
 import (
 	"encoding/json"
-	"gitlab.com/ftchinese/subscription-api/models/apple"
+	"github.com/FTChinese/subscription-api/pkg/apple"
 )
 
 func (env IAPEnv) VerifyReceipt(r apple.VerificationRequestBody) (apple.VerificationResponseBody, error) {

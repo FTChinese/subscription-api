@@ -2,9 +2,9 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/test"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
 
@@ -107,7 +107,7 @@ func TestMembershipTx_CreateMember(t *testing.T) {
 	env := IAPEnv{db: test.DB}
 
 	type args struct {
-		m subscription.Membership
+		m subs.Membership
 	}
 	tests := []struct {
 		name    string
@@ -148,7 +148,7 @@ func TestMembershipTx_UpdateMember(t *testing.T) {
 	env := IAPEnv{db: test.DB}
 
 	type args struct {
-		m subscription.Membership
+		m subs.Membership
 	}
 	tests := []struct {
 		name    string
@@ -226,7 +226,7 @@ func TestIAPEnv_BackUpMember(t *testing.T) {
 	env := IAPEnv{db: test.DB}
 
 	type args struct {
-		snapshot subscription.MemberSnapshot
+		snapshot subs.MemberSnapshot
 	}
 	tests := []struct {
 		name    string

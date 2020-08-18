@@ -2,9 +2,9 @@ package subscription
 
 import (
 	"errors"
+	"github.com/FTChinese/subscription-api/models/util"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/models/wechat"
 	"strconv"
 	"time"
 )

@@ -6,13 +6,14 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
+	"github.com/FTChinese/subscription-api/models/plan"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/brianvoe/gofakeit/v4"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/spf13/viper"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
 	"time"
 )
 
@@ -178,9 +179,8 @@ func (p Profile) Account() reader.Account {
 	return reader.Account{}
 }
 
-func (p Profile) Membership() Membership {
-	m := Membership{
-		ID:            null.StringFrom(GenerateMembershipIndex()),
+func (p Profile) Membership() subs.Membership {
+	m := subs.Membership{
 		MemberID:      p.AccountID(),
 		BasePlan:      p.plan.BasePlan,
 		ExpireDate:    chrono.DateFrom(p.expiresDate),
@@ -188,7 +188,7 @@ func (p Profile) Membership() Membership {
 		StripeSubID:   null.String{},
 		StripePlanID:  null.String{},
 		AutoRenew:     false,
-		Status:        SubStatusNull,
+		Status:        enum.SubsStatusNull,
 	}
 
 	if p.payMethod == enum.PayMethodApple {

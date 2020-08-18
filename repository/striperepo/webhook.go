@@ -3,9 +3,9 @@ package striperepo
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/stripe/stripe-go"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	ftcStripe "gitlab.com/ftchinese/subscription-api/models/stripe"
 )
 
 // WebHookSaveStripeSub saved a user's membership derived from

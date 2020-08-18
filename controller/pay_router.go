@@ -4,16 +4,16 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/subscription-api/models/plan"
+	"github.com/FTChinese/subscription-api/models/util"
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/letter"
+	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/repository/products"
+	"github.com/FTChinese/subscription-api/repository/readerrepo"
+	"github.com/FTChinese/subscription-api/repository/subrepo"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
-	"gitlab.com/ftchinese/subscription-api/models/letter"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/repository/products"
-	"gitlab.com/ftchinese/subscription-api/repository/readerrepo"
-	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 )
 
@@ -68,7 +68,7 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 }
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
-func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
+func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 	log := logger.WithField("trace", "PayRouter.sendConfirmationEmail")
 
 	// If the FtcID field is null, it indicates this user
@@ -115,7 +115,7 @@ func (router PayRouter) sendConfirmationEmail(order subscription.Order) error {
 	return nil
 }
 
-func (router PayRouter) sendFreeUpgradeEmail(order subscription.Order, wallet subscription.Wallet) error {
+func (router PayRouter) sendFreeUpgradeEmail(order subs.Order, wallet subs.Wallet) error {
 	log := logger.WithField("trace", "PayRouter.sendFreeUpgradeEmail")
 
 	// Find this user's personal data

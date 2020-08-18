@@ -3,15 +3,17 @@ package test
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/models/plan"
+	"github.com/FTChinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/brianvoe/gofakeit/v4"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/apple"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
 	"time"
 )
 
@@ -29,7 +31,7 @@ type Profile struct {
 	AppleSubID string
 
 	kind        reader.AccountKind
-	plan        plan.Plan
+	plan        product.Plan
 	expiresDate time.Time
 	payMethod   enum.PayMethod
 }
@@ -140,11 +142,10 @@ func (p Profile) Account() reader.Account {
 	return reader.Account{}
 }
 
-func (p Profile) Membership() subscription.Membership {
-	m := subscription.Membership{
-		ID:            null.StringFrom(subscription.GenerateMembershipIndex()),
+func (p Profile) Membership() subs.Membership {
+	m := subs.Membership{
 		MemberID:      p.AccountID(),
-		BasePlan:      p.plan.BasePlan,
+		Edition:       p.plan.BasePlan,
 		ExpireDate:    chrono.DateFrom(p.expiresDate),
 		PaymentMethod: p.payMethod,
 		StripeSubID:   null.String{},
@@ -162,19 +163,19 @@ func (p Profile) Membership() subscription.Membership {
 }
 
 // StandardOrdersN generates n orders for standard membership.
-func (p Profile) StandardOrdersN(n int) []subscription.Order {
-	orders := make([]subscription.Order, 0)
+func (p Profile) StandardOrdersN(n int) []subs.Order {
+	orders := make([]subs.Order, 0)
 	for i := 0; i < n; i++ {
-		o := subscription.Order{
+		o := subs.Order{
 			ID:       MustGenOrderID(),
 			MemberID: p.AccountID(),
 			BasePlan: p.plan.BasePlan,
 			Price:    p.plan.Price,
-			Charge: subscription.Charge{
+			Charge: subs.Charge{
 				Amount:   p.plan.Amount,
 				Currency: p.plan.Currency,
 			},
-			Duration: subscription.Duration{
+			Duration: subs.Duration{
 				CycleCount: 1,
 				ExtraDays:  1,
 			},

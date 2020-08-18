@@ -1,10 +1,9 @@
 package txrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 var logger = logrus.WithField("package", "query")
@@ -20,7 +19,10 @@ func NewAccountTx(tx *sqlx.Tx) AccountTx {
 // RetrieveAccount loads an ftc account by uuid
 func (tx AccountTx) RetrieveAccount(ftcID string) (reader.Account, error) {
 	var account reader.Account
-	err := tx.Get(&account, query.BuildSelectReader(false, true), ftcID)
+	err := tx.Get(
+		&account,
+		reader.StmtAccountByFtcID+" FOR UPDATE",
+		ftcID)
 	if err != nil {
 		logger.WithField("trace", "AccountTx.RetrieveAccount").Error(err)
 		return reader.Account{}, err
@@ -30,7 +32,10 @@ func (tx AccountTx) RetrieveAccount(ftcID string) (reader.Account, error) {
 }
 
 func (tx AccountTx) SavedStripeID(account reader.Account) error {
-	_, err := tx.NamedExec(query.SaveStripeID, account)
+	_, err := tx.NamedExec(
+		reader.StmtSetStripeID,
+		account,
+	)
 	if err != nil {
 		logger.WithField("trace", "AccountTx.SaveStripeID").Error(err)
 		return err

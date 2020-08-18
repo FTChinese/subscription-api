@@ -2,13 +2,13 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/models/paywall"
+	"github.com/FTChinese/subscription-api/models/plan"
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/repository/products"
+	"github.com/FTChinese/subscription-api/repository/subrepo"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/repository/products"
-	"gitlab.com/ftchinese/subscription-api/repository/subrepo"
 	"net/http"
 
 	"github.com/FTChinese/go-rest/view"

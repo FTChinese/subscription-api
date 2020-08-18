@@ -1,7 +1,7 @@
 package wxoauth
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/wxlogin"
+	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 )
 
 // SaveWxUser from wechat API.

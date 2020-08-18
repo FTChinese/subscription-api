@@ -1,10 +1,13 @@
 package subscription
 
-import "gitlab.com/ftchinese/subscription-api/models/wechat"
+import (
+	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
+)
 
 // WxpayNativeAppOrder creates an order used by native apps.
 type WxpayNativeAppOrder struct {
-	Order
+	subs.Order
 	wechat.AppOrderParams                       // Deprecated
 	Params                wechat.AppOrderParams `json:"params"`
 }
@@ -16,7 +19,7 @@ type WxpayNativeAppOrder struct {
 // It's a shame wechat cannot even use the same data structure
 // for such insignificant differences.
 type WxpayEmbedBrowserOrder struct {
-	Order
+	subs.Order
 	Params wechat.InWxBrowserParams `json:"params"`
 }
 
@@ -28,7 +31,7 @@ type WxpayEmbedBrowserOrder struct {
 // that can be redirected to.
 // and MobileOrder into a single data structure.
 type WxpayBrowserOrder struct {
-	Order
+	subs.Order
 	// TODO: rename json tag codeUrl to qrCode
 	QRCode  string `json:"qrCodeUrl,omitempty"`         // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
 	MWebURL string `json:"mobileRedirectUrl,omitempty"` // This is a standard url that can be redirected to.
@@ -37,13 +40,13 @@ type WxpayBrowserOrder struct {
 // AlipayBrowserOrder represents an order creates for alipay inside
 // browsers
 type AlipayBrowserOrder struct {
-	Order
+	subs.Order
 	RedirectURL string `json:"redirectUrl"`
 }
 
 // AliPayNative is an order created inside a native app.
 type AlipayNativeAppOrder struct {
-	Order
+	subs.Order
 	//FtcOrderID string `json:"ftcOrderId"` // Deprecate
 	Param string `json:"param"`
 }
