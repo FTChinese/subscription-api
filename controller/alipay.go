@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
 	"net/http"
@@ -247,7 +248,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	payResult, err := subscription.NewPaymentResultAli(noti)
+	payResult, err := subs.NewPaymentResultAli(noti)
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）

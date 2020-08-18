@@ -3,15 +3,13 @@ package subrepo
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/models/plan"
-	"github.com/FTChinese/subscription-api/models/subscription"
 	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
 // ConfirmOrder updates the order received from webhook,
 // create or update membership, and optionally flag prorated orders as consumed.
-func (env SubEnv) ConfirmOrder(result subscription.PaymentResult) (subs.Order, *subs.ConfirmError) {
+func (env SubEnv) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.ConfirmError) {
 	log := logger.WithField("trace", "SubEnv.ConfirmOrder")
 
 	tx, err := env.BeginOrderTx()

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/models/plan"
-	"github.com/FTChinese/subscription-api/models/subscription"
 	"github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -157,7 +156,7 @@ func (s *SubStore) MustConfirmOrder(id string) subs.Order {
 		panic(err)
 	}
 
-	builder := builder.NewConfirmationBuilder(subscription.PaymentResult{
+	builder := builder.NewConfirmationBuilder(subs.PaymentResult{
 		Amount:      o.AmountInCent(true),
 		OrderID:     o.ID,
 		ConfirmedAt: time.Now(),
