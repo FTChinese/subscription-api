@@ -7,6 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/models/subscription"
 	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/objcoding/wxpay"
 	"github.com/sirupsen/logrus"
@@ -253,7 +254,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	payResult, err := subscription.NewPaymentResultWx(noti)
+	payResult, err := subs.NewPaymentResultWx(noti)
 	if err != nil {
 		logger.Error(err)
 		if _, err := w.Write([]byte(resp.OK())); err != nil {
