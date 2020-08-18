@@ -47,49 +47,71 @@ func (o Order) IsConfirmed() bool {
 	return !o.ConfirmedAt.IsZero()
 }
 
-func (o Order) getEndDate(startTime time.Time) (time.Time, error) {
+func (o Order) getEndDate() (chrono.Date, error) {
 	var endTime time.Time
 
 	switch o.Cycle {
 	case enum.CycleYear:
-		endTime = startTime.AddDate(int(o.CycleCount), 0, int(o.ExtraDays))
+		endTime = o.StartDate.AddDate(int(o.CycleCount), 0, int(o.ExtraDays))
 
 	case enum.CycleMonth:
-		endTime = startTime.AddDate(0, int(o.CycleCount), int(o.ExtraDays))
+		endTime = o.StartDate.AddDate(0, int(o.CycleCount), int(o.ExtraDays))
 
 	default:
-		return endTime, errors.New("invalid billing cycle")
+		return chrono.Date{}, errors.New("invalid billing cycle")
 	}
 
-	return endTime, nil
+	return chrono.DateFrom(endTime), nil
 }
 
-func (o Order) SnapshotReason() enum.SnapshotReason {
-	switch o.Usage {
-	case enum.OrderKindRenew:
-		return enum.SnapshotReasonRenew
+// pick which date to use as start date upon confirmation.
+// expireDate refers to current membership's expireDate.
+func (o Order) pickStartDate(expireDate chrono.Date) chrono.Date {
+	// If this is an upgrade order, or membership is expired, use confirmation time.
+	if o.Usage == enum.OrderKindUpgrade || o.ConfirmedAt.Time.After(expireDate.Time) {
+		return chrono.DateFrom(o.ConfirmedAt.Time)
+	}
 
-	case enum.OrderKindUpgrade:
-		return enum.SnapshotReasonUpgrade
+	return expireDate
+}
 
-	default:
-		return enum.SnapshotReasonNull
+// Confirm an order based on existing membership.
+// If current membership is not expired, the order's
+// purchased start date starts from the membership's
+// expiration date; otherwise it starts from the
+// confirmation time received by webhook.
+// If this order is used for upgrading, it always starts
+// at now.
+func (o Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
+	o.ConfirmedAt = chrono.TimeFrom(confirmedAt)
+
+	o.StartDate = o.pickStartDate(m.ExpireDate)
+
+	endDate, err := o.getEndDate()
+	if err != nil {
+		return o, err
+	}
+
+	o.EndDate = endDate
+
+	return o, nil
+}
+
+// Membership build a membership based on this order.
+// The order must be already confirmed.
+func (o Order) Membership() Membership {
+	return Membership{
+		MemberID:      o.MemberID,
+		Edition:       o.Edition,
+		LegacyTier:    null.Int{},
+		LegacyExpire:  null.Int{},
+		ExpireDate:    o.EndDate,
+		PaymentMethod: o.PaymentMethod,
+		StripeSubID:   null.String{},
+		StripePlanID:  null.String{},
+		AutoRenew:     false,
+		Status:        enum.SubsStatusNull,
+		AppleSubID:    null.String{},
+		B2BLicenceID:  null.String{},
 	}
 }
-
-// Confirm updates an order with existing membership.
-// Zero membership is a valid value.
-//func (o Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
-//
-//	startTime := o.getStartDate(m, confirmedAt)
-//	endTime, err := o.getEndDate(startTime)
-//	if err != nil {
-//		return o, err
-//	}
-//
-//	o.ConfirmedAt = chrono.TimeFrom(confirmedAt)
-//	o.StartDate = chrono.DateFrom(startTime)
-//	o.EndDate = chrono.DateFrom(endTime)
-//
-//	return o, nil
-//}
