@@ -106,7 +106,7 @@ func (b *ConfirmationBuilder) Build() (subs.ConfirmationResult, error) {
 		return subs.ConfirmationResult{}, err
 	}
 
-	snapshot := b.membership.Snapshot(b.order.SnapshotReason())
+	snapshot := b.membership.Snapshot(subs.GetSnapshotReason(b.order.Usage))
 
 	order := b.confirmedOrder(startTime, endTime, snapshot.SnapshotID)
 
