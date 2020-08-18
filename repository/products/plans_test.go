@@ -2,11 +2,11 @@ package products
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/ftchinese/subscription-api/pkg/product"
-	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 

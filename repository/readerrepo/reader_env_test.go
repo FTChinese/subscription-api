@@ -1,7 +1,7 @@
 package readerrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/test"
+	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
 

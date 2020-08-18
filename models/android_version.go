@@ -3,7 +3,7 @@ package models
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/models/util"
+	"github.com/FTChinese/subscription-api/pkg/client"
 	"strconv"
 	"strings"
 )
@@ -89,7 +89,7 @@ var permittedFlavors = map[string]struct{}{
 
 // AllowAndroidPurchase checks whether the Android client is
 // permitted to buy membership.
-func AllowAndroidPurchase(app util.ClientApp) error {
+func AllowAndroidPurchase(app client.Client) error {
 
 	if app.ClientType != enum.PlatformAndroid {
 		return nil

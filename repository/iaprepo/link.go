@@ -2,9 +2,10 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/models/apple"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
 // Link links an apple subscription to an ftc account.
@@ -27,21 +28,21 @@ import (
 // Return error could be ErrTargetLinkedToOtherIAP,
 // ErrHasValidNonIAPMember
 // The second returned value indicates whether this is initial linking and should send an email to user.
-func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.Membership, bool, error) {
+func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subs.Membership, bool, error) {
 	tx, err := env.BeginTx()
 	if err != nil {
-		return subscription.Membership{}, false, err
+		return subs.Membership{}, false, err
 	}
 
 	iapMember, err := tx.RetrieveAppleMember(s.OriginalTransactionID)
 	if err != nil {
 		_ = tx.Rollback()
-		return subscription.Membership{}, false, err
+		return subs.Membership{}, false, err
 	}
 	ftcMember, err := tx.RetrieveMember(id)
 	if err != nil {
 		_ = tx.Rollback()
-		return subscription.Membership{}, false, err
+		return subs.Membership{}, false, err
 	}
 
 	// Merge two memberships.
@@ -64,11 +65,11 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 				_ = tx.Commit()
 			}
 
-			return subscription.Membership{}, false, err
+			return subs.Membership{}, false, err
 		}
 
 		_ = tx.Rollback()
-		return subscription.Membership{}, false, err
+		return subs.Membership{}, false, err
 	}
 
 	if merged.IsZero() {
@@ -79,8 +80,6 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 
 	// Backup current iap membership and ftc membership
 	if !iapMember.IsZero() {
-		// Back up
-		iapMember.GenerateID()
 		go func() {
 			_ = env.BackUpMember(
 				iapMember.Snapshot(enum.SnapshotReasonAppleLink),
@@ -89,12 +88,11 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 
 		if err := tx.DeleteMember(iapMember.MemberID); err != nil {
 			_ = tx.Rollback()
-			return subscription.Membership{}, false, err
+			return subs.Membership{}, false, err
 		}
 	}
 
 	if !ftcMember.IsZero() {
-		ftcMember.GenerateID()
 		go func() {
 			_ = env.BackUpMember(
 				ftcMember.Snapshot(enum.SnapshotReasonAppleLink),
@@ -103,18 +101,18 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subscription.M
 
 		if err := tx.DeleteMember(ftcMember.MemberID); err != nil {
 			_ = tx.Rollback()
-			return subscription.Membership{}, false, err
+			return subs.Membership{}, false, err
 		}
 	}
 
 	// Insert the merged one.
 	if err := tx.CreateMember(merged); err != nil {
 		_ = tx.Rollback()
-		return subscription.Membership{}, false, err
+		return subs.Membership{}, false, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return subscription.Membership{}, false, err
+		return subs.Membership{}, false, err
 	}
 
 	return merged, iapMember.IsZero(), nil

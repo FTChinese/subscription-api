@@ -1,10 +1,10 @@
 package products
 
 import (
+	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 

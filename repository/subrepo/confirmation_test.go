@@ -1,9 +1,9 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/test"
 	"testing"
 )
 
@@ -13,7 +13,7 @@ func TestSubEnv_SaveConfirmationResult(t *testing.T) {
 	}
 
 	type args struct {
-		r subscription.ConfirmErrSchema
+		r subs.ConfirmErrSchema
 	}
 	tests := []struct {
 		name    string
@@ -23,7 +23,7 @@ func TestSubEnv_SaveConfirmationResult(t *testing.T) {
 		{
 			name: "Save confirmation result",
 			args: args{
-				r: subscription.ConfirmErrSchema{
+				r: subs.ConfirmErrSchema{
 					OrderID:   test.MustGenOrderID(),
 					Succeeded: true,
 					Failed:    null.String{},

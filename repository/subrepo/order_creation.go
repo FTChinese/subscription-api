@@ -2,17 +2,18 @@ package subrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/pkg/builder"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"time"
 )
 
-func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.Order, error) {
+func (env SubEnv) CreateOrder(builder *builder.OrderBuilder) (subs.Order, error) {
 	log := logger.WithField("trace", "PayRouter.createOrder")
 
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		log.Error(err)
-		return subscription.Order{}, err
+		return subs.Order{}, err
 	}
 
 	//builder.SetEnvironment(env.Live())
@@ -26,7 +27,7 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 	if err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return subscription.Order{}, err
+		return subs.Order{}, err
 	}
 	log.Infof("Membership retrieved %+v", member)
 
@@ -34,7 +35,7 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 	subKind, err := builder.GetSubsKind()
 	if err != nil {
 		_ = otx.Rollback()
-		return subscription.Order{}, err
+		return subs.Order{}, err
 	}
 
 	log.Infof("Subscription kind %s", subKind)
@@ -56,24 +57,24 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 		if err != nil {
 			log.Error(err)
 			_ = otx.Rollback()
-			return subscription.Order{}, err
+			return subs.Order{}, err
 		}
 		log.Infof("Find prorated orders: %+v", orders)
 
 		// Step 3.2: Build upgrade plan
-		wallet := subscription.NewWallet(orders, time.Now())
+		wallet := subs.NewWallet(orders, time.Now())
 
 		builder.SetWallet(wallet)
 	}
 
 	if err := builder.Build(); err != nil {
 		_ = otx.Rollback()
-		return subscription.Order{}, err
+		return subs.Order{}, err
 	}
 
 	order, err := builder.Order()
 	if err != nil {
-		return subscription.Order{}, err
+		return subs.Order{}, err
 	}
 
 	if subKind == enum.OrderKindUpgrade {
@@ -83,7 +84,7 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 		// Step 3.5: Save prorated orders
 		if err := otx.SaveUpgradeSchema(upgrade); err != nil {
 			_ = otx.Rollback()
-			return subscription.Order{}, err
+			return subs.Order{}, err
 		}
 	}
 
@@ -91,13 +92,13 @@ func (env SubEnv) CreateOrder(builder *subscription.OrderBuilder) (subscription.
 	if err := otx.SaveOrder(order); err != nil {
 		log.Error(err)
 		_ = otx.Rollback()
-		return subscription.Order{}, err
+		return subs.Order{}, err
 	}
 	log.Infof("Order saved %s", order.ID)
 
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
-		return subscription.Order{}, err
+		return subs.Order{}, err
 	}
 
 	return order, nil

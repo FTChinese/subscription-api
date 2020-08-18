@@ -4,11 +4,12 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/pkg/ali"
+	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
+	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
-	"gitlab.com/ftchinese/subscription-api/models/ali"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/models/util"
 	"net/http"
 )
 
@@ -59,7 +60,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		clientApp := util.NewClientApp(req)
+		clientApp := client.NewClientApp(req)
 
 		edition, err := GetEdition(req)
 		if err != nil {
@@ -84,7 +85,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		builder := subscription.NewOrderBuilder(userID).
+		builder := builder2.NewOrderBuilder(userID).
 			SetPlan(plan).
 			SetPayMethod(enum.PayMethodAli)
 

@@ -3,12 +3,11 @@ package striperepo
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/sub"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	ftcStripe "gitlab.com/ftchinese/subscription-api/models/stripe"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
 )
 
 func createSub(p ftcStripe.SubParams, planID string) (*stripe.Subscription, error) {
@@ -125,7 +124,7 @@ func (env StripeEnv) CreateSubscription(id reader.MemberID, params ftcStripe.Sub
 
 // SaveSubsError saves any error in stripe response.
 func (env StripeEnv) SaveSubsError(id reader.MemberID, e *stripe.Error) error {
-	_, err := env.db.Exec(query.InsertStripeError,
+	_, err := env.db.Exec(ftcStripe.StmtSaveStripeError,
 		id.FtcID,
 		null.NewString(e.ChargeID, e.ChargeID != ""),
 		null.NewString(string(e.Code), e.Code != ""),

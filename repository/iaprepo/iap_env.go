@@ -2,12 +2,13 @@ package iaprepo
 
 import (
 	"errors"
+	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/repository/txrepo"
 	"github.com/jmoiron/sqlx"
 	"github.com/parnurzeal/gorequest"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gitlab.com/ftchinese/subscription-api/models/apple"
-	"gitlab.com/ftchinese/subscription-api/pkg/config"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -46,17 +47,14 @@ func NewIAPEnv(db *sqlx.DB, c config.BuildConfig) IAPEnv {
 // sandbox db should be used and is determined by
 // the CLI argument `-sandbox`.
 // All messages from apple is save in production DBs.
-func (env IAPEnv) BeginTx() (MembershipTx, error) {
+func (env IAPEnv) BeginTx() (txrepo.MemberTx, error) {
 	tx, err := env.db.Beginx()
 
 	if err != nil {
-		return MembershipTx{}, err
+		return txrepo.MemberTx{}, err
 	}
 
-	return MembershipTx{
-		tx:      tx,
-		sandbox: env.c.UseSandboxDB(),
-	}, nil
+	return txrepo.NewMemberTx(tx, env.c), nil
 }
 
 // Under the home directory of current user.

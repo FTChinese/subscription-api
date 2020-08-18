@@ -2,8 +2,8 @@ package subrepo
 
 import (
 	"encoding/json"
-	"gitlab.com/ftchinese/subscription-api/models/paywall"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
+	"github.com/FTChinese/subscription-api/models/paywall"
+	"github.com/FTChinese/subscription-api/models/plan"
 
 	"github.com/patrickmn/go-cache"
 )

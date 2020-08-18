@@ -1,44 +1,49 @@
 package subrepo
 
 import (
-	"github.com/FTChinese/go-rest/enum"
-	"gitlab.com/ftchinese/subscription-api/models/plan"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/models/subscription"
+	"github.com/FTChinese/subscription-api/pkg/builder"
+	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"time"
 )
 
-// See errors returned from Membership.PermitAliWxUpgrade.
-func (env SubEnv) PreviewUpgrade(userID reader.MemberID) (subscription.PaymentIntent, error) {
+// PreviewUpgrade calculates how much should a user to pay
+// to perform upgrading.
+func (env SubEnv) PreviewUpgrade(userID reader.MemberID, plan product.ExpandedPlan) (subscription.PaymentIntent, error) {
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		return subscription.PaymentIntent{}, err
 	}
 
+	// Retrieve existing membership to see if user is valid
+	// to upgrade.
 	member, err := tx.RetrieveMember(userID)
 	if err != nil {
 		_ = tx.Rollback()
 		return subscription.PaymentIntent{}, err
 	}
 
+	// If user is not qualified to upgrade, deny it.
 	if !member.PermitAliWxUpgrade() {
 		_ = tx.Rollback()
 		return subscription.PaymentIntent{}, subscription.ErrUpgradeInvalid
 	}
 
+	// Retrieve all orders with balance remaining
 	orders, err := tx.FindBalanceSources(userID)
 	if err != nil {
 		_ = tx.Rollback()
 		return subscription.PaymentIntent{}, err
 	}
 
-	wallet := subscription.NewWallet(orders, time.Now())
+	// Calculates the balance of user's wallet.
+	wallet := subs.NewWallet(orders, time.Now())
 
-	p, _ := plan.FindPlan(enum.TierPremium, enum.CycleYear)
-
-	builder := subscription.NewOrderBuilder(userID).
-		SetPlan(p).
+	orderBuilder := builder.NewOrderBuilder(userID).
+		SetPlan(plan).
 		SetEnvironment(env.Live()).
 		SetMembership(member).
 		SetWallet(wallet)
@@ -47,5 +52,5 @@ func (env SubEnv) PreviewUpgrade(userID reader.MemberID) (subscription.PaymentIn
 		return subscription.PaymentIntent{}, err
 	}
 
-	return builder.PaymentIntent()
+	return orderBuilder.PaymentIntent()
 }

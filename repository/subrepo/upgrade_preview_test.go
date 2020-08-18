@@ -1,8 +1,8 @@
 package subrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	"gitlab.com/ftchinese/subscription-api/test"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
 

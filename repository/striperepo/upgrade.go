@@ -2,11 +2,11 @@ package striperepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/models/util"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/sub"
-	"gitlab.com/ftchinese/subscription-api/models/reader"
-	ftcStripe "gitlab.com/ftchinese/subscription-api/models/stripe"
-	"gitlab.com/ftchinese/subscription-api/models/util"
 )
 
 func upgradeSub(p ftcStripe.SubParams, subID string) (*stripe.Subscription, error) {

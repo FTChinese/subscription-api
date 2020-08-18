@@ -1,7 +1,7 @@
 package products
 
 import (
-	"gitlab.com/ftchinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/product"
 )
 
 // loadPlans retrieves all plans present on paywall.

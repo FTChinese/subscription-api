@@ -2,11 +2,11 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/subscription-api/models/util"
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/repository/giftrepo"
 	"github.com/jmoiron/sqlx"
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/models/util"
-	"gitlab.com/ftchinese/subscription-api/pkg/config"
-	"gitlab.com/ftchinese/subscription-api/repository/giftrepo"
 	"net/http"
 )
 
@@ -60,7 +60,7 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Update membership from based on gift card info.
-	member, err := subscription.NewMember(userID).FromGiftCard(card)
+	member, err := subs.NewMember(userID).FromGiftCard(card)
 	if err != nil {
 		_ = view.Render(w, view.NewBadRequest(err.Error()))
 		return

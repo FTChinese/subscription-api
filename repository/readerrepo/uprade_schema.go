@@ -1,23 +1,22 @@
 package readerrepo
 
 import (
-	"gitlab.com/ftchinese/subscription-api/models/subscription"
-	"gitlab.com/ftchinese/subscription-api/repository/query"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
-// RetrieveUpgradeBalance retrieves an upgrade plan to be used in email sent to user.
-func (env ReaderEnv) retrieveUpgradeWallet(upgradeID string) (subscription.UpgradeSchema, error) {
+// retrieveUpgradeBalance retrieves an upgrade plan to be used in email sent to user.
+func (env ReaderEnv) retrieveUpgradeWallet(upgradeID string) (subs.UpgradeSchema, error) {
 
-	var data subscription.UpgradeSchema
+	var data subs.UpgradeSchema
 
 	err := env.db.Get(
 		&data,
-		query.BuildSelectUpgradePlan(env.UseSandboxDB()),
+		subs.StmtUpgradeBalance(env.GetSubsDB()),
 		upgradeID)
 
 	if err != nil {
 		logger.WithField("trace", "SubEnv.RetrieveUpgradeWallet").Error(err)
-		return subscription.UpgradeSchema{}, err
+		return subs.UpgradeSchema{}, err
 	}
 
 	return data, nil
@@ -25,12 +24,12 @@ func (env ReaderEnv) retrieveUpgradeWallet(upgradeID string) (subscription.Upgra
 
 // RetrieveProratedOrders retrieves all orders prorated from
 // proration table. Used to send user an email after upgrade.
-func (env ReaderEnv) retrieveProratedOrders(upgradeID string) ([]subscription.ProratedOrderSchema, error) {
-	var sources = make([]subscription.ProratedOrderSchema, 0)
+func (env ReaderEnv) retrieveProratedOrders(upgradeID string) ([]subs.ProratedOrderSchema, error) {
+	var sources = make([]subs.ProratedOrderSchema, 0)
 
 	err := env.db.Select(
 		&sources,
-		query.BuildSelectProration(env.UseSandboxDB()),
+		subs.StmtListProration(env.GetSubsDB()),
 		upgradeID)
 
 	if err != nil {
@@ -41,15 +40,15 @@ func (env ReaderEnv) retrieveProratedOrders(upgradeID string) ([]subscription.Pr
 	return sources, nil
 }
 
-func (env ReaderEnv) LoadUpgradeSchema(upgradeID string) (subscription.UpgradeSchema, error) {
+func (env ReaderEnv) LoadUpgradeSchema(upgradeID string) (subs.UpgradeSchema, error) {
 	upgradeSchema, err := env.retrieveUpgradeWallet(upgradeID)
 	if err != nil {
-		return subscription.UpgradeSchema{}, err
+		return subs.UpgradeSchema{}, err
 	}
 
 	sources, err := env.retrieveProratedOrders(upgradeID)
 	if err != nil {
-		return subscription.UpgradeSchema{}, err
+		return subs.UpgradeSchema{}, err
 	}
 
 	upgradeSchema.Sources = sources
