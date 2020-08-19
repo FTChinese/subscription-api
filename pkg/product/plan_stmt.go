@@ -7,11 +7,13 @@ SELECT p.id AS plan_id,
 	p.price,
 	p.tier,
 	p.cycle,
+	p.description,
 	d.id AS discount_id,
 	d.price_off,
 	d.percent,
 	d.start_utc,
-	d.end_utc
+	d.end_utc,
+	d.discount_desc
 `
 
 // StmtExpandedPlanByID retrieves a single plan with discount by plan id.
