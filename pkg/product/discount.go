@@ -11,6 +11,7 @@ type Discount struct {
 	PriceOff null.Float  `json:"priceOff" db:"price_off"`
 	Percent  null.Int    `json:"percent" db:"percent"`
 	Period
+	Description null.String `json:"description" db:"discount_desc"`
 }
 
 func (d Discount) IsValid() bool {
