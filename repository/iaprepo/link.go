@@ -2,7 +2,6 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/models/subscription"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -51,7 +50,7 @@ func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subs.Membershi
 	// update it based on apple transaction.
 	merged, err := ftcMember.MergeIAPMembership(iapMember)
 	if err != nil {
-		if err == subscription.ErrLinkToMultipleFTC {
+		if err == subs.ErrLinkToMultipleFTC {
 			newIAPMember := s.BuildOn(iapMember)
 			go func() {
 				_ = env.BackUpMember(

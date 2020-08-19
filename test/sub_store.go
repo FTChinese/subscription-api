@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/models/plan"
-	"github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"time"
@@ -114,8 +113,8 @@ func (s *SubStore) GetWallet() subs.Wallet {
 	return subs.NewWallet(orders, time.Now())
 }
 
-func (s *SubStore) createOrderBuilder() *builder.OrderBuilder {
-	builder := builder.NewOrderBuilder(s.Profile.AccountID()).
+func (s *SubStore) createOrderBuilder() *subs.OrderBuilder {
+	builder := subs.NewOrderBuilder(s.Profile.AccountID()).
 		SetPlan(s.plan).
 		SetPayMethod(s.payMethod).
 		SetMembership(s.Member).
@@ -156,7 +155,7 @@ func (s *SubStore) MustConfirmOrder(id string) subs.Order {
 		panic(err)
 	}
 
-	builder := builder.NewConfirmationBuilder(subs.PaymentResult{
+	builder := subs.NewConfirmationBuilder(subs.PaymentResult{
 		Amount:      o.AmountInCent(true),
 		OrderID:     o.ID,
 		ConfirmedAt: time.Now(),

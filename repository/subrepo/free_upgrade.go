@@ -1,8 +1,8 @@
 package subrepo
 
 import (
-	"github.com/FTChinese/subscription-api/models/subscription"
-	"github.com/FTChinese/subscription-api/pkg/builder"
+	"errors"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"time"
 )
@@ -11,7 +11,7 @@ import (
 // is large enough to cover premium's price.
 // This won't happen based on current restrictions of max renewal for 3 consecutive years.
 // It is provided here just for logical completeness.
-func (env SubEnv) FreeUpgrade(builder *builder.OrderBuilder) (subs.ConfirmationResult, error) {
+func (env SubEnv) FreeUpgrade(builder *subs.OrderBuilder) (subs.ConfirmationResult, error) {
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
@@ -24,9 +24,15 @@ func (env SubEnv) FreeUpgrade(builder *builder.OrderBuilder) (subs.ConfirmationR
 		return subs.ConfirmationResult{}, err
 	}
 
-	if !member.PermitAliWxUpgrade() {
+	err = builder.DeduceSubsKind(member)
+	if err != nil {
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, subscription.ErrUpgradeInvalid
+		return subs.ConfirmationResult{}, err
+	}
+
+	if builder.GetSubsKind() != enum.OrderKindUpgrade {
+		_ = tx.Rollback()
+		return subs.ConfirmationResult{}, subs.ErrUpgradeInvalid
 	}
 
 	orders, err := tx.FindBalanceSources(builder.GetReaderID())
@@ -36,15 +42,27 @@ func (env SubEnv) FreeUpgrade(builder *builder.OrderBuilder) (subs.ConfirmationR
 
 	wallet := subs.NewWallet(orders, time.Now())
 
-	builder.SetMembership(member).
-		SetWallet(wallet)
+	builder.SetWallet(wallet)
 
 	if err := builder.Build(); err != nil {
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, err
 	}
 
-	confirmed, err := builder.FreeUpgrade()
+	if !builder.IsFreeUpgrade() {
+		return subs.ConfirmationResult{}, errors.New("current balance is not enough to cover upgrading cost")
+	}
+
+	order, _ := builder.GetOrder()
+	confirmed, err := subs.NewConfirmationBuilder(subs.PaymentResult{
+		Amount:      0,
+		OrderID:     order.ID,
+		ConfirmedAt: time.Now(),
+	}, env.Live()).
+		SetMembership(member).
+		SetOrder(order).
+		Build()
+
 	if err != nil {
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, err

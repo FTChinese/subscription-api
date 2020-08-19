@@ -1,13 +1,41 @@
-package subscription
+package subs
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"time"
 )
+
+const (
+	// Wechat's time layout format.
+	layoutWx = "20060102150405"
+)
+
+// ParseWxTime is used to parse wxpay's time format.
+// If it cannot be parsed, default to current time.
+func ParseWxTime(value string) (time.Time, error) {
+	t, err := time.ParseInLocation(layoutWx, value, chrono.TZShanghai)
+	if err != nil {
+		return t, err
+	}
+
+	return t, nil
+}
+
+// ParseAliTime parses alipay time string.
+// Not clear what timezone it uses. Assming Shanghai time.
+func ParseAliTime(value string) time.Time {
+	t, err := time.ParseInLocation(chrono.SQLDateTime, value, chrono.TZShanghai)
+	if err != nil {
+		return time.Now()
+	}
+
+	return t
+}
 
 // WxpayNativeAppOrder creates an order used by native apps.
 type WxpayNativeAppOrder struct {
-	subs.Order
+	Order
 	wechat.AppOrderParams                       // Deprecated
 	Params                wechat.AppOrderParams `json:"params"`
 }
@@ -19,7 +47,7 @@ type WxpayNativeAppOrder struct {
 // It's a shame wechat cannot even use the same data structure
 // for such insignificant differences.
 type WxpayEmbedBrowserOrder struct {
-	subs.Order
+	Order
 	Params wechat.InWxBrowserParams `json:"params"`
 }
 
@@ -31,7 +59,7 @@ type WxpayEmbedBrowserOrder struct {
 // that can be redirected to.
 // and MobileOrder into a single data structure.
 type WxpayBrowserOrder struct {
-	subs.Order
+	Order
 	// TODO: rename json tag codeUrl to qrCode
 	QRCode  string `json:"qrCodeUrl,omitempty"`         // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
 	MWebURL string `json:"mobileRedirectUrl,omitempty"` // This is a standard url that can be redirected to.
@@ -40,13 +68,13 @@ type WxpayBrowserOrder struct {
 // AlipayBrowserOrder represents an order creates for alipay inside
 // browsers
 type AlipayBrowserOrder struct {
-	subs.Order
+	Order
 	RedirectURL string `json:"redirectUrl"`
 }
 
 // AliPayNative is an order created inside a native app.
 type AlipayNativeAppOrder struct {
-	subs.Order
+	Order
 	//FtcOrderID string `json:"ftcOrderId"` // Deprecate
 	Param string `json:"param"`
 }

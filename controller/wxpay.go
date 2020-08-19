@@ -1,11 +1,8 @@
 package controller
 
 import (
-	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/models/subscription"
-	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -54,22 +51,14 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 
 		clientApp := client.NewClientApp(req)
 
-		sugar.Infof("Client app: %+v", clientApp)
-
 		// Parse request body.
-		input := wechat.NewPayInput(tradeType)
-		if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		input, err := gatherWxPayInput(tradeType, req)
+		if err != nil {
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
 		if ve := input.Validate(); ve != nil {
 			_ = render.New(w).Unprocessable(ve)
-			return
-		}
-
-		edition, err := GetEdition(req)
-		if err != nil {
-			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
 
@@ -81,20 +70,17 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			return
 		}
 
-		// Get ftc user id or wechat union id.
-		userID, _ := GetUserID(req.Header)
-
-		expPlan, err := router.prodRepo.PlanByEdition(edition)
+		expPlan, err := router.prodRepo.PlanByEdition(input.Edition)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 			return
 		}
 
-		builder := builder2.NewOrderBuilder(userID).
+		builder := subs.NewOrderBuilder(input.ReaderID()).
 			SetPlan(expPlan).
 			SetPayMethod(enum.PayMethodWx).
 			SetWxAppID(payClient.GetApp().AppID).
-			SetClient(clientApp).
+			SetUserIP(clientApp.UserIP.String).
 			SetWxParams(wechat.UnifiedOrder{
 				TradeType: tradeType,
 				OpenID:    input.OpenID.String,
@@ -112,7 +98,10 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		sugar.Infof("Created order: %+v", order)
 
 		go func() {
-			_ = router.subEnv.SaveOrderClient(builder.ClientApp())
+			_ = router.subEnv.SaveOrderClient(client.OrderClient{
+				OrderID: order.ID,
+				Client:  clientApp,
+			})
 		}()
 
 		// Send order to wx
@@ -142,32 +131,30 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		switch tradeType {
 		// Desktop returns a url that can be turned to QR code
 		case wechat.TradeTypeDesktop:
-			_ = render.New(w).JSON(http.StatusOK, subscription.WxpayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.WxpayBrowserOrder{
 				Order:  order,
 				QRCode: uor.QRCode.String,
 			})
 
 		// Mobile returns a url which is redirect in browser
 		case wechat.TradeTypeMobile:
-			_ = render.New(w).JSON(http.StatusOK, subscription.WxpayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.WxpayBrowserOrder{
 				Order:   order,
 				MWebURL: uor.MWebURL.String,
 			})
 
 		// Create the json data used by js api
 		case wechat.TradeTypeJSAPI:
-			_ = render.New(w).JSON(http.StatusOK, subscription.WxpayEmbedBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.WxpayEmbedBrowserOrder{
 				Order:  order,
 				Params: payClient.InWxBrowserParams(uor),
 			})
 
 		// Create the json data used by native app.
 		case wechat.TradeTypeApp:
-			params := payClient.AppParams(uor)
-			_ = render.New(w).JSON(http.StatusOK, subscription.WxpayNativeAppOrder{
-				Order:          order,
-				AppOrderParams: params,
-				Params:         payClient.AppParams(uor),
+			_ = render.New(w).JSON(http.StatusOK, subs.WxpayNativeAppOrder{
+				Order:  order,
+				Params: payClient.AppParams(uor),
 			})
 		}
 	}

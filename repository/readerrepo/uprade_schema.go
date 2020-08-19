@@ -4,32 +4,31 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
-// retrieveUpgradeBalance retrieves an upgrade plan to be used in email sent to user.
-func (env ReaderEnv) retrieveUpgradeWallet(upgradeID string) (subs.UpgradeSchema, error) {
+// retrieveUpgradeBalance retrieves an upgrade schema for an order.
+func (env ReaderEnv) retrieveUpgradeBalance(orderID string) (subs.UpgradeSchema, error) {
 
-	var data subs.UpgradeSchema
+	var s subs.UpgradeSchema
 
 	err := env.db.Get(
-		&data,
+		&s,
 		subs.StmtUpgradeBalance(env.GetSubsDB()),
-		upgradeID)
+		orderID)
 
 	if err != nil {
-		logger.WithField("trace", "SubEnv.RetrieveUpgradeWallet").Error(err)
+		logger.WithField("trace", "SubEnv.RetrieveUpgradeBalance").Error(err)
 		return subs.UpgradeSchema{}, err
 	}
 
-	return data, nil
+	return s, nil
 }
 
-// RetrieveProratedOrders retrieves all orders prorated from
-// proration table. Used to send user an email after upgrade.
+// retrieveProratedOrders retrieves all orders prorated used in an upgrade session.
 func (env ReaderEnv) retrieveProratedOrders(upgradeID string) ([]subs.ProratedOrderSchema, error) {
 	var sources = make([]subs.ProratedOrderSchema, 0)
 
 	err := env.db.Select(
 		&sources,
-		subs.StmtListProration(env.GetSubsDB()),
+		subs.StmtListProratedOrders(env.GetSubsDB()),
 		upgradeID)
 
 	if err != nil {
@@ -40,13 +39,13 @@ func (env ReaderEnv) retrieveProratedOrders(upgradeID string) ([]subs.ProratedOr
 	return sources, nil
 }
 
-func (env ReaderEnv) LoadUpgradeSchema(upgradeID string) (subs.UpgradeSchema, error) {
-	upgradeSchema, err := env.retrieveUpgradeWallet(upgradeID)
+func (env ReaderEnv) LoadUpgradeSchema(orderID string) (subs.UpgradeSchema, error) {
+	upgradeSchema, err := env.retrieveUpgradeBalance(orderID)
 	if err != nil {
 		return subs.UpgradeSchema{}, err
 	}
 
-	sources, err := env.retrieveProratedOrders(upgradeID)
+	sources, err := env.retrieveProratedOrders(upgradeSchema.ID)
 	if err != nil {
 		return subs.UpgradeSchema{}, err
 	}

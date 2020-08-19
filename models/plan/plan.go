@@ -47,14 +47,6 @@ type Plan struct {
 	NetPrice  float64 `json:"netPrice"`  // Deprecated
 }
 
-// GetTitle compose the message shown for wxpay or alipay.
-// * 订阅FT中文网标准会员/年
-// * 续订FT中文网标准会员/年
-// * 升级订阅FT中文网高端会员/年
-func (p Plan) GetTitle(k SubsKind) string {
-	return fmt.Sprintf("%sFT中文网%s/%s", k.StringCN(), p.Tier.StringCN(), p.Cycle.StringCN())
-}
-
 // Desc is used for displaying to user.
 // The price show here is not the final price user paid.
 // 标准会员/年 CNY258.00
