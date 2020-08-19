@@ -2,12 +2,11 @@ package subrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"time"
 )
 
-func (env SubEnv) CreateOrder(builder *builder.OrderBuilder) (subs.Order, error) {
+func (env SubEnv) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 	log := logger.WithField("trace", "PayRouter.createOrder")
 
 	otx, err := env.BeginOrderTx()
@@ -22,7 +21,6 @@ func (env SubEnv) CreateOrder(builder *builder.OrderBuilder) (subs.Order, error)
 	// The membership might be empty but the value is
 	// valid.
 	log.Infof("Start retrieving membership for reader %+v", builder.GetReaderID())
-	// TODO: changed sql where clause.
 	member, err := otx.RetrieveMember(builder.GetReaderID())
 	if err != nil {
 		log.Error(err)
@@ -31,14 +29,13 @@ func (env SubEnv) CreateOrder(builder *builder.OrderBuilder) (subs.Order, error)
 	}
 	log.Infof("Membership retrieved %+v", member)
 
-	builder.SetMembership(member)
-	subKind, err := builder.GetSubsKind()
+	err = builder.DeduceSubsKind(member)
 	if err != nil {
 		_ = otx.Rollback()
 		return subs.Order{}, err
 	}
 
-	log.Infof("Subscription kind %s", subKind)
+	log.Infof("Subscription kind %s", builder.GetSubsKind())
 
 	// Step 2: Build an order for the user's chosen plan
 	// with chosen payment method based on previous
@@ -47,7 +44,7 @@ func (env SubEnv) CreateOrder(builder *builder.OrderBuilder) (subs.Order, error)
 
 	// Step 3: required only if this order is used for
 	// upgrading.
-	if subKind == enum.OrderKindUpgrade {
+	if builder.GetSubsKind() == enum.OrderKindUpgrade {
 		// Step 3.1: find previous orders with balance
 		// remaining.
 		// DO not save sources directly. The balance is not
@@ -61,23 +58,25 @@ func (env SubEnv) CreateOrder(builder *builder.OrderBuilder) (subs.Order, error)
 		}
 		log.Infof("Find prorated orders: %+v", orders)
 
-		// Step 3.2: Build upgrade plan
+		// Step 3.2: Build wallet
 		wallet := subs.NewWallet(orders, time.Now())
 
 		builder.SetWallet(wallet)
 	}
 
+	// Now all data are collected. Build order.
 	if err := builder.Build(); err != nil {
 		_ = otx.Rollback()
 		return subs.Order{}, err
 	}
 
-	order, err := builder.Order()
+	order, err := builder.GetOrder()
 	if err != nil {
+		_ = otx.Rollback()
 		return subs.Order{}, err
 	}
 
-	if subKind == enum.OrderKindUpgrade {
+	if order.Usage == enum.OrderKindUpgrade {
 		upgrade, _ := builder.UpgradeSchema()
 
 		// Step 3.4: Save the upgrade plan

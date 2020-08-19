@@ -1,7 +1,7 @@
 package subrepo
 
 import (
-	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
@@ -17,7 +17,7 @@ func TestSubEnv_FreeUpgrade(t *testing.T) {
 	repo.MustSaveMembership(store.MustGetMembership())
 	repo.MustSaveRenewalOrders(profile.StandardOrdersN(10))
 
-	builder := builder2.NewOrderBuilder(profile.AccountID()).
+	builder := subs.NewOrderBuilder(profile.AccountID()).
 		SetPlan(test.YearlyPremium).
 		SetClient(test.RandomClientApp()).
 		SetEnvironment(false)
@@ -25,7 +25,7 @@ func TestSubEnv_FreeUpgrade(t *testing.T) {
 	env := SubEnv{db: test.DB}
 
 	type args struct {
-		builder *builder2.OrderBuilder
+		builder *subs.OrderBuilder
 	}
 	tests := []struct {
 		name    string

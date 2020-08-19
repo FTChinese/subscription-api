@@ -2,7 +2,6 @@ package subs
 
 import (
 	"errors"
-	"github.com/FTChinese/subscription-api/models/util"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/smartwalle/alipay"
 	"strconv"
@@ -25,7 +24,7 @@ func NewPaymentResultAli(n *alipay.TradeNotification) (PaymentResult, error) {
 	return PaymentResult{
 		Amount:      int64(f * 100),
 		OrderID:     n.OutTradeNo,
-		ConfirmedAt: util.ParseAliTime(n.GmtPayment),
+		ConfirmedAt: ParseAliTime(n.GmtPayment),
 	}, nil
 }
 
@@ -38,7 +37,7 @@ func NewPaymentResultWx(n wechat.Notification) (PaymentResult, error) {
 		return PaymentResult{}, errors.New("no order id in wx webhook")
 	}
 
-	confirmedAt, err := util.ParseWxTime(n.TimeEnd.String)
+	confirmedAt, err := ParseWxTime(n.TimeEnd.String)
 	if err != nil {
 		confirmedAt = time.Now()
 	}

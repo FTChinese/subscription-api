@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/FTChinese/go-rest/view"
-	"github.com/FTChinese/subscription-api/models/util"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 )
 
@@ -71,7 +70,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	logger.Infof("Wechat app: %+v", app)
 
 	// Get `code` from request body
-	code, err := util.GetJSONString(req.Body, "code")
+	code, err := GetJSONString(req.Body, "code")
 
 	if err != nil {
 		logger.Error(err)
@@ -180,7 +179,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Parse request body
-	sessionID, err := util.GetJSONString(req.Body, "sessionId")
+	sessionID, err := GetJSONString(req.Body, "sessionId")
 
 	acc, err := router.env.LoadWxAccess(appID, sessionID)
 	// Access token for this openID + appID + clientType is not found

@@ -2,8 +2,8 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/view"
-	"github.com/FTChinese/subscription-api/models/util"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/repository/giftrepo"
 	"github.com/jmoiron/sqlx"
@@ -34,7 +34,7 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	code, err := util.GetJSONString(req.Body, "code")
+	code, err := GetJSONString(req.Body, "code")
 	if err != nil {
 		_ = view.Render(w, view.NewBadRequest(err.Error()))
 		return
@@ -73,7 +73,7 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		// error.field: "member"
 		// error.code: "already_exists"
-		if util.IsAlreadyExists(err) {
+		if db.IsAlreadyExists(err) {
 			r := view.NewReason()
 			r.Field = "member"
 			r.Code = view.CodeAlreadyExists

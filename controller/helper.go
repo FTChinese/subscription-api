@@ -6,7 +6,10 @@ import (
 	"github.com/FTChinese/go-rest/view"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/go-chi/chi"
+	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
 	"github.com/stripe/stripe-go"
 	"net/http"
@@ -53,6 +56,56 @@ func GetEdition(req *http.Request) (product.Edition, error) {
 	}, nil
 }
 
+func gatherWxPayInput(platform wechat.TradeType, req *http.Request) (subs.WxPayInput, error) {
+	input := subs.NewWxPayInput(platform)
+
+	// Get the OpenID field.
+	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		return input, err
+	}
+
+	if input.Tier == enum.TierNull && input.Cycle == enum.CycleNull {
+		// Get the tier and cycle field
+		edition, err := GetEdition(req)
+		if err != nil {
+			return input, err
+		}
+
+		input.Edition = edition
+	}
+
+	if input.FtcID == "" && input.UnionID == "" {
+		input.FtcID = req.Header.Get(ftcIDKey)
+		input.UnionID = req.Header.Get(unionIDKey)
+	}
+
+	return input, nil
+}
+
+func gatherAliPayInput(req *http.Request) (subs.AliPayInput, error) {
+	var input subs.AliPayInput
+	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		return input, err
+	}
+
+	if input.Tier == enum.TierNull && input.Cycle == enum.CycleNull {
+		// Get the tier and cycle field
+		edition, err := GetEdition(req)
+		if err != nil {
+			return input, err
+		}
+
+		input.Edition = edition
+	}
+
+	if input.FtcID == "" && input.UnionID == "" {
+		input.FtcID = req.Header.Get(ftcIDKey)
+		input.UnionID = req.Header.Get(unionIDKey)
+	}
+
+	return input, nil
+}
+
 // getWxAppID from query parameter, and fallback to request header, then fallback to hard-coded one.
 func getWxAppID(req *http.Request) string {
 	appID := req.FormValue("app_id")
@@ -72,7 +125,14 @@ func getWxAppID(req *http.Request) string {
 
 // GetUserID extract ftc uuid or union id from request header.
 func GetUserID(h http.Header) (reader.MemberID, error) {
-	return reader.NewMemberID(h.Get(ftcIDKey), h.Get(unionIDKey))
+	ftcID := h.Get(ftcIDKey)
+	unionID := h.Get(unionIDKey)
+
+	return reader.MemberID{
+		CompoundID: "",
+		FtcID:      null.NewString(ftcID, ftcID != ""),
+		UnionID:    null.NewString(unionID, unionID != ""),
+	}, nil
 }
 
 // CastStripeError tries to cast an error to stripe.Error, or nil if it is not.

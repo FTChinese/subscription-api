@@ -1,4 +1,4 @@
-package plan
+package product
 
 type Currency string
 

@@ -75,7 +75,7 @@ func (r *Repo) SaveProratedOrders(upgrade subs.UpgradeSchema) {
 
 	for _, v := range upgrade.Sources {
 		_, err := r.db.NamedExec(
-			subs.StmtSaveProration(config.SubsDBProd),
+			subs.StmtSaveProratedOrder(config.SubsDBProd),
 			v)
 
 		if err != nil {

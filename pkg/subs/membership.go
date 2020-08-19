@@ -2,8 +2,6 @@ package subs
 
 import (
 	"fmt"
-	"github.com/FTChinese/subscription-api/models/subscription"
-	"github.com/FTChinese/subscription-api/models/util"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"time"
@@ -236,10 +234,6 @@ func (m Membership) SubsKind(p product.ExpandedPlan) (enum.OrderKind, error) {
 		return enum.OrderKindCreate, nil
 	}
 
-	//if p.IsZero() {
-	//	return plan.SubsKindNull, ErrPlanRequired
-	//}
-
 	if m.Status != enum.SubsStatusNull && m.Status.ShouldCreate() {
 		return enum.OrderKindCreate, nil
 	}
@@ -253,7 +247,7 @@ func (m Membership) SubsKind(p product.ExpandedPlan) (enum.OrderKind, error) {
 		if m.inRenewalPeriod() {
 			return enum.OrderKindRenew, nil
 		} else {
-			return enum.OrderKindNull, subscription.ErrRenewalForbidden
+			return enum.OrderKindNull, ErrRenewalForbidden
 		}
 	}
 
@@ -261,7 +255,11 @@ func (m Membership) SubsKind(p product.ExpandedPlan) (enum.OrderKind, error) {
 		return enum.OrderKindUpgrade, nil
 	}
 
-	return enum.OrderKindNull, subscription.ErrSubsUsageUnclear
+	if m.Tier == enum.TierPremium && p.Tier == enum.TierStandard {
+		return enum.OrderKindNull, ErrDowngradeForbidden
+	}
+
+	return enum.OrderKindNull, ErrUnknownSubsKind
 }
 
 // FromAliWxOrder build/create a new membership based on an confirmed order.
@@ -313,7 +311,7 @@ func (m Membership) PermitStripeCreate() error {
 		if m.IsExpired() {
 			return nil
 		}
-		return util.ErrNonStripeValidSub
+		return ErrNonStripeValidSub
 	}
 
 	if m.PaymentMethod == enum.PayMethodStripe {
@@ -330,12 +328,12 @@ func (m Membership) PermitStripeCreate() error {
 
 		// Now it is not expired, or auto renewal,
 		// and status is active.
-		return util.ErrActiveStripeSub
+		return ErrActiveStripeSub
 	}
 
 	// Member is either not expired, or auto renewal
 	// Deny any other cases.
-	return util.ErrUnknownSubState
+	return ErrUnknownSubState
 }
 
 // PermitStripeUpgrade tests whether a stripe customer with
@@ -405,7 +403,7 @@ func (m Membership) MergeIAPMembership(iapMember Membership) (Membership, error)
 		// b != 0, a == 0 iap already exists while ftc is zero;
 		// b != 0, a != 0 iap already exists and ftc is not zero.
 		// It includes both non-zero cases.
-		return Membership{}, subscription.ErrLinkToMultipleFTC
+		return Membership{}, ErrLinkToMultipleFTC
 	}
 
 	// Here b == 0, a != 0.
@@ -423,12 +421,12 @@ func (m Membership) MergeIAPMembership(iapMember Membership) (Membership, error)
 	// to link to the same FTC account which is linked to old
 	// apple memberID.
 	if m.IsIAP() {
-		return Membership{}, subscription.ErrTargetLinkedToOtherIAP
+		return Membership{}, ErrTargetLinkedToOtherIAP
 	}
 
 	// FTC side have a valid membership purchased via
 	// non-apple channel.
-	return Membership{}, subscription.ErrHasValidNonIAPMember
+	return Membership{}, ErrHasValidNonIAPMember
 }
 
 // FromGiftCard creates a new instance based on a gift card.
