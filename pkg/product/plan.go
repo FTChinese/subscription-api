@@ -1,10 +1,23 @@
 package product
 
+import (
+	"fmt"
+	"github.com/FTChinese/go-rest/enum"
+	"github.com/guregu/null"
+)
+
 type Plan struct {
 	ID        string  `json:"id" db:"plan_id"`
 	ProductID string  `json:"productId" db:"product_id"`
 	Price     float64 `json:"price" db:"price"`
 	Edition
+	Description null.String `json:"description" db:"description"`
+}
+
+// PaymentTitle is used as the value of `subject` for alipay,
+// and `body` for wechat pay.
+func (p Plan) PaymentTitle(k enum.OrderKind) string {
+	return fmt.Sprintf("%sFT中文网%s", k.StringSC(), p.Edition.String())
 }
 
 type ExpandedPlan struct {
