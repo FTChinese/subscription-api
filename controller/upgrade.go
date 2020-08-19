@@ -1,13 +1,10 @@
 package controller
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/go-rest/view"
-	"github.com/FTChinese/subscription-api/models/subscription"
-	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"net/http"
 )
 
@@ -33,46 +30,40 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 
 	if err != nil {
 		switch err {
-		case subscription.ErrUpgradeInvalid:
-			_ = view.Render(w, view.NewBadRequest(err.Error()))
+		case subs.ErrUpgradeInvalid:
+			_ = render.New(w).BadRequest(err.Error())
 		default:
-			_ = view.Render(w, view.NewDBFailure(err))
+			_ = render.New(w).DBError(err)
 		}
-
 		return
 	}
 
-	_ = view.Render(w, view.NewResponse().SetBody(pi))
+	_ = render.New(w).JSON(http.StatusOK, pi)
 }
 
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
 
-	p, _ := router.prodRepo.PlanByEdition(product.Edition{
-		Tier:  enum.TierPremium,
-		Cycle: enum.CycleYear,
-	})
+	p, _ := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
 	clientApp := client.NewClientApp(req)
 
-	builder := builder2.NewOrderBuilder(userID).
+	builder := subs.NewOrderBuilder(userID).
 		SetPlan(p).
-		SetClient(clientApp).
 		SetEnvironment(router.subEnv.Live())
 
 	confirmed, err := router.subEnv.FreeUpgrade(builder)
 	if err != nil {
 		switch err {
-		case subscription.ErrUpgradeInvalid:
-			_ = view.Render(w, view.NewBadRequest(err.Error()))
+		case subs.ErrUpgradeInvalid:
+			_ = render.New(w).BadRequest(err.Error())
 
-		case subscription.ErrBalanceCannotCoverUpgrade:
+		case subs.ErrBalanceCannotCoverUpgrade:
 			pi, _ := builder.PaymentIntent()
-			_ = view.Render(w, view.NewResponse().SetBody(pi))
+			_ = render.New(w).JSON(http.StatusOK, pi)
 
 		default:
-			_ = view.Render(w, view.NewDBFailure(err))
+			_ = render.New(w).DBError(err)
 		}
-
 		return
 	}
 
@@ -81,10 +72,12 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		_ = router.subEnv.BackUpMember(confirmed.Snapshot)
 	}()
 
-	orderClient := builder.ClientApp()
 	// Save client app info
 	go func() {
-		_ = router.subEnv.SaveOrderClient(orderClient)
+		_ = router.subEnv.SaveOrderClient(client.OrderClient{
+			OrderID: confirmed.Order.ID,
+			Client:  clientApp,
+		})
 	}()
 
 	wallet := builder.GetWallet()
@@ -92,5 +85,5 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		_ = router.sendFreeUpgradeEmail(confirmed.Order, wallet)
 	}()
 
-	_ = view.Render(w, view.NewNoContent())
+	_ = render.New(w).NoContent()
 }

@@ -3,6 +3,7 @@ package reader
 import (
 	"errors"
 	"github.com/guregu/null"
+	"strings"
 )
 
 // FtcID is used to identify an FTC user.
@@ -34,4 +35,35 @@ func NewMemberID(ftcID, unionID string) (MemberID, error) {
 		return id, errors.New("ftcID and unionID should not both be null")
 	}
 	return id, nil
+}
+
+func (m *MemberID) Normalize() error {
+	if m.FtcID.IsZero() && m.UnionID.IsZero() {
+		return errors.New("ftcID and unionID should not both be null")
+	}
+
+	if m.FtcID.Valid {
+		m.CompoundID = m.FtcID.String
+		return nil
+	}
+
+	m.CompoundID = m.UnionID.String
+	return nil
+}
+
+// BuildFindInSet builds a value to be used in MySQL
+// function FIND_IN_SET(str, strlist) so that find
+// a user's data by both ftc id and union id.
+func (m *MemberID) BuildFindInSet() string {
+	strList := make([]string, 0)
+
+	if m.FtcID.Valid {
+		strList = append(strList, m.FtcID.String)
+	}
+
+	if m.UnionID.Valid {
+		strList = append(strList, m.UnionID.String)
+	}
+
+	return strings.Join(strList, ",")
 }

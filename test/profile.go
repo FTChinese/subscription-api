@@ -171,11 +171,11 @@ func (p Profile) StandardOrdersN(n int) []subs.Order {
 			MemberID: p.AccountID(),
 			BasePlan: p.plan.BasePlan,
 			Price:    p.plan.Price,
-			Charge: subs.Charge{
+			Charge: product.Charge{
 				Amount:   p.plan.Amount,
 				Currency: p.plan.Currency,
 			},
-			Duration: subs.Duration{
+			Duration: product.Duration{
 				CycleCount: 1,
 				ExtraDays:  1,
 			},

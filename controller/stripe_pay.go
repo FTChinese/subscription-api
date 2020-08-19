@@ -5,10 +5,10 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/view"
 	ftcplan "github.com/FTChinese/subscription-api/models/plan"
-	"github.com/FTChinese/subscription-api/models/util"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	ftcstripe "github.com/FTChinese/subscription-api/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/repository/striperepo"
 	"github.com/jmoiron/sqlx"
@@ -149,7 +149,7 @@ func (router StripeRouter) SetDefaultPaymentMethod(w http.ResponseWriter, req *h
 		return
 	}
 
-	pmID, err := util.GetJSONString(req.Body, "defaultPaymentMethod")
+	pmID, err := GetJSONString(req.Body, "defaultPaymentMethod")
 	if err != nil {
 		logrus.Error(err)
 		_ = view.Render(w, view.NewBadRequest(err.Error()))
@@ -262,9 +262,9 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 		}
 
 		switch err {
-		case util.ErrNonStripeValidSub,
-			util.ErrActiveStripeSub,
-			util.ErrUnknownSubState:
+		case subs.ErrNonStripeValidSub,
+			subs.ErrActiveStripeSub,
+			subs.ErrUnknownSubState:
 			_ = view.Render(w, view.NewBadRequest(err.Error()))
 		default:
 			_ = view.Render(w, view.NewDBFailure(err))

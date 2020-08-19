@@ -6,7 +6,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/view"
-	"github.com/FTChinese/subscription-api/models/subscription"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
@@ -154,7 +153,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		switch err {
-		case subscription.ErrLinkToMultipleFTC:
+		case subs.ErrLinkToMultipleFTC:
 			r := view.NewReason()
 			r.Field = "iap_membership"
 			r.Code = "already_linked"
@@ -162,7 +161,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 			_ = view.Render(w, view.NewUnprocessable(r))
 			return
 
-		case subscription.ErrTargetLinkedToOtherIAP:
+		case subs.ErrTargetLinkedToOtherIAP:
 			r := view.NewReason()
 			r.Field = "ftc_membership"
 			r.Code = "already_linked"
@@ -170,7 +169,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 			_ = view.Render(w, view.NewUnprocessable(r))
 			return
 
-		case subscription.ErrHasValidNonIAPMember:
+		case subs.ErrHasValidNonIAPMember:
 			r := view.NewReason()
 			r.Field = "ftc_membership"
 			r.Code = "valid_non_iap"

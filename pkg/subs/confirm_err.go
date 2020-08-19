@@ -35,14 +35,3 @@ type ConfirmErrSchema struct {
 	Succeeded bool        `db:"succeeded"`
 	Failed    null.String `db:"failed"`
 }
-
-// FreeUpgrade contains the data after creating/upgrading/renewing a membership.
-// All data here is in a final state.
-// Those data can be directly save into database.
-// The generated of those fields has a intertwined dependency
-// on each other, so they are return in one batch.
-type ConfirmationResult struct {
-	Order      Order          // The confirmed order.
-	Membership Membership     // The updated membership.
-	Snapshot   MemberSnapshot // // Snapshot of previous membership
-}

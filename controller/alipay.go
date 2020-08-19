@@ -4,9 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/go-rest/view"
-	"github.com/FTChinese/subscription-api/models/subscription"
 	"github.com/FTChinese/subscription-api/pkg/ali"
-	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/sirupsen/logrus"
@@ -31,11 +29,9 @@ func NewAliRouter(baseRouter PayRouter) AliPayRouter {
 
 	app := ali.MustInitApp()
 
-	client := alipay.New(app.ID, app.PublicKey, app.PrivateKey, true)
-
 	r := AliPayRouter{
 		appID:     app.ID,
-		client:    client,
+		client:    alipay.New(app.ID, app.PublicKey, app.PrivateKey, true),
 		PayRouter: baseRouter,
 	}
 
@@ -53,6 +49,13 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		"type":  kind.String(),
 	})
 
+	// TODO: put all those fields in request body.
+	// returnUrl: string;
+	// tier: string;
+	// cycle: string;
+	// planId: string;
+	// ftcId: string;
+	// unionId: string;
 	return func(w http.ResponseWriter, req *http.Request) {
 		err := req.ParseForm()
 		if err != nil {
@@ -63,44 +66,29 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		clientApp := client.NewClientApp(req)
 
-		edition, err := GetEdition(req)
+		input, err := gatherAliPayInput(req)
 		if err != nil {
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
-
-		logger.Infof("Client app: %+v", clientApp)
-
-		//if err := models.AllowAndroidPurchase(clientApp); err != nil {
-		//	logger.Error(err)
-		//	_ = view.Render(w, view.NewBadRequest(err.Error()))
-		//	return
-		//}
-
-		userID, _ := GetUserID(req.Header)
-
-		plan, err := router.prodRepo.PlanByEdition(edition)
-		if err != nil {
-			logger.Error(err)
-			_ = view.Render(w, view.NewBadRequest(err.Error()))
+		if ve := input.Validate(); ve != nil {
+			_ = render.New(w).Unprocessable(ve)
 			return
 		}
 
-		builder := builder2.NewOrderBuilder(userID).
+		plan, err := router.prodRepo.PlanByEdition(input.Edition)
+		if err != nil {
+			logger.Error(err)
+			_ = render.New(w).BadRequest(err.Error())
+			return
+		}
+
+		builder := subs.NewOrderBuilder(input.ReaderID()).
 			SetPlan(plan).
 			SetPayMethod(enum.PayMethodAli)
 
-		// TODO: save client info
 		order, err := router.subEnv.CreateOrder(builder)
 
-		//order, err := router.createOrder(
-		//	userID,
-		//	plan,
-		//	enum.PayMethodAli,
-		//	clientApp,
-		//	null.String{},
-		//)
-		//
 		if err != nil {
 			logger.Error(err)
 			router.handleOrderErr(w, err)
@@ -110,11 +98,11 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		logger.Infof("Created order: %+v", order)
 
 		go func() {
-			_ = router.subEnv.SaveOrderClient(builder.ClientApp())
+			_ = router.subEnv.SaveOrderClient(client.OrderClient{
+				OrderID: order.ID,
+				Client:  clientApp,
+			})
 		}()
-
-		// Alipay specific handling.
-		returnURL := req.FormValue("return_url")
 
 		switch kind {
 		case ali.EntryApp:
@@ -127,51 +115,49 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 			if err != nil {
 				logger.Error(err)
-				_ = view.Render(w, view.NewBadRequest(err.Error()))
+				_ = render.New(w).BadRequest(err.Error())
 				return
 			}
 
-			_ = view.Render(
-				w,
-				view.NewResponse().SetBody(subscription.AlipayNativeAppOrder{
+			_ = render.New(w).
+				JSON(http.StatusOK, subs.AlipayNativeAppOrder{
 					Order: order,
 					Param: queryStr,
-				}),
-			)
+				})
 			return
 
 		case ali.EntryDesktopWeb:
 			redirectURL, err := router.client.TradePagePay(
-				builder.AliDesktopPayParams(returnURL),
+				builder.AliDesktopPayParams(input.ReturnURL),
 			)
 			if err != nil {
 				logger.Error(err)
-				_ = view.Render(w, view.NewBadRequest(err.Error()))
+				_ = render.New(w).BadRequest(err.Error())
 				return
 			}
 
 			logger.Infof("Ali desktop browser redirect url: %+v\n", redirectURL)
 
-			_ = view.Render(w, view.NewResponse().SetBody(subscription.AlipayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserOrder{
 				Order:       order,
 				RedirectURL: redirectURL.String(),
-			}))
+			})
 
 		case ali.EntryMobileWeb:
 			redirectURL, err := router.client.TradeWapPay(
-				builder.AliWapPayParams(returnURL),
+				builder.AliWapPayParams(input.ReturnURL),
 			)
 			if err != nil {
 				logger.Error(err)
-				_ = view.Render(w, view.NewBadRequest(err.Error()))
+				_ = render.New(w).BadRequest(err.Error())
 				return
 			}
 			logger.Infof("Ali mobile browser redirect url: %+v\n", redirectURL)
 
-			_ = view.Render(w, view.NewResponse().SetBody(subscription.AlipayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserOrder{
 				Order:       order,
-				RedirectURL: returnURL,
-			}))
+				RedirectURL: input.ReturnURL,
+			})
 		}
 	}
 }

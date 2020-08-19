@@ -1,4 +1,4 @@
-package subs
+package product
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 )
 
 type Charge struct {
+	// The actual amount payable.
 	Amount   float64 `json:"amount" db:"charged_amount"` // Actual price paid.
 	Currency string  `json:"currency" db:"currency"`     // in which currency.
 }

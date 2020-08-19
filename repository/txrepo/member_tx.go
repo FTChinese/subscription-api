@@ -181,15 +181,14 @@ func (tx MemberTx) DeleteMember(id reader.MemberID) error {
 
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
-func (tx MemberTx) FindBalanceSources(accountID reader.MemberID) ([]subs.ProratedOrder, error) {
+func (tx MemberTx) FindBalanceSources(userIDs reader.MemberID) ([]subs.ProratedOrder, error) {
 
 	var orders = make([]subs.ProratedOrder, 0)
 
 	err := tx.Select(
 		&orders,
 		subs.StmtBalanceSource(tx.dbName),
-		accountID.CompoundID,
-		accountID.UnionID)
+		userIDs.BuildFindInSet())
 
 	if err != nil {
 		logger.WithField("trace", "MemberTx.FindBalanceSources").Error(err)
@@ -219,7 +218,7 @@ func (tx MemberTx) SaveUpgradeSchema(up subs.UpgradeSchema) error {
 
 	for _, v := range up.Sources {
 		_, err := tx.NamedExec(
-			subs.StmtSaveProration(tx.dbName),
+			subs.StmtSaveProratedOrder(tx.dbName),
 			v)
 
 		if err != nil {
@@ -235,7 +234,7 @@ func (tx MemberTx) SaveUpgradeSchema(up subs.UpgradeSchema) error {
 // prorated order for an upgrade operation.
 func (tx MemberTx) ProratedOrdersUsed(upgradeID string) error {
 	_, err := tx.Exec(
-		subs.StmtProrationUsed(tx.dbName),
+		subs.StmtProratedOrdersUsed(tx.dbName),
 		upgradeID,
 	)
 	if err != nil {

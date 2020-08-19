@@ -3,9 +3,8 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
-	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/models/plan"
-	"github.com/FTChinese/subscription-api/models/util"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -50,20 +49,27 @@ func (router PayRouter) findPlan(req *http.Request) (plan.Plan, error) {
 	return router.subEnv.GetCurrentPlans().FindPlan(t + "_" + c)
 }
 
+// Centralized error handling after order creation.
+// It handles the errors propagated from Membership.SubsKind(),
 func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	switch err {
-	case util.ErrBeyondRenewal:
-		_ = view.Render(w, view.NewForbidden(err.Error()))
+	// When the order is used to renew but not allowed.
+	case subs.ErrRenewalForbidden:
+		_ = render.New(w).Unprocessable(&render.ValidationError{
+			Message: err.Error(),
+			Field:   "renewal",
+			Code:    render.CodeInvalid,
+		})
 
-	case util.ErrDowngrade:
-		r := view.NewReason()
-		r.Field = "downgrade"
-		r.Code = view.CodeInvalid
-		r.SetMessage(err.Error())
-		_ = view.Render(w, view.NewUnprocessable(r))
+	case subs.ErrDowngradeForbidden:
+		_ = render.New(w).Unprocessable(&render.ValidationError{
+			Message: err.Error(),
+			Field:   "downgrade",
+			Code:    render.CodeInvalid,
+		})
 
 	default:
-		_ = view.Render(w, view.NewDBFailure(err))
+		_ = render.New(w).DBError(err)
 	}
 }
 
@@ -93,7 +99,7 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 		parcel, err = letter.NewRenewalParcel(account, order)
 
 	case enum.OrderKindUpgrade:
-		up, err := router.readerEnv.LoadUpgradeSchema(order.UpgradeSchemaID.String)
+		up, err := router.readerEnv.LoadUpgradeSchema(order.ID)
 		if err != nil {
 			return err
 		}

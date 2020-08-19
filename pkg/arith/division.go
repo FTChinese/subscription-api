@@ -1,4 +1,4 @@
-package util
+package arith
 
 // Division returns the integer quotient and remainder of x/y
 func Division(x, y float64) (int64, float64) {

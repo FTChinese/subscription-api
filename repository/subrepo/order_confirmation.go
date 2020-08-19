@@ -3,7 +3,6 @@ package subrepo
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
-	builder2 "github.com/FTChinese/subscription-api/pkg/builder"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
@@ -37,7 +36,7 @@ func (env SubEnv) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Con
 		}
 	}
 
-	builder := builder2.NewConfirmationBuilder(result, env.Live()).
+	builder := subs.NewConfirmationBuilder(result, env.Live()).
 		SetOrder(order)
 
 	if err := builder.ValidateOrder(); err != nil {
@@ -91,7 +90,7 @@ func (env SubEnv) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Con
 
 	// Flag upgrade balance source as consumed.
 	if confirmed.Order.Usage == enum.OrderKindUpgrade {
-		err := tx.ProratedOrdersUsed(confirmed.Order.UpgradeSchemaID.String)
+		err := tx.ProratedOrdersUsed(confirmed.Order.ID)
 
 		if err != nil {
 			_ = tx.Rollback()
