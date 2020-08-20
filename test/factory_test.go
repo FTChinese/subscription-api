@@ -28,11 +28,11 @@ func TestWxXMLPrepay(t *testing.T) {
 }
 
 func TestWxPrepay(t *testing.T) {
-	uni := WxPrepay(MustGenOrderID())
+	uni := WxPrepay(subs.MustGenerateOrderID())
 
 	t.Logf("Unified order: %+v", uni)
 }
 
 func TestGenCardSerial(t *testing.T) {
-	t.Log(GenCardSerial())
+	t.Log(genCardSerial())
 }
