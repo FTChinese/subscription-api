@@ -6,7 +6,7 @@ import (
 )
 
 // SaveAliNotification logs everything Alipay sends.
-func (env SubEnv) SaveAliNotification(n alipay.TradeNotification) error {
+func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
 
 	_, err := env.db.Exec(InsertAliPayLoad,
 		n.NotifyTime,
@@ -41,7 +41,7 @@ func (env SubEnv) SaveAliNotification(n alipay.TradeNotification) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "SubEnv.SaveAliNotification").Error(err)
+		logger.WithField("trace", "Env.SaveAliNotification").Error(err)
 		return err
 	}
 
@@ -49,7 +49,7 @@ func (env SubEnv) SaveAliNotification(n alipay.TradeNotification) error {
 }
 
 // SavePrepayResp saves Wechat prepay response for future analysis.
-func (env SubEnv) SavePrepayResp(resp wechat.UnifiedOrderResp) error {
+func (env Env) SavePrepayResp(resp wechat.UnifiedOrderResp) error {
 
 	_, err := env.db.NamedExec(
 		InsertWxPrepay,
@@ -64,7 +64,7 @@ func (env SubEnv) SavePrepayResp(resp wechat.UnifiedOrderResp) error {
 }
 
 // SaveWxNotification saves a wechat notification for logging purpose.
-func (env SubEnv) SaveWxNotification(n wechat.Notification) error {
+func (env Env) SaveWxNotification(n wechat.Notification) error {
 
 	_, err := env.db.NamedExec(
 		InsertWxPayLoad,
@@ -79,7 +79,7 @@ func (env SubEnv) SaveWxNotification(n wechat.Notification) error {
 }
 
 // SaveWxQueryResp stores wechat pay query result to DB.
-func (env SubEnv) SaveWxQueryResp(resp wechat.OrderQueryResp) error {
+func (env Env) SaveWxQueryResp(resp wechat.OrderQueryResp) error {
 
 	_, err := env.db.NamedExec(
 		InsertWxQueryPayLoad,
