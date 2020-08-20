@@ -16,14 +16,14 @@ import (
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	env  subrepo.SubEnv
+	env  subrepo.Env
 	repo products.Env
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
 func NewPaywallRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig) PaywallRouter {
 	return PaywallRouter{
-		env:  subrepo.NewSubEnv(db, c, b),
+		env:  subrepo.NewEnv(db, c, b),
 		repo: products.NewEnv(db, c),
 	}
 }
