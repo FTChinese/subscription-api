@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (env SubEnv) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
+func (env Env) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 	log := logger.WithField("trace", "PayRouter.createOrder")
 
 	otx, err := env.BeginOrderTx()
@@ -76,17 +76,6 @@ func (env SubEnv) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 		return subs.Order{}, err
 	}
 
-	if order.Kind == enum.OrderKindUpgrade {
-		upgrade, _ := builder.UpgradeSchema()
-
-		// Step 3.4: Save the upgrade plan
-		// Step 3.5: Save prorated orders
-		if err := otx.SaveUpgradeSchema(upgrade); err != nil {
-			_ = otx.Rollback()
-			return subs.Order{}, err
-		}
-	}
-
 	// Step 4: Save this order.
 	if err := otx.SaveOrder(order); err != nil {
 		log.Error(err)
@@ -94,6 +83,15 @@ func (env SubEnv) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 		return subs.Order{}, err
 	}
 	log.Infof("Order saved %s", order.ID)
+
+	// Step 5: Save prorated orders for upgrade.
+	if order.Kind == enum.OrderKindUpgrade {
+
+		if err := otx.SaveProratedOrders(builder.GetWallet().Sources); err != nil {
+			_ = otx.Rollback()
+			return subs.Order{}, err
+		}
+	}
 
 	if err := otx.Commit(); err != nil {
 		log.Error(err)
