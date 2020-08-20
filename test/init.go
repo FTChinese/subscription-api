@@ -1,10 +1,7 @@
 package test
 
 import (
-	"github.com/FTChinese/go-rest/connect"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
-	"github.com/FTChinese/subscription-api/models/plan"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -22,24 +19,13 @@ const (
 	MyEmail    = "neefrankie@gmail.com"
 )
 
-func mustFindPlan(tier enum.Tier, cycle enum.Cycle) plan.Plan {
-	p, err := plan.FindPlan(tier, cycle)
-	if err != nil {
-		panic(err)
-	}
-
-	return p
-}
-
-var YearlyStandard = mustFindPlan(enum.TierStandard, enum.CycleYear)
-var YearlyPremium = mustFindPlan(enum.TierPremium, enum.CycleYear)
-
 var (
+	CFG         = config.NewBuildConfig(false, false)
 	DB          *sqlx.DB
 	Postman     postoffice.PostOffice
 	Cache       *cache.Cache
 	WxOAuthApp  wxlogin.OAuthApp
-	WxPayApp    wechat.PayApp
+	WxPayApp    wechat.PayApp = wechat.MustNewPayApp("wxapp.native_app")
 	WxPayClient wechat.Client
 	StripeKey   string
 )
@@ -53,27 +39,14 @@ func init() {
 		log.Fatal(err)
 	}
 
-	var dbConn connect.Connect
-	err = viper.UnmarshalKey("mysql.dev", &dbConn)
-	if err != nil {
-		panic(err)
-	}
-
-	DB = db.MustNewDB(dbConn)
+	DB = db.MustNewDB(CFG.MustGetDBConn(""))
 
 	Postman = postoffice.New(config.MustGetHanqiConn())
 
 	Cache = cache.New(cache.DefaultExpiration, 0)
 
-	err = viper.UnmarshalKey("wxapp.m_subs", &WxOAuthApp)
-	if err != nil {
-		panic(err)
-	}
-
-	err = viper.UnmarshalKey("wxapp.m_subs", &WxPayApp)
-	if err != nil {
-		panic(err)
-	}
+	WxOAuthApp = wxlogin.MustNewOAuthApp("wxapp.native_app")
+	WxPayApp = wechat.MustNewPayApp("wxapp.native_app")
 
 	WxPayClient = wechat.NewClient(WxPayApp)
 
