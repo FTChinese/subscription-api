@@ -32,7 +32,7 @@ func (env StripeEnv) WebHookOnSubscription(memberID reader.MemberID, ss *stripe.
 		return sql.ErrNoRows
 	}
 
-	if m.StripeSubID.String != ss.ID {
+	if m.StripeSubsID.String != ss.ID {
 		_ = tx.Rollback()
 		return sql.ErrNoRows
 	}
