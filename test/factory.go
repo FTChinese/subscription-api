@@ -8,10 +8,8 @@ import (
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
-	"github.com/Pallinder/go-randomdata"
-	"github.com/brianvoe/gofakeit/v4"
+	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"github.com/smartwalle/alipay"
@@ -21,70 +19,82 @@ import (
 	"time"
 )
 
+func SeedGoFake() {
+	gofakeit.Seed(time.Now().UnixNano())
+}
+
 func RandomClientApp() client.Client {
+	SeedGoFake()
+
 	return client.Client{
-		ClientType: enum.Platform(randomdata.Number(1, 4)),
-		Version:    null.StringFrom(GenVersion()),
-		UserIP:     null.StringFrom(randomdata.IpV4Address()),
-		UserAgent:  null.StringFrom(randomdata.UserAgentString()),
+		ClientType: enum.Platform(rand.IntRange(1, 10)),
+		Version:    null.StringFrom(genVersion()),
+		UserIP:     null.StringFrom(gofakeit.IPv4Address()),
+		UserAgent:  null.StringFrom(gofakeit.UserAgent()),
 	}
 }
 
-// GenVersion creates a semantic version string.
-func GenVersion() string {
-	return fmt.Sprintf("%d.%d.%d", randomdata.Number(10), randomdata.Number(1, 10), randomdata.Number(1, 10))
+// genVersion creates a semantic version string.
+func genVersion() string {
+	return fmt.Sprintf("%d.%d.%d",
+		rand.IntRange(1, 10),
+		rand.IntRange(1, 10),
+		rand.IntRange(1, 10))
 }
 
-func MustGenOrderID() string {
-	id, err := subs.GenerateOrderID()
-	if err != nil {
-		panic(err)
-	}
-
-	return id
-}
-
-func GetCusID() string {
+func genCustomerID() string {
 	id, _ := gorest.RandomBase64(9)
 	return "cus_" + id
 }
 
-func GenWxID() string {
+func genStripeSubID() string {
+	id, _ := rand.Base64(9)
+	return "sub_" + id
+}
+
+func genStripePlanID() string {
+	return "plan_" + rand.String(14)
+}
+
+func randNumericString() string {
+	return rand.StringWithCharset(9, "0123456789")
+}
+
+func genAppleSubID() string {
+	return "1000000" + randNumericString()
+}
+
+func genWxID() string {
 	id, _ := gorest.RandomBase64(21)
 	return id
 }
 
-func GenToken() string {
+func genToken() string {
 	token, _ := gorest.RandomBase64(82)
 	return token
 }
 
-func RandomPayMethod() enum.PayMethod {
-	return enum.PayMethod(randomdata.Number(1, 3))
+func randomPayMethod() enum.PayMethod {
+	return enum.PayMethod(rand.IntRange(1, 3))
 }
 
-func GenAvatar() string {
+func genAvatar() string {
 	var gender = []string{"men", "women"}
 
-	n := randomdata.Number(1, 35)
-	g := gender[randomdata.Number(0, 2)]
+	n := rand.IntRange(1, 35)
+	g := gender[rand.IntRange(0, 2)]
 
 	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
 }
 
-const charset = "0123456789"
-
-func randNumericString() string {
-	return rand.StringWithCharset(9, charset)
+func genLicenceID() string {
+	return "lic_" + rand.String(12)
 }
 
-func GenAppleSubID() string {
-	return "1000000" + randNumericString()
-}
-
-func SimplePassword() string {
+func simplePassword() string {
 	return gofakeit.Password(true, false, true, false, false, 8)
 }
+
 func WxXMLNotification(orderID string) string {
 	openID, _ := gorest.RandomBase64(21)
 	nonce, _ := gorest.RandomHex(16)
@@ -180,15 +190,15 @@ func AliNoti() alipay.TradeNotification {
 	}
 }
 
-func GenCardSerial() string {
+func genCardSerial() string {
 	now := time.Now()
 	anni := now.Year() - 2005
-	suffix := randomdata.Number(0, 9999)
+	suffix := rand.IntRange(0, 9999)
 
 	return fmt.Sprintf("%d%02d%04d", anni, now.Month(), suffix)
 }
 
-func GiftCard() redeem.GiftCard {
+func giftCard() redeem.GiftCard {
 	code, _ := gorest.RandomHex(8)
 
 	return redeem.GiftCard{
