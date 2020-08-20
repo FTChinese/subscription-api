@@ -3,7 +3,6 @@ package apple
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/models/plan"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -17,7 +16,7 @@ type Subscription struct {
 	ProductID             string      `db:"product_id"`
 	PurchaseDateUTC       chrono.Time `db:"purchase_date_utc"`
 	ExpiresDateUTC        chrono.Time `db:"expires_date_utc"`
-	plan.BasePlan
+	product.Edition
 	AutoRenewal bool `db:"auto_renewal"`
 }
 
@@ -34,9 +33,9 @@ func (s Subscription) NewMembership(id reader.MemberID) subs.Membership {
 		},
 		ExpireDate:    chrono.DateFrom(s.ExpiresDateUTC.Time),
 		PaymentMethod: enum.PayMethodApple,
-		StripeSubID:   null.String{},
+		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
-		AutoRenew:     s.AutoRenewal,
+		AutoRenewal:   s.AutoRenewal,
 		Status:        enum.SubsStatusNull,
 		AppleSubID:    null.StringFrom(s.OriginalTransactionID),
 	}
@@ -53,9 +52,9 @@ func (s Subscription) BuildOn(m subs.Membership) subs.Membership {
 	m.Cycle = s.Cycle
 	m.ExpireDate = chrono.DateFrom(s.ExpiresDateUTC.Time)
 	m.PaymentMethod = enum.PayMethodApple
-	m.StripeSubID = null.String{}
+	m.StripeSubsID = null.String{}
 	m.StripePlanID = null.String{}
-	m.AutoRenew = s.AutoRenewal
+	m.AutoRenewal = s.AutoRenewal
 	m.Status = enum.SubsStatusNull
 	m.AppleSubID = null.StringFrom(s.OriginalTransactionID)
 
