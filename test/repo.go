@@ -26,7 +26,7 @@ func NewRepo() *Repo {
 	}
 }
 
-func (r *Repo) MustCreateAccount(a reader.Account) {
+func (r *Repo) MustSaveAccount(a reader.Account) {
 	_, err := r.db.NamedExec(stmtInsertAccount, a)
 
 	if err != nil {
@@ -69,11 +69,11 @@ func (r *Repo) MustSaveRenewalOrders(orders []subs.Order) {
 	}
 }
 
-// SaveProratedOrders inserts prorated orders
+// MustSaveProratedOrders inserts prorated orders
 // to test ProratedOrdersUsed.
-func (r *Repo) SaveProratedOrders(upgrade subs.UpgradeSchema) {
+func (r *Repo) MustSaveProratedOrders(pos []subs.ProratedOrder) {
 
-	for _, v := range upgrade.Sources {
+	for _, v := range pos {
 		_, err := r.db.NamedExec(
 			subs.StmtSaveProratedOrder(config.SubsDBProd),
 			v)
