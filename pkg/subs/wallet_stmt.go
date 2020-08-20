@@ -34,3 +34,43 @@ ORDER BY start_date ASC`
 func StmtBalanceSource(db config.SubsDB) string {
 	return fmt.Sprintf(selectBalanceSource, db, db)
 }
+
+// Insert a ProratedOrderSchema.
+// consumed_utc is required only when upgrading is free.
+const insertProratedOrder = `
+INSERT INTO %s.proration
+SET order_id = :order_id,
+	balance = :balance,
+	created_utc = :created_utc,
+	consumed_utc = :consumed_utc,
+	upgrade_order_id = :upgrade_order_id`
+
+// StmtSaveProratedOrder saves an order's balance.
+func StmtSaveProratedOrder(db config.SubsDB) string {
+	return fmt.Sprintf(insertProratedOrder, db)
+}
+
+// Flags all prorated orders as used for an upgrade order.
+const proratedOrdersUsed = `
+UPDATE %s.proration
+SET consumed_utc = UTC_TIMESTAMP()
+WHERE upgrade_order_id = ?`
+
+func StmtProratedOrdersUsed(db config.SubsDB) string {
+	return fmt.Sprintf(proratedOrdersUsed, db)
+}
+
+const selectProratedOrders = `
+SELECT order_id,
+	balance,
+	created_utc,
+	consumed_utc,
+	upgrade_order_id
+FROM %s.proration
+WHERE upgrade_order_id = ?`
+
+// StmtListProratedOrders retrieves all prorated orders for an
+// upgrade order.
+func StmtListProratedOrders(db config.SubsDB) string {
+	return fmt.Sprintf(selectProratedOrders, db)
+}
