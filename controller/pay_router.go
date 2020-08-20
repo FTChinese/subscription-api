@@ -91,7 +91,7 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 	}
 
 	var parcel postoffice.Parcel
-	switch order.Usage {
+	switch order.Kind {
 	case enum.OrderKindCreate:
 		parcel, err = letter.NewSubParcel(account, order)
 

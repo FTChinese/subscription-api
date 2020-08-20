@@ -73,7 +73,7 @@ func (b *ConfirmationBuilder) ValidateOrder() *ConfirmError {
 }
 
 func (b *ConfirmationBuilder) ValidateDuplicateUpgrading() *ConfirmError {
-	if b.order.Usage == enum.OrderKindUpgrade && b.membership.IsValidPremium() {
+	if b.order.Kind == enum.OrderKindUpgrade && b.membership.IsValidPremium() {
 		return &ConfirmError{
 			Err:   errors.New("duplicate upgrading"),
 			Retry: false,
@@ -95,7 +95,7 @@ func (b *ConfirmationBuilder) Build() (ConfirmationResult, error) {
 		Membership: order.Membership(),
 		Snapshot: MemberSnapshot{
 			SnapshotID: GenerateSnapshotID(),
-			Reason:     GetSnapshotReason(order.Usage),
+			Reason:     GetSnapshotReason(order.Kind),
 			CreatedUTC: chrono.TimeNow(),
 			OrderID:    null.StringFrom(order.ID),
 			Membership: b.membership,

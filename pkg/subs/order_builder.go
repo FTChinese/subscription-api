@@ -187,7 +187,7 @@ func (b *OrderBuilder) Build() error {
 		Price:         b.plan.Price,
 		Charge:        charge,
 		Duration:      duration,
-		Usage:         b.kind,
+		Kind:          b.kind,
 		PaymentMethod: b.method,
 		WxAppID:       b.wxAppID,
 		StartDate:     chrono.Date{},
@@ -253,7 +253,7 @@ func (b *OrderBuilder) PaymentIntent() (PaymentIntent, error) {
 	return PaymentIntent{
 		Charge:   b.order.Charge,
 		Duration: b.order.Duration,
-		SubsKind: b.order.Usage,
+		SubsKind: b.order.Kind,
 		Wallet:   b.wallet,
 		Plan: product.IntentPlan{
 			Plan:   b.plan.Plan,
