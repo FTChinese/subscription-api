@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/models/plan"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -18,7 +17,7 @@ import (
 
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
-	subEnv    subrepo.SubEnv
+	subEnv    subrepo.Env
 	readerEnv readerrepo.ReaderEnv
 	prodRepo  products.Env
 	postman   postoffice.PostOffice
@@ -27,26 +26,12 @@ type PayRouter struct {
 
 func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
 	return PayRouter{
-		subEnv:    subrepo.NewSubEnv(db, c, b),
+		subEnv:    subrepo.NewEnv(db, c, b),
 		readerEnv: readerrepo.NewReaderEnv(db, b),
 		prodRepo:  products.NewEnv(db, c),
 		postman:   p,
 		config:    b,
 	}
-}
-
-func (router PayRouter) findPlan(req *http.Request) (plan.Plan, error) {
-	t, err := GetURLParam(req, "tier").ToString()
-	if err != nil {
-		return plan.Plan{}, err
-	}
-
-	c, err := GetURLParam(req, "cycle").ToString()
-	if err != nil {
-		return plan.Plan{}, err
-	}
-
-	return router.subEnv.GetCurrentPlans().FindPlan(t + "_" + c)
 }
 
 // Centralized error handling after order creation.
@@ -99,11 +84,11 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 		parcel, err = letter.NewRenewalParcel(account, order)
 
 	case enum.OrderKindUpgrade:
-		up, err := router.readerEnv.LoadUpgradeSchema(order.ID)
+		pos, err := router.subEnv.ListProratedOrders(order.ID)
 		if err != nil {
 			return err
 		}
-		parcel, err = letter.NewUpgradeParcel(account, order, up)
+		parcel, err = letter.NewUpgradeParcel(account, order, pos)
 	}
 
 	if err != nil {
@@ -112,26 +97,6 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 	}
 
 	log.Info("Send subscription confirmation letter")
-
-	err = router.postman.Deliver(parcel)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	return nil
-}
-
-func (router PayRouter) sendFreeUpgradeEmail(order subs.Order, wallet subs.Wallet) error {
-	log := logger.WithField("trace", "PayRouter.sendFreeUpgradeEmail")
-
-	// Find this user's personal data
-	account, err := router.readerEnv.FindAccountByFtcID(order.FtcID.String)
-
-	if err != nil {
-		return err
-	}
-
-	parcel, err := letter.NewFreeUpgradeParcel(account, order, wallet)
 
 	err = router.postman.Deliver(parcel)
 	if err != nil {
