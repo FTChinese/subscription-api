@@ -9,6 +9,20 @@ type Edition struct {
 	Cycle enum.Cycle `json:"cycle" db:"cycle"`
 }
 
+func NewStdMonthEdition() Edition {
+	return Edition{
+		Tier:  enum.TierStandard,
+		Cycle: enum.CycleMonth,
+	}
+}
+
+func NewStdYearEdition() Edition {
+	return Edition{
+		Tier:  enum.TierStandard,
+		Cycle: enum.CycleYear,
+	}
+}
+
 func NewPremiumEdition() Edition {
 	return Edition{
 		Tier:  enum.TierPremium,
