@@ -90,9 +90,14 @@ func (b *ConfirmationBuilder) Build() (ConfirmationResult, error) {
 		return ConfirmationResult{}, err
 	}
 
+	m, err := order.Membership()
+	if err != nil {
+		return ConfirmationResult{}, err
+	}
+
 	return ConfirmationResult{
 		Order:      order,
-		Membership: order.Membership(),
+		Membership: m,
 		Snapshot: MemberSnapshot{
 			SnapshotID: GenerateSnapshotID(),
 			Reason:     GetSnapshotReason(order.Kind),
