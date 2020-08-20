@@ -60,7 +60,7 @@ func randNumericString() string {
 	return rand.StringWithCharset(9, "0123456789")
 }
 
-func genAppleSubID() string {
+func GenAppleSubID() string {
 	return "1000000" + randNumericString()
 }
 
