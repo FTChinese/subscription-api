@@ -21,9 +21,9 @@ import (
 // WARNING: SubStore is only used to mimic subscription
 // paid via alipay or wxpay.
 // For Stripe and Apple, they do not create orders on our side,
-// so use Profile to generate mock data.
+// so use Persona to generate mock data.
 type SubStore struct {
-	Profile *Profile
+	Profile *Persona
 	Orders  map[string]subs.Order // A user could have multiple orders.
 	Member  subs.Membership       // But only one membership.
 
@@ -33,12 +33,10 @@ type SubStore struct {
 	accountKind   reader.AccountKind
 	payMethod     enum.PayMethod
 	plan          plan.Plan
-	// Saves upgrade schema.
-	upgrade map[string]subs.UpgradeSchema
 }
 
 // NewSubStore represents all the data stored for a single user.
-func NewSubStore(p *Profile) *SubStore {
+func NewSubStore(p *Persona) *SubStore {
 
 	return &SubStore{
 		Profile: p,
@@ -48,9 +46,7 @@ func NewSubStore(p *Profile) *SubStore {
 		// Control behavior of orders and membership.
 		accountKind:   reader.AccountKindFtc,
 		balanceAnchor: time.Now(),
-		payMethod:     RandomPayMethod(),
-		plan:          YearlyStandard,
-		upgrade:       make(map[string]subs.UpgradeSchema),
+		payMethod:     randomPayMethod(),
 	}
 }
 
@@ -80,7 +76,7 @@ func (s *SubStore) SetPlan(p plan.Plan) *SubStore {
 }
 
 func (s *SubStore) GetWallet() subs.Wallet {
-	orders := make([]subs.ProratedOrder, 0)
+	orders := make([]subs.BalanceSource, 0)
 
 	if s.balanceAnchor.IsZero() {
 		s.balanceAnchor = time.Now()
@@ -99,12 +95,11 @@ func (s *SubStore) GetWallet() subs.Wallet {
 			continue
 		}
 
-		o := subs.ProratedOrder{
+		o := subs.BalanceSource{
 			OrderID:   v.ID,
 			Amount:    v.Amount,
 			StartDate: v.StartDate,
 			EndDate:   v.EndDate,
-			Balance:   0,
 		}
 
 		orders = append(orders, o)
@@ -114,12 +109,7 @@ func (s *SubStore) GetWallet() subs.Wallet {
 }
 
 func (s *SubStore) createOrderBuilder() *subs.OrderBuilder {
-	builder := subs.NewOrderBuilder(s.Profile.AccountID()).
-		SetPlan(s.plan).
-		SetPayMethod(s.payMethod).
-		SetMembership(s.Member).
-		SetClient(RandomClientApp()).
-		SetWallet(s.GetWallet())
+	builder := subs.NewOrderBuilder(s.Profile.AccountID())
 
 	if s.payMethod == enum.PayMethodWx {
 		builder.SetWxAppID(WxPayApp.AppID)
@@ -130,21 +120,17 @@ func (s *SubStore) createOrderBuilder() *subs.OrderBuilder {
 
 // MustSaveOrder creates a new order and save it in
 // Orders array indexed by the order id.
-func (s *SubStore) MustCreateOrder() subs.Order {
-	builder := s.createOrderBuilder()
-
-	err := builder.Build()
-
-	if err != nil {
-		panic(err)
-	}
-
-	order, _ := builder.Order()
-
-	s.Orders[order.ID] = order
-
-	return order
-}
+//func (s *SubStore) MustCreateOrder() subs.Order {
+//	builder := s.createOrderBuilder()
+//
+//	err := builder.Build()
+//
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	return order
+//}
 
 // MustConfirmOrder confirms and order, save the updated version,
 // and then updated the membership based on this order.
@@ -183,83 +169,83 @@ func (s *SubStore) MustConfirmOrder(id string) subs.Order {
 // MustGetMembership returns the current membership data.
 // If the membership is zero, an order will be created,
 // confirmed, and resulting membership updated.
-func (s *SubStore) MustGetMembership() subs.Membership {
-	if s.Member.IsZero() {
-		o := s.MustCreateOrder()
-		s.MustConfirmOrder(o.ID)
-	}
+//func (s *SubStore) MustGetMembership() subs.Membership {
+//	if s.Member.IsZero() {
+//		o := s.MustCreateOrder()
+//		s.MustConfirmOrder(o.ID)
+//	}
+//
+//	return s.Member
+//}
 
-	return s.Member
-}
-
-func (s *SubStore) MustRenewN(n int) []subs.Order {
-	orders := make([]subs.Order, 0)
-
-	for i := 0; i < n; i++ {
-		o := s.MustCreateOrder()
-
-		o = s.MustConfirmOrder(o.ID)
-
-		orders = append(orders, o)
-	}
-
-	return orders
-}
+//func (s *SubStore) MustRenewN(n int) []subs.Order {
+//	orders := make([]subs.Order, 0)
+//
+//	for i := 0; i < n; i++ {
+//		o := s.MustCreateOrder()
+//
+//		o = s.MustConfirmOrder(o.ID)
+//
+//		orders = append(orders, o)
+//	}
+//
+//	return orders
+//}
 
 // MustUpgrade gets the ProratedOrderSchema.
 // n specifies how many rounds you want the membership
 // renewed before upgrading.
-func (s *SubStore) MustUpgrade(n int) (subs.UpgradeSchema, subs.Order) {
-	// Must have an valid membership before upgrading.
-	// Otherwise this is a new member.
-	if n < 1 {
-		panic("n must be greater than 1 to upgrade")
-	}
-	// Ensure the plan before upgrading is standard.
-	s.plan = YearlyStandard
+//func (s *SubStore) MustUpgrade(n int) (subs.UpgradeSchema, subs.Order) {
+//	// Must have an valid membership before upgrading.
+//	// Otherwise this is a new member.
+//	if n < 1 {
+//		panic("n must be greater than 1 to upgrade")
+//	}
+//	// Ensure the plan before upgrading is standard.
+//	s.plan = YearlyStandard
+//
+//	s.MustRenewN(n)
+//
+//	// When changing the plan to premium, you are upgrading.
+//	s.plan = YearlyPremium
+//
+//	builder := s.createOrderBuilder()
+//
+//	if err := builder.Build(); err != nil {
+//		panic(err)
+//	}
+//
+//	order, _ := builder.Order()
+//
+//	s.Orders[order.ID] = order
+//
+//	upgrade, err := builder.UpgradeSchema()
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	return upgrade, order
+//}
 
-	s.MustRenewN(n)
+//func (s *SubStore) MustRenewalOrder() subs.Order {
+//	order := s.MustCreateOrder()
+//
+//	order = s.MustConfirmOrder(order.ID)
+//
+//	order2 := s.MustCreateOrder()
+//
+//	return order2
+//}
 
-	// When changing the plan to premium, you are upgrading.
-	s.plan = YearlyPremium
-
-	builder := s.createOrderBuilder()
-
-	if err := builder.Build(); err != nil {
-		panic(err)
-	}
-
-	order, _ := builder.Order()
-
-	s.Orders[order.ID] = order
-
-	upgrade, err := builder.UpgradeSchema()
-	if err != nil {
-		panic(err)
-	}
-
-	return upgrade, order
-}
-
-func (s *SubStore) MustRenewalOrder() subs.Order {
-	order := s.MustCreateOrder()
-
-	order = s.MustConfirmOrder(order.ID)
-
-	order2 := s.MustCreateOrder()
-
-	return order2
-}
-
-func (s *SubStore) MustUpgradingOrder() subs.Order {
-	order := s.MustCreateOrder()
-
-	order = s.MustConfirmOrder(order.ID)
-
-	order2 := s.MustCreateOrder()
-
-	return order2
-}
+//func (s *SubStore) MustUpgradingOrder() subs.Order {
+//	order := s.MustCreateOrder()
+//
+//	order = s.MustConfirmOrder(order.ID)
+//
+//	order2 := s.MustCreateOrder()
+//
+//	return order2
+//}
 
 // getOrder retrieves a previously saved order.
 func (s *SubStore) getOrder(id string) (subs.Order, error) {
