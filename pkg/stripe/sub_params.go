@@ -63,9 +63,9 @@ func (sp SubParams) NewMembership(id reader.MemberID, ss *stripe.Subscription) s
 		},
 		ExpireDate:    chrono.DateFrom(periodEnd.AddDate(0, 0, 1)),
 		PaymentMethod: enum.PayMethodStripe,
-		StripeSubID:   null.StringFrom(ss.ID),
+		StripeSubsID:  null.StringFrom(ss.ID),
 		StripePlanID:  null.StringFrom(sp.GetStripePlanID()),
-		AutoRenew:     !ss.CancelAtPeriodEnd,
+		AutoRenewal:   !ss.CancelAtPeriodEnd,
 		Status:        status,
 	}
 }
@@ -79,9 +79,9 @@ func (sp SubParams) UpdateMembership(m subs.Membership, ss *stripe.Subscription)
 	m.Cycle = sp.Cycle
 	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
 	m.PaymentMethod = enum.PayMethodStripe
-	m.StripeSubID = null.StringFrom(ss.ID)
+	m.StripeSubsID = null.StringFrom(ss.ID)
 	m.StripePlanID = null.StringFrom(sp.GetStripePlanID())
-	m.AutoRenew = !ss.CancelAtPeriodEnd
+	m.AutoRenewal = !ss.CancelAtPeriodEnd
 	m.Status = status
 
 	return m
@@ -92,7 +92,7 @@ func RefreshMembership(m subs.Membership, ss *stripe.Subscription) subs.Membersh
 	periodEnd := CanonicalizeUnix(ss.CurrentPeriodEnd)
 
 	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
-	m.AutoRenew = !ss.CancelAtPeriodEnd
+	m.AutoRenewal = !ss.CancelAtPeriodEnd
 	m.Status, _ = enum.ParseSubsStatus(string(ss.Status))
 
 	return m
