@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/client"
 )
 
-func (env SubEnv) SaveOrderClient(c client.OrderClient) error {
+func (env Env) SaveOrderClient(c client.OrderClient) error {
 
 	_, err := env.db.NamedExec(
 		client.StmtInsertOrderClient(env.GetSubsDB()),
