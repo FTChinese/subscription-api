@@ -31,7 +31,7 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (subs.Membership, error) {
 
 	err := tx.Get(
 		&m,
-		subs.StmtLockMembership(tx.dbName),
+		subs.StmtLockMember(tx.dbName),
 		id.CompoundID,
 	)
 
@@ -56,7 +56,7 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (subs.Membership, e
 
 	err := tx.Get(
 		&m,
-		subs.StmtAppleMembership(tx.dbName),
+		subs.StmtAppleMember(tx.dbName),
 		transactionID)
 
 	if err != nil && err != sql.ErrNoRows {

@@ -1,7 +1,6 @@
 package subs
 
 import (
-	"fmt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"time"
@@ -30,10 +29,11 @@ type Membership struct {
 	LegacyTier    null.Int       `json:"-" db:"vip_type"`
 	LegacyExpire  null.Int       `json:"-" db:"expire_time"`
 	ExpireDate    chrono.Date    `json:"expireDate" db:"expire_date"`
-	PaymentMethod enum.PayMethod `json:"payMethod" db:"pay_method"`
+	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
+	FtcPlanID     null.String    `json:"ftcPlanId" db:"ftc_plan_id"`
 	StripeSubID   null.String    `json:"-" db:"stripe_subs_id"`
 	StripePlanID  null.String    `json:"-" db:"stripe_plan_id"`
-	AutoRenew     bool           `json:"autoRenew" db:"sub_auto_renew"`
+	AutoRenew     bool           `json:"autoRenew" db:"auto_renewal"`
 	// This is used to save stripe subscription status.
 	// Since wechat and alipay treats everything as one-time purchase, they do not have a complex state machine.
 	// If we could integrate apple in-app purchase, this column
@@ -42,7 +42,7 @@ type Membership struct {
 	// Wechat and alipay defaults to `active` for backward compatibility.
 	Status       enum.SubsStatus `json:"status" db:"subs_status"`
 	AppleSubID   null.String     `json:"-" db:"apple_subs_id"`
-	B2BLicenceID null.String     `json:"b2bLicenceId" db:"b2b_licence_id"`
+	B2BLicenceID null.String     `json:"-" db:"b2b_licence_id"`
 }
 
 // NewMember creates a membership directly for a user.
@@ -260,29 +260,6 @@ func (m Membership) SubsKind(p product.ExpandedPlan) (enum.OrderKind, error) {
 	}
 
 	return enum.OrderKindNull, ErrUnknownSubsKind
-}
-
-// FromAliWxOrder build/create a new membership based on an confirmed order.
-func (m Membership) FromAliWxOrder(order Order) (Membership, error) {
-	if !order.IsConfirmed() {
-		return m, fmt.Errorf("payment order %s is not confirmed yet", order.ID)
-	}
-
-	if m.IsZero() {
-		m.MemberID = order.MemberID
-	}
-
-	m.Tier = order.Tier
-	m.Cycle = order.Cycle
-	m.ExpireDate = order.EndDate
-	m.PaymentMethod = order.PaymentMethod
-	m.StripeSubID = null.String{}
-	m.StripePlanID = null.String{}
-	m.AutoRenew = false
-	m.AppleSubID = null.String{}
-	m.B2BLicenceID = null.String{}
-
-	return m, nil
 }
 
 // ================================
