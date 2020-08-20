@@ -2,8 +2,8 @@ package test
 
 import (
 	"encoding/json"
+	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/Pallinder/go-randomdata"
 )
 
 func GetReceiptToken() string {
@@ -24,7 +24,7 @@ func GetIAPTransaction() apple.Transaction {
 
 	l := len(resp.LatestTransactions)
 
-	return resp.LatestTransactions[randomdata.Number(l)]
+	return resp.LatestTransactions[rand.IntRange(0, l)]
 }
 
 func GetPendingRenewal() apple.PendingRenewal {
@@ -32,5 +32,5 @@ func GetPendingRenewal() apple.PendingRenewal {
 
 	l := len(resp.PendingRenewalInfo)
 
-	return resp.PendingRenewalInfo[randomdata.Number(l)]
+	return resp.PendingRenewalInfo[rand.IntRange(0, l)]
 }
