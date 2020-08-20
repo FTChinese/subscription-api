@@ -173,12 +173,12 @@ func (env StripeEnv) GetSubscription(id reader.MemberID) (*stripe.Subscription, 
 		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
-	if mmb.StripeSubID.IsZero() {
+	if mmb.StripeSubsID.IsZero() {
 		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
 
-	ss, err := sub.Get(mmb.StripeSubID.String, nil)
+	ss, err := sub.Get(mmb.StripeSubsID.String, nil)
 
 	if err != nil {
 		log.Error(err)
