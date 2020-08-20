@@ -1,6 +1,7 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/test"
 	"testing"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestEnv_SaveAliNotification(t *testing.T) {
-	env := SubEnv{
+	env := Env{
 		db: test.DB,
 	}
 
@@ -31,14 +32,14 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			if err := env.SaveAliNotification(tt.args.n); (err != nil) != tt.wantErr {
-				t.Errorf("SubEnv.SaveAliNotification() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Env.SaveAliNotification() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
 func TestEnv_SavePrepayResp(t *testing.T) {
-	env := SubEnv{
+	env := Env{
 		db: test.DB,
 	}
 
@@ -53,7 +54,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 		{
 			name: "Save Prepay Response",
 			args: args{
-				resp: test.WxPrepay(test.MustGenOrderID()),
+				resp: test.WxPrepay(subs.MustGenerateOrderID()),
 			},
 		},
 	}
@@ -68,7 +69,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 }
 
 func TestEnv_SaveWxNotification(t *testing.T) {
-	env := SubEnv{
+	env := Env{
 		db: test.DB,
 	}
 
@@ -83,7 +84,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		{
 			name: "Save Wx Notification",
 			args: args{
-				n: test.WxNotification(test.MustGenOrderID()),
+				n: test.WxNotification(subs.MustGenerateOrderID()),
 			},
 			wantErr: false,
 		},

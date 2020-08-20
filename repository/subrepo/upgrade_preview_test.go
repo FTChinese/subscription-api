@@ -1,27 +1,26 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
 
 func TestSubEnv_PreviewUpgrade(t *testing.T) {
-	profile := test.NewProfile()
+	p := test.NewPersona()
 
-	store := test.NewSubStore(profile)
-	orders := store.MustRenewN(3)
+	orders := p.RenewN(3)
 
-	// To have upgrading balance, a user must have an existing standard membership,
-	// and some valid orders.
 	repo := test.NewRepo()
-	repo.MustSaveMembership(store.MustGetMembership())
+
 	repo.MustSaveRenewalOrders(orders)
 
-	env := SubEnv{db: test.DB}
+	env := Env{db: test.DB}
 
 	type args struct {
 		userID reader.MemberID
+		plan   product.ExpandedPlan
 	}
 	tests := []struct {
 		name    string
@@ -31,7 +30,8 @@ func TestSubEnv_PreviewUpgrade(t *testing.T) {
 		{
 			name: "Preview upgrade wallet",
 			args: args{
-				userID: profile.AccountID(),
+				userID: p.AccountID(),
+				plan:   p.GetPlan(),
 			},
 			wantErr: false,
 		},
@@ -39,7 +39,7 @@ func TestSubEnv_PreviewUpgrade(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := env.PreviewUpgrade(tt.args.userID)
+			got, err := env.PreviewUpgrade(tt.args.userID, tt.args.plan)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PreviewUpgrade() error = %v, wantErr %v", err, tt.wantErr)
 				return
