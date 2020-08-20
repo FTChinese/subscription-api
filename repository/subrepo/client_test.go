@@ -2,13 +2,14 @@ package subrepo
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
 
 func TestSubEnv_SaveOrderClient(t *testing.T) {
 
-	env := SubEnv{
+	env := Env{
 		db: test.DB,
 	}
 
@@ -24,7 +25,7 @@ func TestSubEnv_SaveOrderClient(t *testing.T) {
 			name: "Save client app of an order",
 			args: args{
 				c: client.OrderClient{
-					OrderID: test.MustGenOrderID(),
+					OrderID: subs.MustGenerateOrderID(),
 					Client:  test.RandomClientApp(),
 				},
 			},
