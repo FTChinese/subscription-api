@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"net/http"
@@ -41,6 +42,7 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 	_ = render.New(w).JSON(http.StatusOK, pi)
 }
 
+// FreeUpgrade handles free upgrade request.
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	userID, _ := GetUserID(req.Header)
 
@@ -80,9 +82,24 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		})
 	}()
 
-	wallet := builder.GetWallet()
+	// Send email
 	go func() {
-		_ = router.sendFreeUpgradeEmail(confirmed.Order, wallet)
+		// Find this user's personal data
+		account, err := router.readerEnv.FindAccountByFtcID(confirmed.Order.FtcID.String)
+		if err != nil {
+			return
+		}
+		parcel, err := letter.NewFreeUpgradeParcel(
+			account,
+			confirmed.Order,
+			builder.GetWallet().Sources,
+		)
+
+		err = router.postman.Deliver(parcel)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
 	}()
 
 	_ = render.New(w).NoContent()
