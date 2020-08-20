@@ -25,10 +25,15 @@ func GenerateOrderID() (string, error) {
 	return "FT" + strings.ToUpper(id), nil
 }
 
-func GenerateSnapshotID() string {
-	return "snp_" + rand.String(12)
+func MustGenerateOrderID() string {
+	id, err := GenerateOrderID()
+	if err != nil {
+		panic(err)
+	}
+
+	return id
 }
 
-func GenerateUpgradeID() string {
-	return "up_" + rand.String(12)
+func GenerateSnapshotID() string {
+	return "snp_" + rand.String(12)
 }
