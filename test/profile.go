@@ -179,7 +179,7 @@ func (p Profile) StandardOrdersN(n int) []subs.Order {
 				CycleCount: 1,
 				ExtraDays:  1,
 			},
-			Usage:            plan.SubsKindCreate,
+			Kind:             plan.SubsKindCreate,
 			PaymentMethod:    p.payMethod,
 			WxAppID:          null.String{},
 			UpgradeSchemaID:  null.String{},
