@@ -2,7 +2,7 @@ package wechat
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/models/util"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 )
@@ -79,7 +79,7 @@ func NewOrderQueryResp(p wxpay.Params) OrderQueryResp {
 }
 
 func (r *OrderQueryResp) ToQueryResult() OrderQueryResult {
-	timeEnd, err := util.ParseWxTime(r.TimeEnd.String)
+	timeEnd, err := subs.ParseWxTime(r.TimeEnd.String)
 
 	var paidAt chrono.Time
 	if err == nil {
