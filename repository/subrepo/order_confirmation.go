@@ -89,7 +89,7 @@ func (env SubEnv) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Con
 	}
 
 	// Flag upgrade balance source as consumed.
-	if confirmed.Order.Usage == enum.OrderKindUpgrade {
+	if confirmed.Order.Kind == enum.OrderKindUpgrade {
 		err := tx.ProratedOrdersUsed(confirmed.Order.ID)
 
 		if err != nil {

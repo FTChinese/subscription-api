@@ -76,7 +76,7 @@ func (env SubEnv) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 		return subs.Order{}, err
 	}
 
-	if order.Usage == enum.OrderKindUpgrade {
+	if order.Kind == enum.OrderKindUpgrade {
 		upgrade, _ := builder.UpgradeSchema()
 
 		// Step 3.4: Save the upgrade plan
