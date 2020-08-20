@@ -2,9 +2,9 @@ package striperepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/models/util"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/sub"
 )
@@ -67,10 +67,10 @@ func (env StripeEnv) UpgradeSubscription(
 	if !mmb.PermitStripeUpgrade() {
 		log.Error("upgrading via stripe is not permitted")
 		_ = tx.Rollback()
-		return nil, util.ErrInvalidStripeSub
+		return nil, subs.ErrInvalidStripeSub
 	}
 
-	ss, err := upgradeSub(params, mmb.StripeSubID.String)
+	ss, err := upgradeSub(params, mmb.StripeSubsID.String)
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
