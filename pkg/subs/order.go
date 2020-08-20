@@ -22,23 +22,23 @@ import (
 // All those combination add up to 3 * 2 * 3 * 3 = 54
 type Order struct {
 	// Fields common to all.
-	ID string `json:"id" db:"order_id"`
+	ID    string  `json:"id" db:"order_id"`
+	Price float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
+	product.Charge
 	reader.MemberID
 	PlanID     string      `json:"planId" db:"plan_id"`
 	DiscountID null.String `json:"discountId" db:"discount_id"`
 	product.Edition
-	Price float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
-	product.Charge
 	product.Duration
 	Kind enum.OrderKind `json:"usageType" db:"kind"` // The usage of this order: creat new, renew, or upgrade?
 	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
 	TotalBalance  null.Float     `json:"totalBalance" db:"total_balance"` // Only for upgrade
 	WxAppID       null.String    `json:"-" db:"wx_app_id"`                // Wechat specific
-	CreatedAt     chrono.Time    `json:"createdAt" db:"created_at"`
-	ConfirmedAt   chrono.Time    `json:"-" db:"confirmed_at"` // When the payment is confirmed.
-	StartDate     chrono.Date    `json:"-" db:"start_date"`   // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	EndDate       chrono.Date    `json:"-" db:"end_date"`     // Membership end date for this order. Depends on start date.
+	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
+	ConfirmedAt   chrono.Time    `json:"-" db:"confirmed_utc"` // When the payment is confirmed.
+	StartDate     chrono.Date    `json:"-" db:"start_date"`    // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
+	EndDate       chrono.Date    `json:"-" db:"end_date"`      // Membership end date for this order. Depends on start date.
 }
 
 func (o Order) IsZero() bool {
