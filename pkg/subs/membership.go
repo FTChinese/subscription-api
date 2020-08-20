@@ -31,9 +31,9 @@ type Membership struct {
 	ExpireDate    chrono.Date    `json:"expireDate" db:"expire_date"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
 	FtcPlanID     null.String    `json:"ftcPlanId" db:"ftc_plan_id"`
-	StripeSubID   null.String    `json:"-" db:"stripe_subs_id"`
+	StripeSubsID  null.String    `json:"-" db:"stripe_subs_id"`
 	StripePlanID  null.String    `json:"-" db:"stripe_plan_id"`
-	AutoRenew     bool           `json:"autoRenew" db:"auto_renewal"`
+	AutoRenewal   bool           `json:"autoRenew" db:"auto_renewal"`
 	// This is used to save stripe subscription status.
 	// Since wechat and alipay treats everything as one-time purchase, they do not have a complex state machine.
 	// If we could integrate apple in-app purchase, this column
@@ -73,7 +73,7 @@ func (m Membership) IsExpired() bool {
 	// we treat this one as actually expired.
 	// If ExpireDate is passed, but auto renew is true, we still
 	// treat this one as not expired.
-	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenew
+	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
 }
 
 func (m Membership) IsEqual(other Membership) bool {
@@ -91,7 +91,7 @@ func (m Membership) IsValid() bool {
 
 	// If it is expired, check whether auto renew is on.
 	if m.IsExpired() {
-		if !m.AutoRenew {
+		if !m.AutoRenewal {
 			return false
 		}
 
@@ -192,7 +192,7 @@ func (m Membership) PermitRenewal() bool {
 		return false
 	}
 
-	if m.AutoRenew {
+	if m.AutoRenewal {
 		return false
 	}
 
@@ -293,7 +293,7 @@ func (m Membership) PermitStripeCreate() error {
 
 	if m.PaymentMethod == enum.PayMethodStripe {
 		// An expired member that is not auto renewal.
-		if m.IsExpired() && !m.AutoRenew {
+		if m.IsExpired() && !m.AutoRenewal {
 			return nil
 		}
 		// Member is not expired, or is auto renewal.
