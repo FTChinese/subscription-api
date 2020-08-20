@@ -1,7 +1,6 @@
 package subs
 
 import (
-	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/ali"
@@ -39,9 +38,8 @@ type OrderBuilder struct {
 	wxUnifiedParams wechat.UnifiedOrder // Only for wechat pay.
 
 	// Calculated from previous fields.
-	kind          enum.OrderKind
-	order         Order
-	isFreeUpgrade bool
+	kind  enum.OrderKind
+	order Order
 
 	isBuilt bool // A flag to ensure all fields are properly initialized.
 }
@@ -196,20 +194,14 @@ func (b *OrderBuilder) Build() error {
 		ConfirmedAt:   chrono.Time{},
 	}
 
-	// Only subscription kind is upgrade and wallet balance
-	// is greater or equal to plan's charged amount.
-	b.isFreeUpgrade = b.kind == enum.OrderKindUpgrade && b.wallet.Balance >= b.plan.Price
+	// After order is generated, we can now update wallet's
+	// prorated orders, if this order is used for upgrade.
+	if b.kind == enum.OrderKindUpgrade {
+		b.wallet = b.wallet.WithUpgradeOrder(b.order)
+	}
 
 	b.isBuilt = true
 	return nil
-}
-
-// The following methods should only be called after Build is called.
-
-// IsFreeUpgrade checks if user's current balance
-// is enough to cover chosen plan.
-func (b *OrderBuilder) IsFreeUpgrade() bool {
-	return b.isFreeUpgrade
 }
 
 func (b *OrderBuilder) GetOrder() (Order, error) {
@@ -221,22 +213,6 @@ func (b *OrderBuilder) GetOrder() (Order, error) {
 	}
 
 	return b.order, nil
-}
-
-// UpgradeSchema takes a snapshot of wallet upon upgrading.
-func (b *OrderBuilder) UpgradeSchema() (UpgradeSchema, error) {
-	if !b.isBuilt {
-		err := b.Build()
-		if err != nil {
-			return UpgradeSchema{}, err
-		}
-	}
-
-	if b.kind != enum.OrderKindUpgrade {
-		return UpgradeSchema{}, errors.New("not an upgrade subscription")
-	}
-
-	return b.wallet.UpgradeSchema(b.order.ID, b.isFreeUpgrade), nil
 }
 
 // PaymentIntent tells client how to guide user to pay when user queries upgrade balance,
