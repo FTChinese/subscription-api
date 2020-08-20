@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
-func (env SubEnv) SaveConfirmationResult(r subs.ConfirmErrSchema) error {
+func (env Env) SaveConfirmationResult(r subs.ConfirmErrSchema) error {
 	_, err := env.db.NamedExec(
 		subs.StmtSaveConfirmResult,
 		r)
