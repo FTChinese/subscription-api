@@ -1,96 +1,93 @@
 package letter
 
-// ConfirmationLetter is the content of the email send to user when user successfully subscribed to membership.
-const letterNewSub = `
-FT中文网用户 {{.User.NormalizeName}},
+var templates = map[string]string{
+	keyNewSubs: `
+FT中文网用户 {{.UserName}},
 
 感谢您订阅FT中文网会员服务。
 
-您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 订阅了FT中文网 {{.Plan.Desc}}。
+您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 订阅了FT中文网 {{.Order.Tier.StringCN}}。
 
 订单号 {{.Order.ID}}
-支付金额 {{.Order.ReadableAmount}}
+支付金额 {{.Order.Amount | currency}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
 再次感谢您对FT中文网的支持。
 
-FT中文网`
-
-const letterRenewalSub = `
-FT中文网用户 {{.User.NormalizeName}},
+FT中文网`,
+	keyRenewalSubs: `
+FT中文网用户 {{.UserName}},
 
 感谢您续订FT中文网会员服务。
 
-您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 续订了FT中文网 {{.Plan.Desc}}。
+您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 续订了FT中文网 {{.Order.Tier.StringCN}}。
 
 订单号 {{.Order.ID}}
-支付金额 {{.Order.ReadableAmount}}
+支付金额 {{.Order.Amount | currency}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
 再次感谢您对FT中文网的持续支持。
 
-FT中文网`
-
-const letterUpgradeSub = `
-FT中文网用户 {{.User.NormalizeName}},
+FT中文网`,
+	keyUpgradeSubs: `
+FT中文网用户 {{.UserName}},
 
 感谢您升级订阅FT中文网高端会员。
 
-您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 从标准会员升级到 {{.Order.Desc}}。
+您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 从标准会员升级到 {{.Order.Tier.StringCN}}。
 
 订单号 {{.Order.ID}}
-支付金额 {{.Order.ReadableAmount}}
+支付金额 {{.Order.Amount | currency}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
-本次升级前余额 {{.UpgradeSchema.ReadableBalance}}，余额来自如下订单未使用部分：
+本次升级前余额 {{.Order.TotalBalance.Float | currency}}，余额来自如下订单未使用部分：
 
-{{range .UpgradeSchema.Sources}}
-{{.OrderID}}: {{.ReadableBalance}}
+{{range .Prorated}}
+{{.OrderID}}: {{.Balance | currency}}
 {{end}}
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
 再次感谢您对FT中文网的持续支持。
 
-FT中文网`
-
-const letterFreeUpgrade = `
-FT中文网用户 {{.User.NormalizeName}},
+FT中文网`,
+	keyFreeUpgrade: `
+FT中文网用户 {{.UserName}},
 
 感谢您升级订阅FT中文网高端会员。
 
-您于 {{.Order.CreatedAt.StringCN}} 从标准会员免费升级到 {{.Order.Desc}}。
+您于 {{.Order.CreatedAt.StringCN}} 从标准会员免费升级到 {{.Order.Tier.StringCN}}。
 
 订单号 {{.Order.ID}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
-本次升级前余额 {{.Wallet.ReadableBalance}}，余额来自如下订单未使用部分：
+本次升级前余额 {{.Order.TotalBalance.Float | currency}}，余额来自如下订单未使用部分：
 
-{{range .Wallet.Sources}}
-{{.OrderID}}: {{.ReadableBalance}}
+{{range .Prorated}}
+{{.OrderID}}: {{.Balance | currency}}
 {{end}}
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
 再次感谢您对FT中文网的持续支持。
 
-FT中文网`
+FT中文网`,
+	keyIAPLinked: `
+FT中文网用户 {{.UserName}},
 
-const letterIAPLinked = `
-FT中文网用户 {{.Reader.NormalizeName}},
+您的FT中文网账号 {{.Email}} 已经关联了在iOS平台上订阅的FT中文网会员服务。
 
-您的FT中文网账号 {{.Reader.Email}} 已经关联了在iOS平台上订阅的FT中文网会员服务。
-
-订阅产品：{{.Membership.Desc}}
-到期日期：{{.Membership.ExpireDate}}
+订阅产品：{{.Tier.StringCN}}
+到期日期：{{.ExpireDate}}
 
 在其他平台使用FT中文网账号登录即可实现跨平台阅读。
 
-感谢您对FT中文网的支持。如需帮助，请联系客服：subscriber.service@ftchinese.com。`
+感谢您对FT中文网的支持。如需帮助，请联系客服：subscriber.service@ftchinese.com。`,
+}
 
 // Data used to compile this template:
 // Account to get user name;

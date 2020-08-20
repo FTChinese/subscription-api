@@ -2,38 +2,18 @@ package letter
 
 import (
 	"github.com/FTChinese/go-rest/postoffice"
-	"github.com/FTChinese/subscription-api/models/plan"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"strings"
-	"text/template"
 )
 
 func NewSubParcel(a reader.Account, order subs.Order) (postoffice.Parcel, error) {
-	tmpl, err := template.New("order").Parse(letterNewSub)
 
-	if err != nil {
-		return postoffice.Parcel{}, err
+	ctx := CtxSubs{
+		UserName: a.NormalizeName(),
+		Order:    order,
 	}
 
-	p, err := plan.FindPlan(order.Tier, order.Cycle)
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	data := struct {
-		User  reader.Account
-		Order subs.Order
-		Plan  plan.Plan
-	}{
-		User:  a,
-		Order: order,
-		Plan:  p,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
+	body, err := RenderNewSubs(ctx)
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -42,9 +22,9 @@ func NewSubParcel(a reader.Account, order subs.Order) (postoffice.Parcel, error)
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   a.Email,
-		ToName:      a.NormalizeName(),
+		ToName:      ctx.UserName,
 		Subject:     "会员订阅",
-		Body:        body.String(),
+		Body:        body,
 	}, nil
 }
 
@@ -52,30 +32,13 @@ func NewRenewalParcel(
 	a reader.Account,
 	order subs.Order,
 ) (postoffice.Parcel, error) {
-	tmpl, err := template.New("order").Parse(letterRenewalSub)
 
-	if err != nil {
-		return postoffice.Parcel{}, err
+	ctx := CtxSubs{
+		UserName: a.NormalizeName(),
+		Order:    order,
 	}
 
-	p, err := plan.FindFtcPlan(order.NamedKey())
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	data := struct {
-		User  reader.Account
-		Order subs.Order
-		Plan  plan.Plan
-	}{
-		User:  a,
-		Order: order,
-		Plan:  p,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
+	body, err := RenderRenewalSubs(ctx)
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -84,36 +47,25 @@ func NewRenewalParcel(
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   a.Email,
-		ToName:      a.NormalizeName(),
+		ToName:      ctx.UserName,
 		Subject:     "会员续订",
-		Body:        body.String(),
+		Body:        body,
 	}, nil
 }
 
 func NewUpgradeParcel(
 	a reader.Account,
 	order subs.Order,
-	us subs.UpgradeSchema,
+	pos []subs.ProratedOrder,
 ) (postoffice.Parcel, error) {
-	tmpl, err := template.New("order").Parse(letterUpgradeSub)
 
-	if err != nil {
-		return postoffice.Parcel{}, err
+	ctx := CtxUpgrade{
+		UserName: a.NormalizeName(),
+		Order:    order,
+		Prorated: pos,
 	}
 
-	data := struct {
-		User          reader.Account
-		Order         subs.Order
-		UpgradeSchema subs.UpgradeSchema
-	}{
-		User:          a,
-		Order:         order,
-		UpgradeSchema: us,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
+	body, err := RenderUpgrade(ctx)
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -122,36 +74,24 @@ func NewUpgradeParcel(
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   a.Email,
-		ToName:      a.NormalizeName(),
+		ToName:      ctx.UserName,
 		Subject:     "会员升级",
-		Body:        body.String(),
+		Body:        body,
 	}, nil
 }
 
 func NewFreeUpgradeParcel(
 	a reader.Account,
 	order subs.Order,
-	wallet subs.Wallet) (postoffice.Parcel, error) {
+	pos []subs.ProratedOrder) (postoffice.Parcel, error) {
 
-	tmpl, err := template.New("order").Parse(letterFreeUpgrade)
-
-	if err != nil {
-		return postoffice.Parcel{}, err
+	ctx := CtxUpgrade{
+		UserName: a.NormalizeName(),
+		Order:    order,
+		Prorated: pos,
 	}
 
-	data := struct {
-		User   reader.Account
-		Order  subs.Order
-		Wallet subs.Wallet
-	}{
-		User:   a,
-		Order:  order,
-		Wallet: wallet,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
+	body, err := RenderFreeUpgrade(ctx)
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -160,30 +100,21 @@ func NewFreeUpgradeParcel(
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   a.Email,
-		ToName:      a.NormalizeName(),
+		ToName:      ctx.UserName,
 		Subject:     "会员升级",
-		Body:        body.String(),
+		Body:        body,
 	}, nil
 }
 
 func NewIAPLinkParcel(account reader.Account, m subs.Membership) (postoffice.Parcel, error) {
-	tmpl, err := template.New("order").Parse(letterIAPLinked)
-
-	if err != nil {
-		return postoffice.Parcel{}, err
+	ctx := CtxIAPLinked{
+		UserName:   account.NormalizeName(),
+		Email:      account.Email,
+		Tier:       m.Tier,
+		ExpireDate: m.ExpireDate,
 	}
 
-	var data = struct {
-		Reader     reader.Account
-		Membership subs.Membership
-	}{
-		account,
-		m,
-	}
-
-	var body strings.Builder
-	err = tmpl.Execute(&body, data)
-
+	body, err := RenderIAPLinked(ctx)
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -192,9 +123,9 @@ func NewIAPLinkParcel(account reader.Account, m subs.Membership) (postoffice.Par
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   account.Email,
-		ToName:      account.NormalizeName(),
+		ToName:      ctx.UserName,
 		Subject:     "关联iOS订阅",
-		Body:        body.String(),
+		Body:        body,
 	}, nil
 }
 
