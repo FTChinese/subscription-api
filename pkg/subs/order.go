@@ -1,6 +1,7 @@
 package subs
 
 import (
+	"fmt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"time"
 
@@ -47,6 +48,12 @@ func (o Order) IsZero() bool {
 
 func (o Order) IsConfirmed() bool {
 	return !o.ConfirmedAt.IsZero()
+}
+
+// IsFreeUpgrade tests whether this order is used for upgrade
+// and whether the charged amount is zero.
+func (o Order) IsFreeUpgrade() bool {
+	return o.Kind == enum.OrderKindUpgrade && o.Amount == 0
 }
 
 func (o Order) getEndDate() (chrono.Date, error) {
@@ -101,7 +108,11 @@ func (o Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
 
 // Membership build a membership based on this order.
 // The order must be already confirmed.
-func (o Order) Membership() Membership {
+func (o Order) Membership() (Membership, error) {
+	if !o.IsConfirmed() {
+		return Membership{}, fmt.Errorf("order %s used to build membership is not confirmed yet", o.ID)
+	}
+
 	return Membership{
 		MemberID:      o.MemberID,
 		Edition:       o.Edition,
@@ -109,11 +120,12 @@ func (o Order) Membership() Membership {
 		LegacyExpire:  null.Int{},
 		ExpireDate:    o.EndDate,
 		PaymentMethod: o.PaymentMethod,
-		StripeSubID:   null.String{},
+		FtcPlanID:     null.StringFrom(o.PlanID),
+		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
-		AutoRenew:     false,
+		AutoRenewal:   false,
 		Status:        enum.SubsStatusNull,
 		AppleSubID:    null.String{},
 		B2BLicenceID:  null.String{},
-	}
+	}, nil
 }
