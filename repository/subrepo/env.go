@@ -8,24 +8,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SubEnv wraps database connection
-type SubEnv struct {
+// Env wraps database connection
+type Env struct {
 	config.BuildConfig
 	db    *sqlx.DB
 	cache *cache.Cache
 }
 
-// NewSubEnv creates a new instance of SubEnv.
+// NewEnv creates a new instance of Env.
 // `sandbox` is used to determine which table to write subscription data.
-func NewSubEnv(db *sqlx.DB, c *cache.Cache, config config.BuildConfig) SubEnv {
-	return SubEnv{
+func NewEnv(db *sqlx.DB, c *cache.Cache, config config.BuildConfig) Env {
+	return Env{
 		BuildConfig: config,
 		db:          db,
 		cache:       c,
 	}
 }
 
-func (env SubEnv) BeginOrderTx() (txrepo.MemberTx, error) {
+func (env Env) BeginOrderTx() (txrepo.MemberTx, error) {
 	tx, err := env.db.Beginx()
 
 	if err != nil {
