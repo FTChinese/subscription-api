@@ -8,7 +8,7 @@ import (
 
 func TestNewWallet(t *testing.T) {
 	type args struct {
-		orders []ProratedOrder
+		orders []BalanceSource
 		asOf   time.Time
 	}
 	tests := []struct {
@@ -18,7 +18,7 @@ func TestNewWallet(t *testing.T) {
 		{
 			name: "Wallet",
 			args: args{
-				orders: []ProratedOrder{
+				orders: []BalanceSource{
 					{
 						OrderID:   "",
 						Amount:    258,
