@@ -8,8 +8,8 @@ import (
 
 // ConfirmOrder updates the order received from webhook,
 // create or update membership, and optionally flag prorated orders as consumed.
-func (env SubEnv) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.ConfirmError) {
-	log := logger.WithField("trace", "SubEnv.ConfirmOrder")
+func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.ConfirmError) {
+	log := logger.WithField("trace", "Env.ConfirmOrder")
 
 	tx, err := env.BeginOrderTx()
 
