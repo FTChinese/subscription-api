@@ -3,7 +3,6 @@ package product
 import (
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 type Charge struct {
@@ -32,8 +31,7 @@ func (c Charge) AmountInCent(live bool) int64 {
 
 // ReadableAmount turns the charged amount to human readable format.
 func (c Charge) ReadableAmount() string {
-	return fmt.Sprintf("%s%.2f",
-		strings.ToUpper(c.Currency),
+	return fmt.Sprintf("¥ %.2f",
 		c.Amount,
 	)
 }
