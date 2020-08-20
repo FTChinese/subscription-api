@@ -6,20 +6,20 @@ import (
 )
 
 const colMembership = `
-SELECT id AS sub_id, 
-	vip_id AS sub_compound_id,
-	NULLIF(vip_id, vip_id_alias) AS sub_ftc_id,
-	vip_id_alias AS sub_union_id,
+SELECT vip_id AS compound_id,
+	NULLIF(vip_id, vip_id_alias) AS ftc_id,
+	vip_id_alias AS union_id,
 	vip_type,
 	expire_time,
-	member_tier AS plan_tier,
-	billing_cycle AS plan_cycle,
-	expire_date AS sub_expire_date,
-	payment_method AS sub_pay_method,
-	stripe_subscription_id AS stripe_sub_id,
-	auto_renewal AS sub_auto_renew,
-	sub_status,
-	apple_subscription_id AS apple_sub_id,
+	member_tier AS tier,
+	billing_cycle AS cycle,
+	expire_date,
+	payment_method,
+	ftc_plan_id,
+	stripe_subscription_id AS stripe_subs_id,
+	auto_renewal,
+	sub_status AS subs_status,
+	apple_subscription_id AS apple_subs_id,
 	b2b_licence_id
 FROM %s.ftc_vip`
 
@@ -37,29 +37,35 @@ WHERE ? IN (vip_id, vip_id_alias)
 LIMIT 1
 `
 
+// StmtMember builds SQL to retrieve membership.
 func StmtMember(db config.SubsDB) string {
 	return fmt.Sprintf(selectMembership, db)
 }
 
-func StmtLockMembership(db config.SubsDB) string {
+// StmtLockMember builds SQL to retrieve membership in a transaction.
+func StmtLockMember(db config.SubsDB) string {
 	return fmt.Sprintf(selectMembership, db) + "FOR UPDATE"
 }
 
-func StmtAppleMembership(db config.SubsDB) string {
+// StmtAppleMember builds SQL to retrieve membership by apple original transaction id.
+func StmtAppleMember(db config.SubsDB) string {
 	return fmt.Sprintf(colMembership, db) + `
 	WHERE apple_subscription_id = ?
 	FOR UPDATE`
 }
 
+// The common columns when inserting or updating membership.
+// Not the b2b_licence_id column is ignored since it is not
+// generated here. Treat it as read-only across the whole app.
 const mUpsertSharedCols = `
 expire_date = :expire_date,
-payment_method = :pay_method,
+payment_method = :payment_method,
+ftc_plan_id = :ftc_plan_id,
 stripe_subscription_id = :stripe_subs_id,
 stripe_plan_id = :stripe_plan_id,
-auto_renewal = :auto_renew,
-sub_status = :sub_status,
+auto_renewal = :auto_renewal,
+sub_status = :subs_status,
 apple_subscription_id = :apple_subs_id,
-b2b_licence_id = :b2b_licence_id
 `
 
 const mUpsertCols = `
