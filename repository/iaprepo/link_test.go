@@ -6,33 +6,31 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"testing"
-	"time"
 )
 
 // A linked IAP requesting link again.
 func TestIAPEnv_Link_MockNewFTC(t *testing.T) {
-	profile := test.NewProfile().SetPayMethod(enum.PayMethodApple)
+	profile := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 
 	t.Logf("FTC id: %s", profile.FtcID)
 }
 
 func TestIAPEnv_Link(t *testing.T) {
-	profile := test.NewProfile()
+	profile := test.NewPersona()
 
 	// Create an existing ftc member in db.
-	existingFtc := test.NewProfile().Membership()
+	existingFtc := test.NewPersona().Membership()
 	test.NewRepo().MustSaveMembership(existingFtc)
 
 	// Create an expired ftc member in db.
 	expiredFtc := test.
-		NewProfile().
-		SetExpireDate(
-			time.Now().AddDate(0, -1, 0),
-		).Membership()
+		NewPersona().
+		SetExpired(true).
+		Membership()
 	test.NewRepo().MustSaveMembership(expiredFtc)
 
 	// Create an IAP member in db.
-	existingIAPProfile := test.NewProfile()
+	existingIAPProfile := test.NewPersona()
 	existingIAP := existingIAPProfile.SetPayMethod(enum.PayMethodApple).Membership()
 	test.NewRepo().MustSaveMembership(existingIAP)
 
@@ -52,7 +50,7 @@ func TestIAPEnv_Link(t *testing.T) {
 		{
 			name: "New IAP to existing ftc",
 			args: args{
-				s:  test.NewProfile().IAPSubs(),
+				s:  test.NewPersona().IAPSubs(),
 				id: existingFtc.MemberID,
 			},
 			wantErr: true,
@@ -60,7 +58,7 @@ func TestIAPEnv_Link(t *testing.T) {
 		{
 			name: "New IAP to expired FTC",
 			args: args{
-				s:  test.NewProfile().IAPSubs(),
+				s:  test.NewPersona().IAPSubs(),
 				id: expiredFtc.MemberID,
 			},
 			wantErr: false,
@@ -68,7 +66,7 @@ func TestIAPEnv_Link(t *testing.T) {
 		{
 			name: "New IAP to existing IAP",
 			args: args{
-				s:  test.NewProfile().IAPSubs(),
+				s:  test.NewPersona().IAPSubs(),
 				id: existingIAP.MemberID,
 			},
 			wantErr: true,
@@ -93,7 +91,7 @@ func TestIAPEnv_Link(t *testing.T) {
 			name: "Existing IAP to new ftc might be cheat",
 			args: args{
 				s:  existingIAPProfile.IAPSubs(),
-				id: test.NewProfile().AccountID(),
+				id: test.NewPersona().AccountID(),
 			},
 			wantErr: true,
 		},

@@ -10,7 +10,7 @@ import (
 
 func TestMembershipTx_RetrieveMember(t *testing.T) {
 
-	profile := test.NewProfile()
+	profile := test.NewPersona()
 	m := profile.Membership()
 	test.NewRepo().MustSaveMembership(m)
 
@@ -51,7 +51,7 @@ func TestMembershipTx_RetrieveMember(t *testing.T) {
 
 func TestMembershipTx_RetrieveAppleMember(t *testing.T) {
 
-	profile := test.NewProfile().SetPayMethod(enum.PayMethodApple)
+	profile := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 
 	test.NewRepo().MustSaveMembership(profile.Membership())
 
@@ -102,7 +102,7 @@ func TestMembershipTx_RetrieveAppleMember(t *testing.T) {
 
 func TestMembershipTx_CreateMember(t *testing.T) {
 
-	profile := test.NewProfile().SetPayMethod(enum.PayMethodApple)
+	profile := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 
 	env := IAPEnv{db: test.DB}
 
@@ -138,7 +138,7 @@ func TestMembershipTx_CreateMember(t *testing.T) {
 }
 
 func TestMembershipTx_UpdateMember(t *testing.T) {
-	profile := test.NewProfile().SetPayMethod(enum.PayMethodApple)
+	profile := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 
 	m := profile.Membership()
 	m.Tier = enum.TierPremium
@@ -180,7 +180,7 @@ func TestMembershipTx_UpdateMember(t *testing.T) {
 }
 
 func TestMembershipTx_DeleteMember(t *testing.T) {
-	profile := test.NewProfile().SetPayMethod(enum.PayMethodApple)
+	profile := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 	m := profile.Membership()
 
 	test.NewRepo().MustSaveMembership(m)
@@ -220,7 +220,7 @@ func TestMembershipTx_DeleteMember(t *testing.T) {
 }
 
 func TestIAPEnv_BackUpMember(t *testing.T) {
-	profile := test.NewProfile().SetPayMethod(enum.PayMethodApple)
+	profile := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 	m := profile.Membership()
 
 	env := IAPEnv{db: test.DB}

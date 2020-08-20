@@ -54,7 +54,7 @@ func NewPersona() *Persona {
 		Avatar:     genAvatar(),
 		OpenID:     genWxID(),
 		IP:         gofakeit.IPv4Address(),
-		AppleSubID: genAppleSubID(),
+		AppleSubID: GenAppleSubID(),
 
 		kind:      reader.AccountKindFtc,
 		plan:      PlanStdYear,
@@ -196,7 +196,7 @@ func (p *Persona) Membership() subs.Membership {
 		m.AutoRenewal = true
 
 	case enum.PayMethodB2B:
-		m.B2BLicenceID = null.StringFrom(genAppleSubID())
+		m.B2BLicenceID = null.StringFrom(GenAppleSubID())
 	}
 
 	return m.Normalize()
@@ -321,7 +321,7 @@ func (p Persona) IAPSubs() apple.Subscription {
 	return apple.Subscription{
 		Environment:           apple.EnvSandbox,
 		OriginalTransactionID: p.AppleSubID,
-		LastTransactionID:     genAppleSubID(),
+		LastTransactionID:     GenAppleSubID(),
 		ProductID:             "",
 		PurchaseDateUTC:       chrono.TimeNow(),
 		ExpiresDateUTC:        chrono.TimeFrom(p.expiresDate),
