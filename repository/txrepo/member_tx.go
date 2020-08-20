@@ -181,9 +181,9 @@ func (tx MemberTx) DeleteMember(id reader.MemberID) error {
 
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
-func (tx MemberTx) FindBalanceSources(userIDs reader.MemberID) ([]subs.ProratedOrder, error) {
+func (tx MemberTx) FindBalanceSources(userIDs reader.MemberID) ([]subs.BalanceSource, error) {
 
-	var orders = make([]subs.ProratedOrder, 0)
+	var orders = make([]subs.BalanceSource, 0)
 
 	err := tx.Select(
 		&orders,
@@ -198,7 +198,7 @@ func (tx MemberTx) FindBalanceSources(userIDs reader.MemberID) ([]subs.ProratedO
 	return orders, nil
 }
 
-// SaveUpgradeSchema saved user's current total balance
+// SaveProratedOrders saved user's current total balance
 // the the upgrade plan at this moment.
 // It also saves all orders with unused portion to calculate each order's balance.
 // Go's SQL does not support batch insert now.
@@ -206,23 +206,15 @@ func (tx MemberTx) FindBalanceSources(userIDs reader.MemberID) ([]subs.ProratedO
 // Most users won't have much  valid orders
 // at a specific moment, so this should not pose a severe
 // performance issue.
-func (tx MemberTx) SaveUpgradeSchema(up subs.UpgradeSchema) error {
-	_, err := tx.NamedExec(
-		subs.StmtSaveUpgradeBalance(tx.dbName),
-		up)
+func (tx MemberTx) SaveProratedOrders(po []subs.ProratedOrder) error {
 
-	if err != nil {
-		logger.WithField("trace", "MemberTx.SaveUpgradeSchema").Error(err)
-		return err
-	}
-
-	for _, v := range up.Sources {
+	for _, v := range po {
 		_, err := tx.NamedExec(
 			subs.StmtSaveProratedOrder(tx.dbName),
 			v)
 
 		if err != nil {
-			logger.WithField("trace", "MemberTx.SaveUpgradeSchema").Error(err)
+			logger.WithField("trace", "MemberTx.SaveProratedOrders").Error(err)
 			return err
 		}
 	}
@@ -232,10 +224,10 @@ func (tx MemberTx) SaveUpgradeSchema(up subs.UpgradeSchema) error {
 
 // ProratedOrdersUsed set the consumed time on all the
 // prorated order for an upgrade operation.
-func (tx MemberTx) ProratedOrdersUsed(upgradeID string) error {
+func (tx MemberTx) ProratedOrdersUsed(upOrderID string) error {
 	_, err := tx.Exec(
 		subs.StmtProratedOrdersUsed(tx.dbName),
-		upgradeID,
+		upOrderID,
 	)
 	if err != nil {
 		logger.WithField("trace", "MemberTx.ProratedOrdersUsed").Error(err)
