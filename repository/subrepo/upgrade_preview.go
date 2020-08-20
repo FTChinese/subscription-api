@@ -9,7 +9,7 @@ import (
 
 // PreviewUpgrade calculates how much should a user to pay
 // to perform upgrading.
-func (env SubEnv) PreviewUpgrade(userID reader.MemberID, plan product.ExpandedPlan) (subs.PaymentIntent, error) {
+func (env Env) PreviewUpgrade(userID reader.MemberID, plan product.ExpandedPlan) (subs.PaymentIntent, error) {
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {

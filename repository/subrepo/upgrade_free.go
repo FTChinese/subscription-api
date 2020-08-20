@@ -11,7 +11,7 @@ import (
 // is large enough to cover premium's price.
 // This won't happen based on current restrictions of max renewal for 3 consecutive years.
 // It is provided here just for logical completeness.
-func (env SubEnv) FreeUpgrade(builder *subs.OrderBuilder) (subs.ConfirmationResult, error) {
+func (env Env) FreeUpgrade(builder *subs.OrderBuilder) (subs.ConfirmationResult, error) {
 
 	tx, err := env.BeginOrderTx()
 	if err != nil {
@@ -49,11 +49,12 @@ func (env SubEnv) FreeUpgrade(builder *subs.OrderBuilder) (subs.ConfirmationResu
 		return subs.ConfirmationResult{}, err
 	}
 
-	if !builder.IsFreeUpgrade() {
+	order, _ := builder.GetOrder()
+
+	if !order.IsFreeUpgrade() {
 		return subs.ConfirmationResult{}, errors.New("current balance is not enough to cover upgrading cost")
 	}
 
-	order, _ := builder.GetOrder()
 	confirmed, err := subs.NewConfirmationBuilder(subs.PaymentResult{
 		Amount:      0,
 		OrderID:     order.ID,
@@ -80,9 +81,7 @@ func (env SubEnv) FreeUpgrade(builder *subs.OrderBuilder) (subs.ConfirmationResu
 		return subs.ConfirmationResult{}, err
 	}
 
-	// Save upgrading schema.
-	upgrade, _ := builder.UpgradeSchema()
-	if err := tx.SaveUpgradeSchema(upgrade); err != nil {
+	if err := tx.SaveProratedOrders(builder.GetWallet().Sources); err != nil {
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, err
 	}
