@@ -13,7 +13,7 @@ COMMIT := `git log --max-count=1 --pretty=format:%aI_%h`
 
 LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD} -X main.commit=${COMMIT}"
 
-BUILD_LINUX := GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(LINUX_OUT) -v .
+BUILD_LINUX := GOOS=linux GOARCH=amd64 go build -o $(LINUX_OUT) $(LDFLAGS) -tags production -v .
 
 .PHONY: local run linux config deploy build downconfig upconfig publish restart clean
 # Development
