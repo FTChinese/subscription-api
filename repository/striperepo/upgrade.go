@@ -3,44 +3,14 @@ package striperepo
 import (
 	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
+	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/sub"
+	"github.com/guregu/null"
+	stripeSdk "github.com/stripe/stripe-go"
 )
 
-func upgradeSub(p ftcStripe.SubParams, subID string) (*stripe.Subscription, error) {
-	params := &stripe.SubscriptionParams{
-		Items: []*stripe.SubscriptionItemsParams{
-			{
-				Plan: stripe.String(p.GetStripePlanID()),
-			},
-		},
-	}
-
-	params.AddExpand("latest_invoice.payment_intent")
-
-	if p.IdempotencyKey != "" {
-		params.IdempotencyKey = stripe.String(p.IdempotencyKey)
-	}
-
-	if p.Coupon.Valid {
-		params.Coupon = stripe.String(p.DefaultPaymentMethod.String)
-	}
-
-	if p.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripe.String(p.DefaultPaymentMethod.String)
-	}
-
-	params.SetIdempotencyKey(p.IdempotencyKey)
-	return sub.Update(subID, params)
-}
-
 // UpgradeStripeSubs switches subscription plan.
-func (env StripeEnv) UpgradeSubscription(
-	id reader.MemberID,
-	params ftcStripe.SubParams,
-) (*stripe.Subscription, error) {
+func (env StripeEnv) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.Subscription, error) {
 
 	log := logger.WithField("trace", "StripeEnv.UpgradeSubscription")
 
@@ -50,7 +20,11 @@ func (env StripeEnv) UpgradeSubscription(
 		return nil, err
 	}
 
-	mmb, err := tx.RetrieveMember(id)
+	mmb, err := tx.RetrieveMember(reader.MemberID{
+		CompoundID: "",
+		FtcID:      null.StringFrom(input.FtcID),
+		UnionID:    null.String{},
+	}.MustNormalize())
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
@@ -70,14 +44,14 @@ func (env StripeEnv) UpgradeSubscription(
 		return nil, subs.ErrInvalidStripeSub
 	}
 
-	ss, err := upgradeSub(params, mmb.StripeSubsID.String)
+	ss, err := input.UpgradeSubs(mmb.StripeSubsID.String)
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
 
-	mmb = ftcStripe.RefreshMembership(mmb, ss)
+	mmb = stripePkg.RefreshMembership(mmb, ss)
 
 	if err := tx.UpdateMember(mmb); err != nil {
 		_ = tx.Rollback()
