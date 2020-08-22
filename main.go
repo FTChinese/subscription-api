@@ -55,7 +55,6 @@ func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
 	logrus.WithFields(logrus.Fields{
-		"sandbox":      cfg.UseSandboxDB(),
 		"live":         cfg.Live(),
 		"isProduction": cfg.IsProduction(),
 	}).Infof("Initializing environment")
@@ -111,8 +110,6 @@ func main() {
 	r.Use(controller.NoCache)
 
 	r.Get("/__version", status)
-	// Inspect what pricing plans are in effect.
-	r.Get("/__refresh", paywallRouter.RefreshPromo)
 
 	// Requires user id.
 	r.Route("/wxpay", func(r chi.Router) {
@@ -188,8 +185,10 @@ func main() {
 		r.Use(guard.CheckToken)
 
 		r.Post("/verify-receipt", iapRouter.VerifyReceipt)
-		r.Post("/link", iapRouter.Link)
-		r.Delete("/link", iapRouter.Unlink)
+		r.With(controller.FtcID).Post("/link", iapRouter.Link)
+		r.With(controller.FtcID).Delete("/link", iapRouter.Unlink)
+
+		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
@@ -267,12 +266,12 @@ func status(w http.ResponseWriter, _ *http.Request) {
 		Version string `json:"version"`
 		Build   string `json:"build"`
 		Commit  string `json:"commit"`
-		Sandbox bool   `json:"sandbox"`
+		Live    bool   `json:"live"`
 	}{
 		Version: version,
 		Build:   build,
 		Commit:  commit,
-		Sandbox: cfg.UseSandboxDB(),
+		Live:    cfg.Live(),
 	}
 
 	_ = view.Render(w, view.NewResponse().NoCache().SetBody(data))
