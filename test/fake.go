@@ -1,12 +1,10 @@
 package test
 
 import (
-	"fmt"
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
-	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/brianvoe/gofakeit/v5"
@@ -21,78 +19,6 @@ import (
 
 func SeedGoFake() {
 	gofakeit.Seed(time.Now().UnixNano())
-}
-
-func RandomClientApp() client.Client {
-	SeedGoFake()
-
-	return client.Client{
-		ClientType: enum.Platform(rand.IntRange(1, 10)),
-		Version:    null.StringFrom(genVersion()),
-		UserIP:     null.StringFrom(gofakeit.IPv4Address()),
-		UserAgent:  null.StringFrom(gofakeit.UserAgent()),
-	}
-}
-
-// genVersion creates a semantic version string.
-func genVersion() string {
-	return fmt.Sprintf("%d.%d.%d",
-		rand.IntRange(1, 10),
-		rand.IntRange(1, 10),
-		rand.IntRange(1, 10))
-}
-
-func genCustomerID() string {
-	id, _ := gorest.RandomBase64(9)
-	return "cus_" + id
-}
-
-func genStripeSubID() string {
-	id, _ := rand.Base64(9)
-	return "sub_" + id
-}
-
-func genStripePlanID() string {
-	return "plan_" + rand.String(14)
-}
-
-func randNumericString() string {
-	return rand.StringWithCharset(9, "0123456789")
-}
-
-func GenAppleSubID() string {
-	return "1000000" + randNumericString()
-}
-
-func genWxID() string {
-	id, _ := gorest.RandomBase64(21)
-	return id
-}
-
-func genToken() string {
-	token, _ := gorest.RandomBase64(82)
-	return token
-}
-
-func randomPayMethod() enum.PayMethod {
-	return enum.PayMethod(rand.IntRange(1, 3))
-}
-
-func genAvatar() string {
-	var gender = []string{"men", "women"}
-
-	n := rand.IntRange(1, 35)
-	g := gender[rand.IntRange(0, 2)]
-
-	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
-}
-
-func genLicenceID() string {
-	return "lic_" + rand.String(12)
-}
-
-func simplePassword() string {
-	return gofakeit.Password(true, false, true, false, false, 8)
 }
 
 func WxXMLNotification(orderID string) string {
@@ -188,14 +114,6 @@ func AliNoti() alipay.TradeNotification {
 		GmtCreate:  time.Now().In(time.UTC).Format(chrono.SQLDateTime),
 		GmtPayment: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
 	}
-}
-
-func genCardSerial() string {
-	now := time.Now()
-	anni := now.Year() - 2005
-	suffix := rand.IntRange(0, 9999)
-
-	return fmt.Sprintf("%d%02d%04d", anni, now.Month(), suffix)
 }
 
 func giftCard() redeem.GiftCard {

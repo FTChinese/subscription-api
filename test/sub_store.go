@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/models/plan"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -46,7 +47,7 @@ func NewSubStore(p *Persona) *SubStore {
 		// Control behavior of orders and membership.
 		accountKind:   reader.AccountKindFtc,
 		balanceAnchor: time.Now(),
-		payMethod:     randomPayMethod(),
+		payMethod:     faker.RandomPayMethod(),
 	}
 }
 
