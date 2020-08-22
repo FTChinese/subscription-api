@@ -23,8 +23,8 @@ func NewMemberTx(tx *sqlx.Tx, cfg config.BuildConfig) MemberTx {
 	}
 }
 
-// RetrieveMember retrieves a user's membership by ftc id
-// or wechat union id.
+// RetrieveMember retrieves a user's membership by a compound id, which might be ftc id or union id.
+// Use SQL FIND_IN_SET(compoundId, vip_id, vip) to verify it against two columns.
 // Returns zero value of membership if not found.
 func (tx MemberTx) RetrieveMember(id reader.MemberID) (subs.Membership, error) {
 	var m subs.Membership
@@ -32,7 +32,7 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (subs.Membership, error) {
 	err := tx.Get(
 		&m,
 		subs.StmtLockMember(tx.dbName),
-		id.CompoundID,
+		id.BuildFindInSet(),
 	)
 
 	if err != nil && err != sql.ErrNoRows {
