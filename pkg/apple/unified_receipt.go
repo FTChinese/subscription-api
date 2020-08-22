@@ -141,7 +141,7 @@ func (u *UnifiedReceipt) Subscription() (Subscription, error) {
 		autoRenew = false
 	}
 
-	prod, err := GetProductByID(u.latestTransaction.ProductID)
+	prod, err := getProductByID(u.latestTransaction.ProductID)
 
 	if err != nil {
 		return Subscription{}, err
