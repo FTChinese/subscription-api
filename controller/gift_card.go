@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/validator"
 	"github.com/FTChinese/subscription-api/repository/giftrepo"
 	"github.com/jmoiron/sqlx"
 	"net/http"
@@ -28,26 +29,19 @@ func NewGiftCardRouter(db *sqlx.DB, config config.BuildConfig) GiftCardRouter {
 // Input {code: string}
 func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 
-	userID, err := GetUserID(req.Header)
-	if err != nil {
-		_ = view.Render(w, view.NewBadRequest(err.Error()))
-		return
-	}
+	readerIDs := getReaderIDs(req.Header)
 
 	code, err := GetJSONString(req.Body, "code")
 	if err != nil {
-		_ = view.Render(w, view.NewBadRequest(err.Error()))
+		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
 	// message:
 	// error.field: code
 	// error.code: "missing_field"
-	if code == "" {
-		r := view.NewReason()
-		r.Field = "redeem_code"
-		r.Code = view.CodeMissingField
-		_ = view.Render(w, view.NewUnprocessable(r))
+	if ve := validator.New("code").Required().Validate(code); ve != nil {
+		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
@@ -55,14 +49,14 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 	// 404 Not Found
 	card, err := router.env.FindGiftCard(code)
 	if err != nil {
-		_ = view.Render(w, view.NewDBFailure(err))
+		_ = render.New(w).DBError(err)
 		return
 	}
 
 	// Update membership from based on gift card info.
-	member, err := subs.NewMember(userID).FromGiftCard(card)
+	member, err := subs.NewMember(readerIDs).FromGiftCard(card)
 	if err != nil {
-		_ = view.Render(w, view.NewBadRequest(err.Error()))
+		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
@@ -74,16 +68,17 @@ func (router GiftCardRouter) Redeem(w http.ResponseWriter, req *http.Request) {
 		// error.field: "member"
 		// error.code: "already_exists"
 		if db.IsAlreadyExists(err) {
-			r := view.NewReason()
-			r.Field = "member"
-			r.Code = view.CodeAlreadyExists
-			_ = view.Render(w, view.NewUnprocessable(r))
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: "duplicate entry",
+				Field:   "member",
+				Code:    render.CodeAlreadyExists,
+			})
 			return
 		}
 
-		_ = view.Render(w, view.NewDBFailure(err))
+		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_ = view.Render(w, view.NewNoContent())
+	_ = render.New(w).NoContent()
 }
