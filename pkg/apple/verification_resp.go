@@ -38,11 +38,11 @@ func (v *VerificationResp) GetStatusMessage() string {
 }
 
 // Validate ensures the response from Apple API is correct.
+// Checks Status and BundleID.
 func (v *VerificationResp) Validate() bool {
-	logger := logrus.WithField("project", "subscription-api").
-		WithField("package", "models.apple").
-		WithField("trace", "VerificationResp")
+	logger := logrus.WithField("trace", "apple.VerificationResp.Validate")
 
+	// Status above 0 is error.
 	if v.Status != 0 {
 		logger.Infof("Expected response status 0, got %d: %s", v.Status, getStatusMessage(v.Status))
 		return false
@@ -53,13 +53,14 @@ func (v *VerificationResp) Validate() bool {
 		return false
 	}
 
+	// LatestTransactions should not be empty.
 	return v.UnifiedReceipt.Validate()
 }
 
-// SessionSchema is used to save the decoded ClientReceipt received in a verification response.
+// ReceiptSchema is used to save the decoded ClientReceipt received in a verification response.
 // Every verification request will create this record.
 // You must call UnifiedReceipt.Parse before building it.
-func (v *VerificationResp) SessionSchema() VerifiedReceiptSchema {
+func (v *VerificationResp) ReceiptSchema() VerifiedReceiptSchema {
 
 	receiptType, _ := ParseReceiptType(v.Receipt.ReceiptType)
 
