@@ -2,6 +2,7 @@ package apple
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"sort"
 	"time"
 )
@@ -45,6 +46,7 @@ type UnifiedReceipt struct {
 	latestTransaction Transaction // hold the latest transaction sorted from LatestTransactions array.
 }
 
+// Validate ensures the response contains the latest_receipt_info field.
 func (u *UnifiedReceipt) Validate() bool {
 	if u.LatestTransactions == nil || len(u.LatestTransactions) == 0 {
 		return false
@@ -53,13 +55,18 @@ func (u *UnifiedReceipt) Validate() bool {
 	return true
 }
 
+// sortLatestReceiptsDesc sorts the array containing all in-app purchase transactions
+// in descending order by expires_date_ms field so that the latest comes first.
 func (u *UnifiedReceipt) sortLatestReceiptsDesc() {
 	sort.SliceStable(u.LatestTransactions, func(i, j int) bool {
 		return u.LatestTransactions[i].ExpiresDateMs > u.LatestTransactions[j].ExpiresDateMs
 	})
 }
 
+// findLatestTransaction finds the latest first valid transaction.
 func (u *UnifiedReceipt) findLatestTransaction() Transaction {
+	// Sort the latest transactions so that we could
+	// perform binary search.
 	u.sortLatestReceiptsDesc()
 
 	l := len(u.LatestTransactions)
@@ -76,9 +83,9 @@ func (u *UnifiedReceipt) findLatestTransaction() Transaction {
 	// If the above is true, it only indicates the design of
 	// your product and pricing system have problems.
 	i := sort.Search(l, func(i int) bool {
-		r := u.LatestTransactions[i]
+		t := u.LatestTransactions[i]
 
-		return r.ExpiresUnix() >= nowUnix && r.IsValidProduct()
+		return t.ExpiresUnix() >= nowUnix && t.IsValidProduct()
 	})
 
 	if i < l {
@@ -88,10 +95,12 @@ func (u *UnifiedReceipt) findLatestTransaction() Transaction {
 	return u.LatestTransactions[0]
 }
 
+// Parse get the latest first valid transaction.
 func (u *UnifiedReceipt) Parse() {
 	u.latestTransaction = u.findLatestTransaction()
 }
 
+// ReceiptToken builds the data to save the latest receipt token.
 func (u *UnifiedReceipt) ReceiptToken() ReceiptToken {
 	return ReceiptToken{
 		BaseSchema: BaseSchema{
@@ -123,8 +132,9 @@ func (u *UnifiedReceipt) findPendingRenewal() PendingRenewal {
 
 // Subscription builds a subscription for a user based on
 // the receipt information available.
+// Returns Subscription or error if the corresponding product is not found for this transaction.
 // TODO: What if the Transaction is a cancelled one?
-func (u *UnifiedReceipt) Subscription() Subscription {
+func (u *UnifiedReceipt) Subscription() (Subscription, error) {
 	pendingRenewal := u.findPendingRenewal()
 
 	autoRenew := pendingRenewal.IsAutoRenew()
@@ -132,7 +142,11 @@ func (u *UnifiedReceipt) Subscription() Subscription {
 		autoRenew = false
 	}
 
-	p := u.latestTransaction.FindPlan()
+	prod, err := stripe.GetPlanByID(u.latestTransaction.ProductID)
+
+	if err != nil {
+		return Subscription{}, err
+	}
 
 	return Subscription{
 		Environment:           u.Environment,
@@ -145,7 +159,7 @@ func (u *UnifiedReceipt) Subscription() Subscription {
 		ExpiresDateUTC: chrono.TimeFrom(
 			time.Unix(u.latestTransaction.ExpiresUnix(), 0),
 		),
-		BasePlan:    p.BasePlan,
+		Edition:     prod.Edition,
 		AutoRenewal: autoRenew,
-	}
+	}, nil
 }
