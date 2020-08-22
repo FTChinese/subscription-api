@@ -89,7 +89,7 @@ func (router IAPRouter) doVerification(req *http.Request) (apple.VerificationRes
 	// Save the decoded receipt.
 	go func() {
 		_ = router.iapRepo.SaveVerifiedReceipt(
-			resp.SessionSchema(),
+			resp.ReceiptSchema(),
 		)
 	}()
 
