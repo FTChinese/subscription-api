@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"database/sql"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
@@ -20,6 +21,23 @@ type SubsInput struct {
 	CouponID             null.String `json:"coupon"`
 	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
 	IdempotencyKey       string      `json:"idempotency"`
+}
+
+func NewSubsInput(ftcID string) SubsInput {
+	return SubsInput{
+		FtcID: ftcID,
+	}
+}
+
+func (i SubsInput) WithPlanID(live bool) (SubsInput, error) {
+	p, err := stripePlans.findByEdition(i.NamedKey() + "_" + stripeKeySuffix[live])
+	if err != nil {
+		return i, sql.ErrNoRows
+	}
+
+	i.PlanID = p.PlanID
+
+	return i, nil
 }
 
 // Create calls stripe API to create a new subscription.

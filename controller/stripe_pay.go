@@ -56,20 +56,16 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	planConfig, err := stripePkg.GetPlanByEdition(key, router.config.Live())
-	if err != nil {
-		_ = render.New(w).NotFound()
-		return
-	}
-
 	// Fetch plan from Stripe API
-	p, err := planConfig.GetPlan()
+	p, err := stripePkg.FetchPlan(key, router.config.Live())
 
 	if err != nil {
 		err = forwardStripeErr(w, err)
-		if err != nil {
-			_ = render.New(w).BadRequest(err.Error())
+		if err == nil {
+			return
 		}
+
+		_ = render.New(w).NotFound()
 		return
 	}
 
@@ -221,21 +217,18 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
 
-	var input stripePkg.SubsInput
+	input := stripePkg.NewSubsInput(ftcID)
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
-	input.FtcID = ftcID
-
-	// TODO: validate input
-
-	planConfig, err := stripePkg.GetPlanByEdition(input.NamedKey(), router.config.Live())
+	input, err := input.WithPlanID(router.config.Live())
 	if err != nil {
 		_ = render.New(w).NotFound()
 		return
 	}
-	input.PlanID = planConfig.PlanID
+
+	// TODO: validate input
 
 	// Create stripe subscription.
 	s, err := router.stripeRepo.CreateSubscription(input)
@@ -323,21 +316,18 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
 
-	var input stripePkg.SubsInput
+	input := stripePkg.NewSubsInput(ftcID)
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
-	input.FtcID = ftcID
-
-	// TODO: validate input
-
-	planConfig, err := stripePkg.GetPlanByEdition(input.NamedKey(), router.config.Live())
+	input, err := input.WithPlanID(router.config.Live())
 	if err != nil {
 		_ = render.New(w).NotFound()
 		return
 	}
-	input.PlanID = planConfig.PlanID
+
+	// TODO: validate input
 
 	s, err := router.stripeRepo.UpgradeSubscription(input)
 

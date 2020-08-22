@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/stripe/stripe-go"
@@ -16,11 +17,6 @@ type PlanConfig struct {
 	product.Edition
 	PlanID string
 	Live   bool
-}
-
-// GetPlan fetches stripe plan from stripe API.
-func (c PlanConfig) GetPlan() (*stripe.Plan, error) {
-	return plan.Get(c.PlanID, nil)
 }
 
 type stripeStore struct {
@@ -111,10 +107,13 @@ func (s *stripeStore) findByID(planID string) (PlanConfig, error) {
 
 var stripePlans = newStripeStoreSchema()
 
-func GetPlanByEdition(key string, live bool) (PlanConfig, error) {
-	return stripePlans.findByEdition(key + "_" + stripeKeySuffix[live])
-}
+// FetchPlan gets stripe plan from API.
+// The key is one of standard_month, standard_year, premium_year.
+func FetchPlan(key string, live bool) (*stripe.Plan, error) {
+	p, err := stripePlans.findByEdition(key + "_" + stripeKeySuffix[live])
+	if err != nil {
+		return nil, sql.ErrNoRows
+	}
 
-func GetPlanByID(id string) (PlanConfig, error) {
-	return stripePlans.findByID(id)
+	return plan.Get(p.PlanID, nil)
 }
