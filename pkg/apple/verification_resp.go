@@ -7,17 +7,29 @@ import (
 
 const bundleID = "com.ft.ftchinese.mobile"
 
-// VerificationResponseBody is the response body return to verification request.
-type VerificationResponseBody struct {
+// VerificationResp is the response body return to verification request.
+// Per the doc:
+// For auto-renewable subscription items, parse the response to get information about the currently active subscription period.
+// When you validate the receipt for a subscription, `latest_receipt` contains the latest encoded receipt,
+// which is the same as the value for `receipt-data` in the request, and `latest_receipt_info` contains
+// all the transactions for the subscription, including the initial purchase and subsequent renewals but not including any restores.
+//
+// You can use these values to check whether an auto-renewable subscription has expired.
+// Use these values along with the `expiration_intent` subscription field to get the reason for expiration
+//
+// See https://developer.apple.com/documentation/appstorereceipts/requestbody
+type VerificationResp struct {
 	UnifiedReceipt
 	// This is only present if `Status` is not 0. 1 indicates a temporary issue; 0 indicates an unresolvable issue
 	// Only applicable to status codes 21100-21199.
 	IsRetryable bool `json:"is-retryable"`
-	// A JSON representation of the receipt that was sent for verification
+	// A JSON representation of the receipt that was sent for verification.
+	// The decoded version of the encoded receipt data sent with the request to the App Store.
+	// The decoded data of VerificationPayload.ReceiptData
 	Receipt ClientReceipt `json:"receipt"`
 }
 
-func (v *VerificationResponseBody) GetStatusMessage() string {
+func (v *VerificationResp) GetStatusMessage() string {
 	if v.Status >= 21100 && v.Status <= 21199 {
 		return "Internal data access errors"
 	}
@@ -26,10 +38,10 @@ func (v *VerificationResponseBody) GetStatusMessage() string {
 }
 
 // Validate ensures the response from Apple API is correct.
-func (v *VerificationResponseBody) Validate() bool {
+func (v *VerificationResp) Validate() bool {
 	logger := logrus.WithField("project", "subscription-api").
 		WithField("package", "models.apple").
-		WithField("trace", "VerificationResponseBody")
+		WithField("trace", "VerificationResp")
 
 	if v.Status != 0 {
 		logger.Infof("Expected response status 0, got %d: %s", v.Status, getStatusMessage(v.Status))
@@ -44,13 +56,14 @@ func (v *VerificationResponseBody) Validate() bool {
 	return v.UnifiedReceipt.Validate()
 }
 
-// SessionSchema builds the schema by merging the root elements
-// of verification, the Receipt top fields and the latest transaction ids.
-func (v *VerificationResponseBody) SessionSchema() VerificationSessionSchema {
+// SessionSchema is used to save the decoded ClientReceipt received in a verification response.
+// Every verification request will create this record.
+// You must call UnifiedReceipt.Parse before building it.
+func (v *VerificationResp) SessionSchema() VerifiedReceiptSchema {
 
 	receiptType, _ := ParseReceiptType(v.Receipt.ReceiptType)
 
-	return VerificationSessionSchema{
+	return VerifiedReceiptSchema{
 		BaseSchema: BaseSchema{
 			Environment:           v.Environment,
 			OriginalTransactionID: v.latestTransaction.OriginalTransactionID,
