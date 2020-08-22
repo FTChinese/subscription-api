@@ -9,7 +9,7 @@ import (
 
 // Link links an apple subscription to an ftc account.
 // We should first retrieves membership by
-// apple original transaction id and by ftc ftc separately
+// apple original transaction id and by ftc id separately
 // to see if the two sides have existing records.
 // We need to pay special attention to those two case:
 //
@@ -23,96 +23,95 @@ import (
 //
 //	Apple ID A + FTC ID A
 //	Apple ID A + FTC ID B
+//
 // This is a suspicious operation that should always be denied.
-// Return error could be ErrTargetLinkedToOtherIAP,
-// ErrHasValidNonIAPMember
-// The second returned value indicates whether this is initial linking and should send an email to user.
-func (env IAPEnv) Link(s apple.Subscription, id reader.MemberID) (subs.Membership, bool, error) {
+// Return error could be ErrTargetLinkedToOtherIAP, ErrHasValidNonIAPMember.
+func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult, error) {
 	tx, err := env.BeginTx()
 	if err != nil {
-		return subs.Membership{}, false, err
+		return apple.LinkResult{}, err
 	}
 
+	// Try to retrieve membership by apple original transaction id.
 	iapMember, err := tx.RetrieveAppleMember(s.OriginalTransactionID)
 	if err != nil {
 		_ = tx.Rollback()
-		return subs.Membership{}, false, err
+		return apple.LinkResult{}, err
 	}
+	// Try to retrieve membership by ftc id.
 	ftcMember, err := tx.RetrieveMember(id)
 	if err != nil {
 		_ = tx.Rollback()
-		return subs.Membership{}, false, err
+		return apple.LinkResult{}, err
 	}
 
 	// Merge two memberships.
 	// If iap membership is already linked, the merged
 	// membership won't be changed and we only need to
 	// update it based on apple transaction.
-	merged, err := ftcMember.MergeIAPMembership(iapMember)
-	if err != nil {
-		if err == subs.ErrLinkToMultipleFTC {
+	ve := ftcMember.ValidateMergeIAP(iapMember)
+	if ve != nil {
+		// If merging is not allowed but IAP already exists, we should update it.
+		if !iapMember.IsZero() {
 			newIAPMember := s.BuildOn(iapMember)
+			snapshot := iapMember.Snapshot(enum.SnapshotReasonAppleLink)
 			go func() {
-				_ = env.BackUpMember(
-					iapMember.Snapshot(enum.SnapshotReasonAppleLink),
-				)
+				_ = env.BackUpMember(snapshot)
 			}()
 
-			if e := tx.UpdateMember(newIAPMember); e != nil {
+			e := tx.UpdateMember(newIAPMember)
+			if e != nil {
 				_ = tx.Rollback()
 			} else {
 				_ = tx.Commit()
 			}
 
-			return subs.Membership{}, false, err
+			return apple.LinkResult{}, ve
 		}
 
 		_ = tx.Rollback()
-		return subs.Membership{}, false, err
+		return apple.LinkResult{}, ve
 	}
 
-	if merged.IsZero() {
-		merged = s.NewMembership(id)
+	// If reached here, possible cases of FTC and IAP:
+	// FTC	    |  IAP
+	// ----------------
+	// zero	    |  zero  | No backup
+	// Equal    |  Equal | Backup and Update
+	// Expired  |  zero  | Backup FTC and Update
+	// -----------------
+	// From this table we can see we only need to backup the FTC side if it exists.
+	var newMmb subs.Membership
+	if ftcMember.IsZero() {
+		newMmb = s.NewMembership(id)
 	} else {
-		merged = s.BuildOn(merged)
-	}
-
-	// Backup current iap membership and ftc membership
-	if !iapMember.IsZero() {
+		// The merged membership is not zero, but it is invalid.
+		newMmb = s.BuildOn(ftcMember)
+		snapshot := ftcMember.Snapshot(enum.SnapshotReasonAppleLink)
 		go func() {
-			_ = env.BackUpMember(
-				iapMember.Snapshot(enum.SnapshotReasonAppleLink),
-			)
+			_ = env.BackUpMember(snapshot)
 		}()
 
-		if err := tx.DeleteMember(iapMember.MemberID); err != nil {
+		err := tx.DeleteMember(ftcMember.MemberID)
+		if err != nil {
 			_ = tx.Rollback()
-			return subs.Membership{}, false, err
-		}
-	}
-
-	if !ftcMember.IsZero() {
-		go func() {
-			_ = env.BackUpMember(
-				ftcMember.Snapshot(enum.SnapshotReasonAppleLink),
-			)
-		}()
-
-		if err := tx.DeleteMember(ftcMember.MemberID); err != nil {
-			_ = tx.Rollback()
-			return subs.Membership{}, false, err
+			return apple.LinkResult{}, err
 		}
 	}
 
 	// Insert the merged one.
-	if err := tx.CreateMember(merged); err != nil {
+	if err := tx.CreateMember(newMmb); err != nil {
 		_ = tx.Rollback()
-		return subs.Membership{}, false, err
+		return apple.LinkResult{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return subs.Membership{}, false, err
+		return apple.LinkResult{}, err
 	}
 
-	return merged, iapMember.IsZero(), nil
+	return apple.LinkResult{
+		Linked:      newMmb,
+		PreviousFTC: ftcMember,
+		PreviousIAP: iapMember,
+	}, nil
 }
