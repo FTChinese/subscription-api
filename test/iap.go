@@ -7,10 +7,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/apple"
 )
 
-func GetReceiptToken() string {
-	return faker.IAPReceipt
-}
-
 func GetVerificationResponse() *apple.VerificationResp {
 	var r apple.VerificationResp
 	if err := json.Unmarshal([]byte(faker.IAPVerificationResponse), &r); err != nil {

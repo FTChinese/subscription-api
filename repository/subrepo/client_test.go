@@ -1,6 +1,7 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
@@ -26,7 +27,7 @@ func TestSubEnv_SaveOrderClient(t *testing.T) {
 			args: args{
 				c: client.OrderClient{
 					OrderID: subs.MustGenerateOrderID(),
-					Client:  test.RandomClientApp(),
+					Client:  faker.RandomClientApp(),
 				},
 			},
 		},

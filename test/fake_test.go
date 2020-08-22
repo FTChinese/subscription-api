@@ -32,7 +32,3 @@ func TestWxPrepay(t *testing.T) {
 
 	t.Logf("Unified order: %+v", uni)
 }
-
-func TestGenCardSerial(t *testing.T) {
-	t.Log(genCardSerial())
-}
