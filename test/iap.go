@@ -7,17 +7,19 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/apple"
 )
 
-func GetVerificationResponse() *apple.VerificationResp {
+func MustVerificationResponse() *apple.VerificationResp {
 	var r apple.VerificationResp
 	if err := json.Unmarshal([]byte(faker.IAPVerificationResponse), &r); err != nil {
 		panic(err)
 	}
 
+	r.Parse()
+
 	return &r
 }
 
 func GetIAPTransaction() apple.Transaction {
-	resp := GetVerificationResponse()
+	resp := MustVerificationResponse()
 
 	l := len(resp.LatestTransactions)
 
@@ -25,7 +27,7 @@ func GetIAPTransaction() apple.Transaction {
 }
 
 func GetPendingRenewal() apple.PendingRenewal {
-	resp := GetVerificationResponse()
+	resp := MustVerificationResponse()
 
 	l := len(resp.PendingRenewalInfo)
 
