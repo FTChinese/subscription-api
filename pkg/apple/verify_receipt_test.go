@@ -9,12 +9,12 @@ import (
 func TestVerifyReceipt(t *testing.T) {
 	payload := VerificationPayload{
 		ReceiptData:            faker.IAPReceipt,
-		Password:               config.MustGetIAPSecret(),
+		Password:               config.MustIAPSecret(),
 		ExcludeOldTransactions: false,
 	}
 
 	cfg := config.NewBuildConfig(false, false)
-	resp, err := VerifyReceipt(payload, cfg.GetIAPVerificationURL())
+	resp, err := VerifyReceipt(payload, cfg.IAPVerificationURL())
 
 	if err != nil {
 		t.Error(err)
