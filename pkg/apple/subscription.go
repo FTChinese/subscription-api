@@ -10,14 +10,16 @@ import (
 )
 
 type Subscription struct {
-	Environment           Environment `db:"environment"`
-	OriginalTransactionID string      `db:"original_transaction_id"`
-	LastTransactionID     string      `db:"last_transaction_id"`
-	ProductID             string      `db:"product_id"`
-	PurchaseDateUTC       chrono.Time `db:"purchase_date_utc"`
-	ExpiresDateUTC        chrono.Time `db:"expires_date_utc"`
+	Environment           Environment `json:"environment" db:"environment"`
+	OriginalTransactionID string      `json:"originalTransactionId" db:"original_transaction_id"`
+	LastTransactionID     string      `json:"lastTransactionId" db:"last_transaction_id"`
+	ProductID             string      `json:"productId" db:"product_id"`
+	PurchaseDateUTC       chrono.Time `json:"purchaseDateUtc" db:"purchase_date_utc"`
+	ExpiresDateUTC        chrono.Time `json:"expiresDateUtc" db:"expires_date_utc"`
 	product.Edition
-	AutoRenewal bool `db:"auto_renewal"`
+	AutoRenewal bool        `json:"autoRenewal" db:"auto_renewal"`
+	CreatedUTC  chrono.Time `json:"createdUtc"`
+	UpdatedUTC  chrono.Time `json:"updatedUtc"`
 }
 
 // Membership build ftc's membership based on subscription
@@ -33,14 +35,14 @@ func (s Subscription) NewMembership(id reader.MemberID) subs.Membership {
 		},
 		ExpireDate:    chrono.DateFrom(s.ExpiresDateUTC.Time),
 		PaymentMethod: enum.PayMethodApple,
+		FtcPlanID:     null.String{},
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   s.AutoRenewal,
 		Status:        enum.SubsStatusNull,
-		AppleSubID:    null.StringFrom(s.OriginalTransactionID),
+		AppleSubsID:   null.StringFrom(s.OriginalTransactionID),
+		B2BLicenceID:  null.String{},
 	}
-
-	m.Normalize()
 
 	return m
 }
@@ -52,11 +54,13 @@ func (s Subscription) BuildOn(m subs.Membership) subs.Membership {
 	m.Cycle = s.Cycle
 	m.ExpireDate = chrono.DateFrom(s.ExpiresDateUTC.Time)
 	m.PaymentMethod = enum.PayMethodApple
+	m.FtcPlanID = null.String{}
 	m.StripeSubsID = null.String{}
 	m.StripePlanID = null.String{}
 	m.AutoRenewal = s.AutoRenewal
 	m.Status = enum.SubsStatusNull
-	m.AppleSubID = null.StringFrom(s.OriginalTransactionID)
+	m.AppleSubsID = null.StringFrom(s.OriginalTransactionID)
+	m.B2BLicenceID = null.String{}
 
 	return m
 }
