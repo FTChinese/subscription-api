@@ -64,6 +64,7 @@ type WebHook struct {
 	UnifiedReceipt UnifiedReceipt `json:"unified_receipt"`
 }
 
+// Schema turns to SQL-friendly format.
 func (w WebHook) Schema() WebHookSchema {
 	return WebHookSchema{
 		BaseTransactionSchema: w.LatestTransaction.schema(
