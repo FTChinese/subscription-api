@@ -2,6 +2,7 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
@@ -68,7 +69,7 @@ func TestMembershipTx_RetrieveAppleMember(t *testing.T) {
 		{
 			name: "Empty apple membership",
 			args: args{
-				transactionID: test.GenAppleSubID(),
+				transactionID: faker.GenAppleSubID(),
 			},
 			wantErr: false,
 		},
