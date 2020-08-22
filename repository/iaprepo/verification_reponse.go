@@ -20,8 +20,7 @@ import (
 // ReceiptToken
 // Subscription
 
-// SaveVerifiedReceipt saves the root fields
-// of VerificationResp.
+// SaveVerifiedReceipt saved the decoded apple.ClientReceipt from response body.
 func (env Env) SaveVerifiedReceipt(v apple.VerifiedReceiptSchema) error {
 	_, err := env.db.NamedExec(apple.StmtSaveVerifiedReceipt, v)
 
