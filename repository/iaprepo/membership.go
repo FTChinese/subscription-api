@@ -5,14 +5,14 @@ import (
 )
 
 // BackUpMember takes a snapshot of membership.
-func (env IAPEnv) BackUpMember(snapshot subs.MemberSnapshot) error {
+func (env Env) BackUpMember(snapshot subs.MemberSnapshot) error {
 
 	_, err := env.db.NamedExec(
-		subs.StmtSnapshotMember(env.c.GetSubsDB()),
+		subs.StmtSnapshotMember(env.cfg.GetSubsDB()),
 		snapshot)
 
 	if err != nil {
-		logger.WithField("trace", "IAPEnv.BackUpMember").Error(err)
+		logger.WithField("trace", "Env.BackUpMember").Error(err)
 
 		return err
 	}
