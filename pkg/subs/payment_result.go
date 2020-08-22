@@ -2,6 +2,7 @@ package subs
 
 import (
 	"errors"
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/smartwalle/alipay"
 	"strconv"
@@ -15,6 +16,7 @@ type PaymentResult struct {
 	ConfirmedAt time.Time
 }
 
+// NewPaymentResultAli builds PaymentResult from alipay webhook notification.
 func NewPaymentResultAli(n *alipay.TradeNotification) (PaymentResult, error) {
 	f, err := strconv.ParseFloat(n.TotalAmount, 64)
 	if err != nil {
@@ -24,10 +26,11 @@ func NewPaymentResultAli(n *alipay.TradeNotification) (PaymentResult, error) {
 	return PaymentResult{
 		Amount:      int64(f * 100),
 		OrderID:     n.OutTradeNo,
-		ConfirmedAt: ParseAliTime(n.GmtPayment),
+		ConfirmedAt: dt.MustParseAliTime(n.GmtPayment),
 	}, nil
 }
 
+// NewPaymentResultWx builds PaymentResult from wechat pay webhook notification.
 func NewPaymentResultWx(n wechat.Notification) (PaymentResult, error) {
 	if n.TotalFee.IsZero() {
 		return PaymentResult{}, errors.New("no payment amount found in wx webhook")
@@ -37,14 +40,9 @@ func NewPaymentResultWx(n wechat.Notification) (PaymentResult, error) {
 		return PaymentResult{}, errors.New("no order id in wx webhook")
 	}
 
-	confirmedAt, err := ParseWxTime(n.TimeEnd.String)
-	if err != nil {
-		confirmedAt = time.Now()
-	}
-
 	return PaymentResult{
 		Amount:      n.TotalFee.Int64,
 		OrderID:     n.FTCOrderID.String,
-		ConfirmedAt: confirmedAt,
+		ConfirmedAt: dt.MustParseWxTime(n.TimeEnd.String),
 	}, nil
 }
