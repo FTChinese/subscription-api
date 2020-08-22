@@ -2,12 +2,6 @@ package subs
 
 import "errors"
 
-var ErrLinkToMultipleFTC = errors.New("one apple subscription cannot be linked to multiple FTC account")
-
-var ErrTargetLinkedToOtherIAP = errors.New("target ftc account is already linked to another apple subscription")
-
-var ErrHasValidNonIAPMember = errors.New("target ftc account already has a valid membership")
-
 // Errors when deducing a SubsKind from current membership and the new plan to subscribe.
 var (
 	ErrRenewalForbidden   = errors.New("current membership expiration date exceeds max renewal period")
