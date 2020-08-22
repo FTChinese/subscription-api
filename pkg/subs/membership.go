@@ -1,6 +1,7 @@
 package subs
 
 import (
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"time"
@@ -41,7 +42,7 @@ type Membership struct {
 	// Only `active` should be treated as valid member.
 	// Wechat and alipay defaults to `active` for backward compatibility.
 	Status       enum.SubsStatus `json:"status" db:"subs_status"`
-	AppleSubID   null.String     `json:"-" db:"apple_subs_id"`
+	AppleSubsID  null.String     `json:"-" db:"apple_subs_id"`
 	B2BLicenceID null.String     `json:"-" db:"b2b_licence_id"`
 }
 
@@ -81,7 +82,7 @@ func (m Membership) IsEqual(other Membership) bool {
 		return true
 	}
 
-	return m.CompoundID == other.CompoundID && m.AppleSubID.String == other.AppleSubID.String
+	return m.CompoundID == other.CompoundID && m.AppleSubsID.String == other.AppleSubsID.String
 }
 
 func (m Membership) IsValid() bool {
@@ -138,7 +139,7 @@ func (m Membership) IsAliOrWxPay() bool {
 
 // IsIAP tests whether this membership comes from Apple.
 func (m Membership) IsIAP() bool {
-	return m.AppleSubID.Valid
+	return m.AppleSubsID.Valid
 }
 
 func (m Membership) IsB2B() bool {
@@ -340,70 +341,66 @@ func (m Membership) PermitStripeUpgrade() bool {
 // The following section handles Apple IAP
 // =======================================
 
-// MergeIAPMembership merges iap membership into an FTC membership.
+// ValidateMergeIAP checks if it is allowed to merge iap membership into an FTC membership.
 // Only two cases are allowed to merge:
-// * Both sides are refer to the same membership (including zero value);
+// * Both sides refer to the same membership (including zero value);
 // * IAP side is zero and FTC side non-zero but invalid.
-// Let's imagine there are two numbers: a and b
-func (m Membership) MergeIAPMembership(iapMember Membership) (Membership, error) {
-	// a == b, a and b could be both 0 or non-0.
-	// Equal means either both are zero values, or they
-	// refer to the same instance.
+func (m Membership) ValidateMergeIAP(iapMember Membership) *render.ValidationError {
+	// Equal means either both are zero values, or they refer to the same instance.
 	// In such case it is fine to return any of them.
-	// The caller should then check whether the returned value
-	// is zero.
-	// For zero value, build a new membership based on IAP
-	// transaction; otherwise just update it.
+	// The caller should then check whether the returned value is zero.
+	// For zero value, build a new membership based on IAP transaction;
+	// otherwise just update it.
 	if iapMember.IsEqual(m) {
-		return m, nil
+		return nil
 	}
 
-	// a != b:
-	// a == 0, b != 0;
-	// a != 0, b == 0;
-	// a != 0, b != 0.
-	// The two sides are not equal. They must be totally
-	// different memberships.
-	// If the IAP side is non-zero, this means it is
-	// already linked to an FTC account and now  is trying
-	// to link to another FTC  account which should be forbidden
-	// regardless of the FTC side is zero or not.
-	// This is suspicious fraud.
-	// We still need to update the IAP side membership based on
-	// apple latest transaction.
-	// There is a possibility that the FTC side is expired
-	// we take it as error because if we allow it,
-	// then cheater might be using the same apple id to link
-	// to multiple invalid FTC memberships.
+	// If the two sides are not equal, they must be totally different memberships and the two sides cannot be both empty.
+	//
+	// a != b might indicates those cases:
+	// * a == 0, b != 0;
+	// * a != 0, b != 0;
+	// * a != 0, b == 0.
+	//
+	// Case 1 and 2:
+	// The presence of IAP side itself indicates it is already linked to a FTC account.
+	// Now it is trying to link to another FTC account since the two sides are not the same one.
+	// Such action should be denied regardless of whether the FTC side is valid or not, and it is mostly a fraudulent behavior.
+	// If an exiting linked IAP is trying to switch the linked FTC account, it falls into this category and user should first perform unlink.
+	// In such case we still need to update the IAP side membership based on apple latest transaction.
 	if !iapMember.IsZero() {
-		// Here
-		// b != 0, a == 0 iap already exists while ftc is zero;
-		// b != 0, a != 0 iap already exists and ftc is not zero.
-		// It includes both non-zero cases.
-		return Membership{}, ErrLinkToMultipleFTC
+		return &render.ValidationError{
+			Message: "An apple subscription cannot link to multiple FTC accounts",
+			Field:   "iap_membership",
+			Code:    "already_linked",
+		}
 	}
 
-	// Here b == 0, a != 0.
-	// Now the IAP side is zero while the FTC side is not-zero.
-	// If the FTC side is no longer valid, it is allowed to have
-	// apple_subscription_id set to apple's original transaction memberID.
-	// This might erase previous original transaction memberID
-	// set on the FTC side. It's ok since it is already invalid.
-	if !m.IsValid() {
-		return m, nil
-	}
-
-	// FTC side is already linked an apple memberID.
-	// This might occur when user changed apple memberID and is trying
-	// to link to the same FTC account which is linked to old
-	// apple memberID.
+	// Case 3:
+	// Current IAP side is empty, then FTC side must not be empty.
+	// We need to consider 2 cases here:
+	// * FTC side is created via another IAP. In such case we should deny it and user should manually unlink that IAP before linking to this one.
 	if m.IsIAP() {
-		return Membership{}, ErrTargetLinkedToOtherIAP
+		return &render.ValidationError{
+			Message: "Target ftc account is already linked to another apple subscription",
+			Field:   "ftc_membership",
+			Code:    "already_linked",
+		}
 	}
 
-	// FTC side have a valid membership purchased via
-	// non-apple channel.
-	return Membership{}, ErrHasValidNonIAPMember
+	// * FTC side is non-IAP.
+	// Then check whether it is expired.
+	// If the FTC side is still valid, merging is not allowed since it will override valid data.
+	if !m.IsExpired() {
+		return &render.ValidationError{
+			Message: "Target ftc account already has a valid non-iap membership",
+			Field:   "ftc_membership",
+			Code:    "valid_non_iap",
+		}
+	}
+
+	// Otherwise merging to an exiting expired non-iap FTC membership is allowed.
+	return nil
 }
 
 // FromGiftCard creates a new instance based on a gift card.
