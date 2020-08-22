@@ -125,7 +125,7 @@ func (o Order) Membership() (Membership, error) {
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
 		Status:        enum.SubsStatusNull,
-		AppleSubID:    null.String{},
+		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
 	}, nil
 }
