@@ -64,12 +64,12 @@ func (s appleStore) findByID(id string) (Product, error) {
 
 var appleProducts = newAppleStore()
 
-func GetProductByEdition(e product.Edition) (Product, error) {
+func getProductByEdition(e product.Edition) (Product, error) {
 	return appleProducts.findByEdition(e)
 }
 
-// GetProductByID searches a product by id. This is used by UnifiedReceipt
+// getProductByID searches a product by id. This is used by UnifiedReceipt
 // to build a Subscription.
-func GetProductByID(id string) (Product, error) {
+func getProductByID(id string) (Product, error) {
 	return appleProducts.findByID(id)
 }
