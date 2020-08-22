@@ -1,31 +1,34 @@
-package product
+package apple
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/FTChinese/subscription-api/pkg/product"
+)
 
-type AppleProduct struct {
-	Edition
+type Product struct {
+	product.Edition
 	ID string
 }
 
 type appleStore struct {
-	products     []AppleProduct
+	products     []Product
 	indexEdition map[string]int
 	indexID      map[string]int
 }
 
 func newAppleStore() appleStore {
 	s := appleStore{
-		products: []AppleProduct{
+		products: []Product{
 			{
-				Edition: NewStdMonthEdition(),
+				Edition: product.NewStdMonthEdition(),
 				ID:      "com.ft.ftchinese.mobile.subscription.member.monthly",
 			},
 			{
-				Edition: NewStdYearEdition(),
+				Edition: product.NewStdYearEdition(),
 				ID:      "com.ft.ftchinese.mobile.subscription.member",
 			},
 			{
-				Edition: NewPremiumEdition(),
+				Edition: product.NewPremiumEdition(),
 				ID:      "com.ft.ftchinese.mobile.subscription.vip",
 			},
 		},
@@ -41,19 +44,19 @@ func newAppleStore() appleStore {
 	return s
 }
 
-func (s appleStore) findByEdition(e Edition) (AppleProduct, error) {
+func (s appleStore) findByEdition(e product.Edition) (Product, error) {
 	i, ok := s.indexEdition[e.NamedKey()]
 	if !ok {
-		return AppleProduct{}, fmt.Errorf("apple product for %s is not found", e.NamedKey())
+		return Product{}, fmt.Errorf("apple product for %s is not found", e.NamedKey())
 	}
 
 	return s.products[i], nil
 }
 
-func (s appleStore) findByID(id string) (AppleProduct, error) {
+func (s appleStore) findByID(id string) (Product, error) {
 	i, ok := s.indexID[id]
 	if !ok {
-		return AppleProduct{}, fmt.Errorf("apple prodct with id %s not found", id)
+		return Product{}, fmt.Errorf("apple prodct with id %s not found", id)
 	}
 
 	return s.products[i], nil
@@ -61,10 +64,10 @@ func (s appleStore) findByID(id string) (AppleProduct, error) {
 
 var appleProducts = newAppleStore()
 
-func GetAppleProductByEdition(e Edition) (AppleProduct, error) {
+func GetProductByEdition(e product.Edition) (Product, error) {
 	return appleProducts.findByEdition(e)
 }
 
-func GetAppleProductByID(id string) (AppleProduct, error) {
+func GetProductByID(id string) (Product, error) {
 	return appleProducts.findByID(id)
 }
