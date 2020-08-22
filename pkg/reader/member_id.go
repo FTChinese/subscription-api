@@ -37,24 +37,33 @@ func NewMemberID(ftcID, unionID string) (MemberID, error) {
 	return id, nil
 }
 
-func (m *MemberID) Normalize() error {
+func (m MemberID) Normalize() (MemberID, error) {
 	if m.FtcID.IsZero() && m.UnionID.IsZero() {
-		return errors.New("ftcID and unionID should not both be null")
+		return m, errors.New("ftcID and unionID should not both be null")
 	}
 
 	if m.FtcID.Valid {
 		m.CompoundID = m.FtcID.String
-		return nil
+		return m, nil
 	}
 
 	m.CompoundID = m.UnionID.String
-	return nil
+	return m, nil
+}
+
+func (m MemberID) MustNormalize() MemberID {
+	ids, err := m.Normalize()
+	if err != nil {
+		panic(err)
+	}
+
+	return ids
 }
 
 // BuildFindInSet builds a value to be used in MySQL
 // function FIND_IN_SET(str, strlist) so that find
 // a user's data by both ftc id and union id.
-func (m *MemberID) BuildFindInSet() string {
+func (m MemberID) BuildFindInSet() string {
 	strList := make([]string, 0)
 
 	if m.FtcID.Valid {
