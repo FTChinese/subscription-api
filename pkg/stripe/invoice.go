@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/models/plan"
 	"github.com/stripe/stripe-go"
 	"strings"
 )
@@ -17,24 +16,24 @@ func (i Invoice) CreationTime() chrono.Time {
 	return chrono.TimeFrom(CanonicalizeUnix(i.Created))
 }
 
-func (i Invoice) BuildFtcPlan() (plan.Plan, error) {
+func (i Invoice) GetPlanConfig() (PlanConfig, error) {
 	if i.Lines == nil {
-		return plan.Plan{}, errors.New("empty lines")
+		return PlanConfig{}, errors.New("empty lines")
 	}
 
 	if len(i.Lines.Data) == 0 {
-		return plan.Plan{}, errors.New("empty lines.data")
+		return PlanConfig{}, errors.New("empty lines.data")
 	}
 
 	stripePlan := i.Lines.Data[0].Plan
 
-	ftcPlan, err := plan.FindPlanForStripe(stripePlan.ID, i.Livemode)
+	planConfig, err := GetPlanByID(stripePlan.ID)
 
 	if err != nil {
-		return plan.Plan{}, err
+		return PlanConfig{}, err
 	}
 
-	return ftcPlan.WithStripePrice(*stripePlan), nil
+	return planConfig, nil
 }
 
 func (i Invoice) Price() string {
