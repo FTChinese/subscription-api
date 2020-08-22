@@ -29,8 +29,7 @@ type Subscription struct {
 }
 
 // Bridge between chrono pkg and unix timestamp.
-// Unix 0 represent year 1970, while Golang's zero time is really
-// 0.
+// Unix 0 represent year 1970, while Golang's zero time is actually 0.
 func CanonicalizeUnix(s int64) time.Time {
 	if s > 0 {
 		return time.Unix(s, 0)
