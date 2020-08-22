@@ -60,14 +60,7 @@ func (t Transaction) PurchaseDateUnix() int64 {
 	return MustParseInt64(t.PurchaseDateMs) / 1000
 }
 
-// FindPlan finds FTC defined Plan for apple's product id.
-func (t Transaction) FindPlan() plan.Plan {
-	p, _ := plan.FindPlanForApple(t.ProductID)
-
-	return p
-}
-
-// Schema turns a Transaction to be a database schema structure.
+// Schema turns a Transaction to a database schema structure.
 func (t Transaction) Schema(e Environment) TransactionSchema {
 
 	cd := MustParseInt64(t.CancellationDateMs)
