@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/product"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
 	"strings"
@@ -15,33 +14,11 @@ import (
 type PayInput struct {
 	// Tier and cycle are extracted from url.
 	product.Edition
-	// The following fields are extracted from request header. It is scheduled to move to request body.
-	FtcID   string `json:"ftcId"`
-	UnionID string `json:"unionId"`
 	// The following fields are not used yet.
 	PlanID string `json:"planId"`
 }
 
 func (i *PayInput) Validate() *render.ValidationError {
-	i.FtcID = strings.TrimSpace(i.FtcID)
-	i.UnionID = strings.TrimSpace(i.UnionID)
-
-	if i.FtcID == "" && i.UnionID == "" {
-
-		ve := &render.ValidationError{
-			Message: "Either ftc id or union pay must be provided.",
-			Field:   "",
-			Code:    render.CodeMissingField,
-		}
-
-		if i.FtcID == "" {
-			ve.Field = "ftcId"
-		} else {
-			ve.Field = "unionId"
-		}
-
-		return ve
-	}
 
 	if i.Tier == enum.TierNull {
 		return &render.ValidationError{
@@ -60,22 +37,6 @@ func (i *PayInput) Validate() *render.ValidationError {
 	}
 
 	return nil
-}
-
-func (i PayInput) ReaderID() reader.MemberID {
-	ids := reader.MemberID{
-		CompoundID: "",
-		FtcID:      null.NewString(i.FtcID, i.FtcID != ""),
-		UnionID:    null.NewString(i.UnionID, i.UnionID != ""),
-	}
-
-	if i.FtcID != "" {
-		ids.CompoundID = i.FtcID
-	} else if i.UnionID != "" {
-		ids.CompoundID = i.UnionID
-	}
-
-	return ids
 }
 
 type WxPayInput struct {
