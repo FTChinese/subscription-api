@@ -50,12 +50,6 @@ func (c BuildConfig) Live() bool {
 	return c.production && !c.sandbox
 }
 
-// UseSandboxDB tells whether the sandbox db should be used.
-// Not this is not the opposite of Live.
-func (c BuildConfig) UseSandboxDB() bool {
-	return c.sandbox
-}
-
 func (c BuildConfig) GetSubsDB() SubsDB {
 	if c.sandbox {
 		return SubsDBSandbox
@@ -69,11 +63,11 @@ func (c BuildConfig) IsProduction() bool {
 	return c.production
 }
 
-// GetReceiptVerificationURL selects apple receipt verification
+// GetIAPVerificationURL selects apple receipt verification
 // endpoint depending on the deployment environment.
 // This is the same to stripe key selection.
 // MUST not use the UsedSandboxDB!
-func (c BuildConfig) GetReceiptVerificationURL() string {
+func (c BuildConfig) GetIAPVerificationURL() string {
 
 	if c.Live() {
 		return "https://buy.itunes.apple.com/verifyReceipt"
@@ -82,6 +76,7 @@ func (c BuildConfig) GetReceiptVerificationURL() string {
 	return "https://sandbox.itunes.apple.com/verifyReceipt"
 }
 
+// GetStripeKey gets stripe signing key which is used to verify webhook data.
 func (c BuildConfig) GetStripeKey() string {
 	var key string
 	if c.Live() {
@@ -99,6 +94,7 @@ func (c BuildConfig) GetStripeKey() string {
 	return key
 }
 
+// GetStripeSecretKey gets stripe API key.
 func (c BuildConfig) GetStripeSecretKey() string {
 	var key string
 
@@ -144,4 +140,13 @@ func MustGetHanqiConn() connect.Connect {
 	}
 
 	return conn
+}
+
+func MustGetIAPSecret() string {
+	pw := viper.GetString("apple.receipt_password")
+	if pw == "" {
+		panic("empty receipt verification password")
+	}
+
+	return pw
 }
