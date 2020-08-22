@@ -27,7 +27,7 @@ func (i Invoice) GetPlanConfig() (PlanConfig, error) {
 
 	stripePlan := i.Lines.Data[0].Plan
 
-	planConfig, err := GetPlanByID(stripePlan.ID)
+	planConfig, err := stripePlans.findByID(stripePlan.ID)
 
 	if err != nil {
 		return PlanConfig{}, err
