@@ -7,57 +7,14 @@ import (
 	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/sub"
 )
-
-func createSub(p ftcStripe.SubParams, planID string) (*stripe.Subscription, error) {
-
-	params := &stripe.SubscriptionParams{
-		Customer: stripe.String(p.Customer),
-		Items: []*stripe.SubscriptionItemsParams{
-			{
-				Plan: stripe.String(planID),
-			},
-		},
-	}
-
-	params.AddExpand("latest_invoice.payment_intent")
-
-	// {
-	// "status":400,
-	// "message":"Idempotent key length is 0 characters long, which is outside accepted lengths. Idempotent Keys must be 1-255 characters long. If you're looking for a decent generator, try using a UUID defined by IETF RFC 4122.",
-	// "request_id":"req_O6zILK5QEVpViw",
-	// "type":"idempotency_error"
-	// }
-	if p.IdempotencyKey != "" {
-		logger.Infof("Setting idempotency key: %s", p.IdempotencyKey)
-		params.SetIdempotencyKey(p.IdempotencyKey)
-	}
-
-	if p.Coupon.Valid {
-		params.Coupon = stripe.String(p.DefaultPaymentMethod.String)
-	}
-
-	if p.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripe.String(p.DefaultPaymentMethod.String)
-	}
-
-	return sub.New(params)
-}
 
 // CreateSubscription creates a new subscription.
 // error could be:
 // util.ErrNonStripeValidSub
 // util.ErrActiveStripeSub
 // util.ErrUnknownSubState
-func (env StripeEnv) CreateSubscription(id reader.MemberID, params ftcStripe.SubParams) (*stripe.Subscription, error) {
-
-	ftcPlan, err := params.GetFtcPlan()
-	if err != nil {
-		return &stripe.Subscription{}, err
-	}
-
-	stripePlanID := ftcPlan.GetStripePlanID(env.Live())
+func (env StripeEnv) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subscription, error) {
 
 	log := logger.WithField("trace", "Stripe.CreateSubscription")
 
@@ -68,7 +25,12 @@ func (env StripeEnv) CreateSubscription(id reader.MemberID, params ftcStripe.Sub
 	}
 
 	// Retrieve member for this user to check whether the operation is allowed.
-	mmb, err := tx.RetrieveMember(id)
+	mmb, err := tx.RetrieveMember(reader.MemberID{
+		CompoundID: "",
+		FtcID:      null.StringFrom(input.FtcID),
+		UnionID:    null.String{},
+	}.MustNormalize())
+
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
@@ -84,7 +46,7 @@ func (env StripeEnv) CreateSubscription(id reader.MemberID, params ftcStripe.Sub
 	log.Info("Creating stripe subscription")
 
 	// Contact Stripe API.
-	ss, err := createSub(params, stripePlanID)
+	ss, err := input.CreateSubs()
 
 	// {"status":400,
 	// "message":"Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than '4a857eb3-396c-4c91-a8f1-4014868a8437' if you meant to execute a different request.","request_id":"req_Dv6N7d9lF8uDHJ",
@@ -100,14 +62,14 @@ func (env StripeEnv) CreateSubscription(id reader.MemberID, params ftcStripe.Sub
 
 	// What if the user exists but is invalid?
 	if mmb.IsZero() {
-		newMmb := params.NewMembership(id, ss)
+		newMmb := input.NewMembership(ss)
 		log.Infof("A new stripe membership: %+v", newMmb)
 		if err := tx.CreateMember(newMmb); err != nil {
 			_ = tx.Rollback()
 			return nil, err
 		}
 	} else {
-		newMmb := params.UpdateMembership(mmb, ss)
+		newMmb := input.UpdateMembership(mmb, ss)
 		log.Infof("Updated stripe membership: %+v", newMmb)
 		if err := tx.UpdateMember(newMmb); err != nil {
 			_ = tx.Rollback()
@@ -123,17 +85,8 @@ func (env StripeEnv) CreateSubscription(id reader.MemberID, params ftcStripe.Sub
 }
 
 // SaveSubsError saves any error in stripe response.
-func (env StripeEnv) SaveSubsError(id reader.MemberID, e *stripe.Error) error {
-	_, err := env.db.Exec(ftcStripe.StmtSaveStripeError,
-		id.FtcID,
-		null.NewString(e.ChargeID, e.ChargeID != ""),
-		null.NewString(string(e.Code), e.Code != ""),
-		null.NewInt(int64(e.HTTPStatusCode), e.HTTPStatusCode != 0),
-		e.Msg,
-		null.NewString(e.Param, e.Param != ""),
-		null.NewString(e.RequestID, e.RequestID != ""),
-		e.Type,
-	)
+func (env StripeEnv) SaveSubsError(e ftcStripe.APIError) error {
+	_, err := env.db.NamedExec(ftcStripe.StmtSaveAPIError, e)
 
 	if err != nil {
 		logger.WithField("trace", "SubEnv.SaveSubsError").Error(err)
@@ -178,7 +131,7 @@ func (env StripeEnv) GetSubscription(id reader.MemberID) (*stripe.Subscription, 
 		return nil, sql.ErrNoRows
 	}
 
-	ss, err := sub.Get(mmb.StripeSubsID.String, nil)
+	ss, err := ftcStripe.GetSubscription(mmb.StripeSubsID.String)
 
 	if err != nil {
 		log.Error(err)
