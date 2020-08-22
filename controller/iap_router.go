@@ -26,7 +26,7 @@ type IAPRouter struct {
 
 func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice) IAPRouter {
 	return IAPRouter{
-		secret:     config.MustGetIAPSecret(),
+		secret:     config.MustIAPSecret(),
 		config:     cfg,
 		iapRepo:    iaprepo.NewEnv(db, cfg),
 		readerRepo: readerrepo.NewReaderEnv(db, cfg),
@@ -57,7 +57,7 @@ func (router IAPRouter) doVerification(req *http.Request) (apple.VerificationRes
 	payload.ExcludeOldTransactions = false
 
 	// Verify
-	resp, err := apple.VerifyReceipt(payload, router.config.GetIAPVerificationURL())
+	resp, err := apple.VerifyReceipt(payload, router.config.IAPVerificationURL())
 
 	if err != nil {
 		return apple.VerificationResp{}, render.NewBadRequest(err.Error())

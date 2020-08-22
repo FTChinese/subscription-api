@@ -2,10 +2,8 @@ package config
 
 import (
 	"github.com/FTChinese/go-rest/connect"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"log"
-	"os"
 )
 
 func GetConn(key string) (connect.Connect, error) {
@@ -63,11 +61,11 @@ func (c BuildConfig) IsProduction() bool {
 	return c.production
 }
 
-// GetIAPVerificationURL selects apple receipt verification
+// IAPVerificationURL selects apple receipt verification
 // endpoint depending on the deployment environment.
 // This is the same to stripe key selection.
 // MUST not use the UsedSandboxDB!
-func (c BuildConfig) GetIAPVerificationURL() string {
+func (c BuildConfig) IAPVerificationURL() string {
 
 	if c.Live() {
 		return "https://buy.itunes.apple.com/verifyReceipt"
@@ -76,8 +74,8 @@ func (c BuildConfig) GetIAPVerificationURL() string {
 	return "https://sandbox.itunes.apple.com/verifyReceipt"
 }
 
-// GetStripeKey gets stripe signing key which is used to verify webhook data.
-func (c BuildConfig) GetStripeKey() string {
+// MustStripeSigningKey gets stripe signing key which is used to verify webhook data.
+func (c BuildConfig) MustStripeSigningKey() string {
 	var key string
 	if c.Live() {
 		key = viper.GetString("stripe.live_signing_key")
@@ -86,16 +84,14 @@ func (c BuildConfig) GetStripeKey() string {
 	}
 
 	if key == "" {
-		logrus.WithField("trace", "BuildConfig.GetStripeKey").
-			Error("cannot find stripe signing key")
-		os.Exit(1)
+		panic("cannot find stripe signing key")
 	}
 
 	return key
 }
 
-// GetStripeSecretKey gets stripe API key.
-func (c BuildConfig) GetStripeSecretKey() string {
+// MustStripeAPIKey gets stripe API key.
+func (c BuildConfig) MustStripeAPIKey() string {
 	var key string
 
 	if c.Live() {
@@ -105,10 +101,7 @@ func (c BuildConfig) GetStripeSecretKey() string {
 	}
 
 	if key == "" {
-		logrus.WithField("trace", "BuildConfig.GetStripeSecretKey").
-			Error("cannot find stripe secret key")
-
-		os.Exit(1)
+		panic("cannot find stripe secret key")
 	}
 
 	return key
@@ -142,7 +135,7 @@ func MustGetHanqiConn() connect.Connect {
 	return conn
 }
 
-func MustGetIAPSecret() string {
+func MustIAPSecret() string {
 	pw := viper.GetString("apple.receipt_password")
 	if pw == "" {
 		panic("empty receipt verification password")
