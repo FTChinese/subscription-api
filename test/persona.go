@@ -176,7 +176,7 @@ func (p *Persona) Membership() subs.Membership {
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
 		Status:        enum.SubsStatusNull,
-		AppleSubID:    null.String{},
+		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
 	}
 
@@ -192,7 +192,7 @@ func (p *Persona) Membership() subs.Membership {
 		m.Status = enum.SubsStatusActive
 
 	case enum.PayMethodApple:
-		m.AppleSubID = null.StringFrom(p.AppleSubID)
+		m.AppleSubsID = null.StringFrom(p.AppleSubID)
 		m.AutoRenewal = true
 
 	case enum.PayMethodB2B:
