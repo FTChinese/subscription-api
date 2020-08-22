@@ -20,7 +20,7 @@ func NewUpgradeRouter(baseRouter PayRouter) UpgradeRouter {
 }
 
 func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
-	userID, _ := GetUserID(req.Header)
+	userID := getReaderIDs(req.Header)
 
 	plan, err := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
 	if err != nil {
@@ -44,7 +44,7 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 
 // FreeUpgrade handles free upgrade request.
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
-	userID, _ := GetUserID(req.Header)
+	userID := getReaderIDs(req.Header)
 
 	p, _ := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
 	clientApp := client.NewClientApp(req)
