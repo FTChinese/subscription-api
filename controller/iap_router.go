@@ -2,15 +2,13 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
-	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
-	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/repository/readerrepo"
 	"github.com/jmoiron/sqlx"
@@ -19,67 +17,50 @@ import (
 )
 
 type IAPRouter struct {
-	iapEnv    iaprepo.IAPEnv
-	readerEnv readerrepo.ReaderEnv
-	postman   postoffice.PostOffice
+	secret     string
+	config     config.BuildConfig
+	iapRepo    iaprepo.Env
+	readerRepo readerrepo.ReaderEnv
+	postman    postoffice.PostOffice
 }
 
-func NewIAPRouter(db *sqlx.DB, config config.BuildConfig, p postoffice.PostOffice) IAPRouter {
+func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice) IAPRouter {
 	return IAPRouter{
-		iapEnv:    iaprepo.NewIAPEnv(db, config),
-		readerEnv: readerrepo.NewReaderEnv(db, config),
-		postman:   p,
+		secret:     config.MustGetIAPSecret(),
+		config:     cfg,
+		iapRepo:    iaprepo.NewEnv(db, cfg),
+		readerRepo: readerrepo.NewReaderEnv(db, cfg),
+		postman:    p,
 	}
 }
 
-func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt) {
-
-	// save latest receipt array
-	go func() {
-		for _, v := range ur.LatestTransactions {
-			_ = router.iapEnv.SaveTransaction(
-				v.Schema(ur.Environment),
-			)
-		}
-	}()
-
-	// Save pending renewal array
-	go func() {
-		for _, v := range ur.PendingRenewalInfo {
-			_ = router.iapEnv.SavePendingRenewal(
-				v.Schema(ur.Environment),
-			)
-		}
-	}()
-
-	// Save the receipt as a token for status polling.
-	receiptToken := ur.ReceiptToken()
-
-	go func() {
-		//_ = router.iapEnv.SaveReceiptTokenDB(receiptToken)
-		_ = iaprepo.SaveReceiptTokenFile(receiptToken)
-	}()
-}
-
-func (router IAPRouter) doVerification(req *http.Request) (apple.Subscription, view.Response) {
+// Verify a receipt and get response from app store.
+// This the shared action when verifying receipt,
+// link account and unlink account.
+// See https://developer.apple.com/documentation/storekit/in-app_purchase/validating_receipts_with_the_app_store
+func (router IAPRouter) doVerification(req *http.Request) (apple.VerificationResp, *render.ResponseError) {
 	log := logger.WithField("trace", "IAPRouter.VerifyReceipt")
 
 	// Parse input data.
-	var receiptReq apple.VerificationRequestBody
-	if err := gorest.ParseJSON(req.Body, &receiptReq); err != nil {
+	var payload apple.VerificationPayload
+	if err := gorest.ParseJSON(req.Body, &payload); err != nil {
 		log.Error(err)
-		return apple.Subscription{}, view.NewBadRequest(err.Error())
+		return apple.VerificationResp{}, render.NewBadRequest(err.Error())
 	}
 
 	// Validate input.
-	if r := receiptReq.Validate(); r != nil {
-		return apple.Subscription{}, view.NewUnprocessable(r)
+	if ve := payload.Validate(); ve != nil {
+		return apple.VerificationResp{}, render.NewUnprocessable(ve)
 	}
+	// Set other requires fields of payload.
+	payload.Password = router.secret
+	payload.ExcludeOldTransactions = false
 
 	// Verify
-	resp, err := router.iapEnv.VerifyReceipt(receiptReq)
+	resp, err := apple.VerifyReceipt(payload, router.config.GetIAPVerificationURL())
+
 	if err != nil {
-		return apple.Subscription{}, view.NewBadRequest(err.Error())
+		return apple.VerificationResp{}, render.NewBadRequest(err.Error())
 	}
 
 	log.Infof("Environment %s, is retryable %t, status %d", resp.Environment, resp.IsRetryable, resp.Status)
@@ -91,121 +72,183 @@ func (router IAPRouter) doVerification(req *http.Request) (apple.Subscription, v
 		log.WithField("environment", resp.Environment).
 			WithField("status", resp.Status).
 			WithField("message", resp.GetStatusMessage()).
-			WithField("receiptData", receiptReq.ReceiptData).
+			WithField("receiptData", payload.ReceiptData).
 			Info("IAP verification failed")
 
-		r := view.NewReason()
-		r.Field = "receipt-data"
-		r.Code = view.CodeInvalid
-		r.SetMessage("verification response is not valid")
-		return apple.Subscription{}, view.NewUnprocessable(r)
+		ve := &render.ValidationError{
+			Message: "verification response is not valid",
+			Field:   "receipt-data",
+			Code:    render.CodeInvalid,
+		}
+		return apple.VerificationResp{}, render.NewUnprocessable(ve)
 	}
 
+	// Find the latest valid transaction.
 	resp.Parse()
 
-	// Save this verification session.
+	// Save the decoded receipt.
 	go func() {
-		_ = router.iapEnv.SaveVerificationSession(
+		_ = router.iapRepo.SaveVerifiedReceipt(
 			resp.SessionSchema(),
 		)
 	}()
 
-	// Dissect and save the receipt data in background.
+	// Dissect and save other fields in the verification response.
 	router.saveReceiptData(resp.UnifiedReceipt)
-
-	// Crete a subscription from the receipt.
-	sub := resp.Subscription()
-	_ = router.iapEnv.CreateSubscription(sub)
-
-	return sub, view.NewResponse().SetBody(resp)
+	return resp, nil
 }
 
-// VerifyReceipt perform app store receipt verification
-// Input {"receipt-data": string}
+// Save various fields in apple.UnifiedReceipt:
+// * LatestTransactions
+// * PendingRenewalInfo
+// * An encoded receipt as a file.
+func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt) {
+
+	// Save the LatestTransactions array.
+	go func() {
+		for _, v := range ur.LatestTransactions {
+			_ = router.iapRepo.SaveTransaction(
+				v.Schema(ur.Environment),
+			)
+		}
+	}()
+
+	// Save PendingRenewalInfo array
+	go func() {
+		for _, v := range ur.PendingRenewalInfo {
+			_ = router.iapRepo.SavePendingRenewal(
+				v.Schema(ur.Environment),
+			)
+		}
+	}()
+
+	// Save the LatestToken field to a file.
+	// Initially it was designed to save in SQL.
+	receiptToken := ur.ReceiptToken()
+
+	go func() {
+		_ = iaprepo.SaveReceiptTokenFile(receiptToken)
+	}()
+}
+
+func (router IAPRouter) createSubscription(resp apple.VerificationResp) (apple.Subscription, *render.ResponseError) {
+	sub, err := resp.Subscription()
+	if err != nil {
+		return apple.Subscription{}, render.NewNotFound(err.Error())
+	}
+
+	err = router.iapRepo.CreateSubscription(sub)
+	if err != nil {
+		return apple.Subscription{}, render.NewDBError(err)
+	}
+
+	return sub, nil
+}
+
+// VerifyReceipt verifies if the receipt data send by client is valid.
+// Input
+// receipt-data: string
 func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) {
-	_, resp := router.doVerification(req)
-	_ = view.Render(w, resp)
-}
-
-func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
-	sub, resp := router.doVerification(req)
-	// If view.Response.StatusCode is not 200, there must be something wrong.
-	if resp.StatusCode != http.StatusOK {
-		_ = view.Render(w, resp)
+	resp, err := router.doVerification(req)
+	if err != nil {
+		_ = render.New(w).JSON(err.StatusCode, err)
 		return
 	}
 
-	// Check user's ids.
-	memberID, err := reader.NewMemberID(
-		req.Header.Get(ftcIDKey),
-		req.Header.Get(unionIDKey),
-	)
-
-	// If reader ids not found, it indicates this is not
-	// used to link membership.
+	_, err = router.createSubscription(resp)
 	if err != nil {
-		_ = view.Render(w, view.NewNoContent())
+		_ = render.New(w).JSON(err.StatusCode, err)
+		return
+	}
+
+	_ = render.New(w).OK(resp)
+}
+
+// Link merges IAP subscription to FTC account.
+func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
+	// Get user's ids.
+	memberID := getReaderIDs(req.Header)
+
+	// Verification
+	resp, resErr := router.doVerification(req)
+	if resErr != nil {
+		_ = render.New(w).JSON(resErr.StatusCode, resErr)
+		return
+	}
+
+	// Build subscription.
+	sub, resErr := router.createSubscription(resp)
+	if resErr != nil {
+		_ = render.New(w).JSON(resErr.StatusCode, resErr)
 		return
 	}
 
 	// Start to link apple subscription to ftc membership.
-	m, isNewLink, err := router.iapEnv.Link(sub, memberID)
+	linkResult, err := router.iapRepo.Link(sub, memberID)
 
 	if err != nil {
-		switch err {
-		case subs.ErrLinkToMultipleFTC:
-			r := view.NewReason()
-			r.Field = "iap_membership"
-			r.Code = "already_linked"
-			r.SetMessage(err.Error())
-			_ = view.Render(w, view.NewUnprocessable(r))
-			return
-
-		case subs.ErrTargetLinkedToOtherIAP:
-			r := view.NewReason()
-			r.Field = "ftc_membership"
-			r.Code = "already_linked"
-			r.SetMessage(err.Error())
-			_ = view.Render(w, view.NewUnprocessable(r))
-			return
-
-		case subs.ErrHasValidNonIAPMember:
-			r := view.NewReason()
-			r.Field = "ftc_membership"
-			r.Code = "valid_non_iap"
-			r.SetMessage(err.Error())
-			_ = view.Render(w, view.NewUnprocessable(r))
-			return
-
-		default:
-			_ = view.Render(w, view.NewDBFailure(err))
+		var ve *render.ValidationError
+		if errors.As(err, &ve) {
+			_ = render.New(w).Unprocessable(ve)
 			return
 		}
+
+		_ = render.New(w).DBError(err)
+		return
 	}
 
-	if isNewLink {
+	if linkResult.IsInitialLink() {
 		go func() {
-			_ = router.sendLinkedLetter(m)
+			account, err := router.readerRepo.FindAccountByFtcID(linkResult.Linked.FtcID.String)
+			if err != nil {
+				return
+			}
+
+			parcel, err := letter.NewIAPLinkParcel(account, linkResult.Linked)
+			if err != nil {
+				return
+			}
+
+			err = router.postman.Deliver(parcel)
+			if err != nil {
+				return
+			}
 		}()
 	}
 
-	_ = view.Render(w, view.NewResponse().SetBody(m))
+	_ = render.New(w).OK(linkResult.Linked)
 }
 
 // Unlink removes apple subscription id from a user's membership
 func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
-	sub, resp := router.doVerification(req)
-	if resp.StatusCode != 200 {
-		_ = view.Render(w, resp)
+	// Get user's ids.
+	readerIDs := getReaderIDs(req.Header)
+
+	// Verification
+	resp, resErr := router.doVerification(req)
+	if resErr != nil {
+		_ = render.New(w).JSON(resErr.StatusCode, resErr)
 		return
 	}
 
-	if err := router.iapEnv.Unlink(sub); err != nil {
-		_ = view.Render(w, view.NewDBFailure(err))
+	// Build subscription.
+	sub, resErr := router.createSubscription(resp)
+	if resErr != nil {
+		_ = render.New(w).JSON(resErr.StatusCode, resErr)
 		return
 	}
 
-	_ = view.Render(w, view.NewNoContent())
+	if err := router.iapRepo.Unlink(sub, readerIDs); err != nil {
+		if errors.Is(err, apple.ErrUnlinkMismatchedFTC) {
+			_ = render.New(w).BadRequest(err.Error())
+			return
+		}
+
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).NoContent()
 }
 
 // WebHook receives app store server-to-server notification.
@@ -223,20 +266,19 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	if err := json.Unmarshal(b, &wh); err != nil {
 		log.Error(err)
-
-		_ = view.Render(w, view.NewBadRequest(""))
+		_ = render.New(w).BadRequest("")
 		return
 	}
 
-	_ = router.iapEnv.SaveNotification(wh.Schema())
+	_ = router.iapRepo.SaveNotification(wh.Schema())
 
 	if !wh.UnifiedReceipt.Validate() {
-		reason := view.NewReason()
-		reason.Field = "unified_receipt"
-		reason.Code = view.CodeInvalid
-		reason.SetMessage("unified receipt field is not valid")
 		log.Infof("invalid webhook unified receipt")
-		_ = view.Render(w, view.NewUnprocessable(reason))
+		_ = render.New(w).Unprocessable(&render.ValidationError{
+			Message: "unified receipt field is not valid",
+			Field:   "unified_receipt",
+			Code:    render.CodeInvalid,
+		})
 		return
 	}
 	// Find the latest transaction and save transaction
@@ -246,84 +288,58 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	router.saveReceiptData(wh.UnifiedReceipt)
 
 	// Build apple's subscription and save it.
-	sub := wh.UnifiedReceipt.Subscription()
-	if err := router.iapEnv.CreateSubscription(sub); err != nil {
-		_ = view.Render(w, view.NewBadRequest(""))
-		return
-	}
-
-	// Retrieve apple subscription by original transaction id.
-	// together with membership.
-	// If apple subscription is not linked, stop.
-	// If apple subscription is linked, update the membership,
-	// continue to find the membership by linked id,
-	// and take a snapshot of membership, and then
-	// update it.
-
-	tx, err := router.iapEnv.BeginTx()
+	sub, err := wh.UnifiedReceipt.Subscription()
 	if err != nil {
 		log.Error(err)
-		_ = view.Render(w, view.NewDBFailure(err))
+		_ = render.New(w).BadRequest("")
 		return
 	}
 
-	currMember, err := tx.RetrieveAppleMember(sub.OriginalTransactionID)
-	if err != nil {
+	if err := router.iapRepo.CreateSubscription(sub); err != nil {
 		log.Error(err)
-		_ = tx.Rollback()
-		_ = view.Render(w, view.NewBadRequest(""))
+		_ = render.New(w).BadRequest("")
 		return
 	}
 
-	if currMember.IsZero() {
-		_ = tx.Commit()
-		_ = view.Render(w, view.NewResponse())
+	snapshot, err := router.iapRepo.WebhookUpdate(sub)
+	if err != nil {
+		_ = render.New(w).DBError(err)
 		return
 	}
-
-	newMember := sub.NewMembership(currMember.MemberID)
 
 	// Take a snapshot.
 	go func() {
-		_ = router.iapEnv.BackUpMember(
-			currMember.Snapshot(enum.SnapshotReasonAppleLink),
-		)
+		_ = router.iapRepo.BackUpMember(snapshot)
 	}()
 
-	if err := tx.UpdateMember(newMember); err != nil {
-		_ = tx.Rollback()
-		_ = view.Render(w, view.NewBadRequest(""))
+	_ = render.New(w).OK(nil)
+}
+
+// LoadReceipt retrieves the subscription data for
+// an original transaction id, together with the
+// receipt used to verify it.
+func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
+	id, _ := getURLParam(req, "id").ToString()
+
+	sub, err := router.iapRepo.LoadSubscription(id)
+	if err != nil {
+		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_ = tx.Commit()
-
-	_ = view.Render(w, view.NewResponse())
-}
-
-func (router IAPRouter) sendLinkedLetter(m subs.Membership) error {
-	if m.FtcID.IsZero() {
-		logger.
-			WithField("trace", "IAPRouter.sendLinkedLetter").
-			Info("not an ftc account")
-
-		return nil
-	}
-
-	account, err := router.readerEnv.FindAccountByFtcID(m.FtcID.String)
+	b, err := iaprepo.LoadReceipt(sub.OriginalTransactionID, sub.Environment)
 	if err != nil {
-		return err
+		_ = render.New(w).BadRequest(err.Error())
+		return
 	}
 
-	parcel, err := letter.NewIAPLinkParcel(account, m)
-	if err != nil {
-		return err
+	data := struct {
+		apple.Subscription
+		Receipt string `json:"receipt"`
+	}{
+		Subscription: sub,
+		Receipt:      string(b),
 	}
 
-	err = router.postman.Deliver(parcel)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_ = render.New(w).OK(data)
 }
