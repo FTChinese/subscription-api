@@ -23,8 +23,8 @@ type BaseTransactionSchema struct {
 	WebOrderLineItemID     string `db:"web_order_line_item_id"`
 }
 
-// VerificationSessionSchema contains the meta data of verification result.
-type VerificationSessionSchema struct {
+// VerifiedReceiptSchema is the SQL version of ClientReceipt.
+type VerifiedReceiptSchema struct {
 	BaseSchema
 	TransactionID              string      `db:"transaction_id"`
 	AppItemID                  int64       `db:"app_item_id"`
@@ -90,6 +90,14 @@ type ReceiptToken struct {
 	LatestReceipt string `db:"latest_receipt"`
 }
 
-func (r ReceiptToken) FileName() string {
-	return r.OriginalTransactionID + "_" + r.Environment.String() + ".txt"
-}
+// Save the receipt as a token for status polling.
+const StmtSaveReceiptToken = `
+INSERT INTO premium.apple_receipt_token
+SET environment = :environment,
+	original_transaction_id = :original_transaction_id,
+	latest_receipt = :latest_receipt,
+	updated_utc = UTC_TIMESTAMP(),
+	created_utc = UTC_TIMESTAMP()
+ON DUPLICATE KEY UPDATE
+	latest_receipt = :latest_receipt,
+	updated_utc = UTC_TIMESTAMP()`
