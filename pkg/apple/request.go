@@ -1,27 +1,30 @@
 package apple
 
 import (
-	"github.com/FTChinese/go-rest/view"
-	"strings"
+	"encoding/json"
+	"github.com/parnurzeal/gorequest"
 )
 
-// VerificationRequestBody contains the the JSON contents
-// you submit with the request to the App Store when verifying receipt.
-// The ReceiptData is encrypted and the Password is used to decrypt it.
-type VerificationRequestBody struct {
-	ReceiptData            string `json:"receipt-data"`
-	Password               string `json:"password"`
-	ExcludeOldTransactions bool   `json:"exclude-old-transactions"`
-}
+var request = gorequest.New()
 
-func (v VerificationRequestBody) Validate() *view.Reason {
-	if strings.TrimSpace(v.ReceiptData) == "" {
-		r := view.NewReason()
-		r.Field = "receipt-data"
-		r.Code = view.CodeMissingField
-		r.SetMessage("receipt-data missing")
-		return r
+// VerifyReceipt sends the receipt data to the app store for verification.
+// Return app store's response body.
+func VerifyReceipt(payload VerificationPayload, url string) (VerificationResp, error) {
+
+	_, body, errs := request.
+		Post(url).
+		Send(payload).End()
+
+	if errs != nil {
+		return VerificationResp{}, errs[0]
 	}
 
-	return nil
+	// TODO: add logger
+
+	var resp VerificationResp
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		return resp, err
+	}
+
+	return resp, nil
 }
