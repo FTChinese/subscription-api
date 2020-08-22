@@ -1,6 +1,6 @@
 package stripe
 
-const StmtSaveStripeError = `
+const StmtSaveAPIError = `
 INSERT INTO premium.log_stripe_error
 SET ftc_user_id = ?,
 	charge_id = ?,
