@@ -2,7 +2,6 @@ package apple
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"sort"
 	"time"
 )
@@ -142,7 +141,7 @@ func (u *UnifiedReceipt) Subscription() (Subscription, error) {
 		autoRenew = false
 	}
 
-	prod, err := stripe.GetPlanByID(u.latestTransaction.ProductID)
+	prod, err := GetProductByID(u.latestTransaction.ProductID)
 
 	if err != nil {
 		return Subscription{}, err
