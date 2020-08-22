@@ -1,19 +1,6 @@
-package iaprepo
+package apple
 
-const transactionBaseCols = `
-environment = :environment,
-original_transaction_id = :original_transaction_id,
-transaction_id = :transaction_id,
-expires_date_ms = :expires_date_ms,
-is_in_intro_offer_period = :is_in_intro_offer_period,
-is_trial_period = :is_trial_period,
-original_purchase_date_ms = :original_purchase_date_ms,
-product_id = :product_id,
-purchase_date_ms = :purchase_date_ms,
-quantity = :quantity
-`
-
-const insertWebHook = `
+const StmtLoggingWebhook = `
 INSERT IGNORE INTO premium.apple_webhook
 SET ` + transactionBaseCols + `,
 	app_item_id = :app_item_id,
