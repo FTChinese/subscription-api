@@ -33,7 +33,7 @@ FROM %s.ftc_vip`
 // In such case we won't be able to find the membership
 // simply querying the vip_id column.
 const selectMembership = colMembership + `
-WHERE ? IN (vip_id, vip_id_alias)
+WHERE FIND_IN_SET(vip_id, ?) > 0
 LIMIT 1
 `
 
