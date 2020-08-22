@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // Unlink deletes a membership created from IAP.
-func (env IAPEnv) Unlink(s apple.Subscription) error {
+func (env Env) Unlink(s apple.Subscription, ids reader.MemberID) error {
 	tx, err := env.BeginTx()
 
 	if err != nil {
@@ -19,10 +20,14 @@ func (env IAPEnv) Unlink(s apple.Subscription) error {
 		_ = tx.Rollback()
 		return err
 	}
-
 	if m.IsZero() {
 		_ = tx.Rollback()
 		return sql.ErrNoRows
+	}
+
+	if m.FtcID != ids.FtcID {
+		_ = tx.Rollback()
+		return apple.ErrUnlinkMismatchedFTC
 	}
 
 	snapshot := m.Snapshot(enum.SnapshotReasonDelete)
