@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
+	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/stripe/stripe-go"
 )
 
-// WebHookSaveStripeSub saved a user's membership derived from
+// WebHookSaveStripeSub saves a user's membership derived from
 // stripe subscription data.
 func (env StripeEnv) WebHookOnSubscription(memberID reader.MemberID, ss *stripe.Subscription) error {
 
@@ -37,7 +37,7 @@ func (env StripeEnv) WebHookOnSubscription(memberID reader.MemberID, ss *stripe.
 		return sql.ErrNoRows
 	}
 
-	m = ftcStripe.RefreshMembership(m, ss)
+	m = stripePkg.RefreshMembership(m, ss)
 
 	log.Infof("updating a stripe membership: %+v", m)
 
