@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -45,16 +46,16 @@ func NewPersona() *Persona {
 
 	return &Persona{
 		FtcID:      uuid.New().String(),
-		UnionID:    genWxID(),
-		StripeID:   genCustomerID(),
+		UnionID:    faker.GenWxID(),
+		StripeID:   faker.GenCustomerID(),
 		Email:      gofakeit.Email(),
-		Password:   simplePassword(),
+		Password:   faker.SimplePassword(),
 		UserName:   gofakeit.Username(),
 		Nickname:   gofakeit.Name(),
-		Avatar:     genAvatar(),
-		OpenID:     genWxID(),
+		Avatar:     faker.GenAvatar(),
+		OpenID:     faker.GenWxID(),
 		IP:         gofakeit.IPv4Address(),
-		AppleSubID: GenAppleSubID(),
+		AppleSubID: faker.GenAppleSubID(),
 
 		kind:      reader.AccountKindFtc,
 		plan:      PlanStdYear,
@@ -186,8 +187,8 @@ func (p *Persona) Membership() subs.Membership {
 
 	switch p.payMethod {
 	case enum.PayMethodStripe:
-		m.StripeSubsID = null.StringFrom(genStripeSubID())
-		m.StripePlanID = null.StringFrom(genStripePlanID())
+		m.StripeSubsID = null.StringFrom(faker.GenStripeSubID())
+		m.StripePlanID = null.StringFrom(faker.GenStripePlanID())
 		m.AutoRenewal = true
 		m.Status = enum.SubsStatusActive
 
@@ -196,7 +197,7 @@ func (p *Persona) Membership() subs.Membership {
 		m.AutoRenewal = true
 
 	case enum.PayMethodB2B:
-		m.B2BLicenceID = null.StringFrom(GenAppleSubID())
+		m.B2BLicenceID = null.StringFrom(faker.GenLicenceID())
 	}
 
 	return m.Normalize()
@@ -321,7 +322,7 @@ func (p Persona) IAPSubs() apple.Subscription {
 	return apple.Subscription{
 		Environment:           apple.EnvSandbox,
 		OriginalTransactionID: p.AppleSubID,
-		LastTransactionID:     GenAppleSubID(),
+		LastTransactionID:     faker.GenAppleSubID(),
 		ProductID:             "",
 		PurchaseDateUTC:       chrono.TimeNow(),
 		ExpiresDateUTC:        chrono.TimeFrom(p.expiresDate),
@@ -332,9 +333,9 @@ func (p Persona) IAPSubs() apple.Subscription {
 
 func (p Persona) WxAccess() wxlogin.OAuthAccess {
 	acc := wxlogin.OAuthAccess{
-		AccessToken:  genToken(),
+		AccessToken:  faker.GenToken(),
 		ExpiresIn:    7200,
-		RefreshToken: genToken(),
+		RefreshToken: faker.GenToken(),
 		OpenID:       p.OpenID,
 		Scope:        "snsapi_userinfo",
 		UnionID:      null.StringFrom(p.UnionID),
