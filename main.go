@@ -78,7 +78,7 @@ func main() {
 		"trace": "main",
 	})
 
-	stripe.Key = cfg.GetStripeSecretKey()
+	stripe.Key = cfg.MustStripeAPIKey()
 
 	myDB := db.MustNewDB(cfg.MustGetDBConn("mysql.master"))
 
