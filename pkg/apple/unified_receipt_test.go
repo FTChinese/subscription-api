@@ -37,8 +37,7 @@ func TestUnifiedReceipt_sortLatestReceiptDesc(t *testing.T) {
 }
 
 func TestUnifiedReceipt_findPendingRenewal(t *testing.T) {
-	resp := getReceiptResponse()
-	resp.Parse()
+	resp := mustReceiptResponse()
 
 	pr := resp.findPendingRenewal()
 
