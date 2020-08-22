@@ -9,20 +9,6 @@ type BaseSchema struct {
 	OriginalTransactionID string      `db:"original_transaction_id"`
 }
 
-type BaseTransactionSchema struct {
-	BaseSchema
-	TransactionID string `db:"transaction_id"` // UNIQUE INDEX
-
-	ExpiresDateMs          int64  `db:"expires_date_ms"`
-	IsInIntroOfferPeriod   bool   `db:"is_in_intro_offer_period"`
-	IsTrialPeriod          bool   `db:"is_trial_period"`
-	OriginalPurchaseDateMs int64  `db:"original_purchase_date_ms"`
-	ProductID              string `db:"product_id"`
-	PurchaseDateMs         int64  `db:"purchase_date_ms"`
-	Quantity               int64  `db:"quantity"`
-	WebOrderLineItemID     string `db:"web_order_line_item_id"`
-}
-
 // VerifiedReceiptSchema is the SQL version of ClientReceipt.
 type VerifiedReceiptSchema struct {
 	BaseSchema
@@ -42,21 +28,18 @@ type VerifiedReceiptSchema struct {
 	VersionExternalIdentifier  int64       `db:"version_external_identifier"`
 }
 
-// WebHookSchema saves the value of WebHook root fields and the values of its LatestTransaction fields.
-type WebHookSchema struct {
-	BaseTransactionSchema
-	AppItemID int64 `db:"app_item_id"`
-	ItemID    int64 `db:"item_id"`
+type BaseTransactionSchema struct {
+	BaseSchema
+	TransactionID string `db:"transaction_id"` // UNIQUE INDEX
 
-	// Root elements
-	AutoRenewAdamID             int64            `db:"auto_renew_adam_id"`
-	AutoRenewProductID          string           `db:"auto_renew_product_id"`
-	AutoRenewStatus             null.Bool        `db:"auto_renew_status"`
-	AutoRenewStatusChangeDateMs int64            `db:"auto_renew_status_change_date_ms"`
-	ExpirationIntent            null.String      `db:"expiration_intent"`
-	NotificationType            NotificationType `db:"notification_type"`
-	Password                    string           `db:"password"`
-	Status                      int64            `db:"status"`
+	ExpiresDateMs          int64  `db:"expires_date_ms"`
+	IsInIntroOfferPeriod   bool   `db:"is_in_intro_offer_period"`
+	IsTrialPeriod          bool   `db:"is_trial_period"`
+	OriginalPurchaseDateMs int64  `db:"original_purchase_date_ms"`
+	ProductID              string `db:"product_id"`
+	PurchaseDateMs         int64  `db:"purchase_date_ms"`
+	Quantity               int64  `db:"quantity"`
+	WebOrderLineItemID     string `db:"web_order_line_item_id"`
 }
 
 // TransactionSchema represents the db schema to select/insert a row of receipt.
@@ -88,6 +71,23 @@ type PendingRenewalSchema struct {
 type ReceiptToken struct {
 	BaseSchema
 	LatestReceipt string `db:"latest_receipt"`
+}
+
+// WebHookSchema saves the value of WebHook root fields and the values of its LatestTransaction fields.
+type WebHookSchema struct {
+	BaseTransactionSchema
+	AppItemID int64 `db:"app_item_id"`
+	ItemID    int64 `db:"item_id"`
+
+	// Root elements
+	AutoRenewAdamID             int64            `db:"auto_renew_adam_id"`
+	AutoRenewProductID          string           `db:"auto_renew_product_id"`
+	AutoRenewStatus             null.Bool        `db:"auto_renew_status"`
+	AutoRenewStatusChangeDateMs int64            `db:"auto_renew_status_change_date_ms"`
+	ExpirationIntent            null.String      `db:"expiration_intent"`
+	NotificationType            NotificationType `db:"notification_type"`
+	Password                    string           `db:"password"`
+	Status                      int64            `db:"status"`
 }
 
 // Save the receipt as a token for status polling.
