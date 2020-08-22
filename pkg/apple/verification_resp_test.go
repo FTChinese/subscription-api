@@ -1066,8 +1066,8 @@ const mockReceiptResponse = `
   ]
 }`
 
-func getReceiptResponse() VerificationResponseBody {
-	var v VerificationResponseBody
+func getReceiptResponse() VerificationResp {
+	var v VerificationResp
 	if err := json.Unmarshal([]byte(mockReceiptResponse), &v); err != nil {
 		panic(err)
 	}
@@ -1076,7 +1076,7 @@ func getReceiptResponse() VerificationResponseBody {
 }
 
 func TestVerificationResponseBody_Unmarshal(t *testing.T) {
-	var r VerificationResponseBody
+	var r VerificationResp
 
 	if err := json.Unmarshal([]byte(mockReceiptResponse), &r); err != nil {
 		t.Error(err)
@@ -1120,7 +1120,9 @@ func TestVerificationResponseBody_Subscription(t *testing.T) {
 	resp := getReceiptResponse()
 	resp.sortLatestReceiptsDesc()
 
-	sub := resp.Subscription()
-
+	sub, err := resp.Subscription()
+	if err != nil {
+		t.Error(err)
+	}
 	t.Logf("Subscription: %+v", sub)
 }
