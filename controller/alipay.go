@@ -54,8 +54,6 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 	// tier: string;
 	// cycle: string;
 	// planId: string;
-	// ftcId: string;
-	// unionId: string;
 	return func(w http.ResponseWriter, req *http.Request) {
 		err := req.ParseForm()
 		if err != nil {
@@ -65,6 +63,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		}
 
 		clientApp := client.NewClientApp(req)
+		readerIDs := getReaderIDs(req.Header)
 
 		input, err := gatherAliPayInput(req)
 		if err != nil {
@@ -83,7 +82,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		builder := subs.NewOrderBuilder(input.ReaderID()).
+		builder := subs.NewOrderBuilder(readerIDs).
 			SetPlan(plan).
 			SetPayMethod(enum.PayMethodAli)
 

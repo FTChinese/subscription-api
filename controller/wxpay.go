@@ -43,13 +43,12 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 	// tier: string;
 	// cycle: string;
 	// planId: string;
-	// ftcId: string;
-	// unionId: string;
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer logger.Sync()
 		sugar.Info("Start placing a wechat order")
 
 		clientApp := client.NewClientApp(req)
+		readerIDs := getReaderIDs(req.Header)
 
 		// Parse request body.
 		input, err := gatherWxPayInput(tradeType, req)
@@ -76,7 +75,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			return
 		}
 
-		builder := subs.NewOrderBuilder(input.ReaderID()).
+		builder := subs.NewOrderBuilder(readerIDs).
 			SetPlan(expPlan).
 			SetPayMethod(enum.PayMethodWx).
 			SetWxAppID(payClient.GetApp().AppID).
@@ -292,7 +291,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	})
 
 	// Get ftc order id from URL
-	orderID, err := GetURLParam(req, "orderId").ToString()
+	orderID, err := getURLParam(req, "orderId").ToString()
 
 	if err != nil {
 		logger.Error(err)
