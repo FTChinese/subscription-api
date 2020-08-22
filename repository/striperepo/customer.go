@@ -2,28 +2,15 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
-	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/customer"
 )
 
-// createCustomer sends request to customer creation endpoint.
-func createCustomer(email string) (string, error) {
-	params := &stripe.CustomerParams{
-		Email: stripe.String(email),
-	}
-
-	cus, err := customer.New(params)
-
-	if err != nil {
-		return "", err
-	}
-
-	return cus.ID, nil
-}
-
-// CreateStripeCustomer create a customer under ftc account
-// for user with `ftcID`.
+// CreateStripeCustomer create a customer under ftc account for user with `ftcID`.
+// If readers current account already have stripe customer id, this action
+// is aborted and current reader account is returned.
+// It is done in a transaction so that we won't create duplicate customer
+// for the same reader.
 func (env StripeEnv) CreateStripeCustomer(ftcID string) (reader.Account, error) {
 	log := logger.WithField("trace", "StripeEnv.CreateStripeCustomer")
 
@@ -33,6 +20,7 @@ func (env StripeEnv) CreateStripeCustomer(ftcID string) (reader.Account, error) 
 		return reader.Account{}, err
 	}
 
+	// Account might not be found, though it is rare.
 	account, err := tx.RetrieveAccount(ftcID)
 	if err != nil {
 		_ = tx.Rollback()
@@ -40,20 +28,26 @@ func (env StripeEnv) CreateStripeCustomer(ftcID string) (reader.Account, error) 
 		return reader.Account{}, err
 	}
 
+	// If stripe customer id already exists, abort.
 	if account.StripeID.Valid {
 		_ = tx.Rollback()
 		return account, nil
 	}
 
-	stripeID, err := createCustomer(account.Email)
+	// Request stripe api to create customer.
+	// Return *stripe.Error if occurred.
+	stripeID, err := stripe.CreateCustomer(account.Email)
 	if err != nil {
 		_ = tx.Rollback()
 		log.Error(err)
 		return reader.Account{}, err
 	}
 
+	// Add stripe customer id to current account.
 	account.StripeID = null.StringFrom(stripeID)
 
+	// Save customer id in our db.
+	// There might be SQL errors.
 	if err := tx.SavedStripeID(account); err != nil {
 		_ = tx.Rollback()
 		log.Error(err)
