@@ -9,7 +9,7 @@ import (
 // and records those data derived from it:
 //
 // FailureSchema
-// SessionSchema
+// ReceiptSchema
 // only specific to verification.
 //
 // and WebHookSchema specific to notification.
