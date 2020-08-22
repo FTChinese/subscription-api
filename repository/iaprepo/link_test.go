@@ -34,7 +34,7 @@ func TestIAPEnv_Link(t *testing.T) {
 	existingIAP := existingIAPProfile.SetPayMethod(enum.PayMethodApple).Membership()
 	test.NewRepo().MustSaveMembership(existingIAP)
 
-	env := IAPEnv{
+	env := Env{
 		db: test.DB,
 	}
 
@@ -99,15 +99,13 @@ func TestIAPEnv_Link(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, got1, err := env.Link(tt.args.s, tt.args.id)
+			got, err := env.Link(tt.args.s, tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Link() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			t.Logf("Linked membership: %+v", got)
-
-			t.Logf("Is initial link: %t", got1)
 		})
 	}
 }
