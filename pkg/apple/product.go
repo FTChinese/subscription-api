@@ -68,6 +68,8 @@ func GetProductByEdition(e product.Edition) (Product, error) {
 	return appleProducts.findByEdition(e)
 }
 
+// GetProductByID searches a product by id. This is used by UnifiedReceipt
+// to build a Subscription.
 func GetProductByID(id string) (Product, error) {
 	return appleProducts.findByID(id)
 }
