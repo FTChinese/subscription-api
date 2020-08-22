@@ -30,7 +30,7 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 		},
 	}
 
-	env := IAPEnv{
+	env := Env{
 		db: test.DB,
 	}
 
