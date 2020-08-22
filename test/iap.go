@@ -3,16 +3,17 @@ package test
 import (
 	"encoding/json"
 	"github.com/FTChinese/go-rest/rand"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 )
 
 func GetReceiptToken() string {
-	return iapReceipt
+	return faker.IAPReceipt
 }
 
 func GetVerificationResponse() *apple.VerificationResp {
 	var r apple.VerificationResp
-	if err := json.Unmarshal([]byte(iapVerificationResponse), &r); err != nil {
+	if err := json.Unmarshal([]byte(faker.IAPVerificationResponse), &r); err != nil {
 		panic(err)
 	}
 
