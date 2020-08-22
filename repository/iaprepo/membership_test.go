@@ -14,7 +14,7 @@ func TestMembershipTx_RetrieveMember(t *testing.T) {
 	m := profile.Membership()
 	test.NewRepo().MustSaveMembership(m)
 
-	env := IAPEnv{db: test.DB}
+	env := Env{db: test.DB}
 	mtx, _ := env.BeginTx()
 
 	type args struct {
@@ -55,7 +55,7 @@ func TestMembershipTx_RetrieveAppleMember(t *testing.T) {
 
 	test.NewRepo().MustSaveMembership(profile.Membership())
 
-	env := IAPEnv{db: test.DB}
+	env := Env{db: test.DB}
 
 	type args struct {
 		transactionID string
@@ -104,7 +104,7 @@ func TestMembershipTx_CreateMember(t *testing.T) {
 
 	profile := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 
-	env := IAPEnv{db: test.DB}
+	env := Env{db: test.DB}
 
 	type args struct {
 		m subs.Membership
@@ -145,7 +145,7 @@ func TestMembershipTx_UpdateMember(t *testing.T) {
 
 	test.NewRepo().MustSaveMembership(m)
 
-	env := IAPEnv{db: test.DB}
+	env := Env{db: test.DB}
 
 	type args struct {
 		m subs.Membership
@@ -185,7 +185,7 @@ func TestMembershipTx_DeleteMember(t *testing.T) {
 
 	test.NewRepo().MustSaveMembership(m)
 
-	env := IAPEnv{db: test.DB}
+	env := Env{db: test.DB}
 
 	type args struct {
 		id reader.MemberID
@@ -223,7 +223,7 @@ func TestIAPEnv_BackUpMember(t *testing.T) {
 	profile := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 	m := profile.Membership()
 
-	env := IAPEnv{db: test.DB}
+	env := Env{db: test.DB}
 
 	type args struct {
 		snapshot subs.MemberSnapshot
