@@ -19,7 +19,7 @@ import (
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
 	subEnv    subrepo.Env
-	readerEnv readerrepo.ReaderEnv
+	readerEnv readerrepo.Env
 	prodRepo  products.Env
 	postman   postoffice.PostOffice
 	config    config.BuildConfig
