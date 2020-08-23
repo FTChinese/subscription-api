@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/repository/products"
 	"github.com/FTChinese/subscription-api/repository/readerrepo"
@@ -39,14 +40,14 @@ func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p posto
 func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	switch err {
 	// When the order is used to renew but not allowed.
-	case subs.ErrRenewalForbidden:
+	case reader.ErrRenewalForbidden:
 		_ = render.New(w).Unprocessable(&render.ValidationError{
 			Message: err.Error(),
 			Field:   "renewal",
 			Code:    render.CodeInvalid,
 		})
 
-	case subs.ErrDowngradeForbidden:
+	case reader.ErrDowngradeForbidden:
 		_ = render.New(w).Unprocessable(&render.ValidationError{
 			Message: err.Error(),
 			Field:   "downgrade",

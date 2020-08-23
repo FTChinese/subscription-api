@@ -38,7 +38,7 @@ type Persona struct {
 	expired     bool
 
 	orders map[string]subs.Order
-	member subs.Membership
+	member reader.Membership
 }
 
 func NewPersona() *Persona {
@@ -63,7 +63,7 @@ func NewPersona() *Persona {
 		expired:   false,
 
 		orders: make(map[string]subs.Order),
-		member: subs.Membership{},
+		member: reader.Membership{},
 	}
 }
 
@@ -166,8 +166,8 @@ func (p *Persona) Account() reader.Account {
 	return reader.Account{}
 }
 
-func (p *Persona) Membership() subs.Membership {
-	m := subs.Membership{
+func (p *Persona) Membership() reader.Membership {
+	m := reader.Membership{
 		MemberID:      p.AccountID(),
 		Edition:       p.plan.Edition,
 		ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),

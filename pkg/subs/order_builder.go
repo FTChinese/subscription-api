@@ -116,7 +116,7 @@ func (b *OrderBuilder) getWebHookURL() string {
 
 // DeduceSubsKind determines the subscription's usage based on existing membership target plan.
 // The plan field must be set before calling this method.
-func (b *OrderBuilder) DeduceSubsKind(m Membership) error {
+func (b *OrderBuilder) DeduceSubsKind(m reader.Membership) error {
 	if b.plan.ID == "" {
 		return ErrInvalidPlan
 	}

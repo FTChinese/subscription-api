@@ -3,7 +3,7 @@ package iaprepo
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // UpsertSubscription saves an Subscription instance
@@ -20,11 +20,11 @@ func (env Env) UpsertSubscription(s apple.Subscription) error {
 
 // UpdateMembership update subs.Membership if it exists.
 // Return a subs.MemberSnapshot if this subscription is linked to ftc account; otherwise it is empty.
-func (env Env) UpdateMembership(s apple.Subscription) (subs.MemberSnapshot, error) {
+func (env Env) UpdateMembership(s apple.Subscription) (reader.MemberSnapshot, error) {
 	tx, err := env.BeginTx()
 	if err != nil {
 		logger.Error(err)
-		return subs.MemberSnapshot{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	// Retrieve membership by original transaction id.
@@ -34,24 +34,24 @@ func (env Env) UpdateMembership(s apple.Subscription) (subs.MemberSnapshot, erro
 	if err != nil {
 		logger.Error(err)
 		_ = tx.Rollback()
-		return subs.MemberSnapshot{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	// If the subscription is not linked to FTC account, return empty MemberSnapshot and not error.
 	if currMember.IsZero() {
 		_ = tx.Commit()
-		return subs.MemberSnapshot{}, nil
+		return reader.MemberSnapshot{}, nil
 	}
 
 	newMember := s.BuildOn(currMember)
 
 	if err := tx.UpdateMember(newMember); err != nil {
 		_ = tx.Rollback()
-		return subs.MemberSnapshot{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return subs.MemberSnapshot{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	return currMember.Snapshot(enum.SnapshotReasonAppleLink), nil

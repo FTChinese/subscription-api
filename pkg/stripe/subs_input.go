@@ -6,7 +6,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/sub"
@@ -101,12 +100,12 @@ func (i SubsInput) UpgradeSubs(subsID string) (*stripe.Subscription, error) {
 }
 
 // NewMembership creates a new membership for stripe subscription
-func (i SubsInput) NewMembership(ss *stripe.Subscription) subs.Membership {
+func (i SubsInput) NewMembership(ss *stripe.Subscription) reader.Membership {
 
 	periodEnd := CanonicalizeUnix(ss.CurrentPeriodEnd)
 	status, _ := enum.ParseSubsStatus(string(ss.Status))
 
-	return subs.Membership{
+	return reader.Membership{
 		MemberID: reader.MemberID{
 			CompoundID: "",
 			FtcID:      null.StringFrom(i.FtcID),
@@ -125,7 +124,7 @@ func (i SubsInput) NewMembership(ss *stripe.Subscription) subs.Membership {
 }
 
 // UpdateMembership updates an existing membership for a new stripe subscription.
-func (i SubsInput) UpdateMembership(m subs.Membership, ss *stripe.Subscription) subs.Membership {
+func (i SubsInput) UpdateMembership(m reader.Membership, ss *stripe.Subscription) reader.Membership {
 	periodEnd := CanonicalizeUnix(ss.CurrentPeriodEnd)
 	status, _ := enum.ParseSubsStatus(string(ss.Status))
 
@@ -149,7 +148,7 @@ func GetSubscription(subsID string) (*stripe.Subscription, error) {
 }
 
 // RefreshMembership refreshes an existing valid stripe membership.
-func RefreshMembership(m subs.Membership, ss *stripe.Subscription) subs.Membership {
+func RefreshMembership(m reader.Membership, ss *stripe.Subscription) reader.Membership {
 	periodEnd := CanonicalizeUnix(ss.CurrentPeriodEnd)
 
 	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
