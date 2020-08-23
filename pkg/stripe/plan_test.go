@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func mustConfigViper() {
+func mustConfigViper() config.BuildConfig {
 	viper.SetConfigName("api")
 	viper.AddConfigPath("$HOME/config")
 
@@ -18,6 +18,11 @@ func mustConfigViper() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	cfg := config.NewBuildConfig(false, false)
+	stripe.Key = cfg.MustStripeAPIKey()
+
+	return cfg
 }
 
 func Test_newPlanStore(t *testing.T) {
@@ -38,10 +43,8 @@ func Test_planStore_findByEdition(t *testing.T) {
 }
 
 func TestFetchPlan(t *testing.T) {
-	mustConfigViper()
 
-	cfg := config.NewBuildConfig(false, false)
-	stripe.Key = cfg.MustStripeAPIKey()
+	cfg := mustConfigViper()
 
 	p, err := FetchPlan("standard_year", cfg.Live())
 	if err != nil {
