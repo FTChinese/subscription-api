@@ -7,6 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
+	"github.com/magiconair/properties/assert"
 	"testing"
 )
 
@@ -50,11 +51,54 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 				return
 			}
 
-			t.Logf("Got: %+v", got)
+			t.Logf("Got: %+v", got.CompoundID)
 		})
 	}
 
 	_ = otx.Commit()
+}
+
+func TestMemberTx_RetrieveAppleMember(t *testing.T) {
+	p := test.NewPersona()
+	m := p.SetPayMethod(enum.PayMethodApple).Membership()
+
+	repo := test.NewRepo()
+	repo.MustSaveMembership(m)
+
+	tx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+
+	type args struct {
+		transactionID string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Retrieve an IAP member",
+			args: args{
+				transactionID: m.AppleSubsID.String,
+			},
+			want:    p.FtcID,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := tx.RetrieveAppleMember(tt.args.transactionID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RetrieveAppleMember() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			assert.Equal(t, got.CompoundID, tt.want)
+		})
+	}
+
+	_ = tx.Commit()
 }
 
 func TestOrderTx_SaveOrder(t *testing.T) {
@@ -111,7 +155,7 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 		{
 			name: "Retrieve empty order",
 			args: args{
-				orderID: order.ID,
+				orderID: p.CreateOrder().ID,
 			},
 			wantErr: true,
 		},
@@ -128,19 +172,18 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 
 			got, err := otx.RetrieveOrder(tt.args.orderID)
 			if (err != nil) != tt.wantErr {
-				_ = otx.Rollback()
 				t.Errorf("RetrieveOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			t.Logf("%+v", got)
+			t.Logf("Order ID: %s", got.ID)
 		})
 	}
 
 	_ = otx.Commit()
 }
 
-func TestOrderTx_UpdateConfirmedOrder(t *testing.T) {
+func TestOrderTx_ConfirmedOrder(t *testing.T) {
 	p := test.NewPersona()
 	order := p.CreateOrder()
 
@@ -175,7 +218,7 @@ func TestOrderTx_UpdateConfirmedOrder(t *testing.T) {
 				t.Errorf("ConfirmOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			t.Logf("Confirmed: %+v", tt.args.order)
+			t.Logf("Confirmed order ID: %s", tt.args.order.ID)
 			_ = otx.Commit()
 		})
 	}
@@ -259,6 +302,40 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 	}
 
 	_ = otx.Commit()
+}
+
+func TestMemberTx_DeleteMember(t *testing.T) {
+	p := test.NewPersona()
+	m := p.Membership()
+
+	test.NewRepo().MustSaveMembership(m)
+
+	tx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+
+	type args struct {
+		id reader.MemberID
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Delete a member",
+			args: args{
+				id: p.AccountID(),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := tx.DeleteMember(tt.args.id); (err != nil) != tt.wantErr {
+				t.Errorf("DeleteMember() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
 
 func TestOrderTx_FindBalanceSources(t *testing.T) {

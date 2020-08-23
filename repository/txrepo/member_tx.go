@@ -41,11 +41,8 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error)
 		return m, err
 	}
 
-	// Normalize legacy columns
-	m.Normalize()
-
 	// Treat a non-existing member as a valid value.
-	return m, nil
+	return m.Normalize(), nil
 }
 
 // RetrieveAppleMember selects membership by apple original transaction id.
