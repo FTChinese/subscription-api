@@ -8,34 +8,34 @@ import (
 	"testing"
 )
 
-// A linked IAP requesting link again.
-func TestIAPEnv_Link_MockNewFTC(t *testing.T) {
-	profile := test.NewPersona().SetPayMethod(enum.PayMethodApple)
-
-	t.Logf("FTC id: %s", profile.FtcID)
-}
-
 func TestIAPEnv_Link(t *testing.T) {
-	profile := test.NewPersona()
+	ftcP := test.NewPersona()
 
+	repo := test.NewRepo()
 	// Create an existing ftc member in db.
-	existingFtc := test.NewPersona().Membership()
-	test.NewRepo().MustSaveMembership(existingFtc)
+	validFtc := test.
+		NewPersona().
+		Membership()
 
 	// Create an expired ftc member in db.
 	expiredFtc := test.
 		NewPersona().
 		SetExpired(true).
 		Membership()
-	test.NewRepo().MustSaveMembership(expiredFtc)
+
+	repo.MustSaveMembership(validFtc)
+	repo.MustSaveMembership(expiredFtc)
 
 	// Create an IAP member in db.
-	existingIAPProfile := test.NewPersona()
-	existingIAP := existingIAPProfile.SetPayMethod(enum.PayMethodApple).Membership()
-	test.NewRepo().MustSaveMembership(existingIAP)
+	iapP := test.NewPersona()
+	iapMember := iapP.
+		SetPayMethod(enum.PayMethodApple).
+		Membership()
+	repo.MustSaveMembership(iapMember)
 
 	env := Env{
-		db: test.DB,
+		cfg: test.CFG,
+		db:  test.DB,
 	}
 
 	type args struct {
@@ -48,15 +48,15 @@ func TestIAPEnv_Link(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "New IAP to existing ftc",
+			name: "New IAP cannot link to existing valid ftc",
 			args: args{
 				s:  test.NewPersona().IAPSubs(),
-				id: existingFtc.MemberID,
+				id: validFtc.MemberID,
 			},
 			wantErr: true,
 		},
 		{
-			name: "New IAP to expired FTC",
+			name: "New IAP link to expired FTC",
 			args: args{
 				s:  test.NewPersona().IAPSubs(),
 				id: expiredFtc.MemberID,
@@ -64,33 +64,33 @@ func TestIAPEnv_Link(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "New IAP to existing IAP",
+			name: "New IAP cannot link to another existing IAP",
 			args: args{
 				s:  test.NewPersona().IAPSubs(),
-				id: existingIAP.MemberID,
+				id: iapMember.MemberID,
 			},
 			wantErr: true,
 		},
 		{
-			name: "New IAP to empty FTC",
+			name: "New IAP can link to an empty FTC",
 			args: args{
-				s:  profile.IAPSubs(),
-				id: profile.AccountID(),
+				s:  ftcP.IAPSubs(),
+				id: ftcP.AccountID(),
 			},
 			wantErr: false,
 		},
 		{
 			name: "Update",
 			args: args{
-				s:  existingIAPProfile.IAPSubs(),
-				id: existingIAP.MemberID,
+				s:  iapP.IAPSubs(),
+				id: iapMember.MemberID,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Existing IAP to new ftc might be cheat",
 			args: args{
-				s:  existingIAPProfile.IAPSubs(),
+				s:  iapP.IAPSubs(),
 				id: test.NewPersona().AccountID(),
 			},
 			wantErr: true,
@@ -105,7 +105,7 @@ func TestIAPEnv_Link(t *testing.T) {
 				return
 			}
 
-			t.Logf("Linked membership: %+v", got)
+			t.Logf("Linked reader id: %s", got.Linked.CompoundID)
 		})
 	}
 }
