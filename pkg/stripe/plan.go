@@ -8,7 +8,7 @@ import (
 	"github.com/stripe/stripe-go/plan"
 )
 
-var stripeKeySuffix = map[bool]string{
+var editionKeySuffix = map[bool]string{
 	true:  "live",
 	false: "test",
 }
@@ -19,14 +19,14 @@ type PlanConfig struct {
 	Live   bool
 }
 
-type stripeStore struct {
+type planStore struct {
 	plans        []PlanConfig
 	indexEdition map[string]int
 	indexID      map[string]int
 }
 
-func newStripeStoreSchema() *stripeStore {
-	s := &stripeStore{
+func newPlanStore() *planStore {
+	s := &planStore{
 		plans: []PlanConfig{
 			{
 				Edition: product.NewStdMonthEdition(),
@@ -64,7 +64,7 @@ func newStripeStoreSchema() *stripeStore {
 	}
 
 	for i, v := range s.plans {
-		key := v.NamedKey() + "_" + stripeKeySuffix[v.Live]
+		key := v.NamedKey() + "_" + editionKeySuffix[v.Live]
 		s.indexEdition[key] = i
 		s.indexID[v.PlanID] = i
 	}
@@ -72,11 +72,11 @@ func newStripeStoreSchema() *stripeStore {
 	return s
 }
 
-func (s *stripeStore) add(p PlanConfig) *stripeStore {
+func (s *planStore) add(p PlanConfig) *planStore {
 	s.plans = append(s.plans, p)
 
 	pos := len(s.plans) - 1
-	key := p.NamedKey() + "_" + stripeKeySuffix[p.Live]
+	key := p.NamedKey() + "_" + editionKeySuffix[p.Live]
 
 	// Uses <tier>_<cycle>_<live|test> as key.
 	// Example: `standard_year_live`
@@ -87,7 +87,7 @@ func (s *stripeStore) add(p PlanConfig) *stripeStore {
 	return s
 }
 
-func (s *stripeStore) findByEdition(key string) (PlanConfig, error) {
+func (s *planStore) findByEdition(key string) (PlanConfig, error) {
 	i, ok := s.indexEdition[key]
 	if !ok {
 		return PlanConfig{}, fmt.Errorf("stripe plan for %s is not found", key)
@@ -96,7 +96,7 @@ func (s *stripeStore) findByEdition(key string) (PlanConfig, error) {
 	return s.plans[i], nil
 }
 
-func (s *stripeStore) findByID(planID string) (PlanConfig, error) {
+func (s *planStore) findByID(planID string) (PlanConfig, error) {
 	i, ok := s.indexID[planID]
 	if !ok {
 		return PlanConfig{}, fmt.Errorf("stripe plan with id %s is not found", planID)
@@ -105,12 +105,12 @@ func (s *stripeStore) findByID(planID string) (PlanConfig, error) {
 	return s.plans[i], nil
 }
 
-var stripePlans = newStripeStoreSchema()
+var stripePlans = newPlanStore()
 
 // FetchPlan gets stripe plan from API.
 // The key is one of standard_month, standard_year, premium_year.
 func FetchPlan(key string, live bool) (*stripe.Plan, error) {
-	p, err := stripePlans.findByEdition(key + "_" + stripeKeySuffix[live])
+	p, err := stripePlans.findByEdition(key + "_" + editionKeySuffix[live])
 	if err != nil {
 		return nil, sql.ErrNoRows
 	}
