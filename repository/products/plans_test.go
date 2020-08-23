@@ -68,7 +68,7 @@ func TestEnv_PlanByID(t *testing.T) {
 				db:    test.DB,
 				cache: test.Cache,
 			},
-			args:    args{id: "plan_2cc3ncDcKiM7"},
+			args:    args{id: "plan_ICMPPM0UXcpZ"},
 			wantErr: false,
 		},
 	}
@@ -84,7 +84,7 @@ func TestEnv_PlanByID(t *testing.T) {
 				return
 			}
 
-			t.Logf("%+v", got)
+			assert.NotEmpty(t, got.ID)
 		})
 	}
 }
@@ -130,7 +130,7 @@ func TestEnv_PlanByEdition(t *testing.T) {
 				return
 			}
 
-			t.Logf("%+v", got)
+			assert.NotEmpty(t, got.ID)
 		})
 	}
 }
