@@ -31,11 +31,10 @@ type Persona struct {
 	IP         string
 	AppleSubID string
 
-	kind        enum.AccountKind
-	plan        product.ExpandedPlan
-	expiresDate time.Time
-	payMethod   enum.PayMethod
-	expired     bool
+	kind      enum.AccountKind
+	plan      product.ExpandedPlan
+	payMethod enum.PayMethod
+	expired   bool
 
 	orders map[string]subs.Order
 	member reader.Membership
@@ -319,16 +318,22 @@ func GenProratedOrders(upOrderID string) []subs.ProratedOrder {
 }
 
 func (p Persona) IAPSubs() apple.Subscription {
-	return apple.Subscription{
+	s := apple.Subscription{
 		Environment:           apple.EnvSandbox,
 		OriginalTransactionID: p.AppleSubID,
 		LastTransactionID:     faker.GenAppleSubID(),
 		ProductID:             "",
 		PurchaseDateUTC:       chrono.TimeNow(),
-		ExpiresDateUTC:        chrono.TimeFrom(p.expiresDate),
+		ExpiresDateUTC:        chrono.TimeFrom(time.Now().AddDate(1, 0, 0)),
 		Edition:               p.plan.Edition,
 		AutoRenewal:           true,
 	}
+
+	if p.expired {
+		s.ExpiresDateUTC = chrono.TimeFrom(time.Now().AddDate(-1, 0, 0))
+	}
+
+	return s
 }
 
 func (p Persona) WxAccess() wxlogin.OAuthAccess {
