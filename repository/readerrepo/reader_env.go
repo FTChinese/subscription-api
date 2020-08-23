@@ -11,19 +11,19 @@ var logger = logrus.
 	WithField("project", "subscription-api").
 	WithField("package", "reader_repo")
 
-type ReaderEnv struct {
+type Env struct {
 	config.BuildConfig
 	db *sqlx.DB
 }
 
-func NewReaderEnv(db *sqlx.DB, config config.BuildConfig) ReaderEnv {
-	return ReaderEnv{
+func NewReaderEnv(db *sqlx.DB, config config.BuildConfig) Env {
+	return Env{
 		BuildConfig: config,
 		db:          db,
 	}
 }
 
-func (env ReaderEnv) FindAccountByFtcID(id string) (reader.Account, error) {
+func (env Env) FindAccountByFtcID(id string) (reader.Account, error) {
 	var u reader.Account
 	err := env.db.Get(
 		&u,
@@ -32,7 +32,7 @@ func (env ReaderEnv) FindAccountByFtcID(id string) (reader.Account, error) {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "ReaderEnv.FindAccountByFtcID").Error(err)
+		logger.WithField("trace", "Env.FindAccountByFtcID").Error(err)
 
 		return u, err
 	}
@@ -40,14 +40,14 @@ func (env ReaderEnv) FindAccountByFtcID(id string) (reader.Account, error) {
 	return u, nil
 }
 
-func (env ReaderEnv) FindAccountByStripeID(cusID string) (reader.Account, error) {
+func (env Env) FindAccountByStripeID(cusID string) (reader.Account, error) {
 	var u reader.Account
 	err := env.db.Get(&u,
 		reader.StmtAccountByStripeID,
 		cusID)
 
 	if err != nil {
-		logger.WithField("trace", "ReaderEnv.FindAccountByStripeID").Error(err)
+		logger.WithField("trace", "Env.FindAccountByStripeID").Error(err)
 
 		return u, err
 	}
