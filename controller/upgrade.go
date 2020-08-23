@@ -71,7 +71,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 
 	// Save snapshot.
 	go func() {
-		_ = router.subEnv.BackUpMember(confirmed.Snapshot)
+		_ = router.readerEnv.BackUpMember(confirmed.Snapshot)
 	}()
 
 	// Save client app info

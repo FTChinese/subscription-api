@@ -250,7 +250,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	confirmedOrder, result := router.subEnv.ConfirmOrder(payResult)
+	confirmed, result := router.subEnv.ConfirmOrder(payResult)
 
 	if result != nil {
 		go func() {
@@ -271,8 +271,12 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if !confirmed.Snapshot.IsZero() {
+		_ = router.readerEnv.BackUpMember(confirmed.Snapshot)
+	}
+
 	go func() {
-		if err := router.sendConfirmationEmail(confirmedOrder); err != nil {
+		if err := router.sendConfirmationEmail(confirmed.Order); err != nil {
 			logger.Error(err)
 		}
 	}()
