@@ -4,9 +4,11 @@ import (
 	"github.com/guregu/null"
 )
 
+// BaseSchema contains the shared fields of all schema.
+// It is also used as the unmarshal target when performing unlinking.
 type BaseSchema struct {
-	Environment           Environment `db:"environment"`
-	OriginalTransactionID string      `db:"original_transaction_id"`
+	Environment           Environment `json:"-" db:"environment"`
+	OriginalTransactionID string      `json:"originalTransactionDd" db:"original_transaction_id"`
 }
 
 // VerifiedReceiptSchema is the SQL version of ClientReceipt.
