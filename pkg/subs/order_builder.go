@@ -121,7 +121,7 @@ func (b *OrderBuilder) DeduceSubsKind(m reader.Membership) error {
 		return ErrInvalidPlan
 	}
 
-	kind, err := m.SubsKind(b.plan)
+	kind, err := m.AliWxSubsKind(b.plan.Edition)
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (b *OrderBuilder) DeduceSubsKind(m reader.Membership) error {
 	return nil
 }
 
-// GetSubsKind returns the SubsKind, or error if it is
+// GetSubsKind returns the AliWxSubsKind, or error if it is
 // cannot be deduced.
 // See errors returned from buildSubsKind.
 func (b *OrderBuilder) GetSubsKind() enum.OrderKind {
