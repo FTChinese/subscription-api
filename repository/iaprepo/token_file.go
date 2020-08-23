@@ -2,6 +2,7 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -26,19 +27,20 @@ func tokenFileName(id string, env apple.Environment) string {
 // SaveReceiptTokenFile saves the LatestToken field in apple.UnifiedReceipt to a file.
 // Files named after the convention <original_transaction_id>_<Production | Sandbox>.txt
 func SaveReceiptTokenFile(r apple.ReceiptToken) error {
-
-	log := logger.
-		WithField("trace", "SaveReceiptTokenFile").
-		WithField("originalTransactionId", r.OriginalTransactionID)
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	sugar := logger.Sugar()
+	sugar.Infow("Saving Receipt Token File",
+		"originalTransactionId", r.OriginalTransactionID)
 
 	d, err := getReceiptAbsDir()
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return err
 	}
 
 	if err := os.MkdirAll(d, 0755); err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return err
 	}
 
@@ -47,7 +49,7 @@ func SaveReceiptTokenFile(r apple.ReceiptToken) error {
 	err = ioutil.WriteFile(f, []byte(r.LatestReceipt), 0644)
 
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return err
 	}
 
