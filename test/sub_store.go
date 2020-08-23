@@ -31,7 +31,7 @@ type SubStore struct {
 	Snapshot reader.MemberSnapshot // This will be populated and updated for any order other than `create`.
 
 	balanceAnchor time.Time
-	accountKind   reader.AccountKind
+	accountKind   enum.AccountKind
 	payMethod     enum.PayMethod
 	plan          plan.Plan
 }
@@ -45,7 +45,7 @@ func NewSubStore(p *Persona) *SubStore {
 		Member:  reader.Membership{},
 
 		// Control behavior of orders and membership.
-		accountKind:   reader.AccountKindFtc,
+		accountKind:   enum.AccountKindFtc,
 		balanceAnchor: time.Now(),
 		payMethod:     faker.RandomPayMethod(),
 	}
@@ -57,7 +57,7 @@ func (s *SubStore) GetAccount() reader.Account {
 	return s.Profile.Account()
 }
 
-func (s *SubStore) SetAccountKind(k reader.AccountKind) *SubStore {
+func (s *SubStore) SetAccountKind(k enum.AccountKind) *SubStore {
 	s.accountKind = k
 	return s
 }
