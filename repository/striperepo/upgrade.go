@@ -2,6 +2,7 @@ package striperepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
@@ -36,8 +37,13 @@ func (env StripeEnv) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.
 		return nil, sql.ErrNoRows
 	}
 
+	subsKind, err := mmb.StripeSubsKind(input.Edition)
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
 	// Check whether upgrading is permitted.
-	if !mmb.PermitStripeUpgrade() {
+	if subsKind != enum.OrderKindUpgrade {
 		log.Error("upgrading via stripe is not permitted")
 		_ = tx.Rollback()
 		return nil, stripePkg.ErrInvalidStripeSub

@@ -2,6 +2,7 @@ package striperepo
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
@@ -38,9 +39,14 @@ func (env StripeEnv) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subs
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
-	if err := mmb.PermitStripeCreate(); err != nil {
+	subsKind, ve := mmb.StripeSubsKind(input.Edition)
+	if ve != nil {
 		_ = tx.Rollback()
 		return nil, err
+	}
+	if subsKind != enum.OrderKindCreate {
+		_ = tx.Rollback()
+		return nil, errors.New("invalid request to create Stripe subscription")
 	}
 
 	log.Info("Creating stripe subscription")

@@ -1,6 +1,7 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -24,8 +25,14 @@ func (env Env) PreviewUpgrade(userID reader.MemberID, plan product.ExpandedPlan)
 		return subs.PaymentIntent{}, err
 	}
 
+	orderKind, err := member.AliWxSubsKind(product.NewStdYearEdition())
+	if err != nil {
+		_ = tx.Rollback()
+		return subs.PaymentIntent{}, err
+	}
+
 	// If user is not qualified to upgrade, deny it.
-	if !member.PermitAliWxUpgrade() {
+	if orderKind != enum.OrderKindUpgrade {
 		_ = tx.Rollback()
 		return subs.PaymentIntent{}, subs.ErrUpgradeInvalid
 	}
