@@ -38,11 +38,11 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 	)
 
 	// Request input:
-	// OpenID?: string;
+	// openID?: string; Required only for payment inside wechat in-house browser.
 	// TODO: put all those fields in request body
-	// tier: string;
-	// cycle: string;
-	// planId: string;
+	// tier: string; Currently acquired from URL param
+	// cycle: string; Currently acquired from URL param
+	// planId: string; Not used yet. In the future we might only use plan id to identify a purchase.
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer logger.Sync()
 		sugar.Info("Start placing a wechat order")
@@ -53,10 +53,12 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Parse request body.
 		input, err := gatherWxPayInput(tradeType, req)
 		if err != nil {
+			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
 		if ve := input.Validate(); ve != nil {
+			sugar.Error(err)
 			_ = render.New(w).Unprocessable(ve)
 			return
 		}
@@ -64,19 +66,23 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Find the client to use for wxpay
 		payClient, err := router.clients.GetClientByPlatform(tradeType)
 		if err != nil {
-			sugar.Error(err.Error())
+			sugar.Error(err)
 			_ = render.New(w).InternalServerError(err.Error())
 			return
 		}
 
-		expPlan, err := router.prodRepo.PlanByEdition(input.Edition)
+		// Retrieve the plan from DB by edition.
+		plan, err := router.prodRepo.PlanByEdition(input.Edition)
 		if err != nil {
+			sugar.Error(err)
 			_ = render.New(w).DBError(err)
 			return
 		}
 
+		sugar.Infof("Selected plan: %+v", plan)
+
 		builder := subs.NewOrderBuilder(readerIDs).
-			SetPlan(expPlan).
+			SetPlan(plan).
 			SetPayMethod(enum.PayMethodWx).
 			SetWxAppID(payClient.GetApp().AppID).
 			SetUserIP(clientApp.UserIP.String).
@@ -87,7 +93,6 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 			SetEnvironment(router.config.Live())
 
 		order, err := router.subEnv.CreateOrder(builder)
-
 		if err != nil {
 			sugar.Error(err)
 			router.handleOrderErr(w, err)
@@ -108,7 +113,6 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// validate the signature
 		// You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
 		resp, err := payClient.UnifiedOrder(builder.WxpayParams())
-
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
