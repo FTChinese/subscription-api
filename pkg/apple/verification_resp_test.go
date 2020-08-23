@@ -13,7 +13,6 @@ func mustReceiptResponse() VerificationResp {
 		panic(err)
 	}
 
-	resp.Parse()
 	return resp
 }
 
