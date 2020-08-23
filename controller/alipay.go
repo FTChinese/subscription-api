@@ -9,6 +9,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -44,10 +45,13 @@ func NewAliRouter(baseRouter PayRouter) AliPayRouter {
 // 	POST /<desktop|mobile|app>/{tier}/{cycle}?<return_url=xxx>
 // `return_url` parameter is only required for apps running on ftacademy.cn
 func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
-	logger := logrus.WithFields(logrus.Fields{
-		"trace": "AliPayRouter.PlaceOrder",
-		"type":  kind.String(),
-	})
+
+	logger, _ := zap.NewProduction()
+	sugar := logger.Sugar()
+	sugar.Infow("Create wxpay order",
+		"trace", "WxPayRouter.PlaceOrder",
+		"platform", kind.String(),
+	)
 
 	// TODO: put all those fields in request body.
 	// returnUrl: string;
@@ -57,7 +61,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		err := req.ParseForm()
 		if err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 			_ = view.Render(w, view.NewBadRequest(err.Error()))
 			return
 		}
@@ -67,17 +71,19 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		input, err := gatherAliPayInput(req)
 		if err != nil {
+			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
 		if ve := input.Validate(); ve != nil {
+			sugar.Error(err)
 			_ = render.New(w).Unprocessable(ve)
 			return
 		}
 
 		plan, err := router.prodRepo.PlanByEdition(input.Edition)
 		if err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
@@ -89,12 +95,12 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		order, err := router.subEnv.CreateOrder(builder)
 
 		if err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 			router.handleOrderErr(w, err)
 			return
 		}
 
-		logger.Infof("Created order: %+v", order)
+		sugar.Infof("Created order: %+v", order)
 
 		go func() {
 			_ = router.subEnv.SaveOrderClient(client.OrderClient{
@@ -110,10 +116,10 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			queryStr, err := router.client.TradeAppPay(
 				builder.AliAppPayParams())
 
-			logger.Infof("App pay param: %+v\n", queryStr)
+			sugar.Infof("App pay param: %+v\n", queryStr)
 
 			if err != nil {
-				logger.Error(err)
+				sugar.Error(err)
 				_ = render.New(w).BadRequest(err.Error())
 				return
 			}
@@ -130,12 +136,12 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 				builder.AliDesktopPayParams(input.ReturnURL),
 			)
 			if err != nil {
-				logger.Error(err)
+				sugar.Error(err)
 				_ = render.New(w).BadRequest(err.Error())
 				return
 			}
 
-			logger.Infof("Ali desktop browser redirect url: %+v\n", redirectURL)
+			sugar.Infof("Ali desktop browser redirect url: %+v\n", redirectURL)
 
 			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserOrder{
 				Order:       order,
@@ -147,11 +153,11 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 				builder.AliWapPayParams(input.ReturnURL),
 			)
 			if err != nil {
-				logger.Error(err)
+				sugar.Error(err)
 				_ = render.New(w).BadRequest(err.Error())
 				return
 			}
-			logger.Infof("Ali mobile browser redirect url: %+v\n", redirectURL)
+			sugar.Infof("Ali mobile browser redirect url: %+v\n", redirectURL)
 
 			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserOrder{
 				Order:       order,
