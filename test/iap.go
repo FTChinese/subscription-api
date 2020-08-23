@@ -18,7 +18,7 @@ func MustVerificationResponse() *apple.VerificationResp {
 	return &r
 }
 
-func GetIAPTransaction() apple.Transaction {
+func MustIAPTransaction() apple.Transaction {
 	resp := MustVerificationResponse()
 
 	l := len(resp.LatestTransactions)
@@ -26,7 +26,7 @@ func GetIAPTransaction() apple.Transaction {
 	return resp.LatestTransactions[rand.IntRange(0, l)]
 }
 
-func GetPendingRenewal() apple.PendingRenewal {
+func MustPendingRenewal() apple.PendingRenewal {
 	resp := MustVerificationResponse()
 
 	l := len(resp.PendingRenewalInfo)
