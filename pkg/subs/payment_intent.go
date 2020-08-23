@@ -9,8 +9,7 @@ import (
 // WxpayNativeAppOrder creates an order used by native apps.
 type WxpayNativeAppOrder struct {
 	Order
-	wechat.AppOrderParams                       // Deprecated
-	Params                wechat.AppOrderParams `json:"params"`
+	Params wechat.AppOrderParams `json:"params"`
 }
 
 // WepayEmbedBrowserOrder responds to purchase made in wechat
