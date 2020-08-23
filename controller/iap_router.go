@@ -14,6 +14,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 type IAPRouter struct {
@@ -131,43 +132,49 @@ func (router IAPRouter) saveReceiptData(ur apple.UnifiedReceipt) {
 	}()
 }
 
-func (router IAPRouter) createSubscription(resp apple.VerificationResp) (apple.Subscription, *render.ResponseError) {
-	sub, err := resp.Subscription()
-	if err != nil {
-		return apple.Subscription{}, render.NewNotFound(err.Error())
-	}
-
-	err = router.iapRepo.CreateSubscription(sub)
-	if err != nil {
-		return apple.Subscription{}, render.NewDBError(err)
-	}
-
-	return sub, nil
-}
-
-// VerifyReceipt verifies if the receipt data send by client is valid.
+// VerifyReceipt verifies if the receipt data send by client is valid. After app store responded,
+// its latest_receipt, latest_receipt_info, pending_renewal_info are saved in DB in background thread.
+// An apple.Subscription is created from the response, which is saved or updated if already exists,
+// and then user's membership is updated if it exists.
+//
 // Input
 // receipt-data: string
 func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) {
-	resp, err := router.doVerification(req)
-	if err != nil {
-		_ = render.New(w).JSON(err.StatusCode, err)
+	resp, resErr := router.doVerification(req)
+	if resErr != nil {
+		_ = render.New(w).JSON(resErr.StatusCode, resErr)
 		return
 	}
 
-	_, err = router.createSubscription(resp)
-	if err != nil {
-		_ = render.New(w).JSON(err.StatusCode, err)
-		return
+	sub, err := resp.Subscription()
+
+	// Update subscription and possible membership in background since this step is irrelevant to verification.
+	if err == nil {
+		go func() {
+			_ = router.iapRepo.UpsertSubscription(sub)
+
+			snapshot, err := router.iapRepo.UpdateMembership(sub)
+			if err != nil {
+				return
+			}
+
+			if !snapshot.IsZero() {
+				_ = router.iapRepo.BackUpMember(snapshot)
+				return
+			}
+		}()
 	}
 
 	_ = render.New(w).OK(resp)
 }
 
 // Link merges IAP subscription to FTC account.
+//
+// Input:
+// receipt-data: string
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	// Get user's ids.
-	memberID := getReaderIDs(req.Header)
+	readerIDs := getReaderIDs(req.Header)
 
 	// Verification
 	resp, resErr := router.doVerification(req)
@@ -176,20 +183,35 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Build subscription.
-	sub, resErr := router.createSubscription(resp)
-	if resErr != nil {
-		_ = render.New(w).JSON(resErr.StatusCode, resErr)
+	sub, err := resp.Subscription()
+	if err != nil {
+		_ = render.New(w).InternalServerError(err.Error())
 		return
 	}
 
+	// Insert/Update subscription.
+	_ = router.iapRepo.UpsertSubscription(sub)
+
 	// Start to link apple subscription to ftc membership.
-	linkResult, err := router.iapRepo.Link(sub, memberID)
+	linkResult, err := router.iapRepo.Link(sub, readerIDs)
 
 	if err != nil {
 		var ve *render.ValidationError
+		// ValidationError indicates the link is not allowed.
 		if errors.As(err, &ve) {
 			_ = render.New(w).Unprocessable(ve)
+
+			// Try to update the membership if already exists.
+			go func() {
+				snapshot, _ := router.iapRepo.UpdateMembership(sub)
+
+				if snapshot.IsZero() {
+					return
+				}
+
+				_ = router.iapRepo.BackUpMember(snapshot)
+			}()
+
 			return
 		}
 
@@ -197,6 +219,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Send notification email if this is initial link.
 	if linkResult.IsInitialLink() {
 		go func() {
 			account, err := router.readerRepo.FindAccountByFtcID(linkResult.Linked.FtcID.String)
@@ -220,25 +243,31 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 }
 
 // Unlink removes apple subscription id from a user's membership
+//
+// Input:
+// originalTransactionId: string
 func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 	// Get user's ids.
 	readerIDs := getReaderIDs(req.Header)
 
-	// Verification
-	resp, resErr := router.doVerification(req)
-	if resErr != nil {
-		_ = render.New(w).JSON(resErr.StatusCode, resErr)
+	var s apple.BaseSchema
+	if err := gorest.ParseJSON(req.Body, &s); err != nil {
+		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	// Build subscription.
-	sub, resErr := router.createSubscription(resp)
-	if resErr != nil {
-		_ = render.New(w).JSON(resErr.StatusCode, resErr)
+	s.OriginalTransactionID = strings.TrimSpace(s.OriginalTransactionID)
+	if s.OriginalTransactionID == "" {
+		_ = render.New(w).Unprocessable(&render.ValidationError{
+			Message: "Original transaction id is required",
+			Field:   "originalTransactionId",
+			Code:    render.CodeInvalid,
+		})
 		return
 	}
 
-	if err := router.iapRepo.Unlink(sub, readerIDs); err != nil {
+	snapshot, err := router.iapRepo.Unlink(s.OriginalTransactionID, readerIDs)
+	if err != nil {
 		if errors.Is(err, apple.ErrUnlinkMismatchedFTC) {
 			_ = render.New(w).BadRequest(err.Error())
 			return
@@ -247,6 +276,10 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 		_ = render.New(w).DBError(err)
 		return
 	}
+
+	go func() {
+		_ = router.iapRepo.BackUpMember(snapshot)
+	}()
 
 	_ = render.New(w).NoContent()
 }
@@ -295,22 +328,22 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := router.iapRepo.CreateSubscription(sub); err != nil {
-		log.Error(err)
-		_ = render.New(w).BadRequest("")
-		return
-	}
+	// Insert/Update subscription
+	_ = router.iapRepo.UpsertSubscription(sub)
 
-	snapshot, err := router.iapRepo.WebhookUpdate(sub)
+	// Update membership if exists.
+	snapshot, err := router.iapRepo.UpdateMembership(sub)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	// Take a snapshot.
-	go func() {
-		_ = router.iapRepo.BackUpMember(snapshot)
-	}()
+	// Snapshot might be empty is this subscription is linked to ftc account yet.
+	if !snapshot.IsZero() {
+		go func() {
+			_ = router.iapRepo.BackUpMember(snapshot)
+		}()
+	}
 
 	_ = render.New(w).OK(nil)
 }
