@@ -1,4 +1,4 @@
-package test
+package faker
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
