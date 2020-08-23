@@ -21,7 +21,7 @@ import (
 type StripeRouter struct {
 	config     config.BuildConfig
 	signingKey string
-	readerRepo readerrepo.ReaderEnv
+	readerRepo readerrepo.Env
 	stripeRepo striperepo.StripeEnv
 }
 
