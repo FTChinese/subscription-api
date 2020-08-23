@@ -8,14 +8,14 @@ import (
 
 // ConfirmOrder updates the order received from webhook,
 // create or update membership, and optionally flag prorated orders as consumed.
-func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.ConfirmError) {
+func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
 	log := logger.WithField("trace", "Env.ConfirmOrder")
 
 	tx, err := env.BeginOrderTx()
 
 	if err != nil {
 		log.Error(err)
-		return subs.Order{}, &subs.ConfirmError{
+		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
 		}
@@ -30,7 +30,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 	if err != nil {
 		log.Error(err)
 		_ = tx.Rollback()
-		return subs.Order{}, &subs.ConfirmError{
+		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: err != sql.ErrNoRows,
 		}
@@ -41,7 +41,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 
 	if err := builder.ValidateOrder(); err != nil {
 		_ = tx.Rollback()
-		return subs.Order{}, err
+		return subs.ConfirmationResult{}, err
 	}
 
 	// STEP 2: query membership
@@ -49,7 +49,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 	member, err := tx.RetrieveMember(order.MemberID)
 	if err != nil {
 		_ = tx.Rollback()
-		return subs.Order{}, &subs.ConfirmError{
+		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
 		}
@@ -63,7 +63,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 	// for upgrading, decline retry.
 	if err := builder.ValidateDuplicateUpgrading(); err != nil {
 		_ = tx.Rollback()
-		return subs.Order{}, err
+		return subs.ConfirmationResult{}, err
 	}
 
 	// STEP 4: Confirm this order
@@ -72,7 +72,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 	confirmed, err := builder.Build()
 	if err != nil {
 		_ = tx.Rollback()
-		return subs.Order{}, &subs.ConfirmError{
+		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
 		}
@@ -82,7 +82,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 	// For any errors, allow retry.
 	if err := tx.ConfirmOrder(confirmed.Order); err != nil {
 		_ = tx.Rollback()
-		return subs.Order{}, &subs.ConfirmError{
+		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: false,
 		}
@@ -94,18 +94,11 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 
 		if err != nil {
 			_ = tx.Rollback()
-			return subs.Order{}, &subs.ConfirmError{
+			return subs.ConfirmationResult{}, &subs.ConfirmError{
 				Err:   err,
 				Retry: true,
 			}
 		}
-	}
-
-	// Backup old membership.
-	if !confirmed.Snapshot.IsZero() {
-		go func() {
-			_ = env.BackUpMember(confirmed.Snapshot)
-		}()
 	}
 
 	// STEP 7: Insert or update membership.
@@ -113,7 +106,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 	if member.IsZero() {
 		if err := tx.CreateMember(confirmed.Membership); err != nil {
 			_ = tx.Rollback()
-			return subs.Order{}, &subs.ConfirmError{
+			return subs.ConfirmationResult{}, &subs.ConfirmError{
 				Err:   err,
 				Retry: true,
 			}
@@ -122,7 +115,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 		// Update Membership.
 		if err := tx.UpdateMember(confirmed.Membership); err != nil {
 			_ = tx.Rollback()
-			return subs.Order{}, &subs.ConfirmError{
+			return subs.ConfirmationResult{}, &subs.ConfirmError{
 				Err:   err,
 				Retry: true,
 			}
@@ -130,7 +123,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 	}
 
 	if err := tx.Commit(); err != nil {
-		return subs.Order{}, &subs.ConfirmError{
+		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
 		}
@@ -138,5 +131,5 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.Order, *subs.Confir
 
 	log.Infof("Order %s confirmed", result.OrderID)
 
-	return confirmed.Order, nil
+	return confirmed, nil
 }
