@@ -29,8 +29,7 @@ type Subscription struct {
 // to an ftc account.
 func (s Subscription) NewMembership(id reader.MemberID) reader.Membership {
 	m := reader.Membership{
-		LegacyExpire: null.Int{},
-		MemberID:     id,
+		MemberID: id,
 		Edition: product.Edition{
 			Tier:  s.Tier,
 			Cycle: s.Cycle,
