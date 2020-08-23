@@ -32,6 +32,8 @@ github.com/FTChinese/go-rest v0.5.0 h1:dKPGu9jHOL8Q9twMPNQ146nKd75mNNAKMsl3tOyGf
 github.com/FTChinese/go-rest v0.5.0/go.mod h1:6nKS0fEq/bRD37FFx9QwhencQD9Cp2mJKKbTx3xqMvA=
 github.com/FTChinese/go-rest v0.5.1 h1:jkFivH8iU0J20pFhFUjo2xyzVVMr8h8iLWjVl0IUEOs=
 github.com/FTChinese/go-rest v0.5.1/go.mod h1:6nKS0fEq/bRD37FFx9QwhencQD9Cp2mJKKbTx3xqMvA=
+github.com/FTChinese/go-rest v0.5.2 h1:J7OMpL7TvkO4pjiUNHfzWhtEeFjRJ1tVNY7AJS6ZYBE=
+github.com/FTChinese/go-rest v0.5.2/go.mod h1:6nKS0fEq/bRD37FFx9QwhencQD9Cp2mJKKbTx3xqMvA=
 github.com/Masterminds/squirrel v1.1.0 h1:baP1qLdoQCeTw3ifCdOq2dkYc6vGcmRdaociKLbEJXs=
 github.com/Masterminds/squirrel v1.1.0/go.mod h1:yaPeOnPG5ZRwL9oKdTsO/prlkPbXWZlRVMQ/gGlzIuA=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
