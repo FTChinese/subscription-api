@@ -188,6 +188,7 @@ func main() {
 		r.With(controller.FtcID).Post("/link", iapRouter.Link)
 		r.With(controller.FtcID).Delete("/link", iapRouter.Unlink)
 
+		// Load a receipt and its associated subscription. Internal only.
 		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
 	})
 
