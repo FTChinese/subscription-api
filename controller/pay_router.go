@@ -1,12 +1,12 @@
 package controller
 
 import (
+	"errors"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/repository/products"
 	"github.com/FTChinese/subscription-api/repository/readerrepo"
@@ -36,27 +36,15 @@ func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p posto
 }
 
 // Centralized error handling after order creation.
-// It handles the errors propagated from Membership.SubsKind(),
+// It handles the errors propagated from Membership.AliWxSubsKind(),
 func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
-	switch err {
-	// When the order is used to renew but not allowed.
-	case reader.ErrRenewalForbidden:
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: err.Error(),
-			Field:   "renewal",
-			Code:    render.CodeInvalid,
-		})
-
-	case reader.ErrDowngradeForbidden:
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: err.Error(),
-			Field:   "downgrade",
-			Code:    render.CodeInvalid,
-		})
-
-	default:
-		_ = render.New(w).DBError(err)
+	var ve *render.ValidationError
+	if errors.As(err, &ve) {
+		_ = render.New(w).Unprocessable(ve)
+		return
 	}
+
+	_ = render.New(w).DBError(err)
 }
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
