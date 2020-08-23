@@ -29,7 +29,7 @@ func NewSubsInput(ftcID string) SubsInput {
 }
 
 func (i SubsInput) WithPlanID(live bool) (SubsInput, error) {
-	p, err := stripePlans.findByEdition(i.NamedKey() + "_" + stripeKeySuffix[live])
+	p, err := stripePlans.findByEdition(i.NamedKey() + "_" + editionKeySuffix[live])
 	if err != nil {
 		return i, sql.ErrNoRows
 	}
