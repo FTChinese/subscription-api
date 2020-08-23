@@ -55,42 +55,45 @@ func getEdition(req *http.Request) (product.Edition, error) {
 	}, nil
 }
 
+// gatherWxPayInput collect request input data. Due to legacy issues the data is scattered in various places:
+// tier and cycle in url param;
+// openId in request body for wechat-specific browser pay.
+// planId is not provided yet.
+// Since client is not required to send a json body, json.Unmarshal might have problems when request body is empty.
+// To had better stick to the old way and create new endpoint to ask client to submit all data in json body..
 func gatherWxPayInput(platform wechat.TradeType, req *http.Request) (subs.WxPayInput, error) {
 	input := subs.NewWxPayInput(platform)
 
 	// Get the OpenID field.
-	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+	openID, err := GetJSONString(req.Body, "openId")
+	if err != nil {
 		return input, err
 	}
 
-	if input.Tier == enum.TierNull && input.Cycle == enum.CycleNull {
-		// Get the tier and cycle field
-		edition, err := getEdition(req)
-		if err != nil {
-			return input, err
-		}
-
-		input.Edition = edition
+	// Get the tier and cycle field
+	edition, err := getEdition(req)
+	if err != nil {
+		return input, err
 	}
+
+	input.OpenID = null.NewString(openID, openID != "")
+	input.Edition = edition
 
 	return input, nil
 }
 
 func gatherAliPayInput(req *http.Request) (subs.AliPayInput, error) {
 	var input subs.AliPayInput
-	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+
+	retUrl := req.FormValue("return_url")
+
+	edition, err := getEdition(req)
+	if err != nil {
 		return input, err
 	}
 
-	if input.Tier == enum.TierNull && input.Cycle == enum.CycleNull {
-		// Get the tier and cycle field
-		edition, err := getEdition(req)
-		if err != nil {
-			return input, err
-		}
-
-		input.Edition = edition
-	}
+	input.Edition = edition
+	input.ReturnURL = retUrl
 
 	return input, nil
 }
