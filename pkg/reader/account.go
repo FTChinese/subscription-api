@@ -15,8 +15,11 @@ type Account struct {
 }
 
 func (a Account) MemberID() MemberID {
-	id, _ := NewMemberID(a.FtcID, a.UnionID.String)
-	return id
+	return MemberID{
+		CompoundID: "",
+		FtcID:      null.NewString(a.FtcID, a.FtcID != ""),
+		UnionID:    a.UnionID,
+	}.MustNormalize()
 }
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
