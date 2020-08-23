@@ -1,10 +1,15 @@
-package subs
+package reader
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/rand"
 	"github.com/guregu/null"
 )
+
+func GenerateSnapshotID() string {
+	return "snp_" + rand.String(12)
+}
 
 // MemberSnapshot saves a membership's status prior to
 // placing an order.

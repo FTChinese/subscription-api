@@ -26,12 +26,12 @@ func NewMemberTx(tx *sqlx.Tx, cfg config.BuildConfig) MemberTx {
 // RetrieveMember retrieves a user's membership by a compound id, which might be ftc id or union id.
 // Use SQL FIND_IN_SET(compoundId, vip_id, vip) to verify it against two columns.
 // Returns zero value of membership if not found.
-func (tx MemberTx) RetrieveMember(id reader.MemberID) (subs.Membership, error) {
-	var m subs.Membership
+func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error) {
+	var m reader.Membership
 
 	err := tx.Get(
 		&m,
-		subs.StmtLockMember(tx.dbName),
+		reader.StmtLockMember(tx.dbName),
 		id.BuildFindInSet(),
 	)
 
@@ -51,12 +51,12 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (subs.Membership, error) {
 // RetrieveAppleMember selects membership by apple original transaction id.
 // // NOTE: sql.ErrNoRows are ignored. The returned
 //// Membership might be a zero value.
-func (tx MemberTx) RetrieveAppleMember(transactionID string) (subs.Membership, error) {
-	var m subs.Membership
+func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership, error) {
+	var m reader.Membership
 
 	err := tx.Get(
 		&m,
-		subs.StmtAppleMember(tx.dbName),
+		reader.StmtAppleMember(tx.dbName),
 		transactionID)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -124,11 +124,11 @@ func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 }
 
 // CreateMember creates a new membership.
-func (tx MemberTx) CreateMember(m subs.Membership) error {
+func (tx MemberTx) CreateMember(m reader.Membership) error {
 	m.Normalize()
 
 	_, err := tx.NamedExec(
-		subs.StmtCreateMember(tx.dbName),
+		reader.StmtCreateMember(tx.dbName),
 		m,
 	)
 
@@ -141,11 +141,11 @@ func (tx MemberTx) CreateMember(m subs.Membership) error {
 }
 
 // UpdateMember updates existing membership.
-func (tx MemberTx) UpdateMember(m subs.Membership) error {
+func (tx MemberTx) UpdateMember(m reader.Membership) error {
 	m.Normalize()
 
 	_, err := tx.NamedExec(
-		subs.StmtUpdateMember(tx.dbName),
+		reader.StmtUpdateMember(tx.dbName),
 		m)
 
 	if err != nil {
@@ -167,7 +167,7 @@ func (tx MemberTx) UpdateMember(m subs.Membership) error {
 // column which will keep the membership on FTC account.
 func (tx MemberTx) DeleteMember(id reader.MemberID) error {
 	_, err := tx.NamedExec(
-		subs.StmtDeleteMember(tx.dbName),
+		reader.StmtDeleteMember(tx.dbName),
 		id)
 
 	if err != nil {

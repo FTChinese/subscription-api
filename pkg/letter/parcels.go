@@ -106,7 +106,7 @@ func NewFreeUpgradeParcel(
 	}, nil
 }
 
-func NewIAPLinkParcel(account reader.Account, m subs.Membership) (postoffice.Parcel, error) {
+func NewIAPLinkParcel(account reader.Account, m reader.Membership) (postoffice.Parcel, error) {
 	ctx := CtxIAPLinked{
 		UserName:   account.NormalizeName(),
 		Email:      account.Email,

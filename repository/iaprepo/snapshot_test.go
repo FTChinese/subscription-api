@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
@@ -108,7 +107,7 @@ func TestMembershipTx_CreateMember(t *testing.T) {
 	env := Env{db: test.DB}
 
 	type args struct {
-		m subs.Membership
+		m reader.Membership
 	}
 	tests := []struct {
 		name    string
@@ -149,7 +148,7 @@ func TestMembershipTx_UpdateMember(t *testing.T) {
 	env := Env{db: test.DB}
 
 	type args struct {
-		m subs.Membership
+		m reader.Membership
 	}
 	tests := []struct {
 		name    string
@@ -227,7 +226,7 @@ func TestIAPEnv_BackUpMember(t *testing.T) {
 	env := Env{db: test.DB}
 
 	type args struct {
-		snapshot subs.MemberSnapshot
+		snapshot reader.MemberSnapshot
 	}
 	tests := []struct {
 		name    string

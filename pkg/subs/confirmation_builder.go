@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
 
@@ -14,9 +15,9 @@ import (
 // The generated of those fields has a intertwined dependency
 // on each other, so they are return in one batch.
 type ConfirmationResult struct {
-	Order      Order          // The confirmed order.
-	Membership Membership     // The updated membership.
-	Snapshot   MemberSnapshot // // Snapshot of previous membership
+	Order      Order                 // The confirmed order.
+	Membership reader.Membership     // The updated membership.
+	Snapshot   reader.MemberSnapshot // // Snapshot of previous membership
 }
 
 // ConfirmationBuilder is used to confirm an
@@ -30,20 +31,20 @@ type ConfirmationResult struct {
 type ConfirmationBuilder struct {
 	live          bool // Determines the price.
 	paymentResult PaymentResult
-	membership    Membership // Current membership.
-	order         Order      // The order corresponding to a webhook.
+	membership    reader.Membership // Current membership.
+	order         Order             // The order corresponding to a webhook.
 }
 
 func NewConfirmationBuilder(result PaymentResult, live bool) *ConfirmationBuilder {
 	return &ConfirmationBuilder{
 		live:          live,
 		paymentResult: result,
-		membership:    Membership{},
+		membership:    reader.Membership{},
 		order:         Order{},
 	}
 }
 
-func (b *ConfirmationBuilder) SetMembership(m Membership) *ConfirmationBuilder {
+func (b *ConfirmationBuilder) SetMembership(m reader.Membership) *ConfirmationBuilder {
 	b.membership = m
 	return b
 }
@@ -98,9 +99,9 @@ func (b *ConfirmationBuilder) Build() (ConfirmationResult, error) {
 	return ConfirmationResult{
 		Order:      order,
 		Membership: m,
-		Snapshot: MemberSnapshot{
-			SnapshotID: GenerateSnapshotID(),
-			Reason:     GetSnapshotReason(order.Kind),
+		Snapshot: reader.MemberSnapshot{
+			SnapshotID: reader.GenerateSnapshotID(),
+			Reason:     reader.GetSnapshotReason(order.Kind),
 			CreatedUTC: chrono.TimeNow(),
 			OrderID:    null.StringFrom(order.ID),
 			Membership: b.membership,

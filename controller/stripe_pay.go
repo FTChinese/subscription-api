@@ -5,8 +5,8 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/repository/striperepo"
 	"github.com/jmoiron/sqlx"
@@ -245,9 +245,9 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 		}
 
 		switch err {
-		case subs.ErrNonStripeValidSub,
-			subs.ErrActiveStripeSub,
-			subs.ErrUnknownSubState:
+		case reader.ErrNonStripeValidSub,
+			reader.ErrActiveStripeSub,
+			reader.ErrUnknownSubState:
 			_ = render.New(w).BadRequest(err.Error())
 		default:
 			_ = render.New(w).DBError(err)

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
 	stripeSdk "github.com/stripe/stripe-go"
 )
@@ -41,7 +40,7 @@ func (env StripeEnv) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.
 	if !mmb.PermitStripeUpgrade() {
 		log.Error("upgrading via stripe is not permitted")
 		_ = tx.Rollback()
-		return nil, subs.ErrInvalidStripeSub
+		return nil, stripePkg.ErrInvalidStripeSub
 	}
 
 	ss, err := input.UpgradeSubs(mmb.StripeSubsID.String)

@@ -1,4 +1,4 @@
-package subs
+package reader
 
 import (
 	"fmt"
@@ -23,6 +23,7 @@ SELECT vip_id AS compound_id,
 	b2b_licence_id
 FROM %s.ftc_vip`
 
+// StmtLockMember builds SQL to retrieve membership in a transaction.
 // Retrieve membership by compound id extracted from request header.
 // The request might provide ftc id or union id, or both,
 // and we cannot be sure the current state account ids
@@ -32,19 +33,12 @@ FROM %s.ftc_vip`
 // (Chances of such case are rare).
 // In such case we won't be able to find the membership
 // simply querying the vip_id column.
-const selectMembership = colMembership + `
-WHERE FIND_IN_SET(vip_id, ?) > 0
-LIMIT 1
-`
-
-// StmtMember builds SQL to retrieve membership.
-func StmtMember(db config.SubsDB) string {
-	return fmt.Sprintf(selectMembership, db)
-}
-
-// StmtLockMember builds SQL to retrieve membership in a transaction.
 func StmtLockMember(db config.SubsDB) string {
-	return fmt.Sprintf(selectMembership, db) + "FOR UPDATE"
+	return fmt.Sprintf(colMembership, db) + `
+	WHERE FIND_IN_SET(vip_id, ?) > 0
+	LIMIT 1
+	FOR UPDATE
+	`
 }
 
 // StmtAppleMember builds SQL to retrieve membership by apple original transaction id.

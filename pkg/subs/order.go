@@ -91,7 +91,7 @@ func (o Order) pickStartDate(expireDate chrono.Date) chrono.Date {
 // confirmation time received by webhook.
 // If this order is used for upgrading, it always starts
 // at now.
-func (o Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
+func (o Order) Confirm(m reader.Membership, confirmedAt time.Time) (Order, error) {
 	o.ConfirmedAt = chrono.TimeFrom(confirmedAt)
 
 	o.StartDate = o.pickStartDate(m.ExpireDate)
@@ -108,12 +108,12 @@ func (o Order) Confirm(m Membership, confirmedAt time.Time) (Order, error) {
 
 // Membership build a membership based on this order.
 // The order must be already confirmed.
-func (o Order) Membership() (Membership, error) {
+func (o Order) Membership() (reader.Membership, error) {
 	if !o.IsConfirmed() {
-		return Membership{}, fmt.Errorf("order %s used to build membership is not confirmed yet", o.ID)
+		return reader.Membership{}, fmt.Errorf("order %s used to build membership is not confirmed yet", o.ID)
 	}
 
-	return Membership{
+	return reader.Membership{
 		MemberID:      o.MemberID,
 		Edition:       o.Edition,
 		LegacyTier:    null.Int{},

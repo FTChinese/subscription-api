@@ -34,12 +34,12 @@ func (r *Repo) MustSaveAccount(a reader.Account) {
 	}
 }
 
-func (r *Repo) MustSaveMembership(m subs.Membership) {
+func (r *Repo) MustSaveMembership(m reader.Membership) {
 
 	m.Normalize()
 
 	_, err := r.db.NamedExec(
-		subs.StmtCreateMember(config.SubsDBProd),
+		reader.StmtCreateMember(config.SubsDBProd),
 		m)
 
 	if err != nil {
