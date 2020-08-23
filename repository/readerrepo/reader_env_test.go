@@ -9,7 +9,7 @@ func TestReaderEnv_FindAccountByFtcID(t *testing.T) {
 	profile := test.NewPersona()
 	test.NewRepo().MustSaveAccount(profile.Account())
 
-	env := ReaderEnv{db: test.DB}
+	env := Env{db: test.DB}
 
 	type args struct {
 		id string
@@ -43,7 +43,7 @@ func TestReaderEnv_FindAccountByStripeID(t *testing.T) {
 	profile := test.NewPersona()
 	test.NewRepo().MustSaveAccount(profile.Account())
 
-	env := ReaderEnv{db: test.DB}
+	env := Env{db: test.DB}
 
 	type args struct {
 		cusID string
