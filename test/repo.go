@@ -36,7 +36,7 @@ func (r *Repo) MustSaveAccount(a reader.Account) {
 
 func (r *Repo) MustSaveMembership(m reader.Membership) {
 
-	m.Normalize()
+	m = m.Normalize()
 
 	_, err := r.db.NamedExec(
 		reader.StmtCreateMember(config.SubsDBProd),
