@@ -21,7 +21,7 @@ type IAPRouter struct {
 	secret     string
 	config     config.BuildConfig
 	iapRepo    iaprepo.Env
-	readerRepo readerrepo.ReaderEnv
+	readerRepo readerrepo.Env
 	postman    postoffice.PostOffice
 }
 
@@ -159,7 +159,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 			}
 
 			if !snapshot.IsZero() {
-				_ = router.iapRepo.BackUpMember(snapshot)
+				_ = router.readerRepo.BackUpMember(snapshot)
 				return
 			}
 		}()
@@ -209,7 +209,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 					return
 				}
 
-				_ = router.iapRepo.BackUpMember(snapshot)
+				_ = router.readerRepo.BackUpMember(snapshot)
 			}()
 
 			return
@@ -278,7 +278,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		_ = router.iapRepo.BackUpMember(snapshot)
+		_ = router.readerRepo.BackUpMember(snapshot)
 	}()
 
 	_ = render.New(w).NoContent()
@@ -341,7 +341,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// Snapshot might be empty is this subscription is linked to ftc account yet.
 	if !snapshot.IsZero() {
 		go func() {
-			_ = router.iapRepo.BackUpMember(snapshot)
+			_ = router.readerRepo.BackUpMember(snapshot)
 		}()
 	}
 
