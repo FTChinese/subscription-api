@@ -1,11 +1,11 @@
 package giftrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
-func (env GiftEnv) RedeemGiftCard(c redeem.GiftCard, m subs.Membership) error {
+func (env GiftEnv) RedeemGiftCard(c redeem.GiftCard, m reader.Membership) error {
 	tx, err := env.beginOrderTx()
 	if err != nil {
 		logger.WithField("trace", "RedeemGiftCard").Error(err)

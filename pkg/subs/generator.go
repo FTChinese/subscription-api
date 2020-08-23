@@ -2,7 +2,6 @@ package subs
 
 import (
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/rand"
 	"strings"
 )
 
@@ -32,8 +31,4 @@ func MustGenerateOrderID() string {
 	}
 
 	return id
-}
-
-func GenerateSnapshotID() string {
-	return "snp_" + rand.String(12)
 }

@@ -1,4 +1,4 @@
-package subs
+package reader
 
 import (
 	"github.com/FTChinese/go-rest/render"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
 
@@ -24,7 +23,7 @@ var codeToTier = map[int64]enum.Tier{
 // Membership contains a user's membership details
 // This is actually called subscription by Stripe.
 type Membership struct {
-	reader.MemberID
+	MemberID
 	product.Edition
 	LegacyTier    null.Int       `json:"-" db:"vip_type"`
 	LegacyExpire  null.Int       `json:"-" db:"expire_time"`

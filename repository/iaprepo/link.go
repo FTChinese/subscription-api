@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"go.uber.org/zap"
 )
 
@@ -74,7 +73,7 @@ func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult,
 	// Expired  |  zero  | Backup FTC and Update
 	// -----------------
 	// From this table we can see we only need to backup the FTC side if it exists.
-	var newMmb subs.Membership
+	var newMmb reader.Membership
 	if ftcMember.IsZero() {
 		newMmb = s.NewMembership(id)
 		err := tx.CreateMember(newMmb)
@@ -89,7 +88,7 @@ func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult,
 
 		return apple.LinkResult{
 			Linked:   newMmb,
-			Snapshot: subs.MemberSnapshot{},
+			Snapshot: reader.MemberSnapshot{},
 		}, nil
 	}
 
@@ -112,37 +111,37 @@ func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult,
 }
 
 // Unlink deletes a membership created from IAP.
-func (env Env) Unlink(originalTransID string, ids reader.MemberID) (subs.MemberSnapshot, error) {
+func (env Env) Unlink(originalTransID string, ids reader.MemberID) (reader.MemberSnapshot, error) {
 	tx, err := env.BeginTx()
 
 	if err != nil {
-		return subs.MemberSnapshot{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	m, err := tx.RetrieveAppleMember(originalTransID)
 	if err != nil {
 		_ = tx.Rollback()
-		return subs.MemberSnapshot{}, err
+		return reader.MemberSnapshot{}, err
 	}
 	if m.IsZero() {
 		_ = tx.Rollback()
-		return subs.MemberSnapshot{}, sql.ErrNoRows
+		return reader.MemberSnapshot{}, sql.ErrNoRows
 	}
 
 	if m.FtcID != ids.FtcID {
 		_ = tx.Rollback()
-		return subs.MemberSnapshot{}, apple.ErrUnlinkMismatchedFTC
+		return reader.MemberSnapshot{}, apple.ErrUnlinkMismatchedFTC
 	}
 
 	snapshot := m.Snapshot(enum.SnapshotReasonDelete)
 
 	if err := tx.DeleteMember(m.MemberID); err != nil {
 		_ = tx.Rollback()
-		return subs.MemberSnapshot{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return subs.MemberSnapshot{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	return snapshot, nil

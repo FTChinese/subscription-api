@@ -26,9 +26,9 @@ import (
 type SubStore struct {
 	Profile *Persona
 	Orders  map[string]subs.Order // A user could have multiple orders.
-	Member  subs.Membership       // But only one membership.
+	Member  reader.Membership     // But only one membership.
 
-	Snapshot subs.MemberSnapshot // This will be populated and updated for any order other than `create`.
+	Snapshot reader.MemberSnapshot // This will be populated and updated for any order other than `create`.
 
 	balanceAnchor time.Time
 	accountKind   reader.AccountKind
@@ -42,7 +42,7 @@ func NewSubStore(p *Persona) *SubStore {
 	return &SubStore{
 		Profile: p,
 		Orders:  make(map[string]subs.Order), // Initially user has no orders.
-		Member:  subs.Membership{},
+		Member:  reader.Membership{},
 
 		// Control behavior of orders and membership.
 		accountKind:   reader.AccountKindFtc,

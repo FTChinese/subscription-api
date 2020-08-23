@@ -191,7 +191,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
 
 	type args struct {
-		m subs.Membership
+		m reader.Membership
 	}
 	tests := []struct {
 		name    string
@@ -232,7 +232,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
 
 	type args struct {
-		m subs.Membership
+		m reader.Membership
 	}
 	tests := []struct {
 		name    string

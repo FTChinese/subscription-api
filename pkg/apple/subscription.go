@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
 )
 
@@ -28,8 +27,8 @@ type Subscription struct {
 // Membership build ftc's membership based on subscription
 // from apple if this subscription is not linked
 // to an ftc account.
-func (s Subscription) NewMembership(id reader.MemberID) subs.Membership {
-	m := subs.Membership{
+func (s Subscription) NewMembership(id reader.MemberID) reader.Membership {
+	m := reader.Membership{
 		LegacyExpire: null.Int{},
 		MemberID:     id,
 		Edition: product.Edition{
@@ -52,7 +51,7 @@ func (s Subscription) NewMembership(id reader.MemberID) subs.Membership {
 
 // BuildOn updates an existing IAP membership based on this
 // transaction.
-func (s Subscription) BuildOn(m subs.Membership) subs.Membership {
+func (s Subscription) BuildOn(m reader.Membership) reader.Membership {
 	m.Tier = s.Tier
 	m.Cycle = s.Cycle
 	m.ExpireDate = chrono.DateFrom(s.ExpiresDateUTC.Time)

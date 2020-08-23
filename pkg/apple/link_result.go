@@ -1,15 +1,15 @@
 package apple
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // LinkResult contains information about membership before and after linking.
 // You should first check whether Forbidden exists. If it is, stop processing.
 // If not forbidden, then check if Snapshot's FtcID exists. If it exists, backup it.
 type LinkResult struct {
-	Linked   subs.Membership     // The membership after linked. Empty if Forbidden is not nil
-	Snapshot subs.MemberSnapshot // Membership snapshot if linking needs to modify an existing record.
+	Linked   reader.Membership     // The membership after linked. Empty if Forbidden is not nil
+	Snapshot reader.MemberSnapshot // Membership snapshot if linking needs to modify an existing record.
 }
 
 // IsInitialLink checks whether the link is performed for the first time.
