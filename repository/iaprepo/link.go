@@ -62,6 +62,7 @@ func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult,
 	// Caller should still needs update membership based on this subscription.
 	if ve != nil {
 		sugar.Error(ve)
+		_ = tx.Rollback()
 		return apple.LinkResult{}, ve
 	}
 
@@ -78,11 +79,13 @@ func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult,
 		newMmb = s.NewMembership(id)
 		err := tx.CreateMember(newMmb)
 		if err != nil {
+			sugar.Error(err)
 			_ = tx.Rollback()
 			return apple.LinkResult{}, err
 		}
 
 		if err := tx.Commit(); err != nil {
+			sugar.Error(err)
 			return apple.LinkResult{}, err
 		}
 
@@ -96,6 +99,7 @@ func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult,
 	newMmb = s.BuildOn(ftcMember)
 	err = tx.UpdateMember(newMmb)
 	if err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return apple.LinkResult{}, err
 	}
