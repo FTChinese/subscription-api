@@ -26,16 +26,23 @@ func NewRepo() *Repo {
 	}
 }
 
-func (r *Repo) MustSaveAccount(a reader.Account) {
+func (r *Repo) SaveAccount(a reader.Account) error {
 	_, err := r.db.NamedExec(stmtInsertAccount, a)
 
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repo) MustSaveAccount(a reader.Account) {
+	if err := r.SaveAccount(a); err != nil {
 		panic(err)
 	}
 }
 
-func (r *Repo) MustSaveMembership(m reader.Membership) {
-
+func (r *Repo) SaveMembership(m reader.Membership) error {
 	m = m.Normalize()
 
 	_, err := r.db.NamedExec(
@@ -43,14 +50,25 @@ func (r *Repo) MustSaveMembership(m reader.Membership) {
 		m)
 
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repo) MustSaveMembership(m reader.Membership) {
+
+	err := r.SaveMembership(m)
+
+	if err != nil {
 		panic(err)
 	}
 }
 
-func (r *Repo) MustSaveOrder(order subs.Order) {
+func (r *Repo) SaveOrder(order subs.Order) error {
 
 	var stmt = subs.StmtCreateOrder(config.SubsDBProd) + `,
-		confirmed_utc = :confirmed_at,
+		confirmed_utc = :confirmed_utc,
 		start_date = :start_date,
 		end_date = :end_date`
 
@@ -59,6 +77,15 @@ func (r *Repo) MustSaveOrder(order subs.Order) {
 		order)
 
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repo) MustSaveOrder(order subs.Order) {
+
+	if err := r.SaveOrder(order); err != nil {
 		panic(err)
 	}
 }
