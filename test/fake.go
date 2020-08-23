@@ -3,9 +3,7 @@ package test
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
-	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
@@ -21,6 +19,8 @@ func SeedGoFake() {
 	gofakeit.Seed(time.Now().UnixNano())
 }
 
+// WxXMLNotification mocks the data received in wechat webhook.
+// To test its behavior, you must have a user row and order row in the db.
 func WxXMLNotification(orderID string) string {
 	openID, _ := gorest.RandomBase64(21)
 	nonce, _ := gorest.RandomHex(16)
@@ -64,6 +64,7 @@ func WxNotification(orderID string) wechat.Notification {
 	return wechat.NewNotification(p)
 }
 
+// WxXMLPrepay mocks the data received from wechat as a payment intent.
 func WxXMLPrepay() string {
 	nonce, _ := gorest.RandomHex(16)
 
@@ -113,16 +114,5 @@ func AliNoti() alipay.TradeNotification {
 		OutTradeNo: rand.String(18),
 		GmtCreate:  time.Now().In(time.UTC).Format(chrono.SQLDateTime),
 		GmtPayment: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
-	}
-}
-
-func giftCard() redeem.GiftCard {
-	code, _ := gorest.RandomHex(8)
-
-	return redeem.GiftCard{
-		Code:       strings.ToUpper(code),
-		Tier:       enum.TierStandard,
-		CycleUnit:  enum.CycleYear,
-		CycleValue: null.IntFrom(1),
 	}
 }
