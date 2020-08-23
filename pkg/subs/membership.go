@@ -3,7 +3,6 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/product"
-	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -44,16 +43,6 @@ type Membership struct {
 	Status       enum.SubsStatus `json:"status" db:"subs_status"`
 	AppleSubsID  null.String     `json:"-" db:"apple_subs_id"`
 	B2BLicenceID null.String     `json:"-" db:"b2b_licence_id"`
-}
-
-// NewMember creates a membership directly for a user.
-// This is currently used by activating gift cards.
-// If membership is purchased via direct payment channel,
-// membership is created from subscription order.
-func NewMember(accountID reader.MemberID) Membership {
-	return Membership{
-		MemberID: accountID,
-	}
 }
 
 // IsZero test whether the instance is empty.
@@ -401,24 +390,6 @@ func (m Membership) ValidateMergeIAP(iapMember Membership) *render.ValidationErr
 
 	// Otherwise merging to an exiting expired non-iap FTC membership is allowed.
 	return nil
-}
-
-// FromGiftCard creates a new instance based on a gift card.
-func (m Membership) FromGiftCard(c redeem.GiftCard) (Membership, error) {
-
-	var expTime time.Time
-
-	expTime, err := c.ExpireTime()
-
-	if err != nil {
-		return m, err
-	}
-
-	m.Tier = c.Tier
-	m.Cycle = c.CycleUnit
-	m.ExpireDate = chrono.DateFrom(expTime)
-
-	return m, nil
 }
 
 // Snapshot takes a snapshot of membership, usually before modifying it.

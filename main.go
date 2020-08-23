@@ -98,7 +98,7 @@ func main() {
 	stripeRouter := controller.NewStripeRouter(myDB, cfg)
 	iapRouter := controller.NewIAPRouter(myDB, cfg, post)
 
-	giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
+	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.NewPaywallRouter(myDB, promoCache, cfg)
 
 	wxAuth := controller.NewWxAuth(wxoauth.New(myDB))
@@ -212,12 +212,12 @@ func main() {
 		r.Post("/apple", iapRouter.WebHook)
 	})
 
-	r.Route("/gift-card", func(r chi.Router) {
-		r.Use(guard.CheckToken)
-		r.Use(controller.UserOrUnionID)
-
-		r.Put("/redeem", giftCardRouter.Redeem)
-	})
+	//r.Route("/gift-card", func(r chi.Router) {
+	//	r.Use(guard.CheckToken)
+	//	r.Use(controller.UserOrUnionID)
+	//
+	//	r.Put("/redeem", giftCardRouter.Redeem)
+	//})
 
 	r.Route("/paywall", func(r chi.Router) {
 		r.Use(guard.CheckToken)
