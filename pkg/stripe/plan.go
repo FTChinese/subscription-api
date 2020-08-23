@@ -87,8 +87,8 @@ func (s *planStore) add(p PlanConfig) *planStore {
 	return s
 }
 
-func (s *planStore) findByEdition(key string) (PlanConfig, error) {
-	i, ok := s.indexEdition[key]
+func (s planStore) findByEdition(key string, live bool) (PlanConfig, error) {
+	i, ok := s.indexEdition[key+"_"+editionKeySuffix[live]]
 	if !ok {
 		return PlanConfig{}, fmt.Errorf("stripe plan for %s is not found", key)
 	}
@@ -96,7 +96,7 @@ func (s *planStore) findByEdition(key string) (PlanConfig, error) {
 	return s.plans[i], nil
 }
 
-func (s *planStore) findByID(planID string) (PlanConfig, error) {
+func (s planStore) findByID(planID string) (PlanConfig, error) {
 	i, ok := s.indexID[planID]
 	if !ok {
 		return PlanConfig{}, fmt.Errorf("stripe plan with id %s is not found", planID)
@@ -110,7 +110,7 @@ var stripePlans = newPlanStore()
 // FetchPlan gets stripe plan from API.
 // The key is one of standard_month, standard_year, premium_year.
 func FetchPlan(key string, live bool) (*stripe.Plan, error) {
-	p, err := stripePlans.findByEdition(key + "_" + editionKeySuffix[live])
+	p, err := stripePlans.findByEdition(key, live)
 	if err != nil {
 		return nil, sql.ErrNoRows
 	}
