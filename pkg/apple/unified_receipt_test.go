@@ -1,6 +1,7 @@
 package apple
 
 import (
+	"github.com/stretchr/testify/assert"
 	"sort"
 	"testing"
 )
@@ -27,13 +28,9 @@ func TestUnifiedReceipt_sortLatestReceiptDesc(t *testing.T) {
 		return ur.LatestTransactions[i].ExpiresDateMs > ur.LatestTransactions[j].ExpiresDateMs
 	})
 
-	if !isSorted {
-		t.Error("Not sorted")
-	}
+	assert.True(t, isSorted)
 
-	if ur.latestTransaction.ExpiresDateMs != "1532428954000" {
-		t.Error("latest not found")
-	}
+	assert.Equal(t, ur.latestTransaction.ExpiresDateMs, "1532428954000")
 }
 
 func TestUnifiedReceipt_findPendingRenewal(t *testing.T) {
@@ -41,7 +38,16 @@ func TestUnifiedReceipt_findPendingRenewal(t *testing.T) {
 
 	pr := resp.findPendingRenewal()
 
-	if pr.OriginalTransactionID != "1000000595951896" {
-		t.Error("not found")
+	assert.Equal(t, pr.OriginalTransactionID, "1000000595951896")
+}
+
+func TestUnifiedReceipt_Subscription(t *testing.T) {
+	resp := mustParsedReceiptResponse()
+
+	sub, err := resp.Subscription()
+	if err != nil {
+		t.Error(err)
 	}
+
+	assert.NotEmpty(t, sub.OriginalTransactionID)
 }
