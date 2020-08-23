@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/config"
@@ -42,6 +43,11 @@ func forwardStripeErr(w http.ResponseWriter, err error) error {
 	if stripeErr, ok := err.(*stripeSdk.Error); ok {
 		return render.New(w).
 			JSON(stripeErr.HTTPStatusCode, stripeErr)
+	}
+
+	var ve *render.ValidationError
+	if errors.As(err, &ve) {
+		return render.New(w).Unprocessable(ve)
 	}
 
 	return err
