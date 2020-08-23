@@ -212,13 +212,6 @@ func main() {
 		r.Post("/apple", iapRouter.WebHook)
 	})
 
-	//r.Route("/gift-card", func(r chi.Router) {
-	//	r.Use(guard.CheckToken)
-	//	r.Use(controller.UserOrUnionID)
-	//
-	//	r.Put("/redeem", giftCardRouter.Redeem)
-	//})
-
 	r.Route("/paywall", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
