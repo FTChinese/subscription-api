@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"fmt"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"time"
@@ -22,6 +23,12 @@ var codeToTier = map[int64]enum.Tier{
 
 // Membership contains a user's membership details
 // This is actually called subscription by Stripe.
+// A membership might be create from various sources:
+// * Alipay / Wxpay - Classified under FTC retail
+// * B2B
+// * Stripe
+// * Apple IAP
+// We should keep those sources mutually exclusive.
 type Membership struct {
 	MemberID
 	product.Edition
@@ -70,31 +77,14 @@ func (m Membership) IsEqual(other Membership) bool {
 		return true
 	}
 
-	return m.CompoundID == other.CompoundID && m.AppleSubsID.String == other.AppleSubsID.String
-}
-
-func (m Membership) IsValid() bool {
-	if m.IsZero() {
-		return false
-	}
-
-	// If it is expired, check whether auto renew is on.
-	if m.IsExpired() {
-		if !m.AutoRenewal {
-			return false
-		}
-
-		return true
-	}
-
-	return true
+	return m.CompoundID == other.CompoundID && m.StripeSubsID == other.StripeSubsID && m.AppleSubsID.String == other.AppleSubsID.String && m.Tier == other.Tier
 }
 
 // Normalize turns legacy vip_type and expire_time into
 // member_tier and expire_date columns, or vice versus.
-func (m *Membership) Normalize() Membership {
+func (m Membership) Normalize() Membership {
 	if m.IsZero() {
-		return *m
+		return m
 	}
 
 	legacyDate := time.Unix(m.LegacyExpire.Int64, 0)
@@ -110,7 +100,7 @@ func (m *Membership) Normalize() Membership {
 		m.LegacyTier = null.IntFrom(tierToCode[m.Tier])
 	}
 
-	return *m
+	return m
 }
 
 // IsAliOrWxPay checks whether current membership is purchased
@@ -138,191 +128,143 @@ func (m Membership) IsValidPremium() bool {
 	return m.Tier == enum.TierPremium && !m.IsExpired()
 }
 
-// inRenewalPeriod tests if a membership is allowed to renew subscription for alipay or wecaht pay.
-// A member could only renew its subscription when remaining duration of a membership is shorter than a billing cycle.
-// Expire date - now > cycle  --- Renewal is not allowed
-// Expire date - now <= cycle --- Can renew
-//         now--------------------| Allow
-//      |-------- A cycle --------| Expires
-// now----------------------------| Deny
-// Algorithm changed to membership duration not larger than 3 years.
-func (m Membership) inRenewalPeriod() bool {
+// canRenewViaAliWx test if current membership is allowed to renew for wxpay or alipay.
+// now <= expire date <= 3 years later
+func (m Membership) canRenewViaAliWx() bool {
+	// If m does not exist, or not create via alipay or wxpay.
+	if m.IsZero() || !m.IsAliOrWxPay() {
+		return false
+	}
+
 	today := time.Now().Truncate(24 * time.Hour)
 	threeYearsLater := today.AddDate(3, 0, 0)
 
-	// If today is after expiration date, it means the membership
-	// is already expired.
-	// expire date >= today
-	if today.After(m.ExpireDate.Time) {
-		return false
-	}
-
-	// expire date <= three years later
-	if threeYearsLater.Before(m.ExpireDate.Time) {
-		return false
-	}
-
-	return true
+	// It should include today and the date three year later.
+	return !m.ExpireDate.Before(today) && !m.ExpireDate.After(threeYearsLater)
 }
 
-// PermitAliOrWxPay checks whether user is allowed to pay via
-// alipay or wechat pay.
-// A zero or expired membership permit pay by all means.
-// If current membership comes from Stripe, IAP or B2B, deny it.
-func (m Membership) PermitAliOrWxPay() bool {
-	return m.IsZero() || m.IsExpired() || m.IsAliOrWxPay()
-}
-
-// PermitRenewal test if current membership is allowed to renew.
-// now ---------3 years ---------> Expire date
-// expire date - now <= 3 years
-func (m Membership) PermitRenewal() bool {
-	if m.ExpireDate.IsZero() {
-		return false
-	}
-
-	if m.AutoRenewal {
-		return false
-	}
-
-	if !m.IsAliOrWxPay() {
-		return false
-	}
-
-	return m.inRenewalPeriod()
-}
-
-func (m Membership) PermitAliWxUpgrade() bool {
-	if m.IsZero() {
-		return false
-	}
-
-	if !m.IsAliOrWxPay() {
-		return false
-	}
-
-	if m.IsExpired() {
-		return false
-	}
-
-	if m.Tier != enum.TierStandard {
-		return false
-	}
-
-	return true
-}
-
-// SubsKind determines what kind of order a user is creating based on existing membership.
-// SubsKind   |   Membership
+// AliWxSubsKind determines what kind of order a user is creating based on existing membership.
+// SubsKind  |   Membership
 // ---------------------------
-// Create     |   Zero / Status is not active / Expired
-// Renewal    |   Tier === Plan.Tier
-// Upgrade    |   Tier is Standard while Plan.Tier is Premium
-func (m Membership) SubsKind(p product.ExpandedPlan) (enum.OrderKind, error) {
+// Create  | Zero / Status is not active / Expired
+// Renewal | Tier === Plan.Tier
+// Upgrade | Tier is Standard while Plan.Tier is Premium
+// TODO: should we deny B2B switching to retailing?
+func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, *render.ValidationError) {
 	if m.IsZero() {
 		return enum.OrderKindCreate, nil
 	}
 
-	if m.Status != enum.SubsStatusNull && m.Status.ShouldCreate() {
+	// If it is purchased via stripe but the status is not valid.
+	if m.PaymentMethod == enum.PayMethodStripe && !m.Status.IsValid() {
 		return enum.OrderKindCreate, nil
 	}
 
+	// If an existing member expired, treat it as a new member.
 	if m.IsExpired() {
 		return enum.OrderKindCreate, nil
 	}
 
-	// Renewal.
-	if m.Tier == p.Tier {
-		if m.inRenewalPeriod() {
-			return enum.OrderKindRenew, nil
-		} else {
-			return enum.OrderKindNull, ErrRenewalForbidden
+	// Member is not expired. We need to consider current payment method.
+	// If current membership is purchased via methods other than wx or ali, requesting to pay via wx or ali is invalid.
+	if !m.IsAliOrWxPay() {
+		return enum.OrderKindNull, &render.ValidationError{
+			Message: fmt.Sprintf("Already subscribed via %s", m.PaymentMethod),
+			Field:   "paymentMethod",
+			Code:    render.CodeInvalid,
 		}
 	}
 
-	if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
+	// Renewal.
+	if m.Tier == e.Tier {
+		if m.canRenewViaAliWx() {
+			return enum.OrderKindRenew, nil
+		} else {
+			return enum.OrderKindNull, &render.ValidationError{
+				Message: "Already have a very long membership duration",
+				Field:   "renewal",
+				Code:    render.CodeInvalid,
+			}
+		}
+	}
+
+	// Trying to upgrade.
+	if m.Tier == enum.TierStandard && e.Tier == enum.TierPremium {
 		return enum.OrderKindUpgrade, nil
 	}
 
-	if m.Tier == enum.TierPremium && p.Tier == enum.TierStandard {
-		return enum.OrderKindNull, ErrDowngradeForbidden
+	// Trying to downgrade.
+	if m.Tier == enum.TierPremium && e.Tier == enum.TierStandard {
+		return enum.OrderKindNull, &render.ValidationError{
+			Message: "Downgrading is forbidden.",
+			Field:   "downgrade",
+			Code:    render.CodeInvalid,
+		}
 	}
 
-	return enum.OrderKindNull, ErrUnknownSubsKind
+	return enum.OrderKindNull, &render.ValidationError{
+		Message: "Cannot determine subscription kind.",
+		Field:   "order",
+		Code:    render.CodeInvalid,
+	}
 }
 
 // ================================
 // The following section handles stripe.
 // ================================
 
-// PermitStripeCreate checks whether subscription
-// via stripe is permitted or not.
+// StripeSubsKind deduce what kind of subscription a request is trying to create.
+// You can create or upgrade a subscripiton via stripe.
 // Cases for permission:
 // 1. Membership does not exist;
 // 2. Membership exists via alipay or wxpay but expired;
 // 3. Membership exits via stripe but is expired and it is not auto renewable.
 // 4. A stripe subscription that is not expired, auto renewable, but its current status is not active.
-// Returns errors indicates permission not allowed and gives reason:
-// 1. ErrNonStripeValidSub - a valid subscription not paid via stripe
-// 2. ErrActiveStripeSub - a valid stripe subscription.
-// 3. ErrUnknownSubState
-func (m Membership) PermitStripeCreate() error {
+func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, *render.ValidationError) {
 	// If a membership does not exist, allow create stripe
 	// subscription
 	if m.IsZero() {
-		return nil
-	}
-
-	if m.IsAliOrWxPay() {
-		if m.IsExpired() {
-			return nil
-		}
-		return ErrNonStripeValidSub
-	}
-
-	if m.PaymentMethod == enum.PayMethodStripe {
-		// An expired member that is not auto renewal.
-		if m.IsExpired() && !m.AutoRenewal {
-			return nil
-		}
-		// Member is not expired, or is auto renewal.
-		// Deny such request.
-		// If status is active, deny it.
-		if m.Status.ShouldCreate() {
-			return nil
-		}
-
-		// Now it is not expired, or auto renewal,
-		// and status is active.
-		return ErrActiveStripeSub
-	}
-
-	// Member is either not expired, or auto renewal
-	// Deny any other cases.
-	return ErrUnknownSubState
-}
-
-// PermitStripeUpgrade tests whether a stripe customer with
-// standard membership should be allowed to upgrade to premium.
-func (m Membership) PermitStripeUpgrade() bool {
-	if m.IsZero() {
-		return false
-	}
-
-	if m.PaymentMethod != enum.PayMethodStripe {
-		return false
+		return enum.OrderKindCreate, nil
 	}
 
 	if m.IsExpired() {
-		return false
+		return enum.OrderKindCreate, nil
 	}
 
-	// Membership is not expired, or is auto renewable, but status is not active.
-	if m.Status != enum.SubsStatusActive {
-		return false
+	// If not purchased via stripe.
+	if m.PaymentMethod != enum.PayMethodStripe {
+		return enum.OrderKindNull, &render.ValidationError{
+			Message: fmt.Sprintf("Already subscribed via %s", m.PaymentMethod),
+			Field:   "paymentMethod",
+			Code:    render.CodeInvalid,
+		}
 	}
 
-	return m.Tier == enum.TierStandard
+	// Now it is purchase via stripe.
+	// Check subscription status.
+	if !m.Status.IsValid() {
+		return enum.OrderKindCreate, nil
+	}
+
+	// Stripe subscription is still valid
+	if m.Tier == e.Tier {
+		return enum.OrderKindNull, &render.ValidationError{
+			Message: "Already subscribed via Stripe",
+			Field:   "tier",
+			Code:    render.CodeAlreadyExists,
+		}
+	}
+
+	// Trying to switch tier.
+	if m.Tier == enum.TierPremium {
+		return enum.OrderKindNull, &render.ValidationError{
+			Message: "Downgrading is forbidden.",
+			Field:   "downgrade",
+			Code:    render.CodeInvalid,
+		}
+	}
+
+	return enum.OrderKindUpgrade, nil
 }
 
 // =======================================
