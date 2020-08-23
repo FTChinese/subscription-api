@@ -180,13 +180,16 @@ func (b *OrderBuilder) Build() error {
 
 	b.order = Order{
 		ID:            orderID,
-		MemberID:      b.memberID,
-		Edition:       b.plan.Edition,
 		Price:         b.plan.Price,
 		Charge:        charge,
+		MemberID:      b.memberID,
+		PlanID:        b.plan.ID,
+		DiscountID:    b.plan.Discount.DiscID,
+		Edition:       b.plan.Edition,
 		Duration:      duration,
 		Kind:          b.kind,
 		PaymentMethod: b.method,
+		TotalBalance:  null.NewFloat(b.wallet.Balance, b.wallet.Balance != 0),
 		WxAppID:       b.wxAppID,
 		StartDate:     chrono.Date{},
 		EndDate:       chrono.Date{},
