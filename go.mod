@@ -1,10 +1,10 @@
 module github.com/FTChinese/subscription-api
 
 require (
-	github.com/FTChinese/go-rest v0.5.1
+	github.com/FTChinese/go-rest v0.5.2
 	github.com/Masterminds/squirrel v1.1.0
 	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20200817114649-df4adffc9d8c // indirect
+	github.com/asaskevich/govalidator v0.0.0-20200817114649-df4adffc9d8c
 	github.com/brianvoe/gofakeit/v5 v5.9.0
 	github.com/corpix/uarand v0.0.0 // indirect
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a // indirect
