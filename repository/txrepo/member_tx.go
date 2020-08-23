@@ -65,9 +65,7 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership,
 		return m, err
 	}
 
-	m.Normalize()
-
-	return m, nil
+	return m.Normalize(), nil
 }
 
 // SaveOrder saves an order to db.
@@ -125,7 +123,7 @@ func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 
 // CreateMember creates a new membership.
 func (tx MemberTx) CreateMember(m reader.Membership) error {
-	m.Normalize()
+	m = m.Normalize()
 
 	_, err := tx.NamedExec(
 		reader.StmtCreateMember(tx.dbName),
@@ -142,7 +140,7 @@ func (tx MemberTx) CreateMember(m reader.Membership) error {
 
 // UpdateMember updates existing membership.
 func (tx MemberTx) UpdateMember(m reader.Membership) error {
-	m.Normalize()
+	m = m.Normalize()
 
 	_, err := tx.NamedExec(
 		reader.StmtUpdateMember(tx.dbName),
