@@ -31,7 +31,7 @@ type Persona struct {
 	IP         string
 	AppleSubID string
 
-	kind        reader.AccountKind
+	kind        enum.AccountKind
 	plan        product.ExpandedPlan
 	expiresDate time.Time
 	payMethod   enum.PayMethod
@@ -57,8 +57,8 @@ func NewPersona() *Persona {
 		IP:         gofakeit.IPv4Address(),
 		AppleSubID: faker.GenAppleSubID(),
 
-		kind:      reader.AccountKindFtc,
-		plan:      PlanStdYear,
+		kind:      enum.AccountKindFtc,
+		plan:      faker.PlanStdYear,
 		payMethod: enum.PayMethodAli,
 		expired:   false,
 
@@ -79,7 +79,7 @@ var MyProfile = Persona{
 	IP:       gofakeit.IPv4Address(),
 }
 
-func (p *Persona) SetAccountKind(k reader.AccountKind) *Persona {
+func (p *Persona) SetAccountKind(k enum.AccountKind) *Persona {
 	p.kind = k
 	return p
 }
@@ -108,21 +108,21 @@ func (p *Persona) AccountID() reader.MemberID {
 	var id reader.MemberID
 
 	switch p.kind {
-	case reader.AccountKindFtc:
+	case enum.AccountKindFtc:
 		id = reader.MemberID{
 			CompoundID: p.FtcID,
 			FtcID:      null.StringFrom(p.FtcID),
 			UnionID:    null.String{},
 		}
 
-	case reader.AccountKindWx:
+	case enum.AccountKindWx:
 		id = reader.MemberID{
 			CompoundID: p.UnionID,
 			FtcID:      null.String{},
 			UnionID:    null.StringFrom(p.UnionID),
 		}
 
-	case reader.AccountKindLinked:
+	case enum.AccountKindLinked:
 		id = reader.MemberID{
 			CompoundID: p.FtcID,
 			FtcID:      null.StringFrom(p.FtcID),
@@ -135,7 +135,7 @@ func (p *Persona) AccountID() reader.MemberID {
 
 func (p *Persona) Account() reader.Account {
 	switch p.kind {
-	case reader.AccountKindFtc:
+	case enum.AccountKindFtc:
 		return reader.Account{
 			FtcID:    p.FtcID,
 			UnionID:  null.String{},
@@ -144,7 +144,7 @@ func (p *Persona) Account() reader.Account {
 			UserName: null.StringFrom(p.UserName),
 		}
 
-	case reader.AccountKindWx:
+	case enum.AccountKindWx:
 		return reader.Account{
 			FtcID:    "",
 			UnionID:  null.StringFrom(p.UnionID),
@@ -153,7 +153,7 @@ func (p *Persona) Account() reader.Account {
 			UserName: null.String{},
 		}
 
-	case reader.AccountKindLinked:
+	case enum.AccountKindLinked:
 		return reader.Account{
 			FtcID:    p.FtcID,
 			UnionID:  null.StringFrom(p.UnionID),
