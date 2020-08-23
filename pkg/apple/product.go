@@ -38,7 +38,7 @@ func newAppleStore() appleStore {
 
 	for i, v := range s.products {
 		s.indexEdition[v.NamedKey()] = i
-		s.indexEdition[v.ID] = i
+		s.indexID[v.ID] = i
 	}
 
 	return s
