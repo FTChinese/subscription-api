@@ -40,6 +40,7 @@ type Order struct {
 	ConfirmedAt   chrono.Time    `json:"-" db:"confirmed_utc"` // When the payment is confirmed.
 	StartDate     chrono.Date    `json:"-" db:"start_date"`    // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
 	EndDate       chrono.Date    `json:"-" db:"end_date"`      // Membership end date for this order. Depends on start date.
+	LiveMode      bool           `json:"live"`
 }
 
 func (o Order) IsZero() bool {
