@@ -20,8 +20,8 @@ type Subscription struct {
 	ExpiresDateUTC        chrono.Time `json:"expiresDateUtc" db:"expires_date_utc"`
 	product.Edition
 	AutoRenewal bool        `json:"autoRenewal" db:"auto_renewal"`
-	CreatedUTC  chrono.Time `json:"createdUtc"`
-	UpdatedUTC  chrono.Time `json:"updatedUtc"`
+	CreatedUTC  chrono.Time `json:"createdUtc" db:"created_utc"`
+	UpdatedUTC  chrono.Time `json:"updatedUtc" db:"updated_utc"`
 }
 
 // Membership build ftc's membership based on subscription
