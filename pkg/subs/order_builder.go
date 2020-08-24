@@ -1,6 +1,7 @@
 package subs
 
 import (
+	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/ali"
@@ -28,14 +29,13 @@ type OrderBuilder struct {
 	// Required fields.
 	memberID reader.MemberID
 	plan     product.ExpandedPlan
-	live     bool // Use live webhook or sandbox.
 	env      config.BuildConfig
+	// Optional fields.
+	method enum.PayMethod // Should be enum.PayMethodNull for free upgrade.
 
 	wallet Wallet // Only required if kind == SubsKindUpgrade.
 
-	// Optional fields.
-	ip              string              // For wxpay only
-	method          enum.PayMethod      // Should be enum.PayMethodNull for free upgrade.
+	// Wechat pay specific.
 	wxAppID         null.String         // Only required for wechat pay.
 	wxUnifiedParams wechat.UnifiedOrder // Only for wechat pay.
 
@@ -53,20 +53,6 @@ func NewOrderBuilder(id reader.MemberID) *OrderBuilder {
 	}
 }
 
-func (b *OrderBuilder) SetWxAppID(appID string) *OrderBuilder {
-	b.wxAppID = null.StringFrom(appID)
-	return b
-}
-
-func (b *OrderBuilder) GetReaderID() reader.MemberID {
-	return b.memberID
-}
-
-func (b *OrderBuilder) SetEnvConfig(c config.BuildConfig) *OrderBuilder {
-	b.env = c
-	return b
-}
-
 func (b *OrderBuilder) SetPlan(p product.ExpandedPlan) *OrderBuilder {
 	b.plan = p
 	return b
@@ -77,9 +63,13 @@ func (b *OrderBuilder) SetPayMethod(m enum.PayMethod) *OrderBuilder {
 	return b
 }
 
-// SetUserIP that will be used to build wxpay params.
-func (b *OrderBuilder) SetUserIP(ip string) *OrderBuilder {
-	b.ip = ip
+func (b *OrderBuilder) SetEnvConfig(c config.BuildConfig) *OrderBuilder {
+	b.env = c
+	return b
+}
+
+func (b *OrderBuilder) SetWxAppID(appID string) *OrderBuilder {
+	b.wxAppID = null.StringFrom(appID)
 	return b
 }
 
@@ -90,23 +80,21 @@ func (b *OrderBuilder) SetWxParams(p wechat.UnifiedOrder) *OrderBuilder {
 	return b
 }
 
+func (b *OrderBuilder) GetReaderID() reader.MemberID {
+	return b.memberID
+}
+
 // getWebHookURL determines which url to use.
 // For local development, we need a weird combination:
 // use production db layout while using sandbox url.
 func (b *OrderBuilder) getWebHookURL() string {
-	baseURL := "http://www.ftacademy.cn/api"
-	if b.live {
-		baseURL = baseURL + "/v1"
-	} else {
-		baseURL = baseURL + "/sandbox"
-	}
 
 	switch b.method {
 	case enum.PayMethodAli:
-		return baseURL + "/webhook/alipay"
+		return b.env.WebhookBaseURL() + "/webhook/alipay"
 
 	case enum.PayMethodWx:
-		return baseURL + "/webhook/wxpay"
+		return b.env.WebhookBaseURL() + "/webhook/wxpay"
 
 	default:
 		return ""
@@ -156,6 +144,14 @@ func (b *OrderBuilder) Build() error {
 
 	if b.isBuilt {
 		return nil
+	}
+
+	if b.memberID.CompoundID == "" {
+		return errors.New("user account id is not set")
+	}
+
+	if b.plan.ID == "" {
+		return errors.New("plan is not set")
 	}
 
 	// Wallet should exist only for upgrading order.
@@ -304,7 +300,7 @@ func (b *OrderBuilder) WxpayParams() wxpay.Params {
 	p.SetString("body", b.plan.PaymentTitle(b.kind))
 	p.SetString("out_trade_no", b.order.ID)
 	p.SetInt64("total_fee", b.order.AmountInCent())
-	p.SetString("spbill_create_ip", b.ip)
+	p.SetString("spbill_create_ip", b.wxUnifiedParams.IP)
 	p.SetString("notify_url", webHook)
 	// APP for native app
 	// NATIVE for web site
@@ -313,7 +309,7 @@ func (b *OrderBuilder) WxpayParams() wxpay.Params {
 
 	switch b.wxUnifiedParams.TradeType {
 	case wechat.TradeTypeDesktop:
-		p.SetString("product_id", b.plan.NamedKey())
+		p.SetString("product_id", b.plan.ID)
 
 	case wechat.TradeTypeJSAPI:
 		p.SetString("openid", b.wxUnifiedParams.OpenID)
