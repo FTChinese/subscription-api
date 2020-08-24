@@ -51,7 +51,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 
 	builder := subs.NewOrderBuilder(userID).
 		SetPlan(p).
-		SetEnvironment(router.subEnv.Live())
+		SetEnvConfig(router.config)
 
 	confirmed, err := router.subEnv.FreeUpgrade(builder)
 	if err != nil {
