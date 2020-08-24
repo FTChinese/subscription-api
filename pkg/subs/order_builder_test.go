@@ -59,16 +59,66 @@ func mustWxPayBuilder() *OrderBuilder {
 	}.MustNormalize()).
 		SetPlan(planStdYear).
 		SetPayMethod(enum.PayMethodWx).
-		SetWxAppID(mustGetWxClient().GetApp().AppID).
 		SetEnvConfig(config.NewBuildConfig(true, false)).
-		SetUserIP(gofakeit.IPv4Address()).
+		SetWxAppID(mustGetWxClient().GetApp().AppID).
 		SetWxParams(wechat.UnifiedOrder{
+			IP:        gofakeit.IPv4Address(),
 			TradeType: wechat.TradeTypeApp,
 		})
 }
 
+func TestOrderBuilder_getWebHookURL(t *testing.T) {
+	builder := NewOrderBuilder(reader.MemberID{
+		CompoundID: "",
+		FtcID:      null.StringFrom(uuid.New().String()),
+		UnionID:    null.String{},
+	}.MustNormalize()).
+		SetPayMethod(enum.PayMethodWx).
+		SetEnvConfig(config.NewBuildConfig(true, false))
+
+	wh := builder.getWebHookURL()
+
+	assert.Equal(t, wh, "http://www.ftacademy.cn/api/v1/webhook/wxpay")
+}
+
+func TestOrderBuilder_Build(t *testing.T) {
+	builder := mustWxPayBuilder()
+
+	err := builder.DeduceSubsKind(reader.Membership{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = builder.Build()
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestOrderBuilder_GetOrder(t *testing.T) {
+	builder := mustWxPayBuilder()
+
+	err := builder.DeduceSubsKind(reader.Membership{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = builder.Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	o, err := builder.GetOrder()
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.NotZero(t, o.ID)
+	assert.NotZero(t, o.Price)
+	assert.NotZero(t, o.Amount)
+}
+
 func TestOrderBuilder_AliAppPayParams(t *testing.T) {
-	faker.SeedGoFake()
 
 	builder := mustWxPayBuilder()
 
