@@ -1,6 +1,7 @@
 package apple
 
 const colsSubsBase = `
+environment = :environment,
 last_transaction_id = :last_transaction_id,
 product_id = :product_id,
 purchase_date_utc = :purchase_date_utc,
@@ -13,8 +14,7 @@ updated_utc = UTC_TIMESTAMP()
 
 const StmtUpsertSubs = `
 INSERT INTO premium.apple_subscription
-SET environment = :environment,
-	original_transaction_id = :original_transaction_id,
+SET original_transaction_id = :original_transaction_id,
 ` + colsSubsBase + `,
 	created_utc = UTC_TIMESTAMP()
 ON DUPLICATE KEY UPDATE

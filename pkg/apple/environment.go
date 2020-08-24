@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
+	"strings"
 )
 
 type Environment int
@@ -27,12 +28,19 @@ var envMap = map[Environment]string{
 }
 
 var envValue = map[string]Environment{
-	envNames[1]: EnvProduction,
-	envNames[2]: EnvSandbox,
-	"PROD":      EnvProduction, // Handle Apple's erratic naming convention. It appears in its server-to-server notification.
+	envNames[1]:  EnvProduction,
+	envNames[2]:  EnvSandbox,
+	"PROD":       EnvProduction, // Handle Apple's erratic naming convention. It appears in its server-to-server notification.
+	"production": EnvProduction,
+	"sandbox":    EnvSandbox,
 }
 
+// ParseEnvironment turns a string to an Environment instance.
+// BUG: In SQL definition we used accidentally ENUM('production', 'sandbox')
+// and somehow the SQL's scan ignored case. When parsing, we should
+// handle the casing issue.
 func ParseEnvironment(name string) (Environment, error) {
+	name = strings.ToLower(name)
 	if x, ok := envValue[name]; ok {
 		return x, nil
 	}
@@ -42,7 +50,7 @@ func ParseEnvironment(name string) (Environment, error) {
 
 func (x Environment) String() string {
 	if s, ok := envMap[x]; ok {
-		return s
+		return strings.ToLower(s)
 	}
 
 	return ""
