@@ -3,15 +3,17 @@ package subrepo
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/subs"
+	"go.uber.org/zap"
 	"time"
 )
 
 func (env Env) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
-	log := logger.WithField("trace", "PayRouter.createOrder")
+	logger, _ := zap.NewProduction()
+	sugar := logger.Sugar()
 
 	otx, err := env.BeginOrderTx()
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return subs.Order{}, err
 	}
 
@@ -20,22 +22,23 @@ func (env Env) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 	// Step 1: Retrieve membership for this user.
 	// The membership might be empty but the value is
 	// valid.
-	log.Infof("Start retrieving membership for reader %+v", builder.GetReaderID())
+	sugar.Infof("Start retrieving membership for reader %+v", builder.GetReaderID())
 	member, err := otx.RetrieveMember(builder.GetReaderID())
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		_ = otx.Rollback()
 		return subs.Order{}, err
 	}
-	log.Infof("Membership retrieved %+v", member)
+	sugar.Infof("Membership retrieved %+v", member)
 
 	err = builder.DeduceSubsKind(member)
 	if err != nil {
+		sugar.Error()
 		_ = otx.Rollback()
 		return subs.Order{}, err
 	}
 
-	log.Infof("Subscription kind %s", builder.GetSubsKind())
+	sugar.Infof("Subscription kind %s", builder.GetSubsKind())
 
 	// Step 2: Build an order for the user's chosen plan
 	// with chosen payment method based on previous
@@ -49,14 +52,14 @@ func (env Env) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 		// remaining.
 		// DO not save sources directly. The balance is not
 		// calculated at this point.
-		log.Infof("Get balance sources for an upgrading order")
+		sugar.Infof("Get balance sources for an upgrading order")
 		orders, err := otx.FindBalanceSources(builder.GetReaderID())
 		if err != nil {
-			log.Error(err)
+			sugar.Error(err)
 			_ = otx.Rollback()
 			return subs.Order{}, err
 		}
-		log.Infof("Find prorated orders: %+v", orders)
+		sugar.Infof("Find prorated orders: %+v", orders)
 
 		// Step 3.2: Build wallet
 		wallet := subs.NewWallet(orders, time.Now())
@@ -78,23 +81,24 @@ func (env Env) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 
 	// Step 4: Save this order.
 	if err := otx.SaveOrder(order); err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		_ = otx.Rollback()
 		return subs.Order{}, err
 	}
-	log.Infof("Order saved %s", order.ID)
+	sugar.Infof("Order saved %s", order.ID)
 
 	// Step 5: Save prorated orders for upgrade.
 	if order.Kind == enum.OrderKindUpgrade {
 
 		if err := otx.SaveProratedOrders(builder.GetWallet().Sources); err != nil {
+			sugar.Error(err)
 			_ = otx.Rollback()
 			return subs.Order{}, err
 		}
 	}
 
 	if err := otx.Commit(); err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return subs.Order{}, err
 	}
 
