@@ -90,7 +90,8 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		builder := subs.NewOrderBuilder(readerIDs).
 			SetPlan(plan).
-			SetPayMethod(enum.PayMethodAli)
+			SetPayMethod(enum.PayMethodAli).
+			SetEnvironment(router.config.Live())
 
 		order, err := router.subEnv.CreateOrder(builder)
 
