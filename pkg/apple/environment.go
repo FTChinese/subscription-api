@@ -39,6 +39,7 @@ var envValue = map[string]Environment{
 // BUG: In SQL definition we used accidentally ENUM('production', 'sandbox')
 // and somehow the SQL's scan ignored case. When parsing, we should
 // handle the casing issue.
+// To avoid this issue we always turns name to lower case.
 func ParseEnvironment(name string) (Environment, error) {
 	name = strings.ToLower(name)
 	if x, ok := envValue[name]; ok {
@@ -48,9 +49,10 @@ func ParseEnvironment(name string) (Environment, error) {
 	return EnvNull, fmt.Errorf("%s is not a valid Environment", name)
 }
 
+// String always uses capitalized version
 func (x Environment) String() string {
 	if s, ok := envMap[x]; ok {
-		return strings.ToLower(s)
+		return s
 	}
 
 	return ""
@@ -96,11 +98,12 @@ func (x *Environment) Scan(src interface{}) error {
 	}
 }
 
+// Value always uses lower case.
 func (x Environment) Value() (driver.Value, error) {
 	s := x.String()
 	if s == "" {
 		return nil, nil
 	}
 
-	return s, nil
+	return strings.ToLower(s), nil
 }
