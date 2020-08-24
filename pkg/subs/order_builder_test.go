@@ -3,6 +3,7 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
@@ -43,7 +44,7 @@ func TestOrderBuilder_AliAppPayParams(t *testing.T) {
 	}.MustNormalize()).
 		SetPlan(planStdYear).
 		SetPayMethod(enum.PayMethodAli).
-		SetEnvironment(true)
+		SetEnvConfig(config.NewBuildConfig(true, false))
 
 	err := builder.DeduceSubsKind(reader.Membership{})
 	if err != nil {
