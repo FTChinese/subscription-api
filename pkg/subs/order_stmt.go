@@ -24,7 +24,7 @@ SET trade_no = :order_id,
 	category = :kind,
 	payment_method = :payment_method,
 	total_balance = :total_balance,
-	wx_app_id = wx_app_id,
+	wx_app_id = :wx_app_id,
 	created_utc = UTC_TIMESTAMP()`
 
 func StmtCreateOrder(db config.SubsDB) string {
