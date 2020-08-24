@@ -49,8 +49,7 @@ func (env Env) PreviewUpgrade(userID reader.MemberID, plan product.ExpandedPlan)
 
 	orderBuilder := subs.NewOrderBuilder(userID).
 		SetPlan(plan).
-		SetEnvironment(env.Live()).
-		//SetMembership(member).
+		SetEnvConfig(env.BuildConfig).
 		SetWallet(wallet)
 
 	if err := tx.Commit(); err != nil {
