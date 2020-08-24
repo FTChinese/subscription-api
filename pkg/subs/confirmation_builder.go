@@ -63,9 +63,9 @@ func (b *ConfirmationBuilder) ValidateOrder() *ConfirmError {
 		}
 	}
 
-	if b.order.AmountInCent(b.live) != b.paymentResult.Amount {
+	if b.order.AmountInCent() != b.paymentResult.Amount {
 		return &ConfirmError{
-			Err:   fmt.Errorf("amount mismatched: expected: %d, actual: %d", b.order.AmountInCent(b.live), b.paymentResult.Amount),
+			Err:   fmt.Errorf("amount mismatched: expected: %d, actual: %d", b.order.AmountInCent(), b.paymentResult.Amount),
 			Retry: false,
 		}
 	}
