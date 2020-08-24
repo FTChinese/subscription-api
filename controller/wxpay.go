@@ -90,7 +90,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 				TradeType: tradeType,
 				OpenID:    input.OpenID.String,
 			}).
-			SetEnvironment(router.config.Live())
+			SetEnvConfig(router.config)
 
 		order, err := router.subEnv.CreateOrder(builder)
 		if err != nil {
