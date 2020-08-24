@@ -79,6 +79,17 @@ func (c BuildConfig) IAPVerificationURL() string {
 	return "https://sandbox.itunes.apple.com/verifyReceipt"
 }
 
+func (c BuildConfig) WebhookBaseURL() string {
+
+	baseURL := "http://www.ftacademy.cn/api"
+
+	if c.Live() {
+		return baseURL + "/v1"
+	}
+
+	return baseURL + "/sandbox"
+}
+
 // MustStripeSigningKey gets stripe signing key which is used to verify webhook data.
 func (c BuildConfig) MustStripeSigningKey() string {
 	var key string
