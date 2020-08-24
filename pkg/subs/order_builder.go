@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -28,6 +29,7 @@ type OrderBuilder struct {
 	memberID reader.MemberID
 	plan     product.ExpandedPlan
 	live     bool // Use live webhook or sandbox.
+	env      config.BuildConfig
 
 	wallet Wallet // Only required if kind == SubsKindUpgrade.
 
@@ -60,8 +62,8 @@ func (b *OrderBuilder) GetReaderID() reader.MemberID {
 	return b.memberID
 }
 
-func (b *OrderBuilder) SetEnvironment(live bool) *OrderBuilder {
-	b.live = live
+func (b *OrderBuilder) SetEnvConfig(c config.BuildConfig) *OrderBuilder {
+	b.env = c
 	return b
 }
 
@@ -178,6 +180,11 @@ func (b *OrderBuilder) Build() error {
 		charge.Amount = 0
 	}
 
+	// For sandbox change to a fixed amount
+	if b.env.Sandbox() {
+		charge.Amount = 0.01
+	}
+
 	b.order = Order{
 		ID:            orderID,
 		Price:         b.plan.Price,
@@ -195,6 +202,7 @@ func (b *OrderBuilder) Build() error {
 		EndDate:       chrono.Date{},
 		CreatedAt:     chrono.TimeNow(),
 		ConfirmedAt:   chrono.Time{},
+		LiveMode:      !b.env.Sandbox(),
 	}
 
 	// After order is generated, we can now update wallet's
@@ -253,7 +261,7 @@ func (b *OrderBuilder) AliAppPayParams() alipay.AliPayTradeAppPay {
 			NotifyURL:   webHook,
 			Subject:     b.plan.PaymentTitle(b.kind),
 			OutTradeNo:  b.order.ID,
-			TotalAmount: b.order.AliPrice(b.live),
+			TotalAmount: b.order.AliPrice(),
 			ProductCode: ali.ProductCodeApp.String(),
 			GoodsType:   "0",
 		},
@@ -267,7 +275,7 @@ func (b *OrderBuilder) AliDesktopPayParams(retURL string) alipay.AliPayTradePage
 			ReturnURL:   retURL,
 			Subject:     b.plan.PaymentTitle(b.kind),
 			OutTradeNo:  b.order.ID,
-			TotalAmount: b.order.AliPrice(b.live),
+			TotalAmount: b.order.AliPrice(),
 			ProductCode: ali.ProductCodeWeb.String(),
 			GoodsType:   "0",
 		},
@@ -281,7 +289,7 @@ func (b *OrderBuilder) AliWapPayParams(retURL string) alipay.AliPayTradeWapPay {
 			ReturnURL:   retURL,
 			Subject:     b.plan.PaymentTitle(b.kind),
 			OutTradeNo:  b.order.ID,
-			TotalAmount: b.order.AliPrice(b.live),
+			TotalAmount: b.order.AliPrice(),
 			ProductCode: ali.ProductCodeWeb.String(),
 			GoodsType:   "0",
 		},
@@ -295,7 +303,7 @@ func (b *OrderBuilder) WxpayParams() wxpay.Params {
 	p := make(wxpay.Params)
 	p.SetString("body", b.plan.PaymentTitle(b.kind))
 	p.SetString("out_trade_no", b.order.ID)
-	p.SetInt64("total_fee", b.order.AmountInCent(b.live))
+	p.SetInt64("total_fee", b.order.AmountInCent())
 	p.SetString("spbill_create_ip", b.ip)
 	p.SetString("notify_url", webHook)
 	// APP for native app
