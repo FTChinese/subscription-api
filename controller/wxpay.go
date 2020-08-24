@@ -84,13 +84,13 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		builder := subs.NewOrderBuilder(readerIDs).
 			SetPlan(plan).
 			SetPayMethod(enum.PayMethodWx).
+			SetEnvConfig(router.config).
 			SetWxAppID(payClient.GetApp().AppID).
-			SetUserIP(clientApp.UserIP.String).
 			SetWxParams(wechat.UnifiedOrder{
+				IP:        clientApp.UserIP.String,
 				TradeType: tradeType,
 				OpenID:    input.OpenID.String,
-			}).
-			SetEnvConfig(router.config)
+			})
 
 		order, err := router.subEnv.CreateOrder(builder)
 		if err != nil {
