@@ -9,6 +9,7 @@ import (
 // WxpayNativeAppOrder creates an order used by native apps.
 type WxpayNativeAppOrder struct {
 	Order
+	wechat.AppOrderParams
 	Params wechat.AppOrderParams `json:"params"`
 }
 
