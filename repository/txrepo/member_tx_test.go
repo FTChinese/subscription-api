@@ -102,7 +102,6 @@ func TestMemberTx_RetrieveAppleMember(t *testing.T) {
 }
 
 func TestOrderTx_SaveOrder(t *testing.T) {
-	p := test.NewPersona()
 
 	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
 
@@ -115,9 +114,16 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save Order",
+			name: "Save Ali Order",
 			args: args{
-				order: p.CreateOrder(),
+				order: test.NewPersona().CreateOrder(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Save wx order",
+			args: args{
+				order: test.NewPersona().SetPayMethod(enum.PayMethodWx).CreateOrder(),
 			},
 		},
 	}
