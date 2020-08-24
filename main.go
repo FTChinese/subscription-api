@@ -56,7 +56,7 @@ func init() {
 	logrus.SetOutput(os.Stdout)
 	logrus.WithFields(logrus.Fields{
 		"live":         cfg.Live(),
-		"isProduction": cfg.IsProduction(),
+		"isProduction": cfg.Production(),
 	}).Infof("Initializing environment")
 
 	viper.SetConfigName("api")
