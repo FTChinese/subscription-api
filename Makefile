@@ -37,6 +37,7 @@ config :
 	rsync -v $(LOCAL_CONFIG_FILE) tk11:/home/node/config
 
 deploy : config linux
+	echo "Deploying version $(VERSION)"
 	rsync -v $(LINUX_OUT) tk11:/home/node/go/bin/
 	ssh tk11 supervisorctl restart $(BINARY)
 
@@ -44,6 +45,7 @@ deploy : config linux
 build :
 	gvm install go1.13.6
 	gvm use go1.13.6
+	echo "Building version $(VERSION)"
 	$(BUILD_LINUX)
 
 downconfig :
@@ -54,6 +56,7 @@ upconfig :
 	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
 
 publish :
+	echo "Publishing version $(VERSION)"
 	ssh ucloud "rm -f /home/node/go/bin/$(BINARY).bak"
 	rsync -v $(LINUX_OUT) bj32:/home/node
 	ssh bj32 "rsync -v /home/node/$(BINARY) ucloud:/home/node/go/bin/$(BINARY).bak"
