@@ -24,7 +24,7 @@ func GetConn(key string) (connect.Connect, error) {
 // 2. On production server using production db but data are written to sandbox tables;
 // 3. Local machine for development only.
 type BuildConfig struct {
-	sandbox    bool // indicates the it is running on a production server so that production db is used while the application is used only for testing.
+	sandbox    bool // Determine order price.
 	production bool // it determines which database should be used;
 }
 
@@ -48,17 +48,22 @@ func (c BuildConfig) Live() bool {
 	return c.production && !c.sandbox
 }
 
+// Sandbox indicates API is running on production server in sandbox mode.
+func (c BuildConfig) Sandbox() bool {
+	return c.sandbox
+}
+
+// Production indicates API is running on production server.
+func (c BuildConfig) Production() bool {
+	return c.production
+}
+
 func (c BuildConfig) GetSubsDB() SubsDB {
 	if c.sandbox {
 		return SubsDBSandbox
 	}
 
 	return SubsDBProd
-}
-
-// IsProduction determines which DB server to connect
-func (c BuildConfig) IsProduction() bool {
-	return c.production
 }
 
 // IAPVerificationURL selects apple receipt verification
