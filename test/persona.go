@@ -204,7 +204,7 @@ func (p *Persona) Membership() reader.Membership {
 
 func (p *Persona) CreateOrder() subs.Order {
 	builder := subs.NewOrderBuilder(p.AccountID()).
-		SetEnvironment(CFG.Live()).
+		SetEnvConfig(CFG).
 		SetPlan(p.plan).
 		SetPayMethod(p.payMethod)
 
