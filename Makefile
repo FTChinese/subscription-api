@@ -28,6 +28,9 @@ run :
 linux :
 	$(BUILD_LINUX)
 
+version :
+	echo $(VERSION)
+
 # From local machine to production server
 # Copy env varaible to server
 config :
