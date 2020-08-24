@@ -3,9 +3,12 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
@@ -36,15 +39,38 @@ var planStdYear = product.ExpandedPlan{
 	},
 }
 
-func TestOrderBuilder_AliAppPayParams(t *testing.T) {
-	builder := NewOrderBuilder(reader.MemberID{
+func mustGetWxClient() wechat.Client {
+	client, err := wechat.InitPayClients().GetClientByPlatform(wechat.TradeTypeApp)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return client
+}
+
+func mustWxPayBuilder() *OrderBuilder {
+	faker.SeedGoFake()
+
+	return NewOrderBuilder(reader.MemberID{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},
 	}.MustNormalize()).
 		SetPlan(planStdYear).
-		SetPayMethod(enum.PayMethodAli).
-		SetEnvConfig(config.NewBuildConfig(true, false))
+		SetPayMethod(enum.PayMethodWx).
+		SetWxAppID(mustGetWxClient().GetApp().AppID).
+		SetEnvConfig(config.NewBuildConfig(true, false)).
+		SetUserIP(gofakeit.IPv4Address()).
+		SetWxParams(wechat.UnifiedOrder{
+			TradeType: wechat.TradeTypeApp,
+		})
+}
+
+func TestOrderBuilder_AliAppPayParams(t *testing.T) {
+	faker.SeedGoFake()
+
+	builder := mustWxPayBuilder()
 
 	err := builder.DeduceSubsKind(reader.Membership{})
 	if err != nil {
