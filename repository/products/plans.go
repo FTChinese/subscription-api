@@ -4,8 +4,8 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/product"
 )
 
-// loadPlans retrieves all plans present on paywall.
-func (env Env) loadPlans() ([]product.ExpandedPlan, error) {
+// LoadActivePlans retrieves all plans present on paywall.
+func (env Env) LoadActivePlans() ([]product.ExpandedPlan, error) {
 	var schema = make([]product.ExpandedPlanSchema, 0)
 	var plans = make([]product.ExpandedPlan, 0)
 
@@ -26,14 +26,14 @@ type plansResult struct {
 	error error
 }
 
-// asyncLoadPlans retrieves a plist of plans in a goroutine.
+// asyncLoadPlans retrieves a list of plans in a goroutine.
 func (env Env) asyncLoadPlans() <-chan plansResult {
 	ch := make(chan plansResult)
 
 	go func() {
 		defer close(ch)
 
-		plans, err := env.loadPlans()
+		plans, err := env.LoadActivePlans()
 
 		ch <- plansResult{
 			value: plans,

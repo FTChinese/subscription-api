@@ -218,6 +218,7 @@ func main() {
 
 		r.Get("/", paywallRouter.LoadPaywall)
 		r.Get("/__refresh", paywallRouter.BustCache)
+		r.Get("/pricing", paywallRouter.LoadPricing)
 
 		// Get promotion schedule, pricing plans and banner content
 		// Deprecated
