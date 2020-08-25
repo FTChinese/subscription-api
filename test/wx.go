@@ -2,16 +2,12 @@ package test
 
 import (
 	"github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
-	"github.com/smartwalle/alipay"
 	"log"
-	"os"
 	"strings"
-	"time"
 )
 
 // WxXMLNotification mocks the data received in wechat webhook.
@@ -93,21 +89,4 @@ func WxPrepay(orderID string) wechat.UnifiedOrderResp {
 	}
 
 	return wechat.NewUnifiedOrderResp(orderID, p)
-}
-
-func AliNoti() alipay.TradeNotification {
-	return alipay.TradeNotification{
-		NotifyTime: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
-		NotifyType: "trade_status_sync",
-		NotifyId:   rand.String(36),
-		AppId:      os.Getenv("ALIPAY_APP_ID"),
-		Charset:    "utf-8",
-		Version:    "1.0",
-		SignType:   "RSA2",
-		Sign:       rand.String(256),
-		TradeNo:    rand.String(64),
-		OutTradeNo: rand.String(18),
-		GmtCreate:  time.Now().In(time.UTC).Format(chrono.SQLDateTime),
-		GmtPayment: time.Now().In(time.UTC).Format(chrono.SQLDateTime),
-	}
 }
