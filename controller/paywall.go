@@ -52,7 +52,13 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 }
 
 func (router PaywallRouter) LoadPricing(w http.ResponseWriter, req *http.Request) {
+	p, err := router.repo.LoadPricing()
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
 
+	_ = render.New(w).JSON(http.StatusOK, p)
 }
 
 // GetPaywall loads current paywall in effect.
