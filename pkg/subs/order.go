@@ -35,7 +35,7 @@ type Order struct {
 	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
 	TotalBalance  null.Float     `json:"totalBalance" db:"total_balance"` // Only for upgrade
-	WxAppID       null.String    `json:"-" db:"wx_app_id"`                // Wechat specific
+	WxAppID       null.String    `json:"-" db:"wx_app_id"`                // Wechat specific. Used by webhook to verify notification.
 	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
 	ConfirmedAt   chrono.Time    `json:"-" db:"confirmed_utc"` // When the payment is confirmed.
 	StartDate     chrono.Date    `json:"-" db:"start_date"`    // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
