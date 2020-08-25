@@ -28,4 +28,5 @@ func getLogger(name string) *logrus.Entry {
 
 const (
 	keyPaywall = "paywall"
+	keyPricing = "pricing_plans"
 )
