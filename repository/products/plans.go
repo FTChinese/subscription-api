@@ -5,7 +5,7 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-// retrieveActivePlans retrieves all plans present on paywall, directly from DB.
+// retrieveActivePlans retrieves list plans present on paywall, directly from DB.
 func (env Env) retrieveActivePlans() ([]product.ExpandedPlan, error) {
 	var schema = make([]product.ExpandedPlanSchema, 0)
 	var plans = make([]product.ExpandedPlan, 0)
@@ -22,10 +22,14 @@ func (env Env) retrieveActivePlans() ([]product.ExpandedPlan, error) {
 	return plans, nil
 }
 
+// cachePricing caching all currently active plans.
 func (env Env) cachePricing(p []product.ExpandedPlan) {
 	env.cache.Set(keyPricing, p, cache.DefaultExpiration)
 }
 
+// LoadPricing tries to load all active pricing plans from cache,
+// then fallback to db if not found. If retrieved from DB,
+// the data will be cached.
 func (env Env) LoadPricing() ([]product.ExpandedPlan, error) {
 	x, found := env.cache.Get(keyPricing)
 
@@ -45,6 +49,7 @@ func (env Env) LoadPricing() ([]product.ExpandedPlan, error) {
 	return p, nil
 }
 
+// plansResult contains a list of pricing plans and error occurred.
 type plansResult struct {
 	value []product.ExpandedPlan
 	error error

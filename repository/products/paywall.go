@@ -1,13 +1,13 @@
 package products
 
 import (
-	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/patrickmn/go-cache"
 )
 
-// loadBanner retrieves a banner and promo. The banner id is fixed to 1.
-func (env Env) loadBanner() (product.BannerSchema, error) {
+// retrieveBanner retrieves a banner and the optional promo attached to it.
+// The banner id is fixed to 1.
+func (env Env) retrieveBanner() (product.BannerSchema, error) {
 	var schema product.BannerSchema
 
 	err := env.db.Get(&schema, product.StmtBanner)
@@ -23,13 +23,14 @@ type bannerResult struct {
 	error error
 }
 
+// asyncLoadBanner retrieves banner in a goroutine.
 func (env Env) asyncLoadBanner() <-chan bannerResult {
 	c := make(chan bannerResult)
 
 	go func() {
 		defer close(c)
 
-		pw, err := env.loadBanner()
+		pw, err := env.retrieveBanner()
 
 		c <- bannerResult{
 			value: pw,
@@ -40,42 +41,13 @@ func (env Env) asyncLoadBanner() <-chan bannerResult {
 	return c
 }
 
-// LoadPaywallProducts retrieve all products present on paywall.
-func (env Env) loadProducts() ([]product.Product, error) {
-	var products = make([]product.Product, 0)
-
-	err := env.db.Select(&products, product.StmtPaywallProducts)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return products, nil
-}
-
-type productsResult struct {
-	value []product.Product
-	error error
-}
-
-func (env Env) asyncLoadProducts() <-chan productsResult {
-	ch := make(chan productsResult)
-
-	go func() {
-		products, err := env.loadProducts()
-
-		ch <- productsResult{
-			value: products,
-			error: err,
-		}
-	}()
-
-	return ch
-}
-
+// retrievePaywall retrieves all elements of paywall concurrently
+// and then build them into a single Paywall instance.
 func (env Env) retrievePaywall() (product.Paywall, error) {
-	bannerCh, productsCh, plansCh := env.asyncLoadBanner(), env.asyncLoadProducts(), env.asyncLoadPlans()
+	bannerCh, productsCh, plansCh := env.asyncLoadBanner(), env.asyncRetrieveProducts(), env.asyncLoadPlans()
 
+	// Retrieve banner and its promo, products, and each product's plans
+	// in 3 goroutine.
 	bannerRes, productsRes, plansRes := <-bannerCh, <-productsCh, <-plansCh
 
 	if bannerRes.error != nil {
@@ -90,13 +62,11 @@ func (env Env) retrievePaywall() (product.Paywall, error) {
 		return product.Paywall{}, plansRes.error
 	}
 
+	// Zip products with its plans.
 	products := product.BuildPaywallProducts(productsRes.value, plansRes.value)
 
-	paywall := product.NewPaywall(bannerRes.value, products)
-
-	env.cachePaywall(paywall)
-
-	return paywall, nil
+	// Build paywall.
+	return product.NewPaywall(bannerRes.value, products), nil
 }
 
 // cachePaywall caches paywall data after retrieved from db.
@@ -113,13 +83,21 @@ func (env Env) ClearCache() {
 func (env Env) LoadPaywall() (product.Paywall, error) {
 	x, found := env.cache.Get(keyPaywall)
 
-	if !found {
-		return env.retrievePaywall()
+	// If found in cache and it can be casted to Paywall, return it;
+	// otherwise retrieve from DB.
+	if found {
+		if pw, ok := x.(product.Paywall); ok {
+			return pw, nil
+		}
 	}
 
-	if pw, ok := x.(product.Paywall); ok {
-		return pw, nil
+	pw, err := env.retrievePaywall()
+	if err != nil {
+		return product.Paywall{}, err
 	}
 
-	return product.Paywall{}, sql.ErrNoRows
+	// Cache it.
+	env.cachePaywall(pw)
+
+	return pw, nil
 }
