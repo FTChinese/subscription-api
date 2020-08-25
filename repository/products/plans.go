@@ -2,10 +2,11 @@ package products
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/patrickmn/go-cache"
 )
 
-// LoadActivePlans retrieves all plans present on paywall.
-func (env Env) LoadActivePlans() ([]product.ExpandedPlan, error) {
+// retrieveActivePlans retrieves all plans present on paywall, directly from DB.
+func (env Env) retrieveActivePlans() ([]product.ExpandedPlan, error) {
 	var schema = make([]product.ExpandedPlanSchema, 0)
 	var plans = make([]product.ExpandedPlan, 0)
 
@@ -21,6 +22,29 @@ func (env Env) LoadActivePlans() ([]product.ExpandedPlan, error) {
 	return plans, nil
 }
 
+func (env Env) cachePricing(p []product.ExpandedPlan) {
+	env.cache.Set(keyPricing, p, cache.DefaultExpiration)
+}
+
+func (env Env) LoadPricing() ([]product.ExpandedPlan, error) {
+	x, found := env.cache.Get(keyPricing)
+
+	if found {
+		if p, ok := x.([]product.ExpandedPlan); ok {
+			return p, nil
+		}
+	}
+
+	p, err := env.retrieveActivePlans()
+	if err != nil {
+		return nil, err
+	}
+
+	env.cachePricing(p)
+
+	return p, nil
+}
+
 type plansResult struct {
 	value []product.ExpandedPlan
 	error error
@@ -33,7 +57,7 @@ func (env Env) asyncLoadPlans() <-chan plansResult {
 	go func() {
 		defer close(ch)
 
-		plans, err := env.LoadActivePlans()
+		plans, err := env.retrieveActivePlans()
 
 		ch <- plansResult{
 			value: plans,

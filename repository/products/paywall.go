@@ -102,12 +102,6 @@ func (env Env) retrievePaywall() (product.Paywall, error) {
 // cachePaywall caches paywall data after retrieved from db.
 func (env Env) cachePaywall(p product.Paywall) {
 	env.cache.Set(keyPaywall, p, cache.NoExpiration)
-
-	for _, prod := range p.Products {
-		for _, plan := range prod.Plans {
-			env.cache.Set(plan.NamedKey(), plan, cache.NoExpiration)
-		}
-	}
 }
 
 func (env Env) ClearCache() {
