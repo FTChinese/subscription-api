@@ -35,9 +35,9 @@ func TestEnv_loadPlans(t *testing.T) {
 				db:    tt.fields.db,
 				cache: tt.fields.cache,
 			}
-			got, err := env.loadPlans()
+			got, err := env.LoadActivePlans()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("loadPlans() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("LoadActivePlans() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
