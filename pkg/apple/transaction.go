@@ -1,7 +1,6 @@
 package apple
 
 import (
-	"github.com/FTChinese/subscription-api/models/plan"
 	"github.com/guregu/null"
 )
 
@@ -47,7 +46,7 @@ func (t Transaction) CancellationUnix() int64 {
 
 // IsValidProduct checks if the product exists.
 func (t Transaction) IsValidProduct() bool {
-	return plan.AppleProductExists(t.ProductID)
+	return appleProducts.exists(t.ProductID)
 }
 
 // ExpiresUnix turns the milliseconds in string to a unix timestamp in seconds.
