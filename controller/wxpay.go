@@ -7,7 +7,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/objcoding/wxpay"
-	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -166,30 +165,26 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 // WebHook implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
 func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
-	logger := logrus.WithFields(logrus.Fields{
-		"trace": "WxPayRouter.WebHook()",
-	})
 	resp := wxpay.Notifies{}
 
 	// Decode Wechat XML request body.
 	// If it cannot be decoded, tell wechat to resend it.
 	params, err := wechat.DecodeXML(req.Body)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"event": "DecodeXML",
-		}).Error(err)
+		sugar.Error(err)
 
 		if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
-		"param": params,
-	}).Info("Wechat notification decoded")
+	sugar.Info("Wechat notification decoded")
 
 	// Turn the map to struct
 	noti := wechat.NewNotification(params)
@@ -197,13 +192,10 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// Check the status code.
 	err = noti.IsStatusValid()
 	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"event":   "InvalidStatus",
-			"orderId": noti.FTCOrderID,
-		}).Error(err)
+		sugar.Error(err)
 
 		if _, err := w.Write([]byte(resp.OK())); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 		return
 	}
@@ -212,13 +204,10 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	payClient, err := router.clients.GetClientByAppID(noti.AppID.String)
 
 	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"event":   "FindWechatClient",
-			"orderId": noti.FTCOrderID,
-		}).Error(err)
+		sugar.Error(err)
 
 		if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 
 		return
@@ -228,27 +217,24 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// or not.
 	go func() {
 		if err := router.subEnv.SaveWxNotification(noti); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 	}()
 
 	if err := payClient.VerifyNotification(noti); err != nil {
-		logger.WithFields(logrus.Fields{
-			"event":   "VerifyNotification",
-			"orderId": noti.FTCOrderID,
-		}).Error(err)
+		sugar.Error(err)
 
 		if _, err := w.Write([]byte(resp.OK())); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 		return
 	}
 
 	payResult, err := subs.NewPaymentResultWx(noti)
 	if err != nil {
-		logger.Error(err)
+		sugar.Error(err)
 		if _, err := w.Write([]byte(resp.OK())); err != nil {
-			logger.Error()
+			sugar.Error()
 		}
 
 		return
@@ -264,11 +250,11 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 		if result.Retry {
 			if _, err := w.Write([]byte(resp.NotOK(result.Error()))); err != nil {
-				logger.Error(err)
+				sugar.Error(err)
 			}
 		} else {
 			if _, err := w.Write([]byte(resp.OK())); err != nil {
-				logger.Error(err)
+				sugar.Error(err)
 			}
 		}
 
@@ -281,37 +267,38 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	go func() {
 		if err := router.sendConfirmationEmail(confirmed.Order); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 	}()
 
 	if _, err := w.Write([]byte(resp.OK())); err != nil {
-		logger.Error(err)
+		sugar.Error(err)
 	}
 }
 
 // OrderQuery implements 查询订单
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
-// {orderId}?app_id=<string>
+// Path: /query/{orderId}?app_id=<string>
 func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
-	logger := logrus.WithFields(logrus.Fields{
-		"trace": "WxPayRouter.OrderQuery()",
-	})
+
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	// Get ftc order id from URL
 	orderID, err := getURLParam(req, "orderId").ToString()
 
 	if err != nil {
-		logger.Error(err)
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
 	appID := getWxAppID(req)
-
+	// Get the client to query wechat api.
 	payClient, err := router.clients.GetClientByAppID(appID)
 	if err != nil {
-		logger.Error(err)
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
@@ -328,12 +315,12 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 
 	// If there are any errors when querying order.
 	if err != nil {
-		logger.Error(err)
+		sugar.Error(err)
 		_ = render.New(w).InternalServerError(err.Error())
 		return
 	}
 
-	logger.WithField("param", respParams).Infof("Wechat order found")
+	sugar.Infof("Wechat order found")
 
 	// Response:
 	// {message: "", {field: status, code: fail} }
@@ -341,12 +328,12 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	resp := wechat.NewOrderQueryResp(respParams)
 	go func() {
 		if err := router.subEnv.SaveWxQueryResp(resp); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 	}()
 
 	if r := resp.Validate(payClient.GetApp()); r != nil {
-		logger.Info("Response invalid")
+		sugar.Info("Response invalid")
 
 		if r.Field == "result" && r.Code == "ORDERNOTEXIST" {
 			_ = render.New(w).NotFound()
