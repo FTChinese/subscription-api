@@ -51,6 +51,10 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).JSON(http.StatusOK, pw)
 }
 
+func (router PaywallRouter) LoadPricing(w http.ResponseWriter, req *http.Request) {
+
+}
+
 // GetPaywall loads current paywall in effect.
 // Deprecated
 func (router PaywallRouter) GetPaywall(w http.ResponseWriter, req *http.Request) {
