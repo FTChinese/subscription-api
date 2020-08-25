@@ -2,7 +2,7 @@ package stripe
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/models/plan"
+	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/stripe/stripe-go"
 	"time"
@@ -12,7 +12,7 @@ import (
 // Used as response when client asks for subscription data.
 type Subscription struct {
 	AccountID reader.MemberID `json:"-"`
-	plan.BasePlan
+	product.Edition
 	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time `json:"created"`
 	CurrentPeriodEnd   chrono.Time `json:"currentPeriodEnd"`
