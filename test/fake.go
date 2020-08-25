@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
-	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"github.com/smartwalle/alipay"
@@ -14,10 +13,6 @@ import (
 	"strings"
 	"time"
 )
-
-func SeedGoFake() {
-	gofakeit.Seed(time.Now().UnixNano())
-}
 
 // WxXMLNotification mocks the data received in wechat webhook.
 // To test its behavior, you must have a user row and order row in the db.
