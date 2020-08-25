@@ -41,7 +41,7 @@ type Persona struct {
 }
 
 func NewPersona() *Persona {
-	SeedGoFake()
+	faker.SeedGoFake()
 
 	return &Persona{
 		FtcID:      uuid.New().String(),
@@ -210,8 +210,8 @@ func (p *Persona) CreateOrder() subs.Order {
 
 	if p.payMethod == enum.PayMethodWx {
 		builder.SetWxAppID(WxPayApp.AppID).
-			SetUserIP(p.IP).
 			SetWxParams(wechat.UnifiedOrder{
+				IP:        p.IP,
 				TradeType: wechat.TradeTypeMobile,
 				OpenID:    "",
 			})
@@ -352,7 +352,7 @@ func (p Persona) WxAccess() wxlogin.OAuthAccess {
 }
 
 func (p Persona) WxInfo() wxlogin.UserInfo {
-	SeedGoFake()
+	faker.SeedGoFake()
 	return wxlogin.UserInfo{
 		UnionID:    p.UnionID,
 		NickName:   gofakeit.UserAgent(),
