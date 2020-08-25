@@ -216,24 +216,12 @@ func main() {
 	r.Route("/paywall", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
+		// Data used to build a paywall.
 		r.Get("/", paywallRouter.LoadPaywall)
-		r.Get("/__refresh", paywallRouter.BustCache)
+		// List all active pricing plans.
 		r.Get("/pricing", paywallRouter.LoadPricing)
-
-		// Get promotion schedule, pricing plans and banner content
-		// Deprecated
-		r.Get("/default", controller.DefaultPaywall)
-		// Deprecated
-		r.Get("/current", paywallRouter.GetPaywall)
-
-		// Get default pricing plans
-		// Deprecated
-		r.Get("/pricing/default", controller.DefaultPricing)
-		// Deprecated
-		r.Get("/pricing/current", paywallRouter.GetPricing)
-
-		// Deprecated
-		r.Get("/promo", paywallRouter.GetPromo)
+		// Bust cache.
+		r.Get("/__refresh", paywallRouter.BustCache)
 	})
 
 	r.Route("/wx", func(r chi.Router) {

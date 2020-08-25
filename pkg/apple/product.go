@@ -62,4 +62,10 @@ func (s appleStore) findByID(id string) (Product, error) {
 	return s.products[i], nil
 }
 
+func (s appleStore) exists(id string) bool {
+	_, ok := s.indexID[id]
+
+	return ok
+}
+
 var appleProducts = newAppleStore()
