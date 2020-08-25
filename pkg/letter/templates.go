@@ -44,7 +44,7 @@ FT中文网用户 {{.UserName}},
 支付金额 {{.Order.Amount | currency}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
-本次升级前余额 {{.Order.TotalBalance.Float | currency}}，余额来自如下订单未使用部分：
+本次升级前余额 {{.Order.TotalBalance.Float64 | currency}}，余额来自如下订单未使用部分：
 
 {{range .Prorated}}
 {{.OrderID}}: {{.Balance | currency}}
@@ -65,7 +65,7 @@ FT中文网用户 {{.UserName}},
 订单号 {{.Order.ID}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
-本次升级前余额 {{.Order.TotalBalance.Float | currency}}，余额来自如下订单未使用部分：
+本次升级前余额 {{.Order.TotalBalance.Float64 | currency}}，余额来自如下订单未使用部分：
 
 {{range .Prorated}}
 {{.OrderID}}: {{.Balance | currency}}
