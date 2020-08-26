@@ -10,7 +10,6 @@ type Banner struct {
 	SubHeading null.String `json:"subHeading" db:"sub_heading"`
 	CoverURL   null.String `json:"coverUrl" db:"cover_url"`
 	Content    null.String `json:"content" db:"content"`
-	PromoID    null.String `json:"promoId" db:"promo_id"`
 }
 
 type Promo struct {
