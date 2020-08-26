@@ -11,6 +11,7 @@ SELECT b.id AS banner_id,
 	p.cover_url AS promo_cover_url,
 	p.sub_heading AS promo_sub_heading,
 	p.content AS promo_content,
+	p.terms_conditions AS terms_conditions,
 	p.start_utc AS start_utc,
 	p.end_utc AS end_utc
 FROM subs_product.paywall_banner AS b

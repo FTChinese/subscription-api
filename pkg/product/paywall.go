@@ -18,6 +18,7 @@ type Promo struct {
 	SubHeading null.String `json:"subHeading" db:"promo_sub_heading"`
 	CoverURL   null.String `json:"coverUrl" db:"promo_cover_url"`
 	Content    null.String `json:"content" db:"promo_content"`
+	Terms      null.String `json:"terms" db:"terms_conditions"`
 	Period
 }
 
