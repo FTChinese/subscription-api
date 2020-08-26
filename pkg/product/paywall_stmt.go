@@ -3,7 +3,7 @@ package product
 const StmtBanner = `
 SELECT b.id AS banner_id,
 	b.heading AS heading,
-	b.cover_url AS cover_utl,
+	b.cover_url AS cover_url,
 	b.sub_heading AS sub_heading,
 	b.content AS content,
 	p.id AS promo_id,
