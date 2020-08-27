@@ -7,7 +7,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
 	"go.uber.org/zap"
 	"net/http"
@@ -169,73 +168,64 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 }
 
 // WebHook handles alipay server-side notification.
+// POST /webhook/alipay
 func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	logger := logrus.WithFields(logrus.Fields{
-		"trace": "AliPayRouter.WebHook",
-	})
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	err := req.ParseForm()
 	if err != nil {
-		logger.Error(err)
+		sugar.Error(err)
 
 		if _, err := w.Write([]byte(fail)); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 		return
 	}
 
 	// If err is nil, then the signature is verified.
 	noti, err := router.client.GetTradeNotification(req)
-	logger.WithFields(logrus.Fields{
-		"event": "NotificationBody",
-	}).Infof("+%v", noti)
+	sugar.Infof("+%v", noti)
 
 	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"event": "GetTradeNotification",
-		}).Error(err)
+		sugar.Error(err)
 
 		if _, err := w.Write([]byte(fail)); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 		return
 	}
 
 	// 4、验证app_id是否为该商户本身
 	if noti.AppId != router.appID {
-		logger.WithFields(logrus.Fields{
-			"event":   "AppIDNotMatch",
-			"orderId": noti.OutTradeNo,
-		}).Infof("Expected %s, actual %s", router.appID, noti.AppId)
+		sugar.Infof("Expected %s, actual %s", router.appID, noti.AppId)
 
 		if _, err := w.Write([]byte(fail)); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 		return
 	}
 
 	go func() {
 		if err := router.subEnv.SaveAliNotification(*noti); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 	}()
 
 	// 在支付宝的业务通知中，只有交易通知状态为TRADE_SUCCESS或TRADE_FINISHED时，支付宝才会认定为买家付款成功。
 	if !ali.IsPaySuccess(noti) {
-		logger.WithFields(logrus.Fields{
-			"event":   "PaymentFailed",
-			"orderId": noti.OutTradeNo,
-		}).Infof("Status %s", noti.TradeStatus)
+		sugar.Infof("Status %s", noti.TradeStatus)
 
 		if ali.ShouldRetry(noti) {
 			if _, err := w.Write([]byte(fail)); err != nil {
-				logger.Error(err)
+				sugar.Error(err)
 			}
 			return
 		}
 
 		if _, err := w.Write([]byte(success)); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 		return
 	}
@@ -244,24 +234,24 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
-	confirmed, confirmErr := router.subEnv.ConfirmOrder(payResult)
+	confirmed, cfmErr := router.subEnv.ConfirmOrder(payResult)
 
-	if confirmErr != nil {
-
+	if cfmErr != nil {
+		sugar.Error(cfmErr)
 		go func() {
 			_ = router.subEnv.SaveConfirmationResult(
-				confirmErr.Schema(payResult.OrderID),
+				cfmErr.Schema(payResult.OrderID),
 			)
 		}()
 
-		if confirmErr.Retry {
-			if b, err := w.Write([]byte(fail)); err != nil {
-				logger.WithField("byte_output", b).Error(err)
+		if cfmErr.Retry {
+			if _, err := w.Write([]byte(fail)); err != nil {
+				sugar.Error(err)
 			}
 			return
 		} else {
-			if b, err := w.Write([]byte(success)); err != nil {
-				logger.WithField("byte_output", b).Error(err)
+			if _, err := w.Write([]byte(success)); err != nil {
+				sugar.Error(err)
 			}
 			return
 		}
@@ -273,11 +263,11 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	go func() {
 		if err := router.sendConfirmationEmail(confirmed.Order); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 	}()
 
-	if b, err := w.Write([]byte(success)); err != nil {
-		logger.WithField("byte_output", b).Error(err)
+	if _, err := w.Write([]byte(success)); err != nil {
+		sugar.Error(err)
 	}
 }
