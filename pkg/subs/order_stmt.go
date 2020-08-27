@@ -48,7 +48,7 @@ SELECT trade_no AS order_id,
 	category AS kind,
 	payment_method,
 	total_balance,
-	wx_app_id
+	wx_app_id,
 	created_utc,
 	confirmed_utc,
 	start_date,

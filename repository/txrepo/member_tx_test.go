@@ -144,9 +144,11 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 
 func TestOrderTx_RetrieveOrder(t *testing.T) {
 	p := test.NewPersona()
-	order := p.CreateOrder()
+	orderAli := p.CreateOrder()
+	orderWx := p.SetPayMethod(enum.PayMethodWx).CreateOrder()
 
-	test.NewRepo().MustSaveOrder(order)
+	test.NewRepo().MustSaveOrder(orderAli)
+	test.NewRepo().MustSaveOrder(orderWx)
 
 	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
 
@@ -166,9 +168,16 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Retrieve order",
+			name: "Retrieve ali order",
 			args: args{
-				orderID: order.ID,
+				orderID: orderAli.ID,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Retrieve wx order",
+			args: args{
+				orderID: orderWx.ID,
 			},
 			wantErr: false,
 		},

@@ -4,17 +4,20 @@ import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/subs"
+	"go.uber.org/zap"
 )
 
 // ConfirmOrder updates the order received from webhook,
 // create or update membership, and optionally flag prorated orders as consumed.
 func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
-	log := logger.WithField("trace", "Env.ConfirmOrder")
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	tx, err := env.BeginOrderTx()
 
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
@@ -28,7 +31,8 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// otherwise, allow retry.
 	order, err := tx.RetrieveOrder(result.OrderID)
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
+
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
@@ -39,7 +43,9 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	builder := subs.NewConfirmationBuilder(result, env.Live()).
 		SetOrder(order)
 
+	// Validate order
 	if err := builder.ValidateOrder(); err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, err
 	}
@@ -48,6 +54,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// For any errors, allow retry.
 	member, err := tx.RetrieveMember(order.MemberID)
 	if err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
@@ -62,6 +69,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// If user is already a premium member and this order is used
 	// for upgrading, decline retry.
 	if err := builder.ValidateDuplicateUpgrading(); err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, err
 	}
@@ -71,6 +79,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// If there are calculation errors, allow retry.
 	confirmed, err := builder.Build()
 	if err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
@@ -81,6 +90,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// STEP 5: Update confirmed order
 	// For any errors, allow retry.
 	if err := tx.ConfirmOrder(confirmed.Order); err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
@@ -93,6 +103,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 		err := tx.ProratedOrdersUsed(confirmed.Order.ID)
 
 		if err != nil {
+			sugar.Error(err)
 			_ = tx.Rollback()
 			return subs.ConfirmationResult{}, &subs.ConfirmError{
 				Err:   err,
@@ -105,6 +116,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// This error should allow retry
 	if member.IsZero() {
 		if err := tx.CreateMember(confirmed.Membership); err != nil {
+			sugar.Error(err)
 			_ = tx.Rollback()
 			return subs.ConfirmationResult{}, &subs.ConfirmError{
 				Err:   err,
@@ -114,6 +126,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	} else {
 		// Update Membership.
 		if err := tx.UpdateMember(confirmed.Membership); err != nil {
+			sugar.Error(err)
 			_ = tx.Rollback()
 			return subs.ConfirmationResult{}, &subs.ConfirmError{
 				Err:   err,
@@ -123,13 +136,14 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	}
 
 	if err := tx.Commit(); err != nil {
+		sugar.Error(err)
 		return subs.ConfirmationResult{}, &subs.ConfirmError{
 			Err:   err,
 			Retry: true,
 		}
 	}
 
-	log.Infof("Order %s confirmed", result.OrderID)
+	sugar.Infof("Order %s confirmed", result.OrderID)
 
 	return confirmed, nil
 }

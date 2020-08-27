@@ -189,6 +189,8 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// Turn the map to struct
 	noti := wechat.NewNotification(params)
 
+	sugar.Infof("Wxpay webhook payload: %+v", noti)
+
 	// Check the status code.
 	err = noti.IsStatusValid()
 	if err != nil {
@@ -240,16 +242,20 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	confirmed, result := router.subEnv.ConfirmOrder(payResult)
+	sugar.Infof("Payment result %+v", payResult)
 
-	if result != nil {
+	confirmed, cfmErr := router.subEnv.ConfirmOrder(payResult)
+
+	// Handle confirmation error.
+	if cfmErr != nil {
+		sugar.Error(cfmErr)
 		go func() {
 			_ = router.subEnv.SaveConfirmationResult(
-				result.Schema(payResult.OrderID))
+				cfmErr.Schema(payResult.OrderID))
 		}()
 
-		if result.Retry {
-			if _, err := w.Write([]byte(resp.NotOK(result.Error()))); err != nil {
+		if cfmErr.Retry {
+			if _, err := w.Write([]byte(resp.NotOK(cfmErr.Error()))); err != nil {
 				sugar.Error(err)
 			}
 		} else {
