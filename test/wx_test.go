@@ -1,24 +1,27 @@
 package test
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"testing"
 )
 
-func TestMockWxXMLNotification(t *testing.T) {
-	orderID, _ := subs.GenerateOrderID()
+func TestWxXMLNotification(t *testing.T) {
+	p := NewPersona().SetPayMethod(enum.PayMethodWx)
 
-	noti := WxXMLNotification(orderID)
+	repo := NewRepo()
 
-	t.Logf("Mocked wxpay notifiction: %s", noti)
-}
+	order := p.CreateOrder()
+	account := p.Account()
 
-func TestWxNotification(t *testing.T) {
-	orderID, _ := subs.GenerateOrderID()
+	repo.MustSaveAccount(account)
+	repo.MustSaveOrder(order)
 
-	noti := WxNotification(orderID)
+	payload := WxXMLNotification(order)
 
-	t.Logf("Notification: %+v", noti)
+	t.Logf("Created order %s for user %s", order.ID, account.FtcID)
+
+	t.Logf("Wx webhook payload %s", payload)
 }
 
 func TestWxXMLPrepay(t *testing.T) {

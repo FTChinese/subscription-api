@@ -3,6 +3,7 @@ package test
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/rand"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
@@ -12,7 +13,7 @@ import (
 
 // WxXMLNotification mocks the data received in wechat webhook.
 // To test its behavior, you must have a user row and order row in the db.
-func WxXMLNotification(orderID string) string {
+func WxXMLNotification(order subs.Order) string {
 	openID, _ := gorest.RandomBase64(21)
 	nonce, _ := gorest.RandomHex(16)
 
@@ -21,9 +22,9 @@ func WxXMLNotification(orderID string) string {
 		IsSubscribed:  false,
 		TradeType:     null.StringFrom("APP"),
 		BankType:      null.StringFrom("CMC"),
-		TotalFee:      null.IntFrom(25800),
+		TotalFee:      null.IntFrom(order.AmountInCent()),
 		TransactionID: null.StringFrom(rand.String(28)),
-		FTCOrderID:    null.StringFrom(orderID),
+		FTCOrderID:    null.StringFrom(order.ID),
 		TimeEnd:       null.StringFrom("20060102150405"),
 	}
 
@@ -43,8 +44,8 @@ func WxXMLNotification(orderID string) string {
 	return wxpay.MapToXml(p)
 }
 
-func WxNotification(orderID string) wechat.Notification {
-	n := WxXMLNotification(orderID)
+func WxNotification(order subs.Order) wechat.Notification {
+	n := WxXMLNotification(order)
 
 	p, err := wechat.DecodeXML(strings.NewReader(n))
 

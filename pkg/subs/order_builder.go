@@ -89,12 +89,14 @@ func (b *OrderBuilder) GetReaderID() reader.MemberID {
 // use production db layout while using sandbox url.
 func (b *OrderBuilder) getWebHookURL() string {
 
+	baseURL := "http://www.ftacademy.cn/api/v1"
+
 	switch b.method {
 	case enum.PayMethodAli:
-		return b.env.WebhookBaseURL() + "/webhook/alipay"
+		return baseURL + "/webhook/alipay"
 
 	case enum.PayMethodWx:
-		return b.env.WebhookBaseURL() + "/webhook/wxpay"
+		return baseURL + "/webhook/wxpay"
 
 	default:
 		return ""
