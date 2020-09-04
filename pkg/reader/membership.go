@@ -80,6 +80,26 @@ func (m Membership) IsEqual(other Membership) bool {
 	return m.CompoundID == other.CompoundID && m.StripeSubsID == other.StripeSubsID && m.AppleSubsID.String == other.AppleSubsID.String && m.Tier == other.Tier
 }
 
+// isLegacyOnly checks whether the edition information only comes from
+// LegacyTier and LegacyExpire fields.
+func (m Membership) isLegacyOnly() bool {
+	if m.LegacyExpire.Valid && m.LegacyTier.Valid && m.ExpireDate.IsZero() && m.Tier == enum.TierNull {
+		return true
+	}
+
+	return false
+}
+
+// isAPIOnly checks whether the edition information only comes from
+// Tier and Cycle fields.
+func (m Membership) isAPIOnly() bool {
+	if (m.LegacyExpire.IsZero() && m.LegacyTier.IsZero()) && (!m.ExpireDate.IsZero() && m.Tier != enum.TierNull) {
+		return true
+	}
+
+	return false
+}
+
 // Normalize turns legacy vip_type and expire_time into
 // member_tier and expire_date columns, or vice versus.
 func (m Membership) Normalize() Membership {
@@ -87,19 +107,27 @@ func (m Membership) Normalize() Membership {
 		return m
 	}
 
-	legacyDate := time.Unix(m.LegacyExpire.Int64, 0)
+	// Syn from legacy format to api created columns
+	if m.isLegacyOnly() {
+		// Note the conversion is not exactly the same moment since Golang converts Unix in local time.
+		expireDate := time.Unix(m.LegacyExpire.Int64, 0)
 
-	// Use whichever comes later.
-	// If LegacyExpire is after ExpireDate, then we should
-	// use LegacyExpire and LegacyTier
-	if legacyDate.After(m.ExpireDate.Time) {
-		m.ExpireDate = chrono.DateFrom(legacyDate)
+		m.ExpireDate = chrono.DateFrom(expireDate)
 		m.Tier = codeToTier[m.LegacyTier.Int64]
-	} else {
-		m.LegacyExpire = null.IntFrom(m.ExpireDate.Unix())
-		m.LegacyTier = null.IntFrom(tierToCode[m.Tier])
+		// m.Cycle cannot be determined
+
+		return m
 	}
 
+	// Sync from api columns to legacy column
+	if m.isAPIOnly() {
+		m.LegacyExpire = null.IntFrom(m.ExpireDate.Unix())
+		m.LegacyTier = null.IntFrom(tierToCode[m.Tier])
+
+		return m
+	}
+
+	// Otherwise do not touch it.
 	return m
 }
 
