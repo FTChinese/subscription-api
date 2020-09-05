@@ -28,9 +28,12 @@ func NewWxRouter(baseRouter PayRouter) WxPayRouter {
 }
 
 // PlaceOrder creates order for wechat pay.
+// POST /wxpay/desktop/<tier>/<cycle>?test=true
+// 		/wxpay/mobile/<tier>/<cycle>?test=true
+//		/wxpay/jsapi/<tier>/<cycle>?test=true
+// 		/wxpay/app/<tier>/<cycle>?test=true
 func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFunc {
-	logger, _ := zap.NewProduction()
-	sugar := logger.Sugar()
+	sugar := router.logger.Sugar()
 	sugar.Infow("Create wxpay order",
 		"trace", "WxPayRouter.PlaceOrder",
 		"platform", tradeType.String(),
@@ -43,7 +46,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 	// cycle: string; Currently acquired from URL param
 	// planId: string; Not used yet. In the future we might only use plan id to identify a purchase.
 	return func(w http.ResponseWriter, req *http.Request) {
-		defer logger.Sync()
+		defer router.logger.Sync()
 		sugar.Info("Start placing a wechat order")
 
 		clientApp := client.NewClientApp(req)
@@ -80,10 +83,13 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 
 		sugar.Infof("Selected plan: %+v", plan)
 
+		isTest := router.isTestAccount(readerIDs, req)
+
 		builder := subs.NewOrderBuilder(readerIDs).
 			SetPlan(plan).
 			SetPayMethod(enum.PayMethodWx).
-			SetEnvConfig(router.config).
+			SetWebhookURL(router.config.WebHookBaseURL()).
+			SetTest(isTest).
 			SetWxAppID(payClient.GetApp().AppID).
 			SetWxParams(wechat.UnifiedOrder{
 				IP:        clientApp.UserIP.String,
