@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/ali"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -29,9 +28,10 @@ type OrderBuilder struct {
 	// Required fields.
 	memberID reader.MemberID
 	plan     product.ExpandedPlan
-	env      config.BuildConfig
 	// Optional fields.
-	method enum.PayMethod // Should be enum.PayMethodNull for free upgrade.
+	method     enum.PayMethod // Should be enum.PayMethodNull for free upgrade.
+	webhookUrl string
+	isTest     bool
 
 	wallet Wallet // Only required if kind == SubsKindUpgrade.
 
@@ -63,8 +63,13 @@ func (b *OrderBuilder) SetPayMethod(m enum.PayMethod) *OrderBuilder {
 	return b
 }
 
-func (b *OrderBuilder) SetEnvConfig(c config.BuildConfig) *OrderBuilder {
-	b.env = c
+func (b *OrderBuilder) SetWebhookURL(url string) *OrderBuilder {
+	b.webhookUrl = url
+	return b
+}
+
+func (b *OrderBuilder) SetTest(test bool) *OrderBuilder {
+	b.isTest = test
 	return b
 }
 
@@ -89,14 +94,12 @@ func (b *OrderBuilder) GetReaderID() reader.MemberID {
 // use production db layout while using sandbox url.
 func (b *OrderBuilder) getWebHookURL() string {
 
-	baseURL := "http://www.ftacademy.cn/api/v1"
-
 	switch b.method {
 	case enum.PayMethodAli:
-		return baseURL + "/webhook/alipay"
+		return b.webhookUrl + "/webhook/alipay"
 
 	case enum.PayMethodWx:
-		return baseURL + "/webhook/wxpay"
+		return b.webhookUrl + "/webhook/wxpay"
 
 	default:
 		return ""
@@ -179,7 +182,7 @@ func (b *OrderBuilder) Build() error {
 	}
 
 	// For sandbox change to a fixed amount
-	if b.env.Sandbox() {
+	if b.isTest {
 		charge.Amount = 0.01
 	}
 
@@ -200,7 +203,7 @@ func (b *OrderBuilder) Build() error {
 		EndDate:       chrono.Date{},
 		CreatedAt:     chrono.TimeNow(),
 		ConfirmedAt:   chrono.Time{},
-		LiveMode:      !b.env.Sandbox(),
+		LiveMode:      !b.isTest,
 	}
 
 	// After order is generated, we can now update wallet's
