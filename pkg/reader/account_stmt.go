@@ -22,3 +22,10 @@ UPDATE cmstmp01.userinfo
 SET stripe_customer_id = :stripe_id
 WHERE user_id = :ftc_id
 LIMIT 1`
+
+const StmtSandboxExists = `
+SELECT EXISTS(
+	SELECT *
+	FROM user_db.sandbox_account
+	WHERE ftc_id = ?
+) AS sandboxFound`
