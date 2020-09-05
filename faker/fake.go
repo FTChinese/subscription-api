@@ -63,7 +63,7 @@ func GenWxID() string {
 	return id
 }
 
-func GenToken() string {
+func GenWxAccessTokenToken() string {
 	token, _ := gorest.RandomBase64(82)
 	return token
 }
