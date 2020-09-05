@@ -7,7 +7,7 @@ import (
 func (env Env) SaveOrderClient(c client.OrderClient) error {
 
 	_, err := env.db.NamedExec(
-		client.StmtInsertOrderClient(env.GetSubsDB()),
+		client.StmtInsertOrderClient,
 		c)
 
 	if err != nil {

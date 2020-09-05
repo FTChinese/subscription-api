@@ -1,7 +1,6 @@
 package test
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/jmoiron/sqlx"
@@ -46,7 +45,7 @@ func (r *Repo) SaveMembership(m reader.Membership) error {
 	m = m.Normalize()
 
 	_, err := r.db.NamedExec(
-		reader.StmtCreateMember(config.SubsDBProd),
+		reader.StmtCreateMember,
 		m)
 
 	if err != nil {
@@ -67,7 +66,7 @@ func (r *Repo) MustSaveMembership(m reader.Membership) {
 
 func (r *Repo) SaveOrder(order subs.Order) error {
 
-	var stmt = subs.StmtCreateOrder(config.SubsDBProd) + `,
+	var stmt = subs.StmtInsertOrder + `,
 		confirmed_utc = :confirmed_utc,
 		start_date = :start_date,
 		end_date = :end_date`
@@ -102,7 +101,7 @@ func (r *Repo) MustSaveProratedOrders(pos []subs.ProratedOrder) {
 
 	for _, v := range pos {
 		_, err := r.db.NamedExec(
-			subs.StmtSaveProratedOrder(config.SubsDBProd),
+			subs.StmtSaveProratedOrder,
 			v)
 
 		if err != nil {

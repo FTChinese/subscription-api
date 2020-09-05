@@ -54,14 +54,6 @@ func (c BuildConfig) Production() bool {
 	return c.production
 }
 
-func (c BuildConfig) GetSubsDB() SubsDB {
-	if c.sandbox {
-		return SubsDBSandbox
-	}
-
-	return SubsDBProd
-}
-
 // IAPVerificationURL selects apple receipt verification
 // endpoint depending on the deployment environment.
 // This is the same to stripe key selection.

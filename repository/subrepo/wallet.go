@@ -7,7 +7,7 @@ func (env Env) ListProratedOrders(upOrderID string) ([]subs.ProratedOrder, error
 
 	err := env.db.Select(
 		&po,
-		subs.StmtListProratedOrders(env.GetSubsDB()),
+		subs.StmtListProratedOrders,
 		upOrderID)
 
 	if err != nil {
