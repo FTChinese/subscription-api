@@ -2,7 +2,6 @@ package txrepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -13,13 +12,11 @@ import (
 // if allowed.
 type MemberTx struct {
 	*sqlx.Tx
-	dbName config.SubsDB
 }
 
-func NewMemberTx(tx *sqlx.Tx, cfg config.BuildConfig) MemberTx {
+func NewMemberTx(tx *sqlx.Tx) MemberTx {
 	return MemberTx{
-		Tx:     tx,
-		dbName: cfg.GetSubsDB(),
+		Tx: tx,
 	}
 }
 
@@ -31,7 +28,7 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error)
 
 	err := tx.Get(
 		&m,
-		reader.StmtLockMember(tx.dbName),
+		reader.StmtLockMember,
 		id.BuildFindInSet(),
 	)
 
@@ -53,7 +50,7 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership,
 
 	err := tx.Get(
 		&m,
-		reader.StmtAppleMember(tx.dbName),
+		reader.StmtAppleMember,
 		transactionID)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -71,7 +68,7 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership,
 func (tx MemberTx) SaveOrder(order subs.Order) error {
 
 	_, err := tx.NamedExec(
-		subs.StmtCreateOrder(tx.dbName),
+		subs.StmtInsertOrder,
 		order)
 
 	if err != nil {
@@ -89,7 +86,7 @@ func (tx MemberTx) RetrieveOrder(orderID string) (subs.Order, error) {
 
 	err := tx.Get(
 		&order,
-		subs.StmtOrder(tx.dbName),
+		subs.StmtSelectOrder,
 		orderID,
 	)
 
@@ -105,7 +102,7 @@ func (tx MemberTx) RetrieveOrder(orderID string) (subs.Order, error) {
 // ConfirmOrder set an order's confirmation time.
 func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 	_, err := tx.NamedExec(
-		subs.StmtConfirmOrder(tx.dbName),
+		subs.StmtConfirmOrder,
 		order,
 	)
 
@@ -123,7 +120,7 @@ func (tx MemberTx) CreateMember(m reader.Membership) error {
 	m = m.Normalize()
 
 	_, err := tx.NamedExec(
-		reader.StmtCreateMember(tx.dbName),
+		reader.StmtCreateMember,
 		m,
 	)
 
@@ -140,7 +137,7 @@ func (tx MemberTx) UpdateMember(m reader.Membership) error {
 	m = m.Normalize()
 
 	_, err := tx.NamedExec(
-		reader.StmtUpdateMember(tx.dbName),
+		reader.StmtUpdateMember,
 		m)
 
 	if err != nil {
@@ -162,7 +159,7 @@ func (tx MemberTx) UpdateMember(m reader.Membership) error {
 // column which will keep the membership on FTC account.
 func (tx MemberTx) DeleteMember(id reader.MemberID) error {
 	_, err := tx.NamedExec(
-		reader.StmtDeleteMember(tx.dbName),
+		reader.StmtDeleteMember,
 		id)
 
 	if err != nil {
@@ -182,7 +179,7 @@ func (tx MemberTx) FindBalanceSources(userIDs reader.MemberID) ([]subs.BalanceSo
 
 	err := tx.Select(
 		&orders,
-		subs.StmtBalanceSource(tx.dbName),
+		subs.StmtBalanceSource,
 		userIDs.BuildFindInSet())
 
 	if err != nil {
@@ -205,7 +202,7 @@ func (tx MemberTx) SaveProratedOrders(po []subs.ProratedOrder) error {
 
 	for _, v := range po {
 		_, err := tx.NamedExec(
-			subs.StmtSaveProratedOrder(tx.dbName),
+			subs.StmtSaveProratedOrder,
 			v)
 
 		if err != nil {
@@ -221,7 +218,7 @@ func (tx MemberTx) SaveProratedOrders(po []subs.ProratedOrder) error {
 // prorated order for an upgrade operation.
 func (tx MemberTx) ProratedOrdersUsed(upOrderID string) error {
 	_, err := tx.Exec(
-		subs.StmtProratedOrdersUsed(tx.dbName),
+		subs.StmtProratedOrdersUsed,
 		upOrderID,
 	)
 	if err != nil {
@@ -237,7 +234,7 @@ func (tx MemberTx) ProratedOrdersUsed(upOrderID string) error {
 
 func (tx MemberTx) ActivateGiftCard(code string) error {
 	_, err := tx.Exec(
-		redeem.StmtActivateGiftCard(tx.dbName),
+		redeem.StmtActivateGiftCard,
 		code)
 
 	if err != nil {

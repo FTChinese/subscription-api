@@ -1,12 +1,7 @@
 package reader
 
-import (
-	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/config"
-)
-
-const insertMemberSnapshot = `
-INSERT INTO %s.member_snapshot
+const StmtSnapshotMember = `
+INSERT INTO premium.member_snapshot
 SET id = :snapshot_id,
 	reason = :reason,
 	created_utc = UTC_TIMESTAMP(),
@@ -17,7 +12,3 @@ SET id = :snapshot_id,
 	tier = :tier,
 	cycle = :cycle,
 ` + mUpsertSharedCols
-
-func StmtSnapshotMember(db config.SubsDB) string {
-	return fmt.Sprintf(insertMemberSnapshot, db)
-}

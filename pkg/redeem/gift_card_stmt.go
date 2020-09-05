@@ -1,10 +1,5 @@
 package redeem
 
-import (
-	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/config"
-)
-
 const StmtGiftCard = `
 SELECT auth_code AS redeemCode,
 	tier AS tier,
@@ -16,12 +11,8 @@ WHERE auth_code = ?
 	AND active_time = 0
 LIMIT 1`
 
-const activateGiftCard = `
-UPDATE %s.scratch_card
+const StmtActivateGiftCard = `
+UPDATE premium.scratch_card
 	SET active_time = UNIX_TIMESTAMP()
 WHERE auth_code = ?
 LIMIT 1`
-
-func StmtActivateGiftCard(db config.SubsDB) string {
-	return fmt.Sprintf(activateGiftCard, db)
-}
