@@ -7,12 +7,14 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/repository/products"
 	"github.com/FTChinese/subscription-api/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/repository/subrepo"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -23,16 +25,39 @@ type PayRouter struct {
 	prodRepo  products.Env
 	postman   postoffice.PostOffice
 	config    config.BuildConfig
+	logger    *zap.Logger
 }
 
 func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
+	l, _ := zap.NewProduction()
+
 	return PayRouter{
 		subEnv:    subrepo.NewEnv(db, c, b),
 		readerEnv: readerrepo.NewEnv(db, b),
 		prodRepo:  products.NewEnv(db, c),
 		postman:   p,
 		config:    b,
+		logger:    l,
 	}
+}
+
+// Only when the user has ftc account, and
+// query parameter has `test=true` will
+// we search db to see whether it is actually
+// a test account.
+func (router PayRouter) isTestAccount(ids reader.MemberID, req *http.Request) bool {
+	isTest := ids.FtcID.Valid && req.FormValue("test") == "true"
+
+	if !isTest {
+		return false
+	}
+
+	found, err := router.readerEnv.SandboxUserExists(ids.FtcID.String)
+	if err != nil {
+		return false
+	}
+
+	return found
 }
 
 // Centralized error handling after order creation.
