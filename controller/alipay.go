@@ -87,10 +87,13 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
+		isTest := router.isTestAccount(readerIDs, req)
+
 		builder := subs.NewOrderBuilder(readerIDs).
 			SetPlan(plan).
 			SetPayMethod(enum.PayMethodAli).
-			SetEnvConfig(router.config)
+			SetWebhookURL(router.config.WebHookBaseURL()).
+			SetTest(isTest)
 
 		order, err := router.subEnv.CreateOrder(builder)
 
