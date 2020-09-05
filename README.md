@@ -7,11 +7,13 @@ API for subscription service
 * Production: `http://www.ftacademy.cn/api/v1`
 * Sandbox: `http://www.ftacademy.cn/api/sandbox`
 
-The sandbox mode is only used to test Alipay or Wxpay webhook payload. Usually when you want to launch a new version, you cannot be sure whether these two payment providers could hit your webhook correctly or not since they do not provide any means to test. Our solution is to deploy the same app under different names on the same machine under the same host with different urls. You should first deploy your development app to the sandbox url and test it to make sure the webhook works correctly. Both sandbox and production use the same db and perform CRUD on the same data.
+For Stripe and Apple IAP, the sandbox have the same meaning as their APIs: running in sandbox mode hits their sandbox endpoints; otherwise to production endpoints.
 
-When you want to test the actual payment, we provide testing accounts. When logged in using those accounts, you are always charged 0.01, regardless of production or sandbox.
+Sandbox means nonthing to Wxpay and Alipay since they do not provide any means for testing.
 
-Put it simply, product/sandbox determines the webhook url while testing account determines the price you will pay.
+To test these two payment providers, we use testing account. When you logged in with a sandbox account, the prices charged with be fixe to 0.01 and tell them to send webhook paywalod to the sandbox version.
+
+Put it simply, if client detects the logged in account is of type sandbox, send request to sandbox url; otherwise to production url. Only wxpay and alipay endpoints of this app will take further action for sandbox account. Stripe and Apple's will simply ignore it.
 
 ## Development
 
