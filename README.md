@@ -7,6 +7,10 @@ API for subscription service
 * Production: `http://www.ftacademy.cn/api/v1`
 * Sandbox: `http://www.ftacademy.cn/api/sandbox`
 
+The sandbox mode is only used to test Alipay or Wxpay webhook payload. Usually when you want to launch a new version, you cannot be sure whether these two payment providers could hit your webhook correctly or not since they do not provide any means to test. Our solution is to deploy the same app under different names on the same machine under the same host with different urls. You should first deploy your development app to the sandbox url and test it to make sure the webhook works correctly. Both sandbox and production use the same db and perform CRUD on the same data.
+
+When you want to test the actual payment, we provide testing accounts. When logged in using those accounts, you are always charged 0.01, regardless of production or sandbox.
+
 ## Development
 
 All development happens in the `sandbox` branch. `master` is used to merge and publish stable release from `sandbox`. The `sandbox` branch should always be test again live data to ensure subscription will never stop or break down.
