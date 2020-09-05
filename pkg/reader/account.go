@@ -22,6 +22,10 @@ func (a Account) MemberID() MemberID {
 	}.MustNormalize()
 }
 
+func (a Account) IsSandbox() bool {
+	return strings.HasSuffix(a.Email, ".sandbox@ftchinese.com")
+}
+
 // NormalizeName returns user name, or the name part of email if name does not exist.
 func (a Account) NormalizeName() string {
 	if a.UserName.Valid {
