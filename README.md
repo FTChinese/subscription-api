@@ -11,6 +11,8 @@ The sandbox mode is only used to test Alipay or Wxpay webhook payload. Usually w
 
 When you want to test the actual payment, we provide testing accounts. When logged in using those accounts, you are always charged 0.01, regardless of production or sandbox.
 
+Put it simply, product/sandbox determines the webhook url while testing account determines the price you will pay.
+
 ## Development
 
 All development happens in the `sandbox` branch. `master` is used to merge and publish stable release from `sandbox`. The `sandbox` branch should always be test again live data to ensure subscription will never stop or break down.
