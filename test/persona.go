@@ -338,9 +338,9 @@ func (p Persona) IAPSubs() apple.Subscription {
 
 func (p Persona) WxAccess() wxlogin.OAuthAccess {
 	acc := wxlogin.OAuthAccess{
-		AccessToken:  faker.GenToken(),
+		AccessToken:  faker.GenWxAccessTokenToken(),
 		ExpiresIn:    7200,
-		RefreshToken: faker.GenToken(),
+		RefreshToken: faker.GenWxAccessTokenToken(),
 		OpenID:       p.OpenID,
 		Scope:        "snsapi_userinfo",
 		UnionID:      null.StringFrom(p.UnionID),
