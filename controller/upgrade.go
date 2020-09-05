@@ -85,7 +85,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 	// Send email
 	go func() {
 		// Find this user's personal data
-		account, err := router.readerEnv.FindAccountByFtcID(confirmed.Order.FtcID.String)
+		account, err := router.readerEnv.AccountByFtcID(confirmed.Order.FtcID.String)
 		if err != nil {
 			return
 		}

@@ -30,7 +30,7 @@ func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice) 
 		secret:     config.MustIAPSecret(),
 		config:     cfg,
 		iapRepo:    iaprepo.NewEnv(db, cfg),
-		readerRepo: readerrepo.NewReaderEnv(db, cfg),
+		readerRepo: readerrepo.NewEnv(db, cfg),
 		postman:    p,
 	}
 }
@@ -222,7 +222,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	// Send notification email if this is initial link.
 	if linkResult.IsInitialLink() {
 		go func() {
-			account, err := router.readerRepo.FindAccountByFtcID(linkResult.Linked.FtcID.String)
+			account, err := router.readerRepo.AccountByFtcID(linkResult.Linked.FtcID.String)
 			if err != nil {
 				return
 			}
