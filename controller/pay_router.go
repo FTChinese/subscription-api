@@ -28,7 +28,7 @@ type PayRouter struct {
 func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
 	return PayRouter{
 		subEnv:    subrepo.NewEnv(db, c, b),
-		readerEnv: readerrepo.NewReaderEnv(db, b),
+		readerEnv: readerrepo.NewEnv(db, b),
 		prodRepo:  products.NewEnv(db, c),
 		postman:   p,
 		config:    b,
@@ -58,7 +58,7 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := router.readerEnv.FindAccountByFtcID(order.FtcID.String)
+	account, err := router.readerEnv.AccountByFtcID(order.FtcID.String)
 
 	if err != nil {
 		return err

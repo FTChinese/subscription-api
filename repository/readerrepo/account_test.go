@@ -28,7 +28,7 @@ func TestReaderEnv_FindAccountByFtcID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := env.FindAccountByFtcID(tt.args.id)
+			got, err := env.AccountByFtcID(tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FindAccountByFtcID() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -62,7 +62,7 @@ func TestReaderEnv_FindAccountByStripeID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := env.FindAccountByStripeID(tt.args.cusID)
+			got, err := env.AccountByStripeID(tt.args.cusID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FindAccountByStripeID() error = %v, wantErr %v", err, tt.wantErr)
 				return

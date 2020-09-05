@@ -30,7 +30,7 @@ func NewStripeRouter(db *sqlx.DB, config config.BuildConfig) StripeRouter {
 	r := StripeRouter{
 		config:     config,
 		signingKey: config.MustStripeSigningKey(),
-		readerRepo: readerrepo.NewReaderEnv(db, config),
+		readerRepo: readerrepo.NewEnv(db, config),
 		stripeRepo: striperepo.NewStripeEnv(db, config),
 	}
 
@@ -365,7 +365,7 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 
 func (router StripeRouter) onSubscription(s *stripeSdk.Subscription) error {
 
-	account, err := router.readerRepo.FindAccountByStripeID(s.Customer.ID)
+	account, err := router.readerRepo.AccountByStripeID(s.Customer.ID)
 	if err != nil {
 		return err
 	}
