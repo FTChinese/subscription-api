@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/access"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
@@ -16,12 +17,10 @@ import (
 	"time"
 
 	"github.com/FTChinese/go-rest/postoffice"
-	"github.com/FTChinese/go-rest/view"
 	"github.com/FTChinese/subscription-api/controller"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -40,7 +39,7 @@ func init() {
 	var production bool
 	var sandbox bool
 	flag.BoolVar(&production, "production", false, "Connect to production MySQL database if present. Default to localhost.")
-	flag.BoolVar(&sandbox, "sandbox", false, "Use sandbox database to save subscription data if present.")
+	flag.BoolVar(&sandbox, "sandbox", false, "Use sandbox for alipay and wxpay webhook url and stripe keys")
 	var v = flag.Bool("v", false, "print current version")
 
 	flag.Parse()
@@ -52,12 +51,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	logrus.SetFormatter(&logrus.JSONFormatter{})
-	logrus.SetOutput(os.Stdout)
-	logrus.WithFields(logrus.Fields{
-		"live":         cfg.Live(),
-		"isProduction": cfg.Production(),
-	}).Infof("Initializing environment")
+	log.Printf("Production %t. Sandbox %t", production, sandbox)
 
 	viper.SetConfigName("api")
 	viper.AddConfigPath("$HOME/config")
@@ -65,18 +59,9 @@ func init() {
 	if err != nil {
 		os.Exit(1)
 	}
-
-	if cfg.Live() {
-		stripe.Key = viper.GetString("stripe.live_secret_key")
-	} else {
-		stripe.Key = viper.GetString("stripe.test_secret_key")
-	}
 }
 
 func main() {
-	logger := logrus.WithFields(logrus.Fields{
-		"trace": "main",
-	})
 
 	stripe.Key = cfg.MustStripeAPIKey()
 
@@ -236,26 +221,25 @@ func main() {
 		})
 	})
 
-	logger.WithFields(logrus.Fields{
-		"port": port,
-	}).Info("subscription-api started")
-
+	log.Printf("Subscription api running at %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
 func status(w http.ResponseWriter, _ *http.Request) {
 
 	data := struct {
-		Version string `json:"version"`
-		Build   string `json:"build"`
-		Commit  string `json:"commit"`
-		Live    bool   `json:"live"`
+		Version    string `json:"version"`
+		Build      string `json:"build"`
+		Commit     string `json:"commit"`
+		Production bool   `json:"production"`
+		Sandbox    bool   `json:"sandbox"`
 	}{
-		Version: version,
-		Build:   build,
-		Commit:  commit,
-		Live:    cfg.Live(),
+		Version:    version,
+		Build:      build,
+		Commit:     commit,
+		Production: cfg.Production(),
+		Sandbox:    cfg.Sandbox(),
 	}
 
-	_ = view.Render(w, view.NewResponse().NoCache().SetBody(data))
+	_ = render.New(w).OK(data)
 }

@@ -22,7 +22,7 @@ local :
 
 # Run development build
 run :
-	./$(DEV_OUT)
+	./$(DEV_OUT) -sandbox
 
 # Cross compiling linux on for dev.
 linux :

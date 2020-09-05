@@ -17,15 +17,17 @@ func GetConn(key string) (connect.Connect, error) {
 }
 
 // BuildConfig set up deploy environment.
-// For production server, the `-production` flag is passed from
-// command line argument.
-// Running environments:
-// 1. On production server using production db;
-// 2. On production server using production db but data are written to sandbox tables;
-// 3. Local machine for development only.
+// When production is true, always connect to online db; otherwise connect to localhost.
+// When sandbox is true, use stripe sandbox key; otherwise use test key.
+// Wxpay and alipay's webhook url is also determined by sandbox. Their prices, however, is determined by
+// current account.
+// Local development: sandbox = true, production = false;
+// Online product: sandbox = false, production = true;
+// Online sandbox: sandbox = true, production = true;
+// You should always run this program with `-sandbox` arg option.
 type BuildConfig struct {
-	sandbox    bool // Determine order price.
-	production bool // it determines which database should be used;
+	sandbox    bool // Determine the webhook base url for alipayw and wxpay. Determine stripe live/test mode.
+	production bool // Determine which database should be used;
 }
 
 func NewBuildConfig(production, sandbox bool) BuildConfig {
@@ -35,17 +37,11 @@ func NewBuildConfig(production, sandbox bool) BuildConfig {
 	}
 }
 
-// Live specifies:
-// * Which stripe key should be used: true for live key;
-// * How much should user pay: true for normal, false for 1 cent;
-// * Which webhook url should be used: true for produciton url.
-// Matrix to determine what to use: (test == sandbox)
-// 				Stripe Key 	WebHook		DB		Price
-// Local		test		sandbox		live	sandbox
-// Production	live		live		live	live
-// Sandbox		test		sandbox		sandbox	sandbox
+// Live determines which stripe key should be used.
+// When the command line option is `-production`, it uses stripe live key;
+// otherwise, it uses tripe test key: no options or `-production -sandbox`
 func (c BuildConfig) Live() bool {
-	return c.production && !c.sandbox
+	return !c.sandbox
 }
 
 // Sandbox indicates API is running on production server in sandbox mode.
@@ -72,20 +68,30 @@ func (c BuildConfig) GetSubsDB() SubsDB {
 // MUST not use the UsedSandboxDB!
 func (c BuildConfig) IAPVerificationURL() string {
 
-	if c.Live() {
-		return "https://buy.itunes.apple.com/verifyReceipt"
+	if c.sandbox {
+		return "https://sandbox.itunes.apple.com/verifyReceipt"
 	}
 
-	return "https://sandbox.itunes.apple.com/verifyReceipt"
+	return "https://buy.itunes.apple.com/verifyReceipt"
+}
+
+func (c BuildConfig) WebHookBaseURL() string {
+	if c.sandbox {
+		return "http://www.ftacademy.cn/api/sandbox"
+	}
+
+	return "http://www.ftacademy.cn/api/v1"
 }
 
 // MustStripeSigningKey gets stripe signing key which is used to verify webhook data.
 func (c BuildConfig) MustStripeSigningKey() string {
 	var key string
-	if c.Live() {
-		key = viper.GetString("stripe.live_signing_key")
-	} else {
+	if c.sandbox {
+		log.Print("Using stripe test signing key")
 		key = viper.GetString("stripe.test_signing_key")
+	} else {
+		log.Print("Using stripe live signing key")
+		key = viper.GetString("stripe.live_signing_key")
 	}
 
 	if key == "" {
@@ -99,10 +105,12 @@ func (c BuildConfig) MustStripeSigningKey() string {
 func (c BuildConfig) MustStripeAPIKey() string {
 	var key string
 
-	if c.Live() {
-		key = viper.GetString("stripe.live_secret_key")
-	} else {
+	if c.sandbox {
+		log.Print("Using stripe test api key")
 		key = viper.GetString("stripe.test_secret_key")
+	} else {
+		log.Print("Using stripe live api key")
+		key = viper.GetString("stripe.live_secret_key")
 	}
 
 	if key == "" {
