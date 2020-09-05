@@ -2,7 +2,6 @@ package txrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
@@ -18,7 +17,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 	repo := test.NewRepo()
 	repo.MustSaveMembership(p.Membership())
 
-	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		id reader.MemberID
@@ -65,7 +64,7 @@ func TestMemberTx_RetrieveAppleMember(t *testing.T) {
 	repo := test.NewRepo()
 	repo.MustSaveMembership(m)
 
-	tx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	tx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		transactionID string
@@ -103,7 +102,7 @@ func TestMemberTx_RetrieveAppleMember(t *testing.T) {
 
 func TestOrderTx_SaveOrder(t *testing.T) {
 
-	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		order subs.Order
@@ -150,7 +149,7 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 	test.NewRepo().MustSaveOrder(orderAli)
 	test.NewRepo().MustSaveOrder(orderWx)
 
-	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		orderID string
@@ -207,7 +206,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 
 	confirmed := p.ConfirmOrder(order)
 
-	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		order subs.Order
@@ -246,7 +245,7 @@ func TestOrderTx_CreateMember(t *testing.T) {
 
 	member := p.Membership()
 
-	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		m reader.Membership
@@ -287,7 +286,7 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 
 	m.Tier = enum.TierPremium
 
-	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		m reader.Membership
@@ -325,7 +324,7 @@ func TestMemberTx_DeleteMember(t *testing.T) {
 
 	test.NewRepo().MustSaveMembership(m)
 
-	tx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	tx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		id reader.MemberID
@@ -364,7 +363,7 @@ func TestOrderTx_FindBalanceSources(t *testing.T) {
 		repo.MustSaveOrder(c.Order)
 	}
 
-	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		accountID reader.MemberID
@@ -404,8 +403,7 @@ func TestMemberTx_SaveProratedOrders(t *testing.T) {
 	tx, _ := test.DB.Beginx()
 
 	type fields struct {
-		Tx     *sqlx.Tx
-		dbName config.SubsDB
+		Tx *sqlx.Tx
 	}
 	type args struct {
 		po []subs.ProratedOrder
@@ -419,8 +417,7 @@ func TestMemberTx_SaveProratedOrders(t *testing.T) {
 		{
 			name: "Save proration",
 			fields: fields{
-				Tx:     tx,
-				dbName: config.SubsDBProd,
+				Tx: tx,
 			},
 			args: args{
 				po: test.GenProratedOrders(subs.MustGenerateOrderID()),
@@ -430,8 +427,7 @@ func TestMemberTx_SaveProratedOrders(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tx := MemberTx{
-				Tx:     tt.fields.Tx,
-				dbName: tt.fields.dbName,
+				Tx: tt.fields.Tx,
 			}
 			if err := tx.SaveProratedOrders(tt.args.po); (err != nil) != tt.wantErr {
 				t.Errorf("SaveProratedOrders() error = %v, wantErr %v", err, tt.wantErr)
@@ -448,7 +444,7 @@ func TestOrderTx_ProratedOrdersUsed(t *testing.T) {
 	test.NewRepo().
 		MustSaveProratedOrders(pos)
 
-	otx := NewMemberTx(test.DB.MustBegin(), test.CFG)
+	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
 		upOrderID string

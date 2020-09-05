@@ -1,10 +1,5 @@
 package reader
 
-import (
-	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/config"
-)
-
 const colMembership = `
 SELECT vip_id AS compound_id,
 	NULLIF(vip_id, vip_id_alias) AS ftc_id,
@@ -22,7 +17,7 @@ SELECT vip_id AS compound_id,
 	sub_status AS subs_status,
 	apple_subscription_id AS apple_subs_id,
 	b2b_licence_id
-FROM %s.ftc_vip`
+FROM premium.ftc_vip`
 
 // StmtLockMember builds SQL to retrieve membership in a transaction.
 // Retrieve membership by compound id extracted from request header.
@@ -34,20 +29,15 @@ FROM %s.ftc_vip`
 // (Chances of such case are rare).
 // In such case we won't be able to find the membership
 // simply querying the vip_id column.
-func StmtLockMember(db config.SubsDB) string {
-	return fmt.Sprintf(colMembership, db) + `
-	WHERE FIND_IN_SET(vip_id, ?) > 0
-	LIMIT 1
-	FOR UPDATE
-	`
-}
+const StmtLockMember = colMembership + `
+WHERE FIND_IN_SET(vip_id, ?) > 0
+LIMIT 1
+FOR UPDATE
+`
 
-// StmtAppleMember builds SQL to retrieve membership by apple original transaction id.
-func StmtAppleMember(db config.SubsDB) string {
-	return fmt.Sprintf(colMembership, db) + `
-	WHERE apple_subscription_id = ?
-	FOR UPDATE`
-}
+const StmtAppleMember = colMembership + `
+WHERE apple_subscription_id = ?
+FOR UPDATE`
 
 // The common columns when inserting or updating membership.
 // Not the b2b_licence_id column is ignored since it is not
@@ -70,34 +60,22 @@ member_tier = :tier,
 billing_cycle = :cycle,
 ` + mUpsertSharedCols
 
-const stmtInsertMember = `
-INSERT INTO %s.ftc_vip
+const StmtCreateMember = `
+INSERT INTO premium.ftc_vip
 SET vip_id = :compound_id,
 	vip_id_alias = :union_id,
 	ftc_user_id = :ftc_id,
 	wx_union_id = :union_id,
 ` + mUpsertCols
 
-func StmtCreateMember(db config.SubsDB) string {
-	return fmt.Sprintf(stmtInsertMember, db)
-}
-
-const stmtUpdateMember = `
-UPDATE %s.ftc_vip
+const StmtUpdateMember = `
+UPDATE premium.ftc_vip
 SET ` + mUpsertCols + `
 WHERE vip_id = :compound_id
 LIMIT 1`
 
-func StmtUpdateMember(db config.SubsDB) string {
-	return fmt.Sprintf(stmtUpdateMember, db)
-}
-
 // Delete old membership when linking to IAP.
-const stmtDeleteMember = `
-DELETE FROM %s.ftc_vip
+const StmtDeleteMember = `
+DELETE FROM premium.ftc_vip
 WHERE  vip_id = :compound_id
 LIMIT 1`
-
-func StmtDeleteMember(db config.SubsDB) string {
-	return fmt.Sprintf(stmtDeleteMember, db)
-}

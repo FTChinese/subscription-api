@@ -1,14 +1,9 @@
 package subs
 
-import (
-	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/config"
-)
-
 // Saves a new order. The newly created order does not have
 // ConfirmedAt, StartDate and EndDate set.
-const insertOrder = `
-INSERT INTO %s.ftc_trade
+const StmtInsertOrder = `
+INSERT INTO premium.ftc_trade
 SET trade_no = :order_id,
 	trade_price = :price,
 	trade_amount = :charged_amount,
@@ -27,12 +22,8 @@ SET trade_no = :order_id,
 	wx_app_id = :wx_app_id,
 	created_utc = UTC_TIMESTAMP()`
 
-func StmtCreateOrder(db config.SubsDB) string {
-	return fmt.Sprintf(insertOrder, db)
-}
-
 // Retrieves an order. This is mostly used upon confirmation.
-const selectOrder = `
+const StmtSelectOrder = `
 SELECT trade_no AS order_id,
 	trade_price AS price,
 	trade_amount AS charged_amount,
@@ -53,25 +44,16 @@ SELECT trade_no AS order_id,
 	confirmed_utc,
 	start_date,
 	end_date
-FROM %s.ftc_trade
+FROM premium.ftc_trade
 WHERE trade_no = ?
 LIMIT 1
 FOR UPDATE`
 
-// StmtOrder build the SQL to retrieve an order.
-func StmtOrder(db config.SubsDB) string {
-	return fmt.Sprintf(selectOrder, db)
-}
-
-const stmtConfirmOrder = `
-UPDATE %s.ftc_trade
+// StmtConfirmOrder build SQL to set an order confirmed.
+const StmtConfirmOrder = `
+UPDATE premium.ftc_trade
 SET confirmed_utc = :confirmed_utc,
 	start_date = :start_date,
 	end_date = :end_date
 WHERE trade_no = :order_id
 LIMIT 1`
-
-// StmtConfirmOrder build SQL to set an order confirmed.
-func StmtConfirmOrder(db config.SubsDB) string {
-	return fmt.Sprintf(stmtConfirmOrder, db)
-}

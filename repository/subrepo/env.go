@@ -32,7 +32,7 @@ func (env Env) BeginOrderTx() (txrepo.MemberTx, error) {
 		return txrepo.MemberTx{}, err
 	}
 
-	return txrepo.NewMemberTx(tx, env.BuildConfig), nil
+	return txrepo.NewMemberTx(tx), nil
 }
 
 var logger = logrus.
