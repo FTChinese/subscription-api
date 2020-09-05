@@ -11,8 +11,6 @@ func (env Env) AccountByFtcID(id string) (reader.Account, error) {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "Env.FindAccountByFtcID").Error(err)
-
 		return u, err
 	}
 
@@ -26,10 +24,18 @@ func (env Env) AccountByStripeID(cusID string) (reader.Account, error) {
 		cusID)
 
 	if err != nil {
-		logger.WithField("trace", "Env.FindAccountByStripeID").Error(err)
-
 		return u, err
 	}
 
 	return u, nil
+}
+
+func (env Env) SandboxUserExists(ftcID string) (bool, error) {
+	var found bool
+	err := env.db.Get(&found, reader.StmtSandboxExists, ftcID)
+	if err != nil {
+		return false, err
+	}
+
+	return found, nil
 }
