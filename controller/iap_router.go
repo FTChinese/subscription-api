@@ -170,8 +170,10 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 
 // Link merges IAP subscription to FTC account.
 //
+// Header: `X-User-Id: <ftc uuid>`
+
 // Input:
-// receipt-data: string
+// receipt-data: string;
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	// Get user's ids.
 	readerIDs := getReaderIDs(req.Header)
@@ -375,4 +377,9 @@ func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
 	}
 
 	_ = render.New(w).OK(data)
+}
+
+// RefreshReceipt updates an existing apple receipt and optional associated subscription.
+func (router IAPRouter) RefreshReceipt(w http.ResponseWriter, req *http.Request) {
+
 }
