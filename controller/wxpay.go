@@ -96,7 +96,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 				OpenID:    input.OpenID.String,
 			})
 
-		order, err := router.subEnv.CreateOrder(builder)
+		order, err := router.subRepo.CreateOrder(builder)
 		if err != nil {
 			sugar.Error(err)
 			router.handleOrderErr(w, err)
@@ -106,7 +106,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		sugar.Infof("Created order: %+v", order)
 
 		go func() {
-			_ = router.subEnv.SaveOrderClient(client.OrderClient{
+			_ = router.subRepo.SaveOrderClient(client.OrderClient{
 				OrderID: order.ID,
 				Client:  clientApp,
 			})
@@ -126,7 +126,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		// Convert wxpay's map to struct for easy manipulation.
 		uor := wechat.NewUnifiedOrderResp(order.ID, resp)
 		go func() {
-			_ = router.subEnv.SavePrepayResp(uor)
+			_ = router.subRepo.SavePrepayResp(uor)
 		}()
 
 		if r := uor.Validate(payClient.GetApp()); r != nil {
@@ -222,7 +222,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// Log the response, regardless of whether it is an error
 	// or not.
 	go func() {
-		if err := router.subEnv.SaveWxNotification(noti); err != nil {
+		if err := router.subRepo.SaveWxNotification(noti); err != nil {
 			sugar.Error(err)
 		}
 	}()
@@ -248,13 +248,13 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	sugar.Infof("Payment result %+v", payResult)
 
-	confirmed, cfmErr := router.subEnv.ConfirmOrder(payResult)
+	confirmed, cfmErr := router.subRepo.ConfirmOrder(payResult)
 
 	// Handle confirmation error.
 	if cfmErr != nil {
 		sugar.Error(cfmErr)
 		go func() {
-			_ = router.subEnv.SaveConfirmationResult(
+			_ = router.subRepo.SaveConfirmationResult(
 				cfmErr.Schema(payResult.OrderID))
 		}()
 
@@ -272,7 +272,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !confirmed.Snapshot.IsZero() {
-		_ = router.readerEnv.BackUpMember(confirmed.Snapshot)
+		_ = router.readerRepo.BackUpMember(confirmed.Snapshot)
 	}
 
 	go func() {
@@ -336,7 +336,7 @@ func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 	// {message: "", {field: result, code: "ORDERNOTEXIST" | "SYSTEMERROR"} }
 	resp := wechat.NewOrderQueryResp(respParams)
 	go func() {
-		if err := router.subEnv.SaveWxQueryResp(resp); err != nil {
+		if err := router.subRepo.SaveWxQueryResp(resp); err != nil {
 			sugar.Error(err)
 		}
 	}()
