@@ -140,6 +140,14 @@ func main() {
 		r.Get("/query/{orderId}", aliRouter.Query)
 	})
 
+	r.Route("/upgrade", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+		r.Use(controller.UserOrUnionID)
+		// Get membership information when user want to upgrade: days remaining, account balance, amount
+		r.Put("/free", upgradeRouter.FreeUpgrade)
+		r.Get("/balance", upgradeRouter.UpgradeBalance)
+	})
+
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(controller.FtcID)
@@ -182,14 +190,6 @@ func main() {
 		r.Patch("/receipt/{id}", iapRouter.RefreshReceipt)
 	})
 
-	r.Route("/upgrade", func(r chi.Router) {
-		r.Use(guard.CheckToken)
-		r.Use(controller.UserOrUnionID)
-		// Get membership information when user want to upgrade: days remaining, account balance, amount
-		r.Put("/free", upgradeRouter.FreeUpgrade)
-		r.Get("/balance", upgradeRouter.UpgradeBalance)
-	})
-
 	// Deprecate. Use /webhook
 	r.Route("/callback", func(r1 chi.Router) {
 		r1.Post("/wxpay", wxRouter.WebHook)
@@ -214,6 +214,7 @@ func main() {
 		r.Get("/__refresh", paywallRouter.BustCache)
 	})
 
+	// Handle wechat oauth.
 	r.Route("/wx", func(r chi.Router) {
 
 		r.Route("/oauth", func(r chi.Router) {
