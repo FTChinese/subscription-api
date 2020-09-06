@@ -170,12 +170,46 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 	}
 }
 
+// Query verifies the payment status of an order against alipay api.
+// GET /alipay/query/{orderId}
+func (router AliPayRouter) Query(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	orderID, err := getURLParam(req, "orderId").ToString()
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	result, err := router.client.TradeQuery(alipay.AliPayTradeQuery{
+		AppAuthToken: "",
+		OutTradeNo:   orderID,
+	})
+
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	if !result.IsSuccess() {
+		_ = render.New(w).Unprocessable(&render.ValidationError{
+			Message: result.AliPayTradeQuery.Msg,
+			Field:   "status",
+			Code:    render.InvalidCode(result.AliPayTradeQuery.TradeStatus),
+		})
+		return
+	}
+
+	_ = render.New(w).OK(ali.NewOrderQueryResult(result))
+}
+
 // WebHook handles alipay server-side notification.
 // POST /webhook/alipay
 func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	err := req.ParseForm()
 	if err != nil {
