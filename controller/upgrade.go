@@ -27,7 +27,7 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 		_ = render.New(w).DBError(err)
 	}
 
-	pi, err := router.subEnv.PreviewUpgrade(userID, plan)
+	pi, err := router.subRepo.PreviewUpgrade(userID, plan)
 
 	if err != nil {
 		switch err {
@@ -53,7 +53,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 		SetPlan(p).
 		SetEnvConfig(router.config)
 
-	confirmed, err := router.subEnv.FreeUpgrade(builder)
+	confirmed, err := router.subRepo.FreeUpgrade(builder)
 	if err != nil {
 		switch err {
 		case subs.ErrUpgradeInvalid:
@@ -71,12 +71,12 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 
 	// Save snapshot.
 	go func() {
-		_ = router.readerEnv.BackUpMember(confirmed.Snapshot)
+		_ = router.readerRepo.BackUpMember(confirmed.Snapshot)
 	}()
 
 	// Save client app info
 	go func() {
-		_ = router.subEnv.SaveOrderClient(client.OrderClient{
+		_ = router.subRepo.SaveOrderClient(client.OrderClient{
 			OrderID: confirmed.Order.ID,
 			Client:  clientApp,
 		})
@@ -85,7 +85,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 	// Send email
 	go func() {
 		// Find this user's personal data
-		account, err := router.readerEnv.AccountByFtcID(confirmed.Order.FtcID.String)
+		account, err := router.readerRepo.AccountByFtcID(confirmed.Order.FtcID.String)
 		if err != nil {
 			return
 		}

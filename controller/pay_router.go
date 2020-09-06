@@ -20,24 +20,24 @@ import (
 
 // PayRouter is the base type used to handle shared payment operations.
 type PayRouter struct {
-	subEnv    subrepo.Env
-	readerEnv readerrepo.Env
-	prodRepo  products.Env
-	postman   postoffice.PostOffice
-	config    config.BuildConfig
-	logger    *zap.Logger
+	subRepo    subrepo.Env
+	readerRepo readerrepo.Env
+	prodRepo   products.Env
+	postman    postoffice.PostOffice
+	config     config.BuildConfig
+	logger     *zap.Logger
 }
 
 func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
 	l, _ := zap.NewProduction()
 
 	return PayRouter{
-		subEnv:    subrepo.NewEnv(db, c, b),
-		readerEnv: readerrepo.NewEnv(db, b),
-		prodRepo:  products.NewEnv(db, c),
-		postman:   p,
-		config:    b,
-		logger:    l,
+		subRepo:    subrepo.NewEnv(db, c, b),
+		readerRepo: readerrepo.NewEnv(db, b),
+		prodRepo:   products.NewEnv(db, c),
+		postman:    p,
+		config:     b,
+		logger:     l,
 	}
 }
 
@@ -52,7 +52,7 @@ func (router PayRouter) isTestAccount(ids reader.MemberID, req *http.Request) bo
 		return false
 	}
 
-	found, err := router.readerEnv.SandboxUserExists(ids.FtcID.String)
+	found, err := router.readerRepo.SandboxUserExists(ids.FtcID.String)
 	if err != nil {
 		return false
 	}
@@ -83,7 +83,7 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := router.readerEnv.AccountByFtcID(order.FtcID.String)
+	account, err := router.readerRepo.AccountByFtcID(order.FtcID.String)
 
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 		parcel, err = letter.NewRenewalParcel(account, order)
 
 	case enum.OrderKindUpgrade:
-		pos, err := router.subEnv.ListProratedOrders(order.ID)
+		pos, err := router.subRepo.ListProratedOrders(order.ID)
 		if err != nil {
 			return err
 		}

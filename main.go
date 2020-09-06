@@ -103,17 +103,21 @@ func main() {
 		r.Use(controller.UserOrUnionID)
 
 		// Create a new subscription.
-		r.Post("/desktop/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeDesktop))
+		r.With(controller.UserOrUnionID).
+			Post("/desktop/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeDesktop))
 
 		//r.Post("/desktop", wxRouter.NewSub(wechat.TradeTypeDesktop))
 		//r.Patch("/desktop", wxRouter.UpgradeSub(wechat.TradeTypeDesktop))
 
-		r.Post("/mobile/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeMobile))
+		r.With(controller.UserOrUnionID).
+			Post("/mobile/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeMobile))
 
 		// {code: string}
-		r.Post("/jsapi/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeJSAPI))
+		r.With(controller.UserOrUnionID).
+			Post("/jsapi/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeJSAPI))
 
-		r.Post("/app/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeApp))
+		r.With(controller.UserOrUnionID).
+			Post("/app/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeApp))
 
 		// Query order
 		// X-App-Id
