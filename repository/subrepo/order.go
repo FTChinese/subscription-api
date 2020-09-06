@@ -9,6 +9,7 @@ import (
 
 func (env Env) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 	logger, _ := zap.NewProduction()
+	defer logger.Sync()
 	sugar := logger.Sugar()
 
 	otx, err := env.BeginOrderTx()
@@ -99,6 +100,21 @@ func (env Env) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
 
 	if err := otx.Commit(); err != nil {
 		sugar.Error(err)
+		return subs.Order{}, err
+	}
+
+	return order, nil
+}
+
+func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
+	var order subs.Order
+
+	err := env.db.Get(
+		&order,
+		subs.StmtSelectOrder,
+		orderID)
+
+	if err != nil {
 		return subs.Order{}, err
 	}
 
