@@ -95,7 +95,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			SetWebhookURL(router.config.WebHookBaseURL()).
 			SetTest(isTest)
 
-		order, err := router.subEnv.CreateOrder(builder)
+		order, err := router.subRepo.CreateOrder(builder)
 
 		if err != nil {
 			sugar.Error(err)
@@ -106,7 +106,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		sugar.Infof("Created order: %+v", order)
 
 		go func() {
-			_ = router.subEnv.SaveOrderClient(client.OrderClient{
+			_ = router.subRepo.SaveOrderClient(client.OrderClient{
 				OrderID: order.ID,
 				Client:  clientApp,
 			})
@@ -245,7 +245,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		if err := router.subEnv.SaveAliNotification(*noti); err != nil {
+		if err := router.subRepo.SaveAliNotification(*noti); err != nil {
 			sugar.Error(err)
 		}
 	}()
@@ -271,12 +271,12 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
-	confirmed, cfmErr := router.subEnv.ConfirmOrder(payResult)
+	confirmed, cfmErr := router.subRepo.ConfirmOrder(payResult)
 
 	if cfmErr != nil {
 		sugar.Error(cfmErr)
 		go func() {
-			_ = router.subEnv.SaveConfirmationResult(
+			_ = router.subRepo.SaveConfirmationResult(
 				cfmErr.Schema(payResult.OrderID),
 			)
 		}()
@@ -295,7 +295,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !confirmed.Snapshot.IsZero() {
-		_ = router.readerEnv.BackUpMember(confirmed.Snapshot)
+		_ = router.readerRepo.BackUpMember(confirmed.Snapshot)
 	}
 
 	go func() {
