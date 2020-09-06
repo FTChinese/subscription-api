@@ -20,14 +20,14 @@ func NewUpgradeRouter(baseRouter PayRouter) UpgradeRouter {
 }
 
 func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
-	userID := getReaderIDs(req.Header)
+	readerIDs := getReaderIDs(req.Header)
 
 	plan, err := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
 	if err != nil {
 		_ = render.New(w).DBError(err)
 	}
 
-	pi, err := router.subRepo.PreviewUpgrade(userID, plan)
+	pi, err := router.subRepo.PreviewUpgrade(readerIDs, plan)
 
 	if err != nil {
 		switch err {
@@ -44,14 +44,16 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 
 // FreeUpgrade handles free upgrade request.
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
-	userID := getReaderIDs(req.Header)
-
-	p, _ := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
+	readerIDs := getReaderIDs(req.Header)
 	clientApp := client.NewClientApp(req)
 
-	builder := subs.NewOrderBuilder(userID).
+	p, _ := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
+
+	isTest := router.isTestAccount(readerIDs, req)
+
+	builder := subs.NewOrderBuilder(readerIDs).
 		SetPlan(p).
-		SetEnvConfig(router.config)
+		SetTest(isTest)
 
 	confirmed, err := router.subRepo.FreeUpgrade(builder)
 	if err != nil {
