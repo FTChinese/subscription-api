@@ -376,7 +376,7 @@ func (router StripeRouter) onSubscription(s *stripeSdk.Subscription) error {
 }
 
 func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	logger := logrus.WithField("trace", "StripeRouter.WebHook")
+	logger := logrus.WithField("trace", "StripeRouter.AliWebHook")
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {

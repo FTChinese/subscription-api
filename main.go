@@ -74,11 +74,8 @@ func main() {
 
 	guard := access.NewGuard(myDB)
 
-	baseRouter := controller.NewBasePayRouter(myDB, promoCache, cfg, post)
-
-	wxRouter := controller.NewWxRouter(baseRouter)
-	aliRouter := controller.NewAliRouter(baseRouter)
-	upgradeRouter := controller.NewUpgradeRouter(baseRouter)
+	payRouter := controller.NewPayRouter(myDB, promoCache, cfg, post)
+	upgradeRouter := controller.NewUpgradeRouter(payRouter)
 
 	stripeRouter := controller.NewStripeRouter(myDB, cfg)
 	iapRouter := controller.NewIAPRouter(myDB, cfg, post)
@@ -104,24 +101,24 @@ func main() {
 
 		// Create a new subscription.
 		r.With(controller.UserOrUnionID).
-			Post("/desktop/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeDesktop))
+			Post("/desktop/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeDesktop))
 
 		//r.Post("/desktop", wxRouter.NewSub(wechat.TradeTypeDesktop))
 		//r.Patch("/desktop", wxRouter.UpgradeSub(wechat.TradeTypeDesktop))
 
 		r.With(controller.UserOrUnionID).
-			Post("/mobile/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeMobile))
+			Post("/mobile/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeMobile))
 
 		// {code: string}
 		r.With(controller.UserOrUnionID).
-			Post("/jsapi/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeJSAPI))
+			Post("/jsapi/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeJSAPI))
 
 		r.With(controller.UserOrUnionID).
-			Post("/app/{tier}/{cycle}", wxRouter.PlaceOrder(wechat.TradeTypeApp))
+			Post("/app/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeApp))
 
 		// Query order
 		// X-App-Id
-		r.Get("/query/{orderId}", wxRouter.OrderQuery)
+		r.Get("/query/{orderId}", payRouter.QueryWxOrder)
 	})
 
 	// Require user id.
@@ -129,15 +126,15 @@ func main() {
 		r.Use(guard.CheckToken)
 
 		r.With(controller.UserOrUnionID).
-			Post("/desktop/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryDesktopWeb))
+			Post("/desktop/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryDesktopWeb))
 
 		r.With(controller.UserOrUnionID).
-			Post("/mobile/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryMobileWeb))
+			Post("/mobile/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryMobileWeb))
 
 		r.With(controller.UserOrUnionID).
-			Post("/app/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryApp))
+			Post("/app/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryApp))
 
-		r.Get("/query/{orderId}", aliRouter.Query)
+		r.Get("/query/{orderId}", payRouter.QueryAliOrder)
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
@@ -146,6 +143,14 @@ func main() {
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
 		r.Put("/free", upgradeRouter.FreeUpgrade)
 		r.Get("/balance", upgradeRouter.UpgradeBalance)
+	})
+
+	r.Route("/orders", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+
+		// Manually confirm an order if not confirmed yet by verifying against
+		// alipay of wxpay APIs. If it's already confirmed, nothing changes.
+		r.Put("/:id", payRouter.ManualConfirm)
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
@@ -192,13 +197,13 @@ func main() {
 
 	// Deprecate. Use /webhook
 	r.Route("/callback", func(r1 chi.Router) {
-		r1.Post("/wxpay", wxRouter.WebHook)
-		r1.Post("/alipay", aliRouter.WebHook)
+		r1.Post("/wxpay", payRouter.WxWebHook)
+		r1.Post("/alipay", payRouter.AliWebHook)
 	})
 
 	r.Route("/webhook", func(r chi.Router) {
-		r.Post("/wxpay", wxRouter.WebHook)
-		r.Post("/alipay", aliRouter.WebHook)
+		r.Post("/wxpay", payRouter.WxWebHook)
+		r.Post("/alipay", payRouter.AliWebHook)
 		r.Post("/stripe", stripeRouter.WebHook)
 		r.Post("/apple", iapRouter.WebHook)
 	})

@@ -288,7 +288,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 
 // WebHook receives app store server-to-server notification.
 func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	log := logger.WithField("trace", "IAPRouter.WebHook")
+	log := logger.WithField("trace", "IAPRouter.AliWebHook")
 
 	var wh apple.WebHook
 	b, err := ioutil.ReadAll(req.Body)
