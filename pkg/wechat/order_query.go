@@ -1,8 +1,6 @@
 package wechat
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 )
@@ -76,26 +74,4 @@ func NewOrderQueryResp(p wxpay.Params) OrderQueryResp {
 	}
 
 	return r
-}
-
-func (r *OrderQueryResp) ToQueryResult() OrderQueryResult {
-
-	return OrderQueryResult{
-		PaymentState:     r.TradeState.String,
-		PaymentStateDesc: r.TradeStateDesc.String,
-		TotalFee:         r.TotalFee.Int64,
-		TransactionID:    r.TransactionID.String,
-		FTCOrderID:       r.FTCOrderID.String,
-		PaidAt:           chrono.TimeFrom(dt.MustParseWxTime(r.TimeEnd.String)),
-	}
-}
-
-// OrderQueryResult is the query result of wxpay.
-type OrderQueryResult struct {
-	PaymentState     string      `json:"paymentState"` // SUCCESS, REFUND, NOTPAY, CLOSED, REVOKED, USERPAYING, PAYERROR
-	PaymentStateDesc string      `json:"paymentStateDesc"`
-	TotalFee         int64       `json:"totalFee"`
-	TransactionID    string      `json:"transactionId"`
-	FTCOrderID       string      `json:"ftcOrderId"`
-	PaidAt           chrono.Time `json:"paidAt"`
 }

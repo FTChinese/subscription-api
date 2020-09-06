@@ -10,28 +10,12 @@ import (
 	"net/http"
 )
 
-// WxPayRouter wraps wxpay and alipay sdk instances.
-type WxPayRouter struct {
-	clients wechat.PayClients
-	PayRouter
-}
-
-// NewWxRouter creates a new instance or OrderRouter
-func NewWxRouter(baseRouter PayRouter) WxPayRouter {
-	r := WxPayRouter{
-		clients:   wechat.InitPayClients(),
-		PayRouter: baseRouter,
-	}
-
-	return r
-}
-
 // PlaceOrder creates order for wechat pay.
 // POST /wxpay/desktop/<tier>/<cycle>?test=true
 // 		/wxpay/mobile/<tier>/<cycle>?test=true
 //		/wxpay/jsapi/<tier>/<cycle>?test=true
 // 		/wxpay/app/<tier>/<cycle>?test=true
-func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFunc {
+func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFunc {
 	sugar := router.logger.Sugar()
 	sugar.Infow("Create wxpay order",
 		"trace", "WxPayRouter.PlaceOrder",
@@ -65,7 +49,7 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 		}
 
 		// Find the client to use for wxpay
-		payClient, err := router.clients.GetClientByPlatform(tradeType)
+		payClient, err := router.wxPayClients.GetClientByPlatform(tradeType)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).InternalServerError(err.Error())
@@ -167,9 +151,9 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 	}
 }
 
-// WebHook implements 支付结果通知
+// WxWebHook implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
-func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
+func (router PayRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -207,7 +191,7 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Try to find out which app is in charge of the response.
-	payClient, err := router.clients.GetClientByAppID(noti.AppID.String)
+	payClient, err := router.wxPayClients.GetClientByAppID(noti.AppID.String)
 
 	if err != nil {
 		sugar.Error(err)
@@ -286,72 +270,39 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// OrderQuery implements 查询订单
+// QueryWxOrder implements 查询订单
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 // GET /wxpay/query/{orderId}?app_id=<string>
-func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
+func (router PayRouter) QueryWxOrder(w http.ResponseWriter, req *http.Request) {
 
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
 	// Get ftc order id from URL
 	orderID, err := getURLParam(req, "orderId").ToString()
-
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	appID := getWxAppID(req)
-	// Get the client to query wechat api.
-	payClient, err := router.clients.GetClientByAppID(appID)
+	order, err := router.subRepo.RetrieveOrder(orderID)
 	if err != nil {
 		sugar.Error(err)
-		_ = render.New(w).BadRequest(err.Error())
+		_ = render.New(w).DBError(err)
 		return
 	}
 
-	reqParams := make(wxpay.Params)
-	reqParams.SetString("out_trade_no", orderID)
-
-	// Send query to Wechat server
-	// Returns the parsed response as a map.
-	// It checks if the response contains `return_code` key.
-	// If return_code == FAIL, it does not returns error.
-	// If return_code == SUCCESS, it verifies the signature.
-	respParams, err := payClient.OrderQuery(reqParams)
-
-	// If there are any errors when querying order.
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).InternalServerError(err.Error())
+	if order.PaymentMethod != enum.PayMethodWx {
+		_ = render.New(w).BadRequest("Order not paid via wechat")
 		return
 	}
 
-	sugar.Infof("Wechat order found")
-
-	// Response:
-	// {message: "", {field: status, code: fail} }
-	// {message: "", {field: result, code: "ORDERNOTEXIST" | "SYSTEMERROR"} }
-	resp := wechat.NewOrderQueryResp(respParams)
-	go func() {
-		if err := router.subRepo.SaveWxQueryResp(resp); err != nil {
-			sugar.Error(err)
-		}
-	}()
-
-	if r := resp.Validate(payClient.GetApp()); r != nil {
-		sugar.Info("Response invalid")
-
-		if r.Field == "result" && r.Code == "ORDERNOTEXIST" {
-			_ = render.New(w).NotFound()
-			return
-		}
-
-		_ = render.New(w).Unprocessable(r)
+	paidResult, respErr := router.queryWxOrder(order)
+	if respErr != nil {
+		_ = render.New(w).JSON(respErr.StatusCode, respErr)
 		return
 	}
 
-	_ = render.New(w).JSON(http.StatusOK, resp.ToQueryResult())
+	_ = render.New(w).OK(paidResult)
 }

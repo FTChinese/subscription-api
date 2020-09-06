@@ -26,15 +26,6 @@ func NewApp(key string) (App, error) {
 	return app, nil
 }
 
-func MustNewApp(key string) App {
-	app, err := NewApp(key)
-	if err != nil {
-		panic(err)
-	}
-
-	return app
-}
-
 func MustInitApp() App {
 	app, err := NewApp("alipay")
 	if err != nil {

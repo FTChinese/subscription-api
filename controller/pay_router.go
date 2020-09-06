@@ -5,15 +5,20 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/repository/products"
 	"github.com/FTChinese/subscription-api/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/repository/subrepo"
+	"github.com/guregu/null"
 	"github.com/jmoiron/sqlx"
+	"github.com/objcoding/wxpay"
 	"github.com/patrickmn/go-cache"
+	"github.com/smartwalle/alipay"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -26,10 +31,17 @@ type PayRouter struct {
 	postman    postoffice.PostOffice
 	config     config.BuildConfig
 	logger     *zap.Logger
+
+	aliAppID string
+	aliPay   *alipay.AliPay
+
+	wxPayClients wechat.PayClients
 }
 
-func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
+func NewPayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
 	l, _ := zap.NewProduction()
+
+	aliApp := ali.MustInitApp()
 
 	return PayRouter{
 		subRepo:    subrepo.NewEnv(db, c, b),
@@ -38,6 +50,11 @@ func NewBasePayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p posto
 		postman:    p,
 		config:     b,
 		logger:     l,
+
+		aliAppID: aliApp.ID,
+		aliPay:   alipay.New(aliApp.ID, aliApp.PublicKey, aliApp.PrivateKey, true),
+
+		wxPayClients: wechat.InitPayClients(),
 	}
 }
 
@@ -74,7 +91,8 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
 func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
-	log := logger.WithField("trace", "PayRouter.sendConfirmationEmail")
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// If the FtcID field is null, it indicates this user
 	// does not have an FTC account linked. You cannot find out
@@ -106,16 +124,92 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 	}
 
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return err
 	}
 
-	log.Info("Send subscription confirmation letter")
+	sugar.Info("Send subscription confirmation letter")
 
 	err = router.postman.Deliver(parcel)
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return err
 	}
 	return nil
+}
+
+func (router PayRouter) queryWxOrder(order subs.Order) (subs.PaymentResult, *render.ResponseError) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	if order.WxAppID.IsZero() {
+		order.WxAppID = null.StringFrom(wxAppNativeApp)
+	}
+
+	payClient, err := router.wxPayClients.GetClientByAppID(order.WxAppID.String)
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, render.NewInternalError(err.Error())
+	}
+
+	reqParams := make(wxpay.Params)
+	reqParams.SetString("out_trade_no", order.ID)
+
+	// Send query to Wechat server
+	// Returns the parsed response as a map.
+	// It checks if the response contains `return_code` key.
+	// If return_code == FAIL, it does not returns error.
+	// If return_code == SUCCESS, it verifies the signature.
+	respParams, err := payClient.OrderQuery(reqParams)
+
+	// If there are any errors when querying order.
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, render.NewInternalError(err.Error())
+	}
+
+	sugar.Infof("Wechat order found")
+
+	// Response:
+	// {message: "", {field: status, code: fail} }
+	// {message: "", {field: result, code: "ORDERNOTEXIST" | "SYSTEMERROR"} }
+	resp := wechat.NewOrderQueryResp(respParams)
+	go func() {
+		if err := router.subRepo.SaveWxQueryResp(resp); err != nil {
+			sugar.Error(err)
+		}
+	}()
+
+	if r := resp.Validate(payClient.GetApp()); r != nil {
+		sugar.Info("Response invalid")
+
+		if r.Field == "result" && r.Code == "ORDERNOTEXIST" {
+			return subs.PaymentResult{}, render.NewNotFound("Order does not exist")
+		}
+
+		return subs.PaymentResult{}, render.NewUnprocessable(r)
+	}
+
+	return subs.NewWxQueryResult(resp), nil
+}
+
+func (router PayRouter) queryAliOrder(order subs.Order) (subs.PaymentResult, *render.ResponseError) {
+	result, err := router.aliPay.TradeQuery(alipay.AliPayTradeQuery{
+		AppAuthToken: "",
+		OutTradeNo:   order.ID,
+	})
+
+	if err != nil {
+		return subs.PaymentResult{}, render.NewBadRequest(err.Error())
+	}
+
+	if !result.IsSuccess() {
+		return subs.PaymentResult{}, render.NewUnprocessable(&render.ValidationError{
+			Message: result.AliPayTradeQuery.Msg,
+			Field:   "status",
+			Code:    render.InvalidCode(result.AliPayTradeQuery.TradeStatus),
+		})
+	}
+
+	return subs.NewAliQueryResult(result), nil
 }

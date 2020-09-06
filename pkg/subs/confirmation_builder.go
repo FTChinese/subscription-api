@@ -86,7 +86,7 @@ func (b *ConfirmationBuilder) ValidateDuplicateUpgrading() *ConfirmError {
 
 func (b *ConfirmationBuilder) Build() (ConfirmationResult, error) {
 
-	order, err := b.order.Confirm(b.membership, b.paymentResult.ConfirmedAt)
+	order, err := b.order.Confirm(b.membership, b.paymentResult.ConfirmedAt.Time)
 	if err != nil {
 		return ConfirmationResult{}, err
 	}
