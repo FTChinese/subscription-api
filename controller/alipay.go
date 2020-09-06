@@ -7,7 +7,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"github.com/smartwalle/alipay"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -17,33 +16,12 @@ const (
 	fail    = "fail"
 )
 
-// AliPayRouter handles alipay request
-type AliPayRouter struct {
-	appID  string
-	client *alipay.AliPay
-	PayRouter
-}
-
-// NewAliRouter create a new instance of AliPayRouter
-func NewAliRouter(baseRouter PayRouter) AliPayRouter {
-
-	app := ali.MustInitApp()
-
-	r := AliPayRouter{
-		appID:     app.ID,
-		client:    alipay.New(app.ID, app.PublicKey, app.PrivateKey, true),
-		PayRouter: baseRouter,
-	}
-
-	return r
-}
-
 // PlaceOrder creates an http handler function depending
 // on the device platform.
 //
 // 	POST /<desktop|mobile|app>/{tier}/{cycle}?<return_url=xxx>
 // `return_url` parameter is only required for apps running on ftacademy.cn
-func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
+func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 	logger, _ := zap.NewProduction()
 	sugar := logger.Sugar()
@@ -116,7 +94,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 		case ali.EntryApp:
 			// Generate signature and creates a string of query
 			// parameter.
-			queryStr, err := router.client.TradeAppPay(
+			queryStr, err := router.aliPay.TradeAppPay(
 				builder.AliAppPayParams())
 
 			sugar.Infof("App pay param: %+v\n", queryStr)
@@ -135,7 +113,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 
 		case ali.EntryDesktopWeb:
-			redirectURL, err := router.client.TradePagePay(
+			redirectURL, err := router.aliPay.TradePagePay(
 				builder.AliDesktopPayParams(input.ReturnURL),
 			)
 			if err != nil {
@@ -152,7 +130,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 			})
 
 		case ali.EntryMobileWeb:
-			redirectURL, err := router.client.TradeWapPay(
+			redirectURL, err := router.aliPay.TradeWapPay(
 				builder.AliWapPayParams(input.ReturnURL),
 			)
 			if err != nil {
@@ -172,7 +150,7 @@ func (router AliPayRouter) PlaceOrder(kind ali.EntryKind) http.HandlerFunc {
 
 // Query verifies the payment status of an order against alipay api.
 // GET /alipay/query/{orderId}
-func (router AliPayRouter) Query(w http.ResponseWriter, req *http.Request) {
+func (router PayRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -183,31 +161,30 @@ func (router AliPayRouter) Query(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := router.client.TradeQuery(alipay.AliPayTradeQuery{
-		AppAuthToken: "",
-		OutTradeNo:   orderID,
-	})
-
+	order, err := router.subRepo.RetrieveOrder(orderID)
 	if err != nil {
-		_ = render.New(w).BadRequest(err.Error())
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
 		return
 	}
 
-	if !result.IsSuccess() {
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: result.AliPayTradeQuery.Msg,
-			Field:   "status",
-			Code:    render.InvalidCode(result.AliPayTradeQuery.TradeStatus),
-		})
+	if order.PaymentMethod != enum.PayMethodAli {
+		_ = render.New(w).BadRequest("Order not paid via alipay")
 		return
 	}
 
-	_ = render.New(w).OK(ali.NewOrderQueryResult(result))
+	result, respErr := router.queryAliOrder(order)
+	if respErr != nil {
+		_ = render.New(w).JSON(respErr.StatusCode, respErr)
+		return
+	}
+
+	_ = render.New(w).OK(result)
 }
 
-// WebHook handles alipay server-side notification.
+// AliWebHook handles alipay server-side notification.
 // POST /webhook/alipay
-func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
+func (router PayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -222,7 +199,7 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If err is nil, then the signature is verified.
-	noti, err := router.client.GetTradeNotification(req)
+	noti, err := router.aliPay.GetTradeNotification(req)
 	sugar.Infof("+%v", noti)
 
 	if err != nil {
@@ -235,8 +212,8 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// 4、验证app_id是否为该商户本身
-	if noti.AppId != router.appID {
-		sugar.Infof("Expected %s, actual %s", router.appID, noti.AppId)
+	if noti.AppId != router.aliAppID {
+		sugar.Infof("Expected %s, actual %s", router.aliAppID, noti.AppId)
 
 		if _, err := w.Write([]byte(fail)); err != nil {
 			sugar.Error(err)
@@ -295,7 +272,9 @@ func (router AliPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !confirmed.Snapshot.IsZero() {
-		_ = router.readerRepo.BackUpMember(confirmed.Snapshot)
+		go func() {
+			_ = router.readerRepo.BackUpMember(confirmed.Snapshot)
+		}()
 	}
 
 	go func() {
