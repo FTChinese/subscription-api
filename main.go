@@ -175,6 +175,7 @@ func main() {
 
 		// Load a receipt and its associated subscription. Internal only.
 		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
+		r.Patch("/receipt/{id}", iapRouter.RefreshReceipt)
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
