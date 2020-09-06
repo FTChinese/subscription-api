@@ -91,8 +91,6 @@ func (tx MemberTx) RetrieveOrder(orderID string) (subs.Order, error) {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "MemberTx.RetrieveOrder").Error(err)
-
 		return order, err
 	}
 
