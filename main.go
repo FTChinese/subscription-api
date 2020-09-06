@@ -123,17 +123,17 @@ func main() {
 	// Require user id.
 	r.Route("/alipay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.UserOrUnionID)
 
-		r.Post("/desktop/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryDesktopWeb))
+		r.With(controller.UserOrUnionID).
+			Post("/desktop/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryDesktopWeb))
 
-		r.Post("/mobile/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryMobileWeb))
+		r.With(controller.UserOrUnionID).
+			Post("/mobile/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryMobileWeb))
 
-		r.Post("/app/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryApp))
+		r.With(controller.UserOrUnionID).
+			Post("/app/{tier}/{cycle}", aliRouter.PlaceOrder(ali.EntryApp))
 
-		// Deprecate
-		//r.Post("/app-order/{tier}/{cycle}", aliRouter.AppOrder)
-		// r1.Post("/verify/app-pay", aliRouter.VerifyAppPay)
+		r.Get("/query/{orderId}", aliRouter.Query)
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
