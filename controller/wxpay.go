@@ -7,7 +7,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/objcoding/wxpay"
-	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -171,9 +170,8 @@ func (router WxPayRouter) PlaceOrder(tradeType wechat.TradeType) http.HandlerFun
 // WebHook implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
 func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	resp := wxpay.Notifies{}
 
@@ -290,12 +288,11 @@ func (router WxPayRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 // OrderQuery implements 查询订单
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
-// Path: /query/{orderId}?app_id=<string>
+// GET /wxpay/query/{orderId}?app_id=<string>
 func (router WxPayRouter) OrderQuery(w http.ResponseWriter, req *http.Request) {
 
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Get ftc order id from URL
 	orderID, err := getURLParam(req, "orderId").ToString()

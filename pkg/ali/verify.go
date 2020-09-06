@@ -4,7 +4,14 @@ import (
 	"github.com/smartwalle/alipay"
 )
 
+type TradeStatus string
+
 const (
+	TradeStatusFinished TradeStatus = "TRADE_FINISHED"
+	TradeStatusSuccess  TradeStatus = "TRADE_SUCCESS"
+	TradeStatusPending  TradeStatus = "WAIT_BUYER_PAY"
+	TradeStatusClosed   TradeStatus = "TRADE_CLOSED"
+
 	tradeFinished = "TRADE_FINISHED"
 	tradeSuccess  = "TRADE_SUCCESS"
 	tradePending  = "WAIT_BUYER_PAY"
