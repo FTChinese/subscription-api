@@ -27,9 +27,9 @@ LIMIT 1`
 const StmtExpandedPlanByEdition = colExpandedPlan + `
 FROM subs_product.product_active_plans AS a
 	LEFT JOIN subs_product.plan AS p
-	ON a.plan_id = p.id
+		ON a.plan_id = p.id
 	LEFT JOIN subs_product.discount AS d
-	ON p.discount_id = d.id
+		ON p.discount_id = d.id
 WHERE p.tier = ? AND p.cycle = ?
 LIMIT 1`
 
@@ -38,11 +38,11 @@ LIMIT 1`
 const StmtPaywallPlans = colExpandedPlan + `
 FROM subs_product.product_active_plans AS a
 	LEFT JOIN subs_product.plan AS p
-	ON a.plan_id = p.id
+		ON a.plan_id = p.id
 	LEFT JOIN subs_product.discount AS d
-	ON p.discount_id = d.id
+		ON p.discount_id = d.id
 	LEFT JOIN subs_product.paywall_product AS pp
-	ON a.product_id = pp.product_id
+		ON a.product_id = pp.product_id
 WHERE p.id IS NOT NULL
 	AND pp.product_id IS NOT NULL
 ORDER BY cycle DESC`
