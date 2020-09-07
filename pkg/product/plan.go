@@ -28,6 +28,7 @@ func (p Plan) PaymentTitle(k enum.OrderKind) string {
 // we persist plans in db.
 type IntentPlan struct {
 	Plan
+	DiscountID null.String
 	Charge
 }
 
