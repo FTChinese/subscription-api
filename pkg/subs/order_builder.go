@@ -186,13 +186,18 @@ func (b *OrderBuilder) Build() error {
 		charge.Amount = 0.01
 	}
 
+	var discountID null.String
+	if b.plan.Discount.IsValid() {
+		discountID = b.plan.Discount.DiscID
+	}
+
 	b.order = Order{
 		ID:            orderID,
 		Price:         b.plan.Price,
 		Charge:        charge,
 		MemberID:      b.memberID,
 		PlanID:        b.plan.ID,
-		DiscountID:    b.plan.Discount.DiscID,
+		DiscountID:    discountID,
 		Edition:       b.plan.Edition,
 		Duration:      duration,
 		Kind:          b.kind,
