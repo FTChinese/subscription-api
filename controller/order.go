@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -48,6 +49,8 @@ func (router PayRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) 
 		_ = render.New(w).JSON(respErr.StatusCode, respErr)
 		return
 	}
+
+	paidResult.ConfirmedAt = chrono.TimeNow()
 
 	confirmed, cfmErr := router.subRepo.ConfirmOrder(paidResult)
 	if cfmErr != nil {
