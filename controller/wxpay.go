@@ -17,10 +17,6 @@ import (
 // 		/wxpay/app/<tier>/<cycle>?test=true
 func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFunc {
 	sugar := router.logger.Sugar()
-	sugar.Infow("Create wxpay order",
-		"trace", "WxPayRouter.PlaceOrder",
-		"platform", tradeType.String(),
-	)
 
 	// Request input:
 	// openID?: string; Required only for payment inside wechat in-house browser.
