@@ -67,7 +67,7 @@ func NewAliQueryResult(r *alipay.AliPayTradeQueryResponse) PaymentResult {
 		Amount:           mustPriceToCent(r.AliPayTradeQuery.TotalAmount),
 		TransactionID:    r.AliPayTradeQuery.TradeNo,
 		OrderID:          r.AliPayTradeQuery.OutTradeNo,
-		ConfirmedAt:      chrono.Time{},
+		ConfirmedAt:      chrono.TimeNow(),
 	}
 }
 
