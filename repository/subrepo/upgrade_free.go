@@ -2,6 +2,7 @@ package subrepo
 
 import (
 	"errors"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"time"
@@ -58,7 +59,7 @@ func (env Env) FreeUpgrade(builder *subs.OrderBuilder) (subs.ConfirmationResult,
 	confirmed, err := subs.NewConfirmationBuilder(subs.PaymentResult{
 		Amount:      0,
 		OrderID:     order.ID,
-		ConfirmedAt: time.Now(),
+		ConfirmedAt: chrono.TimeNow(),
 	}, env.Live()).
 		SetMembership(member).
 		SetOrder(order).
