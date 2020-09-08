@@ -25,10 +25,6 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 	logger, _ := zap.NewProduction()
 	sugar := logger.Sugar()
-	sugar.Infow("Create wxpay order",
-		"trace", "WxPayRouter.PlaceOrder",
-		"platform", kind.String(),
-	)
 
 	// TODO: put all those fields in request body.
 	// returnUrl: string;
