@@ -24,7 +24,7 @@ func tokenFileName(id string, env apple.Environment) string {
 	return id + "_" + env.String() + ".txt"
 }
 
-// SaveReceiptTokenFile saves the LatestToken field in apple.UnifiedReceipt to a file.
+// SaveReceiptTokenFile saves the LatestReceipt field in apple.UnifiedReceipt to a file.
 // Files named after the convention <original_transaction_id>_<Production | Sandbox>.txt
 func SaveReceiptTokenFile(r apple.ReceiptToken) error {
 	logger, _ := zap.NewProduction()
@@ -56,6 +56,8 @@ func SaveReceiptTokenFile(r apple.ReceiptToken) error {
 	return nil
 }
 
+// LoadReceipt from disk.
+// The error is os.PathError if present.
 func LoadReceipt(originalID string, env apple.Environment) ([]byte, error) {
 	d, err := getReceiptAbsDir()
 	if err != nil {
