@@ -1,11 +1,5 @@
 package apple
 
-import (
-	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/validator"
-	"strings"
-)
-
 // VerificationPayload contains the the JSON contents
 // you submit with the request to the App Store when verifying receipt.
 // The ReceiptData is encrypted and the Password is used to decrypt it.
@@ -22,10 +16,4 @@ type VerificationPayload struct {
 	ReceiptData            string `json:"receipt-data"`             // Required. The Base64 encoded receipt data.
 	Password               string `json:"password"`                 // Required. Your app's shared secret (a hexadecimal string).
 	ExcludeOldTransactions bool   `json:"exclude-old-transactions"` // Set this value to true for the response to include only the latest renewal transaction for any subscriptions. Applicable only to auto-renewable subscriptions.
-}
-
-// Validate checks if ReceiptData is set.
-func (v *VerificationPayload) Validate() *render.ValidationError {
-	v.ReceiptData = strings.TrimSpace(v.ReceiptData)
-	return validator.New("receipt-data").Required().Validate(v.ReceiptData)
 }
