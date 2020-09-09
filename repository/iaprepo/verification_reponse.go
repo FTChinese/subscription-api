@@ -20,37 +20,36 @@ import (
 // ReceiptToken
 // Subscription
 
-// SaveVerifiedReceipt saved the decoded apple.ClientReceipt from response body.
-func (env Env) SaveVerifiedReceipt(v apple.VerifiedReceiptSchema) error {
-	_, err := env.db.NamedExec(apple.StmtSaveVerifiedReceipt, v)
+// SaveDecodedReceipt saved the decoded apple.ClientReceipt from response body.
+func (env Env) SaveDecodedReceipt(v apple.VerifiedReceiptSchema) error {
+	_, err := env.db.NamedExec(apple.StmtSaveDecodedReceipt, v)
 
 	if err != nil {
-		logger.WithField("trace", "Env.SaveVerifiedReceipt").Error(err)
 		return err
 	}
 
 	return nil
 }
 
-// Save transaction save an entry of user's transaction history.
-// UnifiedReceipt.LatestTransactions field.
+// SaveTransaction save an entry of user's transaction history.
+// UnifiedReceipt.LatestReceiptInfo field.
+// Duplicate entries are ignored.
 func (env Env) SaveTransaction(r apple.TransactionSchema) error {
 	_, err := env.db.NamedExec(apple.StmtInsertTransaction, r)
 
 	if err != nil {
-		logger.WithField("trace", "Env.SaveTransaction").Error(err)
 		return err
 	}
 
 	return nil
 }
 
-// SavePendingRenewal saves the UnifiedReceipt.PendingRenewalInfo array.
+// SavePendingRenewal saves an item in the the UnifiedReceipt.PendingRenewalInfo array.
+// Duplicate entries are ignores.
 func (env Env) SavePendingRenewal(p apple.PendingRenewalSchema) error {
 	_, err := env.db.NamedExec(apple.StmtSavePendingRenewal, p)
 
 	if err != nil {
-		logger.WithField("trace", "Env.SavePendingRenewal").Error(err)
 		return err
 	}
 
@@ -59,14 +58,51 @@ func (env Env) SavePendingRenewal(p apple.PendingRenewalSchema) error {
 
 // SaveReceiptTokenDB saves the base-64 encoded receipt data
 // for one original transaction id.
+// It is not in use since we changed to disk files.
+// TODO: try to save it in HBase.
 func (env Env) SaveReceiptTokenDB(r apple.ReceiptToken) error {
 	_, err := env.db.NamedExec(apple.StmtSaveReceiptToken, r)
 
 	if err != nil {
-		logger.WithField("trace", "Env.SaveReceiptTokenDB").Error(err)
-
 		return err
 	}
 
 	return nil
+}
+
+// SaveResponsePayload saves the payload of common fields
+// in either verification response or webhook. It includes:
+//
+// * LatestReceiptInfo
+// * PendingRenewalInfo
+// * LatestReceipt
+//
+// The LatestReceipt field is saved on disk as a file for now.
+// This part is separated since it its also used in webhook.
+//
+// TODO: save this as json document to NOSQL so that we won't need to dissecting data.
+func (env Env) SaveResponsePayload(ur apple.UnifiedReceipt) {
+	// Save the LatestReceiptInfo array.
+	go func() {
+		for _, v := range ur.LatestReceiptInfo {
+			_ = env.SaveTransaction(
+				v.Schema(ur.Environment),
+			)
+		}
+	}()
+
+	// Save PendingRenewalInfo array
+	go func() {
+		for _, v := range ur.PendingRenewalInfo {
+			_ = env.SavePendingRenewal(
+				v.Schema(ur.Environment),
+			)
+		}
+	}()
+
+	// Save the LatestReceipt field to a file.
+	// Initially it was designed to save in SQL.
+	go func() {
+		_ = SaveReceiptTokenFile(ur.ReceiptToken())
+	}()
 }
