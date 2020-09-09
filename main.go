@@ -21,7 +21,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -53,12 +52,7 @@ func init() {
 
 	log.Printf("Production %t. Sandbox %t", production, sandbox)
 
-	viper.SetConfigName("api")
-	viper.AddConfigPath("$HOME/config")
-	err := viper.ReadInConfig()
-	if err != nil {
-		os.Exit(1)
-	}
+	config.MustSetupViper()
 }
 
 func main() {
