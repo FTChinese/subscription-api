@@ -180,13 +180,28 @@ func main() {
 	r.Route("/apple", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
+		// Verify an encoded receipt and returns the decoded data.
 		r.Post("/verify-receipt", iapRouter.VerifyReceipt)
-		r.With(controller.FtcID).Post("/link", iapRouter.Link)
-		r.With(controller.FtcID).Delete("/link", iapRouter.Unlink)
+
+		// Update subscription based on the passed in receipt data.
+		// The only difference between this one and /verify-receipt
+		// is the response data.
+		r.Post("/subscription", iapRouter.UpsertSubs)
+		//r.Get("/subscription", iapRouter.LoadSubs)
+		// Refresh an existing subscription of an original transaction id.
+		r.Patch("/subscription/{id}", iapRouter.RefreshSubs)
+
+		// Link FTC account to apple subscription.
+		// This step does not perform verification.
+		// It only links an existing subscription to ftc account.
+		// You should ask the /subscription endpoint to
+		// update data and get the original transaction id.
+		r.Post("/link", iapRouter.Link)
+		// Unlink ftc account from apple subscription.
+		r.Delete("/link", iapRouter.Unlink)
 
 		// Load a receipt and its associated subscription. Internal only.
 		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
-		r.Patch("/receipt/{id}", iapRouter.RefreshReceipt)
 	})
 
 	// Deprecate. Use /webhook

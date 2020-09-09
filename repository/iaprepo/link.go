@@ -27,7 +27,7 @@ import (
 //
 // This is a suspicious operation that should always be denied.
 // Return error could be ErrTargetLinkedToOtherIAP, ErrHasValidNonIAPMember.
-func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult, error) {
+func (env Env) Link(s apple.Subscription, ids reader.MemberID) (apple.LinkResult, error) {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	sugar := logger.Sugar()
@@ -46,7 +46,7 @@ func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult,
 		return apple.LinkResult{}, err
 	}
 	// Try to retrieve membership by ftc id.
-	ftcMember, err := tx.RetrieveMember(id)
+	ftcMember, err := tx.RetrieveMember(ids)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -76,7 +76,7 @@ func (env Env) Link(s apple.Subscription, id reader.MemberID) (apple.LinkResult,
 	// From this table we can see we only need to backup the FTC side if it exists.
 	var newMmb reader.Membership
 	if ftcMember.IsZero() {
-		newMmb = s.NewMembership(id)
+		newMmb = s.NewMembership(ids)
 		err := tx.CreateMember(newMmb)
 		if err != nil {
 			sugar.Error(err)
