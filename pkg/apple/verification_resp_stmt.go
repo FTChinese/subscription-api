@@ -1,7 +1,9 @@
 package apple
 
-// StmtSaveVerifiedReceipt is SQL for VerifiedReceiptSchema
-const StmtSaveVerifiedReceipt = `
+// StmtSaveDecodedReceipt saves the decoded receipt.
+// It includes all the fields of `receipt` field in a
+// verification response.
+const StmtSaveDecodedReceipt = `
 INSERT IGNORE INTO premium.apple_verification_session
 SET environment = :environment,
 	original_transaction_id = :original_transaction_id,
@@ -36,7 +38,7 @@ quantity = :quantity,
 web_order_line_item_id = :web_order_line_item_id
 `
 
-// StmtInsertTransaction is SQL fro TransactionSchema that saves an item in UnifiedReceipt.LatestTransactions
+// StmtInsertTransaction is SQL fro TransactionSchema that saves an item in UnifiedReceipt.LatestReceiptInfo
 const StmtInsertTransaction = `
 INSERT IGNORE INTO premium.apple_transaction
 SET ` + transactionBaseCols + `,
