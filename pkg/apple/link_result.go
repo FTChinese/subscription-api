@@ -4,25 +4,11 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-type LinkBuilder struct {
-	LinkInput
-	FtcMember reader.Membership
-	IAPMember reader.Membership
-}
-
-func (b LinkBuilder) Build() (LinkResult, error) {
-	// Ftc side has member and not expired.
-	if !b.FtcMember.IsExpired() {
-
-	}
-
-	// Ftc side has no member, or expired.
-}
-
 // LinkResult contains information about membership before and after linking.
 // You should first check whether Forbidden exists. If it is, stop processing.
 // If not forbidden, then check if Snapshot's FtcID exists. If it exists, backup it.
 type LinkResult struct {
+	Initial  bool                  // Is this link done for the first time.
 	Linked   reader.Membership     // The membership after linked. Empty if Forbidden is not nil
 	Snapshot reader.MemberSnapshot // Membership snapshot if linking needs to modify an existing record.
 }

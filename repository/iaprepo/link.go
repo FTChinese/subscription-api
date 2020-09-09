@@ -27,7 +27,7 @@ import (
 //
 // This is a suspicious operation that should always be denied.
 // Return error could be ErrTargetLinkedToOtherIAP, ErrHasValidNonIAPMember.
-func (env Env) Link(input apple.LinkInput) (apple.LinkResult, error) {
+func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (apple.LinkResult, error) {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	sugar := logger.Sugar()
@@ -39,14 +39,14 @@ func (env Env) Link(input apple.LinkInput) (apple.LinkResult, error) {
 	}
 
 	// Try to retrieve membership by apple original transaction id.
-	iapMember, err := tx.RetrieveAppleMember(s.OriginalTransactionID)
+	iapMember, err := tx.RetrieveAppleMember(iapSubs.OriginalTransactionID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return apple.LinkResult{}, err
 	}
 	// Try to retrieve membership by ftc id.
-	ftcMember, err := tx.RetrieveMember(ids)
+	ftcMember, err := tx.RetrieveMember(account.MemberID())
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -58,8 +58,6 @@ func (env Env) Link(input apple.LinkInput) (apple.LinkResult, error) {
 	// membership won't be changed and we only need to
 	// update it based on apple transaction.
 	ve := ftcMember.ValidateMergeIAP(iapMember)
-	// If link is not allowed, there's still a possibility that IAP membership exists.
-	// Caller should still needs update membership based on this subscription.
 	if ve != nil {
 		sugar.Error(ve)
 		_ = tx.Rollback()
@@ -74,30 +72,18 @@ func (env Env) Link(input apple.LinkInput) (apple.LinkResult, error) {
 	// Expired  |  zero  | Backup FTC and Update
 	// -----------------
 	// From this table we can see we only need to backup the FTC side if it exists.
-	var newMmb reader.Membership
-	if ftcMember.IsZero() {
-		newMmb = s.NewMembership(ids)
-		err := tx.CreateMember(newMmb)
+	var newMmb = iapSubs.NewMembership(account.MemberID())
+
+	if !ftcMember.IsZero() {
+		err := tx.DeleteMember(ftcMember.MemberID)
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
 			return apple.LinkResult{}, err
 		}
-
-		if err := tx.Commit(); err != nil {
-			sugar.Error(err)
-			return apple.LinkResult{}, err
-		}
-
-		return apple.LinkResult{
-			Linked:   newMmb,
-			Snapshot: reader.MemberSnapshot{},
-		}, nil
 	}
 
-	// The link target is not zero, but it is invalid.
-	newMmb = s.BuildOn(ftcMember)
-	err = tx.UpdateMember(newMmb)
+	err = tx.CreateMember(newMmb)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -109,6 +95,7 @@ func (env Env) Link(input apple.LinkInput) (apple.LinkResult, error) {
 	}
 
 	return apple.LinkResult{
+		Initial:  iapMember.IsZero(), // As long as iap side is zero, this is initial link.
 		Linked:   newMmb,
 		Snapshot: ftcMember.Snapshot(enum.SnapshotReasonAppleLink),
 	}, nil
