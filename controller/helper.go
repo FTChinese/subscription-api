@@ -9,7 +9,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/go-chi/chi"
 	"github.com/guregu/null"
-	"github.com/sirupsen/logrus"
 	"github.com/stripe/stripe-go"
 	"net/http"
 )
@@ -18,8 +17,6 @@ const (
 	wxOAuthCallback = "http://users.ftchinese.com/login/wechat/callback?"
 	wxAppNativeApp  = "wxacddf1c20516eb69" // Used by native app to pay and log in.
 )
-
-var logger = logrus.WithField("project", "subscription-api").WithField("package", "controller")
 
 // getURLParam gets a url parameter.
 func getURLParam(req *http.Request, key string) gorest.Param {
