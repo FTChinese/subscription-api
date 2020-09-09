@@ -4,12 +4,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/repository/txrepo"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
-
-var logger = logrus.
-	WithField("project", "subscription-api").
-	WithField("package", "iap_repo")
 
 type Env struct {
 	cfg config.BuildConfig
