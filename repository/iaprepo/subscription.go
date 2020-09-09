@@ -23,7 +23,6 @@ func (env Env) UpsertSubscription(s apple.Subscription) error {
 func (env Env) UpdateMembership(s apple.Subscription) (reader.MemberSnapshot, error) {
 	tx, err := env.BeginTx()
 	if err != nil {
-		logger.Error(err)
 		return reader.MemberSnapshot{}, err
 	}
 
@@ -32,7 +31,6 @@ func (env Env) UpdateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 	// If the membership is not found, we can assume this IAP is not linked to FTC account.
 	currMember, err := tx.RetrieveAppleMember(s.OriginalTransactionID)
 	if err != nil {
-		logger.Error(err)
 		_ = tx.Rollback()
 		return reader.MemberSnapshot{}, err
 	}
