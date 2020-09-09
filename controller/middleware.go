@@ -2,11 +2,11 @@ package controller
 
 import (
 	"fmt"
+	"github.com/FTChinese/go-rest/render"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 
-	"github.com/FTChinese/go-rest/view"
 	"log"
 )
 
@@ -41,11 +41,9 @@ func UserOrUnionID(next http.Handler) http.Handler {
 		userID = strings.TrimSpace(userID)
 		unionID = strings.TrimSpace(unionID)
 		if userID == "" && unionID == "" {
-			logger.
-				WithField("trace", "CheckUserID").
-				Info("Missing X-User-Id or X-Union-Id header")
+			log.Print("Missing X-User-Id or X-Union-Id header")
 
-			_ = view.Render(w, view.NewUnauthorized("Missing X-User-Id or X-Union-Id header"))
+			_ = render.New(w).Unauthorized("Missing X-User-Id or X-Union-Id header")
 
 			return
 		}
@@ -68,11 +66,9 @@ func FtcID(next http.Handler) http.Handler {
 
 		userID = strings.TrimSpace(userID)
 		if userID == "" {
-			logger.
-				WithField("trace", "FtcID").
-				Info("Missing X-User-Id header")
+			log.Print("Missing X-User-Id header")
 
-			_ = view.Render(w, view.NewUnauthorized(""))
+			_ = render.New(w).Unauthorized("")
 
 			return
 		}
@@ -95,11 +91,9 @@ func UnionID(next http.Handler) http.Handler {
 
 		unionID = strings.TrimSpace(unionID)
 		if unionID == "" {
-			logger.
-				WithField("trace", "UnionID").
-				Info("Missing X-Union-Id header")
+			log.Print("Missing X-Union-Id header")
 
-			_ = view.Render(w, view.NewUnauthorized("Missing X-Union-Id header"))
+			_ = render.New(w).Unauthorized("Missing X-Union-Id header")
 
 			return
 		}
@@ -118,11 +112,9 @@ func RequireAppID(next http.Handler) http.Handler {
 
 		appID = strings.TrimSpace(appID)
 		if appID == "" {
-			logger.
-				WithField("trace", "RequireAppID").
-				Info("Missing X-App-Id header")
+			log.Print("Missing X-App-Id header")
 
-			_ = view.Render(w, view.NewUnauthorized("Missing X-App-Id header"))
+			_ = render.New(w).Unauthorized("Missing X-App-Id header")
 
 			return
 		}
@@ -150,25 +142,3 @@ func LogRequest(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(fn)
 }
-
-// DiscountPlans show the current discount plans available.
-// func DiscountPlans() func(http.ResponseWriter, *http.Request) {
-// 	return func(w http.ResponseWriter, req *http.Request) {
-// 		util.Render(w, util.NewResponse().NoCache().SetBody(repository.DiscountSchedule))
-// 	}
-// }
-
-// CurrentPlans see what plan we are using now.
-// func () CurrentPlans() func(http.ResponseWriter, *http.Request) {
-// 	return func(w http.ResponseWriter, req *http.Request) {
-// 		util.Render(
-// 			w,
-// 			util.
-// 				NewResponse().
-// 				NoCache().
-// 				SetBody(
-// 					repository.GetCurrentPlans(),
-// 				),
-// 		)
-// 	}
-// }

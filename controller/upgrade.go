@@ -44,6 +44,9 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 
 // FreeUpgrade handles free upgrade request.
 func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
+	defer logger.Sync()
+	sugar := logger.Sugar()
+
 	readerIDs := getReaderIDs(req.Header)
 	clientApp := client.NewClientApp(req)
 
@@ -99,7 +102,7 @@ func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request
 
 		err = router.postman.Deliver(parcel)
 		if err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 			return
 		}
 	}()
