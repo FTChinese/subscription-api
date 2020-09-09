@@ -40,7 +40,7 @@ func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice) 
 // link account and unlink account.
 // See https://developer.apple.com/documentation/storekit/in-app_purchase/validating_receipts_with_the_app_store
 func (router IAPRouter) doVerification(req *http.Request) (apple.VerificationResp, *render.ResponseError) {
-	log := logger.WithField("trace", "IAPRouter.VerifyReceipt")
+	log := logger.Sugar()
 
 	// Parse input data.
 	var payload apple.VerificationPayload
@@ -70,11 +70,7 @@ func (router IAPRouter) doVerification(req *http.Request) (apple.VerificationRes
 	if !resp.Validate() {
 		log.Info("Verification response is not valid")
 
-		log.WithField("environment", resp.Environment).
-			WithField("status", resp.Status).
-			WithField("message", resp.GetStatusMessage()).
-			WithField("receiptData", payload.ReceiptData).
-			Info("IAP verification failed")
+		log.Info("IAP verification failed")
 
 		ve := &render.ValidationError{
 			Message: "verification response is not valid",
@@ -288,7 +284,8 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 
 // WebHook receives app store server-to-server notification.
 func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	log := logger.WithField("trace", "IAPRouter.AliWebHook")
+	defer logger.Sync()
+	log := logger.Sugar()
 
 	var wh apple.WebHook
 	b, err := ioutil.ReadAll(req.Body)

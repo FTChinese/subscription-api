@@ -278,7 +278,8 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 // Error Response:
 // 404: membership for this user is not found.
 func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Request) {
-	log := logger.WithField("trace", "StripeRouter.GetSubscription")
+	defer logger.Sync()
+	log := logger.Sugar()
 
 	readerIDs := getReaderIDs(req.Header)
 
@@ -317,7 +318,8 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 // one is standard and another if premium.
 // So we cannot rely on this field to find FTC plan.
 func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.Request) {
-	log := logrus.WithField("trace", "StripeRouter.UpgradeSubscription")
+	defer logger.Sync()
+	log := logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
@@ -376,23 +378,24 @@ func (router StripeRouter) onSubscription(s *stripeSdk.Subscription) error {
 }
 
 func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	logger := logrus.WithField("trace", "StripeRouter.AliWebHook")
+	defer logger.Sugar()
+	sugar := logger.Sugar()
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		logger.Errorf("Error reading request body %v", err)
+		sugar.Errorf("Error reading request body %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	event, err := webhook.ConstructEvent(body, req.Header.Get("Stripe-Signature"), router.signingKey)
 	if err != nil {
-		logger.Errorf("Error verifying webhook signature: %v", err)
+		sugar.Errorf("Error verifying webhook signature: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	logger.Infof("Stripe event received: %s", event.Type)
+	sugar.Infof("Stripe event received: %s", event.Type)
 
 	switch event.Type {
 
@@ -403,14 +406,14 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		logger.Info(s)
+		sugar.Info(s)
 
 		w.WriteHeader(http.StatusOK)
 
 		go func() {
 			err := router.onSubscription(&s)
 			if err != nil {
-				logger.Error(err)
+				sugar.Error(err)
 			}
 		}()
 		return
@@ -422,13 +425,13 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		logger.Info(s)
+		sugar.Info(s)
 		w.WriteHeader(http.StatusOK)
 
 		go func() {
 			err := router.onSubscription(&s)
 			if err != nil {
-				logger.Error(err)
+				sugar.Error(err)
 			}
 		}()
 
