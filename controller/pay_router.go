@@ -101,7 +101,7 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := router.readerRepo.AccountByFtcID(order.FtcID.String)
+	account, err := router.readerRepo.FtcAccountByFtcID(order.FtcID.String)
 
 	if err != nil {
 		return err

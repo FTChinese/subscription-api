@@ -303,6 +303,8 @@ func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, *render.V
 // Only two cases are allowed to merge:
 // * Both sides refer to the same membership (including zero value);
 // * IAP side is zero and FTC side non-zero but invalid.
+// As long as link is allowed to proceed, two side cannot both have memberships simultaneously.
+// We only need to take a snapshot of ftc side if it exists.
 func (m Membership) ValidateMergeIAP(iapMember Membership) *render.ValidationError {
 	// Equal means either both are zero values, or they refer to the same instance.
 	// In such case it is fine to return any of them.

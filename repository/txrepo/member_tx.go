@@ -161,8 +161,6 @@ func (tx MemberTx) DeleteMember(id reader.MemberID) error {
 		id)
 
 	if err != nil {
-		logger.WithField("trace", "MembershipTx.DeleteMember").Error(err)
-
 		return err
 	}
 
