@@ -139,8 +139,9 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 
 // Input:
 // receipt-data: string;
+// ftcId: string;
+// originalTxId: string;
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
-	// Get user's ids.
 	var input apple.LinkInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
@@ -158,6 +159,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Extract essential subscription status data.
 	sub, err := resp.Subscription()
 	if err != nil {
 		_ = render.New(w).InternalServerError(err.Error())
@@ -261,6 +263,106 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).NoContent()
 }
 
+func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
+
+}
+
+// RefreshSubs updates an existing apple receipt and optional associated subscription.
+// Returns apple.Subscription which contains the essential
+// fields to represent a user's subscription.
+func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
+	defer logger.Sync()
+	sugar := logger.Sugar()
+
+	originalTxID, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	// Find existing subscription data for this original transaction id.
+	// If not found, returns 404.
+	sub, err := router.iapRepo.LoadSubscription(originalTxID)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	// Load the receipt file from disk.
+	// If error occurred, returns 404.
+	b, err := iaprepo.LoadReceipt(sub.OriginalTransactionID, sub.Environment)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).NotFound()
+		return
+	}
+
+	resp, resErr := router.doVerification(string(b))
+	if resErr != nil {
+		sugar.Error(err)
+		_ = render.New(w).JSON(resErr.StatusCode, resErr)
+		return
+	}
+
+	// If err occurred, it indicates program has bugs.
+	updatedSubs, err := resp.Subscription()
+	if err != nil {
+		_ = render.New(w).InternalServerError(err.Error())
+		return
+	}
+
+	// Update subscription and possible membership in background since this step is irrelevant to verification.
+	err = router.iapRepo.UpsertSubscription(updatedSubs)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	snapshot, err := router.iapRepo.UpdateMembership(sub)
+	if err != nil {
+		return
+	}
+
+	if !snapshot.IsZero() {
+		go func() {
+			_ = router.readerRepo.BackUpMember(snapshot)
+		}()
+	}
+
+	_ = render.New(w).OK(updatedSubs)
+}
+
+// LoadReceipt retrieves the subscription data for
+// an original transaction id, together with the
+// receipt used to verify it.
+func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
+	id, _ := getURLParam(req, "id").ToString()
+
+	sub, err := router.iapRepo.LoadSubscription(id)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	b, err := iaprepo.LoadReceipt(sub.OriginalTransactionID, sub.Environment)
+	if err != nil {
+		_ = render.New(w).NotFound()
+		return
+	}
+
+	data := struct {
+		apple.Subscription
+		Receipt string `json:"receipt"`
+	}{
+		Subscription: sub,
+		Receipt:      string(b),
+	}
+
+	_ = render.New(w).OK(data)
+}
+
 // WebHook receives app store server-to-server notification.
 func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	defer logger.Sync()
@@ -324,100 +426,4 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	_ = render.New(w).OK(nil)
-}
-
-// LoadReceipt retrieves the subscription data for
-// an original transaction id, together with the
-// receipt used to verify it.
-func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
-	id, _ := getURLParam(req, "id").ToString()
-
-	sub, err := router.iapRepo.LoadSubscription(id)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	b, err := iaprepo.LoadReceipt(sub.OriginalTransactionID, sub.Environment)
-	if err != nil {
-		_ = render.New(w).NotFound()
-		return
-	}
-
-	data := struct {
-		apple.Subscription
-		Receipt string `json:"receipt"`
-	}{
-		Subscription: sub,
-		Receipt:      string(b),
-	}
-
-	_ = render.New(w).OK(data)
-}
-
-// RefreshReceipt updates an existing apple receipt and optional associated subscription.
-// Returns apple.Subscription which contains the essential
-// fields to represent a user's subscription.
-func (router IAPRouter) RefreshReceipt(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
-
-	originalTxID, err := getURLParam(req, "id").ToString()
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-
-	// Find existing subscription data for this original transaction id.
-	// If not found, returns 404.
-	sub, err := router.iapRepo.LoadSubscription(originalTxID)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	// Load the receipt file from disk.
-	// If error occurred, returns 404.
-	b, err := iaprepo.LoadReceipt(sub.OriginalTransactionID, sub.Environment)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).NotFound()
-		return
-	}
-
-	resp, resErr := router.doVerification(string(b))
-	if resErr != nil {
-		sugar.Error(err)
-		_ = render.New(w).JSON(resErr.StatusCode, resErr)
-		return
-	}
-
-	// If err occurred, it indicates program has bugs.
-	updatedSubs, err := resp.Subscription()
-	if err != nil {
-		_ = render.New(w).InternalServerError(err.Error())
-		return
-	}
-
-	// Update subscription and possible membership in background since this step is irrelevant to verification.
-	err = router.iapRepo.UpsertSubscription(updatedSubs)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	snapshot, err := router.iapRepo.UpdateMembership(sub)
-	if err != nil {
-		return
-	}
-
-	if !snapshot.IsZero() {
-		go func() {
-			_ = router.readerRepo.BackUpMember(snapshot)
-		}()
-	}
-
-	_ = render.New(w).OK(updatedSubs)
 }
