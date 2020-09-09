@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
-func NewSubParcel(a reader.Account, order subs.Order) (postoffice.Parcel, error) {
+func NewSubParcel(a reader.FtcAccount, order subs.Order) (postoffice.Parcel, error) {
 
 	ctx := CtxSubs{
 		UserName: a.NormalizeName(),
@@ -29,7 +29,7 @@ func NewSubParcel(a reader.Account, order subs.Order) (postoffice.Parcel, error)
 }
 
 func NewRenewalParcel(
-	a reader.Account,
+	a reader.FtcAccount,
 	order subs.Order,
 ) (postoffice.Parcel, error) {
 
@@ -54,7 +54,7 @@ func NewRenewalParcel(
 }
 
 func NewUpgradeParcel(
-	a reader.Account,
+	a reader.FtcAccount,
 	order subs.Order,
 	pos []subs.ProratedOrder,
 ) (postoffice.Parcel, error) {
@@ -81,7 +81,7 @@ func NewUpgradeParcel(
 }
 
 func NewFreeUpgradeParcel(
-	a reader.Account,
+	a reader.FtcAccount,
 	order subs.Order,
 	pos []subs.ProratedOrder) (postoffice.Parcel, error) {
 
@@ -106,7 +106,7 @@ func NewFreeUpgradeParcel(
 	}, nil
 }
 
-func NewIAPLinkParcel(account reader.Account, m reader.Membership) (postoffice.Parcel, error) {
+func NewIAPLinkParcel(account reader.FtcAccount, m reader.Membership) (postoffice.Parcel, error) {
 	ctx := CtxIAPLinked{
 		UserName:   account.NormalizeName(),
 		Email:      account.Email,

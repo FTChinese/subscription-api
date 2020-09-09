@@ -17,21 +17,21 @@ func NewAccountTx(tx *sqlx.Tx) AccountTx {
 }
 
 // RetrieveAccount loads an ftc account by uuid
-func (tx AccountTx) RetrieveAccount(ftcID string) (reader.Account, error) {
-	var account reader.Account
+func (tx AccountTx) RetrieveAccount(ftcID string) (reader.FtcAccount, error) {
+	var account reader.FtcAccount
 	err := tx.Get(
 		&account,
 		reader.StmtAccountByFtcID+" FOR UPDATE",
 		ftcID)
 	if err != nil {
 		logger.WithField("trace", "AccountTx.RetrieveAccount").Error(err)
-		return reader.Account{}, err
+		return reader.FtcAccount{}, err
 	}
 
 	return account, nil
 }
 
-func (tx AccountTx) SavedStripeID(account reader.Account) error {
+func (tx AccountTx) SavedStripeID(account reader.FtcAccount) error {
 	_, err := tx.NamedExec(
 		reader.StmtSetStripeID,
 		account,

@@ -25,7 +25,7 @@ func NewRepo() *Repo {
 	}
 }
 
-func (r *Repo) SaveAccount(a reader.Account) error {
+func (r *Repo) SaveAccount(a reader.FtcAccount) error {
 	_, err := r.db.NamedExec(stmtInsertAccount, a)
 
 	if err != nil {
@@ -35,7 +35,7 @@ func (r *Repo) SaveAccount(a reader.Account) error {
 	return nil
 }
 
-func (r *Repo) MustSaveAccount(a reader.Account) {
+func (r *Repo) MustSaveAccount(a reader.FtcAccount) {
 	if err := r.SaveAccount(a); err != nil {
 		panic(err)
 	}
