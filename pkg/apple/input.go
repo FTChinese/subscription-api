@@ -20,23 +20,18 @@ func (i *ReceiptInput) Validate() *render.ValidationError {
 
 // LinkInput defines the request body to link IAP to ftc account.
 type LinkInput struct {
-	FtcID string `json:"ftcId"`
-	ReceiptInput
+	FtcID        string `json:"ftcId"`
+	OriginalTxID string `json:"originalTxId"`
 }
 
 func (i *LinkInput) Validate() *render.ValidationError {
 	i.FtcID = strings.TrimSpace(i.FtcID)
-	i.ReceiptData = strings.TrimSpace(i.ReceiptData)
-	i.LegacyReceiptData = strings.TrimSpace(i.LegacyReceiptData)
-
-	if i.ReceiptData == "" && i.LegacyReceiptData != "" {
-		i.ReceiptData = i.LegacyReceiptData
-	}
+	i.OriginalTxID = strings.TrimSpace(i.OriginalTxID)
 
 	ve := validator.New("ftcId").Required().Validate(i.FtcID)
 	if ve != nil {
 		return ve
 	}
 
-	return i.ReceiptInput.Validate()
+	return validator.New("originalTxId").Required().Validate(i.OriginalTxID)
 }
