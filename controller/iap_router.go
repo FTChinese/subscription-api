@@ -9,10 +9,8 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/repository/readerrepo"
-	"github.com/guregu/null"
 	"github.com/jmoiron/sqlx"
 	"io/ioutil"
 	"net/http"
@@ -152,45 +150,14 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Verification
-	resp, resErr := router.doVerification(input.ReceiptData)
-	if resErr != nil {
-		_ = render.New(w).JSON(resErr.StatusCode, resErr)
-		return
-	}
-
-	// Extract essential subscription status data.
-	sub, err := resp.Subscription()
-	if err != nil {
-		_ = render.New(w).InternalServerError(err.Error())
-		return
-	}
-
-	// Insert/Update subscription.
-	_ = router.iapRepo.UpsertSubscription(sub)
-
 	// Start to link apple subscription to ftc membership.
-	linkResult, err := router.iapRepo.Link(sub, reader.MemberID{
-		FtcID: null.StringFrom(input.FtcID),
-	}.MustNormalize())
+	linkResult, err := router.iapRepo.Link(input)
 
 	if err != nil {
 		var ve *render.ValidationError
 		// ValidationError indicates the link is not allowed.
 		if errors.As(err, &ve) {
 			_ = render.New(w).Unprocessable(ve)
-
-			// Try to update the membership if already exists.
-			go func() {
-				snapshot, _ := router.iapRepo.UpdateMembership(sub)
-
-				if snapshot.IsZero() {
-					return
-				}
-
-				_ = router.readerRepo.BackUpMember(snapshot)
-			}()
-
 			return
 		}
 
@@ -263,8 +230,46 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).NoContent()
 }
 
+// UpsertSubs performs exactly the same step as VerifyReceipt.
+// The two only differs in the data they send back.
 func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
+	var input apple.ReceiptInput
+	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+	if ve := input.Validate(); ve != nil {
+		_ = render.New(w).Unprocessable(ve)
+		return
+	}
 
+	resp, resErr := router.doVerification(input.ReceiptData)
+	if resErr != nil {
+		_ = render.New(w).JSON(resErr.StatusCode, resErr)
+		return
+	}
+
+	sub, err := resp.Subscription()
+
+	err = router.iapRepo.UpsertSubscription(sub)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	snapshot, err := router.iapRepo.UpdateMembership(sub)
+	if err != nil {
+		return
+	}
+
+	// Update subscription and possible membership in background since this step is irrelevant to verification.
+	if !snapshot.IsZero() {
+		go func() {
+			_ = router.readerRepo.BackUpMember(snapshot)
+		}()
+	}
+
+	_ = render.New(w).OK(sub)
 }
 
 // RefreshSubs updates an existing apple receipt and optional associated subscription.

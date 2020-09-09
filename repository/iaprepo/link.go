@@ -27,7 +27,7 @@ import (
 //
 // This is a suspicious operation that should always be denied.
 // Return error could be ErrTargetLinkedToOtherIAP, ErrHasValidNonIAPMember.
-func (env Env) Link(s apple.Subscription, ids reader.MemberID) (apple.LinkResult, error) {
+func (env Env) Link(input apple.LinkInput) (apple.LinkResult, error) {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	sugar := logger.Sugar()
