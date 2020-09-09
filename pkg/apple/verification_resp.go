@@ -23,9 +23,8 @@ type VerificationResp struct {
 	// This is only present if `Status` is not 0. 1 indicates a temporary issue; 0 indicates an unresolvable issue
 	// Only applicable to status codes 21100-21199.
 	IsRetryable bool `json:"is-retryable"`
-	// A JSON representation of the receipt that was sent for verification.
-	// The decoded version of the encoded receipt data sent with the request to the App Store.
-	// The decoded data of VerificationPayload.ReceiptData
+	// The decoded version of the encoded receipt you send to app store for verification.
+	// It is the decoded version of VerificationPayload.ReceiptData
 	Receipt ClientReceipt `json:"receipt"`
 }
 
@@ -53,7 +52,7 @@ func (v *VerificationResp) Validate() bool {
 		return false
 	}
 
-	// LatestTransactions should not be empty.
+	// LatestReceiptInfo should not be empty.
 	return v.UnifiedReceipt.Validate()
 }
 
