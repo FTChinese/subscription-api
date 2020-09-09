@@ -133,10 +133,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 
 // Link merges IAP subscription to FTC account.
 //
-// Header: `X-User-Id: <ftc uuid>`
-
 // Input:
-// receipt-data: string;
 // ftcId: string;
 // originalTxId: string;
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
@@ -150,8 +147,20 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	ftcAccount, err := router.readerRepo.FtcAccountByFtcID(input.FtcID)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	iapSubs, err := router.iapRepo.LoadSubscription(input.OriginalTxID)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
 	// Start to link apple subscription to ftc membership.
-	linkResult, err := router.iapRepo.Link(input)
+	linkResult, err := router.iapRepo.Link(ftcAccount, iapSubs)
 
 	if err != nil {
 		var ve *render.ValidationError
@@ -166,9 +175,9 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Send notification email if this is initial link.
-	if linkResult.IsInitialLink() {
+	if linkResult.Initial {
 		go func() {
-			account, err := router.readerRepo.AccountByFtcID(linkResult.Linked.FtcID.String)
+			account, err := router.readerRepo.FtcAccountByFtcID(linkResult.Linked.FtcID.String)
 			if err != nil {
 				return
 			}
