@@ -24,12 +24,14 @@ var (
 	Postman     postoffice.PostOffice
 	Cache       *cache.Cache
 	WxOAuthApp  wxlogin.OAuthApp
-	WxPayApp    wechat.PayApp = wechat.MustNewPayApp("wxapp.native_app")
+	WxPayApp    wechat.PayApp
 	WxPayClient wechat.Client
 	AliApp      ali.App
 )
 
 func init() {
+	config.MustSetupViper()
+
 	DB = db.MustNewDB(CFG.MustGetDBConn(""))
 	Postman = postoffice.New(config.MustGetHanqiConn())
 	Cache = cache.New(cache.DefaultExpiration, 0)
