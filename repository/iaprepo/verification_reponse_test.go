@@ -42,8 +42,8 @@ func TestEnv_SaveVerifiedReceipt(t *testing.T) {
 				cfg: tt.fields.cfg,
 				db:  tt.fields.db,
 			}
-			if err := env.SaveVerifiedReceipt(tt.args.v); (err != nil) != tt.wantErr {
-				t.Errorf("SaveVerifiedReceipt() error = %v, wantErr %v", err, tt.wantErr)
+			if err := env.SaveDecodedReceipt(tt.args.v); (err != nil) != tt.wantErr {
+				t.Errorf("SaveDecodedReceipt() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
