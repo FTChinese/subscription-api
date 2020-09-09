@@ -95,23 +95,6 @@ func gatherAliPayInput(req *http.Request) (subs.AliPayInput, error) {
 	return input, nil
 }
 
-// getWxAppID from query parameter, and fallback to request header, then fallback to hard-coded one.
-func getWxAppID(req *http.Request) string {
-	appID := req.FormValue("app_id")
-	if appID != "" {
-		return appID
-	}
-
-	// Prior to v0.8.0 the app id is set in header.
-	appID = req.Header.Get(appIDKey)
-	if appID != "" {
-		return appID
-	}
-
-	// For backward compatibility with Android <= 2.0.4
-	return wxAppNativeApp
-}
-
 // getReaderIDs extract ftc uuid or union id from request header.
 // It panic if both ftc id and union id are missing.
 // However it won't happen since middlewares already ensured at least one of them should exist.
