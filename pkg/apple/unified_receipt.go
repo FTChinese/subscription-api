@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// UnifiedReceipt is the payload apple send in a notification,
-// or the base response to verify a receipt.
+// UnifiedReceipt contains the common fields apple send in a notification,
+// or the response of receipt verification.
 type UnifiedReceipt struct {
 	// The environment for which the receipt was generated.
 	// Possible values: Sandbox, Production
@@ -15,11 +15,11 @@ type UnifiedReceipt struct {
 	// The latest Base64-encoded app receipt.
 	// For verification, this is the latest encoded receipt.
 	// This is a string, not byte as specified by Apple doc. It can be decoded into bytes, which does not mean it IS byte.
-	LatestToken string `json:"latest_receipt"`
+	LatestReceipt string `json:"latest_receipt"`
 	// An array that contains the latest 100 in-app purchase transactions of the decoded value in latest_receipt.
 	//  For verification, an array that contains all the transactions for the subscription, including the initial purchase and subsequent renewals but not including any restores.
 	// Use this to get the status of the most recent renewal
-	LatestTransactions []Transaction `json:"latest_receipt_info"`
+	LatestReceiptInfo []Transaction `json:"latest_receipt_info"`
 	// An array where each element contains the pending renewal information for each auto-renewable subscription identified in product_id.
 	// each element contains the pending renewal information for each auto-renewable subscription identified by the product_id.
 	PendingRenewalInfo []PendingRenewal `json:"pending_renewal_info"`
@@ -42,12 +42,12 @@ type UnifiedReceipt struct {
 	// 21100-21199 are various internal data access errors.
 	// For notification the status code, where 0 indicates that the notification is valid.
 	Status            int64       `json:"status"`
-	latestTransaction Transaction // hold the latest transaction sorted from LatestTransactions array.
+	latestTransaction Transaction // hold the latest transaction sorted from LatestReceiptInfo array.
 }
 
 // Validate ensures the response contains the latest_receipt_info field.
 func (u *UnifiedReceipt) Validate() bool {
-	if u.LatestTransactions == nil || len(u.LatestTransactions) == 0 {
+	if u.LatestReceiptInfo == nil || len(u.LatestReceiptInfo) == 0 {
 		return false
 	}
 
@@ -57,8 +57,8 @@ func (u *UnifiedReceipt) Validate() bool {
 // sortLatestReceiptsDesc sorts the array containing all in-app purchase transactions
 // in descending order by expires_date_ms field so that the latest comes first.
 func (u *UnifiedReceipt) sortLatestReceiptsDesc() {
-	sort.SliceStable(u.LatestTransactions, func(i, j int) bool {
-		return u.LatestTransactions[i].ExpiresDateMs > u.LatestTransactions[j].ExpiresDateMs
+	sort.SliceStable(u.LatestReceiptInfo, func(i, j int) bool {
+		return u.LatestReceiptInfo[i].ExpiresDateMs > u.LatestReceiptInfo[j].ExpiresDateMs
 	})
 }
 
@@ -68,7 +68,7 @@ func (u *UnifiedReceipt) findLatestTransaction() Transaction {
 	// perform binary search.
 	u.sortLatestReceiptsDesc()
 
-	l := len(u.LatestTransactions)
+	l := len(u.LatestReceiptInfo)
 
 	nowUnix := time.Now().Unix()
 
@@ -82,16 +82,16 @@ func (u *UnifiedReceipt) findLatestTransaction() Transaction {
 	// If the above is true, it only indicates the design of
 	// your product and pricing system have problems.
 	i := sort.Search(l, func(i int) bool {
-		t := u.LatestTransactions[i]
+		t := u.LatestReceiptInfo[i]
 
 		return t.ExpiresUnix() >= nowUnix && t.IsValidProduct()
 	})
 
 	if i < l {
-		return u.LatestTransactions[i]
+		return u.LatestReceiptInfo[i]
 	}
 
-	return u.LatestTransactions[0]
+	return u.LatestReceiptInfo[0]
 }
 
 // Parse get the latest first valid transaction.
@@ -106,7 +106,7 @@ func (u *UnifiedReceipt) ReceiptToken() ReceiptToken {
 			Environment:           u.Environment,
 			OriginalTransactionID: u.latestTransaction.OriginalTransactionID,
 		},
-		LatestReceipt: u.LatestToken,
+		LatestReceipt: u.LatestReceipt,
 	}
 }
 

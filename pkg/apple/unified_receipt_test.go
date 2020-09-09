@@ -8,9 +8,9 @@ import (
 
 func TestUnifiedReceipt_sortLatestReceiptDesc(t *testing.T) {
 	ur := UnifiedReceipt{
-		Environment: EnvSandbox,
-		LatestToken: "",
-		LatestTransactions: []Transaction{
+		Environment:   EnvSandbox,
+		LatestReceipt: "",
+		LatestReceiptInfo: []Transaction{
 			{
 				ExpiresDateMs: "1532421737000",
 			},
@@ -24,8 +24,8 @@ func TestUnifiedReceipt_sortLatestReceiptDesc(t *testing.T) {
 
 	ur.Parse()
 
-	isSorted := sort.SliceIsSorted(ur.LatestTransactions, func(i, j int) bool {
-		return ur.LatestTransactions[i].ExpiresDateMs > ur.LatestTransactions[j].ExpiresDateMs
+	isSorted := sort.SliceIsSorted(ur.LatestReceiptInfo, func(i, j int) bool {
+		return ur.LatestReceiptInfo[i].ExpiresDateMs > ur.LatestReceiptInfo[j].ExpiresDateMs
 	})
 
 	assert.True(t, isSorted)
