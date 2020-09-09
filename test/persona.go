@@ -132,10 +132,10 @@ func (p *Persona) AccountID() reader.MemberID {
 	return id
 }
 
-func (p *Persona) Account() reader.Account {
+func (p *Persona) Account() reader.FtcAccount {
 	switch p.kind {
 	case enum.AccountKindFtc:
-		return reader.Account{
+		return reader.FtcAccount{
 			FtcID:    p.FtcID,
 			UnionID:  null.String{},
 			StripeID: null.StringFrom(p.StripeID),
@@ -144,7 +144,7 @@ func (p *Persona) Account() reader.Account {
 		}
 
 	case enum.AccountKindWx:
-		return reader.Account{
+		return reader.FtcAccount{
 			FtcID:    "",
 			UnionID:  null.StringFrom(p.UnionID),
 			StripeID: null.String{},
@@ -153,7 +153,7 @@ func (p *Persona) Account() reader.Account {
 		}
 
 	case enum.AccountKindLinked:
-		return reader.Account{
+		return reader.FtcAccount{
 			FtcID:    p.FtcID,
 			UnionID:  null.StringFrom(p.UnionID),
 			StripeID: null.StringFrom(p.StripeID),
@@ -162,7 +162,7 @@ func (p *Persona) Account() reader.Account {
 		}
 	}
 
-	return reader.Account{}
+	return reader.FtcAccount{}
 }
 
 func (p *Persona) Membership() reader.Membership {
