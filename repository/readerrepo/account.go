@@ -2,7 +2,7 @@ package readerrepo
 
 import "github.com/FTChinese/subscription-api/pkg/reader"
 
-func (env Env) AccountByFtcID(id string) (reader.FtcAccount, error) {
+func (env Env) FtcAccountByFtcID(id string) (reader.FtcAccount, error) {
 	var u reader.FtcAccount
 	err := env.db.Get(
 		&u,
@@ -17,7 +17,7 @@ func (env Env) AccountByFtcID(id string) (reader.FtcAccount, error) {
 	return u, nil
 }
 
-func (env Env) AccountByStripeID(cusID string) (reader.FtcAccount, error) {
+func (env Env) FtcAccountByStripeID(cusID string) (reader.FtcAccount, error) {
 	var u reader.FtcAccount
 	err := env.db.Get(&u,
 		reader.StmtAccountByStripeID,

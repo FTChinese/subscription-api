@@ -367,7 +367,7 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 
 func (router StripeRouter) onSubscription(s *stripeSdk.Subscription) error {
 
-	account, err := router.readerRepo.AccountByStripeID(s.Customer.ID)
+	account, err := router.readerRepo.FtcAccountByStripeID(s.Customer.ID)
 	if err != nil {
 		return err
 	}
