@@ -54,19 +54,6 @@ func (c BuildConfig) Production() bool {
 	return c.production
 }
 
-// IAPVerificationURL selects apple receipt verification
-// endpoint depending on the deployment environment.
-// This is the same to stripe key selection.
-// MUST not use the UsedSandboxDB!
-func (c BuildConfig) IAPVerificationURL() string {
-
-	if c.sandbox {
-		return "https://sandbox.itunes.apple.com/verifyReceipt"
-	}
-
-	return "https://buy.itunes.apple.com/verifyReceipt"
-}
-
 func (c BuildConfig) WebHookBaseURL() string {
 	if c.sandbox {
 		return "http://www.ftacademy.cn/api/sandbox"
@@ -147,4 +134,22 @@ func MustIAPSecret() string {
 	}
 
 	return pw
+}
+
+func SetupViper() error {
+	viper.SetConfigName("api")
+	viper.AddConfigPath("$HOME/config")
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func MustSetupViper() {
+	if err := SetupViper(); err != nil {
+		panic(err)
+	}
 }
