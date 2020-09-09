@@ -54,7 +54,7 @@ type WebHook struct {
 	// The latest Base64-encoded transaction receipt
 	LatestExpiredReceipt     string        `json:"latest_expired_receipt"`
 	LatestExpiredReceiptInfo []Transaction `json:"latest_expired_receipt_info"`
-	// It seems this one is the same as UnifiedReceipt.LatestToken.
+	// It seems this one is the same as UnifiedReceipt.LatestReceipt.
 	LatestToken string `json:"latest_receipt"`
 	// Saved to db.
 	LatestTransaction LatestTransaction `json:"latest_receipt_info"`
