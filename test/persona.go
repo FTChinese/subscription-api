@@ -204,7 +204,7 @@ func (p *Persona) Membership() reader.Membership {
 
 func (p *Persona) CreateOrder() subs.Order {
 	builder := subs.NewOrderBuilder(p.AccountID()).
-		SetEnvConfig(CFG).
+		SetTest(false).
 		SetPlan(p.plan).
 		SetPayMethod(p.payMethod)
 
@@ -244,7 +244,7 @@ func (p *Persona) CreateOrder() subs.Order {
 
 func (p *Persona) ConfirmOrder(o subs.Order) subs.ConfirmationResult {
 	builder := subs.NewConfirmationBuilder(subs.PaymentResult{
-		ConfirmedAt: time.Now(),
+		ConfirmedAt: chrono.TimeNow(),
 	}, false).
 		SetMembership(p.member).
 		SetOrder(o)
