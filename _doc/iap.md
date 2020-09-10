@@ -1,9 +1,4 @@
-## Base URL
-
-* Sandbox: `https://www.ftacademy.cn/api/sandbox`
-* Production: `https://www.ftacademy.cn/api/v1`
-
-## Apple IAP
+# Apple IAP
 
 All request must have access token set in its header using OAuth 2.0 Bearer Token, not including the webhook endpoints which are not used by us:
 
@@ -13,9 +8,9 @@ Authorization: Bearer <your-access-token>
 
 See https://tools.ietf.org/html/rfc6750#section-2.1
 
-Generate an access token for your app in Superyard. *DO NOT* use your personal access tokens here since personal access tokens might be invoked any moment.
+Generate an access token for your app in Superyard. *DO NOT* use your personal access tokens here since personal access tokens might be revoked any moment.
 
-### Conventions
+## Conventions
 
 Client should take HTTP status above 400 as error. Error response always returned a body:
 
@@ -31,41 +26,54 @@ Client should take HTTP status above 400 as error. Error response always returne
 
 `message` is always present.
 
-`error` is only present for `422` response. You can use the combination values of `error.field` and `error.code` to determine what goes wrong. 
+`error` is only present for `422` response. You can use the combination of `error.field` and `error.code` to determine what goes wrong.
 
-### Verify Receipt
+## Base URL
+
+* Sandbox: `https://www.ftacademy.cn/api/sandbox`
+* Production: `https://www.ftacademy.cn/api/v1`
+
+### Paths
+
+* POST `/apple/verify-receipt`
+* POST `/apple/subscription`
+* PATCH `/apple/subscription/<original_transaction_id>`
+* POST `/apple/link`
+* DELETE `/apple/link`
+* GET `/apple/receipt/<original_transaction_id>`
+* POST `/webhook/apple`
+
+## Verify Receipt
 
 ```
 POST /apple/verify-receipt
 ```
 
-#### Request Body
+### Request Body
 
 ```json
 {
-  "receipt-data": "the base64 encode apple receipt"
+  "receiptData": "the base64 encode apple receipt"
 }
 ```
 
-#### Response
+### Response
 
-If none of the above headers are set.
-
-##### `400 Bad Request` 
+#### `400 Bad Request`
 
 * If request body cannot be parsed as valid JSON;
 
 * If any error occurred while sending request to Apple's verification request, like network error, timeout, etc.. This does not indicates the receipt is invalid.
 
-##### `422 Unprocessable` 
+#### `422 Unprocessable`
 
-* If `receipt-data` field is missing or empty.
+* If `receiptData` field is missing or empty.
 
 ```json
 {
   "message": "receipt-data missing",
   "error": {
-    "field": "receipt-data",
+    "field": "receiptData",
     "code": "missing_field"
   }
 }
@@ -83,46 +91,42 @@ If none of the above headers are set.
 }
 ```
 
-##### `200 OK`
+#### `200 OK`
 
 Apple's response is transferred to client as is. See https://developer.apple.com/documentation/appstorereceipts/responsebody.
 
 Please note there is an error in Apple's doc saying the type of`latest_receipt` is `byte`. It is a string type, a string representation of the underlying byte array. You can safely ignore this field.
 
-### Link IAP
+## Create/Update a Subscription
+
+```
+POST /apple/subscription
+```
+
+This is similar to the above endpoint, with response body as the only difference. The reponse contains only the essential information to identify a subscrition.
+
+## Link IAP
 
 ```
 POST /apple/link
 ```
 
-#### Headers
+This links apple subscription to an FTC account.
 
-```
-X-User-Id: <ftc-uuid>
-X-Union-Id: <wechat-union-id>
-```
-
-At least one of them must be present. 
-
-If user logged in with email, use the FTC uuid as the value of `X-User-Id`.
-
-If user logged in with Wechat, pass Wechat's union id to `X-Union-Id`.
-
-If email is linked to wechat, pass both of the two ids.
-
-#### Request Body
+### Request Body
 
 ```json
 {
-  "receipt-data": "the base64 encode apple receipt"
+  "ftcId": "uuid",
+  "originalTxId": "the original transaction id as acquired from the last endpoint."
 }
 ```
 
-#### Response
+### Response
 
-##### `400 Bad Request` same as receipt verification
+#### `400 Bad Request` same as receipt verification
 
-##### `422 Unprocessable`
+#### `422 Unprocessable`
 
 In addition to the `422` in the above Verify Receipt section, there are other possible unprocessable errors:
 
@@ -175,7 +179,7 @@ Apple ID A      Apple ID B
 }
 ```
 
-##### `200 OK`
+#### `200 OK`
 
 When a linking request comes in, the API will first try to retrieve membership data by both apple's original transaction id and ftc's uuid (or wechat's union id for wechat-only login), and both sides current status will be checked.
 
@@ -224,28 +228,33 @@ If user switched Apple ID, we should allow user to link the new Apple ID to prev
 
 *Unlinking* here is actually a delete operation.
 
-#### Request Body
+### Request Body
 
 ```json
 {
-  "receipt-data": "same as verification"
+  "ftcId": "uuid",
+  "originalTxId": "orignal transaction id"
 }
 ```
 
-#### Response
+### Response
 
 `400 Bad Request` and `422 Unprocessable` are identical to *Verify Receipt* section.
 
 `204 No Content` if deleted successfully.
 
-This is an idempotence operation. You always get `204` no matter how many times the same user sends request to this endpoint. 
+This is an idempotence operation. You always get `204` no matter how many times the same user sends request to this endpoint.
 
-### WebHook
+## Get a Receipt
+
+```
+GET /apple/receipt/<original_transaction_id>
+```
+
+## WebHook
 
 ```
 POST /webhook/apple
 ```
 
 Handles Apple's server-to-server notification.
-
-
