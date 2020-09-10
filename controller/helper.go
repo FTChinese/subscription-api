@@ -90,7 +90,9 @@ func gatherAliPayInput(req *http.Request) (subs.AliPayInput, error) {
 	}
 
 	input.Edition = edition
-	input.ReturnURL = retUrl
+	if input.ReturnURL == "" && retUrl != "" {
+		input.ReturnURL = retUrl
+	}
 
 	return input, nil
 }
