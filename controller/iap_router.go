@@ -3,7 +3,11 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"github.com/FTChinese/go-rest"
+	"io/ioutil"
+	"net/http"
+	"strings"
+
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/apple"
@@ -12,9 +16,6 @@ import (
 	"github.com/FTChinese/subscription-api/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/repository/readerrepo"
 	"github.com/jmoiron/sqlx"
-	"io/ioutil"
-	"net/http"
-	"strings"
 )
 
 type IAPRouter struct {
@@ -200,7 +201,8 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 // Unlink removes apple subscription id from a user's membership
 //
 // Input:
-// originalTransactionId: string
+// originalTxId: string
+// ftcId: string
 func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 	// Get user's ids.
 	readerIDs := getReaderIDs(req.Header)
