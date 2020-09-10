@@ -8,7 +8,7 @@ import (
 // It is also used as the unmarshal target when performing unlinking.
 type BaseSchema struct {
 	Environment           Environment `json:"-" db:"environment"`
-	OriginalTransactionID string      `json:"originalTransactionDd" db:"original_transaction_id"`
+	OriginalTransactionID string      `json:"originalTransactionId" db:"original_transaction_id"`
 }
 
 // VerifiedReceiptSchema is the SQL version of ClientReceipt.
