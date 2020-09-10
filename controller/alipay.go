@@ -20,7 +20,10 @@ const (
 // on the device platform.
 //
 // 	POST /<desktop|mobile|app>/{tier}/{cycle}?<return_url=xxx>
+//
+// Header: X-User-Id or X-Union-Id, or both.
 // `return_url` parameter is only required for apps running on ftacademy.cn
+// Input:
 func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 	logger, _ := zap.NewProduction()

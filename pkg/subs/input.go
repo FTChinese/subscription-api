@@ -66,7 +66,7 @@ func (i *WxPayInput) Validate() *render.ValidationError {
 
 type AliPayInput struct {
 	PayInput
-	ReturnURL string `json:"returnUrl"`
+	ReturnURL string `json:"returnUrl"` // Only required for desktop.
 }
 
 func (i *AliPayInput) Validate() *render.ValidationError {
