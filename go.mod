@@ -14,7 +14,6 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/objcoding/wxpay v1.0.6
-	github.com/parnurzeal/gorequest v0.2.16
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/pkg/errors v0.9.1

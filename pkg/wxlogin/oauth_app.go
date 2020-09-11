@@ -5,20 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/pkg/fetch"
 	"github.com/spf13/viper"
 	"net/url"
-
-	"github.com/parnurzeal/gorequest"
-	"github.com/sirupsen/logrus"
-)
-
-var (
-	logger  = logrus.WithField("package", "wxlogin")
-	request = gorequest.New()
 )
 
 const (
 	apiBaseURL = "https://api.weixin.qq.com/sns"
+	acceptLang = "en-US,en;q=0.5"
 )
 
 var keys = []string{
@@ -80,17 +74,6 @@ func (a OAuthApp) Validate() error {
 	return nil
 }
 
-// Build url to get access token
-func (a OAuthApp) accessTokenURL(code string) string {
-	q := url.Values{}
-	q.Set("appid", a.AppID)
-	q.Set("secret", a.AppSecret)
-	q.Set("code", code)
-	q.Set("grant_type", "authorization_code")
-
-	return fmt.Sprintf("%s/oauth2/access_token?%s", apiBaseURL, q.Encode())
-}
-
 func (a OAuthApp) userInfoURL(accessToken, openID string) string {
 	q := url.Values{}
 	q.Set("access_token", accessToken)
@@ -125,14 +108,22 @@ func (a OAuthApp) accessValidityURL(accessToken, openID string) string {
 // Response without error: errcode: 0, errmsg: "";
 // What will be returned if two different code under the same Wechat app applied for access token simutaneously?
 func (a OAuthApp) GetAccessToken(code string) (OAuthAccess, error) {
-	u := a.accessTokenURL(code)
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	var acc OAuthAccess
-	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
+	_, body, errs := fetch.NewFetch().
+		Get(apiBaseURL + "/oauth2/access_token").
+		SetParamMap(map[string]string{
+			"appid":      a.AppID,
+			"secret":     a.AppSecret,
+			"code":       code,
+			"grant_type": "authorization_code",
+		}).
+		AcceptLang(acceptLang).
+		EndRaw()
 
 	if errs != nil {
-		logger.WithField("trace", "OAuthApp.GetAccessToken").Error(errs)
-
 		return acc, errs[0]
 	}
 
@@ -142,10 +133,10 @@ func (a OAuthApp) GetAccessToken(code string) (OAuthAccess, error) {
 	// "openid":"ofP-k1LSVS-ObmrySM1aXKbv1Hjs",
 	// "scope":"snsapi_login",
 	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"}
-	logger.WithField("trace", "OAuthApp.GetAccessToken").Infof("Wechat response: %s\n", body)
+	sugar.Infof("Wechat response: %s\n", body)
 
-	if err := json.Unmarshal([]byte(body), &acc); err != nil {
-		logger.WithField("trace", "OAuthApp.GetAccessToken").Error(errs)
+	if err := json.Unmarshal(body, &acc); err != nil {
+		sugar.Error(err)
 		return acc, err
 	}
 
@@ -160,11 +151,19 @@ func (a OAuthApp) GetAccessToken(code string) (OAuthAccess, error) {
 // GetUserInfo from Wechat by open id.
 // It seems wechat return empty fields as empty string.
 func (a OAuthApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
-	u := a.userInfoURL(accessToken, openID)
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	var info UserInfo
 
-	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
+	_, body, errs := fetch.NewFetch().
+		Get(apiBaseURL + "/userinfo").
+		SetParamMap(map[string]string{
+			"access_token": accessToken,
+			"openid":       openID,
+		}).
+		AcceptLang(acceptLang).
+		EndRaw()
 
 	// {
 	// "openid":"ofP-k1LSVS-ObmrySM1aXKbv1Hjs",
@@ -178,16 +177,16 @@ func (a OAuthApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 	// "privilege":[],
 	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"
 	// }
-	logger.WithField("trace", "OAuthApp.GetUserInfo").Infof("Wechat user info: %s", body)
+	sugar.Infof("Wechat user info: %s", body)
 
 	if errs != nil {
-		logger.WithField("trace", "OAuthApp.GetUserInfo").Error(errs)
+		sugar.Error(errs)
 
 		return info, errs[0]
 	}
 
-	if err := json.Unmarshal([]byte(body), &info); err != nil {
-		logger.WithField("trace", "OAuthApp.GetUserInfo").Error(errs)
+	if err := json.Unmarshal(body, &info); err != nil {
+		sugar.Error(errs)
 		return info, err
 	}
 
@@ -196,21 +195,30 @@ func (a OAuthApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 
 // RefreshAccess refresh access token.
 func (a OAuthApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
-	u := a.refreshTokeURL(refreshToken)
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	var acc OAuthAccess
-	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
+	_, body, errs := fetch.NewFetch().
+		Get(apiBaseURL + "/oauth2/refresh_token").
+		SetParamMap(map[string]string{
+			"appid":         a.AppID,
+			"grant_type":    "refresh_token",
+			"refresh_token": refreshToken,
+		}).
+		AcceptLang(acceptLang).
+		EndRaw()
 
-	logger.WithField("trace", "OAuthApp.RefreshAccess").Infof("Response: %s", body)
+	sugar.Infof("Response: %s", body)
 
 	if errs != nil {
-		logger.WithField("trace", "OAuthApp.RefreshAccess").Error(errs)
+		sugar.Error(errs)
 
 		return acc, errs[0]
 	}
 
-	if err := json.Unmarshal([]byte(body), &acc); err != nil {
-		logger.WithField("trace", "OAuthApp.RefreshAccess").Error(err)
+	if err := json.Unmarshal(body, &acc); err != nil {
+		sugar.Error(err)
 
 		return acc, err
 	}
@@ -220,21 +228,27 @@ func (a OAuthApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
 
 // IsValidAccess checks if an access token is valid.
 func (a OAuthApp) IsValidAccess(accessToken, openID string) bool {
-	u := a.accessValidityURL(accessToken, openID)
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
-	var resp RespStatus
-
-	_, body, errs := request.Get(u).Set("Accept-Language", "en-US,en;q=0.5").End()
+	_, body, errs := fetch.NewFetch().
+		Get(apiBaseURL + "/auth").
+		SetParamMap(map[string]string{
+			"access_token": accessToken,
+			"openid":       openID,
+		}).
+		AcceptLang(acceptLang).EndRaw()
 
 	if errs != nil {
-		logger.WithField("trace", "OAuthApp.IsInvalidAccess").Error(errs)
+		sugar.Error(errs)
 		return false
 	}
 
-	logger.WithField("trace", "OAuthApp.IsValidAccess").Infof("Response: %s", body)
+	sugar.Infof("Response: %s", body)
 
-	if err := json.Unmarshal([]byte(body), &resp); err != nil {
-		logger.WithField("trace", "OAuthApp.IsValidAccess").Error(err)
+	var resp RespStatus
+	if err := json.Unmarshal(body, &resp); err != nil {
+		sugar.Error(err)
 		return false
 	}
 
