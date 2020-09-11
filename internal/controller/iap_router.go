@@ -29,7 +29,7 @@ func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice) 
 	return IAPRouter{
 		secret:     config.MustIAPSecret(),
 		config:     cfg,
-		iapRepo:    iaprepo.NewEnv(db, cfg),
+		iapRepo:    iaprepo.NewEnv(db),
 		readerRepo: readerrepo.NewEnv(db, cfg),
 		postman:    p,
 		iapClient:  iaprepo.NewClient(cfg.Sandbox()),

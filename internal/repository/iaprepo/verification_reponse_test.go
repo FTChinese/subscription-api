@@ -39,8 +39,7 @@ func TestEnv_SaveVerifiedReceipt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				cfg: tt.fields.cfg,
-				db:  tt.fields.db,
+				db: tt.fields.db,
 			}
 			if err := env.SaveDecodedReceipt(tt.args.v); (err != nil) != tt.wantErr {
 				t.Errorf("SaveDecodedReceipt() error = %v, wantErr %v", err, tt.wantErr)
@@ -78,8 +77,7 @@ func TestEnv_SaveTransaction(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				cfg: tt.fields.cfg,
-				db:  tt.fields.db,
+				db: tt.fields.db,
 			}
 			if err := env.SaveTransaction(tt.args.r); (err != nil) != tt.wantErr {
 				t.Errorf("SaveTransaction() error = %v, wantErr %v", err, tt.wantErr)
@@ -117,8 +115,7 @@ func TestEnv_SavePendingRenewal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				cfg: tt.fields.cfg,
-				db:  tt.fields.db,
+				db: tt.fields.db,
 			}
 			if err := env.SavePendingRenewal(tt.args.p); (err != nil) != tt.wantErr {
 				t.Errorf("SavePendingRenewal() error = %v, wantErr %v", err, tt.wantErr)

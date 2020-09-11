@@ -11,10 +11,9 @@ type Env struct {
 	db  *sqlx.DB
 }
 
-func NewEnv(db *sqlx.DB, c config.BuildConfig) Env {
+func NewEnv(db *sqlx.DB) Env {
 	return Env{
-		cfg: c,
-		db:  db,
+		db: db,
 	}
 }
 
