@@ -11,12 +11,14 @@ import (
 // is aborted and current reader account is returned.
 // It is done in a transaction so that we won't create duplicate customer
 // for the same reader.
-func (env StripeEnv) CreateStripeCustomer(ftcID string) (reader.FtcAccount, error) {
-	log := logger.WithField("trace", "StripeEnv.CreateStripeCustomer")
+func (env Env) CreateStripeCustomer(ftcID string) (reader.FtcAccount, error) {
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	tx, err := env.beginAccountTx()
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
+		sugar.Error(err)
 		return reader.FtcAccount{}, err
 	}
 
@@ -24,12 +26,13 @@ func (env StripeEnv) CreateStripeCustomer(ftcID string) (reader.FtcAccount, erro
 	account, err := tx.RetrieveAccount(ftcID)
 	if err != nil {
 		_ = tx.Rollback()
-		log.Error(err)
+		sugar.Error(err)
 		return reader.FtcAccount{}, err
 	}
 
 	// If stripe customer id already exists, abort.
 	if account.StripeID.Valid {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return account, nil
 	}
@@ -39,7 +42,7 @@ func (env StripeEnv) CreateStripeCustomer(ftcID string) (reader.FtcAccount, erro
 	stripeID, err := stripe.CreateCustomer(account.Email)
 	if err != nil {
 		_ = tx.Rollback()
-		log.Error(err)
+		sugar.Error(err)
 		return reader.FtcAccount{}, err
 	}
 
@@ -50,12 +53,12 @@ func (env StripeEnv) CreateStripeCustomer(ftcID string) (reader.FtcAccount, erro
 	// There might be SQL errors.
 	if err := tx.SavedStripeID(account); err != nil {
 		_ = tx.Rollback()
-		log.Error(err)
+		sugar.Error(err)
 		return reader.FtcAccount{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return reader.FtcAccount{}, err
 	}
 

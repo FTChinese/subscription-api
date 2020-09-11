@@ -22,7 +22,7 @@ type StripeRouter struct {
 	config     config.BuildConfig
 	signingKey string
 	readerRepo readerrepo.Env
-	stripeRepo striperepo.StripeEnv
+	stripeRepo striperepo.Env
 }
 
 // NewStripeRouter initializes StripeRouter.
@@ -31,7 +31,7 @@ func NewStripeRouter(db *sqlx.DB, config config.BuildConfig) StripeRouter {
 		config:     config,
 		signingKey: config.MustStripeSigningKey(),
 		readerRepo: readerrepo.NewEnv(db),
-		stripeRepo: striperepo.NewStripeEnv(db, config),
+		stripeRepo: striperepo.NewEnv(db),
 	}
 
 	return r
