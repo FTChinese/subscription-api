@@ -26,6 +26,7 @@ run :
 
 # Cross compiling linux on for dev.
 linux :
+	echo 'Build sandbox version'
 	$(BUILD_LINUX)
 
 version :
