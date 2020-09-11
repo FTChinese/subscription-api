@@ -11,7 +11,6 @@ func (env Env) ListProratedOrders(upOrderID string) ([]subs.ProratedOrder, error
 		upOrderID)
 
 	if err != nil {
-		logger.WithField("trace", "SubEnv.RetrieveProratedOrders").Error(err)
 		return nil, err
 	}
 

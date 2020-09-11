@@ -44,7 +44,7 @@ func NewPayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffic
 	aliApp := ali.MustInitApp()
 
 	return PayRouter{
-		subRepo:    subrepo.NewEnv(db, c, b),
+		subRepo:    subrepo.NewEnv(db, c),
 		readerRepo: readerrepo.NewEnv(db),
 		prodRepo:   products.NewEnv(db, c),
 		postman:    p,

@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"net/http"
@@ -17,9 +16,9 @@ type PaywallRouter struct {
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig) PaywallRouter {
+func NewPaywallRouter(db *sqlx.DB, c *cache.Cache) PaywallRouter {
 	return PaywallRouter{
-		env:  subrepo.NewEnv(db, c, b),
+		env:  subrepo.NewEnv(db, c),
 		repo: products.NewEnv(db, c),
 	}
 }
