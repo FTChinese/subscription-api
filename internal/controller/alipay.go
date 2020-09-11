@@ -19,21 +19,23 @@ const (
 // PlaceOrder creates an http handler function depending
 // on the device platform.
 //
-// 	POST /<desktop|mobile|app>/{tier}/{cycle}?<return_url=xxx>
+// 	POST /<desktop|mobile|app>/{tier}/{cycle}?<test=true>&<return_url=xxx>
 //
 // Header: X-User-Id or X-Union-Id, or both.
-// `return_url` parameter is only required for apps running on ftacademy.cn
+// `return_url` parameter is only required for apps running on ftacademy.cn. It is deprecated and changed to request body.
+//
 // Input:
+// returnUrl?: string; Only for browsers.
+// tier: string;
+// cycle: string;
+// planId?: string;
 func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 	logger, _ := zap.NewProduction()
 	sugar := logger.Sugar()
 
 	// TODO: put all those fields in request body.
-	// returnUrl: string;
-	// tier: string;
-	// cycle: string;
-	// planId: string;
+
 	return func(w http.ResponseWriter, req *http.Request) {
 		err := req.ParseForm()
 		if err != nil {
