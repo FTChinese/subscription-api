@@ -27,7 +27,8 @@ import (
 //	Apple ID A + FTC ID B
 //
 // This is a suspicious operation that should always be denied.
-// Return error could be ErrTargetLinkedToOtherIAP, ErrHasValidNonIAPMember.
+// The returned error could be *render.ValidationError
+// if link if forbidden.
 func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (apple.LinkResult, error) {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()

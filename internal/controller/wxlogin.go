@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"github.com/FTChinese/subscription-api/internal/repository/wxoauth"
 	client2 "github.com/FTChinese/subscription-api/pkg/client"
-	"github.com/FTChinese/subscription-api/repository/wxoauth"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
