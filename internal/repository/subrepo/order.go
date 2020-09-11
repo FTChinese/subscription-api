@@ -3,12 +3,10 @@ package subrepo
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"go.uber.org/zap"
 	"time"
 )
 
 func (env Env) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
-	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	sugar := logger.Sugar()
 

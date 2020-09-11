@@ -41,7 +41,6 @@ func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "Env.SaveAliNotification").Error(err)
 		return err
 	}
 

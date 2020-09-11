@@ -49,7 +49,7 @@ func StartServer(s ServerStatus) {
 	iapRouter := controller.NewIAPRouter(myDB, cfg, post)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := controller.NewPaywallRouter(myDB, promoCache, cfg)
+	paywallRouter := controller.NewPaywallRouter(myDB, promoCache)
 
 	wxAuth := controller.NewWxAuth(wxoauth.New(myDB))
 
