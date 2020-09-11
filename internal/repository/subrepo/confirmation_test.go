@@ -30,9 +30,8 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				BuildConfig: tt.fields.BuildConfig,
-				db:          tt.fields.db,
-				cache:       tt.fields.cache,
+				db:    tt.fields.db,
+				cache: tt.fields.cache,
 			}
 			got, got1 := env.ConfirmOrder(tt.args.result)
 			if !reflect.DeepEqual(got, tt.want) {
