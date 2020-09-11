@@ -152,8 +152,8 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 // Query verifies the payment status of an order against alipay api.
 // GET /alipay/query/{orderId}
 func (router PayRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	orderID, err := getURLParam(req, "orderId").ToString()
 	if err != nil {
@@ -186,8 +186,8 @@ func (router PayRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) 
 // AliWebHook handles alipay server-side notification.
 // POST /webhook/alipay
 func (router PayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	err := req.ParseForm()
 	if err != nil {
