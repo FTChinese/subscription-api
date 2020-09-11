@@ -1,13 +1,16 @@
-build_dir := build
+out_dir := build
 input := frontmatter.md intro.md wxpay.md alipay.md paywall.md internal.md
 output := subscripiton_api
 
-.PHONY: build mkbuild clean
-build : mkbuild
-	pandoc -s --toc --pdf-engine=xelatex -o $(build_dir)/$(output).pdf $(input)
+.PHONY: build createdir clean
+build : createdir
+	pandoc -s --toc --pdf-engine=xelatex -o $(out_dir)/$(output).pdf $(input)
 
-mkbuild :
-	mkdir -p $(build_dir)
+createdir :
+	mkdir -p $(out_dir)
+
+iap: createdir
+	pandoc -s --toc --pdf-engine=xelatex -o $(out_dir)/apple_iap.pdf frontmatter.md iap.md
 
 clean :
 	rm build/*
