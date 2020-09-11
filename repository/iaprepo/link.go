@@ -3,6 +3,7 @@ package iaprepo
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"go.uber.org/zap"
@@ -102,14 +103,17 @@ func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (appl
 }
 
 // Unlink deletes a membership created from IAP.
-func (env Env) Unlink(originalTransID string, ids reader.MemberID) (reader.MemberSnapshot, error) {
+// Unlike wechat unlinking FTC account which could keep the membership,
+// unlinking IAP must delete the membership since IAP's owner should be unknown
+// after link severed.
+func (env Env) Unlink(input apple.LinkInput) (reader.MemberSnapshot, error) {
 	tx, err := env.BeginTx()
 
 	if err != nil {
 		return reader.MemberSnapshot{}, err
 	}
 
-	m, err := tx.RetrieveAppleMember(originalTransID)
+	m, err := tx.RetrieveAppleMember(input.OriginalTxID)
 	if err != nil {
 		_ = tx.Rollback()
 		return reader.MemberSnapshot{}, err
@@ -119,12 +123,14 @@ func (env Env) Unlink(originalTransID string, ids reader.MemberID) (reader.Membe
 		return reader.MemberSnapshot{}, sql.ErrNoRows
 	}
 
-	if m.FtcID != ids.FtcID {
+	if m.FtcID.String != input.FtcID {
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, apple.ErrUnlinkMismatchedFTC
+		return reader.MemberSnapshot{}, &render.ValidationError{
+			Message: "IAP is not linked to the ftc account",
+			Field:   "ftcId",
+			Code:    render.CodeInvalid,
+		}
 	}
-
-	snapshot := m.Snapshot(enum.SnapshotReasonDelete)
 
 	if err := tx.DeleteMember(m.MemberID); err != nil {
 		_ = tx.Rollback()
@@ -135,5 +141,5 @@ func (env Env) Unlink(originalTransID string, ids reader.MemberID) (reader.Membe
 		return reader.MemberSnapshot{}, err
 	}
 
-	return snapshot, nil
+	return m.Snapshot(enum.SnapshotReasonAppleUnlink), nil
 }
