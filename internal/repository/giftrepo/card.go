@@ -10,7 +10,6 @@ func (env GiftEnv) FindGiftCard(code string) (redeem.GiftCard, error) {
 	err := env.db.Get(&c, redeem.StmtGiftCard, code)
 
 	if err != nil {
-		logger.WithField("trace", "FindGiftCard").Error(err)
 		return c, err
 	}
 

@@ -4,10 +4,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
-
-var logger = logrus.WithField("package", "gift_repo")
 
 type GiftEnv struct {
 	config.BuildConfig
