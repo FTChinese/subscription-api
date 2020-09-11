@@ -28,6 +28,10 @@ run :
 linux :
 	$(BUILD_LINUX)
 
+version :
+	echo 'Build sandbox version'
+	echo $(VERSION)
+
 # From local machine to production server
 # Copy env varaible to server
 config :
@@ -38,11 +42,9 @@ deploy : version
 	ssh tk11 supervisorctl restart $(BINARY)
 
 # For CI/CD
-build :
-	echo 'Build sandbox version'
+build : version
 	gvm install go1.15
 	gvm use go1.15
-	$(VERSION)
 	$(BUILD_LINUX)
 
 downconfig :
@@ -52,7 +54,7 @@ downconfig :
 upconfig :
 	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
 
-publish : version
+publish :
 	ssh ucloud "rm -f /home/node/go/bin/$(BINARY).bak"
 	rsync -v $(LINUX_OUT) bj32:/home/node
 	ssh bj32 "rsync -v /home/node/$(BINARY) ucloud:/home/node/go/bin/$(BINARY).bak"
