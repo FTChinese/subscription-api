@@ -2,9 +2,9 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/repository/products"
+	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/repository/products"
-	"github.com/FTChinese/subscription-api/repository/subrepo"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"net/http"

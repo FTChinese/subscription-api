@@ -1,8 +1,8 @@
 package giftrepo
 
 import (
+	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/repository/txrepo"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )

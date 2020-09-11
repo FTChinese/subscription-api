@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"github.com/FTChinese/subscription-api/internal/repository/giftrepo"
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/repository/giftrepo"
 	"github.com/jmoiron/sqlx"
 )
 

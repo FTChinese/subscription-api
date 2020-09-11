@@ -171,7 +171,7 @@ func (p *Persona) Membership() reader.Membership {
 		Edition:       p.plan.Edition,
 		ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
 		PaymentMethod: p.payMethod,
-		FtcPlanID:     null.StringFrom(p.plan.ID),
+		FtcPlanID:     null.String{},
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
@@ -185,6 +185,9 @@ func (p *Persona) Membership() reader.Membership {
 	}
 
 	switch p.payMethod {
+	case enum.PayMethodWx, enum.PayMethodAli:
+		m.FtcID = null.StringFrom(p.plan.ID)
+
 	case enum.PayMethodStripe:
 		m.StripeSubsID = null.StringFrom(faker.GenStripeSubID())
 		m.StripePlanID = null.StringFrom(faker.GenStripePlanID())
