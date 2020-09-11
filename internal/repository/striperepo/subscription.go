@@ -15,13 +15,13 @@ import (
 // util.ErrNonStripeValidSub
 // util.ErrActiveStripeSub
 // util.ErrUnknownSubState
-func (env StripeEnv) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subscription, error) {
-
-	log := logger.WithField("trace", "Stripe.CreateSubscription")
+func (env Env) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subscription, error) {
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return nil, err
 	}
 
@@ -33,7 +33,7 @@ func (env StripeEnv) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subs
 	}.MustNormalize())
 
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
@@ -41,15 +41,17 @@ func (env StripeEnv) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subs
 	// Check whether creating stripe subscription is allowed for this member.
 	subsKind, ve := mmb.StripeSubsKind(input.Edition)
 	if ve != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
 	if subsKind != enum.OrderKindCreate {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, errors.New("invalid request to create Stripe subscription")
 	}
 
-	log.Info("Creating stripe subscription")
+	sugar.Info("Creating stripe subscription")
 
 	// Contact Stripe API.
 	ss, err := input.CreateSubs()
@@ -59,24 +61,24 @@ func (env StripeEnv) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subs
 	// "type":"idempotency_error"
 	// }
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
 
-	log.Infof("A stripe membership: %+v", mmb)
+	sugar.Infof("A stripe membership: %+v", mmb)
 
 	// What if the user exists but is invalid?
 	if mmb.IsZero() {
 		newMmb := input.NewMembership(ss)
-		log.Infof("A new stripe membership: %+v", newMmb)
+		sugar.Infof("A new stripe membership: %+v", newMmb)
 		if err := tx.CreateMember(newMmb); err != nil {
 			_ = tx.Rollback()
 			return nil, err
 		}
 	} else {
 		newMmb := input.UpdateMembership(mmb, ss)
-		log.Infof("Updated stripe membership: %+v", newMmb)
+		sugar.Infof("Updated stripe membership: %+v", newMmb)
 		if err := tx.UpdateMember(newMmb); err != nil {
 			_ = tx.Rollback()
 			return nil, err
@@ -84,6 +86,7 @@ func (env StripeEnv) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subs
 	}
 
 	if err := tx.Commit(); err != nil {
+		sugar.Error(err)
 		return nil, err
 	}
 
@@ -91,11 +94,10 @@ func (env StripeEnv) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subs
 }
 
 // SaveSubsError saves any error in stripe response.
-func (env StripeEnv) SaveSubsError(e ftcStripe.APIError) error {
+func (env Env) SaveSubsError(e ftcStripe.APIError) error {
 	_, err := env.db.NamedExec(ftcStripe.StmtSaveAPIError, e)
 
 	if err != nil {
-		logger.WithField("trace", "SubEnv.SaveSubsError").Error(err)
 		return err
 	}
 
@@ -103,36 +105,39 @@ func (env StripeEnv) SaveSubsError(e ftcStripe.APIError) error {
 }
 
 // GetSubscription refresh stripe subscription data if stale.
-func (env StripeEnv) GetSubscription(id reader.MemberID) (*stripe.Subscription, error) {
-	log := logger.WithField("trace", "StripeEvn.GetSubscription")
+func (env Env) GetSubscription(id reader.MemberID) (*stripe.Subscription, error) {
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return nil, err
 	}
 
 	mmb, err := tx.RetrieveMember(id)
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
 
 	if mmb.IsZero() {
-		log.Infof("Membership not found for %v", id)
+		sugar.Infof("Membership not found for %v", id)
 		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
 
-	log.Infof("Retrieve a member: %+v", mmb)
+	sugar.Infof("Retrieve a member: %+v", mmb)
 
 	// If this membership is not a stripe subscription, deny further actions
 	if mmb.PaymentMethod != enum.PayMethodStripe {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
 	if mmb.StripeSubsID.IsZero() {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
@@ -140,25 +145,27 @@ func (env StripeEnv) GetSubscription(id reader.MemberID) (*stripe.Subscription, 
 	ss, err := ftcStripe.GetSubscription(mmb.StripeSubsID.String)
 
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
 
 	newMmb := ftcStripe.RefreshMembership(mmb, ss)
 
-	log.Infof("Refreshed membership: %+v", newMmb)
+	sugar.Infof("Refreshed membership: %+v", newMmb)
 
 	// update member
 	if err := tx.UpdateMember(newMmb); err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
+		sugar.Error(err)
 		return nil, err
 	}
 
-	log.Info("Refreshed finished.")
+	sugar.Info("Refreshed finished.")
 	return ss, nil
 }

@@ -10,13 +10,13 @@ import (
 )
 
 // UpgradeStripeSubs switches subscription plan.
-func (env StripeEnv) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.Subscription, error) {
-
-	log := logger.WithField("trace", "StripeEnv.UpgradeSubscription")
+func (env Env) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.Subscription, error) {
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return nil, err
 	}
 
@@ -26,32 +26,33 @@ func (env StripeEnv) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.
 		UnionID:    null.String{},
 	}.MustNormalize())
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, nil
 	}
 
 	if mmb.IsZero() {
-		log.Error("membership for stripe upgrading not found")
+		sugar.Error("membership for stripe upgrading not found")
 		_ = tx.Rollback()
 		return nil, sql.ErrNoRows
 	}
 
 	subsKind, err := mmb.StripeSubsKind(input.Edition)
 	if err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
 	// Check whether upgrading is permitted.
 	if subsKind != enum.OrderKindUpgrade {
-		log.Error("upgrading via stripe is not permitted")
+		sugar.Error("upgrading via stripe is not permitted")
 		_ = tx.Rollback()
 		return nil, stripePkg.ErrInvalidStripeSub
 	}
 
 	ss, err := input.UpgradeSubs(mmb.StripeSubsID.String)
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
@@ -59,11 +60,13 @@ func (env StripeEnv) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.
 	mmb = stripePkg.RefreshMembership(mmb, ss)
 
 	if err := tx.UpdateMember(mmb); err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
+		sugar.Error(err)
 		return nil, err
 	}
 
