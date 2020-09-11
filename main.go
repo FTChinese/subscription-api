@@ -93,22 +93,33 @@ func main() {
 
 		r.Use(controller.UserOrUnionID)
 
-		// Create a new subscription.
+		// Create a new subscription for desktop browser
+		// Deprecated
 		r.With(controller.UserOrUnionID).
 			Post("/desktop/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeDesktop))
+		r.With(controller.UserOrUnionID).
+			Post("/desktop", payRouter.PlaceWxOrder(wechat.TradeTypeDesktop))
 
-		//r.Post("/desktop", wxRouter.NewSub(wechat.TradeTypeDesktop))
-		//r.Patch("/desktop", wxRouter.UpgradeSub(wechat.TradeTypeDesktop))
-
+		// Create an order for mobile browser
+		// Deprecated
 		r.With(controller.UserOrUnionID).
 			Post("/mobile/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeMobile))
+		r.With(controller.UserOrUnionID).
+			Post("/mobile", payRouter.PlaceWxOrder(wechat.TradeTypeMobile))
 
-		// {code: string}
+		// Create an order for wx-embeded browser
+		// Deprecated
 		r.With(controller.UserOrUnionID).
 			Post("/jsapi/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeJSAPI))
+		r.With(controller.UserOrUnionID).
+			Post("/jsapi", payRouter.PlaceWxOrder(wechat.TradeTypeJSAPI))
 
+		// Creat ean order for native app
+		// Deprecated
 		r.With(controller.UserOrUnionID).
 			Post("/app/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeApp))
+		r.With(controller.UserOrUnionID).
+			Post("/app", payRouter.PlaceWxOrder(wechat.TradeTypeApp))
 
 		// Query order
 		// X-App-Id
@@ -119,14 +130,26 @@ func main() {
 	r.Route("/alipay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
+		// Create an order for desktop browser
+		// Deprecated
 		r.With(controller.UserOrUnionID).
 			Post("/desktop/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryDesktopWeb))
+		r.With(controller.UserOrUnionID).
+			Post("/desktop", payRouter.PlaceAliOrder(ali.EntryDesktopWeb))
 
+		// Create an order for mobile browser
+		// Deprecated
 		r.With(controller.UserOrUnionID).
 			Post("/mobile/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryMobileWeb))
+		r.With(controller.UserOrUnionID).
+			Post("/mobile", payRouter.PlaceAliOrder(ali.EntryMobileWeb))
 
+		// Create an order for native app.
+		// Deprecated
 		r.With(controller.UserOrUnionID).
 			Post("/app/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryApp))
+		r.With(controller.UserOrUnionID).
+			Post("/app", payRouter.PlaceAliOrder(ali.EntryApp))
 
 		r.Get("/query/{orderId}", payRouter.QueryAliOrder)
 	})
