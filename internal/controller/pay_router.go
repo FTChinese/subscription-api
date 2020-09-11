@@ -45,7 +45,7 @@ func NewPayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffic
 
 	return PayRouter{
 		subRepo:    subrepo.NewEnv(db, c, b),
-		readerRepo: readerrepo.NewEnv(db, b),
+		readerRepo: readerrepo.NewEnv(db),
 		prodRepo:   products.NewEnv(db, c),
 		postman:    p,
 		config:     b,
