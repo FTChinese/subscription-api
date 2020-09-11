@@ -42,8 +42,8 @@ deploy : version
 
 # For CI/CD
 build :
-	gvm install go1.13.6
-	gvm use go1.13.6
+	gvm install go1.15
+	gvm use go1.15
 	echo $(VERSION)
 	$(BUILD_LINUX)
 
