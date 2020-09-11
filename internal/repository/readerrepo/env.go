@@ -1,18 +1,16 @@
 package readerrepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/jmoiron/sqlx"
 )
 
 type Env struct {
-	config.BuildConfig
+	//config.BuildConfig
 	db *sqlx.DB
 }
 
-func NewEnv(db *sqlx.DB, config config.BuildConfig) Env {
+func NewEnv(db *sqlx.DB) Env {
 	return Env{
-		BuildConfig: config,
-		db:          db,
+		db: db,
 	}
 }

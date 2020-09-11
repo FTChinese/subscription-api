@@ -30,7 +30,7 @@ func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice) 
 		secret:     config.MustIAPSecret(),
 		config:     cfg,
 		iapRepo:    iaprepo.NewEnv(db),
-		readerRepo: readerrepo.NewEnv(db, cfg),
+		readerRepo: readerrepo.NewEnv(db),
 		postman:    p,
 		iapClient:  iaprepo.NewClient(cfg.Sandbox()),
 	}
