@@ -12,7 +12,7 @@ func TestWxXMLNotification(t *testing.T) {
 	repo := NewRepo()
 
 	order := p.CreateOrder()
-	account := p.Account()
+	account := p.FtcAccount()
 
 	repo.MustSaveAccount(account)
 	repo.MustSaveOrder(order)

@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/jmoiron/sqlx"
@@ -107,5 +108,20 @@ func (r *Repo) MustSaveProratedOrders(pos []subs.ProratedOrder) {
 		if err != nil {
 			panic(err)
 		}
+	}
+}
+
+func (r *Repo) SaveIAPSubs(s apple.Subscription) error {
+	_, err := r.db.NamedExec(apple.StmtUpsertSubs, s)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repo) MustSaveIAPSubs(s apple.Subscription) {
+	if err := r.SaveIAPSubs(s); err != nil {
+		panic(err)
 	}
 }
