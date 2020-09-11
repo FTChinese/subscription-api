@@ -37,8 +37,8 @@ type Membership struct {
 	ExpireDate    chrono.Date    `json:"expireDate" db:"expire_date"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
 	FtcPlanID     null.String    `json:"ftcPlanId" db:"ftc_plan_id"`
-	StripeSubsID  null.String    `json:"-" db:"stripe_subs_id"`
-	StripePlanID  null.String    `json:"-" db:"stripe_plan_id"`
+	StripeSubsID  null.String    `json:"stripeSubsId" db:"stripe_subs_id"`
+	StripePlanID  null.String    `json:"stripePlanId" db:"stripe_plan_id"`
 	AutoRenewal   bool           `json:"autoRenew" db:"auto_renewal"`
 	// This is used to save stripe subscription status.
 	// Since wechat and alipay treats everything as one-time purchase, they do not have a complex state machine.
@@ -47,8 +47,8 @@ type Membership struct {
 	// Only `active` should be treated as valid member.
 	// Wechat and alipay defaults to `active` for backward compatibility.
 	Status       enum.SubsStatus `json:"status" db:"subs_status"`
-	AppleSubsID  null.String     `json:"-" db:"apple_subs_id"`
-	B2BLicenceID null.String     `json:"-" db:"b2b_licence_id"`
+	AppleSubsID  null.String     `json:"appleSubsId" db:"apple_subs_id"`
+	B2BLicenceID null.String     `json:"b2bLicenceId" db:"b2b_licence_id"`
 }
 
 // IsZero test whether the instance is empty.
