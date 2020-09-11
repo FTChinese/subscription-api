@@ -232,6 +232,7 @@ func StartServer(s ServerStatus) {
 
 			r.With(controller.RequireAppID).Put("/refresh", wxAuth.Refresh)
 
+			// Do not check access token here since it is used by wx.
 			r.Get("/callback", wxAuth.WebCallback)
 		})
 	})
