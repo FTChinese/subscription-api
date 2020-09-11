@@ -14,7 +14,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"io/ioutil"
 	"net/http"
-	"strings"
 )
 
 type IAPRouter struct {
@@ -200,31 +199,27 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 // Unlink removes apple subscription id from a user's membership
 //
 // Input:
-// originalTransactionId: string
+// ftcId: string;
+// originalTxId: string;
 func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
-	// Get user's ids.
-	readerIDs := getReaderIDs(req.Header)
 
-	var s apple.BaseSchema
-	if err := gorest.ParseJSON(req.Body, &s); err != nil {
+	var input apple.LinkInput
+	// 400 Bad Request if request body cannot be parsed.
+	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	s.OriginalTransactionID = strings.TrimSpace(s.OriginalTransactionID)
-	if s.OriginalTransactionID == "" {
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: "Original transaction id is required",
-			Field:   "originalTransactionId",
-			Code:    render.CodeInvalid,
-		})
-		return
+	// 422 Unprocessable for request body is not valid.
+	if ve := input.Validate(); ve != nil {
+		_ = render.New(w).Unprocessable(ve)
 	}
 
-	snapshot, err := router.iapRepo.Unlink(s.OriginalTransactionID, readerIDs)
+	snapshot, err := router.iapRepo.Unlink(input)
 	if err != nil {
-		if errors.Is(err, apple.ErrUnlinkMismatchedFTC) {
-			_ = render.New(w).BadRequest(err.Error())
+		var ve *render.ValidationError
+		if errors.As(err, &ve) {
+			_ = render.New(w).Unprocessable(ve)
 			return
 		}
 
