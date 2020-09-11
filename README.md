@@ -9,11 +9,13 @@ API for subscription service
 
 For Stripe and Apple IAP, the sandbox have the same meaning as their APIs: running in sandbox mode hits their sandbox endpoints; otherwise to production endpoints.
 
-Sandbox means nonthing to Wxpay and Alipay since they do not provide any means for testing.
+Sandbox means nothing to Wxpay and Alipay since they do not provide any means for testing.
 
-To test these two payment providers, we use testing account. When you logged in with a sandbox account, the prices charged with be fixe to 0.01 and tell them to send webhook paywalod to the sandbox version.
+To test these two payment providers, we use testing account. When you logged in with a testing account, the prices charged will be fixe to 0.01 and tell them to send webhook paywalod to the sandbox version.
 
-Put it simply, if client detects the logged in account is of type sandbox, send request to sandbox url; otherwise to production url. Only wxpay and alipay endpoints of this app will take further action for sandbox account. Stripe and Apple's will simply ignore it.
+Put it simply, if client detects the logged in account is of type test, send request to sandbox url; otherwise to production url. Only wxpay and alipay endpoints of this app will take further action for testing account. Stripe and Apple's will simply ignore it.
+
+When you are using a testing account, you must also tell API your intention explicitly; otherwise the API won't check whether the request means testing and will treat it as a normal request. To do this, append query parameter `test=true` to wxpay and alipay endpoints. It won't have effects to other endpoints.
 
 ## Development
 
