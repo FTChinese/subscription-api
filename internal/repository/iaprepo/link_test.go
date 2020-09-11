@@ -75,8 +75,7 @@ func TestEnv_Link(t *testing.T) {
 		{
 			name: "IAP exists and should not link to any new ftc account",
 			fields: fields{
-				cfg: config.BuildConfig{},
-				db:  test.DB,
+				db: test.DB,
 			},
 			args: args{
 				account: test.NewPersona().FtcAccount(),
@@ -88,8 +87,7 @@ func TestEnv_Link(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				cfg: tt.fields.cfg,
-				db:  tt.fields.db,
+				db: tt.fields.db,
 			}
 			got, err := env.Link(tt.args.account, tt.args.iapSubs)
 			if tt.wantErr {
@@ -141,8 +139,7 @@ func TestEnv_Unlink(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				cfg: tt.fields.cfg,
-				db:  tt.fields.db,
+				db: tt.fields.db,
 			}
 			got, err := env.Unlink(tt.args.input)
 

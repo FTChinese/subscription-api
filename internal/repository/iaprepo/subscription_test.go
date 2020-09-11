@@ -34,8 +34,7 @@ func TestEnv_LoadSubscription(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				cfg: tt.fields.cfg,
-				db:  tt.fields.db,
+				db: tt.fields.db,
 			}
 			got, err := env.LoadSubscription(tt.args.originalID)
 			if (err != nil) != tt.wantErr {
