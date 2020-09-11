@@ -3,7 +3,6 @@ package controller
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/wxoauth"
 	client2 "github.com/FTChinese/subscription-api/pkg/client"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"strings"
@@ -55,9 +54,8 @@ func NewWxAuth(env wxoauth.Env) WxAuthRouter {
 // Error:
 // 422: code_missing_field; code_invalid; openId_invalid
 func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
-	logger := logrus.WithFields(logrus.Fields{
-		"trace": "WxAuthRouter.Login",
-	})
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	// Find this app.
 	appID := req.Header.Get("X-App-Id")
@@ -67,13 +65,13 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logger.Infof("Wechat app: %+v", app)
+	sugar.Infof("Wechat app: %+v", app)
 
 	// Get `code` from request body
 	code, err := GetJSONString(req.Body, "code")
 
 	if err != nil {
-		logger.Error(err)
+		sugar.Error(err)
 		_ = view.Render(w, view.NewBadRequest(""))
 		return
 	}
@@ -100,7 +98,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 	// Handle wechat response error.
 	if acc.HasError() {
-		logger.Error(acc.Message)
+		sugar.Error(acc.Message)
 
 		// Log Wechat error response
 		go func() {
@@ -131,7 +129,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		// Log error response.
 		go func() {
 			if err := router.env.SaveWxStatus(user.Code, user.Message); err != nil {
-				logger.Error(err)
+				sugar.Error(err)
 			}
 		}()
 
@@ -144,7 +142,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	// Save access token
 	go func() {
 		if err := router.env.SaveWxAccess(appID, acc, client); err != nil {
-			logger.Error(err)
+			sugar.Error(err)
 		}
 	}()
 
@@ -169,7 +167,8 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 // Error
 // 422: refresh_token_invalid
 func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
-	log := logrus.WithField("trace", "WxAuthRouter.Refresh")
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	appID := req.Header.Get("X-App-Id")
 	app, ok := router.apps[appID]
@@ -207,7 +206,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 		if user.HasError() {
 			go func() {
 				if err := router.env.SaveWxStatus(user.Code, user.Message); err != nil {
-					log.Error(err)
+					sugar.Error(err)
 				}
 			}()
 
