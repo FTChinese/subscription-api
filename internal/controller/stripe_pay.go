@@ -30,7 +30,7 @@ func NewStripeRouter(db *sqlx.DB, config config.BuildConfig) StripeRouter {
 	r := StripeRouter{
 		config:     config,
 		signingKey: config.MustStripeSigningKey(),
-		readerRepo: readerrepo.NewEnv(db, config),
+		readerRepo: readerrepo.NewEnv(db),
 		stripeRepo: striperepo.NewStripeEnv(db, config),
 	}
 
