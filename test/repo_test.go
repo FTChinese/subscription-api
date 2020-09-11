@@ -7,7 +7,7 @@ import (
 func TestRepo_SaveAccount(t *testing.T) {
 	p := NewPersona()
 
-	err := NewRepo().SaveAccount(p.Account())
+	err := NewRepo().SaveAccount(p.FtcAccount())
 
 	if err != nil {
 		t.Error(err)

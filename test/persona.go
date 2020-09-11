@@ -132,7 +132,7 @@ func (p *Persona) AccountID() reader.MemberID {
 	return id
 }
 
-func (p *Persona) Account() reader.FtcAccount {
+func (p *Persona) FtcAccount() reader.FtcAccount {
 	switch p.kind {
 	case enum.AccountKindFtc:
 		return reader.FtcAccount{
@@ -186,7 +186,7 @@ func (p *Persona) Membership() reader.Membership {
 
 	switch p.payMethod {
 	case enum.PayMethodWx, enum.PayMethodAli:
-		m.FtcID = null.StringFrom(p.plan.ID)
+		m.FtcPlanID = null.StringFrom(p.plan.ID)
 
 	case enum.PayMethodStripe:
 		m.StripeSubsID = null.StringFrom(faker.GenStripeSubID())

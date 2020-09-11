@@ -1,15 +1,28 @@
 package iaprepo
 
 import (
+	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
-	"reflect"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestEnv_Link(t *testing.T) {
+
+	p1 := test.NewPersona()
+	p2 := test.NewPersona().SetExpired(true)
+	p3 := test.NewPersona().SetPayMethod(enum.PayMethodApple)
+
+	repo := test.NewRepo()
+	repo.MustSaveMembership(p1.Membership())
+	repo.MustSaveMembership(p2.Membership())
+	repo.MustSaveMembership(p3.Membership())
+
 	type fields struct {
 		cfg config.BuildConfig
 		db  *sqlx.DB
@@ -22,11 +35,54 @@ func TestEnv_Link(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    apple.LinkResult
 		wantErr bool
 	}{
 		{
-			name: "Existing IAP cannot link to another FTC account",
+			name: "Both sides have no existing membership",
+			fields: fields{
+				db: test.DB,
+			},
+			args: args{
+				account: test.NewPersona().FtcAccount(),
+				iapSubs: test.NewPersona().IAPSubs(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "IAP current empty cannot link to FTC non-expired",
+			fields: fields{
+				cfg: config.BuildConfig{},
+				db:  test.DB,
+			},
+			args: args{
+				account: p1.FtcAccount(),
+				iapSubs: p1.IAPSubs(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "IAP current empty can link to FTC expired",
+			fields: fields{
+				cfg: config.BuildConfig{},
+				db:  test.DB,
+			},
+			args: args{
+				account: p2.FtcAccount(),
+				iapSubs: test.NewPersona().IAPSubs(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "IAP exists and should not link to any new ftc account",
+			fields: fields{
+				cfg: config.BuildConfig{},
+				db:  test.DB,
+			},
+			args: args{
+				account: test.NewPersona().FtcAccount(),
+				iapSubs: p3.IAPSubs(),
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -36,13 +92,68 @@ func TestEnv_Link(t *testing.T) {
 				db:  tt.fields.db,
 			}
 			got, err := env.Link(tt.args.account, tt.args.iapSubs)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Link() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Link() got = %v, want %v", got, tt.want)
+
+			assert.NoError(t, err)
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
+
+func TestEnv_Unlink(t *testing.T) {
+
+	p := test.NewPersona().SetPayMethod(enum.PayMethodApple)
+
+	test.NewRepo().MustSaveMembership(p.Membership())
+
+	type fields struct {
+		cfg config.BuildConfig
+		db  *sqlx.DB
+	}
+	type args struct {
+		input apple.LinkInput
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    reader.MemberSnapshot
+		wantErr bool
+	}{
+		{
+			name: "Unlink IAP",
+			fields: fields{
+				db: test.DB,
+			},
+			args: args{
+				input: apple.LinkInput{
+					FtcID:        p.FtcID,
+					OriginalTxID: p.AppleSubID,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				cfg: tt.fields.cfg,
+				db:  tt.fields.db,
 			}
+			got, err := env.Unlink(tt.args.input)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
