@@ -7,7 +7,7 @@ import (
 
 func TestReaderEnv_FindAccountByFtcID(t *testing.T) {
 	profile := test.NewPersona()
-	test.NewRepo().MustSaveAccount(profile.Account())
+	test.NewRepo().MustSaveAccount(profile.FtcAccount())
 
 	env := Env{db: test.DB}
 
@@ -41,7 +41,7 @@ func TestReaderEnv_FindAccountByFtcID(t *testing.T) {
 
 func TestReaderEnv_FindAccountByStripeID(t *testing.T) {
 	profile := test.NewPersona()
-	test.NewRepo().MustSaveAccount(profile.Account())
+	test.NewRepo().MustSaveAccount(profile.FtcAccount())
 
 	env := Env{db: test.DB}
 
