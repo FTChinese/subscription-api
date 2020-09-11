@@ -26,11 +26,7 @@ run :
 
 # Cross compiling linux on for dev.
 linux :
-	echo 'Build sandbox version'
 	$(BUILD_LINUX)
-
-version :
-	echo $(VERSION)
 
 # From local machine to production server
 # Copy env varaible to server
@@ -43,9 +39,10 @@ deploy : version
 
 # For CI/CD
 build :
+	echo 'Build sandbox version'
 	gvm install go1.15
 	gvm use go1.15
-	echo $(VERSION)
+	$(VERSION)
 	$(BUILD_LINUX)
 
 downconfig :
