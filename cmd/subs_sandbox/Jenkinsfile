@@ -6,7 +6,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'make build'
+                sh 'cd cmd/subs_sandbox && make build'
                 sh 'make downconfig'
                 archiveArtifacts artifacts: 'build/linux/*', fingerprint: true
             }
@@ -19,8 +19,7 @@ pipeline {
             }
             steps {
                 sh 'make upconfig'
-                sh 'make publish'
-                sh 'make restart'
+                sh 'cd cmd/subs_sandbox && make publish'
             }
         }
     }
