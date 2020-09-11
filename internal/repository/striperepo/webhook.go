@@ -10,19 +10,19 @@ import (
 
 // WebHookSaveStripeSub saves a user's membership derived from
 // stripe subscription data.
-func (env StripeEnv) WebHookOnSubscription(memberID reader.MemberID, ss *stripe.Subscription) error {
-
-	log := logger.WithField("trace", "StripeEnv.OnSubscription")
+func (env Env) WebHookOnSubscription(memberID reader.MemberID, ss *stripe.Subscription) error {
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		return err
 	}
 
 	m, err := tx.RetrieveMember(memberID)
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return nil
 	}
@@ -39,15 +39,17 @@ func (env StripeEnv) WebHookOnSubscription(memberID reader.MemberID, ss *stripe.
 
 	m = stripePkg.RefreshMembership(m, ss)
 
-	log.Infof("updating a stripe membership: %+v", m)
+	sugar.Infof("updating a stripe membership: %+v", m)
 
 	// update member
 	if err := tx.UpdateMember(m); err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return err
 	}
 
 	if err := tx.Commit(); err != nil {
+		sugar.Error(err)
 		return err
 	}
 
