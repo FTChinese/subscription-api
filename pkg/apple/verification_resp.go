@@ -2,7 +2,7 @@ package apple
 
 import (
 	"github.com/guregu/null"
-	"github.com/sirupsen/logrus"
+	"log"
 )
 
 const bundleID = "com.ft.ftchinese.mobile"
@@ -39,16 +39,15 @@ func (v *VerificationResp) GetStatusMessage() string {
 // Validate ensures the response from Apple API is correct.
 // Checks Status and BundleID.
 func (v *VerificationResp) Validate() bool {
-	logger := logrus.WithField("trace", "apple.VerificationResp.Validate")
 
 	// Status above 0 is error.
 	if v.Status != 0 {
-		logger.Infof("Expected response status 0, got %d: %s", v.Status, getStatusMessage(v.Status))
+		log.Printf("Expected response status 0, got %d: %s", v.Status, getStatusMessage(v.Status))
 		return false
 	}
 
 	if v.Receipt.BundleID != bundleID {
-		logger.Infof("Bundle ID does not match, got %s", v.Receipt.BundleID)
+		log.Printf("Bundle ID does not match, got %s", v.Receipt.BundleID)
 		return false
 	}
 

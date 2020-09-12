@@ -27,7 +27,6 @@ func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
 	)
 
 	if err != nil {
-		log.WithField("trace", "Env.SaveWxUser").Error(err)
 		return err
 	}
 
@@ -49,7 +48,6 @@ func (env Env) UpdateWxUser(u wxlogin.UserInfo) error {
 	)
 
 	if err != nil {
-		log.WithField("trace", "Env.UpdateUserInfo").Error(err)
 		return err
 	}
 

@@ -2,7 +2,6 @@ package wxoauth
 
 import (
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
 
 type Env struct {
@@ -14,5 +13,3 @@ func New(db *sqlx.DB) Env {
 		db: db,
 	}
 }
-
-var log = logrus.WithField("package", "repository.wxoauth")

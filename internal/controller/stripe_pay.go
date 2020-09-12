@@ -11,7 +11,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 	stripeSdk "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/webhook"
 	"io/ioutil"
@@ -160,7 +159,8 @@ func (router StripeRouter) SetDefaultPaymentMethod(w http.ResponseWriter, req *h
 //
 // GET /stripe/customers/{id}/key?api_version=<version>
 func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
-	log := logrus.WithField("trace", "StripeRouter.IssueKey")
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	// Get stripe customer id.
 	id, err := getURLParam(req, "id").ToString()
@@ -186,7 +186,7 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 
 	_, err = w.Write(keyData)
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 	}
 }
 
@@ -218,18 +218,21 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 // in case user already linked wechat.
 // Notification email is sent upon webhook receiving data, not here.
 func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.Request) {
-	log := logrus.WithField("trace", "StripeRouter.CreateSubscription")
+	defer logger.Sync()
+	sugar := logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
 
 	input := stripePkg.NewSubsInput(ftcID)
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 	input, err := input.WithPlanID(router.config.Live())
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).NotFound()
 		return
 	}
@@ -240,6 +243,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	s, err := router.stripeRepo.CreateSubscription(input)
 
 	if err != nil {
+		sugar.Error()
 		err := forwardStripeErr(w, err)
 		if err == nil {
 			go func() {
@@ -264,11 +268,12 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	// Tells client whether further action is required.
 	resp, err := stripePkg.NewPaymentResult(s)
 	if err != nil {
+		sugar.Error()
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	log.Infof("Subscription id %s, status %s, payment intent status %s", s.ID, s.Status, s.LatestInvoice.PaymentIntent.Status)
+	sugar.Infof("Subscription id %s, status %s, payment intent status %s", s.ID, s.Status, s.LatestInvoice.PaymentIntent.Status)
 
 	_ = render.New(w).OK(resp)
 }

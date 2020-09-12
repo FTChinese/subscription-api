@@ -26,7 +26,6 @@ func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c client.Clie
 	)
 
 	if err != nil {
-		log.WithField("trace", "Env.SaveAccess").Error(err)
 		return err
 	}
 
@@ -57,7 +56,6 @@ func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error
 	)
 
 	if err != nil {
-		log.WithField("trace", "Env.LoadAccess").Error(err)
 		return acc, err
 	}
 
@@ -73,7 +71,6 @@ func (env Env) UpdateWxAccess(sessionID, accessToken string) error {
 	)
 
 	if err != nil {
-		log.WithField("trace", "Env.UpdateAccess").Error(err)
 		return err
 	}
 
