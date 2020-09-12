@@ -33,8 +33,6 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error)
 	)
 
 	if err != nil && err != sql.ErrNoRows {
-		logger.WithField("trace", "MemberTx.RetrieveMember").Error(err)
-
 		return m, err
 	}
 
@@ -54,8 +52,6 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership,
 		transactionID)
 
 	if err != nil && err != sql.ErrNoRows {
-		logger.WithField("trace", "MemberTx.RetrieveAppleMember").Error(err)
-
 		return m, err
 	}
 
@@ -72,7 +68,6 @@ func (tx MemberTx) SaveOrder(order subs.Order) error {
 		order)
 
 	if err != nil {
-		logger.WithField("trace", "MemberTx.SaveSubscription").Error(err)
 		return err
 	}
 
@@ -105,8 +100,6 @@ func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "MemberTx.ConfirmOrder").Error(err)
-
 		return err
 	}
 
@@ -123,7 +116,6 @@ func (tx MemberTx) CreateMember(m reader.Membership) error {
 	)
 
 	if err != nil {
-		logger.WithField("trace", "MemberTx.CreateMember").Error(err)
 		return err
 	}
 
@@ -139,7 +131,6 @@ func (tx MemberTx) UpdateMember(m reader.Membership) error {
 		m)
 
 	if err != nil {
-		logger.WithField("trace", "MemberTx.UpdateMembership").Error(err)
 		return err
 	}
 
@@ -179,7 +170,6 @@ func (tx MemberTx) FindBalanceSources(userIDs reader.MemberID) ([]subs.BalanceSo
 		userIDs.BuildFindInSet())
 
 	if err != nil {
-		logger.WithField("trace", "MemberTx.FindBalanceSources").Error(err)
 		return nil, err
 	}
 
@@ -202,7 +192,6 @@ func (tx MemberTx) SaveProratedOrders(po []subs.ProratedOrder) error {
 			v)
 
 		if err != nil {
-			logger.WithField("trace", "MemberTx.SaveProratedOrders").Error(err)
 			return err
 		}
 	}
@@ -218,7 +207,6 @@ func (tx MemberTx) ProratedOrdersUsed(upOrderID string) error {
 		upOrderID,
 	)
 	if err != nil {
-		logger.WithField("trace", "MemberTx.ProratedOrdersUsed").Error(err)
 		return err
 	}
 

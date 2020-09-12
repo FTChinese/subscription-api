@@ -3,17 +3,16 @@ package txrepo
 import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
-
-var logger = logrus.WithField("package", "query")
 
 type AccountTx struct {
 	*sqlx.Tx
 }
 
 func NewAccountTx(tx *sqlx.Tx) AccountTx {
-	return AccountTx{tx}
+	return AccountTx{
+		Tx: tx,
+	}
 }
 
 // RetrieveAccount loads an ftc account by uuid
@@ -24,7 +23,6 @@ func (tx AccountTx) RetrieveAccount(ftcID string) (reader.FtcAccount, error) {
 		reader.StmtAccountByFtcID+" FOR UPDATE",
 		ftcID)
 	if err != nil {
-		logger.WithField("trace", "AccountTx.RetrieveAccount").Error(err)
 		return reader.FtcAccount{}, err
 	}
 
@@ -37,7 +35,6 @@ func (tx AccountTx) SavedStripeID(account reader.FtcAccount) error {
 		account,
 	)
 	if err != nil {
-		logger.WithField("trace", "AccountTx.SaveStripeID").Error(err)
 		return err
 	}
 
