@@ -9,7 +9,6 @@ func (env Env) SaveWxStatus(code int64, message string) error {
 	)
 
 	if err != nil {
-		log.WithField("trace", "Env.SaveWxError").Error(err)
 		return err
 	}
 

@@ -10,8 +10,8 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
-	"github.com/sirupsen/logrus"
 	"github.com/smartwalle/alipay"
+	"log"
 )
 
 // OrderBuilder is used to builder an order based
@@ -260,7 +260,7 @@ func (b *OrderBuilder) PaymentIntent() (PaymentIntent, error) {
 
 func (b *OrderBuilder) AliAppPayParams() alipay.AliPayTradeAppPay {
 	webHook := b.getWebHookURL()
-	logrus.WithField("trace", "OrderBuilder.AliAppPayParams").Infof("Using web hook url: %s", webHook)
+	log.Printf("Using web hook url: %s", webHook)
 
 	return alipay.AliPayTradeAppPay{
 		TradePay: alipay.TradePay{
@@ -304,7 +304,7 @@ func (b *OrderBuilder) AliWapPayParams(retURL string) alipay.AliPayTradeWapPay {
 
 func (b *OrderBuilder) WxpayParams() wxpay.Params {
 	webHook := b.getWebHookURL()
-	logrus.WithField("trace", "OrderBuilder.AliAppPayParams").Infof("Using web hook url: %s", webHook)
+	log.Printf("Using web hook url: %s", webHook)
 
 	p := make(wxpay.Params)
 	p.SetString("body", b.plan.PaymentTitle(b.kind))
