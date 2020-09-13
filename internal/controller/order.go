@@ -9,8 +9,8 @@ import (
 )
 
 func (router PayRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Get ftc order id from URL
 	orderID, err := getURLParam(req, "orderId").ToString()

@@ -6,20 +6,23 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	env  subrepo.Env
-	repo products.Env
+	subRepo subrepo.Env
+	repo    products.Env
+	logger  *zap.Logger
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(db *sqlx.DB, c *cache.Cache) PaywallRouter {
+func NewPaywallRouter(db *sqlx.DB, c *cache.Cache, logger *zap.Logger) PaywallRouter {
 	return PaywallRouter{
-		env:  subrepo.NewEnv(db, c),
-		repo: products.NewEnv(db, c),
+		subRepo: subrepo.NewEnv(db, c, logger),
+		repo:    products.NewEnv(db, c),
+		logger:  logger,
 	}
 }
 

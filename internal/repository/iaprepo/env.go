@@ -3,15 +3,18 @@ package iaprepo
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 type Env struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	logger *zap.Logger
 }
 
-func NewEnv(db *sqlx.DB) Env {
+func NewEnv(db *sqlx.DB, logger *zap.Logger) Env {
 	return Env{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
 }
 

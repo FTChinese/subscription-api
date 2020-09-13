@@ -12,8 +12,8 @@ import (
 // It is done in a transaction so that we won't create duplicate customer
 // for the same reader.
 func (env Env) CreateStripeCustomer(ftcID string) (reader.FtcAccount, error) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginAccountTx()
 	if err != nil {

@@ -2,9 +2,10 @@ package reader
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/product"
-	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
@@ -313,14 +314,20 @@ func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, *render.V
 // Not-Expired |  N     |      N      |  N
 // Expired     |  Y     |      N      |  N
 // --------------------------------------------
-func (m Membership) ValidateMergeIAP(iapMember Membership) *render.ValidationError {
+func (m Membership) ValidateMergeIAP(iapMember Membership) error {
 	// Equal means either both are zero values, or they refer to the same instance.
 	// In such case it is fine to return any of them.
 	// The caller should then check whether the returned value is zero.
-	// For zero value, build a new membership based on IAP transaction;
-	// otherwise just update it.
+	// For zero value, build a new membership based on IAP transaction.
+	// If any of them is not zero, it indicates they already linked.
+	// We should stop processing.
 	if iapMember.IsEqual(m) {
-		return nil
+		if m.IsZero() {
+			return nil
+		}
+
+		// Tell calle to stop processing.
+		return ErrIAPFtcLinked
 	}
 
 	// If the two sides are not equal, they must be totally different memberships and the two sides cannot be both empty.

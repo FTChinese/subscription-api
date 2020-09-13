@@ -9,17 +9,7 @@ import (
 	"net/http"
 )
 
-type UpgradeRouter struct {
-	PayRouter
-}
-
-func NewUpgradeRouter(baseRouter PayRouter) UpgradeRouter {
-	return UpgradeRouter{
-		PayRouter: baseRouter,
-	}
-}
-
-func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
+func (router PayRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
 	readerIDs := getReaderIDs(req.Header)
 
 	plan, err := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
@@ -43,9 +33,9 @@ func (router UpgradeRouter) UpgradeBalance(w http.ResponseWriter, req *http.Requ
 }
 
 // FreeUpgrade handles free upgrade request.
-func (router UpgradeRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+func (router PayRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	readerIDs := getReaderIDs(req.Header)
 	clientApp := client.NewClientApp(req)

@@ -3,7 +3,11 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"github.com/FTChinese/go-rest"
+	"go.uber.org/zap"
+	"io/ioutil"
+	"net/http"
+
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
@@ -12,8 +16,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/jmoiron/sqlx"
-	"io/ioutil"
-	"net/http"
 )
 
 type IAPRouter struct {
@@ -23,16 +25,18 @@ type IAPRouter struct {
 	readerRepo readerrepo.Env
 	postman    postoffice.PostOffice
 	iapClient  iaprepo.Client
+	logger     *zap.Logger
 }
 
-func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice) IAPRouter {
+func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) IAPRouter {
 	return IAPRouter{
 		secret:     config.MustIAPSecret(),
 		config:     cfg,
-		iapRepo:    iaprepo.NewEnv(db),
+		iapRepo:    iaprepo.NewEnv(db, logger),
 		readerRepo: readerrepo.NewEnv(db),
 		postman:    p,
 		iapClient:  iaprepo.NewClient(cfg.Sandbox()),
+		logger:     logger,
 	}
 }
 
@@ -41,7 +45,8 @@ func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice) 
 // link account and unlink account.
 // See https://developer.apple.com/documentation/storekit/in-app_purchase/validating_receipts_with_the_app_store
 func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, *render.ResponseError) {
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	content, err := router.iapClient.Verify(receipt)
 	if err != nil {
@@ -136,24 +141,31 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 //
 // Response: the linked Membership.
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	var input apple.LinkInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 	if ve := input.Validate(); ve != nil {
+		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
 	ftcAccount, err := router.readerRepo.FtcAccountByFtcID(input.FtcID)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	iapSubs, err := router.iapRepo.LoadSubs(input.OriginalTxID)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
@@ -162,6 +174,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	linkResult, err := router.iapRepo.Link(ftcAccount, iapSubs)
 
 	if err != nil {
+		sugar.Error(err)
 		var ve *render.ValidationError
 		// ValidationError indicates the link is not allowed.
 		if errors.As(err, &ve) {
@@ -173,8 +186,15 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if !linkResult.Snapshot.IsZero() {
+		go func() {
+			_ = router.readerRepo.BackUpMember(linkResult.Snapshot)
+		}()
+	}
+
 	// Send notification email if this is initial link.
 	if linkResult.Initial {
+		sugar.Info("Initial link. Sending email....")
 		go func() {
 			account, err := router.readerRepo.FtcAccountByFtcID(linkResult.Linked.FtcID.String)
 			if err != nil {
@@ -238,8 +258,8 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 
 // WebHook receives app store server-to-server notification.
 func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	var wh apple.WebHook
 	b, err := ioutil.ReadAll(req.Body)

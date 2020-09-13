@@ -2,24 +2,25 @@ package subrepo
 
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
+	"go.uber.org/zap"
 )
 
 // Env wraps database connection
 type Env struct {
-	config.BuildConfig
-	db    *sqlx.DB
-	cache *cache.Cache
+	db     *sqlx.DB
+	cache  *cache.Cache
+	logger *zap.Logger
 }
 
 // NewEnv creates a new instance of Env.
 // `sandbox` is used to determine which table to write subscription data.
-func NewEnv(db *sqlx.DB, c *cache.Cache) Env {
+func NewEnv(db *sqlx.DB, c *cache.Cache, logger *zap.Logger) Env {
 	return Env{
-		db:    db,
-		cache: c,
+		db:     db,
+		cache:  c,
+		logger: logger,
 	}
 }
 

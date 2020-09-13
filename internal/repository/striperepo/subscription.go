@@ -16,8 +16,8 @@ import (
 // util.ErrActiveStripeSub
 // util.ErrUnknownSubState
 func (env Env) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subscription, error) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
@@ -106,8 +106,8 @@ func (env Env) SaveSubsError(e ftcStripe.APIError) error {
 
 // GetSubscription refresh stripe subscription data if stale.
 func (env Env) GetSubscription(id reader.MemberID) (*stripe.Subscription, error) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {

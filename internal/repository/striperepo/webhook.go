@@ -11,8 +11,8 @@ import (
 // WebHookSaveStripeSub saves a user's membership derived from
 // stripe subscription data.
 func (env Env) WebHookOnSubscription(memberID reader.MemberID, ss *stripe.Subscription) error {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
