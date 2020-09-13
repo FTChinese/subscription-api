@@ -2,13 +2,11 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/jmoiron/sqlx"
 )
 
 type Env struct {
-	cfg config.BuildConfig
-	db  *sqlx.DB
+	db *sqlx.DB
 }
 
 func NewEnv(db *sqlx.DB) Env {
