@@ -19,6 +19,7 @@ import (
 	"github.com/objcoding/wxpay"
 	"github.com/patrickmn/go-cache"
 	"github.com/smartwalle/alipay"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -29,6 +30,7 @@ type PayRouter struct {
 	prodRepo   products.Env
 	postman    postoffice.PostOffice
 	config     config.BuildConfig
+	logger     *zap.Logger
 
 	aliAppID string
 	aliPay   *alipay.AliPay
@@ -36,16 +38,17 @@ type PayRouter struct {
 	wxPayClients wechat.PayClients
 }
 
-func NewPayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice) PayRouter {
+func NewPayRouter(db *sqlx.DB, c *cache.Cache, b config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) PayRouter {
 
 	aliApp := ali.MustInitApp()
 
 	return PayRouter{
-		subRepo:    subrepo.NewEnv(db, c),
+		subRepo:    subrepo.NewEnv(db, c, logger),
 		readerRepo: readerrepo.NewEnv(db),
 		prodRepo:   products.NewEnv(db, c),
 		postman:    p,
 		config:     b,
+		logger:     logger,
 
 		aliAppID: aliApp.ID,
 		aliPay:   alipay.New(aliApp.ID, aliApp.PublicKey, aliApp.PrivateKey, true),
@@ -87,8 +90,8 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
 func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// If the FtcID field is null, it indicates this user
 	// does not have an FTC account linked. You cannot find out
@@ -135,8 +138,8 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 }
 
 func (router PayRouter) queryWxOrder(order subs.Order) (subs.PaymentResult, *render.ResponseError) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	if order.WxAppID.IsZero() {
 		order.WxAppID = null.StringFrom(wxAppNativeApp)

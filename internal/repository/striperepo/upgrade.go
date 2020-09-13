@@ -11,8 +11,8 @@ import (
 
 // UpgradeStripeSubs switches subscription plan.
 func (env Env) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.Subscription, error) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {

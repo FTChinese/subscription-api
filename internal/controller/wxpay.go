@@ -22,11 +22,11 @@ import (
 // tier: string; Currently acquired from URL param
 // cycle: string; Currently acquired from URL param
 func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFunc {
-	defer logger.Sync()
-	sugar := logger.Sugar()
 
 	return func(w http.ResponseWriter, req *http.Request) {
-		defer logger.Sync()
+		defer router.logger.Sync()
+		sugar := router.logger.Sugar()
+
 		sugar.Info("Start placing a wechat order")
 
 		clientApp := client.NewClientApp(req)
@@ -151,8 +151,8 @@ func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFun
 // WxWebHook implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
 func (router PayRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	resp := wxpay.Notifies{}
 
@@ -272,8 +272,8 @@ func (router PayRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 // GET /wxpay/query/{orderId}?app_id=<string>
 func (router PayRouter) QueryWxOrder(w http.ResponseWriter, req *http.Request) {
 
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Get ftc order id from URL
 	orderID, err := getURLParam(req, "orderId").ToString()

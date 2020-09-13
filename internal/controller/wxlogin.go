@@ -3,6 +3,8 @@ package controller
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/wxoauth"
 	client2 "github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 	"net/http"
 	"net/url"
 	"strings"
@@ -17,15 +19,17 @@ import (
 // Wechat never said you should do this.
 // But when combining their messy documentation, you must do it this way.
 type WxAuthRouter struct {
-	apps map[string]wxlogin.OAuthApp
-	env  wxoauth.Env
+	apps   map[string]wxlogin.OAuthApp
+	wxRepo wxoauth.Env
+	logger *zap.Logger
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
-func NewWxAuth(env wxoauth.Env) WxAuthRouter {
+func NewWxAuth(db *sqlx.DB, logger *zap.Logger) WxAuthRouter {
 	return WxAuthRouter{
-		apps: wxlogin.MustInitApps(),
-		env:  env,
+		apps:   wxlogin.MustInitApps(),
+		wxRepo: wxoauth.NewEnv(db),
+		logger: logger,
 	}
 }
 
@@ -54,8 +58,8 @@ func NewWxAuth(env wxoauth.Env) WxAuthRouter {
 // Error:
 // 422: code_missing_field; code_invalid; openId_invalid
 func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Find this app.
 	appID := req.Header.Get("X-App-Id")
@@ -102,7 +106,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 		// Log Wechat error response
 		go func() {
-			_ = router.env.SaveWxStatus(acc.Code, acc.Message)
+			_ = router.wxRepo.SaveWxStatus(acc.Code, acc.Message)
 		}()
 
 		r := acc.BuildReason()
@@ -128,7 +132,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	if user.HasError() {
 		// Log error response.
 		go func() {
-			if err := router.env.SaveWxStatus(user.Code, user.Message); err != nil {
+			if err := router.wxRepo.SaveWxStatus(user.Code, user.Message); err != nil {
 				sugar.Error(err)
 			}
 		}()
@@ -141,14 +145,14 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 	// Step 3:
 	// Save access token
 	go func() {
-		if err := router.env.SaveWxAccess(appID, acc, client); err != nil {
+		if err := router.wxRepo.SaveWxAccess(appID, acc, client); err != nil {
 			sugar.Error(err)
 		}
 	}()
 
 	// Step 4:
 	// Save userinfo
-	err = router.env.SaveWxUser(user)
+	err = router.wxRepo.SaveWxUser(user)
 
 	if err != nil {
 		_ = view.Render(w, view.NewDBFailure(err))
@@ -167,8 +171,8 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 // Error
 // 422: refresh_token_invalid
 func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	appID := req.Header.Get("X-App-Id")
 	app, ok := router.apps[appID]
@@ -180,7 +184,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	// Parse request body
 	sessionID, err := GetJSONString(req.Body, "sessionId")
 
-	acc, err := router.env.LoadWxAccess(appID, sessionID)
+	acc, err := router.wxRepo.LoadWxAccess(appID, sessionID)
 	// Access token for this openID + appID + clientType is not found
 	if err != nil {
 		_ = view.Render(w, view.NewDBFailure(err))
@@ -205,7 +209,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 		// Just ask user to retry.
 		if user.HasError() {
 			go func() {
-				if err := router.env.SaveWxStatus(user.Code, user.Message); err != nil {
+				if err := router.wxRepo.SaveWxStatus(user.Code, user.Message); err != nil {
 					sugar.Error(err)
 				}
 			}()
@@ -216,7 +220,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Update wechat userinfo for this union id.
-		err = router.env.UpdateWxUser(user)
+		err = router.wxRepo.UpdateWxUser(user)
 
 		if err != nil {
 			_ = view.Render(w, view.NewDBFailure(err))
@@ -242,7 +246,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	// Client should ask user to re-authorize
 	if acc.HasError() {
 		go func() {
-			_ = router.env.SaveWxStatus(acc.Code, acc.Message)
+			_ = router.wxRepo.SaveWxStatus(acc.Code, acc.Message)
 		}()
 
 		r := acc.BuildReason()
@@ -264,7 +268,7 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 	// Just ask user to retry.
 	if user.HasError() {
 		go func() {
-			_ = router.env.SaveWxStatus(user.Code, user.Message)
+			_ = router.wxRepo.SaveWxStatus(user.Code, user.Message)
 		}()
 		r := user.BuildReason()
 		_ = view.Render(w, view.NewUnprocessable(r))
@@ -273,11 +277,11 @@ func (router WxAuthRouter) Refresh(w http.ResponseWriter, req *http.Request) {
 
 	// Save access token
 	go func() {
-		_ = router.env.UpdateWxAccess(sessionID, refreshedAcc.AccessToken)
+		_ = router.wxRepo.UpdateWxAccess(sessionID, refreshedAcc.AccessToken)
 	}()
 
 	// Save userinfo
-	err = router.env.UpdateWxUser(user)
+	err = router.wxRepo.UpdateWxUser(user)
 
 	if err != nil {
 		_ = view.Render(w, view.NewDBFailure(err))

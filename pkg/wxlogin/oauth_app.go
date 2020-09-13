@@ -7,6 +7,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/fetch"
 	"github.com/spf13/viper"
+	"log"
 	"net/url"
 )
 
@@ -108,8 +109,6 @@ func (a OAuthApp) accessValidityURL(accessToken, openID string) string {
 // Response without error: errcode: 0, errmsg: "";
 // What will be returned if two different code under the same Wechat app applied for access token simutaneously?
 func (a OAuthApp) GetAccessToken(code string) (OAuthAccess, error) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
 
 	var acc OAuthAccess
 	_, body, errs := fetch.New().
@@ -133,10 +132,10 @@ func (a OAuthApp) GetAccessToken(code string) (OAuthAccess, error) {
 	// "openid":"ofP-k1LSVS-ObmrySM1aXKbv1Hjs",
 	// "scope":"snsapi_login",
 	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"}
-	sugar.Infof("Wechat response: %s\n", body)
+	log.Printf("Wechat response: %s\n", body)
 
 	if err := json.Unmarshal(body, &acc); err != nil {
-		sugar.Error(err)
+		log.Print(err)
 		return acc, err
 	}
 
@@ -151,8 +150,6 @@ func (a OAuthApp) GetAccessToken(code string) (OAuthAccess, error) {
 // GetUserInfo from Wechat by open id.
 // It seems wechat return empty fields as empty string.
 func (a OAuthApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
 
 	var info UserInfo
 
@@ -177,16 +174,16 @@ func (a OAuthApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 	// "privilege":[],
 	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"
 	// }
-	sugar.Infof("Wechat user info: %s", body)
+	log.Printf("Wechat user info: %s", body)
 
 	if errs != nil {
-		sugar.Error(errs)
+		log.Print(errs)
 
 		return info, errs[0]
 	}
 
 	if err := json.Unmarshal(body, &info); err != nil {
-		sugar.Error(errs)
+		log.Print(errs)
 		return info, err
 	}
 
@@ -195,8 +192,6 @@ func (a OAuthApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 
 // RefreshAccess refresh access token.
 func (a OAuthApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
 
 	var acc OAuthAccess
 	_, body, errs := fetch.New().
@@ -209,16 +204,16 @@ func (a OAuthApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
 		AcceptLang(acceptLang).
 		EndRaw()
 
-	sugar.Infof("Response: %s", body)
+	log.Printf("Response: %s", body)
 
 	if errs != nil {
-		sugar.Error(errs)
+		log.Print(errs)
 
 		return acc, errs[0]
 	}
 
 	if err := json.Unmarshal(body, &acc); err != nil {
-		sugar.Error(err)
+		log.Print(err)
 
 		return acc, err
 	}
@@ -228,8 +223,6 @@ func (a OAuthApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
 
 // IsValidAccess checks if an access token is valid.
 func (a OAuthApp) IsValidAccess(accessToken, openID string) bool {
-	defer logger.Sync()
-	sugar := logger.Sugar()
 
 	_, body, errs := fetch.New().
 		Get(apiBaseURL + "/auth").
@@ -240,15 +233,15 @@ func (a OAuthApp) IsValidAccess(accessToken, openID string) bool {
 		AcceptLang(acceptLang).EndRaw()
 
 	if errs != nil {
-		sugar.Error(errs)
+		log.Print(errs)
 		return false
 	}
 
-	sugar.Infof("Response: %s", body)
+	log.Printf("Response: %s", body)
 
 	var resp RespStatus
 	if err := json.Unmarshal(body, &resp); err != nil {
-		sugar.Error(err)
+		log.Print(err)
 		return false
 	}
 

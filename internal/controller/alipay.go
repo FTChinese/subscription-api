@@ -7,7 +7,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -30,13 +29,10 @@ const (
 // cycle: string;
 // planId?: string;
 func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
-
-	logger, _ := zap.NewProduction()
-	sugar := logger.Sugar()
-
-	// TODO: put all those fields in request body.
-
 	return func(w http.ResponseWriter, req *http.Request) {
+		defer router.logger.Sync()
+		sugar := router.logger.Sugar()
+
 		err := req.ParseForm()
 		if err != nil {
 			sugar.Error(err)
@@ -152,8 +148,8 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 // Query verifies the payment status of an order against alipay api.
 // GET /alipay/query/{orderId}
 func (router PayRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	orderID, err := getURLParam(req, "orderId").ToString()
 	if err != nil {
@@ -186,8 +182,8 @@ func (router PayRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) 
 // AliWebHook handles alipay server-side notification.
 // POST /webhook/alipay
 func (router PayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	err := req.ParseForm()
 	if err != nil {

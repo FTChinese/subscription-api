@@ -2,11 +2,12 @@ package iaprepo
 
 import (
 	"database/sql"
+	"errors"
+
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"go.uber.org/zap"
 )
 
 // Link links an apple subscription to an ftc account.
@@ -30,9 +31,8 @@ import (
 // The returned error could be *render.ValidationError
 // if link if forbidden.
 func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (apple.LinkResult, error) {
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.BeginTx()
 	if err != nil {
@@ -59,18 +59,28 @@ func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (appl
 	// If iap membership is already linked, the merged
 	// membership won't be changed and we only need to
 	// update it based on apple transaction.
-	ve := ftcMember.ValidateMergeIAP(iapMember)
-	if ve != nil {
-		sugar.Error(ve)
+	err = ftcMember.ValidateMergeIAP(iapMember)
+	if err != nil {
+		sugar.Error(err)
+
+		if errors.Is(err, reader.ErrIAPFtcLinked) {
+			_ = tx.Rollback()
+			return apple.LinkResult{
+				Initial:  false,
+				Linked:   iapMember,
+				Snapshot: reader.MemberSnapshot{},
+			}, nil
+		}
+
 		_ = tx.Rollback()
-		return apple.LinkResult{}, ve
+		return apple.LinkResult{}, err
 	}
 
 	// If reached here, possible cases of FTC and IAP:
 	// FTC	    |  IAP
 	// ----------------
 	// zero	    |  zero  | No backup
-	// Equal    |  Equal | Backup and Update
+	// Equal    |  Equal | Stop
 	// Expired  |  zero  | Backup FTC and Update
 	// -----------------
 	// From this table we can see we only need to backup the FTC side if it exists.
