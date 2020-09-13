@@ -130,7 +130,11 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(resp)
 }
 
-// Link merges IAP subscription to FTC account.
+// Link links IAP subscription to FTC account.
+// This step does not perform verification.
+// It only links an existing subscription to ftc account.
+// You should ask the /subscription/* endpoint to
+// update data and get the original transaction id.
 //
 // Input:
 // ftcId: string;
@@ -152,7 +156,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	iapSubs, err := router.iapRepo.LoadSubscription(input.OriginalTxID)
+	iapSubs, err := router.iapRepo.LoadSubs(input.OriginalTxID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -215,6 +219,8 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 		_ = render.New(w).Unprocessable(ve)
 	}
 
+	// This will retrieve membership by apple original transaction id.
+	// So if target does not exists, if will simply gives 404 error.
 	snapshot, err := router.iapRepo.Unlink(input)
 	if err != nil {
 		var ve *render.ValidationError
@@ -232,144 +238,6 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	_ = render.New(w).NoContent()
-}
-
-// UpsertSubs performs exactly the same step as VerifyReceipt.
-// The two only differs in the data they send back.
-func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
-	var input apple.ReceiptInput
-	if err := gorest.ParseJSON(req.Body, &input); err != nil {
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-	if ve := input.Validate(); ve != nil {
-		_ = render.New(w).Unprocessable(ve)
-		return
-	}
-
-	resp, resErr := router.doVerification(input.ReceiptData)
-	if resErr != nil {
-		_ = render.New(w).JSON(resErr.StatusCode, resErr)
-		return
-	}
-
-	sub, err := resp.Subscription()
-
-	err = router.iapRepo.UpsertSubscription(sub)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	snapshot, err := router.iapRepo.UpdateMembership(sub)
-	if err != nil {
-		return
-	}
-
-	// Update subscription and possible membership in background since this step is irrelevant to verification.
-	if !snapshot.IsZero() {
-		go func() {
-			_ = router.readerRepo.BackUpMember(snapshot)
-		}()
-	}
-
-	_ = render.New(w).OK(sub)
-}
-
-// RefreshSubs updates an existing apple receipt and optional associated subscription.
-// Returns apple.Subscription which contains the essential
-// fields to represent a user's subscription.
-func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
-
-	originalTxID, err := getURLParam(req, "id").ToString()
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-
-	// Find existing subscription data for this original transaction id.
-	// If not found, returns 404.
-	sub, err := router.iapRepo.LoadSubscription(originalTxID)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	// Load the receipt file from disk.
-	// If error occurred, returns 404.
-	b, err := iaprepo.LoadReceipt(sub.OriginalTransactionID, sub.Environment)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).NotFound()
-		return
-	}
-
-	resp, resErr := router.doVerification(string(b))
-	if resErr != nil {
-		sugar.Error(err)
-		_ = render.New(w).JSON(resErr.StatusCode, resErr)
-		return
-	}
-
-	// If err occurred, it indicates program has bugs.
-	updatedSubs, err := resp.Subscription()
-	if err != nil {
-		_ = render.New(w).InternalServerError(err.Error())
-		return
-	}
-
-	// Update subscription and possible membership in background since this step is irrelevant to verification.
-	err = router.iapRepo.UpsertSubscription(updatedSubs)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	snapshot, err := router.iapRepo.UpdateMembership(sub)
-	if err != nil {
-		return
-	}
-
-	if !snapshot.IsZero() {
-		go func() {
-			_ = router.readerRepo.BackUpMember(snapshot)
-		}()
-	}
-
-	_ = render.New(w).OK(updatedSubs)
-}
-
-// LoadReceipt retrieves the subscription data for
-// an original transaction id, together with the
-// receipt used to verify it.
-func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
-	id, _ := getURLParam(req, "id").ToString()
-
-	sub, err := router.iapRepo.LoadSubscription(id)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	b, err := iaprepo.LoadReceipt(sub.OriginalTransactionID, sub.Environment)
-	if err != nil {
-		_ = render.New(w).NotFound()
-		return
-	}
-
-	data := struct {
-		apple.Subscription
-		Receipt string `json:"receipt"`
-	}{
-		Subscription: sub,
-		Receipt:      string(b),
-	}
-
-	_ = render.New(w).OK(data)
 }
 
 // WebHook receives app store server-to-server notification.
