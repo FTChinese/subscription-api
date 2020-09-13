@@ -15,7 +15,7 @@ tasks:
   run:
     desc: Run the program
     cmds:
-      - ./{{.BUILD_DIR}}/{{.BINARY}}{{exeExt}}
+      - ./{{.BUILD_DIR}}/{{.BINARY}}{{exeExt}} -sandbox=true
 
   deploy:
     desc: Build Linux binary and copy to production machine.
