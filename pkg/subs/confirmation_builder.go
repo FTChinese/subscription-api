@@ -29,15 +29,13 @@ type ConfirmationResult struct {
 // membership needs to be inspected to see
 // when shall the membership starts.
 type ConfirmationBuilder struct {
-	live          bool // Determines the price.
 	paymentResult PaymentResult
 	membership    reader.Membership // Current membership.
 	order         Order             // The order corresponding to a webhook.
 }
 
-func NewConfirmationBuilder(result PaymentResult, live bool) *ConfirmationBuilder {
+func NewConfirmationBuilder(result PaymentResult) *ConfirmationBuilder {
 	return &ConfirmationBuilder{
-		live:          live,
 		paymentResult: result,
 		membership:    reader.Membership{},
 		order:         Order{},

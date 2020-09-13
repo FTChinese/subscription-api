@@ -60,7 +60,7 @@ func (env Env) FreeUpgrade(builder *subs.OrderBuilder) (subs.ConfirmationResult,
 		Amount:      0,
 		OrderID:     order.ID,
 		ConfirmedAt: chrono.TimeNow(),
-	}, env.Live()).
+	}).
 		SetMembership(member).
 		SetOrder(order).
 		Build()

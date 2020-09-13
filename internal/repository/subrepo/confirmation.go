@@ -40,7 +40,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 		}
 	}
 
-	builder := subs.NewConfirmationBuilder(result, env.Live()).
+	builder := subs.NewConfirmationBuilder(result).
 		SetOrder(order)
 
 	// Validate order

@@ -7,8 +7,8 @@ import (
 )
 
 func (env Env) CreateOrder(builder *subs.OrderBuilder) (subs.Order, error) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	otx, err := env.BeginOrderTx()
 	if err != nil {

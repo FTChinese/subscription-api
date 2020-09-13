@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/controller"
-	"github.com/FTChinese/subscription-api/internal/repository/wxoauth"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -14,6 +13,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
 	"github.com/stripe/stripe-go"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"time"
@@ -30,6 +30,16 @@ type ServerStatus struct {
 
 func StartServer(s ServerStatus) {
 	cfg := config.NewBuildConfig(s.Production, s.Sandbox)
+	var logger *zap.Logger
+	var err error
+	if cfg.Production() {
+		logger, err = zap.NewProduction()
+	} else {
+		logger, err = zap.NewDevelopment()
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	stripe.Key = cfg.MustStripeAPIKey()
 
@@ -42,16 +52,14 @@ func StartServer(s ServerStatus) {
 
 	guard := access.NewGuard(myDB)
 
-	payRouter := controller.NewPayRouter(myDB, promoCache, cfg, post)
-	upgradeRouter := controller.NewUpgradeRouter(payRouter)
-
-	stripeRouter := controller.NewStripeRouter(myDB, cfg)
-	iapRouter := controller.NewIAPRouter(myDB, cfg, post)
+	payRouter := controller.NewPayRouter(myDB, promoCache, cfg, post, logger)
+	iapRouter := controller.NewIAPRouter(myDB, cfg, post, logger)
+	stripeRouter := controller.NewStripeRouter(myDB, cfg, logger)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := controller.NewPaywallRouter(myDB, promoCache)
+	paywallRouter := controller.NewPaywallRouter(myDB, promoCache, logger)
 
-	wxAuth := controller.NewWxAuth(wxoauth.New(myDB))
+	wxAuth := controller.NewWxAuth(myDB, logger)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -130,8 +138,8 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 		r.Use(controller.UserOrUnionID)
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
-		r.Put("/free", upgradeRouter.FreeUpgrade)
-		r.Get("/balance", upgradeRouter.UpgradeBalance)
+		r.Put("/free", payRouter.FreeUpgrade)
+		r.Get("/balance", payRouter.UpgradeBalance)
 	})
 
 	r.Route("/orders", func(r chi.Router) {

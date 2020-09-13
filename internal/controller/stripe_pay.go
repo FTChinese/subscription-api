@@ -13,6 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	stripeSdk "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/webhook"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 )
@@ -22,18 +23,18 @@ type StripeRouter struct {
 	signingKey string
 	readerRepo readerrepo.Env
 	stripeRepo striperepo.Env
+	logger     *zap.Logger
 }
 
 // NewStripeRouter initializes StripeRouter.
-func NewStripeRouter(db *sqlx.DB, config config.BuildConfig) StripeRouter {
-	r := StripeRouter{
+func NewStripeRouter(db *sqlx.DB, config config.BuildConfig, logger *zap.Logger) StripeRouter {
+	return StripeRouter{
 		config:     config,
 		signingKey: config.MustStripeSigningKey(),
 		readerRepo: readerrepo.NewEnv(db),
-		stripeRepo: striperepo.NewEnv(db),
+		stripeRepo: striperepo.NewEnv(db, logger),
+		logger:     logger,
 	}
-
-	return r
 }
 
 // Forward stripe error to client, and give the error back to caller to handle if it is not stripe error.
@@ -159,8 +160,8 @@ func (router StripeRouter) SetDefaultPaymentMethod(w http.ResponseWriter, req *h
 //
 // GET /stripe/customers/{id}/key?api_version=<version>
 func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Get stripe customer id.
 	id, err := getURLParam(req, "id").ToString()
@@ -218,8 +219,8 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 // in case user already linked wechat.
 // Notification email is sent upon webhook receiving data, not here.
 func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
@@ -283,8 +284,8 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 // Error Response:
 // 404: membership for this user is not found.
 func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	log := logger.Sugar()
+	defer router.logger.Sync()
+	log := router.logger.Sugar()
 
 	readerIDs := getReaderIDs(req.Header)
 
@@ -323,8 +324,8 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 // one is standard and another if premium.
 // So we cannot rely on this field to find FTC plan.
 func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	log := logger.Sugar()
+	defer router.logger.Sync()
+	log := router.logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
@@ -383,8 +384,8 @@ func (router StripeRouter) onSubscription(s *stripeSdk.Subscription) error {
 }
 
 func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sugar()
-	sugar := logger.Sugar()
+	defer router.logger.Sugar()
+	sugar := router.logger.Sugar()
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {

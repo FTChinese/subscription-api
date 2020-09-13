@@ -81,8 +81,8 @@ func (router IAPRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 // Returns apple.Subscription which contains the essential
 // fields to represent a user's subscription.
 func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	originalTxID, err := getURLParam(req, "id").ToString()
 	if err != nil {

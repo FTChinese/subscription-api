@@ -3,18 +3,21 @@ package striperepo
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 // Env wraps database connection
 type Env struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	logger *zap.Logger
 }
 
 // NewSubEnv creates a new instance of SubEnv.
 // `sandbox` is used to determine which table to write subscription data.
-func NewEnv(db *sqlx.DB) Env {
+func NewEnv(db *sqlx.DB, logger *zap.Logger) Env {
 	return Env{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
 }
 
