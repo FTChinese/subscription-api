@@ -181,14 +181,14 @@ func StartServer(s ServerStatus) {
 		r.Post("/link", iapRouter.Link)
 		// Unlink ftc account from apple subscription.
 		r.Delete("/link", iapRouter.Unlink)
+		// Verify a receipt like the verify-receipt.
+		// Returns the extracted subscription instead the verified receipt.
+		r.Post("/subscription", iapRouter.UpsertSubs)
+		// Load one subscription.
 
 		// ?page=<int>&per_page<int>
 		r.Get("/subscription", iapRouter.ListSubs)
-		// Update subscription based on the passed in receipt data.
-		// The only difference between this one and /verify-receipt
-		// is the response data.
-		r.Post("/subscription", iapRouter.UpsertSubs)
-		// Load one subscription.
+		// Load a single receipt.
 		r.Get("/subscription/{id}", iapRouter.LoadSubs)
 		// Refresh an existing subscription of an original transaction id.
 		r.Patch("/subscription/{id}", iapRouter.RefreshSubs)
