@@ -1,9 +1,11 @@
 package iaprepo
 
 import (
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"log"
 )
 
 // UpsertSubscription saves an Subscription instance
@@ -18,7 +20,7 @@ func (env Env) UpsertSubscription(s apple.Subscription) error {
 	return nil
 }
 
-// UpdateMembership update subs.Membership if it exists.
+// UpdateMembership update subs.Membership if it linked to an apple subscription..
 // Return a subs.MemberSnapshot if this subscription is linked to ftc account; otherwise it is empty.
 func (env Env) UpdateMembership(s apple.Subscription) (reader.MemberSnapshot, error) {
 	tx, err := env.BeginTx()
@@ -55,7 +57,7 @@ func (env Env) UpdateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 	return currMember.Snapshot(enum.SnapshotReasonAppleLink), nil
 }
 
-func (env Env) LoadSubscription(originalID string) (apple.Subscription, error) {
+func (env Env) LoadSubs(originalID string) (apple.Subscription, error) {
 	var s apple.Subscription
 	err := env.db.Get(&s, apple.StmtLoadSubs, originalID)
 
@@ -64,4 +66,62 @@ func (env Env) LoadSubscription(originalID string) (apple.Subscription, error) {
 	}
 
 	return s, nil
+}
+
+func (env Env) countSubs() (int64, error) {
+	var count int64
+	err := env.db.Get(&count, apple.StmtCountSubs)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (env Env) listSubs(p gorest.Pagination) ([]apple.Subscription, error) {
+	var s = make([]apple.Subscription, 0)
+	err := env.db.Select(&s, apple.StmtListSubs, p.Limit, p.Offset())
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (env Env) ListSubs(p gorest.Pagination) (apple.SubsList, error) {
+	countCh := make(chan int64)
+	listCh := make(chan apple.SubsList)
+
+	go func() {
+		defer close(countCh)
+		n, err := env.countSubs()
+		// Ignore error
+		if err != nil {
+			log.Print(err)
+		}
+		countCh <- n
+	}()
+
+	go func() {
+		defer close(listCh)
+		s, err := env.listSubs(p)
+		listCh <- apple.SubsList{
+			Total:      0,
+			Pagination: gorest.Pagination{},
+			Data:       s,
+			Err:        err,
+		}
+	}()
+
+	count, listResult := <-countCh, <-listCh
+
+	if listResult.Err != nil {
+		return apple.SubsList{}, listResult.Err
+	}
+
+	return apple.SubsList{
+		Total:      count,
+		Pagination: p,
+		Data:       listResult.Data,
+	}, nil
 }
