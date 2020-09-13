@@ -112,7 +112,7 @@ func (a OAuthApp) GetAccessToken(code string) (OAuthAccess, error) {
 	sugar := logger.Sugar()
 
 	var acc OAuthAccess
-	_, body, errs := fetch.NewFetch().
+	_, body, errs := fetch.New().
 		Get(apiBaseURL + "/oauth2/access_token").
 		SetParamMap(map[string]string{
 			"appid":      a.AppID,
@@ -156,7 +156,7 @@ func (a OAuthApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 
 	var info UserInfo
 
-	_, body, errs := fetch.NewFetch().
+	_, body, errs := fetch.New().
 		Get(apiBaseURL + "/userinfo").
 		SetParamMap(map[string]string{
 			"access_token": accessToken,
@@ -199,7 +199,7 @@ func (a OAuthApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
 	sugar := logger.Sugar()
 
 	var acc OAuthAccess
-	_, body, errs := fetch.NewFetch().
+	_, body, errs := fetch.New().
 		Get(apiBaseURL + "/oauth2/refresh_token").
 		SetParamMap(map[string]string{
 			"appid":         a.AppID,
@@ -231,7 +231,7 @@ func (a OAuthApp) IsValidAccess(accessToken, openID string) bool {
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
-	_, body, errs := fetch.NewFetch().
+	_, body, errs := fetch.New().
 		Get(apiBaseURL + "/auth").
 		SetParamMap(map[string]string{
 			"access_token": accessToken,

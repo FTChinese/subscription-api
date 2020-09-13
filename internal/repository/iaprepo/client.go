@@ -41,7 +41,7 @@ func (c Client) Verify(receipt string) ([]byte, error) {
 		ExcludeOldTransactions: false,
 	}
 
-	resp, errs := fetch.NewFetch().
+	resp, errs := fetch.New().
 		Post(c.pickUrl()).
 		SendJSON(payload).
 		End()
