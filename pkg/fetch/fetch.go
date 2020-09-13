@@ -21,7 +21,7 @@ type Fetch struct {
 	Errors []error
 }
 
-func NewFetch() *Fetch {
+func New() *Fetch {
 	return &Fetch{
 		method: "GET",
 		url:    "",
