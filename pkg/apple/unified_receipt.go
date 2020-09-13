@@ -160,5 +160,7 @@ func (u *UnifiedReceipt) Subscription() (Subscription, error) {
 		),
 		Edition:     prod.Edition,
 		AutoRenewal: autoRenew,
+		CreatedUTC:  chrono.TimeNow(),
+		UpdatedUTC:  chrono.TimeNow(),
 	}, nil
 }
