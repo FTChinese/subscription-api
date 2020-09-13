@@ -58,14 +58,8 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 	sugar.Infof("Environment %s, is retryable %t, status %d", resp.Environment, resp.IsRetryable, resp.Status)
 
 	// If the response is not valid.
-	if !resp.Validate() {
+	if ve := resp.Validate(); ve != nil {
 		sugar.Info("IAP verification response is not valid")
-
-		ve := &render.ValidationError{
-			Message: "verification response is not valid",
-			Field:   "receiptData",
-			Code:    render.CodeInvalid,
-		}
 		return apple.VerificationResp{}, render.NewUnprocessable(ve)
 	}
 
@@ -139,6 +133,8 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 // Input:
 // ftcId: string;
 // originalTxId: string;
+//
+// Response: the linked Membership.
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	var input apple.LinkInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {

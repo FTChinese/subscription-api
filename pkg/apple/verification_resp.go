@@ -1,6 +1,7 @@
 package apple
 
 import (
+	"github.com/FTChinese/go-rest/render"
 	"github.com/guregu/null"
 	"log"
 )
@@ -38,21 +39,37 @@ func (v *VerificationResp) GetStatusMessage() string {
 
 // Validate ensures the response from Apple API is correct.
 // Checks Status and BundleID.
-func (v *VerificationResp) Validate() bool {
+func (v *VerificationResp) Validate() *render.ValidationError {
 
 	// Status above 0 is error.
 	if v.Status != 0 {
-		log.Printf("Expected response status 0, got %d: %s", v.Status, getStatusMessage(v.Status))
-		return false
+		log.Printf("Expected response status 0, got %d", v.Status)
+		return &render.ValidationError{
+			Message: getStatusMessage(v.Status),
+			Field:   "status",
+			Code:    render.CodeInvalid,
+		}
 	}
 
 	if v.Receipt.BundleID != bundleID {
 		log.Printf("Bundle ID does not match, got %s", v.Receipt.BundleID)
-		return false
+		return &render.ValidationError{
+			Message: "Bundle ID does not match",
+			Field:   "bundle_id",
+			Code:    render.CodeInvalid,
+		}
 	}
 
 	// LatestReceiptInfo should not be empty.
-	return v.UnifiedReceipt.Validate()
+	if !v.UnifiedReceipt.Validate() {
+		return &render.ValidationError{
+			Message: "Latest receipt info should not be empty",
+			Field:   "latest_receipt_info",
+			Code:    render.CodeMissingField,
+		}
+	}
+
+	return nil
 }
 
 // ReceiptSchema is used to save the decoded ClientReceipt received in a verification response.
