@@ -141,6 +141,9 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 		}()
 	}
 
+	// Use old subscription's creation time.
+	updatedSubs.CreatedUTC = sub.CreatedUTC
+
 	_ = render.New(w).OK(updatedSubs)
 }
 
