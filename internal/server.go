@@ -177,23 +177,21 @@ func StartServer(s ServerStatus) {
 
 		// Verify an encoded receipt and returns the decoded data.
 		r.Post("/verify-receipt", iapRouter.VerifyReceipt)
+		// Link FTC account to apple subscription.
+		r.Post("/link", iapRouter.Link)
+		// Unlink ftc account from apple subscription.
+		r.Delete("/link", iapRouter.Unlink)
 
+		// ?page=<int>&per_page<int>
+		r.Get("/subscription", iapRouter.ListSubs)
 		// Update subscription based on the passed in receipt data.
 		// The only difference between this one and /verify-receipt
 		// is the response data.
 		r.Post("/subscription", iapRouter.UpsertSubs)
-		//r.Get("/subscription", iapRouter.LoadSubs)
+		// Load one subscription.
+		r.Get("/subscription/{id}", iapRouter.LoadSubs)
 		// Refresh an existing subscription of an original transaction id.
 		r.Patch("/subscription/{id}", iapRouter.RefreshSubs)
-
-		// Link FTC account to apple subscription.
-		// This step does not perform verification.
-		// It only links an existing subscription to ftc account.
-		// You should ask the /subscription endpoint to
-		// update data and get the original transaction id.
-		r.Post("/link", iapRouter.Link)
-		// Unlink ftc account from apple subscription.
-		r.Delete("/link", iapRouter.Unlink)
 
 		// Load a receipt and its associated subscription. Internal only.
 		r.Get("/receipt/{id}", iapRouter.LoadReceipt)

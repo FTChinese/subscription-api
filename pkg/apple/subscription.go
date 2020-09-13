@@ -1,6 +1,7 @@
 package apple
 
 import (
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
@@ -64,4 +65,11 @@ func (s Subscription) BuildOn(m reader.Membership) reader.Membership {
 	m.B2BLicenceID = null.String{}
 
 	return m
+}
+
+type SubsList struct {
+	Total int64 `json:"total" db:"row_count"`
+	gorest.Pagination
+	Data []Subscription `json:"data"`
+	Err  error          `json:"-"`
 }
