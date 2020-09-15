@@ -10,6 +10,8 @@ import (
 )
 
 func TestEnv_SaveAliNotification(t *testing.T) {
+	p := test.NewPersona()
+
 	env := Env{
 		db: test.DB,
 	}
@@ -24,7 +26,7 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 	}{
 		{
 			name:    "Save Ali Notification",
-			args:    args{n: test.AliNoti()},
+			args:    args{n: test.AliNoti(p.CreateOrder())},
 			wantErr: false,
 		},
 	}
@@ -69,6 +71,9 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 }
 
 func TestEnv_SaveWxNotification(t *testing.T) {
+
+	p := test.NewPersona()
+
 	env := Env{
 		db: test.DB,
 	}
@@ -84,7 +89,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		{
 			name: "Save Wx Notification",
 			args: args{
-				n: test.WxNotification(subs.MustGenerateOrderID()),
+				n: test.WxNotification(p.CreateOrder()),
 			},
 			wantErr: false,
 		},

@@ -1,45 +1,75 @@
 package subrepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
-	"github.com/patrickmn/go-cache"
-	"reflect"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestEnv_ConfirmOrder(t *testing.T) {
+	repo := test.NewRepo()
+
+	p1 := test.NewPersona()
+	order1 := p1.CreateOrder()
+	t.Logf("Ali Order id %s", order1.ID)
+	repo.MustSaveOrder(order1)
+
+	p2 := test.NewPersona()
+	order2 := p2.CreateOrder()
+	t.Logf("Wx Order id %s", order2.ID)
+	repo.MustSaveOrder(order2)
+
 	type fields struct {
-		BuildConfig config.BuildConfig
-		db          *sqlx.DB
-		cache       *cache.Cache
+		db *sqlx.DB
 	}
 	type args struct {
 		result subs.PaymentResult
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   subs.ConfirmationResult
-		want1  *subs.ConfirmError
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Confirm ali order",
+			fields: fields{
+				db: test.DB,
+			},
+			args: args{
+				result: p1.PaymentResult(order1),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Confirm wx order",
+			fields: fields{
+				db: test.DB,
+			},
+			args: args{
+				result: p1.PaymentResult(order2),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db:    tt.fields.db,
-				cache: tt.fields.cache,
+				db: tt.fields.db,
 			}
-			got, got1 := env.ConfirmOrder(tt.args.result)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ConfirmOrder() got = %v, want %v", got, tt.want)
+
+			t.Logf("Payment result: %+v", tt.args.result)
+
+			got, err := env.ConfirmOrder(tt.args.result)
+			if tt.wantErr {
+				assert.NotNil(t, err)
+				return
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("ConfirmOrder() got1 = %v, want %v", got1, tt.want1)
-			}
+
+			assert.Nil(t, err)
+			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
