@@ -23,13 +23,12 @@ import (
 // All those combination add up to 3 * 2 * 3 * 3 = 54
 type Order struct {
 	// Fields common to all.
-	ID    string  `json:"id" db:"order_id"`
-	Price float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
-	product.Charge
+	ID string `json:"id" db:"order_id"`
 	reader.MemberID
-	PlanID     string      `json:"planId" db:"plan_id"`
-	DiscountID null.String `json:"discountId" db:"discount_id"`
+	PlanID string  `json:"planId" db:"plan_id"`
+	Price  float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
 	product.Edition
+	product.Charge
 	product.Duration
 	Kind enum.OrderKind `json:"usageType" db:"kind"` // The usage of this order: creat new, renew, or upgrade?
 	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
