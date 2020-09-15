@@ -28,7 +28,7 @@ func (p Plan) PaymentTitle(k enum.OrderKind) string {
 // we persist plans in db.
 type IntentPlan struct {
 	Plan
-	DiscountID null.String
+	DiscountID null.String // Deprecated
 	Charge
 }
 
@@ -44,6 +44,25 @@ func (e ExpandedPlan) Amount() float64 {
 	}
 
 	return e.Price
+}
+
+// Payable calculates how much we should charge a user after
+// taking into account an effective discount.
+// This might not be the final price if user's wallet has balance, e.g., when upgrading.
+func (e ExpandedPlan) Payable() Charge {
+	if e.Discount.IsValid() {
+		return Charge{
+			Amount:     e.Price - e.Discount.PriceOff.Float64,
+			DiscountID: e.Discount.DiscID,
+			Currency:   "cny",
+		}
+	}
+
+	return Charge{
+		Amount:     e.Price,
+		DiscountID: null.String{},
+		Currency:   "cny",
+	}
 }
 
 // ExpandedPlanSchema contains a plans and its discount.
