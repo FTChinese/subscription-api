@@ -2,13 +2,16 @@ package product
 
 import (
 	"fmt"
+	"github.com/guregu/null"
 	"strconv"
 )
 
+// Charge represents how much we should ask user to pay in what currency with which discount.
 type Charge struct {
 	// The actual amount payable.
-	Amount   float64 `json:"amount" db:"charged_amount"` // Actual price paid.
-	Currency string  `json:"currency" db:"currency"`     // in which currency.
+	Amount     float64     `json:"amount" db:"charged_amount"` // Actual price paid.
+	DiscountID null.String `json:"discountId" db:"discount_id"`
+	Currency   string      `json:"currency" db:"currency"` // in which currency.
 }
 
 // AliPrice converts Charged price to ailpay format
