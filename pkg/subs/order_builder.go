@@ -31,7 +31,7 @@ type OrderBuilder struct {
 	// Optional fields.
 	method     enum.PayMethod // Should be enum.PayMethodNull for free upgrade.
 	webhookUrl string
-	isTest     bool
+	isTest     bool // Determine the price.
 
 	wallet Wallet // Only required if kind == SubsKindUpgrade.
 
@@ -170,36 +170,21 @@ func (b *OrderBuilder) Build() error {
 	}
 	// A zero wallet still produces valid Duration value,
 	// which default to 1 cycle plus 1 day.
-	duration := b.wallet.ConvertBalance(b.plan)
-	charge := product.Charge{
-		Amount: b.plan.Amount() - b.wallet.Balance,
-		//Currency: b.plan.Currency,
-	}
-	// If balance is larger than a plan's price,
-	// charged amount should be zero.
-	if charge.Amount < 0 {
-		charge.Amount = 0
-	}
+	checkout := b.wallet.CheckOut(b.plan)
 
 	// For sandbox change to a fixed amount
 	if b.isTest {
-		charge.Amount = 0.01
-	}
-
-	var discountID null.String
-	if b.plan.Discount.IsValid() {
-		discountID = b.plan.Discount.DiscID
+		checkout = checkout.WithTest()
 	}
 
 	b.order = Order{
 		ID:            orderID,
-		Price:         b.plan.Price,
-		Charge:        charge,
 		MemberID:      b.memberID,
 		PlanID:        b.plan.ID,
-		DiscountID:    discountID,
+		Price:         b.plan.Price,
 		Edition:       b.plan.Edition,
-		Duration:      duration,
+		Charge:        checkout.Charge,
+		Duration:      checkout.Duration,
 		Kind:          b.kind,
 		PaymentMethod: b.method,
 		TotalBalance:  null.NewFloat(b.wallet.Balance, b.wallet.Balance != 0),
