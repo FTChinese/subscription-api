@@ -248,7 +248,7 @@ func (p *Persona) CreateOrder() subs.Order {
 func (p *Persona) ConfirmOrder(o subs.Order) subs.ConfirmationResult {
 	builder := subs.NewConfirmationBuilder(subs.PaymentResult{
 		ConfirmedAt: chrono.TimeNow(),
-	}, false).
+	}).
 		SetMembership(p.member).
 		SetOrder(o)
 
@@ -320,7 +320,7 @@ func GenProratedOrders(upOrderID string) []subs.ProratedOrder {
 	return orders
 }
 
-func (p Persona) IAPSubs() apple.Subscription {
+func (p *Persona) IAPSubs() apple.Subscription {
 	s := apple.Subscription{
 		Environment:           apple.EnvSandbox,
 		OriginalTransactionID: p.AppleSubID,
@@ -339,7 +339,7 @@ func (p Persona) IAPSubs() apple.Subscription {
 	return s
 }
 
-func (p Persona) WxAccess() wxlogin.OAuthAccess {
+func (p *Persona) WxAccess() wxlogin.OAuthAccess {
 	acc := wxlogin.OAuthAccess{
 		AccessToken:  faker.GenWxAccessTokenToken(),
 		ExpiresIn:    7200,
@@ -354,7 +354,7 @@ func (p Persona) WxAccess() wxlogin.OAuthAccess {
 	return acc
 }
 
-func (p Persona) WxInfo() wxlogin.UserInfo {
+func (p *Persona) WxInfo() wxlogin.UserInfo {
 	faker.SeedGoFake()
 	return wxlogin.UserInfo{
 		UnionID:    p.UnionID,
@@ -365,5 +365,12 @@ func (p Persona) WxInfo() wxlogin.UserInfo {
 		Province:   gofakeit.State(),
 		City:       gofakeit.City(),
 		Privileges: []string{},
+	}
+}
+
+func (p *Persona) IAPLinkInput() apple.LinkInput {
+	return apple.LinkInput{
+		FtcID:        p.FtcID,
+		OriginalTxID: p.AppleSubID,
 	}
 }
