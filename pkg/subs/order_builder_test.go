@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -59,7 +58,7 @@ func mustWxPayBuilder() *OrderBuilder {
 	}.MustNormalize()).
 		SetPlan(planStdYear).
 		SetPayMethod(enum.PayMethodWx).
-		SetEnvConfig(config.NewBuildConfig(true, false)).
+		SetTest(false).
 		SetWxAppID(mustGetWxClient().GetApp().AppID).
 		SetWxParams(wechat.UnifiedOrder{
 			IP:        gofakeit.IPv4Address(),
@@ -74,7 +73,7 @@ func TestOrderBuilder_getWebHookURL(t *testing.T) {
 		UnionID:    null.String{},
 	}.MustNormalize()).
 		SetPayMethod(enum.PayMethodWx).
-		SetEnvConfig(config.NewBuildConfig(true, false))
+		SetTest(false)
 
 	wh := builder.getWebHookURL()
 
