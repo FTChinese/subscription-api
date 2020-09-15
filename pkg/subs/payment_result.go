@@ -79,9 +79,12 @@ func NewPaymentResultAli(n *alipay.TradeNotification) (PaymentResult, error) {
 	}
 
 	return PaymentResult{
-		Amount:      a,
-		OrderID:     n.OutTradeNo,
-		ConfirmedAt: chrono.TimeFrom(dt.MustParseAliTime(n.GmtPayment)),
+		PaymentState:     n.TradeStatus,
+		PaymentStateDesc: "",
+		Amount:           a,
+		TransactionID:    n.TradeNo,
+		OrderID:          n.OutTradeNo,
+		ConfirmedAt:      chrono.TimeFrom(dt.MustParseAliTime(n.GmtPayment)),
 	}, nil
 }
 
@@ -96,8 +99,11 @@ func NewPaymentResultWx(n wechat.Notification) (PaymentResult, error) {
 	}
 
 	return PaymentResult{
-		Amount:      n.TotalFee.Int64,
-		OrderID:     n.FTCOrderID.String,
-		ConfirmedAt: chrono.TimeFrom(dt.MustParseWxTime(n.TimeEnd.String)),
+		PaymentState:     "",
+		PaymentStateDesc: "",
+		Amount:           n.TotalFee.Int64,
+		TransactionID:    n.TransactionID.String,
+		OrderID:          n.FTCOrderID.String,
+		ConfirmedAt:      chrono.TimeFrom(dt.MustParseWxTime(n.TimeEnd.String)),
 	}, nil
 }
