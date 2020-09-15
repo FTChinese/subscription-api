@@ -33,3 +33,12 @@ func TestRepo_SaveOrder(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestRepo_SaveIAPSubs(t *testing.T) {
+	p := NewPersona()
+
+	err := NewRepo().SaveIAPSubs(p.IAPSubs())
+	if err != nil {
+		t.Error(err)
+	}
+}
