@@ -129,6 +129,27 @@ func (w Wallet) ConvertBalance(p product.ExpandedPlan) product.Duration {
 	}
 }
 
+func (w Wallet) CheckOut(p product.ExpandedPlan) Checkout {
+	dur := w.ConvertBalance(p)
+
+	charge := p.Payable()
+
+	// If user's wallet has balance.
+	if w.Balance > 0 {
+		charge.Amount = charge.Amount - w.Balance
+	}
+
+	// If balance exceeds payable amount
+	if charge.Amount < 0 {
+		charge.Amount = 0
+	}
+
+	return Checkout{
+		Charge:   charge,
+		Duration: dur,
+	}
+}
+
 // WithUpgradeOrder updates the wallet's sources after upgrading order created.
 func (w Wallet) WithUpgradeOrder(o Order) Wallet {
 	isFreeUpgrade := o.IsFreeUpgrade()
