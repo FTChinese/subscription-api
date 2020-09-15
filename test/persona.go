@@ -263,6 +263,29 @@ func (p *Persona) ConfirmOrder(o subs.Order) subs.ConfirmationResult {
 	return res
 }
 
+func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
+
+	switch p.payMethod {
+	case enum.PayMethodWx:
+		result, err := subs.NewPaymentResultWx(WxNotification(order))
+		if err != nil {
+			panic(err)
+		}
+		return result
+
+	case enum.PayMethodAli:
+		n := AliNoti(order)
+		result, err := subs.NewPaymentResultAli(&n)
+		if err != nil {
+			panic(err)
+		}
+		return result
+
+	default:
+		panic("Not ali or wx pay")
+	}
+}
+
 func (p *Persona) findBalanceSources(anchor time.Time) []subs.BalanceSource {
 
 	sources := make([]subs.BalanceSource, 0)
