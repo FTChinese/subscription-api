@@ -137,6 +137,7 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 	return nil
 }
 
+//https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 func (router PayRouter) queryWxOrder(order subs.Order) (subs.PaymentResult, *render.ResponseError) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -159,6 +160,18 @@ func (router PayRouter) queryWxOrder(order subs.Order) (subs.PaymentResult, *ren
 	// It checks if the response contains `return_code` key.
 	// If return_code == FAIL, it does not returns error.
 	// If return_code == SUCCESS, it verifies the signature.
+	// Example:
+	// appid:wxacddf1c20516eb69
+	// device_info: mch_id:1504993271
+	// nonce_str:9dmEFWFU5ooB9dMN
+	// out_trade_no:FT9F67C5CC9F47CF65
+	// result_code:SUCCESS
+	// return_code:SUCCESS
+	// return_msg:OK
+	// sign:538529EAEE06FE61ECE379C699437B37
+	// total_fee:25800
+	// trade_state:NOTPAY
+	// trade_state_desc:订单未支付
 	respParams, err := payClient.OrderQuery(reqParams)
 
 	// If there are any errors when querying order.
@@ -167,11 +180,8 @@ func (router PayRouter) queryWxOrder(order subs.Order) (subs.PaymentResult, *ren
 		return subs.PaymentResult{}, render.NewInternalError(err.Error())
 	}
 
-	sugar.Infof("Wechat order found")
+	sugar.Infof("Wechat order query result: %+v", respParams)
 
-	// Response:
-	// {message: "", {field: status, code: fail} }
-	// {message: "", {field: result, code: "ORDERNOTEXIST" | "SYSTEMERROR"} }
 	resp := wechat.NewOrderQueryResp(respParams)
 	go func() {
 		if err := router.subRepo.SaveWxQueryResp(resp); err != nil {
@@ -179,34 +189,94 @@ func (router PayRouter) queryWxOrder(order subs.Order) (subs.PaymentResult, *ren
 		}
 	}()
 
-	if r := resp.Validate(payClient.GetApp()); r != nil {
-		sugar.Info("Response invalid")
-
-		if r.Field == "result" && r.Code == "ORDERNOTEXIST" {
+	// Validate if response is correct. This does not verify the payment is successful.
+	// field: return_code, code: invalid
+	// field: result_code, code: invalid
+	// field: app_id, code: invalid
+	// field: mch_id, code: invalid
+	if ve := resp.Validate(payClient.GetApp()); ve != nil {
+		if resp.IsOrderNotFound() {
 			return subs.PaymentResult{}, render.NewNotFound("Order does not exist")
 		}
 
-		return subs.PaymentResult{}, render.NewUnprocessable(r)
+		return subs.PaymentResult{}, render.NewUnprocessable(ve)
+	}
+
+	if ve := resp.ValidateTradeState(); ve != nil {
+		return subs.PaymentResult{}, render.NewUnprocessable(ve)
 	}
 
 	return subs.NewWxQueryResult(resp), nil
 }
 
+// https://opendocs.alipay.com/apis/api_1/alipay.trade.query/
 func (router PayRouter) queryAliOrder(order subs.Order) (subs.PaymentResult, *render.ResponseError) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	result, err := router.aliPay.TradeQuery(alipay.AliPayTradeQuery{
 		AppAuthToken: "",
 		OutTradeNo:   order.ID,
 	})
 
 	if err != nil {
+		sugar.Error(err)
 		return subs.PaymentResult{}, render.NewBadRequest(err.Error())
 	}
 
+	sugar.Infof("Alipay trade query result: %+v", result)
+
+	// Example failure response:
+	// Code:40004  // 网关返回码
+	// Msg:Business Failed // 网关返回码描述
+	// SubCode:ACQ.TRADE_NOT_EXIST // 业务返回码
+	// SubMsg:交易不存在 // 业务返回码描述
+	// AuthTradePayMode:
+	// BuyerLogonId: BuyerPayAmount:0.00
+	// BuyerUserId:
+	// BuyerUserType:
+	// InvoiceAmount:0.00
+	// OutTradeNo:FT33381C4D23AE4F19
+	// PointAmount:0.00 ReceiptAmount:0.00
+	// SendPayDate:
+	// TotalAmount:
+	// TradeNo:
+	// TradeStatus: // 交易状态：WAIT_BUYER_PAY（交易创建，等待买家付款）、TRADE_CLOSED（未付款交易超时关闭，或支付完成后全额退款）、TRADE_SUCCESS（交易支付成功）、TRADE_FINISHED（交易结束，不可退款）
+	// DiscountAmount:
+	// FundBillList:[]
+	// MdiscountAmount:
+	// PayAmount:
+	// PayCurrency:
+	// SettleAmount:
+	// SettleCurrency:
+	// SettleTransRate:
+	// StoreId: StoreName:
+	// TerminalId: TransCurrency:
+	// TransPayRate:
+	// DiscountGoodsDetail:
+	// IndustrySepcDetail:
+	// VoucherDetailList:[]
 	if !result.IsSuccess() {
 		return subs.PaymentResult{}, render.NewUnprocessable(&render.ValidationError{
-			Message: result.AliPayTradeQuery.Msg,
-			Field:   "status",
-			Code:    render.InvalidCode(result.AliPayTradeQuery.TradeStatus),
+			Message: result.AliPayTradeQuery.Msg + ":" + result.AliPayTradeQuery.SubMsg,
+			Field:   "code",
+			Code:    render.CodeInvalid,
+		})
+	}
+
+	// 交易状态：
+	// WAIT_BUYER_PAY（交易创建，等待买家付款）、
+	// TRADE_CLOSED（未付款交易超时关闭，或支付完成后全额退款）、
+	// TRADE_SUCCESS（交易支付成功）、
+	// TRADE_FINISHED（交易结束，不可退款）
+	// We must ensure trade_status is successful here.
+	// Golang cannot parse empty string to number. If you
+	// don't check it here, the next step will fail.
+	if !ali.IsStatusSuccess(result.AliPayTradeQuery.TradeStatus) {
+		return subs.PaymentResult{}, render.NewUnprocessable(&render.ValidationError{
+			Message: result.AliPayTradeQuery.TradeStatus,
+			Field:   "trade_status",
+			Code:    render.CodeInvalid,
 		})
 	}
 
