@@ -3,6 +3,7 @@ package subs
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/smartwalle/alipay"
@@ -29,14 +30,15 @@ func mustPriceToCent(s string) int64 {
 
 // PaymentResult unifies ali and wx webhook notification.
 type PaymentResult struct {
-	// Alipay:
+	// For Alipay `trade_status` field:
 	// WAIT_BUYER_PAY（交易创建，等待买家付款）
 	// TRADE_CLOSED（未付款交易超时关闭，或支付完成后全额退款）
 	// TRADE_SUCCESS（交易支付成功）
 	// TRADE_FINISHED（交易结束，不可退款）
-	// Wechat:
+	// For Wechat `trade_state` field:
 	// SUCCESS, REFUND, NOTPAY, CLOSED, REVOKED, USERPAYING, PAYERROR
-	PaymentState     string `json:"paymentState"`
+	PaymentState string `json:"paymentState"`
+	// For wechat `trade_state_desc` field.
 	PaymentStateDesc string `json:"paymentStateDesc"`
 	// In cent.
 	// For alipay, we use the total_amount, which is
@@ -46,6 +48,26 @@ type PaymentResult struct {
 	TransactionID string      `json:"transactionId"`
 	OrderID       string      `json:"ftcOrderId"`
 	ConfirmedAt   chrono.Time `json:"paidAt"`
+}
+
+// NewWxPayResult builds PaymentResult from wechat pay webhook notification.
+func NewWxPayResult(n wechat.Notification) (PaymentResult, error) {
+	if n.TotalFee.IsZero() {
+		return PaymentResult{}, errors.New("no payment amount found in wx webhook")
+	}
+
+	if n.FTCOrderID.IsZero() {
+		return PaymentResult{}, errors.New("no order id in wx webhook")
+	}
+
+	return PaymentResult{
+		PaymentState:     "",
+		PaymentStateDesc: "",
+		Amount:           n.TotalFee.Int64,
+		TransactionID:    n.TransactionID.String,
+		OrderID:          n.FTCOrderID.String,
+		ConfirmedAt:      chrono.TimeFrom(dt.MustParseWxTime(n.TimeEnd.String)),
+	}, nil
 }
 
 // NewWxQueryResult creates a new PaymentResult from the result of querying wechat order.
@@ -63,7 +85,7 @@ func NewWxQueryResult(r wechat.OrderQueryResp) PaymentResult {
 func NewAliQueryResult(r *alipay.AliPayTradeQueryResponse) PaymentResult {
 	return PaymentResult{
 		PaymentState:     r.AliPayTradeQuery.TradeStatus,
-		PaymentStateDesc: "",
+		PaymentStateDesc: ali.TradeStatusMsg[r.AliPayTradeQuery.TradeStatus],
 		Amount:           mustPriceToCent(r.AliPayTradeQuery.TotalAmount),
 		TransactionID:    r.AliPayTradeQuery.TradeNo,
 		OrderID:          r.AliPayTradeQuery.OutTradeNo,
@@ -71,8 +93,8 @@ func NewAliQueryResult(r *alipay.AliPayTradeQueryResponse) PaymentResult {
 	}
 }
 
-// NewPaymentResultAli builds PaymentResult from alipay webhook notification.
-func NewPaymentResultAli(n *alipay.TradeNotification) (PaymentResult, error) {
+// NewAliPayResult builds PaymentResult from alipay webhook notification.
+func NewAliPayResult(n *alipay.TradeNotification) (PaymentResult, error) {
 	a, err := priceToCent(n.TotalAmount)
 	if err != nil {
 		return PaymentResult{}, err
@@ -80,30 +102,10 @@ func NewPaymentResultAli(n *alipay.TradeNotification) (PaymentResult, error) {
 
 	return PaymentResult{
 		PaymentState:     n.TradeStatus,
-		PaymentStateDesc: "",
+		PaymentStateDesc: ali.TradeStatusMsg[n.TradeStatus],
 		Amount:           a,
 		TransactionID:    n.TradeNo,
 		OrderID:          n.OutTradeNo,
 		ConfirmedAt:      chrono.TimeFrom(dt.MustParseAliTime(n.GmtPayment)),
-	}, nil
-}
-
-// NewPaymentResultWx builds PaymentResult from wechat pay webhook notification.
-func NewPaymentResultWx(n wechat.Notification) (PaymentResult, error) {
-	if n.TotalFee.IsZero() {
-		return PaymentResult{}, errors.New("no payment amount found in wx webhook")
-	}
-
-	if n.FTCOrderID.IsZero() {
-		return PaymentResult{}, errors.New("no order id in wx webhook")
-	}
-
-	return PaymentResult{
-		PaymentState:     "",
-		PaymentStateDesc: "",
-		Amount:           n.TotalFee.Int64,
-		TransactionID:    n.TransactionID.String,
-		OrderID:          n.FTCOrderID.String,
-		ConfirmedAt:      chrono.TimeFrom(dt.MustParseWxTime(n.TimeEnd.String)),
 	}, nil
 }

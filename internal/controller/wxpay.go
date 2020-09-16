@@ -217,7 +217,7 @@ func (router PayRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	payResult, err := subs.NewPaymentResultWx(noti)
+	payResult, err := subs.NewWxPayResult(noti)
 	if err != nil {
 		sugar.Error(err)
 		if _, err := w.Write([]byte(resp.OK())); err != nil {
@@ -295,6 +295,7 @@ func (router PayRouter) QueryWxOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// The result might not be valid. However we cannot check it for backward compatibility.
 	paidResult, respErr := router.queryWxOrder(order)
 	if respErr != nil {
 		_ = render.New(w).JSON(respErr.StatusCode, respErr)
