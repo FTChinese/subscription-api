@@ -13,7 +13,7 @@ func (router PayRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) 
 	sugar := router.logger.Sugar()
 
 	// Get ftc order id from URL
-	orderID, err := getURLParam(req, "orderId").ToString()
+	orderID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		sugar.Error()
 		_ = render.New(w).BadRequest(err.Error())
@@ -27,6 +27,11 @@ func (router PayRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	if order.IsConfirmed() {
+		_ = render.New(w).Forbidden("Order already confirmed")
+		return
+	}
+
 	var paidResult subs.PaymentResult
 	var respErr *render.ResponseError
 	switch order.PaymentMethod {
@@ -37,6 +42,7 @@ func (router PayRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) 
 		paidResult, respErr = router.queryAliOrder(order)
 
 	default:
+		sugar.Error("Manual confirmation: not ali or wx order")
 		_ = render.New(w).Unprocessable(&render.ValidationError{
 			Message: "Only orders paid via ali or wx is allowed",
 			Field:   "payMethod",
@@ -46,14 +52,18 @@ func (router PayRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) 
 	}
 
 	if respErr != nil {
+		sugar.Error(respErr)
 		_ = render.New(w).JSON(respErr.StatusCode, respErr)
 		return
 	}
+
+	sugar.Infof("Payment result: %+v", paidResult)
 
 	paidResult.ConfirmedAt = chrono.TimeNow()
 
 	confirmed, cfmErr := router.subRepo.ConfirmOrder(paidResult)
 	if cfmErr != nil {
+		sugar.Error(cfmErr)
 		_ = render.New(w).DBError(cfmErr)
 		return
 	}
