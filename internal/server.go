@@ -147,7 +147,7 @@ func StartServer(s ServerStatus) {
 
 		// Manually confirm an order if not confirmed yet by verifying against
 		// alipay of wxpay APIs. If it's already confirmed, nothing changes.
-		r.Put("/:id", payRouter.ManualConfirm)
+		r.Patch("/{id}", payRouter.ManualConfirm)
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
