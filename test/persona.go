@@ -205,6 +205,28 @@ func (p *Persona) Membership() reader.Membership {
 	return m.Normalize()
 }
 
+func (p *Persona) WxOrderBuilder() *subs.OrderBuilder {
+	return subs.NewOrderBuilder(p.AccountID()).
+		SetPlan(p.plan).
+		SetPayMethod(p.payMethod).
+		SetWebhookURL(CFG.WebHookBaseURL()).
+		SetTest(false).
+		SetWxAppID(WxPayApp.AppID).
+		SetWxParams(wechat.UnifiedOrder{
+			IP:        p.IP,
+			TradeType: wechat.TradeTypeApp,
+			OpenID:    "",
+		})
+}
+
+func (p *Persona) AliOrderBuilder() *subs.OrderBuilder {
+	return subs.NewOrderBuilder(p.AccountID()).
+		SetPlan(p.plan).
+		SetPayMethod(p.payMethod).
+		SetWebhookURL(CFG.WebHookBaseURL()).
+		SetTest(false)
+}
+
 func (p *Persona) CreateOrder() subs.Order {
 	builder := subs.NewOrderBuilder(p.AccountID()).
 		SetTest(false).
@@ -267,7 +289,7 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 
 	switch p.payMethod {
 	case enum.PayMethodWx:
-		result, err := subs.NewPaymentResultWx(WxNotification(order))
+		result, err := subs.NewWxPayResult(WxNotification(order))
 		if err != nil {
 			panic(err)
 		}
@@ -275,7 +297,7 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 
 	case enum.PayMethodAli:
 		n := AliNoti(order)
-		result, err := subs.NewPaymentResultAli(&n)
+		result, err := subs.NewAliPayResult(&n)
 		if err != nil {
 			panic(err)
 		}
