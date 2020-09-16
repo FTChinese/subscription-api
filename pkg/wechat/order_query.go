@@ -1,21 +1,34 @@
 package wechat
 
 import (
+	"github.com/FTChinese/go-rest/render"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 )
 
+const (
+	TradeStateSuccess  = "SUCCESS"
+	TradeStateRefund   = "REFUND"
+	TradeStateNotPay   = "NOTPAY"
+	TradeStateClosed   = "CLOSED"
+	TradeStateRevoked  = "REVOKED"
+	TradeStatePaying   = "USERPAYING"
+	TradeStatePayError = "PAYERROR"
+)
+
+// OrderQueryResp for https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 type OrderQueryResp struct {
 	Resp
+	// 以下字段在return_code 和result_code都为SUCCESS的时候有返回
 	OpenID    null.String `db:"open_id"`
 	TradeType null.String `db:"trade_type"` // APP
-	// SUCCESS
-	// REFUND
-	// NOTPAY
-	// CLOSED
-	// REVOKED
-	// USERPAYING
-	// PAYERROR
+	// SUCCESS—支付成功
+	// REFUND—转入退款
+	// NOTPAY—未支付
+	// CLOSED—已关闭
+	// REVOKED—已撤销（刷卡支付）
+	// USERPAYING--用户支付中
+	// PAYERROR--支付失败(其他原因，如银行返回失败)
 	// This is `trade_state` field in wechat response.
 	TradeState null.String `db:"trade_state"`
 	// This is the `trade_state_desc` field.
@@ -74,4 +87,17 @@ func NewOrderQueryResp(p wxpay.Params) OrderQueryResp {
 	}
 
 	return r
+}
+
+// ValidateTradeState ensures the transaction is actually done successfully.
+func (r OrderQueryResp) ValidateTradeState() *render.ValidationError {
+	if r.TradeState.String == TradeStateSuccess {
+		return nil
+	}
+
+	return &render.ValidationError{
+		Message: r.TradeStateDesc.String,
+		Field:   "trade_state",
+		Code:    render.InvalidCode(r.TradeState.String),
+	}
 }
