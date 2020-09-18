@@ -20,7 +20,7 @@ func (env Env) UpsertSubscription(s apple.Subscription) error {
 	return nil
 }
 
-// UpdateMembership update subs.Membership if it linked to an apple subscription..
+// UpdateMembership update subs.Membership if it is linked to an apple subscription.
 // Return a subs.MemberSnapshot if this subscription is linked to ftc account; otherwise it is empty.
 func (env Env) UpdateMembership(s apple.Subscription) (reader.MemberSnapshot, error) {
 	tx, err := env.BeginTx()
