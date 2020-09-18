@@ -309,6 +309,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// if found, use the associated vip_id (where vip_id_alias is NULL) to find membership in ftc_vip table;
 	// if this membership payMethod is null, and expireDate is not after sub.ExpireDateUTC,
 	// then we should update this membership using this subscription.
+	// This approach can be used in webhook notification and verify-receipt.
 	snapshot, err := router.iapRepo.UpdateMembership(sub)
 	if err != nil {
 		_ = render.New(w).DBError(err)
