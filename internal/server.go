@@ -197,7 +197,7 @@ func StartServer(s ServerStatus) {
 
 		// ?page=<int>&per_page<int>
 		r.Get("/subs", iapRouter.ListSubs)
-		// Load a single receipt.
+		// Load a single subscription.
 		r.Get("/subs/{id}", iapRouter.LoadSubs)
 		// Refresh an existing subscription of an original transaction id.
 		r.Patch("/subs/{id}", iapRouter.RefreshSubs)
