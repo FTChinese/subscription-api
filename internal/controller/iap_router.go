@@ -89,7 +89,7 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 // and then user's membership is updated if it exists.
 //
 // Input
-// receipt-data: string
+// receiptData: string
 func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) {
 	var input apple.ReceiptInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
