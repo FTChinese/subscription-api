@@ -6,6 +6,24 @@ import (
 	"log"
 )
 
+func SetupViper() error {
+	viper.SetConfigName("api")
+	viper.AddConfigPath("$HOME/config")
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func MustSetupViper() {
+	if err := SetupViper(); err != nil {
+		panic(err)
+	}
+}
+
 func GetConn(key string) (connect.Connect, error) {
 	var conn connect.Connect
 	err := viper.UnmarshalKey(key, &conn)
@@ -118,6 +136,21 @@ func (c BuildConfig) MustGetDBConn(key string) connect.Connect {
 	return conn
 }
 
+func (c BuildConfig) MustRedisAddr() string {
+	var addr string
+	if c.production {
+		addr = viper.GetString("redis.production")
+	} else {
+		addr = viper.GetString("redis.development")
+	}
+
+	if addr == "" {
+		log.Fatal("Redis address not found")
+	}
+
+	return addr
+}
+
 func MustGetHanqiConn() connect.Connect {
 	conn, err := GetConn("email.hanqi")
 	if err != nil {
@@ -134,22 +167,4 @@ func MustIAPSecret() string {
 	}
 
 	return pw
-}
-
-func SetupViper() error {
-	viper.SetConfigName("api")
-	viper.AddConfigPath("$HOME/config")
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func MustSetupViper() {
-	if err := SetupViper(); err != nil {
-		panic(err)
-	}
 }

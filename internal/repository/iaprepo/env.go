@@ -2,18 +2,21 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
+	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
 type Env struct {
 	db     *sqlx.DB
+	rdb    *redis.Client
 	logger *zap.Logger
 }
 
-func NewEnv(db *sqlx.DB, logger *zap.Logger) Env {
+func NewEnv(db *sqlx.DB, rdb *redis.Client, logger *zap.Logger) Env {
 	return Env{
 		db:     db,
+		rdb:    rdb,
 		logger: logger,
 	}
 }
