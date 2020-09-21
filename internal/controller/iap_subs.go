@@ -123,15 +123,10 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Update subscription and possible membership in background since this step is irrelevant to verification.
-	err = router.iapRepo.UpsertSubscription(updatedSubs)
+	// Update subscription and possible membership
+	snapshot, err := router.iapRepo.SaveSubs(sub)
 	if err != nil {
 		_ = render.New(w).DBError(err)
-		return
-	}
-
-	snapshot, err := router.iapRepo.UpdateMembership(sub)
-	if err != nil {
 		return
 	}
 
@@ -145,38 +140,4 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 	updatedSubs.CreatedUTC = sub.CreatedUTC
 
 	_ = render.New(w).OK(updatedSubs)
-}
-
-// LoadReceipt retrieves the subscription data for
-// an original transaction id, together with the
-// receipt used to verify it.
-func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	id, _ := getURLParam(req, "id").ToString()
-
-	sub, err := router.iapRepo.LoadSubs(id)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	b, err := iaprepo.LoadReceipt(sub.BaseSchema)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).NotFound()
-		return
-	}
-
-	data := struct {
-		apple.Subscription
-		Receipt string `json:"receipt"`
-	}{
-		Subscription: sub,
-		Receipt:      string(b),
-	}
-
-	_ = render.New(w).OK(data)
 }
