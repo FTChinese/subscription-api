@@ -8,6 +8,23 @@ import (
 	"log"
 )
 
+// SaveSubs saves an apple.Subscription instance and
+// optionally updated membership if it is linked to a ftc membership.
+// This is used by verify receipt, refresh subscription, webhook, and polling.
+func (env Env) SaveSubs(s apple.Subscription) (reader.MemberSnapshot, error) {
+	err := env.UpsertSubscription(s)
+	if err != nil {
+		return reader.MemberSnapshot{}, err
+	}
+
+	snapshot, err := env.UpdateMembership(s)
+	if err != nil {
+		return reader.MemberSnapshot{}, err
+	}
+
+	return snapshot, nil
+}
+
 // UpsertSubscription saves an Subscription instance
 // built from the latest transaction, or update it if exists.
 func (env Env) UpsertSubscription(s apple.Subscription) error {
