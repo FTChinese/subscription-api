@@ -9,6 +9,13 @@ import (
 	"github.com/guregu/null"
 )
 
+type SubsFilter struct {
+	ExpiresIn   int64  // expires_date_utc
+	AutoRenewal bool   // Allow null
+	OrderBy     string // Order by column: updated_utc, expires_date_utc
+	Ascending   bool
+}
+
 // Subscription contains a user's subscription data.
 // It it built from app store's verification response.
 // The original transaction id is used to uniquely identify a user.
