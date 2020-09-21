@@ -124,7 +124,7 @@ func (env Env) SaveResponsePayload(ur apple.UnifiedReceipt) {
 			0,
 		).Err()
 		if err != nil {
-			sugar.Error(err)
+			sugar.Errorf("error saving receipt to redis: %s", err)
 		}
 	}()
 }
