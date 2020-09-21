@@ -1,11 +1,14 @@
 package iaprepo
 
 import (
+	"context"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
+
+var ctx = context.Background()
 
 type Env struct {
 	db     *sqlx.DB
