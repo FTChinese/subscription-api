@@ -202,6 +202,8 @@ func StartServer(s ServerStatus) {
 		// Refresh an existing subscription of an original transaction id.
 		r.Patch("/subs/{id}", iapRouter.RefreshSubs)
 
+		// Save the response of a verified receipt.
+		r.Post("/receipt", iapRouter.SaveReceipt)
 		// Load a receipt and its associated subscription. Internal only.
 		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
 	})
