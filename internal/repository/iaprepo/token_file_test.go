@@ -35,8 +35,7 @@ func TestSaveReceiptTokenFile(t *testing.T) {
 
 func TestLoadReceipt(t *testing.T) {
 	type args struct {
-		originalID string
-		env        apple.Environment
+		s apple.BaseSchema
 	}
 	rt := test.MustVerificationResponse().ReceiptToken()
 
@@ -48,15 +47,17 @@ func TestLoadReceipt(t *testing.T) {
 		{
 			name: "Load Receipt",
 			args: args{
-				originalID: rt.OriginalTransactionID,
-				env:        rt.Environment,
+				s: apple.BaseSchema{
+					OriginalTransactionID: rt.OriginalTransactionID,
+					Environment:           rt.Environment,
+				},
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := LoadReceipt(tt.args.originalID, tt.args.env)
+			got, err := LoadReceipt(tt.args.s)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LoadReceipt() error = %v, wantErr %v", err, tt.wantErr)
 				return

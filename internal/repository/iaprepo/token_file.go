@@ -20,10 +20,6 @@ func getReceiptAbsDir() (string, error) {
 	return filepath.Join(home, receiptsDir), nil
 }
 
-func tokenFileName(id string, env apple.Environment) string {
-	return id + "_" + env.String() + ".txt"
-}
-
 // SaveReceiptTokenFile saves the LatestReceipt field in apple.UnifiedReceipt to a file.
 // Files named after the convention <original_transaction_id>_<Production | Sandbox>.txt
 func SaveReceiptTokenFile(r apple.ReceiptToken) error {
@@ -44,7 +40,7 @@ func SaveReceiptTokenFile(r apple.ReceiptToken) error {
 		return err
 	}
 
-	f := filepath.Join(d, tokenFileName(r.OriginalTransactionID, r.Environment))
+	f := filepath.Join(d, r.ReceiptFileName())
 
 	err = ioutil.WriteFile(f, []byte(r.LatestReceipt), 0644)
 
@@ -58,13 +54,13 @@ func SaveReceiptTokenFile(r apple.ReceiptToken) error {
 
 // LoadReceipt from disk.
 // The error is os.PathError if present.
-func LoadReceipt(originalID string, env apple.Environment) ([]byte, error) {
+func LoadReceipt(s apple.BaseSchema) ([]byte, error) {
 	d, err := getReceiptAbsDir()
 	if err != nil {
 		return nil, err
 	}
 
-	filename := tokenFileName(originalID, env)
+	filename := s.ReceiptFileName()
 
 	b, err := ioutil.ReadFile(filepath.Join(d, filename))
 

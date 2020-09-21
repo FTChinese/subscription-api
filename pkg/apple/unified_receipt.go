@@ -148,10 +148,12 @@ func (u *UnifiedReceipt) Subscription() (Subscription, error) {
 	}
 
 	return Subscription{
-		Environment:           u.Environment,
-		OriginalTransactionID: u.latestTransaction.OriginalTransactionID,
-		LastTransactionID:     u.latestTransaction.TransactionID,
-		ProductID:             u.latestTransaction.ProductID,
+		BaseSchema: BaseSchema{
+			Environment:           u.Environment,
+			OriginalTransactionID: u.latestTransaction.OriginalTransactionID,
+		},
+		LastTransactionID: u.latestTransaction.TransactionID,
+		ProductID:         u.latestTransaction.ProductID,
 		PurchaseDateUTC: chrono.TimeFrom(
 			time.Unix(u.latestTransaction.PurchaseDateUnix(), 0),
 		),
