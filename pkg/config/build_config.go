@@ -139,8 +139,10 @@ func (c BuildConfig) MustGetDBConn(key string) connect.Connect {
 func (c BuildConfig) MustRedisAddr() string {
 	var addr string
 	if c.production {
+		log.Print("Using production redis")
 		addr = viper.GetString("redis.production")
 	} else {
+		log.Print("Using development redis")
 		addr = viper.GetString("redis.development")
 	}
 
