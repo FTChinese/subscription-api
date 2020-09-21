@@ -1,7 +1,6 @@
 package iaprepo
 
 import (
-	"context"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 )
 
@@ -87,6 +86,7 @@ func (env Env) SaveResponsePayload(ur apple.UnifiedReceipt) {
 	sugar := env.logger.Sugar()
 
 	// Save the LatestReceiptInfo array.
+	sugar.Info("Saving receipt history array")
 	go func() {
 		for _, v := range ur.LatestReceiptInfo {
 			_ = env.SaveTransaction(
@@ -96,6 +96,7 @@ func (env Env) SaveResponsePayload(ur apple.UnifiedReceipt) {
 	}()
 
 	// Save PendingRenewalInfo array
+	sugar.Info("Saving pending renewal array")
 	go func() {
 		for _, v := range ur.PendingRenewalInfo {
 			_ = env.SavePendingRenewal(
@@ -105,20 +106,25 @@ func (env Env) SaveResponsePayload(ur apple.UnifiedReceipt) {
 	}()
 
 	rt := ur.ReceiptToken()
+
 	// Save the LatestReceipt field to a file.
 	// Initially it was designed to save in SQL.
+	sugar.Info("Saving receipt to disk")
 	go func() {
 		_ = SaveReceiptTokenFile(rt)
 	}()
 
 	// Save in redis
-	err := env.rdb.Set(
-		context.Background(),
-		rt.ReceiptKeyName(),
-		rt.LatestReceipt,
-		0,
-	)
-	if err != nil {
-		sugar.Error(err)
-	}
+	sugar.Infof("Saving receipt to redis")
+	go func() {
+		err := env.rdb.Set(
+			ctx,
+			rt.ReceiptKeyName(),
+			rt.LatestReceipt,
+			0,
+		).Err()
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
 }
