@@ -120,9 +120,8 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	// Update subscription and possible membership in background since this step is irrelevant to verification.
 	if err == nil {
 		go func() {
-			_ = router.iapRepo.UpsertSubscription(sub)
 
-			snapshot, err := router.iapRepo.UpdateMembership(sub)
+			snapshot, err := router.iapRepo.SaveSubs(sub)
 			if err != nil {
 				return
 			}
