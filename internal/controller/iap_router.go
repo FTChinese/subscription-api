@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
@@ -19,24 +20,31 @@ import (
 )
 
 type IAPRouter struct {
-	secret     string
-	config     config.BuildConfig
 	iapRepo    iaprepo.Env
 	readerRepo readerrepo.Env
 	postman    postoffice.PostOffice
-	iapClient  iaprepo.Client
-	logger     *zap.Logger
+	rdb        *redis.Client
+
+	secret    string
+	iapClient iaprepo.Client
+	logger    *zap.Logger
 }
 
-func NewIAPRouter(db *sqlx.DB, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) IAPRouter {
+func NewIAPRouter(db *sqlx.DB, p postoffice.PostOffice, cfg config.BuildConfig, logger *zap.Logger) IAPRouter {
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     cfg.MustRedisAddr(),
+		Password: "",
+		DB:       0,
+	})
+
 	return IAPRouter{
-		secret:     config.MustIAPSecret(),
-		config:     cfg,
-		iapRepo:    iaprepo.NewEnv(db, logger),
+		iapRepo:    iaprepo.NewEnv(db, rdb, logger),
 		readerRepo: readerrepo.NewEnv(db),
 		postman:    p,
-		iapClient:  iaprepo.NewClient(cfg.Sandbox()),
-		logger:     logger,
+
+		secret:    config.MustIAPSecret(),
+		iapClient: iaprepo.NewClient(cfg.Sandbox()),
+		logger:    logger,
 	}
 }
 

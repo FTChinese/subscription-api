@@ -102,7 +102,7 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 
 	// Load the receipt file from disk.
 	// If error occurred, returns 404.
-	b, err := iaprepo.LoadReceipt(sub.OriginalTransactionID, sub.Environment)
+	b, err := iaprepo.LoadReceipt(sub.BaseSchema)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound()
@@ -159,7 +159,7 @@ func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	b, err := iaprepo.LoadReceipt(sub.OriginalTransactionID, sub.Environment)
+	b, err := iaprepo.LoadReceipt(sub.BaseSchema)
 	if err != nil {
 		_ = render.New(w).NotFound()
 		return

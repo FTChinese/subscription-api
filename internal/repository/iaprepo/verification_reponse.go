@@ -1,6 +1,7 @@
 package iaprepo
 
 import (
+	"context"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 )
 
@@ -82,6 +83,9 @@ func (env Env) SaveReceiptTokenDB(r apple.ReceiptToken) error {
 //
 // TODO: save this as json document to NOSQL so that we won't need to dissecting data.
 func (env Env) SaveResponsePayload(ur apple.UnifiedReceipt) {
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
+
 	// Save the LatestReceiptInfo array.
 	go func() {
 		for _, v := range ur.LatestReceiptInfo {
@@ -100,9 +104,21 @@ func (env Env) SaveResponsePayload(ur apple.UnifiedReceipt) {
 		}
 	}()
 
+	rt := ur.ReceiptToken()
 	// Save the LatestReceipt field to a file.
 	// Initially it was designed to save in SQL.
 	go func() {
-		_ = SaveReceiptTokenFile(ur.ReceiptToken())
+		_ = SaveReceiptTokenFile(rt)
 	}()
+
+	// Save in redis
+	err := env.rdb.Set(
+		context.Background(),
+		rt.ReceiptKeyName(),
+		rt.LatestReceipt,
+		0,
+	)
+	if err != nil {
+		sugar.Error(err)
+	}
 }
