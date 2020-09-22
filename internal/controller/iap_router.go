@@ -23,7 +23,6 @@ type IAPRouter struct {
 	iapRepo    iaprepo.Env
 	readerRepo readerrepo.Env
 	postman    postoffice.PostOffice
-	rdb        *redis.Client
 
 	secret    string
 	iapClient iaprepo.Client
@@ -41,7 +40,6 @@ func NewIAPRouter(db *sqlx.DB, p postoffice.PostOffice, cfg config.BuildConfig, 
 		iapRepo:    iaprepo.NewEnv(db, rdb, logger),
 		readerRepo: readerrepo.NewEnv(db),
 		postman:    p,
-		rdb:        rdb,
 
 		secret:    config.MustIAPSecret(),
 		iapClient: iaprepo.NewClient(cfg.Sandbox()),
