@@ -1,6 +1,8 @@
 package test
 
 import (
+	"time"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
@@ -14,7 +16,6 @@ import (
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"time"
 )
 
 // Persona mocks a user.
@@ -367,14 +368,16 @@ func GenProratedOrders(upOrderID string) []subs.ProratedOrder {
 
 func (p *Persona) IAPSubs() apple.Subscription {
 	s := apple.Subscription{
-		Environment:           apple.EnvSandbox,
-		OriginalTransactionID: p.AppleSubID,
-		LastTransactionID:     faker.GenAppleSubID(),
-		ProductID:             "",
-		PurchaseDateUTC:       chrono.TimeNow(),
-		ExpiresDateUTC:        chrono.TimeFrom(time.Now().AddDate(1, 0, 0)),
-		Edition:               p.plan.Edition,
-		AutoRenewal:           true,
+		BaseSchema: apple.BaseSchema{
+			Environment:           apple.EnvSandbox,
+			OriginalTransactionID: p.AppleSubID,
+		},
+		LastTransactionID: faker.GenAppleSubID(),
+		ProductID:         "",
+		PurchaseDateUTC:   chrono.TimeNow(),
+		ExpiresDateUTC:    chrono.TimeFrom(time.Now().AddDate(1, 0, 0)),
+		Edition:           p.plan.Edition,
+		AutoRenewal:       true,
 	}
 
 	if p.expired {
