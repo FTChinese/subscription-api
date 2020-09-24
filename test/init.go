@@ -32,7 +32,7 @@ var (
 func init() {
 	config.MustSetupViper()
 
-	DB = db.MustNewDB(CFG.MustGetDBConn(""))
+	DB = db.MustNewMySQL(CFG.MustGetDBConn(""))
 	Postman = postoffice.New(config.MustGetHanqiConn())
 	Cache = cache.New(cache.DefaultExpiration, 0)
 	WxOAuthApp = wxlogin.MustNewOAuthApp("wxapp.native_app")
