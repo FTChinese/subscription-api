@@ -3,16 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/FTChinese/subscription-api/internal"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"log"
 	"os"
+
+	"github.com/FTChinese/subscription-api/internal"
+	"github.com/FTChinese/subscription-api/pkg/config"
 )
 
 var (
 	version    string
 	build      string
 	commit     string
+	port       string
 	production bool
 	sandbox    bool
 )
@@ -38,7 +40,7 @@ func main() {
 		Version:    version,
 		Build:      build,
 		Commit:     commit,
-		Port:       "8200",
+		Port:       port,
 		Production: production,
 		Sandbox:    sandbox,
 	}
