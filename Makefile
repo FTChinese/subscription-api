@@ -1,9 +1,14 @@
 build_dir := build
 config_file := api.toml
-BINARY := subscription-api
+api_name := subscription-api
+consumer_name := iap-kafka-consumer
 
-DEV_OUT := $(build_dir)/$(BINARY)
-LINUX_OUT := $(build_dir)/linux/$(BINARY)
+api_dev_out := $(build_dir)/$(api_name)
+api_prod_out := $(build_dir)/linux/$(api_name)
+
+consumer_dev_out := $(build_dir)/$(consumer_name)
+consumer_prod_out := $(build_dir)/linux/$(consumer_name)
+consumer_src_dir := ./cmd/iap-kafka-consumer/
 
 LOCAL_CONFIG_FILE := $(HOME)/config/$(config_file)
 
@@ -11,59 +16,63 @@ VERSION := `git describe --tags`
 BUILD := `date +%FT%T%z`
 COMMIT := `git log --max-count=1 --pretty=format:%aI_%h`
 
-LDFLAGS := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD} -X main.commit=${COMMIT}"
+ldflags := -ldflags "-w -s -X main.version=${VERSION} -X main.build=${BUILD} -X main.commit=${COMMIT}"
 
-BUILD_LINUX := GOOS=linux GOARCH=amd64 go build -o $(LINUX_OUT) $(LDFLAGS) -tags production -v .
+linux_api := GOOS=linux GOARCH=amd64 go build -o $(api_prod_out) $(ldflags) -tags production -v .
+linux_consumer := GOOS=linux GOARCH=amd64 go build -o $(consumer_prod_out) $(ldflags) -tags production -v $(consumer_src_dir)
+
+go_version := go1.15
 
 .PHONY: local run linux config deploy build downconfig upconfig publish restart clean
 # Development
-local :
-	go build $(LDFLAGS) -o $(DEV_OUT) -v .
+dev-api :
+	go build -o $(api_dev_out) $(ldflags) -v .
+
+dev-consumer :
+	go build -o $(consumer_dev_out) $(ldflags) -v $(consumer_src_dir)
 
 # Run development build
-run :
-	./$(DEV_OUT) -sandbox
+run-api :
+	./$(api_dev_out) -sandbox
+
+run-consumer :
+	./$(consumer_dev_out)
 
 # Cross compiling linux on for dev.
-linux :
-	echo 'Build production version'
-	$(BUILD_LINUX)
+linux-api :
+	$(linux_api)
 
-version :
-	echo $(VERSION)
+linux-consumer :
+	$(linux_consumer)
 
-# From local machine to production server
-# Copy env varaible to server
-config :
-	rsync -v $(LOCAL_CONFIG_FILE) tk11:/home/node/config
+#deploy :
+#	rsync -v $(api_prod_out) tk11:/home/node/go/bin/
+#	ssh tk11 supervisorctl restart $(api_name)
 
-deploy : version
-	rsync -v $(LINUX_OUT) tk11:/home/node/go/bin/
-	ssh tk11 supervisorctl restart $(BINARY)
+install-go:
+	gvm install $(go_version)
+	gvm use $(go_version)
 
 # For CI/CD
-build :
-	gvm install go1.15
-	gvm use go1.15
-	echo $(VERSION)
-	$(BUILD_LINUX)
+build-api : install-go
+	$(linux_api)
 
-downconfig :
+build-consumer : install-go
+	$(linux_consumer)
+
+config :
 	rsync -v tk11:/home/node/config/$(config_file) ./$(build_dir)
-
-# Publish artifacts.
-upconfig :
 	rsync -v ./$(build_dir)/$(config_file) ucloud:/home/node/config
 
-publish : version
-	ssh ucloud "rm -f /home/node/go/bin/$(BINARY).bak"
-	rsync -v $(LINUX_OUT) bj32:/home/node
-	ssh bj32 "rsync -v /home/node/$(BINARY) ucloud:/home/node/go/bin/$(BINARY).bak"
+publish-api :
+	ssh ucloud "rm -f /home/node/go/bin/$(api_name).bak"
+	rsync -v $(api_prod_out) bj32:/home/node
+	ssh bj32 "rsync -v /home/node/$(api_name) ucloud:/home/node/go/bin/$(api_name).bak"
 #	scp -rp $(LINUX_OUT) ucloud:/home/node/go/bin/$(BINARY).bak
 
-restart :
-	ssh ucloud "cd /home/node/go/bin/ && \mv $(BINARY).bak $(BINARY)"
-	ssh ucloud supervisorctl restart $(BINARY)
+restart-api :
+	ssh ucloud "cd /home/node/go/bin/ && \mv $(api_name).bak $(api_name)"
+	ssh ucloud supervisorctl restart $(api_name)
 
 clean :
 	go clean -x
