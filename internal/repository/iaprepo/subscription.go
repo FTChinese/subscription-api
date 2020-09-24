@@ -11,6 +11,7 @@ import (
 // SaveSubs saves an apple.Subscription instance and
 // optionally updated membership if it is linked to a ftc membership.
 // This is used by verify receipt, refresh subscription, webhook, and polling.
+// The returned membership is empty if the subscription is not linked to an FTC account.
 func (env Env) SaveSubs(s apple.Subscription) (reader.MemberSnapshot, error) {
 	err := env.UpsertSubscription(s)
 	if err != nil {
@@ -71,7 +72,7 @@ func (env Env) UpdateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 		return reader.MemberSnapshot{}, err
 	}
 
-	return currMember.Snapshot(enum.SnapshotReasonAppleLink), nil
+	return currMember.Snapshot(enum.SnapshotReasonIapUpdate), nil
 }
 
 func (env Env) LoadSubs(originalID string) (apple.Subscription, error) {

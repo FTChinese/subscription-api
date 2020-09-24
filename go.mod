@@ -1,7 +1,7 @@
 module github.com/FTChinese/subscription-api
 
 require (
-	github.com/FTChinese/go-rest v0.5.3
+	github.com/FTChinese/go-rest v0.5.4
 	github.com/asaskevich/govalidator v0.0.0-20200817114649-df4adffc9d8c
 	github.com/brianvoe/gofakeit/v5 v5.9.0
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a // indirect

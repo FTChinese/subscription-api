@@ -235,6 +235,8 @@ When performing linking, we need to take into account current memberships of bot
 
 For IAP side, it must not have a membership prior to linking; otherwise it indicates IAP is already linked to another FTC and user is  trying to link the same IAP to multiple FTC accounts. Therefore, only the first column has cases to be allowed. Among them, if the FTC side has a non-expired membership as in column 1, row 2, it is not allowed to link since this will cause data overriding. 
 
+Case in Column 1, Row 2 has an edge case: The FTC side might be manually created from an IAP result by customer service. It has no payment method, not expired. Should we allow linking in such case? The answer is non-deterministic. Currently my approach is to compare the expiration date the FTC membership against IAP subscription. The IAP subscription expires later, allow linking; otherwise it is forbidden.
+
 ## Unlinking
 
 ```
