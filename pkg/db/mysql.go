@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func NewDB(c connect.Connect) (*sqlx.DB, error) {
+func NewMySQL(c connect.Connect) (*sqlx.DB, error) {
 	cfg := &mysql.Config{
 		User:   c.User,
 		Passwd: c.Pass,
@@ -45,8 +45,8 @@ func NewDB(c connect.Connect) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func MustNewDB(c connect.Connect) *sqlx.DB {
-	db, err := NewDB(c)
+func MustNewMySQL(c connect.Connect) *sqlx.DB {
+	db, err := NewMySQL(c)
 	if err != nil {
 		panic(err)
 	}
