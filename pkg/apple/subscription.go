@@ -57,6 +57,8 @@ func (s Subscription) NewMembership(id reader.MemberID) reader.Membership {
 
 // BuildOn updates an existing IAP membership based on this
 // transaction.
+// Used when updating an existing subscription and its optionally
+// linked membership.
 func (s Subscription) BuildOn(m reader.Membership) reader.Membership {
 	m.Tier = s.Tier
 	m.Cycle = s.Cycle

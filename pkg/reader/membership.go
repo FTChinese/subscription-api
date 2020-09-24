@@ -2,6 +2,7 @@ package reader
 
 import (
 	"fmt"
+	"github.com/FTChinese/subscription-api/pkg/apple"
 	"time"
 
 	"github.com/FTChinese/go-rest/render"
@@ -315,7 +316,7 @@ func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, *render.V
 //
 // Row 2 Column 2 has an exception:
 // If payMethod is null, ftc side expire time is not after iap side, it is probably comes from IAP.
-func (m Membership) ValidateMergeIAP(iapMember Membership) error {
+func (m Membership) ValidateMergeIAP(iapMember Membership, s apple.Subscription) error {
 	// Equal means either both are zero values, or they refer to the same instance.
 	// In such case it is fine to return any of them.
 	// The caller should then check whether the returned value is zero.
@@ -368,6 +369,19 @@ func (m Membership) ValidateMergeIAP(iapMember Membership) error {
 	// Then check whether it is expired.
 	// If the FTC side is still valid, merging is not allowed since it will override valid data.
 	if !m.IsExpired() {
+		// An edge case here: if the data is in legacy format and payMethod is null, which might be created by wxpay or
+		// or alipay, or might be manually created by customer service, we could not determine whether the linked should
+		// be allowed or not.
+		// In such case, we will compare the expiration date.
+		// If apple's expiration date comes later, allow the FTC
+		// side to be overridden; otherwise we shall keep the FTC
+		// side intact.
+		if m.PaymentMethod == enum.PayMethodNull {
+			if m.ExpireDate.Before(s.ExpiresDateUTC.Time) {
+				return nil
+			}
+		}
+
 		return &render.ValidationError{
 			Message: "Target ftc account already has a valid non-iap membership",
 			Field:   "ftc_membership",
