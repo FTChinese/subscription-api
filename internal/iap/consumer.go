@@ -57,7 +57,7 @@ func (c Consumer) Consume() {
 			continue
 		}
 
-		sugar.Infof("message at topic: %v, partition %v, offset %v, %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+		sugar.Infof("message at topic: %v, partition %v, offset %v, key %s\n", m.Topic, m.Partition, m.Offset, string(m.Key))
 
 		c.save(m.Value)
 	}
@@ -75,6 +75,8 @@ func (c Consumer) save(input []byte) {
 func (c Consumer) parseVrfResp(input []byte) (apple.VerificationResp, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
+
+	sugar.Info("Parsing verification response")
 
 	var resp apple.VerificationResp
 	if err := json.Unmarshal(input, &resp); err != nil {
@@ -96,6 +98,8 @@ func (c Consumer) saveReceipt(resp apple.VerificationResp) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
 
+	sugar.Info("Saving verification response in background")
+
 	c.iapRepo.SaveResponsePayload(resp.UnifiedReceipt)
 
 	sub, err := resp.Subscription()
@@ -103,6 +107,8 @@ func (c Consumer) saveReceipt(resp apple.VerificationResp) {
 		sugar.Error(err)
 		return
 	}
+
+	sugar.Infof("Saving IAP subscription %s", sub.OriginalTransactionID)
 
 	snapshot, err := c.iapRepo.SaveSubs(sub)
 	if err != nil {
@@ -116,4 +122,6 @@ func (c Consumer) saveReceipt(resp apple.VerificationResp) {
 			sugar.Error(err)
 		}
 	}
+
+	sugar.Infof("Finished saving IAP subscription %s", sub.OriginalTransactionID)
 }
