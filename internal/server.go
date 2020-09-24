@@ -13,7 +13,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
 	"github.com/stripe/stripe-go"
-	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"time"
@@ -30,20 +29,12 @@ type ServerStatus struct {
 
 func StartServer(s ServerStatus) {
 	cfg := config.NewBuildConfig(s.Production, s.Sandbox)
-	var logger *zap.Logger
-	var err error
-	if cfg.Production() {
-		logger, err = zap.NewProduction()
-	} else {
-		logger, err = zap.NewDevelopment()
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
+	logger := config.MustGetLogger(s.Production)
 
 	stripe.Key = cfg.MustStripeAPIKey()
 
-	myDB := db.MustNewDB(cfg.MustGetDBConn("mysql.master"))
+	myDB := db.MustNewMySQL(config.MustMySQLMasterConn(s.Production))
+	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
 	// Set the cache default expiration time to 2 hours.
 	promoCache := cache.New(2*time.Hour, 0)
@@ -53,7 +44,7 @@ func StartServer(s ServerStatus) {
 	guard := access.NewGuard(myDB)
 
 	payRouter := controller.NewPayRouter(myDB, promoCache, cfg, post, logger)
-	iapRouter := controller.NewIAPRouter(myDB, post, cfg, logger)
+	iapRouter := controller.NewIAPRouter(myDB, rdb, logger, post, cfg)
 	stripeRouter := controller.NewStripeRouter(myDB, cfg, logger)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
@@ -202,8 +193,6 @@ func StartServer(s ServerStatus) {
 		// Refresh an existing subscription of an original transaction id.
 		r.Patch("/subs/{id}", iapRouter.RefreshSubs)
 
-		// Save the response of a verified receipt.
-		r.Post("/receipt", iapRouter.SaveReceipt)
 		// Load a receipt and its associated subscription. Internal only.
 		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
 	})
