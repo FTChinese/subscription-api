@@ -29,12 +29,7 @@ type IAPRouter struct {
 	logger    *zap.Logger
 }
 
-func NewIAPRouter(db *sqlx.DB, p postoffice.PostOffice, cfg config.BuildConfig, logger *zap.Logger) IAPRouter {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.MustRedisAddr(),
-		Password: "",
-		DB:       0,
-	})
+func NewIAPRouter(db *sqlx.DB, rdb *redis.Client, logger *zap.Logger, p postoffice.PostOffice, cfg config.BuildConfig) IAPRouter {
 
 	return IAPRouter{
 		iapRepo:    iaprepo.NewEnv(db, rdb, logger),
