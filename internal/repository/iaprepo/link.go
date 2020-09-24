@@ -59,7 +59,7 @@ func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (appl
 	// If iap membership is already linked, the merged
 	// membership won't be changed and we only need to
 	// update it based on apple transaction.
-	err = ftcMember.ValidateMergeIAP(iapMember, iapSubs)
+	err = ftcMember.ValidateMergeIAP(iapMember, iapSubs.ExpiresDateUTC)
 	if err != nil {
 		sugar.Error(err)
 

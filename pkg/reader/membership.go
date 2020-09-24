@@ -2,7 +2,6 @@ package reader
 
 import (
 	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/apple"
 	"time"
 
 	"github.com/FTChinese/go-rest/render"
@@ -316,7 +315,7 @@ func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, *render.V
 //
 // Row 2 Column 2 has an exception:
 // If payMethod is null, ftc side expire time is not after iap side, it is probably comes from IAP.
-func (m Membership) ValidateMergeIAP(iapMember Membership, s apple.Subscription) error {
+func (m Membership) ValidateMergeIAP(iapMember Membership, iapExpires chrono.Time) error {
 	// Equal means either both are zero values, or they refer to the same instance.
 	// In such case it is fine to return any of them.
 	// The caller should then check whether the returned value is zero.
@@ -377,7 +376,7 @@ func (m Membership) ValidateMergeIAP(iapMember Membership, s apple.Subscription)
 		// side to be overridden; otherwise we shall keep the FTC
 		// side intact.
 		if m.PaymentMethod == enum.PayMethodNull {
-			if m.ExpireDate.Before(s.ExpiresDateUTC.Time) {
+			if m.ExpireDate.Before(iapExpires.Time) {
 				return nil
 			}
 		}
