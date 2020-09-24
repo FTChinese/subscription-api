@@ -79,8 +79,6 @@ func (env Env) SaveReceiptTokenDB(r apple.ReceiptToken) error {
 //
 // The LatestReceipt field is saved on disk as a file for now.
 // This part is separated since it its also used in webhook.
-//
-// TODO: save this as json document to NOSQL so that we won't need to dissecting data.
 func (env Env) SaveResponsePayload(ur apple.UnifiedReceipt) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
