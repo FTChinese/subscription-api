@@ -7,8 +7,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Build sandbox version'
-                sh 'cd cmd/subs_sandbox && make build'
-                sh 'make downconfig'
+                sh 'make build-sandbox'
                 archiveArtifacts artifacts: 'build/linux/*', fingerprint: true
             }
         }
@@ -20,10 +19,10 @@ pipeline {
             }
             steps {
                 echo 'Sync config file'
-                sh 'make upconfig'
+                sh 'make config'
                 echo 'Copy binary'
-                sh 'cd cmd/subs_sandbox && make publish'
-                sh 'cd cmd/subs_sandbox && make restart'
+                sh 'make publish-sandbox'
+                sh 'make restart-sandbox'
             }
         }
     }
