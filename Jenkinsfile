@@ -6,8 +6,9 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'make build-api'
-                archiveArtifacts artifacts: 'build/linux/*', fingerprint: true
+                sh 'make install-go'
+                sh 'make build'
+                archiveArtifacts artifacts: 'build/*', fingerprint: true
             }
         }
         stage('Deploy') {
@@ -18,8 +19,8 @@ pipeline {
             }
             steps {
                 sh 'make config'
-                sh 'make publish-api'
-                sh 'make restart-api'
+                sh 'make publish'
+                sh 'make restart'
             }
         }
     }

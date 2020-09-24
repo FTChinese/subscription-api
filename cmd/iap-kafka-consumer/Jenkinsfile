@@ -7,8 +7,8 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Build kafka consumer'
-                sh 'make build-consumer'
-                archiveArtifacts artifacts: 'build/linux/*', fingerprint: true
+                sh 'make build APP=consumer'
+                archiveArtifacts artifacts: 'build/*', fingerprint: true
             }
         }
         stage('Deploy') {
@@ -21,8 +21,8 @@ pipeline {
                 echo 'Sync config file'
                 sh 'make config'
                 echo 'Copy binary'
-                sh 'make publish-consumer'
-                sh 'make restart-consumer'
+                sh 'make publish APP=consumer'
+                sh 'make restart APP=consumer'
             }
         }
     }
