@@ -6,7 +6,8 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'make build-api'
+                echo 'Build kafka consumer'
+                sh 'make build-consumer'
                 archiveArtifacts artifacts: 'build/linux/*', fingerprint: true
             }
         }
@@ -17,9 +18,11 @@ pipeline {
                 }
             }
             steps {
+                echo 'Sync config file'
                 sh 'make config'
-                sh 'make publish-api'
-                sh 'make restart-api'
+                echo 'Copy binary'
+                sh 'make publish-consumer'
+                sh 'make restart-consumer'
             }
         }
     }
