@@ -12,7 +12,7 @@ import (
 var (
 	version    string
 	build      string
-	production bool
+	production bool // Command line argument. Determine which db to use: true use production mysql, false use localhost.
 )
 
 func init() {
@@ -29,6 +29,7 @@ func init() {
 	config.MustSetupViper()
 }
 
+// Run: ./iap-kafka-consumer -production
 func main() {
 	logger := config.MustGetLogger(production)
 
