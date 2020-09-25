@@ -1,7 +1,7 @@
 # One of `api | sandbox | consumer`.
 APP := api
 
-version := `git describe --tags`
+version := `git tag -l --sort=-v:refname | head -n 1`
 build_time := `date +%FT%T%z`
 commit := `git log --max-count=1 --pretty=format:%aI_%h`
 
@@ -37,6 +37,10 @@ build_executable := go build -o $(executable) $(ldflags) -tags production -v $(s
 .PHONY: dev
 dev :
 	$(build_executable)
+
+.PHONY: tag
+tag :
+	@echo $(version)
 
 .PHONY: run
 run :
