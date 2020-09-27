@@ -289,7 +289,10 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_ = router.iapRepo.SaveNotification(wh.Schema())
+	err = router.iapRepo.SaveNotification(wh.Schema())
+	if err != nil {
+		sugar.Error(err)
+	}
 
 	if !wh.UnifiedReceipt.Validate() {
 		sugar.Infof("invalid webhook unified receipt")
@@ -314,17 +317,14 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Insert/Update subscription
-	_ = router.iapRepo.UpsertSubscription(sub)
-
 	// Update membership if exists.
-	// TODO: use original transaction id to search ftc_vip_ios table;
 	// if found, use the associated vip_id (where vip_id_alias is NULL) to find membership in ftc_vip table;
 	// if this membership payMethod is null, and expireDate is not after sub.ExpireDateUTC,
 	// then we should update this membership using this subscription.
 	// This approach can be used in webhook notification and verify-receipt.
-	snapshot, err := router.iapRepo.UpdateMembership(sub)
+	snapshot, err := router.iapRepo.SaveSubs(sub)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
@@ -332,7 +332,10 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// Snapshot might be empty is this subscription is linked to ftc account yet.
 	if !snapshot.IsZero() {
 		go func() {
-			_ = router.readerRepo.BackUpMember(snapshot)
+			err := router.readerRepo.BackUpMember(snapshot)
+			if err != nil {
+				sugar.Error()
+			}
 		}()
 	}
 

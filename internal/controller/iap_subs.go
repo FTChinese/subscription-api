@@ -22,39 +22,44 @@ func (router IAPRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
 // UpsertSubs performs exactly the same step as VerifyReceipt.
 // The two only differs in the data they send back.
 func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	var input apple.ReceiptInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 	if ve := input.Validate(); ve != nil {
+		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
 	resp, resErr := router.doVerification(input.ReceiptData)
 	if resErr != nil {
+		sugar.Error(resErr)
 		_ = render.New(w).JSON(resErr.StatusCode, resErr)
 		return
 	}
 
 	sub, err := resp.Subscription()
 
-	err = router.iapRepo.UpsertSubscription(sub)
+	snapshot, err := router.iapRepo.SaveSubs(sub)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
-		return
-	}
-
-	snapshot, err := router.iapRepo.UpdateMembership(sub)
-	if err != nil {
 		return
 	}
 
 	// Update subscription and possible membership in background since this step is irrelevant to verification.
 	if !snapshot.IsZero() {
 		go func() {
-			_ = router.readerRepo.BackUpMember(snapshot)
+			err := router.readerRepo.BackUpMember(snapshot)
+			if err != nil {
+				sugar.Error(err)
+			}
 		}()
 	}
 
