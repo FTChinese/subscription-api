@@ -93,23 +93,32 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 // Input
 // receiptData: string
 func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	var input apple.ReceiptInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 	if ve := input.Validate(); ve != nil {
+		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
 	resp, resErr := router.doVerification(input.ReceiptData)
 	if resErr != nil {
+		sugar.Error(resErr)
 		_ = render.New(w).JSON(resErr.StatusCode, resErr)
 		return
 	}
 
 	sub, err := resp.Subscription()
+	if err != nil {
+		sugar.Error(err)
+	}
 
 	// Update subscription and possible membership in background since this step is irrelevant to verification.
 	if err == nil {
@@ -117,12 +126,15 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 
 			snapshot, err := router.iapRepo.SaveSubs(sub)
 			if err != nil {
+				sugar.Error(err)
 				return
 			}
 
 			if !snapshot.IsZero() {
-				_ = router.readerRepo.BackUpMember(snapshot)
-				return
+				err := router.readerRepo.BackUpMember(snapshot)
+				if err != nil {
+					sugar.Error()
+				}
 			}
 		}()
 	}
