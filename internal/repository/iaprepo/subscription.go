@@ -13,12 +13,12 @@ import (
 // This is used by verify receipt, refresh subscription, webhook, and polling.
 // The returned membership is empty if the subscription is not linked to an FTC account.
 func (env Env) SaveSubs(s apple.Subscription) (reader.MemberSnapshot, error) {
-	err := env.UpsertSubscription(s)
+	err := env.upsertSubscription(s)
 	if err != nil {
 		return reader.MemberSnapshot{}, err
 	}
 
-	snapshot, err := env.UpdateMembership(s)
+	snapshot, err := env.updateMembership(s)
 	if err != nil {
 		return reader.MemberSnapshot{}, err
 	}
@@ -26,9 +26,9 @@ func (env Env) SaveSubs(s apple.Subscription) (reader.MemberSnapshot, error) {
 	return snapshot, nil
 }
 
-// UpsertSubscription saves an Subscription instance
+// upsertSubscription saves an Subscription instance
 // built from the latest transaction, or update it if exists.
-func (env Env) UpsertSubscription(s apple.Subscription) error {
+func (env Env) upsertSubscription(s apple.Subscription) error {
 	_, err := env.db.NamedExec(apple.StmtUpsertSubs, s)
 
 	if err != nil {
@@ -38,9 +38,9 @@ func (env Env) UpsertSubscription(s apple.Subscription) error {
 	return nil
 }
 
-// UpdateMembership update subs.Membership if it is linked to an apple subscription.
+// updateMembership update subs.Membership if it is linked to an apple subscription.
 // Return a subs.MemberSnapshot if this subscription is linked to ftc account; otherwise it is empty.
-func (env Env) UpdateMembership(s apple.Subscription) (reader.MemberSnapshot, error) {
+func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, error) {
 	tx, err := env.BeginTx()
 	if err != nil {
 		return reader.MemberSnapshot{}, err
