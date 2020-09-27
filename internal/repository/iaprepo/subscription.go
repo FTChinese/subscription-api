@@ -41,8 +41,12 @@ func (env Env) upsertSubscription(s apple.Subscription) error {
 // updateMembership update subs.Membership if it is linked to an apple subscription.
 // Return a subs.MemberSnapshot if this subscription is linked to ftc account; otherwise it is empty.
 func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, error) {
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
+
 	tx, err := env.BeginTx()
 	if err != nil {
+		sugar.Error(err)
 		return reader.MemberSnapshot{}, err
 	}
 
@@ -51,12 +55,14 @@ func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 	// If the membership is not found, we can assume this IAP is not linked to FTC account.
 	currMember, err := tx.RetrieveAppleMember(s.OriginalTransactionID)
 	if err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return reader.MemberSnapshot{}, err
 	}
 
 	// If the subscription is not linked to FTC account, return empty MemberSnapshot and not error.
 	if currMember.IsZero() {
+		sugar.Info("Empty membership linked to IAP. Ignore membership update.")
 		_ = tx.Rollback()
 		return reader.MemberSnapshot{}, nil
 	}
@@ -64,11 +70,13 @@ func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 	newMember := s.BuildOn(currMember)
 
 	if err := tx.UpdateMember(newMember); err != nil {
+		sugar.Error(err)
 		_ = tx.Rollback()
 		return reader.MemberSnapshot{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
+		sugar.Error(err)
 		return reader.MemberSnapshot{}, err
 	}
 
