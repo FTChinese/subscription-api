@@ -57,7 +57,7 @@ func (env Env) UpdateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 
 	// If the subscription is not linked to FTC account, return empty MemberSnapshot and not error.
 	if currMember.IsZero() {
-		_ = tx.Commit()
+		_ = tx.Rollback()
 		return reader.MemberSnapshot{}, nil
 	}
 
