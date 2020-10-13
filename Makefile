@@ -38,13 +38,9 @@ build_executable := go build -o $(executable) $(ldflags) -tags production -v $(s
 dev :
 	$(build_executable)
 
-.PHONY: tag
-tag :
-	@echo $(version)
-
 .PHONY: run
 run :
-	./$(app_name) -sandbox=true
+	$(executable) -sandbox=true
 
 # For CI/CD
 .PHONY: build
