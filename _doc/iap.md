@@ -391,3 +391,165 @@ POST /webhook/apple
 ```
 
 Handles Apple's server-to-server notification.
+
+## Accessing API from iOS
+
+To access API you need to present an access token for each request, and the access token should be kept secret. Never leak it to public.
+
+You can put the access token in Xcode configuration files and use `git-crypt` to encrypt it.
+
+### XCode configuration file
+
+In you Xcode project, click `File > New > File...`. Scroll to the `Other` section in the opened dialog. Select `Configuration Settings File`. You are asked to save the file. Name it `Keys.xcconfig`. Make sure nothing is check in the `Targets` section. Click `Create`.
+
+Add the access token to it:
+
+```
+ACCESS_TOKEN = you_access_token
+```
+
+If you want to keep project files organized into folders, right-click on your project name in the navigator. Select `New Group` and give it a name `Keys`, for example.
+
+Add another configuration file `Production.xcconfig` in the project root. Add the following content to it:
+
+```
+#include "Keys/Keys.xcconfig"
+```
+
+Open `Info.pllist` file of your project. Right-click and select `Add Row`. Give the key name `AccessToken` (or whatevery name you like) and set its value to `$(ACCESS_TOKEN)`.
+
+To use the variable in Swift, create a new file `API.swift`, for example. Read the data from bundle:
+
+```swift
+struct Configuration {
+    enum Error: Swift.Error {
+        case missingKey, invalidValue
+    }
+    
+    static func value<T>(for key: String) throws -> T where T: LosslessStringConvertible {
+        guard let object = Bundle.main.object(forInfoDictionaryKey: key) else {
+            throw Error.missingKey
+        }
+        
+        switch object {
+        case let value as T:
+            return value
+        case let string as String:
+            guard let value = T(string) else { fallthrough }
+            return value
+        default:
+            throw Error.invalidValue
+        }
+    }
+}
+
+struct API {
+    static var accessToken: String {
+        return try! Configuration.value(for: "AccessToken")
+    }
+}
+```
+
+Now you can use the variable from Xcode configuration files.
+
+References:
+
+* https://www.appcoda.com/xcconfig-guide/
+* https://nshipster.com/xcconfig/
+
+### Encrypt sensitive data
+
+Install `gpg` and `git-crypt`:
+
+```
+brew install gpg
+brea install git-crypt
+```
+
+Set up `git-crypt`:
+
+```
+git-crypt init
+```
+
+Create file `.gitattributes` and add those to it:
+
+```
+Keys/Keys.xcconfig filter=git-crypt diff=git-crypt
+```
+
+Commit files:
+
+```
+git add -A
+git commit -m "Added .gitattributes for git-crypt"
+```
+
+Now if you push data to upstream, you'll find the `Keys.xcconfig` exists but encrypted.
+
+### GPG keys
+
+All collaborators should generate gpk key, including yourself.
+
+```
+gpg --generate-key
+```
+
+Configure your real name and email following the gpt instructions.
+
+After the public and secret key created and signed, you will get something like:
+
+```
+pub   rsa2048 2019-01-07 [SC] [expires: 2021-01-06]
+      D2B3EAAF9A8D5DB93CC30B26CCA243599CC80727B
+uid           [ultimate] Your Name <your@email.com>
+sub   rsa2048 2019-01-07 [E] [expires: 2021-01-06]
+```
+
+The second line is your key. You can also get it using the command `gpg --list-keys`.
+
+### Add yourself to the git-crypt repo
+
+Every collaborator needs to generate their own gpg key exactly the same way mentioned above. Let's add yourself first.
+
+```
+git-crypt add-gpg-user D2B3EAAF9A8D5DB93CC30B26CCA243599CC80727B
+git push
+```
+
+After cloning the repo, you can unlock files by `unlock` command:
+
+```
+git-crypt unlock
+```
+
+### Other Collaborators
+
+Other collaborators have to generate their own gpg keys on their own machine, export the public key and hand it over to you.
+
+Ask them to export public key:
+
+```
+gpg --armor --export --output /Users/someuser/user_pubkey.gpg
+```
+
+After you get that file, import it:
+
+```
+gpg --import user_pubkey.gpg
+```
+
+Trust the key:
+
+```
+gpg ––edit–key D2B3EAAF9A8D5DB93CC30B26CCA243599CC80727B
+```
+
+Then you can add this collaborator using `git-crypt add-gpg-user xxxxx`
+
+References:
+
+* https://medium.com/@sumitkum/securing-your-secret-keys-with-git-crypt-b2fa6ffed1a6
+* https://github.com/AGWA/git-crypt/wiki/Create-a-Repostiory
+* http://irtfweb.ifa.hawaii.edu/~lockhart/gpg/
+
