@@ -33,6 +33,8 @@ type Consumer struct {
 	ctx        context.Context
 }
 
+// NewConsumer create a new Consumer instance.
+// If prod is true, uses production kafka; otherwise use localhost.
 func NewConsumer(myDB *sqlx.DB, rdb *redis.Client, logger *zap.Logger, prod bool) Consumer {
 
 	return Consumer{
