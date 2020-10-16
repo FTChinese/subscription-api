@@ -144,13 +144,17 @@ func (m Membership) IsAliOrWxPay() bool {
 	return m.PaymentMethod == enum.PayMethodAli || m.PaymentMethod == enum.PayMethodWx
 }
 
+func (m Membership) IsStripe() bool {
+	return !m.IsZero() && m.PaymentMethod == enum.PayMethodStripe && m.StripeSubsID.Valid
+}
+
 // IsIAP tests whether this membership comes from Apple.
 func (m Membership) IsIAP() bool {
-	return m.AppleSubsID.Valid
+	return !m.IsZero() && m.PaymentMethod == enum.PayMethodApple && m.AppleSubsID.Valid
 }
 
 func (m Membership) IsB2B() bool {
-	return m.B2BLicenceID.Valid
+	return !m.IsZero() && m.PaymentMethod == enum.PayMethodB2B && m.B2BLicenceID.Valid
 }
 
 func (m Membership) IsValidPremium() bool {
