@@ -61,37 +61,37 @@ func getEdition(req *http.Request) (product.Edition, error) {
 func gatherWxPayInput(platform wechat.TradeType, req *http.Request) (subs.WxPayInput, error) {
 	input := subs.NewWxPayInput(platform)
 
-	// Get the OpenID field.
-	openID, err := GetJSONString(req.Body, "openId")
-	if err != nil {
-		return input, err
+	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		return subs.WxPayInput{}, err
 	}
 
-	// Get the tier and cycle field
-	edition, err := getEdition(req)
-	if err != nil {
-		return input, err
+	// Backward compatibility
+	if input.Tier == enum.TierNull || input.Cycle == enum.CycleNull {
+		// Get the tier and cycle field
+		edition, err := getEdition(req)
+		if err != nil {
+			return input, err
+		}
+		input.Edition = edition
 	}
-
-	input.OpenID = null.NewString(openID, openID != "")
-	input.Edition = edition
 
 	return input, nil
 }
 
 func gatherAliPayInput(req *http.Request) (subs.AliPayInput, error) {
 	var input subs.AliPayInput
-
-	retUrl := req.FormValue("return_url")
-
-	edition, err := getEdition(req)
-	if err != nil {
-		return input, err
+	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		return subs.AliPayInput{}, err
 	}
 
-	input.Edition = edition
-	if input.ReturnURL == "" && retUrl != "" {
-		input.ReturnURL = retUrl
+	// Backward compatibility.
+	if input.Tier == enum.TierNull || input.Cycle == enum.CycleNull {
+		edition, err := getEdition(req)
+		if err != nil {
+			return input, err
+		}
+
+		input.Edition = edition
 	}
 
 	return input, nil
