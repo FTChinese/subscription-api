@@ -68,6 +68,9 @@ restart :
 	ssh ucloud "cd /home/node/go/bin/ && \mv $(app_name).bak $(app_name)"
 	ssh ucloud supervisorctl restart $(app_name)
 
+test-deploy : build
+	rsync -v $(executable) tk11:/home/node/go/bin
+
 .PHONY: clean
 clean :
 	go clean -x
