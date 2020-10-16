@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"net/http"
 )
 
@@ -46,7 +47,7 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 
 	sub, err := resp.Subscription()
 
-	snapshot, err := router.iapRepo.SaveSubs(sub)
+	result, err := router.iapRepo.SaveSubs(sub)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -54,9 +55,19 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Update subscription and possible membership in background since this step is irrelevant to verification.
-	if !snapshot.IsZero() {
+	if !result.Snapshot.IsZero() {
 		go func() {
-			err := router.readerRepo.BackUpMember(snapshot)
+			err := router.readerRepo.BackUpMember(result.Snapshot)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+	}
+
+	// Save ftc uuid to apple original transaction id mapping.
+	if !result.Member.IsZero() {
+		go func() {
+			err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -66,6 +77,8 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(sub)
 }
 
+// LoadSubs retrieves apple.Subscription for the specified
+// original transaction id.
 func (router IAPRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 	id, err := getURLParam(req, "id").ToString()
 	if err != nil {
@@ -82,7 +95,7 @@ func (router IAPRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(s)
 }
 
-// RefreshSubs updates an existing apple receipt and optional associated subscription.
+// RefreshSubs updates an existing apple receipt and optional associated membership.
 // Returns apple.Subscription which contains the essential
 // fields to represent a user's subscription.
 func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
@@ -129,15 +142,27 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Update subscription and possible membership
-	snapshot, err := router.iapRepo.SaveSubs(sub)
+	result, err := router.iapRepo.SaveSubs(sub)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	if !snapshot.IsZero() {
+	if !result.Snapshot.IsZero() {
 		go func() {
-			_ = router.readerRepo.BackUpMember(snapshot)
+			err := router.readerRepo.BackUpMember(result.Snapshot)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+	}
+
+	if !result.Member.IsZero() {
+		go func() {
+			err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
+			if err != nil {
+				sugar.Error(err)
+			}
 		}()
 	}
 
