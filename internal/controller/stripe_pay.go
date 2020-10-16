@@ -238,7 +238,11 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	// TODO: validate input
+	if err := input.Validate(); err != nil {
+		sugar.Error(err)
+		_ = render.New(w).Unprocessable(err)
+		return
+	}
 
 	// Create stripe subscription.
 	s, err := router.stripeRepo.CreateSubscription(input)
