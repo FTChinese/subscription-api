@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
+	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
 )
@@ -22,7 +22,7 @@ import (
 // util.ErrNonStripeValidSub
 // util.ErrActiveStripeSub
 // util.ErrUnknownSubState
-func (env Env) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subscription, error) {
+func (env Env) CreateSubscription(input stripePkg.SubsInput) (*stripe.Subscription, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -99,8 +99,8 @@ func (env Env) CreateSubscription(input ftcStripe.SubsInput) (*stripe.Subscripti
 }
 
 // SaveSubsError saves any error in stripe response.
-func (env Env) SaveSubsError(e ftcStripe.APIError) error {
-	_, err := env.db.NamedExec(ftcStripe.StmtSaveAPIError, e)
+func (env Env) SaveSubsError(e stripePkg.APIError) error {
+	_, err := env.db.NamedExec(stripePkg.StmtSaveAPIError, e)
 
 	if err != nil {
 		return err
@@ -151,7 +151,7 @@ func (env Env) GetSubscription(ftcID string) (*stripe.Subscription, error) {
 		return nil, sql.ErrNoRows
 	}
 
-	ss, err := ftcStripe.GetSubscription(mmb.StripeSubsID.String)
+	ss, err := stripePkg.GetSubscription(mmb.StripeSubsID.String)
 
 	if err != nil {
 		sugar.Error(err)
@@ -159,7 +159,7 @@ func (env Env) GetSubscription(ftcID string) (*stripe.Subscription, error) {
 		return nil, err
 	}
 
-	newMmb := ftcStripe.RefreshMembership(mmb, ss)
+	newMmb := stripePkg.RefreshMembership(mmb, ss)
 
 	sugar.Infof("Refreshed membership: %+v", newMmb)
 
