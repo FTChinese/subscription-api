@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -124,16 +125,25 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	if err == nil {
 		go func() {
 
-			snapshot, err := router.iapRepo.SaveSubs(sub)
+			result, err := router.iapRepo.SaveSubs(sub)
 			if err != nil {
 				sugar.Error(err)
 				return
 			}
 
-			if !snapshot.IsZero() {
-				err := router.readerRepo.BackUpMember(snapshot)
+			// Save snapshot
+			if !result.Snapshot.IsZero() {
+				err := router.readerRepo.BackUpMember(result.Snapshot)
 				if err != nil {
-					sugar.Error()
+					sugar.Error(err)
+				}
+			}
+
+			// Save ftc id to original transaction id mapping.
+			if !result.Member.IsZero() {
+				err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
+				if err != nil {
+					sugar.Error(err)
 				}
 			}
 		}()
@@ -184,7 +194,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Start to link apple subscription to ftc membership.
-	linkResult, err := router.iapRepo.Link(ftcAccount, iapSubs)
+	result, err := router.iapRepo.Link(ftcAccount, iapSubs)
 
 	if err != nil {
 		sugar.Error(err)
@@ -199,22 +209,31 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !linkResult.Snapshot.IsZero() {
-		go func() {
-			_ = router.readerRepo.BackUpMember(linkResult.Snapshot)
-		}()
-	}
+	go func() {
+		// For link, membership must exists.
+		err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
+		if err != nil {
+			sugar.Error()
+		}
+
+		if !result.Snapshot.IsZero() {
+			err := router.readerRepo.BackUpMember(result.Snapshot)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}
+	}()
 
 	// Send notification email if this is initial link.
-	if linkResult.Initial {
+	if result.InitialLink {
 		sugar.Info("Initial link. Sending email....")
 		go func() {
-			account, err := router.readerRepo.FtcAccountByFtcID(linkResult.Linked.FtcID.String)
+			account, err := router.readerRepo.FtcAccountByFtcID(result.Member.FtcID.String)
 			if err != nil {
 				return
 			}
 
-			parcel, err := letter.NewIAPLinkParcel(account, linkResult.Linked)
+			parcel, err := letter.NewIAPLinkParcel(account, result.Member)
 			if err != nil {
 				return
 			}
@@ -226,7 +245,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		}()
 	}
 
-	_ = render.New(w).OK(linkResult.Linked)
+	_ = render.New(w).OK(result.Member)
 }
 
 // Unlink removes apple subscription id from a user's membership
@@ -322,7 +341,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// if this membership payMethod is null, and expireDate is not after sub.ExpireDateUTC,
 	// then we should update this membership using this subscription.
 	// This approach can be used in webhook notification and verify-receipt.
-	snapshot, err := router.iapRepo.SaveSubs(sub)
+	result, err := router.iapRepo.SaveSubs(sub)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -330,11 +349,20 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Snapshot might be empty is this subscription is linked to ftc account yet.
-	if !snapshot.IsZero() {
+	if !result.Snapshot.IsZero() {
 		go func() {
-			err := router.readerRepo.BackUpMember(snapshot)
+			err := router.readerRepo.BackUpMember(result.Snapshot)
 			if err != nil {
 				sugar.Error()
+			}
+		}()
+	}
+
+	if !result.Member.IsZero() {
+		go func() {
+			err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
+			if err != nil {
+				sugar.Error(err)
 			}
 		}()
 	}
