@@ -2,6 +2,15 @@
 
 API for subscription service
 
+## Build
+
+This project produces 3 binaries: `subscription-api`, `subs_sandbox` and `iap-kafka-consumer`. By default, all make targets handles `subscripiton-api`. Set `APP` command line arguments to make to handle other binaries. The value could be one of `sandbox` or `consumer` for `subs_sandbox` and `iap-kafka-consumer` respectively.
+
+```
+make build APP=sandbox
+make build APP=consumer
+```
+
 ## Base URL
 
 * Production: `http://www.ftacademy.cn/api/v1`
