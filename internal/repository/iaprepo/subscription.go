@@ -12,18 +12,13 @@ import (
 // optionally updated membership if it is linked to a ftc membership.
 // This is used by verify receipt, refresh subscription, webhook, and polling.
 // The returned membership is empty if the subscription is not linked to an FTC account.
-func (env Env) SaveSubs(s apple.Subscription) (reader.MemberSnapshot, error) {
+func (env Env) SaveSubs(s apple.Subscription) (apple.IAPResult, error) {
 	err := env.upsertSubscription(s)
 	if err != nil {
-		return reader.MemberSnapshot{}, err
+		return apple.IAPResult{}, err
 	}
 
-	snapshot, err := env.updateMembership(s)
-	if err != nil {
-		return reader.MemberSnapshot{}, err
-	}
-
-	return snapshot, nil
+	return env.updateMembership(s)
 }
 
 // upsertSubscription saves an Subscription instance
@@ -40,14 +35,14 @@ func (env Env) upsertSubscription(s apple.Subscription) error {
 
 // updateMembership update subs.Membership if it is linked to an apple subscription.
 // Return a subs.MemberSnapshot if this subscription is linked to ftc account; otherwise it is empty.
-func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, error) {
+func (env Env) updateMembership(s apple.Subscription) (apple.IAPResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.BeginTx()
 	if err != nil {
 		sugar.Error(err)
-		return reader.MemberSnapshot{}, err
+		return apple.IAPResult{}, err
 	}
 
 	// Retrieve membership by original transaction id.
@@ -57,14 +52,19 @@ func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, err
+		return apple.IAPResult{}, err
 	}
 
 	// If the subscription is not linked to FTC account, return empty MemberSnapshot and not error.
-	if currMember.IsZero() {
-		sugar.Info("Empty membership linked to IAP. Ignore membership update.")
+	// We need to take into account a situation where payment method is not apple but apple subscription id is not empty.
+	if !currMember.IsIAP() {
+		sugar.Info("Membership liked to original transaction id %s is either empty or non-iap")
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, nil
+		return apple.IAPResult{
+			InitialLink: false,
+			Member:      reader.Membership{},
+			Snapshot:    reader.MemberSnapshot{},
+		}, nil
 	}
 
 	newMember := s.BuildOn(currMember)
@@ -72,15 +72,19 @@ func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 	if err := tx.UpdateMember(newMember); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, err
+		return apple.IAPResult{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return reader.MemberSnapshot{}, err
+		return apple.IAPResult{}, err
 	}
 
-	return currMember.Snapshot(enum.SnapshotReasonIapUpdate), nil
+	return apple.IAPResult{
+		InitialLink: false,
+		Member:      currMember,
+		Snapshot:    currMember.Snapshot(enum.SnapshotReasonIapUpdate),
+	}, nil
 }
 
 func (env Env) LoadSubs(originalID string) (apple.Subscription, error) {
