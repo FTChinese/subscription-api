@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/validator"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/sub"
@@ -26,6 +28,15 @@ func NewSubsInput(ftcID string) SubsInput {
 	return SubsInput{
 		FtcID: ftcID,
 	}
+}
+
+func (i SubsInput) Validate() *render.ValidationError {
+	ve := validator.New("customer").Required().Validate(i.CustomerID)
+	if ve != nil {
+		return ve
+	}
+
+	return validator.New("idempotency").Required().Validate(i.IdempotencyKey)
 }
 
 func (i SubsInput) WithPlanID(live bool) (SubsInput, error) {
