@@ -9,7 +9,7 @@ import (
 	stripeSdk "github.com/stripe/stripe-go"
 )
 
-// UpgradeStripeSubs switches subscription plan.
+// UpgradeSubscription switches subscription plan.
 func (env Env) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.Subscription, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
