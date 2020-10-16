@@ -231,6 +231,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
+	// Get stripe plan id.
 	input, err := input.WithPlanID(router.config.Live())
 	if err != nil {
 		sugar.Error(err)
@@ -238,6 +239,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 		return
 	}
 
+	// Validate input data.
 	if err := input.Validate(); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).Unprocessable(err)
@@ -280,6 +282,15 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 
 	sugar.Infof("Subscription id %s, status %s, payment intent status %s", s.ID, s.Status, s.LatestInvoice.PaymentIntent.Status)
 
+	// Link ftc id to stripe subscription id in background.
+	go func() {
+		link := reader.NewSubsLinkStripe(ftcID, s)
+		err := router.readerRepo.LinkSubs(link)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
 	_ = render.New(w).OK(resp)
 }
 
@@ -289,13 +300,13 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 // 404: membership for this user is not found.
 func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
-	log := router.logger.Sugar()
+	sugar := router.logger.Sugar()
 
-	readerIDs := getReaderIDs(req.Header)
+	ftcID := req.Header.Get(ftcIDKey)
 
-	s, err := router.stripeRepo.GetSubscription(readerIDs)
+	s, err := router.stripeRepo.GetSubscription(ftcID)
 	if err != nil {
-		log.Error(err)
+		sugar.Error(err)
 
 		err = forwardStripeErr(w, err)
 		if err == nil {
@@ -306,7 +317,15 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	log.Infof("Subscription id %s, status %s", s.ID, s.Status)
+	sugar.Infof("Subscription id %s, status %s", s.ID, s.Status)
+
+	go func() {
+		link := reader.NewSubsLinkStripe(ftcID, s)
+		err := router.readerRepo.LinkSubs(link)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
 
 	_ = render.New(w).OK(s)
 }
@@ -329,7 +348,7 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 // So we cannot rely on this field to find FTC plan.
 func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
-	log := router.logger.Sugar()
+	sugar := router.logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
@@ -345,7 +364,10 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		return
 	}
 
-	// TODO: validate input
+	if err := input.Validate(); err != nil {
+		_ = render.New(w).Unprocessable(err)
+		return
+	}
 
 	s, err := router.stripeRepo.UpgradeSubscription(input)
 
@@ -370,21 +392,46 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		return
 	}
 
-	log.Infof("Subscription id %s, status %s, payment intent status %s", s.ID, s.Status, s.LatestInvoice.PaymentIntent.Status)
+	sugar.Infof("Subscription id %s, status %s, payment intent status %s", s.ID, s.Status, s.LatestInvoice.PaymentIntent.Status)
+
+	go func() {
+		link := reader.NewSubsLinkStripe(input.FtcID, s)
+		err := router.readerRepo.LinkSubs(link)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
 
 	_ = render.New(w).OK(resp)
 }
 
 func (router StripeRouter) onSubscription(s *stripeSdk.Subscription) error {
 
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	account, err := router.readerRepo.FtcAccountByStripeID(s.Customer.ID)
 	if err != nil {
+		sugar.Error(err)
 		return err
 	}
 
 	memberID := account.MemberID()
 
-	return router.stripeRepo.WebHookOnSubscription(memberID, s)
+	err = router.stripeRepo.WebHookOnSubscription(memberID, s)
+	if err != nil {
+		sugar.Error(err)
+		return err
+	}
+
+	link := reader.NewSubsLinkStripe(account.FtcID, s)
+
+	err = router.readerRepo.LinkSubs(link)
+	if err != nil {
+		sugar.Error(err)
+	}
+
+	return err
 }
 
 func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
