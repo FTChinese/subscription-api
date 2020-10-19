@@ -2,7 +2,6 @@ package reader
 
 import (
 	"github.com/guregu/null"
-	stripeSdk "github.com/stripe/stripe-go"
 )
 
 const stmtColsSetSubsLink = `
@@ -24,15 +23,6 @@ type SubsLink struct {
 	StripeSubsID      null.String `db:"stripe_subs_id"`
 	AppleOriginalTxID null.String `json:"apple_original_tx_id"`
 	B2BLicenceID      null.String `json:"b2b_licence_id"`
-}
-
-func NewSubsLinkStripe(ftcID string, ss *stripeSdk.Subscription) SubsLink {
-	return SubsLink{
-		FtcID:             ftcID,
-		StripeSubsID:      null.StringFrom(ss.ID),
-		AppleOriginalTxID: null.String{},
-		B2BLicenceID:      null.String{},
-	}
 }
 
 func NewSubsLink(m Membership) SubsLink {
