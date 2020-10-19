@@ -6,18 +6,17 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
-	stripeSdk "github.com/stripe/stripe-go"
 )
 
 // UpgradeSubscription switches subscription plan.
-func (env Env) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.Subscription, error) {
+func (env Env) UpgradeSubscription(input stripePkg.SubsInput) (stripePkg.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return nil, err
+		return stripePkg.SubsResult{}, err
 	}
 
 	mmb, err := tx.RetrieveMember(reader.MemberID{
@@ -28,47 +27,52 @@ func (env Env) UpgradeSubscription(input stripePkg.SubsInput) (*stripeSdk.Subscr
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return nil, nil
+		return stripePkg.SubsResult{}, nil
 	}
 
 	if mmb.IsZero() {
 		sugar.Error("membership for stripe upgrading not found")
 		_ = tx.Rollback()
-		return nil, sql.ErrNoRows
+		return stripePkg.SubsResult{}, sql.ErrNoRows
 	}
 
 	subsKind, err := mmb.StripeSubsKind(input.Edition)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return nil, err
+		return stripePkg.SubsResult{}, err
 	}
 	// Check whether upgrading is permitted.
 	if subsKind != enum.OrderKindUpgrade {
 		sugar.Error("upgrading via stripe is not permitted")
 		_ = tx.Rollback()
-		return nil, stripePkg.ErrInvalidStripeSub
+		return stripePkg.SubsResult{}, stripePkg.ErrInvalidStripeSub
 	}
 
 	ss, err := input.UpgradeSubs(mmb.StripeSubsID.String)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return nil, err
+		return stripePkg.SubsResult{}, err
 	}
+	sugar.Infof("Subscription id %s, status %s, payment intent status %s", ss.ID, ss.Status, ss.LatestInvoice.PaymentIntent.Status)
 
-	mmb = stripePkg.RefreshMembership(mmb, ss)
+	newMmb := stripePkg.RefreshMembership(mmb, ss)
 
-	if err := tx.UpdateMember(mmb); err != nil {
+	if err := tx.UpdateMember(newMmb); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return nil, err
+		return stripePkg.SubsResult{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return nil, err
+		return stripePkg.SubsResult{}, err
 	}
 
-	return ss, nil
+	return stripePkg.SubsResult{
+		StripeSubs: ss,
+		Member:     newMmb,
+		Snapshot:   mmb.Snapshot(enum.SnapshotReasonDelete),
+	}, nil
 }
