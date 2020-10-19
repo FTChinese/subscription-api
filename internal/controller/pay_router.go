@@ -137,6 +137,30 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 	return nil
 }
 
+// Backup previous membership if exists;
+// Save uuid to id link table;
+// Send confirmation email.
+func (router PayRouter) processCfmResult(result subs.ConfirmationResult) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	if !result.Snapshot.IsZero() {
+		err := router.readerRepo.BackUpMember(result.Snapshot)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}
+
+	err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Membership))
+	if err != nil {
+		sugar.Error(err)
+	}
+
+	if err := router.sendConfirmationEmail(result.Order); err != nil {
+		sugar.Error(err)
+	}
+}
+
 //https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 func (router PayRouter) queryWxOrder(order subs.Order) (subs.PaymentResult, *render.ResponseError) {
 	defer router.logger.Sync()
