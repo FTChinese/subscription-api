@@ -252,14 +252,8 @@ func (router PayRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !confirmed.Snapshot.IsZero() {
-		_ = router.readerRepo.BackUpMember(confirmed.Snapshot)
-	}
-
 	go func() {
-		if err := router.sendConfirmationEmail(confirmed.Order); err != nil {
-			sugar.Error(err)
-		}
+		router.processCfmResult(confirmed)
 	}()
 
 	if _, err := w.Write([]byte(resp.OK())); err != nil {

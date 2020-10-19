@@ -15,7 +15,6 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	sugar := logger.Sugar()
 
 	tx, err := env.BeginOrderTx()
-
 	if err != nil {
 		sugar.Error(err)
 		return subs.ConfirmationResult{}, &subs.ConfirmError{
