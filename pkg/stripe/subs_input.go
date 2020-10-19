@@ -110,8 +110,9 @@ func (i SubsInput) UpgradeSubs(subsID string) (*stripe.Subscription, error) {
 	return sub.Update(subsID, params)
 }
 
-// NewMembership creates a new membership for stripe subscription
-func (i SubsInput) NewMembership(ss *stripe.Subscription) reader.Membership {
+// NewMembership creates a new membership for stripe subscription.
+// The user might have an invalid membership and we should keep its union id if the account is lined to wechat.
+func (i SubsInput) NewMembership(oldM reader.Membership, ss *stripe.Subscription) reader.Membership {
 
 	periodEnd := CanonicalizeUnix(ss.CurrentPeriodEnd)
 	status, _ := enum.ParseSubsStatus(string(ss.Status))
@@ -120,7 +121,7 @@ func (i SubsInput) NewMembership(ss *stripe.Subscription) reader.Membership {
 		MemberID: reader.MemberID{
 			CompoundID: "",
 			FtcID:      null.StringFrom(i.FtcID),
-			UnionID:    null.String{},
+			UnionID:    oldM.UnionID,
 		}.MustNormalize(),
 		Edition:       i.Edition,
 		ExpireDate:    chrono.DateFrom(periodEnd.AddDate(0, 0, 1)),
