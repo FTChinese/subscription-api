@@ -21,8 +21,8 @@ ON DUPLICATE KEY UPDATE
 type SubsLink struct {
 	FtcID             string      `db:"ftc_user_id"`
 	StripeSubsID      null.String `db:"stripe_subs_id"`
-	AppleOriginalTxID null.String `json:"apple_original_tx_id"`
-	B2BLicenceID      null.String `json:"b2b_licence_id"`
+	AppleOriginalTxID null.String `db:"apple_original_tx_id"`
+	B2BLicenceID      null.String `db:"b2b_licence_id"`
 }
 
 func NewSubsLink(m Membership) SubsLink {
