@@ -268,16 +268,8 @@ func (router PayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	if !confirmed.Snapshot.IsZero() {
-		go func() {
-			_ = router.readerRepo.BackUpMember(confirmed.Snapshot)
-		}()
-	}
-
 	go func() {
-		if err := router.sendConfirmationEmail(confirmed.Order); err != nil {
-			sugar.Error(err)
-		}
+		router.processCfmResult(confirmed)
 	}()
 
 	if _, err := w.Write([]byte(success)); err != nil {
