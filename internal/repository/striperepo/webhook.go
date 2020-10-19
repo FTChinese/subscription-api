@@ -2,7 +2,6 @@ package striperepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/stripe/stripe-go"
@@ -10,48 +9,49 @@ import (
 
 // WebHookSaveStripeSub saves a user's membership derived from
 // stripe subscription data.
-func (env Env) WebHookOnSubscription(memberID reader.MemberID, ss *stripe.Subscription) error {
+func (env Env) WebHookOnSubscription(memberID reader.MemberID, ss *stripe.Subscription) (reader.Membership, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return err
+		return reader.Membership{}, err
 	}
 
 	m, err := tx.RetrieveMember(memberID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return nil
+		return reader.Membership{}, err
 	}
 
-	if m.PaymentMethod != enum.PayMethodStripe {
+	// If current membership's payment method is not stripe, discard this notification.
+	if !m.IsStripe() {
 		_ = tx.Rollback()
-		return sql.ErrNoRows
+		return reader.Membership{}, sql.ErrNoRows
 	}
 
 	if m.StripeSubsID.String != ss.ID {
 		_ = tx.Rollback()
-		return sql.ErrNoRows
+		return reader.Membership{}, sql.ErrNoRows
 	}
 
 	m = stripePkg.RefreshMembership(m, ss)
 
-	sugar.Infof("updating a stripe membership: %+v", m)
+	sugar.Infof("updating stripe membership from webhook: %+v", m)
 
 	// update member
 	if err := tx.UpdateMember(m); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return err
+		return reader.Membership{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return err
+		return reader.Membership{}, err
 	}
 
-	return nil
+	return m, nil
 }
