@@ -86,6 +86,43 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 	return resp, nil
 }
 
+func (router IAPRouter) processSubsResult(result apple.SubsResult) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	if !result.Snapshot.IsZero() {
+		err := router.readerRepo.BackUpMember(result.Snapshot)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}
+
+	if !result.Member.IsZero() {
+		err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
+		if err != nil {
+			sugar.Error(err)
+		}
+	}
+
+	if result.InitialLink {
+		sugar.Info("Initial link. Sending email....")
+		account, err := router.readerRepo.FtcAccountByFtcID(result.Member.FtcID.String)
+		if err != nil {
+			return
+		}
+
+		parcel, err := letter.NewIAPLinkParcel(account, result.Member)
+		if err != nil {
+			return
+		}
+
+		err = router.postman.Deliver(parcel)
+		if err != nil {
+			return
+		}
+	}
+}
+
 // VerifyReceipt verifies if the receipt data send by client is valid. After app store responded,
 // its latest_receipt, latest_receipt_info, pending_renewal_info are saved in DB in background thread.
 // An apple.Subscription is created from the response, which is saved or updated if already exists,
@@ -131,21 +168,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 				return
 			}
 
-			// Save snapshot
-			if !result.Snapshot.IsZero() {
-				err := router.readerRepo.BackUpMember(result.Snapshot)
-				if err != nil {
-					sugar.Error(err)
-				}
-			}
-
-			// Save ftc id to original transaction id mapping.
-			if !result.Member.IsZero() {
-				err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
-				if err != nil {
-					sugar.Error(err)
-				}
-			}
+			router.processSubsResult(result)
 		}()
 	}
 
@@ -210,40 +233,8 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		// For link, membership must exists.
-		err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
-		if err != nil {
-			sugar.Error()
-		}
-
-		if !result.Snapshot.IsZero() {
-			err := router.readerRepo.BackUpMember(result.Snapshot)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}
+		router.processSubsResult(result)
 	}()
-
-	// Send notification email if this is initial link.
-	if result.InitialLink {
-		sugar.Info("Initial link. Sending email....")
-		go func() {
-			account, err := router.readerRepo.FtcAccountByFtcID(result.Member.FtcID.String)
-			if err != nil {
-				return
-			}
-
-			parcel, err := letter.NewIAPLinkParcel(account, result.Member)
-			if err != nil {
-				return
-			}
-
-			err = router.postman.Deliver(parcel)
-			if err != nil {
-				return
-			}
-		}()
-	}
 
 	_ = render.New(w).OK(result.Member)
 }
@@ -349,23 +340,9 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Snapshot might be empty is this subscription is linked to ftc account yet.
-	if !result.Snapshot.IsZero() {
-		go func() {
-			err := router.readerRepo.BackUpMember(result.Snapshot)
-			if err != nil {
-				sugar.Error()
-			}
-		}()
-	}
-
-	if !result.Member.IsZero() {
-		go func() {
-			err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-	}
+	go func() {
+		router.processSubsResult(result)
+	}()
 
 	_ = render.New(w).OK(nil)
 }

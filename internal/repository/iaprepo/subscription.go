@@ -12,10 +12,10 @@ import (
 // optionally updated membership if it is linked to a ftc membership.
 // This is used by verify receipt, refresh subscription, webhook, and polling.
 // The returned membership is empty if the subscription is not linked to an FTC account.
-func (env Env) SaveSubs(s apple.Subscription) (apple.IAPResult, error) {
+func (env Env) SaveSubs(s apple.Subscription) (apple.SubsResult, error) {
 	err := env.upsertSubscription(s)
 	if err != nil {
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
 	return env.updateMembership(s)
@@ -35,14 +35,14 @@ func (env Env) upsertSubscription(s apple.Subscription) error {
 
 // updateMembership update subs.Membership if it is linked to an apple subscription.
 // Return a subs.MemberSnapshot if this subscription is linked to ftc account; otherwise it is empty.
-func (env Env) updateMembership(s apple.Subscription) (apple.IAPResult, error) {
+func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.BeginTx()
 	if err != nil {
 		sugar.Error(err)
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
 	// Retrieve membership by original transaction id.
@@ -52,7 +52,7 @@ func (env Env) updateMembership(s apple.Subscription) (apple.IAPResult, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
 	// If the subscription is not linked to FTC account, return empty MemberSnapshot and not error.
@@ -60,7 +60,7 @@ func (env Env) updateMembership(s apple.Subscription) (apple.IAPResult, error) {
 	if !currMember.IsIAP() {
 		sugar.Info("Membership liked to original transaction id %s is either empty or non-iap")
 		_ = tx.Rollback()
-		return apple.IAPResult{
+		return apple.SubsResult{
 			InitialLink: false,
 			Member:      reader.Membership{},
 			Snapshot:    reader.MemberSnapshot{},
@@ -72,15 +72,15 @@ func (env Env) updateMembership(s apple.Subscription) (apple.IAPResult, error) {
 	if err := tx.UpdateMember(newMember); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
-	return apple.IAPResult{
+	return apple.SubsResult{
 		InitialLink: false,
 		Member:      currMember,
 		Snapshot:    currMember.Snapshot(enum.SnapshotReasonIapUpdate),
