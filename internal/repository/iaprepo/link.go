@@ -30,14 +30,14 @@ import (
 // This is a suspicious operation that should always be denied.
 // The returned error could be *render.ValidationError
 // if link if forbidden.
-func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (apple.IAPResult, error) {
+func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (apple.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.BeginTx()
 	if err != nil {
 		sugar.Error(err)
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
 	// Try to retrieve membership by apple original transaction id.
@@ -45,14 +45,14 @@ func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (appl
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 	// Try to retrieve membership by ftc id.
 	ftcMember, err := tx.RetrieveMember(account.MemberID())
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
 	// Merge two memberships.
@@ -65,7 +65,7 @@ func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (appl
 
 		if errors.Is(err, reader.ErrIAPFtcLinked) {
 			_ = tx.Rollback()
-			return apple.IAPResult{
+			return apple.SubsResult{
 				InitialLink: false,
 				Member:      iapMember,
 				Snapshot:    reader.MemberSnapshot{},
@@ -73,7 +73,7 @@ func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (appl
 		}
 
 		_ = tx.Rollback()
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
 	// If reached here, possible cases of FTC and IAP:
@@ -91,7 +91,7 @@ func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (appl
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return apple.IAPResult{}, err
+			return apple.SubsResult{}, err
 		}
 	}
 
@@ -99,14 +99,14 @@ func (env Env) Link(account reader.FtcAccount, iapSubs apple.Subscription) (appl
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return apple.IAPResult{}, err
+		return apple.SubsResult{}, err
 	}
 
-	return apple.IAPResult{
+	return apple.SubsResult{
 		InitialLink: iapMember.IsZero(), // As long as iap side is zero, this is initial link.
 		Member:      newMmb,
 		Snapshot:    ftcMember.Snapshot(enum.SnapshotReasonAppleLink),

@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"net/http"
 )
 
@@ -54,25 +53,9 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Update subscription and possible membership in background since this step is irrelevant to verification.
-	if !result.Snapshot.IsZero() {
-		go func() {
-			err := router.readerRepo.BackUpMember(result.Snapshot)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-	}
-
-	// Save ftc uuid to apple original transaction id mapping.
-	if !result.Member.IsZero() {
-		go func() {
-			err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-	}
+	go func() {
+		router.processSubsResult(result)
+	}()
 
 	_ = render.New(w).OK(sub)
 }
@@ -148,23 +131,9 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !result.Snapshot.IsZero() {
-		go func() {
-			err := router.readerRepo.BackUpMember(result.Snapshot)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-	}
-
-	if !result.Member.IsZero() {
-		go func() {
-			err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-	}
+	go func() {
+		router.processSubsResult(result)
+	}()
 
 	// Use old subscription's creation time.
 	updatedSubs.CreatedUTC = sub.CreatedUTC
