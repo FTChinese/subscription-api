@@ -15,6 +15,7 @@ const (
 	keyUpgradeSubs = "upgradeSubs"
 	keyFreeUpgrade = "freeUpgrade"
 	keyIAPLinked   = "iapLinked"
+	keyIAPUnlinked = "iapUnlinked"
 )
 
 var funcMap = template.FuncMap{
@@ -74,4 +75,8 @@ func RenderFreeUpgrade(ctx CtxUpgrade) (string, error) {
 
 func RenderIAPLinked(ctx CtxIAPLinked) (string, error) {
 	return Render(keyIAPLinked, ctx)
+}
+
+func RenderIAPUnlinked(ctx CtxIAPLinked) (string, error) {
+	return Render(keyIAPUnlinked, ctx)
 }
