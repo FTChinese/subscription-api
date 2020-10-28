@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"net/http"
 )
@@ -31,6 +32,14 @@ func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFun
 
 		clientApp := client.NewClientApp(req)
 		readerIDs := getReaderIDs(req.Header)
+
+		// Find user account.
+		account, err := router.readerRepo.FindAccount(readerIDs)
+		if err != nil {
+			sugar.Error(err)
+			_ = render.New(w).DBError(err)
+			return
+		}
 
 		// Parse request body.
 		input, err := gatherWxPayInput(tradeType, req)
@@ -63,21 +72,15 @@ func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFun
 
 		sugar.Infof("Selected plan: %+v", plan)
 
-		isTest := router.isTestAccount(readerIDs, req)
+		config := subs.PaymentConfig{
+			Account:        account,
+			Plan:           plan,
+			Method:         enum.PayMethodWx,
+			WebhookBaseURL: router.config.WebHookBaseURL(),
+			WxAppID:        null.StringFrom(payClient.GetApp().AppID),
+		}
 
-		builder := subs.NewOrderBuilder(readerIDs).
-			SetPlan(plan).
-			SetPayMethod(enum.PayMethodWx).
-			SetWebhookURL(router.config.WebHookBaseURL()).
-			SetTest(isTest).
-			SetWxAppID(payClient.GetApp().AppID).
-			SetWxParams(wechat.UnifiedOrder{
-				IP:        clientApp.UserIP.String,
-				TradeType: tradeType,
-				OpenID:    input.OpenID.String,
-			})
-
-		order, err := router.subRepo.CreateOrder(builder)
+		order, err := router.subRepo.CreateOrder(config)
 		if err != nil {
 			sugar.Error(err)
 			router.handleOrderErr(w, err)
@@ -97,7 +100,12 @@ func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFun
 		// UnifiedOrder checks if `return_code` is SUCCESS/FAIL,
 		// validate the signature
 		// You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
-		resp, err := payClient.UnifiedOrder(builder.WxpayParams())
+		resp, err := payClient.UnifiedOrder(order.WxPay(wechat.UnifiedOrder{
+			IP:        clientApp.UserIP.String,
+			TradeType: tradeType,
+			OpenID:    input.OpenID.String,
+		}))
+
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
@@ -119,28 +127,28 @@ func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFun
 		switch tradeType {
 		// Desktop returns a url that can be turned to QR code
 		case wechat.TradeTypeDesktop:
-			_ = render.New(w).JSON(http.StatusOK, subs.WxpayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.WxpayBrowserIntent{
 				Order:  order,
 				QRCode: uor.QRCode.String,
 			})
 
 		// Mobile returns a url which is redirect in browser
 		case wechat.TradeTypeMobile:
-			_ = render.New(w).JSON(http.StatusOK, subs.WxpayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.WxpayBrowserIntent{
 				Order:   order,
 				MWebURL: uor.MWebURL.String,
 			})
 
 		// Create the json data used by js api
 		case wechat.TradeTypeJSAPI:
-			_ = render.New(w).JSON(http.StatusOK, subs.WxpayEmbedBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.WxpayEmbedBrowserIntent{
 				Order:  order,
 				Params: payClient.InWxBrowserParams(uor),
 			})
 
 		// Create the json data used by native app.
 		case wechat.TradeTypeApp:
-			_ = render.New(w).JSON(http.StatusOK, subs.WxpayNativeAppOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.WxpayNativeAppIntent{
 				Order:  order,
 				Params: payClient.AppParams(uor),
 			})
