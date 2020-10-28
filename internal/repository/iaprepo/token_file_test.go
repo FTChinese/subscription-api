@@ -9,7 +9,7 @@ import (
 
 func TestSaveReceiptTokenFile(t *testing.T) {
 	type args struct {
-		r apple.ReceiptToken
+		r apple.ReceiptSchema
 	}
 	tests := []struct {
 		name    string
@@ -26,8 +26,8 @@ func TestSaveReceiptTokenFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := SaveReceiptTokenFile(tt.args.r); (err != nil) != tt.wantErr {
-				t.Errorf("SaveReceiptTokenFile() error = %v, wantErr %v", err, tt.wantErr)
+			if err := SaveReceiptToDisk(tt.args.r); (err != nil) != tt.wantErr {
+				t.Errorf("SaveReceiptToDisk() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -57,9 +57,9 @@ func TestLoadReceipt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := LoadReceipt(tt.args.s)
+			got, err := LoadReceiptFromDisk(tt.args.s)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("LoadReceipt() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("LoadReceiptFromDisk() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
