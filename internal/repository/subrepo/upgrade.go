@@ -49,8 +49,8 @@ func (env Env) UpgradeIntent(account reader.FtcAccount, plan product.ExpandedPla
 		return subs.UpgradeIntent{}, err
 	}
 
-	config := subs.NewUpgradeConfig(account, plan).
-		WithPreview(preview)
+	config := subs.NewPayment(account, plan).
+		WithUpgrade(preview)
 
 	checkout := config.Checkout(balanceSources, enum.OrderKindUpgrade)
 
