@@ -2,6 +2,7 @@ package txrepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -38,6 +39,35 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error)
 
 	// Treat a non-existing member as a valid value.
 	return m.Normalize(), nil
+}
+
+func (tx MemberTx) RetrieveAppleSubs(origTxID string) (apple.Subscription, error) {
+	var s apple.Subscription
+	err := tx.Get(&s, apple.StmtLockSubs, origTxID)
+
+	if err != nil {
+		return apple.Subscription{}, err
+	}
+
+	return s, nil
+}
+
+func (tx MemberTx) LinkAppleSubs(link apple.LinkInput) error {
+	_, err := tx.NamedExec(apple.StmtLinkSubs, link)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx MemberTx) UnlinkAppleSubs(link apple.LinkInput) error {
+	_, err := tx.NamedExec(apple.StmtUnlinkSubs, link)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // RetrieveAppleMember selects membership by apple original transaction id.
