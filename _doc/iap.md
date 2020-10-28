@@ -43,7 +43,7 @@ When you logged in with a test account, which can be found in Superyard, request
 
 For Alipay and Wxpay, subscription prices will be set to 0.01 so that you don't need to be bothered with refunding.
 
-### Paths
+## Paths
 
 * POST `/apple/verify-receipt` Verify a receipt.
 * POST `/apple/link` Link an IAP to an FTC account.
@@ -54,6 +54,108 @@ For Alipay and Wxpay, subscription prices will be set to 0.01 so that you don't 
 * PATCH `/apple/subs/<original_transaction_id>` Refresh an existing IAP subscription against Apple verification.
 * GET `/apple/receipt/<original_transaction_id>` Load a single IAP subscription together with the receipt file.
 * POST `/webhook/apple`
+
+## The verification process
+
+The verification process is performed by multiple endpoints:
+
+* POST `/apple/verify-receipt`;
+* POST `/apple/subs`;
+* PATCH `/apple/subs`.
+
+We dedicate this section to its details.
+
+1. Send http request to App Store endpoint as required by Apple. If any errors occurred, we send `500 Internal Error` to client.
+
+2. Then we validate various fields in the response to ensure it is valid. If Apple's response is not valid, we will send the following errors to our clients:
+
+If `status` is not `0`, it indicates error: 
+
+```json
+{
+  "message": "The data in the receipt-data property was malformed or missing",
+  "error": {
+    "field": "status",
+    "code": "invalid"
+  }
+}
+```
+
+If `bundle_id` does not match:
+
+```json
+{
+    "message": "The data in the receipt-data property was malformed or missing",
+    "error": {
+        "field": "bundle_id",
+        "code": "invalid"
+    }
+}
+```
+
+If `latest_receipt_info` field is empty.
+
+```json
+{
+    "message": "Latest receipt info should not be empty",
+    "error": {
+        "field": "latest_receipt_info",
+        "code": "missing_field"
+    }
+}
+```
+
+3. Parse the response to get user's valid subscription.
+
+4. Dissect the response so that we could save its various fields to relational database. The response has the following structure:
+
+```json
+{
+  "environment": "sandbox or production",
+  "latest_receipt": "the latest base64-encoded app receipt",
+  "latest_receipt_info": [],
+  "pending_renewal_info": [],
+  "status": 0,
+  "is-retryable": false,
+  "receipt": {}
+}
+```
+
+The data under `latest_receipt`, `latest_receipt_info`, `pending_renewal_info` and `receipt` are saved into those tables:
+
+| Field                | Table Name                         |
+| -------------------- | ---------------------------------- |
+| receipt              | premium.apple_verification_session |
+| latest_receipt_info  | premium.apple_transaction          |
+| pending_renewal_info | premium.apple_pending_renewal      |
+| latest_receipt       | file_store.apple_receipt           |
+
+The `environment` field is saved along each row to all the tables mentioned here so that we know from which environment each row is generated.
+
+Note the `latest_receipt` is original saved to disk. Later it is also save to Redis. Then we also save a copy to MySQL, therefore a receipt might appear in three places:
+
+* Disk on ucloud;
+* Redis
+* MySQL
+
+6. We create a data structure called `Subscripiton` which contains the essential data from the verification response and save it in `premium.apple_subscription`:
+
+```json
+{
+  "environment": "",
+  "originalTransactionId": "uniquely identify a apple subscription",
+  "latestTransactionId": "the last transaction id",
+  "productId": "",
+  "purchaseDateUtc": "purchase date in iso format set in utc time zone",
+  "expiresDateUtc": "expiration date",
+  "tier": "standard | premium",
+  "cycle": "month | year",
+  "autoRenewal": true,
+  "createdUtc": "when this row is inserted",
+  "updatedUtc": "the last update time",
+  "ftcUserId": "uuid if linked to ftc account; otherwise null"
+}
+```
 
 ## Verify Receipt
 
@@ -69,15 +171,17 @@ POST /apple/verify-receipt
 }
 ```
 
-### Response
+### `200 OK` Response
 
-#### `400 Bad Request`
+Apple's response is transferred to client as is. See https://developer.apple.com/documentation/appstorereceipts/responsebody.
 
-* If request body cannot be parsed as valid JSON;
+Please note there is an error in Apple's doc saying the type of`latest_receipt` is `byte`. It is a string type, a string representation of the underlying byte array. You can safely ignore this field.
 
-#### `422 Unprocessable`
+### Work flow and error response
 
-* If request body has invalid field, e.g, `receiptData` field is missing or empty.
+1. Parse request body. If request body cannot be parsed as valid JSON, returns `400 Bad Request`.
+
+2. Validate request body. If request body has invalid field, e.g, `receiptData` field is missing or empty, returns `422 Unprocessable`
 
 ```json
 {
@@ -89,55 +193,15 @@ POST /apple/verify-receipt
 }
 ```
 
-* If the verification response is not valid, those fields in the response will be checked: 
+3. Perform verification to App Store. See above section `The verification process`.
 
-`status` is not `0`: 
+If the http request sent to App Store failed, returns `500 Internal Error`.
 
-```json
-{
-  "message": "The data in the receipt-data property was malformed or missing",
-  "error": {
-    "field": "status",
-    "code": "invalid"
-  }
-}
-```
+If the verification response is not valid, those fields in the response will be checked: 
 
-`bundle_id` does not match:
+4. App store response is sent to client as is.
 
-```json
-{
-    "message": "The data in the receipt-data property was malformed or missing",
-    "error": {
-        "field": "bundle_id",
-        "code": "invalid"
-    }
-}
-```
-
-`latest_receipt_info` field is empty.
-
-```json
-{
-    "message": "Latest receipt info should not be empty",
-    "error": {
-        "field": "latest_receipt_info",
-        "code": "missing_field"
-    }
-}
-```
-
-#### `500 Interval Server Error`
-
-* This indicates an error occurred when building http request which will be sent to Apple. It does not mean Apple responded an error.
-
-* Apple responded with something, but the response body cannot be parsed as valid JSON.
-
-#### `200 OK`
-
-Apple's response is transferred to client as is. See https://developer.apple.com/documentation/appstorereceipts/responsebody.
-
-Please note there is an error in Apple's doc saying the type of`latest_receipt` is `byte`. It is a string type, a string representation of the underlying byte array. You can safely ignore this field.
+5. In background, we extract essential data from the response and build a data structure called apple's `Subscription` sand saved it to table `premium.apple_subscription`. If there's a row in `premium.ftc_vip` whose `apple_subscription_id` matches apple's original transaction id, that row is updated based on `Subscription`.
 
 ## Link IAP
 
