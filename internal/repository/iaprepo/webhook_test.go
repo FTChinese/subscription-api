@@ -53,8 +53,8 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if err := env.SaveNotification(tt.args.w); (err != nil) != tt.wantErr {
-				t.Errorf("SaveNotification() error = %v, wantErr %v", err, tt.wantErr)
+			if err := env.SaveWebhook(tt.args.w); (err != nil) != tt.wantErr {
+				t.Errorf("SaveWebhook() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
