@@ -63,27 +63,3 @@ type WebHook struct {
 	// An object that contains information about the most recent in-app purchase transactions for the app.
 	UnifiedReceipt UnifiedReceipt `json:"unified_receipt"`
 }
-
-// Schema turns to SQL-friendly format.
-func (w WebHook) Schema() WebHookSchema {
-	return WebHookSchema{
-		BaseTransactionSchema: w.LatestTransaction.schema(
-			w.Environment,
-			w.LatestTransaction.ExpiresDate,
-		),
-
-		AppItemID: MustParseInt64(w.LatestTransaction.AppItemID),
-		ItemID:    MustParseInt64(w.LatestTransaction.ItemID),
-
-		AutoRenewAdamID:    w.AutoRenewAdamID,
-		AutoRenewProductID: w.AutoRenewProductID,
-		AutoRenewStatus: null.NewBool(
-			MustParseBoolean(w.AutoRenewStatus),
-			w.AutoRenewStatus != ""),
-		AutoRenewStatusChangeDateMs: MustParseInt64(w.AutoRenewStatusChangeDateMs),
-		ExpirationIntent:            w.ExpirationIntent,
-		NotificationType:            w.NotificationType,
-		Password:                    w.Password,
-		Status:                      w.UnifiedReceipt.Status,
-	}
-}
