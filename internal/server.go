@@ -128,13 +128,15 @@ func StartServer(s ServerStatus) {
 	r.Route("/upgrade", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(controller.UserOrUnionID)
+		r.Get("/balance", payRouter.PreviewUpgrade)
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
 		r.Put("/free", payRouter.FreeUpgrade)
-		r.Get("/balance", payRouter.UpgradeBalance)
 	})
 
 	r.Route("/orders", func(r chi.Router) {
 		r.Use(guard.CheckToken)
+
+		// List a user's orders
 
 		// Manually confirm an order if not confirmed yet by verifying against
 		// alipay of wxpay APIs. If it's already confirmed, nothing changes.
