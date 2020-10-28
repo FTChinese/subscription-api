@@ -9,15 +9,21 @@ import (
 	"net/http"
 )
 
-func (router PayRouter) UpgradeBalance(w http.ResponseWriter, req *http.Request) {
+func (router PayRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
 	readerIDs := getReaderIDs(req.Header)
+
+	account, err := router.readerRepo.FindAccount(readerIDs)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
 
 	plan, err := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
 	if err != nil {
 		_ = render.New(w).DBError(err)
 	}
 
-	pi, err := router.subRepo.PreviewUpgrade(readerIDs, plan)
+	pi, err := router.subRepo.UpgradeIntent(account, plan, true)
 
 	if err != nil {
 		switch err {
@@ -38,25 +44,22 @@ func (router PayRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	sugar := router.logger.Sugar()
 
 	readerIDs := getReaderIDs(req.Header)
+	account, err := router.readerRepo.FindAccount(readerIDs)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
 	clientApp := client.NewClientApp(req)
 
 	p, _ := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
 
-	isTest := router.isTestAccount(readerIDs, req)
-
-	builder := subs.NewOrderBuilder(readerIDs).
-		SetPlan(p).
-		SetTest(isTest)
-
-	confirmed, err := router.subRepo.FreeUpgrade(builder)
+	intent, err := router.subRepo.UpgradeIntent(account, p, false)
+	// Check whether intent if free. If not free, return it to client and stop.
 	if err != nil {
 		switch err {
 		case subs.ErrUpgradeInvalid:
 			_ = render.New(w).BadRequest(err.Error())
-
-		case subs.ErrBalanceCannotCoverUpgrade:
-			pi, _ := builder.PaymentIntent()
-			_ = render.New(w).JSON(http.StatusOK, pi)
 
 		default:
 			_ = render.New(w).DBError(err)
@@ -64,15 +67,21 @@ func (router PayRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if !intent.IsFree {
+		_ = render.New(w).OK(intent)
+		return
+	}
+
+	// Only free upgrade could go to here.
 	// Save snapshot.
 	go func() {
-		_ = router.readerRepo.BackUpMember(confirmed.Snapshot)
+		_ = router.readerRepo.BackUpMember(intent.Result.Snapshot)
 	}()
 
 	// Save client app info
 	go func() {
 		_ = router.subRepo.SaveOrderClient(client.OrderClient{
-			OrderID: confirmed.Order.ID,
+			OrderID: intent.Result.Order.ID,
 			Client:  clientApp,
 		})
 	}()
@@ -80,14 +89,10 @@ func (router PayRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	// Send email
 	go func() {
 		// Find this user's personal data
-		account, err := router.readerRepo.FtcAccountByFtcID(confirmed.Order.FtcID.String)
-		if err != nil {
-			return
-		}
 		parcel, err := letter.NewFreeUpgradeParcel(
 			account,
-			confirmed.Order,
-			builder.GetWallet().Sources,
+			intent.Result.Order,
+			intent.Wallet.Sources,
 		)
 
 		err = router.postman.Deliver(parcel)
