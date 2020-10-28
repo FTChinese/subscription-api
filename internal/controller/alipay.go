@@ -43,6 +43,14 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 		clientApp := client.NewClientApp(req)
 		readerIDs := getReaderIDs(req.Header)
 
+		// Find user account.
+		account, err := router.readerRepo.FindAccount(readerIDs)
+		if err != nil {
+			sugar.Error(err)
+			_ = render.New(w).DBError(err)
+			return
+		}
+
 		input, err := gatherAliPayInput(req)
 		if err != nil {
 			sugar.Error(err)
@@ -55,6 +63,7 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
+		// Find pricing plan.
 		plan, err := router.prodRepo.PlanByEdition(input.Edition)
 		if err != nil {
 			sugar.Error(err)
@@ -62,29 +71,29 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		isTest := router.isTestAccount(readerIDs, req)
+		config := subs.PaymentConfig{
+			Account:        account,
+			Plan:           plan,
+			Method:         enum.PayMethodAli,
+			WebhookBaseURL: router.config.WebHookBaseURL(),
+		}
 
-		builder := subs.NewOrderBuilder(readerIDs).
-			SetPlan(plan).
-			SetPayMethod(enum.PayMethodAli).
-			SetWebhookURL(router.config.WebHookBaseURL()).
-			SetTest(isTest)
-
-		order, err := router.subRepo.CreateOrder(builder)
-
+		order, err := router.subRepo.CreateOrder(config)
 		if err != nil {
-			sugar.Error(err)
-			router.handleOrderErr(w, err)
+			_ = render.New(w).InternalServerError(err.Error())
 			return
 		}
 
 		sugar.Infof("Created order: %+v", order)
 
 		go func() {
-			_ = router.subRepo.SaveOrderClient(client.OrderClient{
+			err := router.subRepo.SaveOrderClient(client.OrderClient{
 				OrderID: order.ID,
 				Client:  clientApp,
 			})
+			if err != nil {
+				sugar.Error(err)
+			}
 		}()
 
 		switch kind {
@@ -92,7 +101,7 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 			// Generate signature and creates a string of query
 			// parameter.
 			queryStr, err := router.aliPay.TradeAppPay(
-				builder.AliAppPayParams())
+				order.AliAppPay())
 
 			sugar.Infof("App pay param: %+v\n", queryStr)
 
@@ -103,7 +112,7 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 			}
 
 			_ = render.New(w).
-				JSON(http.StatusOK, subs.AlipayNativeAppOrder{
+				JSON(http.StatusOK, subs.AlipayNativeIntent{
 					Order: order,
 					Param: queryStr,
 				})
@@ -111,7 +120,7 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		case ali.EntryDesktopWeb:
 			redirectURL, err := router.aliPay.TradePagePay(
-				builder.AliDesktopPayParams(input.ReturnURL),
+				order.AliDesktopPay(input.ReturnURL),
 			)
 			if err != nil {
 				sugar.Error(err)
@@ -121,14 +130,14 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 			sugar.Infof("Ali desktop browser redirect url: %+v\n", redirectURL)
 
-			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserIntent{
 				Order:       order,
 				RedirectURL: redirectURL.String(),
 			})
 
 		case ali.EntryMobileWeb:
 			redirectURL, err := router.aliPay.TradeWapPay(
-				builder.AliWapPayParams(input.ReturnURL),
+				order.AliWapPay(input.ReturnURL),
 			)
 			if err != nil {
 				sugar.Error(err)
@@ -137,7 +146,7 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 			}
 			sugar.Infof("Ali mobile browser redirect url: %+v\n", redirectURL)
 
-			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserOrder{
+			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserIntent{
 				Order:       order,
 				RedirectURL: input.ReturnURL,
 			})
