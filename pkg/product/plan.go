@@ -23,46 +23,9 @@ func (p Plan) PaymentTitle(k enum.OrderKind) string {
 	return fmt.Sprintf("%sFT中文网%s", k.StringSC(), p.Edition.StringCN())
 }
 
-// IntentPlan describes user's intent plan of subscription.
-// This is used to keep backward-compatible before
-// we persist plans in db.
-type IntentPlan struct {
-	Plan
-	DiscountID null.String // Deprecated
-	Charge
-}
-
 type ExpandedPlan struct {
 	Plan
 	Discount Discount `json:"discount"`
-}
-
-// Amount calculates how much a user should pay.
-func (e ExpandedPlan) Amount() float64 {
-	if e.Discount.IsValid() {
-		return e.Price - e.Discount.PriceOff.Float64
-	}
-
-	return e.Price
-}
-
-// Payable calculates how much we should charge a user after
-// taking into account an effective discount.
-// This might not be the final price if user's wallet has balance, e.g., when upgrading.
-func (e ExpandedPlan) Payable() Charge {
-	if e.Discount.IsValid() {
-		return Charge{
-			Amount:     e.Price - e.Discount.PriceOff.Float64,
-			DiscountID: e.Discount.DiscID,
-			Currency:   "cny",
-		}
-	}
-
-	return Charge{
-		Amount:     e.Price,
-		DiscountID: null.String{},
-		Currency:   "cny",
-	}
 }
 
 // ExpandedPlanSchema contains a plans and its discount.
