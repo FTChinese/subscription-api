@@ -7,7 +7,6 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/segmentio/kafka-go"
@@ -102,7 +101,6 @@ func (c Consumer) saveReceipt(resp apple.VerificationResp) {
 	sugar := c.logger.Sugar()
 
 	sugar.Info("Saving verification response in background")
-
 	c.iapRepo.SaveResponsePayload(resp.UnifiedReceipt)
 
 	sub, err := resp.Subscription()
@@ -113,21 +111,14 @@ func (c Consumer) saveReceipt(resp apple.VerificationResp) {
 
 	sugar.Infof("Saving IAP subscription %s", sub.OriginalTransactionID)
 
-	result, err := c.iapRepo.SaveSubs(sub)
+	snapshot, err := c.iapRepo.SaveSubs(sub)
 	if err != nil {
 		sugar.Error(err)
 		return
 	}
 
-	if !result.Snapshot.IsZero() {
-		err := c.readerRepo.BackUpMember(result.Snapshot)
-		if err != nil {
-			sugar.Error(err)
-		}
-	}
-
-	if !result.Member.IsZero() {
-		err := c.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
+	if !snapshot.IsZero() {
+		err := c.readerRepo.BackUpMember(snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
