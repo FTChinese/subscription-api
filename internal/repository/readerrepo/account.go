@@ -1,8 +1,11 @@
 package readerrepo
 
-import "github.com/FTChinese/subscription-api/pkg/reader"
+import (
+	"errors"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+)
 
-func (env Env) FtcAccountByFtcID(id string) (reader.FtcAccount, error) {
+func (env Env) AccountByFtcID(id string) (reader.FtcAccount, error) {
 	var u reader.FtcAccount
 	err := env.db.Get(
 		&u,
@@ -15,6 +18,28 @@ func (env Env) FtcAccountByFtcID(id string) (reader.FtcAccount, error) {
 	}
 
 	return u, nil
+}
+
+func (env Env) AccountByWxID(unionID string) (reader.FtcAccount, error) {
+	var a reader.FtcAccount
+	err := env.db.Get(&a, reader.StmtAccountByWx, unionID)
+	if err != nil {
+		return reader.FtcAccount{}, err
+	}
+
+	return a, nil
+}
+
+func (env Env) FindAccount(ids reader.MemberID) (reader.FtcAccount, error) {
+	if ids.FtcID.Valid {
+		return env.AccountByFtcID(ids.FtcID.String)
+	}
+
+	if ids.UnionID.Valid {
+		return env.AccountByWxID(ids.UnionID.String)
+	}
+
+	return reader.FtcAccount{}, errors.New("either ftc id or wechat id should be specified")
 }
 
 func (env Env) FtcAccountByStripeID(cusID string) (reader.FtcAccount, error) {
