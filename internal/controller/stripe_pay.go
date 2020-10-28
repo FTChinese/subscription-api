@@ -283,10 +283,6 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	// Save ftc id to stripe subscription id mapping.
 	// Backup previous membership if exists.
 	go func() {
-		err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
-		if err != nil {
-			sugar.Error(err)
-		}
 
 		if !result.Snapshot.IsZero() {
 			err := router.readerRepo.BackUpMember(result.Snapshot)
@@ -321,14 +317,6 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 		_ = render.New(w).DBError(err)
 		return
 	}
-
-	// Save uuid to stripe subscription id mapping.
-	go func() {
-		err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
-		if err != nil {
-			sugar.Error(err)
-		}
-	}()
 
 	_ = render.New(w).OK(result)
 }
@@ -392,11 +380,6 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 	// Remember uuid to stripe subscription mapping;
 	// Backup previous membership.
 	go func() {
-		err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
-		if err != nil {
-			sugar.Error(err)
-		}
-
 		err = router.readerRepo.BackUpMember(result.Snapshot)
 		if err != nil {
 			sugar.Error(err)
@@ -425,15 +408,10 @@ func (router StripeRouter) onSubscription(s *stripeSdk.Subscription) error {
 
 	memberID := account.MemberID()
 
-	m, err := router.stripeRepo.WebHookOnSubscription(memberID, s)
+	_, err = router.stripeRepo.WebHookOnSubscription(memberID, s)
 	if err != nil {
 		sugar.Error(err)
 		return err
-	}
-
-	err = router.readerRepo.LinkSubs(reader.NewSubsLink(m))
-	if err != nil {
-		sugar.Error(err)
 	}
 
 	return err
