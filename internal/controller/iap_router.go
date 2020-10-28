@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
@@ -16,7 +15,6 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -38,7 +36,7 @@ func NewIAPRouter(db *sqlx.DB, rdb *redis.Client, logger *zap.Logger, p postoffi
 		postman:    p,
 
 		secret:    config.MustIAPSecret(),
-		iapClient: iaprepo.NewClient(cfg.Sandbox()),
+		iapClient: iaprepo.NewClient(cfg.Sandbox(), logger),
 		logger:    logger,
 	}
 }
@@ -51,19 +49,11 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	content, err := router.iapClient.Verify(receipt)
+	// Send data to IAP endpoint for verification
+	resp, err := router.iapClient.Verify(receipt)
 	if err != nil {
 		return apple.VerificationResp{}, render.NewInternalError(err.Error())
 	}
-
-	sugar.Infof("Verified receipt %s", content)
-
-	var resp apple.VerificationResp
-	if err := json.Unmarshal(content, &resp); err != nil {
-		return resp, render.NewInternalError(err.Error())
-	}
-
-	sugar.Infof("Environment %s, is retryable %t, status %d", resp.Environment, resp.IsRetryable, resp.Status)
 
 	// If the response is not valid.
 	if ve := resp.Validate(); ve != nil {
@@ -74,7 +64,7 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 	// Find the latest valid transaction.
 	resp.Parse()
 
-	// Save the decoded receipt.
+	// Save the decoded receipt as a session of verification
 	go func() {
 		_ = router.iapRepo.SaveDecodedReceipt(
 			resp.ReceiptSchema(),
@@ -86,39 +76,15 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 	return resp, nil
 }
 
-func (router IAPRouter) processSubsResult(result apple.SubsResult) {
+func (router IAPRouter) processSubsResult(snapshot reader.MemberSnapshot) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	if !result.Snapshot.IsZero() {
-		err := router.readerRepo.BackUpMember(result.Snapshot)
+	// Backup previous membership
+	if !snapshot.IsZero() {
+		err := router.readerRepo.BackUpMember(snapshot)
 		if err != nil {
 			sugar.Error(err)
-		}
-	}
-
-	if !result.Member.IsZero() {
-		err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Member))
-		if err != nil {
-			sugar.Error(err)
-		}
-	}
-
-	if result.InitialLink {
-		sugar.Info("Initial link. Sending email....")
-		account, err := router.readerRepo.FtcAccountByFtcID(result.Member.FtcID.String)
-		if err != nil {
-			return
-		}
-
-		parcel, err := letter.NewIAPLinkParcel(account, result.Member)
-		if err != nil {
-			return
-		}
-
-		err = router.postman.Deliver(parcel)
-		if err != nil {
-			return
 		}
 	}
 }
@@ -134,18 +100,21 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
+	// Parse request body.
 	var input apple.ReceiptInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
+	// Validate input data
 	if ve := input.Validate(); ve != nil {
 		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
+	// Perform verification.
 	resp, resErr := router.doVerification(input.ReceiptData)
 	if resErr != nil {
 		sugar.Error(resErr)
@@ -153,7 +122,8 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	sub, err := resp.Subscription()
+	// Create apple.Subscription.
+	sub, err := apple.NewSubscription(resp.UnifiedReceipt)
 	if err != nil {
 		sugar.Error(err)
 	}
@@ -162,121 +132,17 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	if err == nil {
 		go func() {
 
-			result, err := router.iapRepo.SaveSubs(sub)
+			snapshot, err := router.iapRepo.SaveSubs(sub)
 			if err != nil {
 				sugar.Error(err)
 				return
 			}
 
-			router.processSubsResult(result)
+			router.processSubsResult(snapshot)
 		}()
 	}
 
 	_ = render.New(w).OK(resp)
-}
-
-// Link links IAP subscription to FTC account.
-// This step does not perform verification.
-// It only links an existing subscription to ftc account.
-// You should ask the /subscription/* endpoint to
-// update data and get the original transaction id.
-//
-// Input:
-// ftcId: string;
-// originalTxId: string;
-//
-// Response: the linked Membership.
-func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	var input apple.LinkInput
-	if err := gorest.ParseJSON(req.Body, &input); err != nil {
-		sugar.Error(err)
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-	if ve := input.Validate(); ve != nil {
-		sugar.Error(ve)
-		_ = render.New(w).Unprocessable(ve)
-		return
-	}
-
-	ftcAccount, err := router.readerRepo.FtcAccountByFtcID(input.FtcID)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	iapSubs, err := router.iapRepo.LoadSubs(input.OriginalTxID)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	// Start to link apple subscription to ftc membership.
-	result, err := router.iapRepo.Link(ftcAccount, iapSubs)
-
-	if err != nil {
-		sugar.Error(err)
-		var ve *render.ValidationError
-		// ValidationError indicates the link is not allowed.
-		if errors.As(err, &ve) {
-			_ = render.New(w).Unprocessable(ve)
-			return
-		}
-
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	go func() {
-		router.processSubsResult(result)
-	}()
-
-	_ = render.New(w).OK(result.Member)
-}
-
-// Unlink removes apple subscription id from a user's membership
-//
-// Input:
-// ftcId: string;
-// originalTxId: string;
-func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
-
-	var input apple.LinkInput
-	// 400 Bad Request if request body cannot be parsed.
-	if err := gorest.ParseJSON(req.Body, &input); err != nil {
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-
-	// 422 Unprocessable for request body is not valid.
-	if ve := input.Validate(); ve != nil {
-		_ = render.New(w).Unprocessable(ve)
-	}
-
-	// This will retrieve membership by apple original transaction id.
-	// So if target does not exists, if will simply gives 404 error.
-	snapshot, err := router.iapRepo.Unlink(input)
-	if err != nil {
-		var ve *render.ValidationError
-		if errors.As(err, &ve) {
-			_ = render.New(w).Unprocessable(ve)
-			return
-		}
-
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	go func() {
-		_ = router.readerRepo.BackUpMember(snapshot)
-	}()
-
-	_ = render.New(w).NoContent()
 }
 
 // WebHook receives app store server-to-server notification.
@@ -299,7 +165,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = router.iapRepo.SaveNotification(wh.Schema())
+	err = router.iapRepo.SaveWebhook(apple.NewWebHookSchema(wh))
 	if err != nil {
 		sugar.Error(err)
 	}
@@ -332,7 +198,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// if this membership payMethod is null, and expireDate is not after sub.ExpireDateUTC,
 	// then we should update this membership using this subscription.
 	// This approach can be used in webhook notification and verify-receipt.
-	result, err := router.iapRepo.SaveSubs(sub)
+	snapshot, err := router.iapRepo.SaveSubs(sub)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -341,7 +207,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	// Snapshot might be empty is this subscription is linked to ftc account yet.
 	go func() {
-		router.processSubsResult(result)
+		router.processSubsResult(snapshot)
 	}()
 
 	_ = render.New(w).OK(nil)
