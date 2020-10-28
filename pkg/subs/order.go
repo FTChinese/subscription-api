@@ -2,14 +2,17 @@ package subs
 
 import (
 	"fmt"
+	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"github.com/objcoding/wxpay"
+	"github.com/smartwalle/alipay"
+	"log"
 	"time"
-
-	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/pkg/errors"
 
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
 
@@ -25,8 +28,9 @@ type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
 	reader.MemberID
-	PlanID string  `json:"planId" db:"plan_id"`
-	Price  float64 `json:"price" db:"price"` // Price of a plan, prior to discount.
+	PlanID     string      `json:"planId" db:"plan_id"`
+	DiscountID null.String `json:"discountId" db:"discount_id"`
+	Price      float64     `json:"price" db:"price"` // Price of a plan, prior to discount.
 	product.Edition
 	product.Charge
 	product.Duration
@@ -36,10 +40,82 @@ type Order struct {
 	TotalBalance  null.Float     `json:"totalBalance" db:"total_balance"` // Only for upgrade
 	WxAppID       null.String    `json:"-" db:"wx_app_id"`                // Wechat specific. Used by webhook to verify notification.
 	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
-	ConfirmedAt   chrono.Time    `json:"-" db:"confirmed_utc"` // When the payment is confirmed.
-	StartDate     chrono.Date    `json:"-" db:"start_date"`    // Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	EndDate       chrono.Date    `json:"-" db:"end_date"`      // Membership end date for this order. Depends on start date.
-	LiveMode      bool           `json:"live"`
+	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
+	PurchasedPeriod
+	LiveMode bool `json:"live"`
+
+	// Not from/to DB.
+	CheckedItem
+	WebhookURL string `json:"-"`
+}
+
+func (o Order) AliAppPay() alipay.AliPayTradeAppPay {
+	log.Printf("Using web hook url: %s", o.WebhookURL)
+
+	return alipay.AliPayTradeAppPay{
+		TradePay: alipay.TradePay{
+			NotifyURL:   o.WebhookURL,
+			Subject:     o.Plan.PaymentTitle(o.Kind),
+			OutTradeNo:  o.ID,
+			TotalAmount: o.AliPrice(),
+			ProductCode: ali.ProductCodeApp.String(),
+			GoodsType:   "0",
+		},
+	}
+}
+
+func (o Order) AliDesktopPay(retURL string) alipay.AliPayTradePagePay {
+	return alipay.AliPayTradePagePay{
+		TradePay: alipay.TradePay{
+			NotifyURL:   o.WebhookURL,
+			ReturnURL:   retURL,
+			Subject:     o.Plan.PaymentTitle(o.Kind),
+			OutTradeNo:  o.ID,
+			TotalAmount: o.AliPrice(),
+			ProductCode: ali.ProductCodeWeb.String(),
+			GoodsType:   "0",
+		},
+	}
+}
+
+func (o Order) AliWapPay(retURL string) alipay.AliPayTradeWapPay {
+	return alipay.AliPayTradeWapPay{
+		TradePay: alipay.TradePay{
+			NotifyURL:   o.WebhookURL,
+			ReturnURL:   retURL,
+			Subject:     o.Plan.PaymentTitle(o.Kind),
+			OutTradeNo:  o.ID,
+			TotalAmount: o.AliPrice(),
+			ProductCode: ali.ProductCodeWeb.String(),
+			GoodsType:   "0",
+		},
+	}
+}
+
+func (o Order) WxPay(wxParam wechat.UnifiedOrder) wxpay.Params {
+
+	log.Printf("Using web hook url: %s", o.WebhookURL)
+
+	p := make(wxpay.Params)
+	p.SetString("body", o.Plan.PaymentTitle(o.Kind))
+	p.SetString("out_trade_no", o.ID)
+	p.SetInt64("total_fee", o.AmountInCent())
+	p.SetString("spbill_create_ip", wxParam.IP)
+	p.SetString("notify_url", o.WebhookURL)
+	// APP for native app
+	// NATIVE for web site
+	// JSAPI for web page opend inside wechat browser
+	p.SetString("trade_type", wxParam.TradeType.String())
+
+	switch wxParam.TradeType {
+	case wechat.TradeTypeDesktop:
+		p.SetString("product_id", o.Plan.ID)
+
+	case wechat.TradeTypeJSAPI:
+		p.SetString("openid", wxParam.OpenID)
+	}
+
+	return p
 }
 
 func (o Order) IsZero() bool {
@@ -48,29 +124,6 @@ func (o Order) IsZero() bool {
 
 func (o Order) IsConfirmed() bool {
 	return !o.ConfirmedAt.IsZero()
-}
-
-// IsFreeUpgrade tests whether this order is used for upgrade
-// and whether the charged amount is zero.
-func (o Order) IsFreeUpgrade() bool {
-	return o.Kind == enum.OrderKindUpgrade && o.Amount == 0
-}
-
-func (o Order) getEndDate() (chrono.Date, error) {
-	var endTime time.Time
-
-	switch o.Cycle {
-	case enum.CycleYear:
-		endTime = o.StartDate.AddDate(int(o.CycleCount), 0, int(o.ExtraDays))
-
-	case enum.CycleMonth:
-		endTime = o.StartDate.AddDate(0, int(o.CycleCount), int(o.ExtraDays))
-
-	default:
-		return chrono.Date{}, errors.New("invalid billing cycle")
-	}
-
-	return chrono.DateFrom(endTime), nil
 }
 
 // pick which date to use as start date upon confirmation.
@@ -94,14 +147,15 @@ func (o Order) pickStartDate(expireDate chrono.Date) chrono.Date {
 func (o Order) Confirm(m reader.Membership, confirmedAt time.Time) (Order, error) {
 	o.ConfirmedAt = chrono.TimeFrom(confirmedAt)
 
-	o.StartDate = o.pickStartDate(m.ExpireDate)
-
-	endDate, err := o.getEndDate()
+	period, err := NewPeriodBuilder(
+		o.Edition,
+		o.Duration).
+		Build(o.pickStartDate(m.ExpireDate))
 	if err != nil {
 		return o, err
 	}
 
-	o.EndDate = endDate
+	o.PurchasedPeriod = period
 
 	return o, nil
 }
