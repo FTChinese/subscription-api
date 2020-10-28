@@ -79,26 +79,35 @@ func (c Checkout) ProratedOrders(upgradeTo Order) []ProratedOrder {
 // PaymentConfig collects parameters to build an order.
 // These are experimental refactoring.
 type PaymentConfig struct {
-	dryRun         bool // Only for upgrade preview.
-	Account        reader.FtcAccount
-	Plan           product.ExpandedPlan
-	Method         enum.PayMethod
+	dryRun         bool                 // Only for upgrade preview.
+	Account        reader.FtcAccount    // Required. Who is paying.
+	Plan           product.ExpandedPlan // Required. What is purchased.
+	Method         enum.PayMethod       // Optional if no payment is actually involved.
 	WebhookBaseURL string
 
 	WxAppID null.String
 }
 
-// NewUpgradeConfig is used to build an upgrade intent, or
-// free upgrade. It does not involve any payment providers.
-func NewUpgradeConfig(a reader.FtcAccount, plan product.ExpandedPlan) PaymentConfig {
+func NewPayment(account reader.FtcAccount, plan product.ExpandedPlan) PaymentConfig {
 	return PaymentConfig{
-		Account: a,
+		Account: account,
 		Plan:    plan,
 	}
 }
 
-func (c PaymentConfig) WithPreview(p bool) PaymentConfig {
-	c.dryRun = p
+func (c PaymentConfig) WithAlipay() PaymentConfig {
+	c.Method = enum.PayMethodAli
+	return c
+}
+
+func (c PaymentConfig) WithWxpay(appID string) PaymentConfig {
+	c.Method = enum.PayMethodWx
+	c.WxAppID = null.StringFrom(appID)
+	return c
+}
+
+func (c PaymentConfig) WithUpgrade(preview bool) PaymentConfig {
+	c.dryRun = preview
 	return c
 }
 
