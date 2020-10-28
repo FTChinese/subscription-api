@@ -1,16 +1,18 @@
 version: '2'
 
 vars:
+  PORT: 8200
+  VERSION: {sh: git tag -l --sort=-v:refname | head -n 1}
   BUILD_DIR: build
+  SRC_DIR: .
   BINARY: subscription-api
-  VERSION: {sh: git describe --tags}
-  LDFLAGS: -ldflags "-w -s -X main.version={{.VERSION}} -X main.buildAt={{now | date "2006-01-02T15:04:05Z07:00"}}"
+  LDFLAGS: -ldflags "-w -s -X main.version={{.VERSION}} -X main.build={{now | date "2006-01-02T15:04:05Z07:00"}} main.port={{.PORT}}"
 
 tasks:
   build:
     desc: Build the go binary for current platform.
     cmds:
-      - go build {{.LDFLAGS}} -o {{.BUILD_DIR}}/{{.BINARY}}{{exeExt}} -v .
+      - go build -o {{.BUILD_DIR}}/{{.BINARY}}{{exeExt}} {{.LDFLAGS}}  -v {{.SRC_DIR}}
 
   run:
     desc: Run the program
