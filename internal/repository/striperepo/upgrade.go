@@ -73,6 +73,6 @@ func (env Env) UpgradeSubscription(input stripePkg.SubsInput) (stripePkg.SubsRes
 	return stripePkg.SubsResult{
 		StripeSubs: ss,
 		Member:     newMmb,
-		Snapshot:   mmb.Snapshot(enum.SnapshotReasonDelete),
+		Snapshot:   mmb.Snapshot(reader.ArchiverStripeUpgrade),
 	}, nil
 }
