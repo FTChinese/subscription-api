@@ -2,7 +2,6 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"net/http"
 )
@@ -14,16 +13,21 @@ func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	id, _ := getURLParam(req, "id").ToString()
+	origTxID, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
 
-	sub, err := router.iapRepo.LoadSubs(id)
+	sub, err := router.iapRepo.LoadSubs(origTxID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	b, err := iaprepo.LoadReceipt(sub.BaseSchema)
+	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound()
@@ -35,7 +39,7 @@ func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
 		Receipt string `json:"receipt"`
 	}{
 		Subscription: sub,
-		Receipt:      string(b),
+		Receipt:      receipt,
 	}
 
 	_ = render.New(w).OK(data)
