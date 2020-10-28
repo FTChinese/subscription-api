@@ -99,7 +99,7 @@ func (env Env) CreateSubscription(input stripePkg.SubsInput) (stripePkg.SubsResu
 	return stripePkg.SubsResult{
 		StripeSubs: ss,
 		Member:     newMmb,
-		Snapshot:   mmb.Snapshot(enum.SnapshotReasonDelete),
+		Snapshot:   mmb.Snapshot(reader.ArchiverStripeCreate),
 	}, err
 }
 
