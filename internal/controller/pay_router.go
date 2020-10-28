@@ -100,7 +100,7 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := router.readerRepo.FtcAccountByFtcID(order.FtcID.String)
+	account, err := router.readerRepo.AccountByFtcID(order.FtcID.String)
 
 	if err != nil {
 		return err
@@ -149,11 +149,6 @@ func (router PayRouter) processCfmResult(result subs.ConfirmationResult) {
 		if err != nil {
 			sugar.Error(err)
 		}
-	}
-
-	err := router.readerRepo.LinkSubs(reader.NewSubsLink(result.Membership))
-	if err != nil {
-		sugar.Error(err)
 	}
 
 	if err := router.sendConfirmationEmail(result.Order); err != nil {
