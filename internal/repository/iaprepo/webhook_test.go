@@ -45,7 +45,7 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 		{
 			name: "Save notification",
 			args: args{
-				w: wh.Schema(),
+				w: apple.NewWebHookSchema(wh),
 			},
 			wantErr: false,
 		},
