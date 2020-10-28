@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// ProratedOrder is the balance of an order upon upgrading.
+// ProratedOrder is the calculated result of BalanceSource.
 type ProratedOrder struct {
 	OrderID        string      `db:"order_id"` // Balance source order's order.
 	Balance        float64     `db:"balance"`
@@ -18,7 +18,7 @@ type ProratedOrder struct {
 	UpgradeOrderID string      `db:"upgrade_order_id"` // The order id to perform upgrade.
 }
 
-// BalanceSource is used to retrieve confirmed orders with unused portion.
+// BalanceSource is the DB schema used to retrieve confirmed orders with unused portion.
 type BalanceSource struct {
 	OrderID   string      `db:"order_id"`
 	Amount    float64     `db:"charged_amount"` // Retrieve only
@@ -107,11 +107,11 @@ func (w Wallet) ReadableBalance() string {
 	return fmt.Sprintf("%s%.2f", "CNY", w.Balance)
 }
 
-// ConvertBalance calculates how many billing cycles could a user's current
+// ConvertLength calculates how many billing cycles could a user's current
 // balance be converted to.
 // If the balance is less thant a plan's price, returns the default duration;
 // otherwise calculate
-func (w Wallet) ConvertBalance(p product.ExpandedPlan) product.Duration {
+func (w Wallet) ConvertLength(p product.Plan) product.Duration {
 	if w.Balance == 0 || w.Balance <= p.Price {
 		return product.DefaultDuration()
 	}
@@ -127,42 +127,4 @@ func (w Wallet) ConvertBalance(p product.ExpandedPlan) product.Duration {
 		CycleCount: cycles,
 		ExtraDays:  int64(days),
 	}
-}
-
-func (w Wallet) CheckOut(p product.ExpandedPlan) Checkout {
-	dur := w.ConvertBalance(p)
-
-	charge := p.Payable()
-
-	// If user's wallet has balance.
-	if w.Balance > 0 {
-		charge.Amount = charge.Amount - w.Balance
-	}
-
-	// If balance exceeds payable amount
-	if charge.Amount < 0 {
-		charge.Amount = 0
-	}
-
-	return Checkout{
-		Charge:   charge,
-		Duration: dur,
-	}
-}
-
-// WithUpgradeOrder updates the wallet's sources after upgrading order created.
-func (w Wallet) WithUpgradeOrder(o Order) Wallet {
-	isFreeUpgrade := o.IsFreeUpgrade()
-	now := chrono.TimeNow()
-
-	for i, v := range w.Sources {
-		v.UpgradeOrderID = o.ID
-		if isFreeUpgrade {
-			v.ConsumedUTC = now
-		}
-
-		w.Sources[i] = v
-	}
-
-	return w
 }
