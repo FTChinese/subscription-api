@@ -149,6 +149,10 @@ func (m Membership) IsStripe() bool {
 }
 
 // IsIAP tests whether this membership comes from Apple.
+// This is actually not necessary. However, as People are allowed to changed DB directly, if an IAP membership is
+// changed to other payment methods, and chances are high that humans only change the payment method column but
+// do not nullify the AppleSubsID field, which is probably true since it is hard for human to find out apple's original
+// transaction id.
 func (m Membership) IsIAP() bool {
 	return !m.IsZero() && m.PaymentMethod == enum.PayMethodApple && m.AppleSubsID.Valid
 }
@@ -397,14 +401,14 @@ func (m Membership) ValidateMergeIAP(iapMember Membership, iapExpires chrono.Tim
 }
 
 // Snapshot takes a snapshot of membership, usually before modifying it.
-func (m Membership) Snapshot(reason enum.SnapshotReason) MemberSnapshot {
+func (m Membership) Snapshot(by Archiver) MemberSnapshot {
 	if m.IsZero() {
 		return MemberSnapshot{}
 	}
 
 	return MemberSnapshot{
 		SnapshotID: GenerateSnapshotID(),
-		Reason:     reason,
+		CreatedBy:  null.StringFrom(by.String()),
 		CreatedUTC: chrono.TimeNow(),
 		Membership: m,
 	}
