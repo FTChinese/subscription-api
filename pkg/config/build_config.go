@@ -54,6 +54,7 @@ func (c BuildConfig) Production() bool {
 	return c.production
 }
 
+// WebHookBaseURL determines which host to use upon app startup based on running environment.
 func (c BuildConfig) WebHookBaseURL() string {
 	if c.sandbox {
 		return "http://www.ftacademy.cn/api/sandbox"
