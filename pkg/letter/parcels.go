@@ -129,6 +129,29 @@ func NewIAPLinkParcel(account reader.FtcAccount, m reader.Membership) (postoffic
 	}, nil
 }
 
+func NewIAPUnlinkParcel(account reader.FtcAccount, m reader.Membership) (postoffice.Parcel, error) {
+	ctx := CtxIAPLinked{
+		UserName:   account.NormalizeName(),
+		Email:      account.Email,
+		Tier:       m.Tier,
+		ExpireDate: m.ExpireDate,
+	}
+
+	body, err := RenderIAPUnlinked(ctx)
+	if err != nil {
+		return postoffice.Parcel{}, err
+	}
+
+	return postoffice.Parcel{
+		FromAddress: "no-reply@ftchinese.com",
+		FromName:    "FT中文网会员订阅",
+		ToAddress:   account.Email,
+		ToName:      ctx.UserName,
+		Subject:     "取消关联iOS订阅",
+		Body:        body,
+	}, nil
+}
+
 //func (a Account) StripeSubParcel(s *stripe.Subscription) (postoffice.Parcel, error) {
 //	tmpl, err := template.New("stripe_sub").Parse(letterStripeSub)
 //
