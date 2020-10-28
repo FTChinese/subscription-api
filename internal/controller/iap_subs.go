@@ -3,14 +3,31 @@ package controller
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"net/http"
 )
 
+// ListSubs gets a list of a user's apple subscription.
+//
+// GET /apple/subs?ftc_id=<uuid>
 func (router IAPRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
+	err := req.ParseForm()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
 	p := gorest.GetPagination(req)
-	list, err := router.iapRepo.ListSubs(p)
+	ftcID := req.FormValue("ftc_id")
+	if ftcID == "" {
+		_ = render.New(w).Unprocessable(&render.ValidationError{
+			Message: "Missing required field ftc_id",
+			Field:   "ftc_id",
+			Code:    render.CodeMissing,
+		})
+	}
+
+	list, err := router.iapRepo.ListSubs(ftcID, p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -21,6 +38,8 @@ func (router IAPRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
 
 // UpsertSubs performs exactly the same step as VerifyReceipt.
 // The two only differs in the data they send back.
+//
+// POST /apple/subs
 func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -62,6 +81,8 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 
 // LoadSubs retrieves apple.Subscription for the specified
 // original transaction id.
+//
+// GET /apple/subs/{id}
 func (router IAPRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 	id, err := getURLParam(req, "id").ToString()
 	if err != nil {
@@ -81,11 +102,13 @@ func (router IAPRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 // RefreshSubs updates an existing apple receipt and optional associated membership.
 // Returns apple.Subscription which contains the essential
 // fields to represent a user's subscription.
+//
+// PATCH /apple/subs/{id}
 func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	originalTxID, err := getURLParam(req, "id").ToString()
+	origTxID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -94,7 +117,7 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 
 	// Find existing subscription data for this original transaction id.
 	// If not found, returns 404.
-	sub, err := router.iapRepo.LoadSubs(originalTxID)
+	sub, err := router.iapRepo.LoadSubs(origTxID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -103,14 +126,14 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 
 	// Load the receipt file from disk.
 	// If error occurred, returns 404.
-	b, err := iaprepo.LoadReceipt(sub.BaseSchema)
+	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound()
 		return
 	}
 
-	resp, resErr := router.doVerification(string(b))
+	resp, resErr := router.doVerification(receipt)
 	if resErr != nil {
 		sugar.Error(err)
 		_ = render.New(w).JSON(resErr.StatusCode, resErr)
