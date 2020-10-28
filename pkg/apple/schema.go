@@ -76,39 +76,3 @@ type PendingRenewalSchema struct {
 	PriceConsentStatus       null.String `db:"price_consent_status"`
 	ProductID                string      `db:"product_id"`
 }
-
-// ReceiptToken is a row to save the receipt data from a request
-// so that later we can re-validate this receipt.
-type ReceiptToken struct {
-	BaseSchema
-	LatestReceipt string `db:"latest_receipt"`
-}
-
-// WebHookSchema saves the value of WebHook root fields and the values of its LatestTransaction fields.
-type WebHookSchema struct {
-	BaseTransactionSchema
-	AppItemID int64 `db:"app_item_id"`
-	ItemID    int64 `db:"item_id"`
-
-	// Root elements
-	AutoRenewAdamID             int64            `db:"auto_renew_adam_id"`
-	AutoRenewProductID          string           `db:"auto_renew_product_id"`
-	AutoRenewStatus             null.Bool        `db:"auto_renew_status"`
-	AutoRenewStatusChangeDateMs int64            `db:"auto_renew_status_change_date_ms"`
-	ExpirationIntent            null.String      `db:"expiration_intent"`
-	NotificationType            NotificationType `db:"notification_type"`
-	Password                    string           `db:"password"`
-	Status                      int64            `db:"status"`
-}
-
-// Save the receipt as a token for status polling.
-const StmtSaveReceiptToken = `
-INSERT INTO premium.apple_receipt_token
-SET environment = :environment,
-	original_transaction_id = :original_transaction_id,
-	latest_receipt = :latest_receipt,
-	updated_utc = UTC_TIMESTAMP(),
-	created_utc = UTC_TIMESTAMP()
-ON DUPLICATE KEY UPDATE
-	latest_receipt = :latest_receipt,
-	updated_utc = UTC_TIMESTAMP()`
