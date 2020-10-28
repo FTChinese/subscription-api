@@ -87,6 +87,17 @@ FT中文网用户 {{.UserName}},
 在其他平台使用FT中文网账号登录即可实现跨平台阅读。
 
 感谢您对FT中文网的支持。如需帮助，请联系客服：subscriber.service@ftchinese.com。`,
+	keyIAPUnlinked: `
+FT中文网用户 {{.UserName}},
+
+您的FT中文网账号 {{.Email}} 已经取消了与iOS平台上订阅的FT中文网会员服务的关联。
+
+订阅产品：{{.Tier.StringCN}}
+到期日期：{{.ExpireDate}}
+
+该订阅可以关联其他FT中文网账号。
+
+感谢您对FT中文网的支持。如需帮助，请联系客服：subscriber.service@ftchinese.com。`,
 }
 
 // Data used to compile this template:
