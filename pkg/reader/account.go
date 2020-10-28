@@ -12,6 +12,7 @@ type FtcAccount struct {
 	StripeID null.String `json:"stripeId" db:"stripe_id"`
 	Email    string      `json:"email" db:"email"`
 	UserName null.String `json:"userName" db:"user_name"`
+	VIP      bool        `json:"vip" db:"is_vip"`
 }
 
 func (a FtcAccount) MemberID() MemberID {
@@ -22,8 +23,16 @@ func (a FtcAccount) MemberID() MemberID {
 	}.MustNormalize()
 }
 
-func (a FtcAccount) IsSandbox() bool {
-	return strings.HasSuffix(a.Email, ".sandbox@ftchinese.com")
+func (a FtcAccount) IsTest() bool {
+	return strings.HasSuffix(a.Email, ".test@ftchinese.com")
+}
+
+func (a FtcAccount) IsFtc() bool {
+	return a.FtcID != ""
+}
+
+func (a FtcAccount) IsWxOnly() bool {
+	return a.FtcID == "" && a.UnionID.Valid
 }
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
