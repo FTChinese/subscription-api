@@ -99,9 +99,9 @@ func (u *UnifiedReceipt) Parse() {
 	u.latestTransaction = u.findLatestTransaction()
 }
 
-// ReceiptToken builds the data to save the latest receipt token.
-func (u *UnifiedReceipt) ReceiptToken() ReceiptToken {
-	return ReceiptToken{
+// ReceiptSchema builds the data to save the latest receipt token.
+func (u *UnifiedReceipt) ReceiptToken() ReceiptSchema {
+	return ReceiptSchema{
 		BaseSchema: BaseSchema{
 			Environment:           u.Environment,
 			OriginalTransactionID: u.latestTransaction.OriginalTransactionID,
@@ -113,7 +113,7 @@ func (u *UnifiedReceipt) ReceiptToken() ReceiptToken {
 // findPendingRenewal loops over the PendingRenewalInfo array
 // to find the element that matches the latest receipt.
 // Returns a zero instance if not found.
-// The zero value if valid since we're only interested in
+// The zero value is valid since we're only interested in
 // the auto renew field which should default to false.
 func (u *UnifiedReceipt) findPendingRenewal() PendingRenewal {
 	if u.PendingRenewalInfo == nil {
