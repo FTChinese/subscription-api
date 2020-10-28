@@ -3,10 +3,8 @@ package subs
 import (
 	"errors"
 	"fmt"
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/guregu/null"
 )
 
 // FreeUpgrade contains the data after creating/upgrading/renewing a membership.
@@ -97,12 +95,6 @@ func (b *ConfirmationBuilder) Build() (ConfirmationResult, error) {
 	return ConfirmationResult{
 		Order:      order,
 		Membership: m,
-		Snapshot: reader.MemberSnapshot{
-			SnapshotID: reader.GenerateSnapshotID(),
-			Reason:     reader.GetSnapshotReason(order.Kind),
-			CreatedUTC: chrono.TimeNow(),
-			OrderID:    null.StringFrom(order.ID),
-			Membership: b.membership,
-		},
+		Snapshot:   b.membership.Snapshot(reader.FtcArchiver(order.Kind)).WithOrder(order.ID),
 	}, nil
 }
