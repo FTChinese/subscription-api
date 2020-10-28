@@ -2,7 +2,6 @@ package iaprepo
 
 import (
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"log"
@@ -12,10 +11,10 @@ import (
 // optionally updated membership if it is linked to a ftc membership.
 // This is used by verify receipt, refresh subscription, webhook, and polling.
 // The returned membership is empty if the subscription is not linked to an FTC account.
-func (env Env) SaveSubs(s apple.Subscription) (apple.SubsResult, error) {
+func (env Env) SaveSubs(s apple.Subscription) (reader.MemberSnapshot, error) {
 	err := env.upsertSubscription(s)
 	if err != nil {
-		return apple.SubsResult{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	return env.updateMembership(s)
@@ -23,6 +22,7 @@ func (env Env) SaveSubs(s apple.Subscription) (apple.SubsResult, error) {
 
 // upsertSubscription saves an Subscription instance
 // built from the latest transaction, or update it if exists.
+// Note the ftc_user_id field won't be touched here.
 func (env Env) upsertSubscription(s apple.Subscription) error {
 	_, err := env.db.NamedExec(apple.StmtUpsertSubs, s)
 
@@ -33,16 +33,16 @@ func (env Env) upsertSubscription(s apple.Subscription) error {
 	return nil
 }
 
-// updateMembership update subs.Membership if it is linked to an apple subscription.
-// Return a subs.MemberSnapshot if this subscription is linked to ftc account; otherwise it is empty.
-func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) {
+// updateMembership update subs.Membership if it is linked to an apple subscription,
+// and returns a snapshot of membership if it is actually touched.
+func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.BeginTx()
 	if err != nil {
 		sugar.Error(err)
-		return apple.SubsResult{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	// Retrieve membership by original transaction id.
@@ -52,39 +52,35 @@ func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) 
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return apple.SubsResult{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	// If the subscription is not linked to FTC account, return empty MemberSnapshot and not error.
 	// We need to take into account a situation where payment method is not apple but apple subscription id is not empty.
-	if !currMember.IsIAP() {
-		sugar.Info("Membership liked to original transaction id %s is either empty or non-iap")
+	if !s.ShouldUpdate(currMember) {
+		sugar.Info("Membership liked to original transaction id %s is either empty or non-iap, or expires later")
 		_ = tx.Rollback()
-		return apple.SubsResult{
-			InitialLink: false,
-			Member:      reader.Membership{},
-			Snapshot:    reader.MemberSnapshot{},
-		}, nil
+		return reader.MemberSnapshot{}, nil
 	}
 
+	// IAP membership exists. Update it.
+	// Since we are polling IAP everyday, chances of membership
+	// staying the same are every high.
+	// We should compare the old and new memberships expiration time.
 	newMember := s.BuildOn(currMember)
 
 	if err := tx.UpdateMember(newMember); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return apple.SubsResult{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return apple.SubsResult{}, err
+		return reader.MemberSnapshot{}, err
 	}
 
-	return apple.SubsResult{
-		InitialLink: false,
-		Member:      currMember,
-		Snapshot:    currMember.Snapshot(enum.SnapshotReasonIapUpdate),
-	}, nil
+	return currMember.Snapshot(reader.ArchiverAppleVerify), nil
 }
 
 func (env Env) LoadSubs(originalID string) (apple.Subscription, error) {
@@ -108,9 +104,9 @@ func (env Env) countSubs() (int64, error) {
 	return count, nil
 }
 
-func (env Env) listSubs(p gorest.Pagination) ([]apple.Subscription, error) {
+func (env Env) listSubs(ftcID string, p gorest.Pagination) ([]apple.Subscription, error) {
 	var s = make([]apple.Subscription, 0)
-	err := env.db.Select(&s, apple.StmtListSubs, p.Limit, p.Offset())
+	err := env.db.Select(&s, apple.StmtListSubs, ftcID, p.Limit, p.Offset())
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +114,7 @@ func (env Env) listSubs(p gorest.Pagination) ([]apple.Subscription, error) {
 	return s, nil
 }
 
-func (env Env) ListSubs(p gorest.Pagination) (apple.SubsList, error) {
+func (env Env) ListSubs(ftcID string, p gorest.Pagination) (apple.SubsList, error) {
 	countCh := make(chan int64)
 	listCh := make(chan apple.SubsList)
 
@@ -134,7 +130,7 @@ func (env Env) ListSubs(p gorest.Pagination) (apple.SubsList, error) {
 
 	go func() {
 		defer close(listCh)
-		s, err := env.listSubs(p)
+		s, err := env.listSubs(ftcID, p)
 		listCh <- apple.SubsList{
 			Total:      0,
 			Pagination: gorest.Pagination{},
