@@ -1,21 +1,23 @@
 package wechat
 
 import (
+	"github.com/FTChinese/go-rest/render"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 )
 
 // UnifiedOrderResp is wechat's response for prepay.
-type UnifiedOrderResp struct {
+type UnifiedOrder struct {
 	Resp
-	TradeType  null.String `db:"trade_type"`
-	PrepayID   null.String `db:"prepay_id"`
-	QRCode     null.String `db:"qr_code"`
-	MWebURL    null.String `db:"mobile_redirect_url"`
-	FtcOrderID string      `db:"order_id"`
+	TradeType  null.String             `db:"trade_type"`
+	PrepayID   null.String             `db:"prepay_id"`
+	QRCode     null.String             `db:"qr_code"`
+	MWebURL    null.String             `db:"mobile_redirect_url"`
+	FtcOrderID string                  `db:"order_id"`
+	Invalid    *render.ValidationError `db:"-"`
 }
 
-func (o UnifiedOrderResp) Params() wxpay.Params {
+func (o UnifiedOrder) Params() wxpay.Params {
 	p := o.BaseParams()
 
 	p.SetString("prepay_id", o.PrepayID.String)
@@ -36,8 +38,8 @@ func (o UnifiedOrderResp) Params() wxpay.Params {
 // mch_id:1504993271
 // nonce_str:aOyCOfOvWZQZkRwp
 // ]
-func NewUnifiedOrderResp(orderID string, p wxpay.Params) UnifiedOrderResp {
-	r := UnifiedOrderResp{
+func NewUnifiedOrderResp(orderID string, p wxpay.Params) UnifiedOrder {
+	r := UnifiedOrder{
 		FtcOrderID: orderID,
 	}
 

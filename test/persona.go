@@ -213,7 +213,7 @@ func (p *Persona) WxOrderBuilder() *subs.OrderBuilder {
 		SetWebhookURL(CFG.WebHookBaseURL()).
 		SetTest(false).
 		SetWxAppID(WxPayApp.AppID).
-		SetWxParams(wechat.UnifiedOrder{
+		SetWxParams(wechat.UnifiedOrderConfig{
 			IP:        p.IP,
 			TradeType: wechat.TradeTypeApp,
 			OpenID:    "",
@@ -236,7 +236,7 @@ func (p *Persona) CreateOrder() subs.Order {
 
 	if p.payMethod == enum.PayMethodWx {
 		builder.SetWxAppID(WxPayApp.AppID).
-			SetWxParams(wechat.UnifiedOrder{
+			SetWxParams(wechat.UnifiedOrderConfig{
 				IP:        p.IP,
 				TradeType: wechat.TradeTypeMobile,
 				OpenID:    "",
@@ -290,7 +290,7 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 
 	switch p.payMethod {
 	case enum.PayMethodWx:
-		result, err := subs.NewWxPayResult(WxNotification(order))
+		result, err := subs.NewWxWebhookResult(WxNotification(order))
 		if err != nil {
 			panic(err)
 		}
@@ -298,7 +298,7 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 
 	case enum.PayMethodAli:
 		n := AliNoti(order)
-		result, err := subs.NewAliPayResult(&n)
+		result, err := subs.NewAliWebhookResult(&n)
 		if err != nil {
 			panic(err)
 		}

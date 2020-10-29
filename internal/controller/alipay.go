@@ -71,24 +71,29 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		config := subs.PaymentConfig{
-			Account:        account,
-			Plan:           plan,
-			Method:         enum.PayMethodAli,
-			WebhookBaseURL: router.config.WebHookBaseURL(),
-		}
+		config := subs.NewPayment(account, plan).
+			WithAlipay(
+				router.config.WebHookBaseURL(),
+			)
 
-		order, err := router.subRepo.CreateOrder(config)
+		pi, err := router.subRepo.CreateOrder(config)
 		if err != nil {
 			_ = render.New(w).InternalServerError(err.Error())
 			return
 		}
 
-		sugar.Infof("Created order: %+v", order)
+		sugar.Infof("Created order: %+v", pi.Order)
 
 		go func() {
-			err := router.subRepo.SaveOrderClient(client.OrderClient{
-				OrderID: order.ID,
+			if pi.Kind == enum.OrderKindUpgrade {
+				err := router.subRepo.SaveProratedOrders(pi.ProratedOrders())
+				if err != nil {
+					sugar.Error(err)
+				}
+			}
+
+			err := router.subRepo.LogOrderMeta(subs.OrderMeta{
+				OrderID: pi.Order.ID,
 				Client:  clientApp,
 			})
 			if err != nil {
@@ -98,58 +103,38 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		switch kind {
 		case ali.EntryApp:
-			// Generate signature and creates a string of query
-			// parameter.
-			queryStr, err := router.aliPay.TradeAppPay(
-				order.AliAppPay())
-
-			sugar.Infof("App pay param: %+v\n", queryStr)
-
+			param, err := router.aliPayClient.SignAppPay(pi.AliAppPayParam())
 			if err != nil {
 				sugar.Error(err)
-				_ = render.New(w).BadRequest(err.Error())
+				_ = render.New(w).InternalServerError(err.Error())
 				return
 			}
+			sugar.Infof("App pay param: %+v\n", param)
 
-			_ = render.New(w).
-				JSON(http.StatusOK, subs.AlipayNativeIntent{
-					Order: order,
-					Param: queryStr,
-				})
+			_ = render.New(w).OK(pi.AliAppPayIntent(param))
 			return
 
 		case ali.EntryDesktopWeb:
-			redirectURL, err := router.aliPay.TradePagePay(
-				order.AliDesktopPay(input.ReturnURL),
-			)
+			url, err := router.aliPayClient.DesktopPayRedirectTo(
+				pi.AliDesktopPayParam(
+					input.ReturnURL))
+
 			if err != nil {
 				sugar.Error(err)
-				_ = render.New(w).BadRequest(err.Error())
+				_ = render.New(w).InternalServerError(err.Error())
 				return
 			}
-
-			sugar.Infof("Ali desktop browser redirect url: %+v\n", redirectURL)
-
-			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserIntent{
-				Order:       order,
-				RedirectURL: redirectURL.String(),
-			})
+			_ = render.New(w).OK(pi.AliPayBrowserIntent(url))
 
 		case ali.EntryMobileWeb:
-			redirectURL, err := router.aliPay.TradeWapPay(
-				order.AliWapPay(input.ReturnURL),
-			)
+			url, err := router.aliPayClient.MobileWebRedirectTo(pi.AliWapPayParam(input.ReturnURL))
 			if err != nil {
 				sugar.Error(err)
-				_ = render.New(w).BadRequest(err.Error())
+				_ = render.New(w).InternalServerError(err.Error())
 				return
 			}
-			sugar.Infof("Ali mobile browser redirect url: %+v\n", redirectURL)
 
-			_ = render.New(w).JSON(http.StatusOK, subs.AlipayBrowserIntent{
-				Order:       order,
-				RedirectURL: input.ReturnURL,
-			})
+			_ = render.New(w).OK(pi.AliPayBrowserIntent(url))
 		}
 	}
 }
@@ -179,13 +164,22 @@ func (router PayRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	result, respErr := router.queryAliOrder(order)
-	if respErr != nil {
-		_ = render.New(w).JSON(respErr.StatusCode, respErr)
+	payRes, err := router.verifyAliPayment(order)
+	if err != nil {
+		_ = render.New(w).InternalServerError(err.Error())
 		return
 	}
 
-	_ = render.New(w).OK(result)
+	if !payRes.IsSuccess() {
+		_ = render.New(w).OK(payRes)
+		return
+	}
+
+	if !order.IsConfirmed() {
+		_ = router.processQueryResult(payRes)
+	}
+
+	_ = render.New(w).OK(payRes)
 }
 
 // AliWebHook handles alipay server-side notification.
@@ -205,9 +199,8 @@ func (router PayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If err is nil, then the signature is verified.
-	noti, err := router.aliPay.GetTradeNotification(req)
-	sugar.Infof("+%v", noti)
-
+	payload, err := router.aliPayClient.GetWebhookPayload(req)
+	sugar.Infof("+%v", payload)
 	if err != nil {
 		sugar.Error(err)
 
@@ -217,27 +210,17 @@ func (router PayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// 4、验证app_id是否为该商户本身
-	if noti.AppId != router.aliAppID {
-		sugar.Infof("Expected %s, actual %s", router.aliAppID, noti.AppId)
-
-		if _, err := w.Write([]byte(fail)); err != nil {
-			sugar.Error(err)
-		}
-		return
-	}
-
 	go func() {
-		if err := router.subRepo.SaveAliNotification(*noti); err != nil {
+		if err := router.subRepo.SaveAliNotification(*payload); err != nil {
 			sugar.Error(err)
 		}
 	}()
 
 	// 在支付宝的业务通知中，只有交易通知状态为TRADE_SUCCESS或TRADE_FINISHED时，支付宝才会认定为买家付款成功。
-	if !ali.IsPaySuccess(noti) {
-		sugar.Infof("Status %s", noti.TradeStatus)
+	if !ali.IsStatusSuccess(payload.TradeStatus) {
+		sugar.Infof("Status %s", payload.TradeStatus)
 
-		if ali.ShouldRetry(noti) {
+		if ali.ShouldRetry(payload) {
 			if _, err := w.Write([]byte(fail)); err != nil {
 				sugar.Error(err)
 			}
@@ -250,7 +233,7 @@ func (router PayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	payResult, err := subs.NewAliPayResult(noti)
+	payResult, err := subs.NewAliWebhookResult(payload)
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）

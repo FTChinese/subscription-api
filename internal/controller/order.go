@@ -33,13 +33,12 @@ func (router PayRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) 
 	}
 
 	var paidResult subs.PaymentResult
-	var respErr *render.ResponseError
 	switch order.PaymentMethod {
 	case enum.PayMethodWx:
-		paidResult, respErr = router.queryWxOrder(order)
+		paidResult, err = router.verifyWxPayment(order)
 
 	case enum.PayMethodAli:
-		paidResult, respErr = router.queryAliOrder(order)
+		paidResult, err = router.verifyAliPayment(order)
 
 	default:
 		sugar.Error("Manual confirmation: not ali or wx order")
@@ -51,9 +50,9 @@ func (router PayRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	if respErr != nil {
-		sugar.Error(respErr)
-		_ = render.New(w).JSON(respErr.StatusCode, respErr)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).InternalServerError(err.Error())
 		return
 	}
 

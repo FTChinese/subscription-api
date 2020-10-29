@@ -5,14 +5,14 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
-func (env Env) CreateOrder(config subs.PaymentConfig) (subs.Order, error) {
+func (env Env) CreateOrder(config subs.PaymentConfig) (subs.PaymentIntent, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return subs.Order{}, err
+		return subs.PaymentIntent{}, err
 	}
 
 	// Step 1: Retrieve membership for this user.
@@ -23,7 +23,7 @@ func (env Env) CreateOrder(config subs.PaymentConfig) (subs.Order, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.Order{}, err
+		return subs.PaymentIntent{}, err
 	}
 	sugar.Infof("Membership retrieved %+v", member)
 
@@ -32,7 +32,7 @@ func (env Env) CreateOrder(config subs.PaymentConfig) (subs.Order, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.Order{}, err
+		return subs.PaymentIntent{}, err
 	}
 	sugar.Infof("Subscription kind %s", kind)
 
@@ -54,46 +54,63 @@ func (env Env) CreateOrder(config subs.PaymentConfig) (subs.Order, error) {
 		if err != nil {
 			sugar.Error(err)
 			_ = otx.Rollback()
-			return subs.Order{}, err
+			return subs.PaymentIntent{}, err
 		}
 		sugar.Infof("Find balance source: %+v", balanceSources)
 	}
 
-	checkout := config.Checkout(balanceSources, kind)
-
-	order, err := config.BuildOrder(checkout)
+	pi, err := config.BuildIntent(balanceSources, kind)
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.Order{}, err
+		return subs.PaymentIntent{}, err
 	}
 
 	// Step 4: Save this order.
-	if err := otx.SaveOrder(order); err != nil {
+	if err := otx.SaveOrder(pi.Order); err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.Order{}, err
+		return subs.PaymentIntent{}, err
 	}
-	sugar.Infof("Order saved %s", order.ID)
-
-	// Step 5: Save prorated orders for upgrade.
-	if kind == enum.OrderKindUpgrade {
-		err := otx.SaveProratedOrders(checkout.ProratedOrders(order))
-		if err != nil {
-			sugar.Error(err)
-			_ = otx.Rollback()
-			return subs.Order{}, err
-		}
-	}
+	sugar.Infof("Order saved %s", pi.Order.ID)
 
 	if err := otx.Commit(); err != nil {
 		sugar.Error(err)
-		return subs.Order{}, err
+		return subs.PaymentIntent{}, err
 	}
 
-	return order, nil
+	return pi, nil
 }
 
+func (env Env) SaveProratedOrders(pos []subs.ProratedOrder) error {
+	for _, v := range pos {
+		_, err := env.db.NamedExec(
+			subs.StmtSaveProratedOrder,
+			v)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (env Env) LogOrderMeta(m subs.OrderMeta) error {
+
+	_, err := env.db.NamedExec(
+		subs.StmtInsertOrderMeta,
+		m)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RetrieveOrder loads an order by its id.
+// TODO: for wechat order, fill up wx app id if missing.
 func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 	var order subs.Order
 

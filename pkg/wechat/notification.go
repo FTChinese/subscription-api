@@ -19,31 +19,7 @@ type Notification struct {
 	TransactionID null.String `db:"transaction_id"`
 	FTCOrderID    null.String `db:"ftc_order_id"`
 	TimeEnd       null.String `db:"time_end"`
-	params        wxpay.Params
-}
-
-// Params turns the struct into wxpay.Param so that we
-// could generate a signature.
-// This is used for mocking only.
-func (n Notification) Params() wxpay.Params {
-	p := n.BaseParams()
-
-	var subscribed string
-	if n.IsSubscribed {
-		subscribed = "Y"
-	} else {
-		subscribed = "N"
-	}
-
-	p.SetString("openid", n.OpenID.String)
-	p.SetString("is_subscribe", subscribed)
-	p.SetString("bank_type", n.BankType.String)
-	p.SetInt64("total_fee", n.TotalFee.Int64)
-	p.SetString("transaction_id", n.TransactionID.String)
-	p.SetString("out_trade_no", n.FTCOrderID.String)
-	p.SetString("time_end", n.TimeEnd.String)
-
-	return p
+	RawParams     wxpay.Params
 }
 
 // NewNotification converts wxpay.Params type to Notification type.
@@ -86,15 +62,31 @@ func NewNotification(p wxpay.Params) Notification {
 		n.TimeEnd = null.StringFrom(v)
 	}
 
-	n.params = p
+	n.RawParams = p
 
 	return n
 }
 
-func (n Notification) IsPriceMatched(cent int64) bool {
-	if n.TotalFee.IsZero() {
-		return false
+// Params turns the struct into wxpay.Param so that we
+// could generate a signature.
+// This is used for mocking only.
+func (n Notification) Params() wxpay.Params {
+	p := n.BaseParams()
+
+	var subscribed string
+	if n.IsSubscribed {
+		subscribed = "Y"
+	} else {
+		subscribed = "N"
 	}
 
-	return n.TotalFee.Int64 == cent
+	p.SetString("openid", n.OpenID.String)
+	p.SetString("is_subscribe", subscribed)
+	p.SetString("bank_type", n.BankType.String)
+	p.SetInt64("total_fee", n.TotalFee.Int64)
+	p.SetString("transaction_id", n.TransactionID.String)
+	p.SetString("out_trade_no", n.FTCOrderID.String)
+	p.SetString("time_end", n.TimeEnd.String)
+
+	return p
 }

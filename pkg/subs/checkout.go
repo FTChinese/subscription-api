@@ -54,40 +54,42 @@ func (c Checkout) WithTest(t bool) Checkout {
 	return c
 }
 
-func (c Checkout) ProratedOrders(upgradeTo Order) []ProratedOrder {
-	if c.Kind != enum.OrderKindUpgrade {
-		return nil
-	}
-	if c.Wallet.Sources == nil || len(c.Wallet.Sources) == 0 {
-		return nil
-	}
-
-	now := chrono.TimeNow()
-
-	for i, v := range c.Wallet.Sources {
-		v.UpgradeOrderID = upgradeTo.ID
-		if c.IsFree {
-			v.ConsumedUTC = now
-		}
-
-		c.Wallet.Sources[i] = v
-	}
-
-	return c.Wallet.Sources
-}
+//func (c Checkout) ProratedOrders(upgradeTo Order) []ProratedOrder {
+//	if c.Kind != enum.OrderKindUpgrade {
+//		return nil
+//	}
+//	if c.Wallet.Sources == nil || len(c.Wallet.Sources) == 0 {
+//		return nil
+//	}
+//
+//	now := chrono.TimeNow()
+//
+//	for i, v := range c.Wallet.Sources {
+//		v.UpgradeOrderID = upgradeTo.ID
+//		if c.IsFree {
+//			v.ConsumedUTC = now
+//		}
+//
+//		c.Wallet.Sources[i] = v
+//	}
+//
+//	return c.Wallet.Sources
+//}
 
 // PaymentConfig collects parameters to build an order.
 // These are experimental refactoring.
 type PaymentConfig struct {
-	dryRun         bool                 // Only for upgrade preview.
-	Account        reader.FtcAccount    // Required. Who is paying.
-	Plan           product.ExpandedPlan // Required. What is purchased.
-	Method         enum.PayMethod       // Optional if no payment is actually involved.
-	WebhookBaseURL string
+	dryRun     bool                 // Only for upgrade preview.
+	Account    reader.FtcAccount    // Required. Who is paying.
+	Plan       product.ExpandedPlan // Required. What is purchased.
+	Method     enum.PayMethod       // Optional if no payment is actually involved.
+	WebhookURL string
 
 	WxAppID null.String
 }
 
+// NewPayment initializes a new payment session.
+// Who and what to purchase are the minimal data required to start payment.
 func NewPayment(account reader.FtcAccount, plan product.ExpandedPlan) PaymentConfig {
 	return PaymentConfig{
 		Account: account,
@@ -95,33 +97,23 @@ func NewPayment(account reader.FtcAccount, plan product.ExpandedPlan) PaymentCon
 	}
 }
 
-func (c PaymentConfig) WithAlipay() PaymentConfig {
+func (c PaymentConfig) WithAlipay(whBaseURL string) PaymentConfig {
 	c.Method = enum.PayMethodAli
+	c.WebhookURL = whBaseURL + "/webhook/alipay"
+
 	return c
 }
 
-func (c PaymentConfig) WithWxpay(appID string) PaymentConfig {
+func (c PaymentConfig) WithWxpay(appID string, whBaseURL string) PaymentConfig {
 	c.Method = enum.PayMethodWx
 	c.WxAppID = null.StringFrom(appID)
+	c.WebhookURL = whBaseURL + "/webhook/wxpay"
 	return c
 }
 
 func (c PaymentConfig) WithUpgrade(preview bool) PaymentConfig {
 	c.dryRun = preview
 	return c
-}
-
-func (c PaymentConfig) WebhookURL() string {
-	switch c.Method {
-	case enum.PayMethodAli:
-		return c.WebhookBaseURL + "/webhook/alipay"
-
-	case enum.PayMethodWx:
-		return c.WebhookBaseURL + "/webhook/wxpay"
-
-	default:
-		return ""
-	}
 }
 
 func (c PaymentConfig) Checkout(bs []BalanceSource, kind enum.OrderKind) Checkout {
@@ -190,8 +182,20 @@ func (c PaymentConfig) BuildOrder(checkout Checkout) (Order, error) {
 		CreatedAt:       chrono.TimeNow(),
 		ConfirmedAt:     chrono.Time{},
 		LiveMode:        checkout.LiveMode,
-		CheckedItem:     checkout.Item,
-		WebhookURL:      c.WebhookURL(),
+	}, nil
+}
+
+func (c PaymentConfig) BuildIntent(bs []BalanceSource, kind enum.OrderKind) (PaymentIntent, error) {
+	checkout := c.Checkout(bs, kind)
+	order, err := c.BuildOrder(checkout)
+	if err != nil {
+		return PaymentIntent{}, err
+	}
+
+	return PaymentIntent{
+		Checkout:   Checkout{},
+		Order:      order,
+		WebhookURL: c.WebhookURL,
 	}, nil
 }
 
