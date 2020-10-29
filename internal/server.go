@@ -137,6 +137,9 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		// List a user's orders
+		//r.Get("/", payRouter.ListOrders)
+		//r.Get("/{id}", payRouter.LoadOrder)
+		//r.Post("/{id}/verify-payment", payRouter.VerifyPayment)
 
 		// Manually confirm an order if not confirmed yet by verifying against
 		// alipay of wxpay APIs. If it's already confirmed, nothing changes.

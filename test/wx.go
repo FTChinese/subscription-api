@@ -60,7 +60,7 @@ func WxNotification(order subs.Order) wechat.Notification {
 func WxXMLPrepay() string {
 	nonce, _ := gorest.RandomHex(16)
 
-	uni := wechat.UnifiedOrderResp{
+	uni := wechat.UnifiedOrder{
 		PrepayID: null.StringFrom(rand.String(36)),
 	}
 
@@ -80,7 +80,7 @@ func WxXMLPrepay() string {
 	return wxpay.MapToXml(p)
 }
 
-func WxPrepay(orderID string) wechat.UnifiedOrderResp {
+func WxPrepay(orderID string) wechat.UnifiedOrder {
 	uni := WxXMLPrepay()
 
 	p, err := wechat.DecodeXML(strings.NewReader(uni))

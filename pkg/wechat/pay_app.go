@@ -27,9 +27,10 @@ var appCfgs = []appConfig{
 }
 
 type PayApp struct {
-	AppID  string `mapstructure:"app_id"`
-	MchID  string `mapstructure:"mch_id"`
-	APIKey string `mapstructure:"api_key"`
+	Platform TradeType
+	AppID    string `mapstructure:"app_id"`
+	MchID    string `mapstructure:"mch_id"`
+	APIKey   string `mapstructure:"api_key"`
 }
 
 func NewPayApp(key string) (PayApp, error) {
@@ -63,10 +64,19 @@ func (a PayApp) Validate() error {
 	return nil
 }
 
-func (a PayApp) Ensure() error {
-	if a.AppID == "" || a.MchID == "" || a.APIKey == "" {
-		return errors.New("wechat pay app_id, mch_id or secret cannot be empty")
+func MustGetPayApps() []PayApp {
+	keys := map[string]TradeType{
+		"wxapp.native_app":    TradeTypeApp,
+		"wxapp.webrowser_pay": TradeTypeJSAPI,
+		"wxapp.web_pay":       TradeTypeDesktop, // Also used as TradeTypeMobile
 	}
 
-	return nil
+	var apps []PayApp
+	for k, p := range keys {
+		app := MustNewPayApp(k)
+		app.Platform = p
+		apps = append(apps, app)
+	}
+
+	return apps
 }

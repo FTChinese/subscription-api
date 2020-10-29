@@ -46,7 +46,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 	}
 
 	type args struct {
-		resp wechat.UnifiedOrderResp
+		resp wechat.UnifiedOrder
 	}
 	tests := []struct {
 		name    string

@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
-	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
 	"time"
 )
@@ -30,14 +29,4 @@ var planStdYear = product.ExpandedPlan{
 		},
 		Description: null.String{},
 	},
-}
-
-func mustGetWxClient() wechat.Client {
-	client, err := wechat.InitPayClients().GetClientByPlatform(wechat.TradeTypeApp)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return client
 }

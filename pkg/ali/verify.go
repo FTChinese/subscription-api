@@ -24,15 +24,6 @@ var TradeStatusMsg = map[string]string{
 	TradeStatusFinished: "交易结束",
 }
 
-func IsPaySuccess(n *alipay.TradeNotification) bool {
-	switch n.TradeStatus {
-	case TradeStatusSuccess, TradeStatusFinished:
-		return true
-	default:
-		return false
-	}
-}
-
 func IsStatusSuccess(s string) bool {
 	switch s {
 	case TradeStatusSuccess, TradeStatusFinished:

@@ -80,7 +80,7 @@ func (router PayRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 
 	// Save client app info
 	go func() {
-		_ = router.subRepo.SaveOrderClient(client.OrderClient{
+		_ = router.subRepo.LogOrderMeta(subs.OrderMeta{
 			OrderID: intent.Result.Order.ID,
 			Client:  clientApp,
 		})
