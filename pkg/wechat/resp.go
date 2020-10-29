@@ -41,22 +41,6 @@ type Resp struct {
 	ErrorMessage null.String `db:"error_message"`
 }
 
-// BaseParams turns Resp to a wxpay.Params.
-// This is used to mock wechat pay's response.
-// Used only for testing.
-func (r Resp) BaseParams() wxpay.Params {
-	p := make(wxpay.Params)
-
-	p.SetString("return_code", r.StatusCode)
-	p.SetString("return_msg", r.StatusMessage)
-	p.SetString("appid", r.AppID.String)
-	p.SetString("mch_id", r.MID.String)
-	p.SetString("nonce_str", r.Nonce.String)
-	p.SetString("result_code", r.ResultCode.String)
-
-	return p
-}
-
 // Populate fills the fields of Resp from wxpay.Params
 func (r *Resp) Populate(p wxpay.Params) {
 
@@ -118,6 +102,7 @@ func (r Resp) IsStatusValid() error {
 // But its check is incomplete since `return_code == FAIL`
 // is regarded as ok.
 // You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
+// TODO: split into 3 steps: validate return_code, then validate result_code, then validate identify.
 func (r Resp) Validate(app PayApp) *render.ValidationError {
 	// If `return_code` is FAIL
 	// 此字段是通信标识，非交易标识，交易是否成功需要查看trade_state来判断
@@ -146,7 +131,7 @@ func (r Resp) Validate(app PayApp) *render.ValidationError {
 		reason := &render.ValidationError{
 			Message: "Missing app id",
 			Field:   "app_id",
-			Code:    view.CodeInvalid,
+			Code:    render.CodeInvalid,
 		}
 
 		return reason
@@ -156,7 +141,7 @@ func (r Resp) Validate(app PayApp) *render.ValidationError {
 		reason := &render.ValidationError{
 			Message: "Missing merchant id",
 			Field:   "mch_id",
-			Code:    view.CodeInvalid,
+			Code:    render.CodeInvalid,
 		}
 
 		return reason
@@ -186,5 +171,21 @@ func (r Resp) Validate(app PayApp) *render.ValidationError {
 }
 
 func (r Resp) IsOrderNotFound() bool {
-	return r.ResultCode.String == ResultCodeOrderNotFound
+	return r.ErrorCode.String == ResultCodeOrderNotFound
+}
+
+// BaseParams turns Resp to a wxpay.Params.
+// This is used to mock wechat pay's response.
+// Used only for testing.
+func (r Resp) BaseParams() wxpay.Params {
+	p := make(wxpay.Params)
+
+	p.SetString("return_code", r.StatusCode)
+	p.SetString("return_msg", r.StatusMessage)
+	p.SetString("appid", r.AppID.String)
+	p.SetString("mch_id", r.MID.String)
+	p.SetString("nonce_str", r.Nonce.String)
+	p.SetString("result_code", r.ResultCode.String)
+
+	return p
 }

@@ -2,6 +2,7 @@ package test
 
 import (
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -25,7 +26,7 @@ var (
 	Cache       *cache.Cache
 	WxOAuthApp  wxlogin.OAuthApp
 	WxPayApp    wechat.PayApp
-	WxPayClient wechat.Client
+	WxPayClient subrepo.WxPayClient
 	AliApp      ali.App
 )
 
@@ -37,6 +38,6 @@ func init() {
 	Cache = cache.New(cache.DefaultExpiration, 0)
 	WxOAuthApp = wxlogin.MustNewOAuthApp("wxapp.native_app")
 	WxPayApp = wechat.MustNewPayApp("wxapp.native_app")
-	WxPayClient = wechat.NewClient(WxPayApp)
+	WxPayClient = subrepo.NewWxPayClient(WxPayApp)
 	AliApp = ali.MustInitApp()
 }

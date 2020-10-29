@@ -39,6 +39,7 @@ type OrderQueryResp struct {
 	TransactionID  null.String `db:"transaction_id"`
 	FTCOrderID     null.String `db:"ftc_order_id"`
 	TimeEnd        null.String `db:"time_end"` // 20141030133525
+	Invalid        *render.ValidationError
 }
 
 func NewOrderQueryResp(p wxpay.Params) OrderQueryResp {
@@ -90,6 +91,7 @@ func NewOrderQueryResp(p wxpay.Params) OrderQueryResp {
 }
 
 // ValidateTradeState ensures the transaction is actually done successfully.
+// TODO: move to PaymentResult.IsSuccessful.
 func (r OrderQueryResp) ValidateTradeState() *render.ValidationError {
 	if r.TradeState.String == TradeStateSuccess {
 		return nil

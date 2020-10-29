@@ -2,12 +2,7 @@ package subs
 
 import (
 	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/product"
-	"github.com/FTChinese/subscription-api/pkg/wechat"
-	"github.com/objcoding/wxpay"
-	"github.com/smartwalle/alipay"
-	"log"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -43,79 +38,6 @@ type Order struct {
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
 	PurchasedPeriod
 	LiveMode bool `json:"live"`
-
-	// Not from/to DB.
-	CheckedItem
-	WebhookURL string `json:"-"`
-}
-
-func (o Order) AliAppPay() alipay.AliPayTradeAppPay {
-	log.Printf("Using web hook url: %s", o.WebhookURL)
-
-	return alipay.AliPayTradeAppPay{
-		TradePay: alipay.TradePay{
-			NotifyURL:   o.WebhookURL,
-			Subject:     o.Plan.PaymentTitle(o.Kind),
-			OutTradeNo:  o.ID,
-			TotalAmount: o.AliPrice(),
-			ProductCode: ali.ProductCodeApp.String(),
-			GoodsType:   "0",
-		},
-	}
-}
-
-func (o Order) AliDesktopPay(retURL string) alipay.AliPayTradePagePay {
-	return alipay.AliPayTradePagePay{
-		TradePay: alipay.TradePay{
-			NotifyURL:   o.WebhookURL,
-			ReturnURL:   retURL,
-			Subject:     o.Plan.PaymentTitle(o.Kind),
-			OutTradeNo:  o.ID,
-			TotalAmount: o.AliPrice(),
-			ProductCode: ali.ProductCodeWeb.String(),
-			GoodsType:   "0",
-		},
-	}
-}
-
-func (o Order) AliWapPay(retURL string) alipay.AliPayTradeWapPay {
-	return alipay.AliPayTradeWapPay{
-		TradePay: alipay.TradePay{
-			NotifyURL:   o.WebhookURL,
-			ReturnURL:   retURL,
-			Subject:     o.Plan.PaymentTitle(o.Kind),
-			OutTradeNo:  o.ID,
-			TotalAmount: o.AliPrice(),
-			ProductCode: ali.ProductCodeWeb.String(),
-			GoodsType:   "0",
-		},
-	}
-}
-
-func (o Order) WxPay(wxParam wechat.UnifiedOrder) wxpay.Params {
-
-	log.Printf("Using web hook url: %s", o.WebhookURL)
-
-	p := make(wxpay.Params)
-	p.SetString("body", o.Plan.PaymentTitle(o.Kind))
-	p.SetString("out_trade_no", o.ID)
-	p.SetInt64("total_fee", o.AmountInCent())
-	p.SetString("spbill_create_ip", wxParam.IP)
-	p.SetString("notify_url", o.WebhookURL)
-	// APP for native app
-	// NATIVE for web site
-	// JSAPI for web page opend inside wechat browser
-	p.SetString("trade_type", wxParam.TradeType.String())
-
-	switch wxParam.TradeType {
-	case wechat.TradeTypeDesktop:
-		p.SetString("product_id", o.Plan.ID)
-
-	case wechat.TradeTypeJSAPI:
-		p.SetString("openid", wxParam.OpenID)
-	}
-
-	return p
 }
 
 func (o Order) IsZero() bool {
