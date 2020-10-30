@@ -63,6 +63,94 @@ func (router SubsRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	_ = render.New(w).DBError(err)
 }
 
+//https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
+func (router SubsRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, error) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	if order.WxAppID.IsZero() {
+		order.WxAppID = null.StringFrom(wxAppNativeApp)
+	}
+
+	payClient, err := router.wxPayClients.ClientByAppID(order.WxAppID.String)
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, err
+	}
+
+	wxOrder, err := payClient.QueryOrder(order)
+	// If there are any errors when querying order.
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, err
+	}
+
+	go func() {
+		if err := router.subRepo.SaveWxQueryResp(wxOrder); err != nil {
+			sugar.Error(err)
+		}
+	}()
+
+	// Validate if response is correct. This does not verify the payment is successful.
+	// field: return_code, code: invalid
+	// field: result_code, code: invalid
+	// field: app_id, code: invalid
+	// field: mch_id, code: invalid
+	err = wxOrder.Validate(payClient.GetApp())
+	if err != nil {
+		return subs.PaymentResult{}, err
+	}
+
+	return subs.NewWxQueryResult(wxOrder), nil
+}
+
+// https://opendocs.alipay.com/apis/api_1/alipay.trade.query/
+func (router SubsRouter) verifyAliPayment(order subs.Order) (subs.PaymentResult, error) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	aliOrder, err := router.aliPayClient.QueryOrder(order.ID)
+
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, err
+	}
+
+	return subs.NewAliQueryResult(aliOrder), nil
+}
+
+func (router SubsRouter) processPaymentResult(result subs.PaymentResult) (subs.ConfirmationResult, error) {
+	confirmed, cfmErr := router.subRepo.ConfirmOrder(result)
+	if cfmErr != nil {
+		return confirmed, cfmErr
+	}
+
+	go func() {
+		router.processCfmResult(confirmed)
+	}()
+
+	return confirmed, nil
+}
+
+// Backup previous membership if exists;
+// Save uuid to id link table;
+// Send confirmation email.
+func (router SubsRouter) processCfmResult(result subs.ConfirmationResult) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	if !result.Snapshot.IsZero() {
+		err := router.readerRepo.BackUpMember(result.Snapshot)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}
+
+	if err := router.sendConfirmationEmail(result.Order); err != nil {
+		sugar.Error(err)
+	}
+}
+
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
 func (router SubsRouter) sendConfirmationEmail(order subs.Order) error {
 	defer router.logger.Sync()
@@ -109,99 +197,5 @@ func (router SubsRouter) sendConfirmationEmail(order subs.Order) error {
 		sugar.Error(err)
 		return err
 	}
-	return nil
-}
-
-// Backup previous membership if exists;
-// Save uuid to id link table;
-// Send confirmation email.
-func (router SubsRouter) processCfmResult(result subs.ConfirmationResult) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	if !result.Snapshot.IsZero() {
-		err := router.readerRepo.BackUpMember(result.Snapshot)
-		if err != nil {
-			sugar.Error(err)
-		}
-	}
-
-	if err := router.sendConfirmationEmail(result.Order); err != nil {
-		sugar.Error(err)
-	}
-}
-
-//https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
-func (router SubsRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, error) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	if order.WxAppID.IsZero() {
-		order.WxAppID = null.StringFrom(wxAppNativeApp)
-	}
-
-	payClient, err := router.wxPayClients.ClientByAppID(order.WxAppID.String)
-	if err != nil {
-		sugar.Error(err)
-		return subs.PaymentResult{}, err
-	}
-
-	wxOrder, err := payClient.QueryOrder(order)
-	// If there are any errors when querying order.
-	if err != nil {
-		sugar.Error(err)
-		return subs.PaymentResult{}, err
-	}
-
-	go func() {
-		if err := router.subRepo.SaveWxQueryResp(wxOrder); err != nil {
-			sugar.Error(err)
-		}
-	}()
-
-	// Validate if response is correct. This does not verify the payment is successful.
-	// field: return_code, code: invalid
-	// field: result_code, code: invalid
-	// field: app_id, code: invalid
-	// field: mch_id, code: invalid
-	if ve := wxOrder.Validate(payClient.GetApp()); ve != nil {
-
-		return subs.PaymentResult{}, ve
-	}
-
-	return subs.NewWxQueryResult(wxOrder), nil
-}
-
-// https://opendocs.alipay.com/apis/api_1/alipay.trade.query/
-func (router SubsRouter) verifyAliPayment(order subs.Order) (subs.PaymentResult, error) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	aliOrder, err := router.aliPayClient.QueryOrder(order.ID)
-
-	if err != nil {
-		sugar.Error(err)
-		return subs.PaymentResult{}, err
-	}
-
-	return subs.NewAliQueryResult(aliOrder), nil
-}
-
-func (router SubsRouter) processQueryResult(result subs.PaymentResult) error {
-	confirmed, cfmErr := router.subRepo.ConfirmOrder(result)
-	if cfmErr != nil {
-		go func() {
-			_ = router.subRepo.SaveConfirmationResult(
-				cfmErr.Schema(result.OrderID),
-			)
-		}()
-
-		return cfmErr
-	}
-
-	go func() {
-		router.processCfmResult(confirmed)
-	}()
-
 	return nil
 }
