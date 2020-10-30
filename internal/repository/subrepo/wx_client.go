@@ -28,7 +28,7 @@ func NewWxClientStore(apps []wechat.PayApp, logger *zap.Logger) WxPayClientStore
 	}
 
 	for i, app := range apps {
-		store.clients = append(store.clients, NewWxPayClient(app))
+		store.clients = append(store.clients, NewWxPayClient(app, logger))
 
 		store.indexByPlatform[app.Platform] = i
 		// Desktop and mobile browser use the same app.
@@ -67,19 +67,21 @@ func (s WxPayClientStore) ClientByAppID(id string) (WxPayClient, error) {
 
 // Client extends wxpay.Client
 type WxPayClient struct {
-	app wechat.PayApp
-	sdk *wxpay.Client
+	app    wechat.PayApp
+	sdk    *wxpay.Client
+	logger *zap.Logger
 }
 
 // NewClient creats a new instance of Client.
-func NewWxPayClient(app wechat.PayApp) WxPayClient {
+func NewWxPayClient(app wechat.PayApp, logger *zap.Logger) WxPayClient {
 	// Pay attention to the last parameter.
 	// It should always be false because Weixin's sandbox address does not work!
 	account := wxpay.NewAccount(app.AppID, app.MchID, app.APIKey, false)
 	c := wxpay.NewClient(account)
 	return WxPayClient{
-		app: app,
-		sdk: c,
+		app:    app,
+		sdk:    c,
+		logger: logger,
 	}
 }
 
@@ -103,6 +105,9 @@ func (c WxPayClient) CreateOrder(o wechat.OrderReq) (wechat.OrderResp, error) {
 
 //https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 func (c WxPayClient) QueryOrder(order subs.Order) (wechat.OrderQueryResp, error) {
+	defer c.logger.Sync()
+	sugar := c.logger.Sugar()
+
 	reqParams := make(wxpay.Params)
 	reqParams.SetString("out_trade_no", order.ID)
 
@@ -124,6 +129,8 @@ func (c WxPayClient) QueryOrder(order subs.Order) (wechat.OrderQueryResp, error)
 	// trade_state:NOTPAY
 	// trade_state_desc:订单未支付
 	respParams, err := c.sdk.OrderQuery(reqParams)
+
+	sugar.Infof("Query wx order: %v", respParams)
 
 	// If there are any errors when querying order.
 	if err != nil {
