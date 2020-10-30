@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestReaderEnv_FindAccountByFtcID(t *testing.T) {
+func TestReaderEnv_AccountByFtcID(t *testing.T) {
 	profile := test.NewPersona()
 	test.NewRepo().MustSaveAccount(profile.FtcAccount())
 
@@ -39,7 +39,7 @@ func TestReaderEnv_FindAccountByFtcID(t *testing.T) {
 	}
 }
 
-func TestReaderEnv_FindAccountByStripeID(t *testing.T) {
+func TestReaderEnv_AccountByStripeID(t *testing.T) {
 	profile := test.NewPersona()
 	test.NewRepo().MustSaveAccount(profile.FtcAccount())
 
