@@ -139,49 +139,6 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 	}
 }
 
-// Query verifies the payment status of an order against alipay api.
-// GET /alipay/query/{orderId}
-func (router SubsRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	orderID, err := getURLParam(req, "orderId").ToString()
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-
-	order, err := router.subRepo.RetrieveOrder(orderID)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	if order.PaymentMethod != enum.PayMethodAli {
-		_ = render.New(w).BadRequest("Order not paid via alipay")
-		return
-	}
-
-	payRes, err := router.verifyAliPayment(order)
-	if err != nil {
-		_ = render.New(w).InternalServerError(err.Error())
-		return
-	}
-
-	if !payRes.IsSuccess() {
-		_ = render.New(w).OK(payRes)
-		return
-	}
-
-	if !order.IsConfirmed() {
-		_ = router.processQueryResult(payRes)
-	}
-
-	_ = render.New(w).OK(payRes)
-}
-
 // AliWebHook handles alipay server-side notification.
 // POST /webhook/alipay
 func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
