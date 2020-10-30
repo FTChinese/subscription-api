@@ -7,7 +7,7 @@ SELECT
 	stripe_customer_id 		AS stripe_id,
 	email					AS email,
 	user_name 				AS user_name,
-	IFNULL(u.is_vip, FALSE) AS is_vip,
+	IFNULL(is_vip, FALSE) AS is_vip
 FROM cmstmp01.userinfo
 `
 
