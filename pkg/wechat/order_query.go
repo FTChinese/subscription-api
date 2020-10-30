@@ -18,7 +18,7 @@ const (
 
 // OrderQueryResp for https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 type OrderQueryResp struct {
-	Resp
+	BaseResp
 	// 以下字段在return_code 和result_code都为SUCCESS的时候有返回
 	OpenID    null.String `db:"open_id"`
 	TradeType null.String `db:"trade_type"` // APP
