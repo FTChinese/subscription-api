@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
 	"time"
 )
@@ -54,28 +55,6 @@ func (c Checkout) WithTest(t bool) Checkout {
 	return c
 }
 
-//func (c Checkout) ProratedOrders(upgradeTo Order) []ProratedOrder {
-//	if c.Kind != enum.OrderKindUpgrade {
-//		return nil
-//	}
-//	if c.Wallet.Sources == nil || len(c.Wallet.Sources) == 0 {
-//		return nil
-//	}
-//
-//	now := chrono.TimeNow()
-//
-//	for i, v := range c.Wallet.Sources {
-//		v.UpgradeOrderID = upgradeTo.ID
-//		if c.IsFree {
-//			v.ConsumedUTC = now
-//		}
-//
-//		c.Wallet.Sources[i] = v
-//	}
-//
-//	return c.Wallet.Sources
-//}
-
 // PaymentConfig collects parameters to build an order.
 // These are experimental refactoring.
 type PaymentConfig struct {
@@ -104,9 +83,9 @@ func (c PaymentConfig) WithAlipay(whBaseURL string) PaymentConfig {
 	return c
 }
 
-func (c PaymentConfig) WithWxpay(appID string, whBaseURL string) PaymentConfig {
+func (c PaymentConfig) WithWxpay(app wechat.PayApp, whBaseURL string) PaymentConfig {
 	c.Method = enum.PayMethodWx
-	c.WxAppID = null.StringFrom(appID)
+	c.WxAppID = null.StringFrom(app.AppID)
 	c.WebhookURL = whBaseURL + "/webhook/wxpay"
 	return c
 }
@@ -125,33 +104,37 @@ func (c PaymentConfig) Checkout(bs []BalanceSource, kind enum.OrderKind) Checkou
 		w = NewWallet(bs, time.Now())
 	}
 
-	period := w.ConvertLength(item.Plan)
+	duration := w.ConvertLength(item.Plan)
 
 	amount := item.Plan.Price - item.Discount.PriceOff.Float64 - w.Balance
 
 	// Balance is large enough to cover price.
 	if amount < 0 {
 		return Checkout{
-			Kind:   kind,
-			Wallet: w,
+			Kind:     kind,
+			Item:     item,
+			Wallet:   w,
+			Duration: duration,
 			Payable: product.Charge{
 				Amount:   0,
 				Currency: "cny",
 			},
-			Duration: period,
 			IsFree:   true,
+			LiveMode: true,
 		}.WithTest(c.Account.IsTest())
 	}
 
 	return Checkout{
 		Kind:   kind,
+		Item:   item,
 		Wallet: w,
 		Payable: product.Charge{
 			Amount:   amount,
 			Currency: "cny",
 		},
-		Duration: period,
+		Duration: duration,
 		IsFree:   false,
+		LiveMode: true,
 	}.WithTest(c.Account.IsTest())
 }
 
