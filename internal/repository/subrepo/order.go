@@ -28,11 +28,11 @@ func (env Env) CreateOrder(config subs.PaymentConfig) (subs.PaymentIntent, error
 	sugar.Infof("Membership retrieved %+v", member)
 
 	// Deduce order kind.
-	kind, err := member.AliWxSubsKind(config.Plan.Edition)
-	if err != nil {
-		sugar.Error(err)
+	kind, ve := member.AliWxSubsKind(config.Plan.Edition)
+	if ve != nil {
+		sugar.Error(ve)
 		_ = otx.Rollback()
-		return subs.PaymentIntent{}, err
+		return subs.PaymentIntent{}, ve
 	}
 	sugar.Infof("Subscription kind %s", kind)
 
