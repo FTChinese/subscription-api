@@ -43,7 +43,7 @@ func StartServer(s ServerStatus) {
 
 	guard := access.NewGuard(myDB)
 
-	payRouter := controller.NewPayRouter(myDB, promoCache, cfg, post, logger)
+	payRouter := controller.NewSubsRouter(myDB, promoCache, cfg, post, logger)
 	iapRouter := controller.NewIAPRouter(myDB, rdb, logger, post, cfg)
 	stripeRouter := controller.NewStripeRouter(myDB, cfg, logger)
 
