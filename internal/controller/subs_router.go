@@ -101,7 +101,7 @@ func (router SubsRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, 
 		return subs.PaymentResult{}, err
 	}
 
-	return subs.NewWxQueryResult(wxOrder), nil
+	return subs.NewWxPayResult(wxOrder), nil
 }
 
 // https://opendocs.alipay.com/apis/api_1/alipay.trade.query/
@@ -116,7 +116,7 @@ func (router SubsRouter) verifyAliPayment(order subs.Order) (subs.PaymentResult,
 		return subs.PaymentResult{}, err
 	}
 
-	return subs.NewAliQueryResult(aliOrder), nil
+	return subs.NewAliPayResult(aliOrder), nil
 }
 
 func (router SubsRouter) processPaymentResult(result subs.PaymentResult) (subs.ConfirmationResult, error) {
