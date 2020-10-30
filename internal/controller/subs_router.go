@@ -20,8 +20,8 @@ import (
 	"net/http"
 )
 
-// PayRouter is the base type used to handle shared payment operations.
-type PayRouter struct {
+// SubsRouter is the base type used to handle shared payment operations.
+type SubsRouter struct {
 	subRepo    subrepo.Env
 	readerRepo readerrepo.Env
 	prodRepo   products.Env
@@ -34,12 +34,12 @@ type PayRouter struct {
 	wxPayClients subrepo.WxPayClientStore
 }
 
-func NewPayRouter(db *sqlx.DB, c *cache.Cache, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) PayRouter {
+func NewSubsRouter(db *sqlx.DB, c *cache.Cache, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) SubsRouter {
 
 	aliApp := ali.MustInitApp()
 	wxApps := wechat.MustGetPayApps()
 
-	return PayRouter{
+	return SubsRouter{
 		subRepo:      subrepo.NewEnv(db, c, logger),
 		readerRepo:   readerrepo.NewEnv(db),
 		prodRepo:     products.NewEnv(db, c),
@@ -53,7 +53,7 @@ func NewPayRouter(db *sqlx.DB, c *cache.Cache, cfg config.BuildConfig, p postoff
 
 // Centralized error handling after order creation.
 // It handles the errors propagated from Membership.AliWxSubsKind(),
-func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
+func (router SubsRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	var ve *render.ValidationError
 	if errors.As(err, &ve) {
 		_ = render.New(w).Unprocessable(ve)
@@ -64,7 +64,7 @@ func (router PayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 }
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
-func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
+func (router SubsRouter) sendConfirmationEmail(order subs.Order) error {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -115,7 +115,7 @@ func (router PayRouter) sendConfirmationEmail(order subs.Order) error {
 // Backup previous membership if exists;
 // Save uuid to id link table;
 // Send confirmation email.
-func (router PayRouter) processCfmResult(result subs.ConfirmationResult) {
+func (router SubsRouter) processCfmResult(result subs.ConfirmationResult) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -132,7 +132,7 @@ func (router PayRouter) processCfmResult(result subs.ConfirmationResult) {
 }
 
 //https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
-func (router PayRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, error) {
+func (router SubsRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, error) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -173,7 +173,7 @@ func (router PayRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, e
 }
 
 // https://opendocs.alipay.com/apis/api_1/alipay.trade.query/
-func (router PayRouter) verifyAliPayment(order subs.Order) (subs.PaymentResult, error) {
+func (router SubsRouter) verifyAliPayment(order subs.Order) (subs.PaymentResult, error) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -187,7 +187,7 @@ func (router PayRouter) verifyAliPayment(order subs.Order) (subs.PaymentResult, 
 	return subs.NewAliQueryResult(aliOrder), nil
 }
 
-func (router PayRouter) processQueryResult(result subs.PaymentResult) error {
+func (router SubsRouter) processQueryResult(result subs.PaymentResult) error {
 	confirmed, cfmErr := router.subRepo.ConfirmOrder(result)
 	if cfmErr != nil {
 		go func() {

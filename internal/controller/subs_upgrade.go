@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func (router PayRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
+func (router SubsRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
 	readerIDs := getReaderIDs(req.Header)
 
 	account, err := router.readerRepo.FindAccount(readerIDs)
@@ -39,7 +39,7 @@ func (router PayRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request)
 }
 
 // FreeUpgrade handles free upgrade request.
-func (router PayRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
+func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 

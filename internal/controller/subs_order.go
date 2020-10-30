@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func (router PayRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) {
+func (router SubsRouter) ManualConfirm(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
