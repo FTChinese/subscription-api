@@ -48,7 +48,7 @@ func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
 }
 
 // SavePrepayResp saves Wechat prepay response for future analysis.
-func (env Env) SavePrepayResp(resp wechat.UnifiedOrder) error {
+func (env Env) SavePrepayResp(resp wechat.OrderResp) error {
 
 	_, err := env.db.NamedExec(
 		InsertWxPrepay,
