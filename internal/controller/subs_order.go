@@ -27,27 +27,86 @@ func (router SubsRouter) ManualConfirm(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	// Return error or data?
 	if order.IsConfirmed() {
 		_ = render.New(w).Forbidden("Order already confirmed")
 		return
 	}
 
-	var paidResult subs.PaymentResult
+	if !order.IsAliWxPay() {
+		_ = render.New(w).BadRequest("order not paid via ali or wx")
+		return
+	}
+
+	var payResult subs.PaymentResult
 	switch order.PaymentMethod {
 	case enum.PayMethodWx:
-		paidResult, err = router.verifyWxPayment(order)
+		payResult, err = router.verifyWxPayment(order)
 
 	case enum.PayMethodAli:
-		paidResult, err = router.verifyAliPayment(order)
+		payResult, err = router.verifyAliPayment(order)
+	}
 
-	default:
-		sugar.Error("Manual confirmation: not ali or wx order")
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: "Only orders paid via ali or wx is allowed",
-			Field:   "payMethod",
-			Code:    render.CodeInvalid,
-		})
+	sugar.Infof("Payment result: %+v", payResult)
+
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).InternalServerError(err.Error())
 		return
+	}
+
+	if !payResult.IsSuccess() {
+		_ = render.New(w).BadRequest("This order is not paid")
+		return
+	}
+
+	payResult.ConfirmedAt = chrono.TimeNow()
+
+	confirmed, err := router.processPaymentResult(payResult)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(confirmed.Order)
+}
+
+// VerifyPayment checks against payment provider's api to get
+// the payment result of an order.
+// GET /wxpay/query/{orderId}
+// GET /alipay/query/{orderId}
+// POST /orders/{id}/verify-payment
+func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	// Get ftc order id from URL
+	orderID, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	order, err := router.subRepo.RetrieveOrder(orderID)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	if !order.IsAliWxPay() {
+		_ = render.New(w).BadRequest("Order not paid vai alipay or wxpay")
+		return
+	}
+
+	var payResult subs.PaymentResult
+	switch order.PaymentMethod {
+	case enum.PayMethodWx:
+		payResult, err = router.verifyWxPayment(order)
+
+	case enum.PayMethodAli:
+		payResult, err = router.verifyAliPayment(order)
 	}
 
 	if err != nil {
@@ -56,28 +115,16 @@ func (router SubsRouter) ManualConfirm(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	sugar.Infof("Payment result: %+v", paidResult)
+	sugar.Infof("Payment result: %+v", payResult)
 
-	paidResult.ConfirmedAt = chrono.TimeNow()
-
-	confirmed, cfmErr := router.subRepo.ConfirmOrder(paidResult)
-	if cfmErr != nil {
-		sugar.Error(cfmErr)
-		_ = render.New(w).DBError(cfmErr)
+	if !payResult.IsSuccess() {
+		_ = render.New(w).OK(payResult)
 		return
 	}
 
-	if !confirmed.Snapshot.IsZero() {
-		go func() {
-			_ = router.readerRepo.BackUpMember(confirmed.Snapshot)
-		}()
+	if !order.IsConfirmed() {
+		_, _ = router.processPaymentResult(payResult)
 	}
 
-	go func() {
-		if err := router.sendConfirmationEmail(confirmed.Order); err != nil {
-			sugar.Error(err)
-		}
-	}()
-
-	_ = render.New(w).OK(confirmed.Order)
+	_ = render.New(w).OK(payResult)
 }
