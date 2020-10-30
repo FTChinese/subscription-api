@@ -87,21 +87,18 @@ func (c WxPayClient) GetApp() wechat.PayApp {
 	return c.app
 }
 
-func (c WxPayClient) CreateOrder(pi subs.PaymentIntent, cfg wechat.UnifiedOrderConfig) (wechat.UnifiedOrder, error) {
-	params := pi.WxPayParam(cfg)
-	resp, err := c.sdk.UnifiedOrder(params)
+func (c WxPayClient) Sign(p wxpay.Params) string {
+	return c.sdk.Sign(p)
+}
+
+func (c WxPayClient) CreateOrder(o wechat.OrderReq) (wechat.OrderResp, error) {
+
+	resp, err := c.sdk.UnifiedOrder(o.ToMap())
 	if err != nil {
-		return wechat.UnifiedOrder{}, err
+		return wechat.OrderResp{}, err
 	}
 
-	uo := wechat.NewUnifiedOrderResp(pi.Order.ID, resp)
-
-	ve := uo.Validate(c.app)
-	if ve != nil {
-		uo.Invalid = ve
-	}
-
-	return uo, nil
+	return wechat.NewOrderResp(o.SellerOrderID, resp), nil
 }
 
 //https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
@@ -136,46 +133,31 @@ func (c WxPayClient) QueryOrder(order subs.Order) (wechat.OrderQueryResp, error)
 	return wechat.NewOrderQueryResp(respParams), nil
 }
 
-func (c WxPayClient) InWxBrowserParams(u wechat.UnifiedOrder) wechat.InWxBrowserParams {
-	p := wechat.InWxBrowserParams{
-		Timestamp: wechat.GenerateTimestamp(),
-		Nonce:     wechat.GenerateNonce(),
-		Package:   "prepay_id=" + u.PrepayID.String,
-		SignType:  "MD5",
+func (c WxPayClient) ValidateWebhook(payload wechat.Notification) error {
+
+	err := payload.Validate(c.app)
+	if err != nil {
+		return err
 	}
 
-	p.Signature = c.sdk.Sign(p.ToMap(c.app.AppID))
+	if !c.sdk.ValidSign(payload.RawParams) {
+		return errors.New("invalid sign")
+	}
 
-	return p
+	return nil
 }
 
-// AppParams build the parameters required by native app pay.
-func (c WxPayClient) AppParams(u wechat.UnifiedOrder) wechat.AppOrderParams {
-	p := wechat.AppOrderParams{
-		AppID:     c.app.AppID,
-		PartnerID: u.MID.String,
-		PrepayID:  u.PrepayID.String,
-		Timestamp: wechat.GenerateTimestamp(),
-		Nonce:     wechat.GenerateNonce(),
-		Package:   "Sign=WXPay",
-	}
+func (c WxPayClient) SignJSApiParams(or wechat.OrderResp) wechat.JSApiParams {
+	p := wechat.NewJSApiParams(or)
 	p.Signature = c.sdk.Sign(p.ToMap())
 
 	return p
 }
 
-func (c WxPayClient) ValidateNotification(n wechat.Notification) error {
-	if err := n.IsStatusValid(); err != nil {
-		return err
-	}
+// SignAppParams build the parameters required by native app pay.
+func (c WxPayClient) SignAppParams(or wechat.OrderResp) wechat.NativeAppParams {
+	p := wechat.NewNativeAppParams(or)
+	p.Signature = c.sdk.Sign(p.ToMap())
 
-	if ve := n.Validate(c.app); ve != nil {
-		return errors.New(ve.Message)
-	}
-
-	if !c.sdk.ValidSign(n.RawParams) {
-		return errors.New("invalid sign")
-	}
-
-	return nil
+	return p
 }
