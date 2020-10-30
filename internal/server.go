@@ -93,8 +93,8 @@ func StartServer(s ServerStatus) {
 			Post("/app", payRouter.PlaceWxOrder(wechat.TradeTypeApp))
 
 		// Query order
-		// X-App-Id
-		r.Get("/query/{orderId}", payRouter.QueryWxOrder)
+		// Deprecated
+		r.Get("/query/{orderId}", payRouter.VerifyPayment)
 	})
 
 	// Require user id.
@@ -122,7 +122,8 @@ func StartServer(s ServerStatus) {
 		r.With(controller.UserOrUnionID).
 			Post("/app", payRouter.PlaceAliOrder(ali.EntryApp))
 
-		r.Get("/query/{orderId}", payRouter.QueryAliOrder)
+		// Deprecated.
+		r.Get("/query/{id}", payRouter.VerifyPayment)
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
@@ -139,7 +140,8 @@ func StartServer(s ServerStatus) {
 		// List a user's orders
 		//r.Get("/", payRouter.ListOrders)
 		//r.Get("/{id}", payRouter.LoadOrder)
-		//r.Post("/{id}/verify-payment", payRouter.VerifyPayment)
+		// Verify if an order is confirmed, and returns PaymentResult.
+		r.Post("/{id}/verify-payment", payRouter.VerifyPayment)
 
 		// Manually confirm an order if not confirmed yet by verifying against
 		// alipay of wxpay APIs. If it's already confirmed, nothing changes.
