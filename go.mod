@@ -4,8 +4,6 @@ require (
 	github.com/FTChinese/go-rest v0.6.0
 	github.com/asaskevich/govalidator v0.0.0-20200817114649-df4adffc9d8c
 	github.com/brianvoe/gofakeit/v5 v5.9.0
-	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-redis/redis/v8 v8.1.3
 	github.com/go-sql-driver/mysql v1.5.0
@@ -17,7 +15,7 @@ require (
 	github.com/objcoding/wxpay v1.0.6
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.8.0 // indirect
-	github.com/pkg/errors v0.9.1
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/segmentio/kafka-go v0.4.2
 	github.com/smartwalle/alipay v1.0.2
 	github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304 // indirect
@@ -36,7 +34,6 @@ require (
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
 	golang.org/x/sys v0.0.0-20200814200057-3d37ad5750ed // indirect
 	gopkg.in/ini.v1 v1.58.0 // indirect
-	moul.io/http2curl v1.0.0 // indirect
 )
 
 go 1.13
