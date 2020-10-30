@@ -92,8 +92,8 @@ func NewWxWebhookResult(payload wechat.Notification) (PaymentResult, error) {
 	}, nil
 }
 
-// NewWxQueryResult creates a new PaymentResult from the result of querying wechat order.
-func NewWxQueryResult(r wechat.OrderQueryResp) PaymentResult {
+// NewWxPayResult creates a new PaymentResult from the result of querying wechat order.
+func NewWxPayResult(r wechat.OrderQueryResp) PaymentResult {
 	return PaymentResult{
 		PaymentState:     r.TradeState.String,
 		PaymentStateDesc: r.TradeStateDesc.String,
@@ -104,7 +104,7 @@ func NewWxQueryResult(r wechat.OrderQueryResp) PaymentResult {
 	}
 }
 
-func NewAliQueryResult(r *alipay.AliPayTradeQueryResponse) PaymentResult {
+func NewAliPayResult(r *alipay.AliPayTradeQueryResponse) PaymentResult {
 	return PaymentResult{
 		PaymentState:     r.AliPayTradeQuery.TradeStatus,
 		PaymentStateDesc: ali.TradeStatusMsg[r.AliPayTradeQuery.TradeStatus],
