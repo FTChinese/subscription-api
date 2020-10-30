@@ -48,6 +48,10 @@ func (o Order) IsConfirmed() bool {
 	return !o.ConfirmedAt.IsZero()
 }
 
+func (o Order) IsAliWxPay() bool {
+	return o.PaymentMethod == enum.PayMethodAli || o.PaymentMethod == enum.PayMethodWx
+}
+
 // pick which date to use as start date upon confirmation.
 // expireDate refers to current membership's expireDate.
 func (o Order) pickStartDate(expireDate chrono.Date) chrono.Date {
