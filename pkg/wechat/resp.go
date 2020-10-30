@@ -2,8 +2,7 @@ package wechat
 
 import (
 	"errors"
-	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/go-rest/view"
+	"fmt"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 )
@@ -17,9 +16,9 @@ const (
 type BaseResp struct {
 	// return_code: SUCCESS/FAIL.
 	// 此字段是通信标识，非交易标识，交易是否成功需要查看trade_state来判断
-	StatusCode string `db:"status_code"`
+	ReturnCode string `db:"status_code"`
 	// return_msg. 返回信息，如非空，为错误原因
-	StatusMessage string `db:"status_message"`
+	ReturnMessage string `db:"status_message"`
 	// 以下字段在return_code为SUCCESS的时候有返回
 	// appid
 	AppID null.String `db:"app_id"`
@@ -41,11 +40,48 @@ type BaseResp struct {
 	ErrorMessage null.String `db:"error_message"`
 }
 
+func NewBaseResp(p wxpay.Params) BaseResp {
+	r := BaseResp{
+		ReturnCode:    p.GetString("return_code"),
+		ReturnMessage: p.GetString("return_msg"),
+		AppID:         null.String{},
+		MID:           null.String{},
+		Nonce:         null.String{},
+		Signature:     null.String{},
+		ResultCode:    null.String{},
+		ErrorCode:     null.String{},
+		ErrorMessage:  null.String{},
+	}
+
+	v, ok := p["appid"]
+	r.AppID = null.NewString(v, ok)
+
+	v, ok = p["mch_id"]
+	r.MID = null.NewString(v, ok)
+
+	v, ok = p["nonce_str"]
+	r.Nonce = null.NewString(v, ok)
+
+	v, ok = p["sign"]
+	r.Signature = null.NewString(v, ok)
+
+	v, ok = p["result_code"]
+	r.ResultCode = null.NewString(v, ok)
+
+	v, ok = p["err_code"]
+	r.ErrorCode = null.NewString(v, ok)
+
+	v, ok = p["err_code_des"]
+	r.ErrorMessage = null.NewString(v, ok)
+
+	return r
+}
+
 // Populate fills the fields of BaseResp from wxpay.Params
 func (r *BaseResp) Populate(p wxpay.Params) {
 
-	r.StatusCode = p.GetString("return_code")
-	r.StatusMessage = p.GetString("return_msg")
+	r.ReturnCode = p.GetString("return_code")
+	r.ReturnMessage = p.GetString("return_msg")
 
 	if v, ok := p["appid"]; ok {
 		r.AppID = null.StringFrom(v)
@@ -76,12 +112,12 @@ func (r *BaseResp) Populate(p wxpay.Params) {
 	}
 }
 
-// IsStatusValid checks if wechat reponse contains `return_code`.
+// ValidateResponded checks if wechat send back a response by checking if it contains `return_code`.
 // It does not check if `return_code` is SUCCESS of FAIL,
 // following `wxpay` package's convention.
-func (r BaseResp) IsStatusValid() error {
+func (r BaseResp) ValidateResponded() error {
 
-	switch r.StatusCode {
+	switch r.ReturnCode {
 	case "":
 		return errors.New("no return_code in XML")
 
@@ -89,8 +125,40 @@ func (r BaseResp) IsStatusValid() error {
 		return nil
 
 	default:
-		return errors.New("return_code value is invalid in XML")
+		return fmt.Errorf("invalid reponse: %s, %s", r.ReturnCode, r.ReturnMessage)
 	}
+}
+
+func (r BaseResp) ValidateReturnSuccess() error {
+	if r.ReturnCode == wxpay.Success {
+		return nil
+	}
+
+	return fmt.Errorf("wxpay api return_code not success: %s, %s", r.ReturnCode, r.ReturnCode)
+}
+
+func (r BaseResp) ValidateResultSuccess() error {
+	if r.ResultCode.Valid && r.ResultCode.String == wxpay.Success {
+		return nil
+	}
+
+	return fmt.Errorf("wxpay api result_code not success: %s, %s", r.ErrorCode.String, r.ErrorMessage.String)
+}
+
+func (r BaseResp) ValidateIdentity(app PayApp) error {
+	if r.AppID.String != app.AppID {
+		return errors.New("wxpay appid mismatched")
+	}
+
+	if r.MID.String != app.MchID {
+		return errors.New("wxpay mch_id mismatched")
+	}
+
+	return nil
+}
+
+func (r BaseResp) IsSuccess() bool {
+	return r.ReturnCode == wxpay.Success
 }
 
 // Validate wechat if wechat response itself is valid.
@@ -102,90 +170,19 @@ func (r BaseResp) IsStatusValid() error {
 // But its check is incomplete since `return_code == FAIL`
 // is regarded as ok.
 // You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
-// TODO: split into 3 steps: validate return_code, then validate result_code, then validate identify.
-func (r BaseResp) Validate(app PayApp) *render.ValidationError {
-	// If `return_code` is FAIL
-	// 此字段是通信标识，非交易标识，交易是否成功需要查看trade_state来判断
-	if r.StatusCode == wxpay.Fail {
-		reason := &render.ValidationError{
-			Message: r.StatusCode + ":" + r.StatusMessage,
-			Field:   "return_code",
-			Code:    render.CodeInvalid,
-		}
+func (r BaseResp) Validate(app PayApp) error {
 
-		return reason
+	if err := r.ValidateReturnSuccess(); err != nil {
+		return err
 	}
 
-	// If `result_code` is FAIL
-	if r.ResultCode.String == wxpay.Fail {
-		reason := &render.ValidationError{
-			Message: r.ErrorCode.String + ":" + r.ErrorMessage.String,
-			Field:   "result_code",
-			Code:    render.CodeInvalid,
-		}
-
-		return reason
+	if err := r.ValidateResultSuccess(); err != nil {
+		return err
 	}
 
-	if r.AppID.IsZero() {
-		reason := &render.ValidationError{
-			Message: "Missing app id",
-			Field:   "app_id",
-			Code:    render.CodeInvalid,
-		}
-
-		return reason
-	}
-
-	if r.MID.IsZero() {
-		reason := &render.ValidationError{
-			Message: "Missing merchant id",
-			Field:   "mch_id",
-			Code:    render.CodeInvalid,
-		}
-
-		return reason
-	}
-
-	if r.AppID.String != app.AppID {
-		reason := &render.ValidationError{
-			Message: "Missing or wrong app id",
-			Field:   "app_id",
-			Code:    view.CodeInvalid,
-		}
-
-		return reason
-	}
-
-	if r.MID.String != app.MchID {
-		reason := &render.ValidationError{
-			Message: "Missing or wrong merchant id",
-			Field:   "mch_id",
-			Code:    view.CodeInvalid,
-		}
-
-		return reason
+	if err := r.ValidateIdentity(app); err != nil {
+		return err
 	}
 
 	return nil
-}
-
-func (r BaseResp) IsOrderNotFound() bool {
-	return r.ErrorCode.String == ResultCodeOrderNotFound
-}
-
-// BaseParams turns BaseResp to a wxpay.Params.
-// This is used to mock wechat pay's response.
-// Used only for testing.
-func (r BaseResp) BaseParams() wxpay.Params {
-	p := make(wxpay.Params)
-
-	p.SetString("return_code", r.StatusCode)
-	p.SetString("return_msg", r.StatusMessage)
-	p.SetString("appid", r.AppID.String)
-	p.SetString("mch_id", r.MID.String)
-	p.SetString("nonce_str", r.Nonce.String)
-	p.SetString("result_code", r.ResultCode.String)
-
-	return p
 }
