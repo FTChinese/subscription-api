@@ -28,7 +28,7 @@ const (
 // tier: string;
 // cycle: string;
 // planId?: string;
-func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
+func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer router.logger.Sync()
 		sugar := router.logger.Sugar()
@@ -141,7 +141,7 @@ func (router PayRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 // Query verifies the payment status of an order against alipay api.
 // GET /alipay/query/{orderId}
-func (router PayRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) {
+func (router SubsRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -184,7 +184,7 @@ func (router PayRouter) QueryAliOrder(w http.ResponseWriter, req *http.Request) 
 
 // AliWebHook handles alipay server-side notification.
 // POST /webhook/alipay
-func (router PayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
+func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 

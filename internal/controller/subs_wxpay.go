@@ -22,7 +22,7 @@ import (
 // TODO: put all those fields in request body
 // tier: string; Currently acquired from URL param
 // cycle: string; Currently acquired from URL param
-func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFunc {
+func (router SubsRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFunc {
 
 	// Find the client to use for wxpay
 	payClient, err := router.wxPayClients.ClientByPlatform(tradeType)
@@ -167,7 +167,7 @@ func (router PayRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFun
 
 // WxWebHook implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
-func (router PayRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
+func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -269,7 +269,7 @@ func (router PayRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 // QueryWxOrder implements 查询订单
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 // GET /wxpay/query/{orderId}?app_id=<string>
-func (router PayRouter) QueryWxOrder(w http.ResponseWriter, req *http.Request) {
+func (router SubsRouter) QueryWxOrder(w http.ResponseWriter, req *http.Request) {
 
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
