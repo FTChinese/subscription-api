@@ -43,55 +43,74 @@ type OrderQueryResp struct {
 }
 
 func NewOrderQueryResp(p wxpay.Params) OrderQueryResp {
-	r := OrderQueryResp{}
-
-	r.Populate(p)
-
-	if v, ok := p["openid"]; ok {
-		r.OpenID = null.StringFrom(v)
+	r := OrderQueryResp{
+		BaseResp: NewBaseResp(p),
 	}
 
-	if v, ok := p["trade_type"]; ok {
-		r.TradeType = null.StringFrom(v)
-	}
+	//r.Populate(p)
+	v, ok := p["openid"]
+	r.OpenID = null.NewString(v, ok)
 
-	if v, ok := p["trade_state"]; ok {
-		r.TradeState = null.StringFrom(v)
-	}
+	//if v, ok := p["openid"]; ok {
+	//	r.OpenID = null.NewString(v, ok)
+	//}
 
-	if v, ok := p["bank_type"]; ok {
-		r.BankType = null.StringFrom(v)
-	}
+	v, ok = p["trade_type"]
+	r.TradeType = null.NewString(v, ok)
 
-	if price := p.GetInt64("total_fee"); price != 0 {
-		r.TotalFee = null.IntFrom(price)
-	}
+	//if v, ok := p["trade_type"]; ok {
+	//	r.TxKind = null.NewString(v, ok)
+	//}
 
-	if v, ok := p["fee_type"]; ok {
-		r.Currency = null.StringFrom(v)
-	}
+	v, ok = p["trade_state"]
+	r.TradeState = null.NewString(v, ok)
+	//if v, ok := p["trade_state"]; ok {
+	//	r.TradeState = null.NewString(v, ok)
+	//}
 
-	if v, ok := p["transaction_id"]; ok {
-		r.TransactionID = null.StringFrom(v)
-	}
+	v, ok = p["bank_type"]
+	r.BankType = null.NewString(v, ok)
+	//if v, ok := p["bank_type"]; ok {
+	//	r.BankType = null.NewString(v, ok)
+	//}
 
-	if v, ok := p["out_trade_no"]; ok {
-		r.FTCOrderID = null.StringFrom(v)
-	}
+	price := p.GetInt64("total_fee")
+	r.TotalFee = null.NewInt(price, price != 0)
 
-	if v, ok := p["time_end"]; ok {
-		r.TimeEnd = null.StringFrom(v)
-	}
+	v, ok = p["fee_type"]
+	r.Currency = null.NewString(v, ok)
+	//if v, ok := p["fee_type"]; ok {
+	//	r.Currency = null.NewString(v, ok)
+	//}
 
-	if v, ok := p["trade_state_desc"]; ok {
-		r.TradeStateDesc = null.StringFrom(v)
-	}
+	v, ok = p["transaction_id"]
+	r.TransactionID = null.NewString(v, ok)
+	//if v, ok := p["transaction_id"]; ok {
+	//	r.TransactionID = null.NewString(v, ok)
+	//}
+
+	v, ok = p["out_trade_no"]
+	r.FTCOrderID = null.NewString(v, ok)
+	//if v, ok := p["out_trade_no"]; ok {
+	//	r.FTCOrderID = null.NewString(v, ok)
+	//}
+
+	v, ok = p["time_end"]
+	r.TimeEnd = null.NewString(v, ok)
+	//if v, ok := p["time_end"]; ok {
+	//	r.TimeEnd = null.NewString(v, ok)
+	//}
+
+	v, ok = p["trade_state_desc"]
+	r.TradeStateDesc = null.NewString(v, ok)
+	//if v, ok := p["trade_state_desc"]; ok {
+	//	r.TradeStateDesc = null.NewString(v, ok)
+	//}
 
 	return r
 }
 
 // ValidateTradeState ensures the transaction is actually done successfully.
-// TODO: move to PaymentResult.IsSuccessful.
 func (r OrderQueryResp) ValidateTradeState() *render.ValidationError {
 	if r.TradeState.String == TradeStateSuccess {
 		return nil
