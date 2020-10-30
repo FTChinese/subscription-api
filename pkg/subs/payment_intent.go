@@ -5,15 +5,14 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
-	"github.com/objcoding/wxpay"
 	"github.com/smartwalle/alipay"
 )
 
-// WxpayNativeAppIntent creates an order used by native apps.
-type WxpayNativeAppIntent struct {
+// WxPayNativeAppIntent creates an order used by native apps.
+type WxPayNativeAppIntent struct {
 	Order
-	wechat.AppOrderParams
-	Params wechat.AppOrderParams `json:"params"`
+	//wechat.NativeAppParams // Deprecated
+	Params wechat.NativeAppParams `json:"params"`
 }
 
 // WepayEmbedBrowserOrder responds to purchase made in wechat
@@ -22,19 +21,19 @@ type WxpayNativeAppIntent struct {
 // perform actions inside wechat app.
 // It's a shame wechat cannot even use the same data structure
 // for such insignificant differences.
-type WxpayEmbedBrowserIntent struct {
+type WxPayJSApiIntent struct {
 	Order
-	Params wechat.InWxBrowserParams `json:"params"`
+	Params wechat.JSApiParams `json:"params"`
 }
 
-// WxpayBrowserIntent creates order for payment via wechat
+// WxPayBrowserIntent creates order for payment via wechat
 // made in browsers.
 // For desktop browser, wechat send back a custom url
 // for the client to generate a QR image;
 // For mobile browser, wechat sends back a canonical url
 // that can be redirected to.
 // and MobileOrder into a single data structure.
-type WxpayBrowserIntent struct {
+type WxPayBrowserIntent struct {
 	Order
 	// TODO: rename json tag codeUrl to qrCode
 	QRCode  string `json:"qrCodeUrl,omitempty"`         // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
@@ -141,26 +140,33 @@ func (pi PaymentIntent) AliPayBrowserIntent(redirectURL string) AlipayBrowserInt
 		RedirectURL: redirectURL,
 	}
 }
-func (pi PaymentIntent) WxPayParam(wxParam wechat.UnifiedOrderConfig) wxpay.Params {
 
-	p := make(wxpay.Params)
-	p.SetString("body", pi.Item.Plan.PaymentTitle(pi.Kind))
-	p.SetString("out_trade_no", pi.Order.ID)
-	p.SetInt64("total_fee", pi.Order.AmountInCent())
-	p.SetString("spbill_create_ip", wxParam.IP)
-	p.SetString("notify_url", pi.WebhookURL)
-	// APP for native app
-	// NATIVE for web site
-	// JSAPI for web page opend inside wechat browser
-	p.SetString("trade_type", wxParam.TradeType.String())
-
-	switch wxParam.TradeType {
-	case wechat.TradeTypeDesktop:
-		p.SetString("product_id", pi.Item.Plan.ID)
-
-	case wechat.TradeTypeJSAPI:
-		p.SetString("openid", wxParam.OpenID)
+func (pi PaymentIntent) WxPayDesktopIntent(wxOrder wechat.OrderResp) WxPayBrowserIntent {
+	return WxPayBrowserIntent{
+		Order:   pi.Order,
+		QRCode:  wxOrder.QRCode.String,
+		MWebURL: "",
 	}
+}
 
-	return p
+func (pi PaymentIntent) WxPayMobileIntent(wxOrder wechat.OrderResp) WxPayBrowserIntent {
+	return WxPayBrowserIntent{
+		Order:   pi.Order,
+		QRCode:  "",
+		MWebURL: wxOrder.MWebURL.String,
+	}
+}
+
+func (pi PaymentIntent) WxPayJSApiIntent(p wechat.JSApiParams) WxPayJSApiIntent {
+	return WxPayJSApiIntent{
+		Order:  pi.Order,
+		Params: p,
+	}
+}
+
+func (pi PaymentIntent) WxNativeAppIntent(p wechat.NativeAppParams) WxPayNativeAppIntent {
+	return WxPayNativeAppIntent{
+		Order:  pi.Order,
+		Params: p,
+	}
 }
