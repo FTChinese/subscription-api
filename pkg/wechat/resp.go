@@ -13,8 +13,8 @@ const (
 	ResultCodeSystemError   = "SYSTEMERROR"
 )
 
-// WxResp contains the shared fields all wechat pay endpoints contains.
-type Resp struct {
+// BaseResp contains the shared fields all wechat pay endpoints return.
+type BaseResp struct {
 	// return_code: SUCCESS/FAIL.
 	// 此字段是通信标识，非交易标识，交易是否成功需要查看trade_state来判断
 	StatusCode string `db:"status_code"`
@@ -41,8 +41,8 @@ type Resp struct {
 	ErrorMessage null.String `db:"error_message"`
 }
 
-// Populate fills the fields of Resp from wxpay.Params
-func (r *Resp) Populate(p wxpay.Params) {
+// Populate fills the fields of BaseResp from wxpay.Params
+func (r *BaseResp) Populate(p wxpay.Params) {
 
 	r.StatusCode = p.GetString("return_code")
 	r.StatusMessage = p.GetString("return_msg")
@@ -79,7 +79,7 @@ func (r *Resp) Populate(p wxpay.Params) {
 // IsStatusValid checks if wechat reponse contains `return_code`.
 // It does not check if `return_code` is SUCCESS of FAIL,
 // following `wxpay` package's convention.
-func (r Resp) IsStatusValid() error {
+func (r BaseResp) IsStatusValid() error {
 
 	switch r.StatusCode {
 	case "":
@@ -103,7 +103,7 @@ func (r Resp) IsStatusValid() error {
 // is regarded as ok.
 // You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
 // TODO: split into 3 steps: validate return_code, then validate result_code, then validate identify.
-func (r Resp) Validate(app PayApp) *render.ValidationError {
+func (r BaseResp) Validate(app PayApp) *render.ValidationError {
 	// If `return_code` is FAIL
 	// 此字段是通信标识，非交易标识，交易是否成功需要查看trade_state来判断
 	if r.StatusCode == wxpay.Fail {
@@ -170,14 +170,14 @@ func (r Resp) Validate(app PayApp) *render.ValidationError {
 	return nil
 }
 
-func (r Resp) IsOrderNotFound() bool {
+func (r BaseResp) IsOrderNotFound() bool {
 	return r.ErrorCode.String == ResultCodeOrderNotFound
 }
 
-// BaseParams turns Resp to a wxpay.Params.
+// BaseParams turns BaseResp to a wxpay.Params.
 // This is used to mock wechat pay's response.
 // Used only for testing.
-func (r Resp) BaseParams() wxpay.Params {
+func (r BaseResp) BaseParams() wxpay.Params {
 	p := make(wxpay.Params)
 
 	p.SetString("return_code", r.StatusCode)

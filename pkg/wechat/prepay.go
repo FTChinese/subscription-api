@@ -8,7 +8,7 @@ import (
 
 // UnifiedOrderResp is wechat's response for prepay.
 type UnifiedOrder struct {
-	Resp
+	BaseResp
 	TradeType  null.String             `db:"trade_type"`
 	PrepayID   null.String             `db:"prepay_id"`
 	QRCode     null.String             `db:"qr_code"`
