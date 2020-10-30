@@ -33,6 +33,7 @@ func mustPriceToCent(s string) int64 {
 }
 
 // PaymentResult unifies ali and wx webhook notification.
+// TODO: add payment method?
 type PaymentResult struct {
 	// For Alipay `trade_status` field:
 	// WAIT_BUYER_PAY（交易创建，等待买家付款）
