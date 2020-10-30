@@ -11,7 +11,7 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/guregu/null v4.0.0+incompatible
 	github.com/jmoiron/sqlx v1.2.0
-	github.com/mitchellh/mapstructure v1.3.3 // indirect
+	github.com/mitchellh/mapstructure v1.3.3
 	github.com/objcoding/wxpay v1.0.6
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.8.0 // indirect
