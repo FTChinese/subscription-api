@@ -16,6 +16,9 @@ SET user_id = :ftc_id,
 	email = :email,
 	password = '12345678'`
 
+const stmtInsertWxAccount = `
+INSERT INTO `
+
 type Repo struct {
 	db *sqlx.DB
 }
