@@ -11,6 +11,48 @@ import (
 	"strings"
 )
 
+func WxBaseRespToMap(r wechat.BaseResp) wxpay.Params {
+	p := make(wxpay.Params)
+
+	p.SetString("return_code", r.ReturnCode)
+	p.SetString("return_msg", r.ReturnMessage)
+	p.SetString("appid", r.AppID.String)
+	p.SetString("mch_id", r.MID.String)
+	p.SetString("nonce_str", r.Nonce.String)
+	p.SetString("result_code", r.ResultCode.String)
+
+	return p
+}
+
+func WxWebhookToMap(n wechat.Notification) wxpay.Params {
+	p := WxBaseRespToMap(n.BaseResp)
+
+	var subscribed string
+	if n.IsSubscribed {
+		subscribed = "Y"
+	} else {
+		subscribed = "N"
+	}
+
+	p.SetString("openid", n.OpenID.String)
+	p.SetString("is_subscribe", subscribed)
+	p.SetString("bank_type", n.BankType.String)
+	p.SetInt64("total_fee", n.TotalFee.Int64)
+	p.SetString("transaction_id", n.TransactionID.String)
+	p.SetString("out_trade_no", n.FTCOrderID.String)
+	p.SetString("time_end", n.TimeEnd.String)
+
+	return p
+}
+
+func WxOrderRespToMap(o wechat.OrderResp) wxpay.Params {
+	p := WxBaseRespToMap(o.BaseResp)
+
+	p.SetString("prepay_id", o.PrepayID.String)
+
+	return p
+}
+
 // WxXMLNotification mocks the data received in wechat webhook.
 // To test its behavior, you must have a user row and order row in the db.
 func WxXMLNotification(order subs.Order) string {
@@ -28,16 +70,16 @@ func WxXMLNotification(order subs.Order) string {
 		TimeEnd:       null.StringFrom("20060102150405"),
 	}
 
-	noti.StatusCode = "SUCCESS"
-	noti.StatusMessage = "OK"
+	noti.ReturnCode = "SUCCESS"
+	noti.ReturnMessage = "OK"
 	noti.AppID = null.StringFrom(WxPayApp.AppID)
 	noti.MID = null.StringFrom(WxPayApp.MchID)
 	noti.Nonce = null.StringFrom(nonce)
 	noti.ResultCode = null.StringFrom("SUCCESS")
 
-	p := noti.Params()
+	p := WxWebhookToMap(noti)
 
-	s := WxPayClient.Sign(noti.Params())
+	s := WxPayClient.Sign(p)
 
 	p.SetString("sign", s)
 
@@ -60,18 +102,18 @@ func WxNotification(order subs.Order) wechat.Notification {
 func WxXMLPrepay() string {
 	nonce, _ := gorest.RandomHex(16)
 
-	uni := wechat.UnifiedOrder{
+	or := wechat.OrderResp{
 		PrepayID: null.StringFrom(rand.String(36)),
 	}
 
-	uni.StatusCode = "SUCCESS"
-	uni.StatusMessage = "OK"
-	uni.AppID = null.StringFrom(WxPayApp.AppID)
-	uni.MID = null.StringFrom(WxPayApp.MchID)
-	uni.Nonce = null.StringFrom(nonce)
-	uni.ResultCode = null.StringFrom("SUCCESS")
+	or.ReturnCode = "SUCCESS"
+	or.ReturnMessage = "OK"
+	or.AppID = null.StringFrom(WxPayApp.AppID)
+	or.MID = null.StringFrom(WxPayApp.MchID)
+	or.Nonce = null.StringFrom(nonce)
+	or.ResultCode = null.StringFrom("SUCCESS")
 
-	p := uni.Params()
+	p := WxOrderRespToMap(or)
 
 	s := WxPayClient.Sign(p)
 
@@ -80,7 +122,7 @@ func WxXMLPrepay() string {
 	return wxpay.MapToXml(p)
 }
 
-func WxPrepay(orderID string) wechat.UnifiedOrder {
+func WxPrepay(orderID string) wechat.OrderResp {
 	uni := WxXMLPrepay()
 
 	p, err := wechat.DecodeXML(strings.NewReader(uni))
@@ -89,5 +131,5 @@ func WxPrepay(orderID string) wechat.UnifiedOrder {
 		log.Fatal(err)
 	}
 
-	return wechat.NewUnifiedOrderResp(orderID, p)
+	return wechat.NewOrderResp(orderID, p)
 }
