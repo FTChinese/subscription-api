@@ -11,7 +11,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
@@ -206,66 +205,44 @@ func (p *Persona) Membership() reader.Membership {
 	return m.Normalize()
 }
 
-func (p *Persona) WxOrderBuilder() *subs.OrderBuilder {
-	return subs.NewOrderBuilder(p.AccountID()).
-		SetPlan(p.plan).
-		SetPayMethod(p.payMethod).
-		SetWebhookURL(CFG.WebHookBaseURL()).
-		SetTest(false).
-		SetWxAppID(WxPayApp.AppID).
-		SetWxParams(wechat.UnifiedOrderConfig{
-			IP:        p.IP,
-			TradeType: wechat.TradeTypeApp,
-			OpenID:    "",
-		})
+func (p *Persona) WxOrderBuilder() subs.PaymentConfig {
+	return subs.NewPayment(p.FtcAccount(), p.plan).
+		WithWxpay(WxPayApp, CFG.WebHookBaseURL())
 }
 
-func (p *Persona) AliOrderBuilder() *subs.OrderBuilder {
-	return subs.NewOrderBuilder(p.AccountID()).
-		SetPlan(p.plan).
-		SetPayMethod(p.payMethod).
-		SetWebhookURL(CFG.WebHookBaseURL()).
-		SetTest(false)
+func (p *Persona) AliOrderBuilder() subs.PaymentConfig {
+	return subs.NewPayment(p.FtcAccount(), p.plan).
+		WithAlipay(CFG.WebHookBaseURL())
 }
 
 func (p *Persona) CreateOrder() subs.Order {
-	builder := subs.NewOrderBuilder(p.AccountID()).
-		SetTest(false).
-		SetPlan(p.plan).
-		SetPayMethod(p.payMethod)
-
+	var payConfig subs.PaymentConfig
 	if p.payMethod == enum.PayMethodWx {
-		builder.SetWxAppID(WxPayApp.AppID).
-			SetWxParams(wechat.UnifiedOrderConfig{
-				IP:        p.IP,
-				TradeType: wechat.TradeTypeMobile,
-				OpenID:    "",
-			})
+		payConfig = p.WxOrderBuilder()
+	} else if p.payMethod == enum.PayMethodAli {
+		payConfig = p.AliOrderBuilder()
+	} else {
+		panic("only alipay or wxpay supported")
 	}
 
-	err := builder.DeduceSubsKind(p.member)
+	kind, ve := p.member.AliWxSubsKind(p.plan.Edition)
+	if ve != nil {
+		panic(ve)
+	}
+
+	var bs []subs.BalanceSource
+	if kind == enum.OrderKindUpgrade {
+		bs = p.findBalanceSources(time.Now())
+	}
+
+	pi, err := payConfig.BuildIntent(bs, kind)
 	if err != nil {
 		panic(err)
 	}
 
-	if builder.GetSubsKind() == enum.OrderKindUpgrade {
-		bs := p.findBalanceSources(time.Now())
+	p.orders[pi.Order.ID] = pi.Order
 
-		wallet := subs.NewWallet(bs, time.Now())
-
-		builder.SetWallet(wallet)
-	}
-
-	err = builder.Build()
-	if err != nil {
-		panic(err)
-	}
-
-	order, _ := builder.GetOrder()
-
-	p.orders[order.ID] = order
-
-	return order
+	return pi.Order
 }
 
 func (p *Persona) ConfirmOrder(o subs.Order) subs.ConfirmationResult {
