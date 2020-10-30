@@ -9,7 +9,7 @@ import (
 // finished.
 // It is parsed from wechat's raw xml string.
 type Notification struct {
-	Resp
+	BaseResp
 	OpenID        null.String `db:"open_id"`
 	IsSubscribed  bool        `db:"is_subscribed"`
 	TradeType     null.String `db:"trade_type"`
