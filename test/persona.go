@@ -7,7 +7,6 @@ import (
 
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/product"
@@ -362,9 +361,9 @@ func (p *Persona) IAPSubs() apple.Subscription {
 
 func (p *Persona) WxAccess() wxlogin.OAuthAccess {
 	acc := wxlogin.OAuthAccess{
-		AccessToken:  faker.GenWxAccessTokenToken(),
+		AccessToken:  faker.GenWxAccessToken(),
 		ExpiresIn:    7200,
-		RefreshToken: faker.GenWxAccessTokenToken(),
+		RefreshToken: faker.GenWxAccessToken(),
 		OpenID:       p.OpenID,
 		Scope:        "snsapi_userinfo",
 		UnionID:      null.StringFrom(p.UnionID),
@@ -375,17 +374,20 @@ func (p *Persona) WxAccess() wxlogin.OAuthAccess {
 	return acc
 }
 
-func (p *Persona) WxInfo() wxlogin.UserInfo {
+func (p *Persona) WxUser() wxlogin.UserInfoSchema {
 	faker.SeedGoFake()
-	return wxlogin.UserInfo{
-		UnionID:    p.UnionID,
-		NickName:   gofakeit.UserAgent(),
-		AvatarURL:  p.Avatar,
-		Sex:        rand.IntRange(0, 3),
-		Country:    gofakeit.Country(),
-		Province:   gofakeit.State(),
-		City:       gofakeit.City(),
-		Privileges: []string{},
+	return wxlogin.UserInfoSchema{
+		UserInfoShared: wxlogin.UserInfoShared{
+			UnionID:   p.UnionID,
+			OpenID:    "",
+			NickName:  null.StringFrom(gofakeit.Username()),
+			AvatarURL: null.StringFrom(faker.GenAvatar()),
+			Country:   null.StringFrom(gofakeit.Country()),
+			Province:  null.StringFrom(gofakeit.State()),
+			City:      null.StringFrom(gofakeit.City()),
+		},
+		Gender:    faker.RandomGender(),
+		Privilege: null.String{},
 	}
 }
 
