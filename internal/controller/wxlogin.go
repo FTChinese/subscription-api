@@ -152,7 +152,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 
 	// Step 4:
 	// Save userinfo
-	err = router.wxRepo.SaveWxUser(user)
+	err = router.wxRepo.SaveWxUser(user.SQLSchema())
 
 	if err != nil {
 		_ = view.Render(w, view.NewDBFailure(err))
