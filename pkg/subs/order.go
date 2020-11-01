@@ -1,12 +1,11 @@
 package subs
 
 import (
+	"errors"
 	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/product"
-	"time"
-
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
@@ -52,6 +51,22 @@ func (o Order) IsAliWxPay() bool {
 	return o.PaymentMethod == enum.PayMethodAli || o.PaymentMethod == enum.PayMethodWx
 }
 
+func (o Order) ValidatePayment(result PaymentResult) error {
+	if o.AmountInCent() != result.Amount {
+		return fmt.Errorf("amount mismatched: expected: %d, actual: %d", o.AmountInCent(), result.Amount)
+	}
+
+	return nil
+}
+
+func (o Order) ValidateDupUpgrade(m reader.Membership) error {
+	if o.Kind == enum.OrderKindUpgrade && m.IsValidPremium() {
+		return errors.New("duplicate upgrading")
+	}
+
+	return nil
+}
+
 // pick which date to use as start date upon confirmation.
 // expireDate refers to current membership's expireDate.
 func (o Order) pickStartDate(expireDate chrono.Date) chrono.Date {
@@ -61,29 +76,6 @@ func (o Order) pickStartDate(expireDate chrono.Date) chrono.Date {
 	}
 
 	return expireDate
-}
-
-// Confirm an order based on existing membership.
-// If current membership is not expired, the order's
-// purchased start date starts from the membership's
-// expiration date; otherwise it starts from the
-// confirmation time received by webhook.
-// If this order is used for upgrading, it always starts
-// at now.
-func (o Order) Confirm(m reader.Membership, confirmedAt time.Time) (Order, error) {
-	o.ConfirmedAt = chrono.TimeFrom(confirmedAt)
-
-	period, err := NewPeriodBuilder(
-		o.Edition,
-		o.Duration).
-		Build(o.pickStartDate(m.ExpireDate))
-	if err != nil {
-		return o, err
-	}
-
-	o.PurchasedPeriod = period
-
-	return o, nil
 }
 
 // Membership build a membership based on this order.
@@ -107,5 +99,42 @@ func (o Order) Membership() (reader.Membership, error) {
 		Status:        enum.SubsStatusNull,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
+	}, nil
+}
+
+// Confirm an order based on existing membership.
+// If current membership is not expired, the order's
+// purchased start date starts from the membership's
+// expiration date; otherwise it starts from the
+// confirmation time received by webhook.
+// If this order is used for upgrading, it always starts
+// at now.
+func (o Order) Confirm(pr PaymentResult, m reader.Membership) (ConfirmationResult, error) {
+	o.ConfirmedAt = chrono.TimeFrom(pr.ConfirmedAt.Time)
+
+	period, err := NewPeriodBuilder(
+		o.Edition,
+		o.Duration).
+		Build(o.pickStartDate(m.ExpireDate))
+	if err != nil {
+		return ConfirmationResult{}, err
+	}
+
+	o.PurchasedPeriod = period
+
+	newMember, err := o.Membership()
+	if err != nil {
+		return ConfirmationResult{}, err
+	}
+
+	snapshot := m.Snapshot(reader.FtcArchiver(o.Kind))
+	if !m.IsZero() {
+		snapshot = snapshot.WithOrder(o.ID)
+	}
+
+	return ConfirmationResult{
+		Order:      o,
+		Membership: newMember,
+		Snapshot:   snapshot,
 	}, nil
 }
