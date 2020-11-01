@@ -96,6 +96,18 @@ func (env Env) SaveProratedOrders(pos []subs.ProratedOrder) error {
 	return nil
 }
 
+func (env Env) ProratedOrdersUsed(upOrderID string) error {
+	_, err := env.db.Exec(
+		subs.StmtProratedOrdersUsed,
+		upOrderID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (env Env) LogOrderMeta(m subs.OrderMeta) error {
 
 	_, err := env.db.NamedExec(
