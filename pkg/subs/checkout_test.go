@@ -7,6 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -15,7 +16,7 @@ var account = reader.FtcAccount{
 	FtcID:    uuid.New().String(),
 	UnionID:  null.String{},
 	StripeID: null.String{},
-	Email:    "aliwx.test@ftchinese.com",
+	Email:    "any@example.org",
 	UserName: null.StringFrom("World"),
 	VIP:      false,
 }
@@ -43,17 +44,232 @@ var planStdYear = product.ExpandedPlan{
 	},
 }
 
-func TestNewCheckedItem(t *testing.T) {
-	item := NewCheckedItem(planStdYear)
-
-	t.Logf("%+v", item)
+func TestNewCheckedItem1(t *testing.T) {
+	type args struct {
+		ep product.ExpandedPlan
+	}
+	tests := []struct {
+		name string
+		args args
+		want CheckedItem
+	}{
+		{
+			name: "Checkout item",
+			args: args{
+				ep: planStdYear,
+			},
+			want: CheckedItem{
+				Plan:     planStdYear.Plan,
+				Discount: planStdYear.Discount,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewCheckedItem(tt.args.ep)
+			assert.Equal(t, got, tt.want)
+			t.Logf("Checkout item %+v", got)
+		})
+	}
 }
 
-func TestNewPayment(t *testing.T) {
-	c := NewPayment(account, planStdYear).
-		WithAlipay("https://webhook.example.org")
+func TestPaymentConfig_Checkout(t *testing.T) {
+	type fields struct {
+		dryRun  bool
+		Account reader.FtcAccount
+		Plan    product.ExpandedPlan
+		Method  enum.PayMethod
+		WxAppID null.String
+	}
+	type args struct {
+		bs   []BalanceSource
+		kind enum.OrderKind
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   Checkout
+	}{
+		{
+			name: "New order",
+			fields: fields{
+				dryRun:  false,
+				Account: account,
+				Plan:    planStdYear,
+				Method:  enum.PayMethodAli,
+				WxAppID: null.String{},
+			},
+			args: args{
+				bs:   nil,
+				kind: enum.OrderKindCreate,
+			},
+			want: Checkout{
+				Kind: enum.OrderKindCreate,
+				Item: CheckedItem{
+					Plan:     planStdYear.Plan,
+					Discount: planStdYear.Discount,
+				},
+				Wallet: Wallet{
+					Balance:   0,
+					CreatedAt: chrono.TimeNow(),
+					Sources:   nil,
+				},
+				Duration: product.Duration{
+					CycleCount: 1,
+					ExtraDays:  1,
+				},
+				Payable: product.Charge{
+					Amount:   128,
+					Currency: "cny",
+				},
+				IsFree:   false,
+				LiveMode: true,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := PaymentConfig{
+				dryRun:  tt.fields.dryRun,
+				Account: tt.fields.Account,
+				Plan:    tt.fields.Plan,
+				Method:  tt.fields.Method,
+				WxAppID: tt.fields.WxAppID,
+			}
+			got := c.Checkout(tt.args.bs, tt.args.kind)
+			assert.Equal(t, got.Kind, tt.want.Kind)
+			assert.Equal(t, got.Item, tt.want.Item)
+			assert.Equal(t, got.Wallet.Balance, tt.want.Wallet.Balance)
+			assert.Equal(t, got.Duration, tt.want.Duration)
+			assert.Equal(t, got.Payable, tt.want.Payable)
+			assert.Equal(t, got.IsFree, tt.want.IsFree)
+			assert.Equal(t, got.LiveMode, tt.want.LiveMode)
+		})
+	}
+}
 
-	checkout := c.Checkout(nil, enum.OrderKindCreate)
+func TestPaymentConfig_BuildOrder(t *testing.T) {
+	type fields struct {
+		dryRun  bool
+		Account reader.FtcAccount
+		Plan    product.ExpandedPlan
+		Method  enum.PayMethod
+		WxAppID null.String
+	}
+	type args struct {
+		checkout Checkout
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    Order
+		wantErr bool
+	}{
+		{
+			name: "New order",
+			fields: fields{
+				dryRun:  false,
+				Account: account,
+				Plan:    planStdYear,
+				Method:  enum.PayMethodAli,
+				WxAppID: null.String{},
+			},
+			args: args{
+				checkout: Checkout{
+					Kind: enum.OrderKindCreate,
+					Item: CheckedItem{
+						Plan:     planStdYear.Plan,
+						Discount: planStdYear.Discount,
+					},
+					Wallet: Wallet{
+						Balance:   0,
+						CreatedAt: chrono.TimeNow(),
+						Sources:   nil,
+					},
+					Duration: product.Duration{
+						CycleCount: 1,
+						ExtraDays:  1,
+					},
+					Payable: product.Charge{
+						Amount:   128,
+						Currency: "cny",
+					},
+					IsFree:   false,
+					LiveMode: true,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := PaymentConfig{
+				dryRun:  tt.fields.dryRun,
+				Account: tt.fields.Account,
+				Plan:    tt.fields.Plan,
+				Method:  tt.fields.Method,
+				WxAppID: tt.fields.WxAppID,
+			}
+			got, err := c.BuildOrder(tt.args.checkout)
+			assert.NoError(t, err)
 
-	t.Logf("%+v", checkout)
+			assert.NotEmpty(t, got.ID)
+			assert.NotZero(t, got.Price)
+			assert.NotZero(t, got.Amount)
+			assert.Zero(t, got.ConfirmedAt)
+		})
+	}
+}
+
+func TestPaymentConfig_BuildIntent(t *testing.T) {
+	type fields struct {
+		dryRun  bool
+		Account reader.FtcAccount
+		Plan    product.ExpandedPlan
+		Method  enum.PayMethod
+		WxAppID null.String
+	}
+	type args struct {
+		bs   []BalanceSource
+		kind enum.OrderKind
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    PaymentIntent
+		wantErr bool
+	}{
+		{
+			name: "New order",
+			fields: fields{
+				dryRun:  false,
+				Account: account,
+				Plan:    planStdYear,
+				Method:  enum.PayMethodAli,
+				WxAppID: null.String{},
+			},
+			args: args{
+				bs:   nil,
+				kind: enum.OrderKindCreate,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := PaymentConfig{
+				dryRun:  tt.fields.dryRun,
+				Account: tt.fields.Account,
+				Plan:    tt.fields.Plan,
+				Method:  tt.fields.Method,
+				WxAppID: tt.fields.WxAppID,
+			}
+			got, err := c.BuildIntent(tt.args.bs, tt.args.kind)
+			assert.NoError(t, err)
+			assert.NotZero(t, got.Checkout)
+		})
+	}
 }
