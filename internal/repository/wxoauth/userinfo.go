@@ -6,9 +6,9 @@ import (
 
 // SaveWxUser from wechat API.
 // Since a user can authorize multiple times, use ON DUPLICATE to handle unique key constraint.
-func (env Env) SaveWxUser(u wxlogin.UserInfo) error {
+func (env Env) SaveWxUser(u wxlogin.UserInfoSchema) error {
 
-	_, err := env.db.NamedExec(wxlogin.StmtInsertUserInfo, u.SQLSchema())
+	_, err := env.db.NamedExec(wxlogin.StmtInsertUserInfo, u)
 
 	if err != nil {
 		return err
