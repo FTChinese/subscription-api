@@ -75,7 +75,7 @@ func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	// Only free upgrade could go to here.
 	// Save snapshot.
 	go func() {
-		_ = router.readerRepo.BackUpMember(intent.Result.Snapshot)
+		_ = router.readerRepo.ArchiveMember(intent.Result.Snapshot)
 	}()
 
 	// Save client app info
