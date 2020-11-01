@@ -9,6 +9,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -63,6 +64,31 @@ func (router SubsRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	_ = render.New(w).DBError(err)
 }
 
+func (router SubsRouter) afterOrderCreated(pi subs.PaymentIntent, client client.Client) error {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	if pi.Kind == enum.OrderKindUpgrade {
+		err := router.subRepo.SaveProratedOrders(pi.ProratedOrders())
+		if err != nil {
+			sugar.Error(err)
+			return err
+		}
+	}
+
+	go func() {
+		err := router.subRepo.LogOrderMeta(subs.OrderMeta{
+			OrderID: pi.Order.ID,
+			Client:  client,
+		})
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
+	return nil
+}
+
 //https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
 func (router SubsRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, error) {
 	defer router.logger.Sync()
@@ -85,6 +111,7 @@ func (router SubsRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, 
 		return subs.PaymentResult{}, err
 	}
 
+	// Save raw response.
 	go func() {
 		if err := router.subRepo.SaveWxQueryResp(wxOrder); err != nil {
 			sugar.Error(err)
@@ -92,12 +119,14 @@ func (router SubsRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, 
 	}()
 
 	// Validate if response is correct. This does not verify the payment is successful.
+	// We have to send the payment status as is to client.
 	// field: return_code, code: invalid
 	// field: result_code, code: invalid
 	// field: app_id, code: invalid
 	// field: mch_id, code: invalid
 	err = wxOrder.Validate(payClient.GetApp())
 	if err != nil {
+		sugar.Error(err)
 		return subs.PaymentResult{}, err
 	}
 
@@ -119,36 +148,43 @@ func (router SubsRouter) verifyAliPayment(order subs.Order) (subs.PaymentResult,
 	return subs.NewAliPayResult(aliOrder), nil
 }
 
-func (router SubsRouter) processPaymentResult(result subs.PaymentResult) (subs.ConfirmationResult, error) {
+func (router SubsRouter) processPaymentResult(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	confirmed, cfmErr := router.subRepo.ConfirmOrder(result)
 	if cfmErr != nil {
+		go func() {
+			err := router.subRepo.SaveConfirmationErr(cfmErr)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
 		return confirmed, cfmErr
 	}
 
 	go func() {
-		router.processCfmResult(confirmed)
+		if !confirmed.Snapshot.IsZero() {
+			err := router.readerRepo.BackUpMember(confirmed.Snapshot)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}
+
+		// Flag upgrade balance as consumed.
+		if confirmed.Order.Kind == enum.OrderKindUpgrade {
+			err := router.subRepo.ProratedOrdersUsed(confirmed.Order.ID)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}
+
+		if err := router.sendConfirmationEmail(confirmed.Order); err != nil {
+			sugar.Error(err)
+		}
 	}()
 
 	return confirmed, nil
-}
-
-// Backup previous membership if exists;
-// Save uuid to id link table;
-// Send confirmation email.
-func (router SubsRouter) processCfmResult(result subs.ConfirmationResult) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	if !result.Snapshot.IsZero() {
-		err := router.readerRepo.BackUpMember(result.Snapshot)
-		if err != nil {
-			sugar.Error(err)
-		}
-	}
-
-	if err := router.sendConfirmationEmail(result.Order); err != nil {
-		sugar.Error(err)
-	}
 }
 
 // SendConfirmationLetter sends a confirmation email if user logged in with FTC account.
