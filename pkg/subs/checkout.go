@@ -10,6 +10,24 @@ import (
 	"time"
 )
 
+func WebhookURL(sandbox bool, method enum.PayMethod) string {
+	var baseURL string
+	if sandbox {
+		baseURL = "http://www.ftacademy.cn/api/sandbox"
+	} else {
+		baseURL = "http://www.ftacademy.cn/api/v1"
+	}
+
+	switch method {
+	case enum.PayMethodWx:
+		return baseURL + "/webhook/wxpay"
+	case enum.PayMethodAli:
+		return baseURL + "/webhook/alipay"
+	}
+
+	return ""
+}
+
 // CheckedItem contains an item user want to buy and all attributes attached to it like applicable discount, coupon, etc..
 type CheckedItem struct {
 	Plan     product.Plan     `json:"plan"`
@@ -58,12 +76,10 @@ func (c Checkout) WithTest(t bool) Checkout {
 // PaymentConfig collects parameters to build an order.
 // These are experimental refactoring.
 type PaymentConfig struct {
-	dryRun     bool                 // Only for upgrade preview.
-	Account    reader.FtcAccount    // Required. Who is paying.
-	Plan       product.ExpandedPlan // Required. What is purchased.
-	Method     enum.PayMethod       // Optional if no payment is actually involved.
-	WebhookURL string
-
+	dryRun  bool                 // Only for upgrade preview.
+	Account reader.FtcAccount    // Required. Who is paying.
+	Plan    product.ExpandedPlan // Required. What is purchased.
+	Method  enum.PayMethod       // Optional if no payment is actually involved.
 	WxAppID null.String
 }
 
@@ -76,17 +92,14 @@ func NewPayment(account reader.FtcAccount, plan product.ExpandedPlan) PaymentCon
 	}
 }
 
-func (c PaymentConfig) WithAlipay(whBaseURL string) PaymentConfig {
+func (c PaymentConfig) WithAlipay() PaymentConfig {
 	c.Method = enum.PayMethodAli
-	c.WebhookURL = whBaseURL + "/webhook/alipay"
-
 	return c
 }
 
-func (c PaymentConfig) WithWxpay(app wechat.PayApp, whBaseURL string) PaymentConfig {
+func (c PaymentConfig) WithWxpay(app wechat.PayApp) PaymentConfig {
 	c.Method = enum.PayMethodWx
 	c.WxAppID = null.StringFrom(app.AppID)
-	c.WebhookURL = whBaseURL + "/webhook/wxpay"
 	return c
 }
 
@@ -176,9 +189,8 @@ func (c PaymentConfig) BuildIntent(bs []BalanceSource, kind enum.OrderKind) (Pay
 	}
 
 	return PaymentIntent{
-		Checkout:   Checkout{},
-		Order:      order,
-		WebhookURL: c.WebhookURL,
+		Checkout: checkout,
+		Order:    order,
 	}, nil
 }
 
