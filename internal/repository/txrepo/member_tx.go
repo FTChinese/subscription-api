@@ -229,20 +229,6 @@ func (tx MemberTx) SaveProratedOrders(po []subs.ProratedOrder) error {
 	return nil
 }
 
-// ProratedOrdersUsed set the consumed time on all the
-// prorated order for an upgrade operation.
-func (tx MemberTx) ProratedOrdersUsed(upOrderID string) error {
-	_, err := tx.Exec(
-		subs.StmtProratedOrdersUsed,
-		upOrderID,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // -------------
 // The following are used by gift card
 
