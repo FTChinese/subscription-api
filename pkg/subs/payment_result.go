@@ -1,13 +1,13 @@
 package subs
 
 import (
-	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/smartwalle/alipay"
 	"strconv"
+	"time"
 )
 
 func priceToCent(s string) (int64, error) {
@@ -32,7 +32,7 @@ func mustPriceToCent(s string) int64 {
 	return i
 }
 
-// PaymentResult unifies ali and wx webhook notification.
+// PaymentResult unifies ali and wx webhook payload, or query order.
 // TODO: add payment method?
 type PaymentResult struct {
 	// For Alipay `trade_status` field:
@@ -61,7 +61,9 @@ type PaymentResult struct {
 	ConfirmedAt   chrono.Time `json:"paidAt"`
 }
 
-func (r PaymentResult) IsSuccess() bool {
+// IsOrderPaid checks if a wx or ali order is paid.
+// Do not call it for webhook since the payload does not contain these fields.
+func (r PaymentResult) IsOrderPaid() bool {
 	switch r.PaymentState {
 	case ali.TradeStatusSuccess,
 		ali.TradeStatusFinished,
@@ -72,16 +74,16 @@ func (r PaymentResult) IsSuccess() bool {
 	return false
 }
 
+func (r PaymentResult) ConfirmError(err error, retry bool) *ConfirmError {
+	return &ConfirmError{
+		OrderID: r.OrderID,
+		Message: err.Error(),
+		Retry:   retry,
+	}
+}
+
 // NewWxWebhookResult builds PaymentResult from wechat pay webhook notification.
-func NewWxWebhookResult(payload wechat.Notification) (PaymentResult, error) {
-	if payload.TotalFee.IsZero() {
-		return PaymentResult{}, errors.New("no payment amount found in wx webhook")
-	}
-
-	if payload.FTCOrderID.IsZero() {
-		return PaymentResult{}, errors.New("no order id in wx webhook")
-	}
-
+func NewWxWebhookResult(payload wechat.Notification) PaymentResult {
 	return PaymentResult{
 		PaymentState:     "",
 		PaymentStateDesc: "",
@@ -89,18 +91,24 @@ func NewWxWebhookResult(payload wechat.Notification) (PaymentResult, error) {
 		TransactionID:    payload.TransactionID.String,
 		OrderID:          payload.FTCOrderID.String,
 		ConfirmedAt:      chrono.TimeFrom(dt.MustParseWxTime(payload.TimeEnd.String)),
-	}, nil
+	}
 }
 
 // NewWxPayResult creates a new PaymentResult from the result of querying wechat order.
+// The payment status should be returned to client as is, whether it is paid or not.
 func NewWxPayResult(r wechat.OrderQueryResp) PaymentResult {
+	// If the payment is not done, we should not add confirmation time.
+	var confirmedAt time.Time
+	if r.TimeEnd.Valid {
+		confirmedAt = dt.MustParseWxTime(r.TimeEnd.String)
+	}
 	return PaymentResult{
 		PaymentState:     r.TradeState.String,
 		PaymentStateDesc: r.TradeStateDesc.String,
 		Amount:           r.TotalFee.Int64,
 		TransactionID:    r.TransactionID.String,
 		OrderID:          r.FTCOrderID.String,
-		ConfirmedAt:      chrono.TimeFrom(dt.MustParseWxTime(r.TimeEnd.String)),
+		ConfirmedAt:      chrono.TimeFrom(confirmedAt),
 	}
 }
 
