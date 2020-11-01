@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/client"
@@ -22,6 +23,8 @@ import (
 // tier: string; Currently acquired from URL param
 // cycle: string; Currently acquired from URL param
 func (router SubsRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFunc {
+
+	webhookURL := subs.WebhookURL(router.config.Sandbox(), enum.PayMethodWx)
 
 	// Find the client to use for wxpay
 	payClient, err := router.wxPayClients.ClientByPlatform(tradeType)
@@ -70,7 +73,7 @@ func (router SubsRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFu
 		sugar.Infof("Selected plan: %+v", plan)
 
 		config := subs.NewPayment(account, plan).
-			WithWxpay(payClient.GetApp(), router.config.WebHookBaseURL())
+			WithWxpay(payClient.GetApp())
 
 		pi, err := router.subRepo.CreateOrder(config)
 		if err != nil {
@@ -81,22 +84,11 @@ func (router SubsRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFu
 
 		sugar.Infof("Created order: %+v", pi.Order)
 
-		go func() {
-			if pi.Kind == enum.OrderKindUpgrade {
-				err := router.subRepo.SaveProratedOrders(pi.ProratedOrders())
-				if err != nil {
-					sugar.Error(err)
-				}
-			}
-
-			err := router.subRepo.LogOrderMeta(subs.OrderMeta{
-				OrderID: pi.Order.ID,
-				Client:  clientApp,
-			})
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
+		err = router.afterOrderCreated(pi, clientApp)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			return
+		}
 
 		// Send order to wx
 		// UnifiedOrder checks if `return_code` is SUCCESS/FAIL,
@@ -106,7 +98,7 @@ func (router SubsRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFu
 			Body:          pi.Item.Plan.PaymentTitle(pi.Kind),
 			SellerOrderID: pi.Order.ID,
 			TotalAmount:   pi.Order.AmountInCent(),
-			WebhookURL:    pi.WebhookURL,
+			WebhookURL:    webhookURL,
 			ProductID:     pi.Item.Plan.ID,
 			TxKind:        tradeType,
 			UserIP:        clientApp.UserIP.String,
@@ -168,98 +160,69 @@ func (router SubsRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFu
 func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
-
 	resp := wxpay.Notifies{}
+
+	var send = func(err error) {
+		var e error
+		if err != nil {
+			sugar.Error(err)
+			_, e = w.Write([]byte(resp.NotOK(err.Error())))
+		} else {
+			_, e = w.Write([]byte(resp.OK()))
+		}
+
+		if e != nil {
+			sugar.Error(e)
+		}
+	}
 
 	// Decode Wechat XML request body.
 	// If it cannot be decoded, tell wechat to resend it.
-	params, err := wechat.DecodeXML(req.Body)
+	payload, err := router.wxPayClients.GetWebhookPayload(req)
+	//params, err := wechat.DecodeXML(req.Body)
 	if err != nil {
-		sugar.Error(err)
-
-		if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
-			sugar.Error(err)
-		}
-
+		send(err)
 		return
 	}
 
-	sugar.Info("Wechat notification decoded")
-	sugar.Infof("Wxpay webhook payload: %+v", params)
-
 	// Turn the map to struct
-	noti := wechat.NewNotification(params)
+	//payload := wechat.NewNotification(params)
 	// Log the response, regardless of whether it is an error
 	// or not.
 	go func() {
-		if err := router.subRepo.SaveWxNotification(noti); err != nil {
+		if err := router.subRepo.SaveWxNotification(payload); err != nil {
 			sugar.Error(err)
 		}
 	}()
 
-	// Try to find out which app is in charge of the response.
-	payClient, err := router.wxPayClients.ClientByAppID(noti.AppID.String)
-
-	if err != nil {
-		sugar.Error(err)
-
-		if _, err := w.Write([]byte(resp.NotOK(err.Error()))); err != nil {
-			sugar.Error(err)
-		}
-
+	if payload.IsUnprocessable() {
+		sugar.Error(payload.UnprocessableMsg())
+		send(errors.New(payload.ErrorMessage.String))
 		return
 	}
 
-	if err := payClient.ValidateWebhook(noti); err != nil {
-		sugar.Error(err)
+	// Should check this?
+	//if err := payload.EnsureSuccess(); err != nil {
+	//	sugar.Error(err)
+	//	_, _ = w.Write([]byte(resp.OK()))
+	//	return
+	//}
 
-		if _, err := w.Write([]byte(resp.OK())); err != nil {
-			sugar.Error(err)
-		}
-		return
-	}
-
-	payResult, err := subs.NewWxWebhookResult(noti)
-	if err != nil {
-		sugar.Error(err)
-		if _, err := w.Write([]byte(resp.OK())); err != nil {
-			sugar.Error()
-		}
-
-		return
-	}
-
+	payResult := subs.NewWxWebhookResult(payload)
 	sugar.Infof("Payment result %+v", payResult)
 
-	// TODO: refactor confirmation
-	confirmed, cfmErr := router.subRepo.ConfirmOrder(payResult)
+	_, cfmErr := router.processPaymentResult(payResult)
 
 	// Handle confirmation error.
 	if cfmErr != nil {
-		sugar.Error(cfmErr)
-		go func() {
-			_ = router.subRepo.SaveConfirmationResult(
-				cfmErr.Schema(payResult.OrderID))
-		}()
-
 		if cfmErr.Retry {
-			if _, err := w.Write([]byte(resp.NotOK(cfmErr.Error()))); err != nil {
-				sugar.Error(err)
-			}
+			send(cfmErr)
 		} else {
-			if _, err := w.Write([]byte(resp.OK())); err != nil {
-				sugar.Error(err)
-			}
+			send(nil)
 		}
 
 		return
 	}
 
-	go func() {
-		router.processCfmResult(confirmed)
-	}()
-
-	if _, err := w.Write([]byte(resp.OK())); err != nil {
-		sugar.Error(err)
-	}
+	send(nil)
 }
