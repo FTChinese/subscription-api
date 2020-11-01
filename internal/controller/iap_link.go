@@ -92,7 +92,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	go func() {
 		// Backup previous membership
 		if !result.Snapshot.IsZero() {
-			err := router.readerRepo.BackUpMember(result.Snapshot)
+			err := router.readerRepo.ArchiveMember(result.Snapshot)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -150,7 +150,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		err := router.readerRepo.BackUpMember(snapshot)
+		err := router.readerRepo.ArchiveMember(snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}

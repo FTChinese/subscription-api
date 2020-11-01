@@ -118,7 +118,7 @@ func (c Consumer) saveReceipt(resp apple.VerificationResp) {
 	}
 
 	if !snapshot.IsZero() {
-		err := c.readerRepo.BackUpMember(snapshot)
+		err := c.readerRepo.ArchiveMember(snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}

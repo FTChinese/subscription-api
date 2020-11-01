@@ -165,7 +165,7 @@ func (router SubsRouter) processPaymentResult(result subs.PaymentResult) (subs.C
 
 	go func() {
 		if !confirmed.Snapshot.IsZero() {
-			err := router.readerRepo.BackUpMember(confirmed.Snapshot)
+			err := router.readerRepo.ArchiveMember(confirmed.Snapshot)
 			if err != nil {
 				sugar.Error(err)
 			}

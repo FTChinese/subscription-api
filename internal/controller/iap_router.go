@@ -82,7 +82,7 @@ func (router IAPRouter) processSubsResult(snapshot reader.MemberSnapshot) {
 
 	// Backup previous membership
 	if !snapshot.IsZero() {
-		err := router.readerRepo.BackUpMember(snapshot)
+		err := router.readerRepo.ArchiveMember(snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
