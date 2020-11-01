@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -17,9 +18,6 @@ SET user_id = :ftc_id,
 	user_name = :user_name,
 	email = :email,
 	password = '12345678'`
-
-const stmtInsertWxAccount = `
-INSERT INTO `
 
 type Repo struct {
 	db *sqlx.DB
@@ -43,6 +41,22 @@ func (r *Repo) SaveAccount(a reader.FtcAccount) error {
 
 func (r *Repo) MustSaveAccount(a reader.FtcAccount) {
 	if err := r.SaveAccount(a); err != nil {
+		panic(err)
+	}
+}
+
+func (r *Repo) SaveWxUser(u wxlogin.UserInfoSchema) error {
+	_, err := r.db.NamedExec(wxlogin.StmtInsertUserInfo, u)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repo) MustSaveWxUser(u wxlogin.UserInfoSchema) {
+	err := r.SaveWxUser(u)
+	if err != nil {
 		panic(err)
 	}
 }
