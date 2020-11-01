@@ -22,28 +22,50 @@ func NewAliPayClient(app ali.App, logger *zap.Logger) AliPayClient {
 	}
 }
 
-// SignAppPay build the data and sign it that can be used by native app.
-func (c AliPayClient) SignAppPay(param alipay.AliPayTradeAppPay) (string, error) {
-	return c.sdk.TradeAppPay(param)
-}
-
-// DesktopPayRedirectTo signs the request body and construct a url to Zhifubao.
-func (c AliPayClient) DesktopPayRedirectTo(param alipay.AliPayTradePagePay) (string, error) {
-	url, err := c.sdk.TradePagePay(param)
-	if err != nil {
-		return "", err
+// CreateOrder signs order creation param and returns the signed string as query parameters.
+// Inside browsers, the query parameter is actually an url you can redirect to.
+func (c AliPayClient) CreateOrder(or ali.OrderReq) (string, error) {
+	param := alipay.TradePay{
+		NotifyURL:   or.WebhookURL,
+		Subject:     or.Title,
+		OutTradeNo:  or.FtcOrderID,
+		TotalAmount: or.TotalAmount,
+		GoodsType:   "0",
 	}
 
-	return url.String(), nil
-}
+	switch or.TxKind {
+	case ali.EntryApp:
+		param.ProductCode = ali.ProductCodeApp.String()
+		return c.sdk.TradeAppPay(alipay.AliPayTradeAppPay{
+			TradePay: param,
+		})
 
-func (c AliPayClient) MobileWebRedirectTo(param alipay.AliPayTradeWapPay) (string, error) {
-	redirectURL, err := c.sdk.TradeWapPay(param)
-	if err != nil {
-		return "", err
+	case ali.EntryDesktopWeb:
+		param.ProductCode = ali.ProductCodeWeb.String()
+		param.ReturnURL = or.ReturnURL
+		url, err := c.sdk.TradePagePay(alipay.AliPayTradePagePay{
+			TradePay: param,
+		})
+		if err != nil {
+			return "", err
+		}
+
+		return url.String(), nil
+
+	case ali.EntryMobileWeb:
+		param.ProductCode = ali.ProductCodeWeb.String()
+		param.ReturnURL = or.ReturnURL
+		url, err := c.sdk.TradeWapPay(alipay.AliPayTradeWapPay{
+			TradePay: param,
+		})
+		if err != nil {
+			return "", err
+		}
+
+		return url.String(), nil
 	}
 
-	return redirectURL.String(), nil
+	return "", fmt.Errorf("unknown payment platform %s", or.TxKind)
 }
 
 // https://opendocs.alipay.com/apis/api_1/alipay.trade.query/
