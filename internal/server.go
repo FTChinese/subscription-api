@@ -94,7 +94,7 @@ func StartServer(s ServerStatus) {
 
 		// Query order
 		// Deprecated
-		r.Get("/query/{orderId}", payRouter.VerifyPayment)
+		r.Get("/query/{id}", payRouter.VerifyPayment)
 	})
 
 	// Require user id.
