@@ -2,7 +2,7 @@ package subrepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/go-rest/enum"
+	"errors"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"go.uber.org/zap"
 )
@@ -17,10 +17,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return subs.ConfirmationResult{}, &subs.ConfirmError{
-			Err:   err,
-			Retry: true,
-		}
+		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
 	}
 
 	// Step 1: Find the subscription order by order id
@@ -31,22 +28,21 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	order, err := tx.RetrieveOrder(result.OrderID)
 	if err != nil {
 		sugar.Error(err)
-
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, &subs.ConfirmError{
-			Err:   err,
-			Retry: err != sql.ErrNoRows,
-		}
+		return subs.ConfirmationResult{}, result.ConfirmError(err, err != sql.ErrNoRows)
 	}
 
-	builder := subs.NewConfirmationBuilder(result).
-		SetOrder(order)
+	if order.IsConfirmed() {
+		_ = tx.Rollback()
+		err := errors.New("duplicate confirmation")
+		sugar.Error(err)
+		return subs.ConfirmationResult{}, result.ConfirmError(err, false)
+	}
 
-	// Validate order
-	if err := builder.ValidateOrder(); err != nil {
+	if err := order.ValidatePayment(result); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, err
+		return subs.ConfirmationResult{}, result.ConfirmError(err, false)
 	}
 
 	// STEP 2: query membership
@@ -55,35 +51,27 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, &subs.ConfirmError{
-			Err:   err,
-			Retry: true,
-		}
+		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
 	}
-
-	builder.SetMembership(member)
 
 	// STEP 3: validate the retrieved order.
 	// This order might be invalid for upgrading.
 	// If user is already a premium member and this order is used
 	// for upgrading, decline retry.
-	if err := builder.ValidateDuplicateUpgrading(); err != nil {
+	if err := order.ValidateDupUpgrade(member); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, err
+		return subs.ConfirmationResult{}, result.ConfirmError(err, false)
 	}
 
 	// STEP 4: Confirm this order
 	// Populate the ConfirmedAt, StartDate and EndDate.
 	// If there are calculation errors, allow retry.
-	confirmed, err := builder.Build()
+	confirmed, err := order.Confirm(result, member)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, &subs.ConfirmError{
-			Err:   err,
-			Retry: true,
-		}
+		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
 	}
 
 	// STEP 5: Update confirmed order
@@ -91,55 +79,30 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	if err := tx.ConfirmOrder(confirmed.Order); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, &subs.ConfirmError{
-			Err:   err,
-			Retry: false,
-		}
-	}
-
-	// Flag upgrade balance source as consumed.
-	if confirmed.Order.Kind == enum.OrderKindUpgrade {
-		err := tx.ProratedOrdersUsed(confirmed.Order.ID)
-
-		if err != nil {
-			sugar.Error(err)
-			_ = tx.Rollback()
-			return subs.ConfirmationResult{}, &subs.ConfirmError{
-				Err:   err,
-				Retry: true,
-			}
-		}
+		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
 	}
 
 	// STEP 7: Insert or update membership.
 	// This error should allow retry
-	if member.IsZero() {
-		if err := tx.CreateMember(confirmed.Membership); err != nil {
+	if !member.IsZero() {
+		err := tx.DeleteMember(member.MemberID)
+		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return subs.ConfirmationResult{}, &subs.ConfirmError{
-				Err:   err,
-				Retry: true,
-			}
+			return subs.ConfirmationResult{}, result.ConfirmError(err, true)
 		}
-	} else {
-		// Update Membership.
-		if err := tx.UpdateMember(confirmed.Membership); err != nil {
-			sugar.Error(err)
-			_ = tx.Rollback()
-			return subs.ConfirmationResult{}, &subs.ConfirmError{
-				Err:   err,
-				Retry: true,
-			}
-		}
+	}
+
+	err = tx.CreateMember(confirmed.Membership)
+	if err != nil {
+		sugar.Error(err)
+		_ = tx.Rollback()
+		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return subs.ConfirmationResult{}, &subs.ConfirmError{
-			Err:   err,
-			Retry: true,
-		}
+		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
 	}
 
 	sugar.Infof("Order %s confirmed", result.OrderID)
@@ -147,10 +110,10 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	return confirmed, nil
 }
 
-func (env Env) SaveConfirmationResult(r subs.ConfirmErrSchema) error {
+func (env Env) SaveConfirmationErr(e *subs.ConfirmError) error {
 	_, err := env.db.NamedExec(
 		subs.StmtSaveConfirmResult,
-		r)
+		e)
 
 	if err != nil {
 		return err
