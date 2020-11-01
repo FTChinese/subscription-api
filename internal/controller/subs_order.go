@@ -55,7 +55,7 @@ func (router SubsRouter) ManualConfirm(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	if !payResult.IsSuccess() {
+	if !payResult.IsOrderPaid() {
 		_ = render.New(w).BadRequest("This order is not paid")
 		return
 	}
@@ -117,14 +117,18 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 
 	sugar.Infof("Payment result: %+v", payResult)
 
-	if !payResult.IsSuccess() {
+	if !payResult.IsOrderPaid() {
 		_ = render.New(w).OK(payResult)
 		return
 	}
 
-	if !order.IsConfirmed() {
-		_, _ = router.processPaymentResult(payResult)
+	if order.IsConfirmed() {
+		_ = render.New(w).OK(payResult)
+		return
 	}
 
+	_, _ = router.processPaymentResult(payResult)
+
 	_ = render.New(w).OK(payResult)
+
 }
