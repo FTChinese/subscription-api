@@ -1,7 +1,6 @@
 package reader
 
 import (
-	"database/sql/driver"
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
@@ -91,20 +90,25 @@ func FtcArchiver(k enum.OrderKind) Archiver {
 }
 
 func (a Archiver) String() string {
-	return fmt.Sprintf("%a.%a", a.Name, a.Action)
-}
-
-func (a Archiver) Value() (driver.Value, error) {
-	if a.Name == "" && a.Action == "" {
-		return nil, nil
-	}
-
-	return a.String(), nil
+	return fmt.Sprintf("%s.%s", a.Name, a.Action)
 }
 
 func GenerateSnapshotID() string {
 	return "snp_" + rand.String(12)
 }
+
+const StmtSnapshotMember = `
+INSERT INTO premium.member_snapshot
+SET id = :snapshot_id,
+	created_by = :created_by,
+	created_utc = UTC_TIMESTAMP(),
+	order_id = :order_id,
+	compound_id = :compound_id,
+	ftc_user_id = :ftc_id,
+	wx_union_id = :union_id,
+	tier = :tier,
+	cycle = :cycle,
+` + mUpsertSharedCols
 
 // MemberSnapshot saves a membership's status prior to
 // placing an order.

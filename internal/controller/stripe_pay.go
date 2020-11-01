@@ -285,7 +285,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	go func() {
 
 		if !result.Snapshot.IsZero() {
-			err := router.readerRepo.BackUpMember(result.Snapshot)
+			err := router.readerRepo.ArchiveMember(result.Snapshot)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -380,7 +380,7 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 	// Remember uuid to stripe subscription mapping;
 	// Backup previous membership.
 	go func() {
-		err = router.readerRepo.BackUpMember(result.Snapshot)
+		err = router.readerRepo.ArchiveMember(result.Snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
