@@ -1,7 +1,7 @@
-package wxoauth
+package wxlogin
 
 const (
-	stmtInsertAccess = `
+	StmtInsertAccess = `
 	INSERT INTO user_db.wechat_access
 	SET session_id = UNHEX(?),
 		app_id = ?,
@@ -18,7 +18,7 @@ const (
 		created_utc = ?,
 		updated_utc = ?`
 
-	stmtSelectAccess = `
+	StmtSelectAccess = `
 	SELECT LOWER(HEX(session_id)) AS sessionId, 
 	    access_token AS accessToken,
 		expires_in AS expiresIn,
@@ -33,14 +33,14 @@ const (
 		AND app_id = ?
 	LIMIT 1`
 
-	stmtUpdateAccess = `
+	StmtUpdateAccess = `
 	UPDATE user_db.wechat_access
 	SET access_token = ?,
 	    updated_utc = UTC_TIMESTAMP()
 	WHERE session_id = UNHEX(?)
 	LIMIT 1`
 
-	stmtInsertUserInfo = `
+	StmtInsertUserInfo = `
 	INSERT INTO user_db.wechat_userinfo
 	SET union_id = ?,
 		nickname = ?,
@@ -62,7 +62,7 @@ const (
 		privilege = NULLIF(?, ''),
 		updated_utc = UTC_TIMESTAMP()`
 
-	stmtUpdateUserInfo = `
+	StmtUpdateUserInfo = `
 	UPDATE user_db.wechat_userinfo
 	SET nickname = ?,
 		gender = ?,
@@ -74,7 +74,7 @@ const (
 	    updated_utc = UTC_TIMESTAMP()
 	WHERE union_id = ?`
 
-	stmtInsertStatus = `
+	StmtInsertStatus = `
 	INSERT INTO user_db.wechat_error_log
 	SET code = ?,
 		message = ?,

@@ -8,7 +8,7 @@ import (
 // SaveWxAccess saves the access token related data after acquired from wechat api.
 func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c client.Client) error {
 
-	_, err := env.db.Exec(stmtInsertAccess,
+	_, err := env.db.Exec(wxlogin.StmtInsertAccess,
 		acc.SessionID,
 		appID,
 		acc.AccessToken,
@@ -40,7 +40,7 @@ func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c client.Clie
 func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error) {
 
 	var acc wxlogin.OAuthAccess
-	err := env.db.QueryRow(stmtSelectAccess,
+	err := env.db.QueryRow(wxlogin.StmtSelectAccess,
 		sessionID,
 		appID,
 	).Scan(
@@ -65,7 +65,7 @@ func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error
 // UpdateWxAccess saves refreshed access token.
 func (env Env) UpdateWxAccess(sessionID, accessToken string) error {
 
-	_, err := env.db.Exec(stmtUpdateAccess,
+	_, err := env.db.Exec(wxlogin.StmtUpdateAccess,
 		accessToken,
 		sessionID,
 	)
