@@ -29,6 +29,8 @@ const (
 // cycle: string;
 // planId?: string;
 func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
+	webhookURL := subs.WebhookURL(router.config.Sandbox(), enum.PayMethodAli)
+
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer router.logger.Sync()
 		sugar := router.logger.Sugar()
@@ -57,6 +59,7 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
+		// TODO: ensure return url is set.
 		if ve := input.Validate(); ve != nil {
 			sugar.Error(err)
 			_ = render.New(w).Unprocessable(ve)
@@ -72,9 +75,7 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 		}
 
 		config := subs.NewPayment(account, plan).
-			WithAlipay(
-				router.config.WebHookBaseURL(),
-			)
+			WithAlipay()
 
 		pi, err := router.subRepo.CreateOrder(config)
 		if err != nil {
@@ -84,57 +85,39 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		sugar.Infof("Created order: %+v", pi.Order)
 
-		go func() {
-			if pi.Kind == enum.OrderKindUpgrade {
-				err := router.subRepo.SaveProratedOrders(pi.ProratedOrders())
-				if err != nil {
-					sugar.Error(err)
-				}
-			}
+		err = router.afterOrderCreated(pi, clientApp)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			return
+		}
 
-			err := router.subRepo.LogOrderMeta(subs.OrderMeta{
-				OrderID: pi.Order.ID,
-				Client:  clientApp,
-			})
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
+		or := ali.OrderReq{
+			Title:       pi.Item.Plan.PaymentTitle(pi.Kind),
+			FtcOrderID:  pi.Order.ID,
+			TotalAmount: pi.Payable.AliPrice(),
+			WebhookURL:  webhookURL,
+			TxKind:      kind,
+			ReturnURL:   input.ReturnURL,
+		}
+
+		param, err := router.aliPayClient.CreateOrder(or)
+		if err != nil {
+			sugar.Error(err)
+			_ = render.New(w).InternalServerError(err.Error())
+			return
+		}
+		sugar.Infof("Alipay signed order param: %s", param)
 
 		switch kind {
 		case ali.EntryApp:
-			param, err := router.aliPayClient.SignAppPay(pi.AliAppPayParam())
-			if err != nil {
-				sugar.Error(err)
-				_ = render.New(w).InternalServerError(err.Error())
-				return
-			}
-			sugar.Infof("App pay param: %+v\n", param)
-
 			_ = render.New(w).OK(pi.AliAppPayIntent(param))
 			return
 
 		case ali.EntryDesktopWeb:
-			url, err := router.aliPayClient.DesktopPayRedirectTo(
-				pi.AliDesktopPayParam(
-					input.ReturnURL))
-
-			if err != nil {
-				sugar.Error(err)
-				_ = render.New(w).InternalServerError(err.Error())
-				return
-			}
-			_ = render.New(w).OK(pi.AliPayBrowserIntent(url))
+			_ = render.New(w).OK(pi.AliPayBrowserIntent(param))
 
 		case ali.EntryMobileWeb:
-			url, err := router.aliPayClient.MobileWebRedirectTo(pi.AliWapPayParam(input.ReturnURL))
-			if err != nil {
-				sugar.Error(err)
-				_ = render.New(w).InternalServerError(err.Error())
-				return
-			}
-
-			_ = render.New(w).OK(pi.AliPayBrowserIntent(url))
+			_ = render.New(w).OK(pi.AliPayBrowserIntent(param))
 		}
 	}
 }
@@ -145,13 +128,23 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
+	var send = func(ok bool) {
+		var err error
+		if ok {
+			_, err = w.Write([]byte("fail"))
+		} else {
+			_, err = w.Write([]byte("success"))
+		}
+
+		if err != nil {
+			sugar.Error(err)
+		}
+	}
+
 	err := req.ParseForm()
 	if err != nil {
 		sugar.Error(err)
-
-		if _, err := w.Write([]byte(fail)); err != nil {
-			sugar.Error(err)
-		}
+		send(false)
 		return
 	}
 
@@ -159,11 +152,7 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	payload, err := router.aliPayClient.GetWebhookPayload(req)
 	sugar.Infof("+%v", payload)
 	if err != nil {
-		sugar.Error(err)
-
-		if _, err := w.Write([]byte(fail)); err != nil {
-			sugar.Error(err)
-		}
+		send(false)
 		return
 	}
 
@@ -178,15 +167,11 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 		sugar.Infof("Status %s", payload.TradeStatus)
 
 		if ali.ShouldRetry(payload) {
-			if _, err := w.Write([]byte(fail)); err != nil {
-				sugar.Error(err)
-			}
+			send(false)
 			return
 		}
 
-		if _, err := w.Write([]byte(success)); err != nil {
-			sugar.Error(err)
-		}
+		send(true)
 		return
 	}
 
@@ -194,34 +179,18 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
-	confirmed, cfmErr := router.subRepo.ConfirmOrder(payResult)
+	_, cfmErr := router.processPaymentResult(payResult)
 
 	if cfmErr != nil {
-		sugar.Error(cfmErr)
-		go func() {
-			_ = router.subRepo.SaveConfirmationResult(
-				cfmErr.Schema(payResult.OrderID),
-			)
-		}()
 
 		if cfmErr.Retry {
-			if _, err := w.Write([]byte(fail)); err != nil {
-				sugar.Error(err)
-			}
+			send(false)
 			return
 		} else {
-			if _, err := w.Write([]byte(success)); err != nil {
-				sugar.Error(err)
-			}
+			send(true)
 			return
 		}
 	}
 
-	go func() {
-		router.processCfmResult(confirmed)
-	}()
-
-	if _, err := w.Write([]byte(success)); err != nil {
-		sugar.Error(err)
-	}
+	send(true)
 }
