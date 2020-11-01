@@ -1,3 +1,5 @@
+// +build !production
+
 package test
 
 import (
@@ -207,12 +209,12 @@ func (p *Persona) Membership() reader.Membership {
 
 func (p *Persona) WxOrderBuilder() subs.PaymentConfig {
 	return subs.NewPayment(p.FtcAccount(), p.plan).
-		WithWxpay(WxPayApp, CFG.WebHookBaseURL())
+		WithWxpay(WxPayApp)
 }
 
 func (p *Persona) AliOrderBuilder() subs.PaymentConfig {
 	return subs.NewPayment(p.FtcAccount(), p.plan).
-		WithAlipay(CFG.WebHookBaseURL())
+		WithAlipay()
 }
 
 func (p *Persona) CreateOrder() subs.Order {
@@ -246,13 +248,10 @@ func (p *Persona) CreateOrder() subs.Order {
 }
 
 func (p *Persona) ConfirmOrder(o subs.Order) subs.ConfirmationResult {
-	builder := subs.NewConfirmationBuilder(subs.PaymentResult{
-		ConfirmedAt: chrono.TimeNow(),
-	}).
-		SetMembership(p.member).
-		SetOrder(o)
 
-	res, err := builder.Build()
+	res, err := o.Confirm(subs.PaymentResult{
+		ConfirmedAt: chrono.TimeNow(),
+	}, p.member)
 	if err != nil {
 		panic(err)
 	}
@@ -267,10 +266,7 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 
 	switch p.payMethod {
 	case enum.PayMethodWx:
-		result, err := subs.NewWxWebhookResult(WxNotification(order))
-		if err != nil {
-			panic(err)
-		}
+		result := subs.NewWxWebhookResult(NewWxWHUnsigned(order))
 		return result
 
 	case enum.PayMethodAli:
