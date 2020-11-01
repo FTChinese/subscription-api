@@ -1,8 +1,9 @@
+// +build !production
+
 package test
 
 import (
 	"github.com/FTChinese/go-rest/postoffice"
-	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -20,14 +21,13 @@ const (
 )
 
 var (
-	CFG         = config.NewBuildConfig(false, false)
-	DB          *sqlx.DB
-	Postman     postoffice.PostOffice
-	Cache       *cache.Cache
-	WxOAuthApp  wxlogin.OAuthApp
-	WxPayApp    wechat.PayApp
-	WxPayClient subrepo.WxPayClient
-	AliApp      ali.App
+	CFG        = config.NewBuildConfig(false, false)
+	DB         *sqlx.DB
+	Postman    postoffice.PostOffice
+	Cache      *cache.Cache
+	WxOAuthApp wxlogin.OAuthApp
+	WxPayApp   wechat.PayApp
+	AliApp     ali.App
 )
 
 func init() {
@@ -38,6 +38,5 @@ func init() {
 	Cache = cache.New(cache.DefaultExpiration, 0)
 	WxOAuthApp = wxlogin.MustNewOAuthApp("wxapp.native_app")
 	WxPayApp = wechat.MustNewPayApp("wxapp.native_app")
-	WxPayClient = subrepo.NewWxPayClient(WxPayApp)
 	AliApp = ali.MustInitApp()
 }
