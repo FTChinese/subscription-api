@@ -40,40 +40,6 @@ const (
 	WHERE session_id = UNHEX(?)
 	LIMIT 1`
 
-	StmtInsertUserInfo = `
-	INSERT INTO user_db.wechat_userinfo
-	SET union_id = ?,
-		nickname = ?,
-		avatar_url = ?,
-		gender = ?,
-		country = ?,
-		province = ?,
-		city = ?,
-		privilege = NULLIF(?, ''),
-	    created_utc = UTC_TIMESTAMP(),
-	    updated_utc = UTC_TIMESTAMP()
-	ON DUPLICATE KEY UPDATE
-		nickname = ?,
-		avatar_url = ?,
-		gender = ?,
-		country = ?,
-		province = ?,
-		city = ?,
-		privilege = NULLIF(?, ''),
-		updated_utc = UTC_TIMESTAMP()`
-
-	StmtUpdateUserInfo = `
-	UPDATE user_db.wechat_userinfo
-	SET nickname = ?,
-		gender = ?,
-		country = ?,
-		province = ?,
-		city = ?,
-		avatar_url = ?,
-		privilege = NULLIF(?, ''),
-	    updated_utc = UTC_TIMESTAMP()
-	WHERE union_id = ?`
-
 	StmtInsertStatus = `
 	INSERT INTO user_db.wechat_error_log
 	SET code = ?,
