@@ -1,9 +1,9 @@
 package subrepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/test"
+	"go.uber.org/zap/zaptest"
 	"testing"
 
 	"github.com/smartwalle/alipay"
@@ -41,6 +41,11 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 }
 
 func TestEnv_SavePrepayResp(t *testing.T) {
+	client := NewWxPayClient(test.WxPayApp, zaptest.NewLogger(t))
+
+	p := test.NewPersona()
+	or := test.NewWxOrderUnsigned()
+
 	env := Env{
 		db: test.DB,
 	}
@@ -56,7 +61,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 		{
 			name: "Save Prepay Response",
 			args: args{
-				resp: test.WxPrepay(subs.MustGenerateOrderID()),
+				resp: wechat.NewOrderResp(p.CreateOrder().ID, client.MockOrderPayload(or)),
 			},
 		},
 	}
@@ -72,7 +77,10 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 
 func TestEnv_SaveWxNotification(t *testing.T) {
 
+	client := NewWxPayClient(test.WxPayApp, zaptest.NewLogger(t))
+
 	p := test.NewPersona()
+	noti := test.NewWxWHUnsigned(p.CreateOrder())
 
 	env := Env{
 		db: test.DB,
@@ -89,7 +97,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 		{
 			name: "Save Wx Notification",
 			args: args{
-				n: test.WxNotification(p.CreateOrder()),
+				n: wechat.NewNotification(client.MockWebhookPayload(noti)),
 			},
 			wantErr: false,
 		},
