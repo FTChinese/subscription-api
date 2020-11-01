@@ -51,74 +51,34 @@ func NewOrderQueryResp(p wxpay.Params) OrderQueryResp {
 	v, ok := p["openid"]
 	r.OpenID = null.NewString(v, ok)
 
-	//if v, ok := p["openid"]; ok {
-	//	r.OpenID = null.NewString(v, ok)
-	//}
-
 	v, ok = p["trade_type"]
 	r.TradeType = null.NewString(v, ok)
 
-	//if v, ok := p["trade_type"]; ok {
-	//	r.TxKind = null.NewString(v, ok)
-	//}
-
 	v, ok = p["trade_state"]
 	r.TradeState = null.NewString(v, ok)
-	//if v, ok := p["trade_state"]; ok {
-	//	r.TradeState = null.NewString(v, ok)
-	//}
 
 	v, ok = p["bank_type"]
 	r.BankType = null.NewString(v, ok)
-	//if v, ok := p["bank_type"]; ok {
-	//	r.BankType = null.NewString(v, ok)
-	//}
 
 	price := p.GetInt64("total_fee")
 	r.TotalFee = null.NewInt(price, price != 0)
 
 	v, ok = p["fee_type"]
 	r.Currency = null.NewString(v, ok)
-	//if v, ok := p["fee_type"]; ok {
-	//	r.Currency = null.NewString(v, ok)
-	//}
 
 	v, ok = p["transaction_id"]
 	r.TransactionID = null.NewString(v, ok)
-	//if v, ok := p["transaction_id"]; ok {
-	//	r.TransactionID = null.NewString(v, ok)
-	//}
 
 	v, ok = p["out_trade_no"]
 	r.FTCOrderID = null.NewString(v, ok)
-	//if v, ok := p["out_trade_no"]; ok {
-	//	r.FTCOrderID = null.NewString(v, ok)
-	//}
 
+	// 订单支付时间，格式为yyyyMMddHHmmss，如2009年12月25日9点10分10秒表示为20091225091010
 	v, ok = p["time_end"]
 	r.TimeEnd = null.NewString(v, ok)
-	//if v, ok := p["time_end"]; ok {
-	//	r.TimeEnd = null.NewString(v, ok)
-	//}
 
+	// 对当前查询订单状态的描述和下一步操作的指引
 	v, ok = p["trade_state_desc"]
 	r.TradeStateDesc = null.NewString(v, ok)
-	//if v, ok := p["trade_state_desc"]; ok {
-	//	r.TradeStateDesc = null.NewString(v, ok)
-	//}
 
 	return r
-}
-
-// ValidateTradeState ensures the transaction is actually done successfully.
-func (r OrderQueryResp) ValidateTradeState() *render.ValidationError {
-	if r.TradeState.String == TradeStateSuccess {
-		return nil
-	}
-
-	return &render.ValidationError{
-		Message: r.TradeStateDesc.String,
-		Field:   "trade_state",
-		Code:    render.InvalidCode(r.TradeState.String),
-	}
 }
