@@ -64,13 +64,17 @@ func GenWxID() string {
 	return id
 }
 
-func GenWxAccessTokenToken() string {
+func GenWxAccessToken() string {
 	token, _ := gorest.RandomBase64(82)
 	return token
 }
 
 func RandomPayMethod() enum.PayMethod {
 	return enum.PayMethod(rand.IntRange(1, 3))
+}
+
+func RandomGender() enum.Gender {
+	return enum.Gender(rand.IntRange(0, 3))
 }
 
 func GenAvatar() string {
