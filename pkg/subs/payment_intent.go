@@ -3,9 +3,7 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
-	"github.com/smartwalle/alipay"
 )
 
 // WxPayNativeAppIntent creates an order used by native apps.
@@ -81,22 +79,6 @@ func (pi PaymentIntent) ProratedOrders() []ProratedOrder {
 	return pi.Wallet.Sources
 }
 
-// AliAppPayParam builds the data that can be to tell Ali what product user is buying.
-// The return data has to be signed by Alipay sdk
-// before sending it to client.
-func (pi PaymentIntent) AliAppPayParam() alipay.AliPayTradeAppPay {
-	return alipay.AliPayTradeAppPay{
-		TradePay: alipay.TradePay{
-			NotifyURL:   pi.WebhookURL,
-			Subject:     pi.Item.Plan.PaymentTitle(pi.Kind),
-			OutTradeNo:  pi.Order.ID,
-			TotalAmount: pi.Payable.AliPrice(),
-			ProductCode: ali.ProductCodeApp.String(),
-			GoodsType:   "0",
-		},
-	}
-}
-
 // AliAppPayIntent build the data to be sent to native apps.
 // The param is Alipsy sdk's signed string.
 func (pi PaymentIntent) AliAppPayIntent(param string) AlipayNativeIntent {
@@ -106,34 +88,7 @@ func (pi PaymentIntent) AliAppPayIntent(param string) AlipayNativeIntent {
 	}
 }
 
-func (pi PaymentIntent) AliDesktopPayParam(retURL string) alipay.AliPayTradePagePay {
-	return alipay.AliPayTradePagePay{
-		TradePay: alipay.TradePay{
-			NotifyURL:   pi.WebhookURL,
-			ReturnURL:   retURL,
-			Subject:     pi.Item.Plan.PaymentTitle(pi.Order.Kind),
-			OutTradeNo:  pi.Order.ID,
-			TotalAmount: pi.Payable.AliPrice(),
-			ProductCode: ali.ProductCodeWeb.String(),
-			GoodsType:   "0",
-		},
-	}
-}
-
-func (pi PaymentIntent) AliWapPayParam(retURL string) alipay.AliPayTradeWapPay {
-	return alipay.AliPayTradeWapPay{
-		TradePay: alipay.TradePay{
-			NotifyURL:   pi.WebhookURL,
-			ReturnURL:   retURL,
-			Subject:     pi.Item.Plan.PaymentTitle(pi.Order.Kind),
-			OutTradeNo:  pi.Order.ID,
-			TotalAmount: pi.Payable.AliPrice(),
-			ProductCode: ali.ProductCodeWeb.String(),
-			GoodsType:   "0",
-		},
-	}
-}
-
+// AliPayBrowserIntent build the data required to pay inside desktop or mobile browsers.
 func (pi PaymentIntent) AliPayBrowserIntent(redirectURL string) AlipayBrowserIntent {
 	return AlipayBrowserIntent{
 		Order:       pi.Order,
