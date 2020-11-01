@@ -3,11 +3,11 @@ package subrepo
 import (
 	"errors"
 	"fmt"
-	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/objcoding/wxpay"
 	"go.uber.org/zap"
+	"net/http"
 )
 
 // PayClients put various weechat payment app
@@ -47,7 +47,7 @@ func NewWxClientStore(apps []wechat.PayApp, logger *zap.Logger) WxPayClientStore
 func (s WxPayClientStore) ClientByPlatform(t wechat.TradeType) (WxPayClient, error) {
 	i, ok := s.indexByPlatform[t]
 	if !ok {
-		return WxPayClient{}, fmt.Errorf("wxpay client for trade type %s not found", t)
+		return WxPayClient{}, fmt.Errorf("wxpay client: cannot find app for trade type %s", t)
 	}
 
 	return s.clients[i], nil
@@ -59,10 +59,46 @@ func (s WxPayClientStore) ClientByAppID(id string) (WxPayClient, error) {
 	i, ok := s.indexByID[id]
 
 	if !ok {
-		return WxPayClient{}, fmt.Errorf("wxpay client for app id %s not found", id)
+		return WxPayClient{}, fmt.Errorf("wxpay client: cannot find app %s", id)
 	}
 
 	return s.clients[i], nil
+}
+
+func (s WxPayClientStore) GetWebhookPayload(req *http.Request) (wechat.Notification, error) {
+	defer s.logger.Sync()
+	sugar := s.logger.Sugar()
+
+	defer req.Body.Close()
+
+	raw, err := wechat.DecodeXML(req.Body)
+	if err != nil {
+		sugar.Error()
+		return wechat.Notification{}, err
+	}
+
+	sugar.Infof("wxpay webhook raw payload: %+v", raw)
+
+	payload := wechat.NewNotification(raw)
+
+	if payload.IsBadRequest() {
+		return wechat.Notification{}, fmt.Errorf("wxpay webhook payload: %s", payload.BadRequestMsg())
+	}
+
+	if payload.AppID.IsZero() {
+		return wechat.Notification{}, fmt.Errorf("wxpay webhook payload: missing appid")
+	}
+
+	client, err := s.ClientByAppID(payload.AppID.String)
+	if err != nil {
+		return wechat.Notification{}, err
+	}
+
+	if !client.sdk.ValidSign(raw) {
+		return wechat.Notification{}, errors.New("wxpay webhook payload: signature cannot be verified")
+	}
+
+	return payload, nil
 }
 
 // Client extends wxpay.Client
@@ -128,30 +164,16 @@ func (c WxPayClient) QueryOrder(order subs.Order) (wechat.OrderQueryResp, error)
 	// total_fee:25800
 	// trade_state:NOTPAY
 	// trade_state_desc:订单未支付
-	respParams, err := c.sdk.OrderQuery(reqParams)
+	raw, err := c.sdk.OrderQuery(reqParams)
 
-	sugar.Infof("Query wx order: %v", respParams)
+	sugar.Infof("wxpay client raw query order: %v", raw)
 
 	// If there are any errors when querying order.
 	if err != nil {
-		return wechat.OrderQueryResp{}, render.NewInternalError(err.Error())
+		return wechat.OrderQueryResp{}, err
 	}
 
-	return wechat.NewOrderQueryResp(respParams), nil
-}
-
-func (c WxPayClient) ValidateWebhook(payload wechat.Notification) error {
-
-	err := payload.Validate(c.app)
-	if err != nil {
-		return err
-	}
-
-	if !c.sdk.ValidSign(payload.RawParams) {
-		return errors.New("invalid sign")
-	}
-
-	return nil
+	return wechat.NewOrderQueryResp(raw), nil
 }
 
 func (c WxPayClient) SignJSApiParams(or wechat.OrderResp) wechat.JSApiParams {
@@ -161,7 +183,7 @@ func (c WxPayClient) SignJSApiParams(or wechat.OrderResp) wechat.JSApiParams {
 	return p
 }
 
-// SignAppParams build the parameters required by native app pay.
+// SignAppParams re-sign wxpay's order to build the parameters used by native app sdk to call wechat service.
 func (c WxPayClient) SignAppParams(or wechat.OrderResp) wechat.NativeAppParams {
 	p := wechat.NewNativeAppParams(or)
 	p.Signature = c.sdk.Sign(p.ToMap())
