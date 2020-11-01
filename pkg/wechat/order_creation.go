@@ -18,13 +18,6 @@ func GenerateTimestamp() string {
 	return fmt.Sprintf("%d", time.Now().Unix())
 }
 
-// UnifiedOrder contains the data sent to wechat to obtain a payment intent.
-type OrderConfig struct {
-	UserIP string
-	TxKind TradeType
-	OpenID string // Required only for JSAPI.
-}
-
 // OrderReq contains the data sent to wechat api to create an order.
 type OrderReq struct {
 	Body          string      `xml:"body"`
@@ -83,27 +76,22 @@ type OrderResp struct {
 // ]
 func NewOrderResp(orderID string, p wxpay.Params) OrderResp {
 	r := OrderResp{
+		BaseResp:   NewBaseResp(p),
 		FtcOrderID: orderID,
 	}
 
-	r.Populate(p)
+	v, ok := p["trade_type"]
+	r.TradeType = null.NewString(v, ok)
 
-	if v, ok := p["trade_type"]; ok {
-		r.TradeType = null.StringFrom(v)
-	}
-
-	if v, ok := p["prepay_id"]; ok {
-		r.PrepayID = null.StringFrom(v)
-	}
+	v, ok = p["prepay_id"]
+	r.PrepayID = null.NewString(v, ok)
 
 	// For native pay.
-	if v, ok := p["code_url"]; ok {
-		r.QRCode = null.StringFrom(v)
-	}
+	v, ok = p["code_url"]
+	r.QRCode = null.NewString(v, ok)
 
-	if v, ok := p["mweb_url"]; ok {
-		r.MWebURL = null.StringFrom(v)
-	}
+	v, ok = p["mweb_url"]
+	r.MWebURL = null.NewString(v, ok)
 
 	return r
 }
