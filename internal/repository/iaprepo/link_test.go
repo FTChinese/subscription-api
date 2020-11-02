@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/go-redis/redis/v8"
@@ -164,31 +163,73 @@ func TestEnv_Link(t *testing.T) {
 	}
 }
 
-func TestEnv_Unlink(t *testing.T) {
+func TestEnv_ArchiveLinkCheating(t *testing.T) {
 
-	p := test.NewPersona().SetPayMethod(enum.PayMethodApple)
-
-	test.NewRepo().MustSaveMembership(p.Membership())
+	p := test.NewPersona()
 
 	type fields struct {
-		cfg config.BuildConfig
-		db  *sqlx.DB
+		db     *sqlx.DB
+		rdb    *redis.Client
+		logger *zap.Logger
 	}
 	type args struct {
-		input apple.LinkInput
+		link apple.LinkInput
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    reader.MemberSnapshot
+		wantErr bool
+	}{
+		{
+			name: "Archive link cheating",
+			fields: fields{
+				db:     test.DB,
+				rdb:    test.Redis,
+				logger: zaptest.NewLogger(t),
+			},
+			args: args{link: apple.LinkInput{
+				FtcID:        p.FtcID,
+				OriginalTxID: p.AppleSubID,
+			}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				db:     tt.fields.db,
+				rdb:    tt.fields.rdb,
+				logger: tt.fields.logger,
+			}
+			if err := env.ArchiveLinkCheating(tt.args.link); (err != nil) != tt.wantErr {
+				t.Errorf("ArchiveLinkCheating() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnv_Unlink(t *testing.T) {
+
+	p := test.NewPersona().SetPayMethod(enum.PayMethodApple)
+
+	sub := p.IAPSubs()
+
+	repo := test.NewRepo()
+	repo.MustSaveMembership(p.Membership())
+	repo.MustSaveIAPSubs(sub)
+
+	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
+
+	type args struct {
+		input apple.LinkInput
+	}
+	tests := []struct {
+		name    string
+		args    args
 		wantErr bool
 	}{
 		{
 			name: "Unlink IAP",
-			fields: fields{
-				db: test.DB,
-			},
 			args: args{
 				input: apple.LinkInput{
 					FtcID:        p.FtcID,
@@ -200,9 +241,7 @@ func TestEnv_Unlink(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db: tt.fields.db,
-			}
+
 			got, err := env.Unlink(tt.args.input)
 
 			if tt.wantErr {
