@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/guregu/null"
 	"time"
 )
 
@@ -50,6 +51,7 @@ func (p *Persona) IAPSubs() apple.Subscription {
 		ExpiresDateUTC:    chrono.TimeFrom(time.Now().AddDate(1, 0, 0)),
 		Edition:           p.plan.Edition,
 		AutoRenewal:       true,
+		FtcUserID:         null.StringFrom(p.FtcID),
 	}
 
 	if p.expired {
