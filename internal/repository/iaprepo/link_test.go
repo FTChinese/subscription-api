@@ -7,8 +7,11 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
+	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
@@ -24,12 +27,13 @@ func TestEnv_Link(t *testing.T) {
 	repo.MustSaveMembership(p3.Membership())
 
 	type fields struct {
-		cfg config.BuildConfig
-		db  *sqlx.DB
+		db     *sqlx.DB
+		rdb    *redis.Client
+		logger *zap.Logger
 	}
 	type args struct {
 		account reader.FtcAccount
-		iapSubs apple.Subscription
+		sub     apple.Subscription
 	}
 	tests := []struct {
 		name    string
@@ -40,46 +44,48 @@ func TestEnv_Link(t *testing.T) {
 		{
 			name: "Both sides have no existing membership",
 			fields: fields{
-				db: test.DB,
+				db:     test.DB,
+				logger: zaptest.NewLogger(t),
 			},
 			args: args{
 				account: test.NewPersona().FtcAccount(),
-				iapSubs: test.NewPersona().IAPSubs(),
+				sub:     test.NewPersona().IAPSubs(),
 			},
 			wantErr: false,
 		},
 		{
 			name: "IAP current empty cannot link to FTC non-expired",
 			fields: fields{
-				cfg: config.BuildConfig{},
-				db:  test.DB,
+				db:     test.DB,
+				logger: zaptest.NewLogger(t),
 			},
 			args: args{
 				account: p1.FtcAccount(),
-				iapSubs: p1.IAPSubs(),
+				sub:     p1.IAPSubs(),
 			},
 			wantErr: true,
 		},
 		{
 			name: "IAP current empty can link to FTC expired",
 			fields: fields{
-				cfg: config.BuildConfig{},
-				db:  test.DB,
+				db:     test.DB,
+				logger: zaptest.NewLogger(t),
 			},
 			args: args{
 				account: p2.FtcAccount(),
-				iapSubs: test.NewPersona().IAPSubs(),
+				sub:     test.NewPersona().IAPSubs(),
 			},
 			wantErr: false,
 		},
 		{
 			name: "IAP exists and should not link to any new ftc account",
 			fields: fields{
-				db: test.DB,
+				db:     test.DB,
+				logger: zaptest.NewLogger(t),
 			},
 			args: args{
 				account: test.NewPersona().FtcAccount(),
-				iapSubs: p3.IAPSubs(),
+				sub:     p3.IAPSubs(),
 			},
 			wantErr: true,
 		},
@@ -89,7 +95,7 @@ func TestEnv_Link(t *testing.T) {
 			env := Env{
 				db: tt.fields.db,
 			}
-			got, err := env.Link(tt.args.account, tt.args.iapSubs)
+			got, err := env.Link(tt.args.account, tt.args.sub)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

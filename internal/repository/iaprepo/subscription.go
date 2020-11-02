@@ -83,6 +83,7 @@ func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 	return currMember.Snapshot(reader.ArchiverAppleVerify), nil
 }
 
+// LoadSubs retrieves a single row of iap subscription.
 func (env Env) LoadSubs(originalID string) (apple.Subscription, error) {
 	var s apple.Subscription
 	err := env.db.Get(&s, apple.StmtLoadSubs, originalID)
@@ -94,9 +95,10 @@ func (env Env) LoadSubs(originalID string) (apple.Subscription, error) {
 	return s, nil
 }
 
-func (env Env) countSubs() (int64, error) {
+// countSubs get the number of rows of a user's subscription.
+func (env Env) countSubs(ftcID string) (int64, error) {
 	var count int64
-	err := env.db.Get(&count, apple.StmtCountSubs)
+	err := env.db.Get(&count, apple.StmtCountSubs, ftcID)
 	if err != nil {
 		return 0, err
 	}
@@ -104,6 +106,7 @@ func (env Env) countSubs() (int64, error) {
 	return count, nil
 }
 
+// listSubs get a list of a user's iap subscription.
 func (env Env) listSubs(ftcID string, p gorest.Pagination) ([]apple.Subscription, error) {
 	var s = make([]apple.Subscription, 0)
 	err := env.db.Select(&s, apple.StmtListSubs, ftcID, p.Limit, p.Offset())
@@ -120,7 +123,7 @@ func (env Env) ListSubs(ftcID string, p gorest.Pagination) (apple.SubsList, erro
 
 	go func() {
 		defer close(countCh)
-		n, err := env.countSubs()
+		n, err := env.countSubs(ftcID)
 		// Ignore error
 		if err != nil {
 			log.Print(err)

@@ -77,7 +77,7 @@ func TestEnv_countSubs(t *testing.T) {
 			env := Env{
 				db: tt.fields.db,
 			}
-			got, err := env.countSubs()
+			got, err := env.countSubs(p.FtcID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("countSubs() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -102,7 +102,8 @@ func TestEnv_listSubs(t *testing.T) {
 		db *sqlx.DB
 	}
 	type args struct {
-		p gorest.Pagination
+		ftcID string
+		p     gorest.Pagination
 	}
 	tests := []struct {
 		name    string
@@ -116,7 +117,8 @@ func TestEnv_listSubs(t *testing.T) {
 				db: test.DB,
 			},
 			args: args{
-				p: gorest.NewPagination(1, 20),
+				ftcID: p.FtcID,
+				p:     gorest.NewPagination(1, 20),
 			},
 			wantErr: false,
 		},
@@ -126,7 +128,7 @@ func TestEnv_listSubs(t *testing.T) {
 			env := Env{
 				db: tt.fields.db,
 			}
-			got, err := env.listSubs(tt.args.p)
+			got, err := env.listSubs(tt.args.ftcID, tt.args.p)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("listSubs() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -151,7 +153,8 @@ func TestEnv_ListSubs(t *testing.T) {
 		db *sqlx.DB
 	}
 	type args struct {
-		p gorest.Pagination
+		ftcID string
+		p     gorest.Pagination
 	}
 	tests := []struct {
 		name    string
@@ -175,7 +178,7 @@ func TestEnv_ListSubs(t *testing.T) {
 			env := Env{
 				db: tt.fields.db,
 			}
-			got, err := env.ListSubs(tt.args.p)
+			got, err := env.ListSubs(tt.args.ftcID, tt.args.p)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListSubs() error = %v, wantErr %v", err, tt.wantErr)
 				return

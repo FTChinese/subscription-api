@@ -3,6 +3,7 @@ package iaprepo
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
@@ -16,12 +17,12 @@ func TestClient_pickUrl(t *testing.T) {
 	}{
 		{
 			name:   "Sandbox",
-			fields: NewClient(true),
+			fields: NewClient(true, zaptest.NewLogger(t)),
 			want:   "https://sandbox.itunes.apple.com/verifyReceipt",
 		},
 		{
 			name:   "Production",
-			fields: NewClient(false),
+			fields: NewClient(false, zaptest.NewLogger(t)),
 			want:   "https://buy.itunes.apple.com/verifyReceipt",
 		},
 	}
@@ -47,7 +48,7 @@ func TestClient_Verify(t *testing.T) {
 	}{
 		{
 			name:    "A sandbox receipt",
-			fields:  NewClient(true),
+			fields:  NewClient(true, zaptest.NewLogger(t)),
 			args:    args{receipt: faker.IAPReceipt},
 			wantErr: false,
 		},
