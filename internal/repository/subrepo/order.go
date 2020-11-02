@@ -3,7 +3,11 @@ package subrepo
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/guregu/null"
 )
+
+// For backward compatibility.
+const wxAppNativeApp = "wxacddf1c20516eb69" // Used by native app to pay and log in.
 
 func (env Env) CreateOrder(config subs.PaymentConfig) (subs.PaymentIntent, error) {
 	defer env.logger.Sync()
@@ -122,7 +126,6 @@ func (env Env) LogOrderMeta(m subs.OrderMeta) error {
 }
 
 // RetrieveOrder loads an order by its id.
-// TODO: for wechat order, fill up wx app id if missing.
 func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 	var order subs.Order
 
@@ -133,6 +136,11 @@ func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 
 	if err != nil {
 		return subs.Order{}, err
+	}
+
+	// Set wx app id to the one used by native app pay if missing.
+	if order.PaymentMethod == enum.PayMethodWx && order.WxAppID.IsZero() {
+		order.WxAppID = null.StringFrom(wxAppNativeApp)
 	}
 
 	return order, nil
