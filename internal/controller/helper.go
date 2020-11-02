@@ -15,7 +15,6 @@ import (
 
 const (
 	wxOAuthCallback = "http://users.ftchinese.com/login/wechat/callback?"
-	wxAppNativeApp  = "wxacddf1c20516eb69" // Used by native app to pay and log in.
 )
 
 // getURLParam gets a url parameter.
