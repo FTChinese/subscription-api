@@ -78,26 +78,21 @@ func (env Env) CreateOrder(config subs.PaymentConfig) (subs.PaymentIntent, error
 	}
 	sugar.Infof("Order saved %s", pi.Order.ID)
 
+	if balanceSources != nil {
+		pos := pi.ProratedOrders(pi.Order.ID)
+		err := otx.SaveProratedOrders(pos)
+		if err != nil {
+			_ = otx.Rollback()
+			return subs.PaymentIntent{}, err
+		}
+	}
+
 	if err := otx.Commit(); err != nil {
 		sugar.Error(err)
 		return subs.PaymentIntent{}, err
 	}
 
 	return pi, nil
-}
-
-func (env Env) SaveProratedOrders(pos []subs.ProratedOrder) error {
-	for _, v := range pos {
-		_, err := env.db.NamedExec(
-			subs.StmtSaveProratedOrder,
-			v)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (env Env) ProratedOrdersUsed(upOrderID string) error {
