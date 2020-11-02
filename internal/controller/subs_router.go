@@ -63,13 +63,13 @@ func (router SubsRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	_ = render.New(w).DBError(err)
 }
 
-func (router SubsRouter) afterOrderCreated(pi subs.PaymentIntent, client client.Client) error {
+func (router SubsRouter) postOrderCreation(order subs.Order, client client.Client) error {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
 	go func() {
 		err := router.subRepo.LogOrderMeta(subs.OrderMeta{
-			OrderID: pi.Order.ID,
+			OrderID: order.ID,
 			Client:  client,
 		})
 		if err != nil {

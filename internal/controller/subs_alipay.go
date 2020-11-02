@@ -85,7 +85,7 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 
 		sugar.Infof("Created order: %+v", pi.Order)
 
-		err = router.afterOrderCreated(pi, clientApp)
+		err = router.postOrderCreation(pi.Order, clientApp)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 			return
