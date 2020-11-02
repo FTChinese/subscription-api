@@ -115,7 +115,7 @@ func (r *Repo) MustSaveRenewalOrders(orders []subs.Order) {
 	}
 }
 
-// MustSaveProratedOrders inserts prorated orders
+// MustSaveProratedOrders inserts prorated Orders
 // to test ProratedOrdersUsed.
 func (r *Repo) MustSaveProratedOrders(pos []subs.ProratedOrder) {
 
