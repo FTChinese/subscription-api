@@ -46,12 +46,8 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Start to link apple subscription to ftc membership.
-	result, err := router.iapRepo.Link(input, ftcAccount)
-
+	sub, err := router.iapRepo.GetSubAndSetFtcID(input)
 	if err != nil {
-		sugar.Error(err)
-
 		switch err {
 		case apple.ErrIAPAlreadyLinked:
 			// Archive possible cheating.
@@ -68,6 +64,19 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 				Code:    "link_taken",
 			})
 
+		default:
+			_ = render.New(w).DBError(err)
+		}
+
+		return
+	}
+	// Start to link apple subscription to ftc membership.
+	result, err := router.iapRepo.Link(ftcAccount, sub)
+
+	if err != nil {
+		sugar.Error(err)
+
+		switch err {
 		case apple.ErrFtcAlreadyLinked:
 			_ = render.New(w).Unprocessable(&render.ValidationError{
 				Message: "FTC account is already linked to another Apple subscription",
