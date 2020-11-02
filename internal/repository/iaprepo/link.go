@@ -28,6 +28,7 @@ func (env Env) GetSubAndSetFtcID(input apple.LinkInput) (apple.Subscription, err
 	// If sub.FtcUserID is not empty, and not equal to input.FtcID
 	// link should be denied and this is possible cheating.
 	if !sub.PermitLink(input.FtcID) {
+		sugar.Infof("Link %s to %s is not permitted", input.FtcID, input.OriginalTxID)
 		_ = tx.Rollback()
 		return apple.Subscription{}, apple.ErrIAPAlreadyLinked
 	}
@@ -104,8 +105,11 @@ func (env Env) Link(account reader.FtcAccount, sub apple.Subscription) (apple.Li
 
 	result, err := builder.Build()
 	if err != nil {
+		sugar.Error(err)
+		_ = tx.Rollback()
 		return apple.LinkResult{}, err
 	}
+
 	// If membership is take a snapshot, we must delete it.
 	if !result.Snapshot.IsZero() {
 		err := tx.DeleteMember(ftcMember.MemberID)
