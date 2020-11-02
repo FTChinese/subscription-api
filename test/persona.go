@@ -281,10 +281,35 @@ func (p *Persona) RenewN(n int) []subs.Order {
 	orders := make([]subs.Order, 0)
 
 	for i := 0; i < n; i++ {
-		o := p.CreateOrder()
-		p.ConfirmOrder(o)
+		result := p.ConfirmOrder(p.CreateOrder())
 
-		orders = append(orders, o)
+		orders = append(orders, result.Order)
+	}
+
+	return orders
+}
+
+func (p *Persona) CreateBalanceSources(n int) []subs.Order {
+	orders := make([]subs.Order, 0)
+
+	var payConfig subs.PaymentConfig
+	if p.payMethod == enum.PayMethodWx {
+		payConfig = p.WxOrderBuilder()
+	} else if p.payMethod == enum.PayMethodAli {
+		payConfig = p.AliOrderBuilder()
+	} else {
+		panic("only alipay or wxpay supported")
+	}
+
+	for i := 0; i < n; i++ {
+		pi, err := payConfig.BuildIntent(nil, enum.OrderKindRenew)
+		if err != nil {
+			panic(err)
+		}
+
+		result := p.ConfirmOrder(pi.Order)
+
+		orders = append(orders, result.Order)
 	}
 
 	return orders
