@@ -39,7 +39,7 @@ func (env Env) FindAccount(ids reader.MemberID) (reader.FtcAccount, error) {
 		return env.AccountByWxID(ids.UnionID.String)
 	}
 
-	return reader.FtcAccount{}, errors.New("either ftc id or wechat id should be specified")
+	return reader.FtcAccount{}, errors.New("niether ftc id nor wechat id should be specified")
 }
 
 func (env Env) FtcAccountByStripeID(cusID string) (reader.FtcAccount, error) {
@@ -53,14 +53,4 @@ func (env Env) FtcAccountByStripeID(cusID string) (reader.FtcAccount, error) {
 	}
 
 	return u, nil
-}
-
-func (env Env) SandboxUserExists(ftcID string) (bool, error) {
-	var found bool
-	err := env.db.Get(&found, reader.StmtSandboxExists, ftcID)
-	if err != nil {
-		return false, err
-	}
-
-	return found, nil
 }
