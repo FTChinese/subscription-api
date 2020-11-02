@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -186,8 +187,7 @@ func (m Membership) canRenewViaAliWx() bool {
 // Create  | Zero / Status is not active / Expired
 // Renewal | Tier === Plan.Tier
 // Upgrade | Tier is Standard while Plan.Tier is Premium
-// TODO: should we deny B2B switching to retailing?
-func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, *render.ValidationError) {
+func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, error) {
 	if m.IsZero() {
 		return enum.OrderKindCreate, nil
 	}
@@ -205,11 +205,7 @@ func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, *render.Va
 	// Member is not expired. We need to consider current payment method.
 	// If current membership is purchased via methods other than wx or ali, requesting to pay via wx or ali is invalid.
 	if !m.IsAliOrWxPay() {
-		return enum.OrderKindNull, &render.ValidationError{
-			Message: fmt.Sprintf("Already subscribed via %s", m.PaymentMethod),
-			Field:   "paymentMethod",
-			Code:    render.CodeInvalid,
-		}
+		return enum.OrderKindNull, fmt.Errorf("already subscribed via %s", m.PaymentMethod)
 	}
 
 	// Renewal.
@@ -217,11 +213,7 @@ func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, *render.Va
 		if m.canRenewViaAliWx() {
 			return enum.OrderKindRenew, nil
 		} else {
-			return enum.OrderKindNull, &render.ValidationError{
-				Message: "Already have a very long membership duration",
-				Field:   "renewal",
-				Code:    render.CodeInvalid,
-			}
+			return enum.OrderKindNull, errors.New("beyond max allowed renewal period")
 		}
 	}
 
@@ -231,19 +223,15 @@ func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, *render.Va
 	}
 
 	// Trying to downgrade.
+	// TODO: to allow downgrading, we should establish a system that
+	// keep order in reserved state.
+	// Only change current membership based on reserved order after expiration date reached.
+	// The same approach could be used to handle a valid B2B, IAP or Stripe user creating orders via wx and ali.
 	if m.Tier == enum.TierPremium && e.Tier == enum.TierStandard {
-		return enum.OrderKindNull, &render.ValidationError{
-			Message: "Downgrading is forbidden.",
-			Field:   "downgrade",
-			Code:    render.CodeInvalid,
-		}
+		return enum.OrderKindNull, errors.New("downgrading is not supported currently")
 	}
 
-	return enum.OrderKindNull, &render.ValidationError{
-		Message: "Cannot determine subscription kind.",
-		Field:   "order",
-		Code:    render.CodeInvalid,
-	}
+	return enum.OrderKindNull, errors.New("cannot determine subscription kind")
 }
 
 // ================================
