@@ -15,6 +15,58 @@ import (
 	"testing"
 )
 
+func TestEnv_GetSubAndSetFtcID(t *testing.T) {
+	p := test.NewPersona().SetPayMethod(enum.PayMethodApple)
+
+	test.NewRepo().MustSaveIAPSubs(p.IAPSubs())
+
+	type fields struct {
+		db     *sqlx.DB
+		rdb    *redis.Client
+		logger *zap.Logger
+	}
+	type args struct {
+		input apple.LinkInput
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Get subscription and optionally set ftc id",
+			fields: fields{
+				db:     test.DB,
+				logger: zaptest.NewLogger(t),
+			},
+			args: args{
+				input: apple.LinkInput{
+					FtcID:        p.FtcID,
+					OriginalTxID: p.AppleSubID,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				db:     tt.fields.db,
+				rdb:    tt.fields.rdb,
+				logger: tt.fields.logger,
+			}
+			got, err := env.GetSubAndSetFtcID(tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetSubAndSetFtcID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			t.Logf("%+v", got)
+		})
+	}
+}
+
 func TestEnv_Link(t *testing.T) {
 
 	p1 := test.NewPersona()
@@ -45,6 +97,7 @@ func TestEnv_Link(t *testing.T) {
 			name: "Both sides have no existing membership",
 			fields: fields{
 				db:     test.DB,
+				rdb:    test.Redis,
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
@@ -57,6 +110,7 @@ func TestEnv_Link(t *testing.T) {
 			name: "IAP current empty cannot link to FTC non-expired",
 			fields: fields{
 				db:     test.DB,
+				rdb:    test.Redis,
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
@@ -69,6 +123,7 @@ func TestEnv_Link(t *testing.T) {
 			name: "IAP current empty can link to FTC expired",
 			fields: fields{
 				db:     test.DB,
+				rdb:    test.Redis,
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
@@ -81,6 +136,7 @@ func TestEnv_Link(t *testing.T) {
 			name: "IAP exists and should not link to any new ftc account",
 			fields: fields{
 				db:     test.DB,
+				rdb:    test.Redis,
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
@@ -93,15 +149,15 @@ func TestEnv_Link(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db: tt.fields.db,
+				db:     tt.fields.db,
+				rdb:    tt.fields.rdb,
+				logger: tt.fields.logger,
 			}
 			got, err := env.Link(tt.args.account, tt.args.sub)
-			if tt.wantErr {
-				assert.Error(t, err)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Link() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
-			assert.NoError(t, err)
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
