@@ -67,14 +67,6 @@ func (router SubsRouter) afterOrderCreated(pi subs.PaymentIntent, client client.
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	if pi.Kind == enum.OrderKindUpgrade {
-		err := router.subRepo.SaveProratedOrders(pi.ProratedOrders())
-		if err != nil {
-			sugar.Error(err)
-			return err
-		}
-	}
-
 	go func() {
 		err := router.subRepo.LogOrderMeta(subs.OrderMeta{
 			OrderID: pi.Order.ID,
