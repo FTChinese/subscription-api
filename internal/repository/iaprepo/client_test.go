@@ -67,7 +67,7 @@ func TestClient_Verify(t *testing.T) {
 				return
 			}
 
-			t.Logf("Verified receipt: %s", got)
+			t.Logf("Verified receipt: %v", got)
 		})
 	}
 }
