@@ -76,7 +76,7 @@ func (c Checkout) WithTest(t bool) Checkout {
 // PaymentConfig collects parameters to build an order.
 // These are experimental refactoring.
 type PaymentConfig struct {
-	dryRun  bool                 // Only for upgrade preview.
+	DryRun  bool                 // Only for upgrade preview.
 	Account reader.FtcAccount    // Required. Who is paying.
 	Plan    product.ExpandedPlan // Required. What is purchased.
 	Method  enum.PayMethod       // Optional if no payment is actually involved.
@@ -103,8 +103,10 @@ func (c PaymentConfig) WithWxpay(app wechat.PayApp) PaymentConfig {
 	return c
 }
 
-func (c PaymentConfig) WithUpgrade(preview bool) PaymentConfig {
-	c.dryRun = preview
+// WithPreview set the DryRun field.
+// Used by upgrade preview and the free uprade.
+func (c PaymentConfig) WithPreview(preview bool) PaymentConfig {
+	c.DryRun = preview
 	return c
 }
 
@@ -194,7 +196,9 @@ func (c PaymentConfig) BuildIntent(bs []BalanceSource, kind enum.OrderKind) (Pay
 	}, nil
 }
 
-func (c PaymentConfig) UpgradeIntent(checkout Checkout, m reader.Membership) (UpgradeIntent, error) {
+func (c PaymentConfig) UpgradeIntent(bs []BalanceSource, m reader.Membership) (UpgradeIntent, error) {
+
+	checkout := c.Checkout(bs, enum.OrderKindUpgrade)
 
 	intent := UpgradeIntent{
 		Charge:         checkout.Payable,
@@ -211,7 +215,7 @@ func (c PaymentConfig) UpgradeIntent(checkout Checkout, m reader.Membership) (Up
 	}
 
 	// This order is used for upgrade but the balance is not enough to cover the cost.
-	if c.dryRun || !checkout.IsFree {
+	if c.DryRun || !checkout.IsFree {
 		return intent, nil
 	}
 
