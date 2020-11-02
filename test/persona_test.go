@@ -12,6 +12,45 @@ func TestNewProfile(t *testing.T) {
 	t.Log(NewPersona().Email)
 }
 
+func TestPersona_ConfirmOrder(t *testing.T) {
+	p := NewPersona()
+	o := p.CreateOrder()
+
+	result := p.ConfirmOrder(o)
+
+	assert.NotZero(t, result.Order.ConfirmedAt)
+	assert.NotZero(t, result.Order.StartDate)
+	assert.NotZero(t, result.Order.EndDate)
+}
+
+func TestPersona_RenewN(t *testing.T) {
+	p := NewPersona()
+
+	orders := p.RenewN(3)
+
+	for _, v := range orders {
+		assert.NotZero(t, v.ConfirmedAt)
+		assert.NotZero(t, v.StartDate)
+		assert.NotZero(t, v.EndDate)
+	}
+}
+
+func TestPersona_CreateBalanceSources(t *testing.T) {
+	p := NewPersona()
+
+	orders := p.CreateBalanceSources(10)
+
+	for _, v := range orders {
+		assert.NotZero(t, v.ConfirmedAt)
+		assert.NotZero(t, v.StartDate)
+		assert.NotZero(t, v.EndDate)
+	}
+
+	assert.NotZero(t, p.Member)
+
+	t.Logf("%+v", p.Member)
+}
+
 func TestPersona_IAPSubs(t *testing.T) {
 	p := NewPersona()
 
