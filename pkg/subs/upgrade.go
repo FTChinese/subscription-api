@@ -17,7 +17,7 @@ type UpgradeIntent struct {
 	Discount product.Discount     `json:"discount"`
 	Wallet   Wallet               `json:"wallet"`
 	Payable  product.Charge       `json:"payable"`
-	Length   product.Duration     `json:"length"`
+	Length   product.Duration     `json:"duration"`
 	IsFree   bool                 `json:"isFree"`
 	Result   ConfirmationResult   `json:"-"` // Only for free upgrade.
 }
