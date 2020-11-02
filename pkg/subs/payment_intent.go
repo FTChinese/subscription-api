@@ -1,8 +1,6 @@
 package subs
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 )
 
@@ -53,30 +51,7 @@ type AlipayNativeIntent struct {
 
 type PaymentIntent struct {
 	Checkout
-	Order      Order
-	WebhookURL string
-}
-
-func (pi PaymentIntent) ProratedOrders() []ProratedOrder {
-	if pi.Kind != enum.OrderKindUpgrade {
-		return nil
-	}
-	if pi.Wallet.Sources == nil || len(pi.Wallet.Sources) == 0 {
-		return nil
-	}
-
-	now := chrono.TimeNow()
-
-	for i, v := range pi.Wallet.Sources {
-		v.UpgradeOrderID = pi.Order.ID
-		if pi.IsFree {
-			v.ConsumedUTC = now
-		}
-
-		pi.Wallet.Sources[i] = v
-	}
-
-	return pi.Wallet.Sources
+	Order Order
 }
 
 // AliAppPayIntent build the data to be sent to native apps.

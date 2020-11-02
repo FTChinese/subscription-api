@@ -59,6 +59,29 @@ type Checkout struct {
 	LiveMode bool             `json:"live"`
 }
 
+func (c Checkout) ProratedOrders(upOrderID string) []ProratedOrder {
+	if c.Kind != enum.OrderKindUpgrade {
+		return nil
+	}
+	if c.Wallet.Sources == nil || len(c.Wallet.Sources) == 0 {
+		return nil
+	}
+
+	now := chrono.TimeNow()
+
+	var pos = make([]ProratedOrder, 0)
+	for _, v := range c.Wallet.Sources {
+		v.UpgradeOrderID = upOrderID
+		if c.IsFree {
+			v.ConsumedUTC = now
+		}
+
+		pos = append(pos, v)
+	}
+
+	return pos
+}
+
 func (c Checkout) WithTest(t bool) Checkout {
 	c.LiveMode = !t
 
@@ -202,15 +225,11 @@ func (c PaymentConfig) UpgradeIntent(bs []BalanceSource, m reader.Membership) (U
 
 	intent := UpgradeIntent{
 		Charge:         checkout.Payable,
-		Duration:       checkout.Duration,
+		CycleCount:     checkout.Duration.CycleCount,
+		ExtraDays:      checkout.Duration.ExtraDays,
 		LegacySubsKind: enum.OrderKindUpgrade,
-		SubsKind:       enum.OrderKindUpgrade,
 		Plan:           c.Plan,
-		Discount:       checkout.Item.Discount,
-		Wallet:         checkout.Wallet,
-		Payable:        checkout.Payable,
-		Length:         checkout.Duration,
-		IsFree:         checkout.IsFree,
+		Checkout:       checkout,
 		Result:         ConfirmationResult{},
 	}
 
