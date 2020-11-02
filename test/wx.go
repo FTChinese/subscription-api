@@ -4,10 +4,13 @@ package test
 
 import (
 	"github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"github.com/FTChinese/subscription-api/pkg/wxlogin"
+	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
 )
 
@@ -50,4 +53,36 @@ func NewWxOrderUnsigned() wechat.OrderResp {
 	or.ResultCode = null.StringFrom("SUCCESS")
 
 	return or
+}
+
+func (p *Persona) WxAccess() wxlogin.OAuthAccess {
+	acc := wxlogin.OAuthAccess{
+		AccessToken:  faker.GenWxAccessToken(),
+		ExpiresIn:    7200,
+		RefreshToken: faker.GenWxAccessToken(),
+		OpenID:       p.OpenID,
+		Scope:        "snsapi_userinfo",
+		UnionID:      null.StringFrom(p.UnionID),
+	}
+	acc.GenerateSessionID()
+	acc.CreatedAt = chrono.TimeNow()
+	acc.UpdatedAt = chrono.TimeNow()
+	return acc
+}
+
+func (p *Persona) WxUser() wxlogin.UserInfoSchema {
+	faker.SeedGoFake()
+	return wxlogin.UserInfoSchema{
+		UserInfoShared: wxlogin.UserInfoShared{
+			UnionID:   p.UnionID,
+			OpenID:    "",
+			NickName:  null.StringFrom(gofakeit.Username()),
+			AvatarURL: null.StringFrom(faker.GenAvatar()),
+			Country:   null.StringFrom(gofakeit.Country()),
+			Province:  null.StringFrom(gofakeit.State()),
+			City:      null.StringFrom(gofakeit.City()),
+		},
+		Gender:    faker.RandomGender(),
+		Privilege: null.String{},
+	}
 }
