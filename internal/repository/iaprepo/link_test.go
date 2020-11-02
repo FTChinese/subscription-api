@@ -255,3 +255,37 @@ func TestEnv_Unlink(t *testing.T) {
 		})
 	}
 }
+
+func TestEnv_ArchiveUnlink(t *testing.T) {
+
+	p := test.NewPersona()
+
+	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
+
+	type args struct {
+		link apple.LinkInput
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Archive unlink",
+			args: args{
+				link: apple.LinkInput{
+					FtcID:        p.FtcID,
+					OriginalTxID: p.AppleSubID,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := env.ArchiveUnlink(tt.args.link); (err != nil) != tt.wantErr {
+				t.Errorf("ArchiveUnlink() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
