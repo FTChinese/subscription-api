@@ -2,8 +2,6 @@ package subrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/product"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
@@ -11,7 +9,7 @@ import (
 // is large enough to cover premium's price.
 // This won't happen based on current restrictions of max renewal for 3 consecutive years.
 // It is provided here just for logical completeness.
-func (env Env) UpgradeIntent(account reader.FtcAccount, plan product.ExpandedPlan, preview bool) (subs.UpgradeIntent, error) {
+func (env Env) UpgradeIntent(config subs.PaymentConfig) (subs.UpgradeIntent, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -21,14 +19,14 @@ func (env Env) UpgradeIntent(account reader.FtcAccount, plan product.ExpandedPla
 		return subs.UpgradeIntent{}, err
 	}
 
-	member, err := tx.RetrieveMember(account.MemberID())
+	member, err := tx.RetrieveMember(config.Account.MemberID())
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.UpgradeIntent{}, err
 	}
 
-	orderKind, err := member.AliWxSubsKind(plan.Edition)
+	orderKind, err := member.AliWxSubsKind(config.Plan.Edition)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -39,7 +37,7 @@ func (env Env) UpgradeIntent(account reader.FtcAccount, plan product.ExpandedPla
 	if orderKind != enum.OrderKindUpgrade {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.UpgradeIntent{}, subs.ErrUpgradeInvalid
+		return subs.UpgradeIntent{}, subs.ErrNotUpgradeIntent
 	}
 
 	balanceSources, err := tx.FindBalanceSources(member.MemberID)
@@ -49,12 +47,7 @@ func (env Env) UpgradeIntent(account reader.FtcAccount, plan product.ExpandedPla
 		return subs.UpgradeIntent{}, err
 	}
 
-	config := subs.NewPayment(account, plan).
-		WithUpgrade(preview)
-
-	checkout := config.Checkout(balanceSources, enum.OrderKindUpgrade)
-
-	intent, err := config.UpgradeIntent(checkout, member)
+	intent, err := config.UpgradeIntent(balanceSources, member)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -62,7 +55,7 @@ func (env Env) UpgradeIntent(account reader.FtcAccount, plan product.ExpandedPla
 	}
 
 	// If this is used for preview only.
-	if preview {
+	if config.DryRun {
 		if err := tx.Commit(); err != nil {
 			return subs.UpgradeIntent{}, err
 		}
