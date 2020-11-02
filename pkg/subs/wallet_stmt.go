@@ -14,7 +14,7 @@ SELECT o.trade_no AS order_id,
 	 END AS start_date,
 	IF(o.end_date IS NOT NULL, o.end_date, DATE(FROM_UNIXTIME(o.trade_end))) AS end_date
 FROM premium.ftc_trade AS o
-	LEFT JOIN %s.proration AS p
+	LEFT JOIN premium.proration AS p
 	ON o.trade_no = p.order_id
 WHERE FIND_IN_SET(o.user_id, ?) > 0
 	AND (o.tier_to_buy = 'standard' OR o.trade_subs = 10)
