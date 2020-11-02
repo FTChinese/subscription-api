@@ -63,46 +63,6 @@ func TestEnv_CreateOrder(t *testing.T) {
 	}
 }
 
-func TestEnv_SaveProratedOrders(t *testing.T) {
-	type fields struct {
-		db     *sqlx.DB
-		cache  *cache.Cache
-		logger *zap.Logger
-	}
-	type args struct {
-		pos []subs.ProratedOrder
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Save prorated orders",
-			fields: fields{
-				db: test.DB,
-			},
-			args: args{
-				pos: test.GenProratedOrders(subs.MustGenerateOrderID()),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db:     tt.fields.db,
-				cache:  tt.fields.cache,
-				logger: tt.fields.logger,
-			}
-			if err := env.SaveProratedOrders(tt.args.pos); (err != nil) != tt.wantErr {
-				t.Errorf("SaveProratedOrders() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestEnv_ProratedOrdersUsed(t *testing.T) {
 	upOrderID := subs.MustGenerateOrderID()
 
