@@ -14,7 +14,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
-	"github.com/guregu/null"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
@@ -93,10 +92,6 @@ func (router SubsRouter) afterOrderCreated(pi subs.PaymentIntent, client client.
 func (router SubsRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, error) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
-
-	if order.WxAppID.IsZero() {
-		order.WxAppID = null.StringFrom(wxAppNativeApp)
-	}
 
 	payClient, err := router.wxPayClients.ClientByAppID(order.WxAppID.String)
 	if err != nil {
