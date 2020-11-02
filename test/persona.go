@@ -35,8 +35,8 @@ type Persona struct {
 	payMethod enum.PayMethod
 	expired   bool
 
-	orders map[string]subs.Order
-	member reader.Membership
+	Orders map[string]subs.Order
+	Member reader.Membership
 }
 
 func NewPersona() *Persona {
@@ -60,21 +60,9 @@ func NewPersona() *Persona {
 		payMethod: enum.PayMethodAli,
 		expired:   false,
 
-		orders: make(map[string]subs.Order),
-		member: reader.Membership{},
+		Orders: make(map[string]subs.Order),
+		Member: reader.Membership{},
 	}
-}
-
-var MyProfile = Persona{
-	FtcID:    MyFtcID,
-	UnionID:  MyUnionID,
-	StripeID: "cus_FOgRRgj9aMzpAv",
-	Email:    MyEmail,
-	Password: "12345678",
-	UserName: "weiguo.ni",
-	Nickname: gofakeit.Username(),
-	Avatar:   "http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTIibCfVIicoNXZ15Af6nWkXwq5QgFcrNdkEKMHT7P1oJVI6McLT2qFia2ialF4FSMnm33yS0eAq7MK1cA/132",
-	IP:       gofakeit.IPv4Address(),
 }
 
 func (p *Persona) SetAccountKind(k enum.AccountKind) *Persona {
@@ -224,7 +212,7 @@ func (p *Persona) CreateOrder() subs.Order {
 		panic("only alipay or wxpay supported")
 	}
 
-	kind, ve := p.member.AliWxSubsKind(p.plan.Edition)
+	kind, ve := p.Member.AliWxSubsKind(p.plan.Edition)
 	if ve != nil {
 		panic(ve)
 	}
@@ -239,7 +227,7 @@ func (p *Persona) CreateOrder() subs.Order {
 		panic(err)
 	}
 
-	p.orders[pi.Order.ID] = pi.Order
+	p.Orders[pi.Order.ID] = pi.Order
 
 	return pi.Order
 }
@@ -248,42 +236,22 @@ func (p *Persona) ConfirmOrder(o subs.Order) subs.ConfirmationResult {
 
 	res, err := o.Confirm(subs.PaymentResult{
 		ConfirmedAt: chrono.TimeNow(),
-	}, p.member)
+	}, p.Member)
 	if err != nil {
 		panic(err)
 	}
 
-	p.orders[res.Order.ID] = res.Order
-	p.member = res.Membership
+	p.Orders[res.Order.ID] = res.Order
+	p.Member = res.Membership
 
 	return res
-}
-
-func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
-
-	switch p.payMethod {
-	case enum.PayMethodWx:
-		result := subs.NewWxWebhookResult(NewWxWHUnsigned(order))
-		return result
-
-	case enum.PayMethodAli:
-		n := AliNoti(order)
-		result, err := subs.NewAliWebhookResult(&n)
-		if err != nil {
-			panic(err)
-		}
-		return result
-
-	default:
-		panic("Not ali or wx pay")
-	}
 }
 
 func (p *Persona) findBalanceSources(anchor time.Time) []subs.BalanceSource {
 
 	sources := make([]subs.BalanceSource, 0)
 
-	for _, v := range p.orders {
+	for _, v := range p.Orders {
 		if v.IsZero() || !v.IsConfirmed() {
 			continue
 		}
@@ -320,6 +288,26 @@ func (p *Persona) RenewN(n int) []subs.Order {
 	}
 
 	return orders
+}
+
+func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
+
+	switch p.payMethod {
+	case enum.PayMethodWx:
+		result := subs.NewWxWebhookResult(NewWxWHUnsigned(order))
+		return result
+
+	case enum.PayMethodAli:
+		n := AliNoti(order)
+		result, err := subs.NewAliWebhookResult(&n)
+		if err != nil {
+			panic(err)
+		}
+		return result
+
+	default:
+		panic("Not ali or wx pay")
+	}
 }
 
 func GenProratedOrders(upOrderID string) []subs.ProratedOrder {
