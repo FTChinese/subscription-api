@@ -77,11 +77,8 @@ func NewSubscription(u UnifiedReceipt) (Subscription, error) {
 // to an ftc  account. It is allowed only when the FtcUserID
 // field is still empty, or is the same as the target id.
 func (s Subscription) PermitLink(ftcID string) bool {
-	if s.FtcUserID.IsZero() {
-		return true
-	}
 
-	if s.FtcUserID.String == ftcID {
+	if s.FtcUserID.IsZero() || s.FtcUserID.String == ftcID {
 		return true
 	}
 
