@@ -3,11 +3,9 @@
 package faker
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/guregu/null"
-	"time"
 )
 
 var PlanStdYear = product.ExpandedPlan{
@@ -22,14 +20,14 @@ var PlanStdYear = product.ExpandedPlan{
 		Description: null.String{},
 	},
 	Discount: product.Discount{
-		DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
-		PriceOff: null.FloatFrom(130),
-		Percent:  null.Int{},
-		Period: product.Period{
-			StartUTC: chrono.TimeNow(),
-			EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 2)),
-		},
-		Description: null.String{},
+		//DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
+		//PriceOff: null.FloatFrom(130),
+		//Percent:  null.Int{},
+		//Period: product.Period{
+		//	StartUTC: chrono.TimeNow(),
+		//	EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 2)),
+		//},
+		//Description: null.String{},
 	},
 }
 
