@@ -23,11 +23,14 @@ func (router SubsRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request
 		_ = render.New(w).DBError(err)
 	}
 
-	pi, err := router.subRepo.UpgradeIntent(account, plan, true)
+	config := subs.NewPayment(account, plan).
+		WithPreview(true)
+
+	pi, err := router.subRepo.UpgradeIntent(config)
 
 	if err != nil {
 		switch err {
-		case subs.ErrUpgradeInvalid:
+		case subs.ErrNotUpgradeIntent:
 			_ = render.New(w).BadRequest(err.Error())
 		default:
 			_ = render.New(w).DBError(err)
@@ -54,11 +57,12 @@ func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 
 	p, _ := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
 
-	intent, err := router.subRepo.UpgradeIntent(account, p, false)
+	config := subs.NewPayment(account, p)
+	intent, err := router.subRepo.UpgradeIntent(config)
 	// Check whether intent if free. If not free, return it to client and stop.
 	if err != nil {
 		switch err {
-		case subs.ErrUpgradeInvalid:
+		case subs.ErrNotUpgradeIntent:
 			_ = render.New(w).BadRequest(err.Error())
 
 		default:
