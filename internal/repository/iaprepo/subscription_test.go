@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestEnv_LoadSubscription(t *testing.T) {
+func TestEnv_LoadSubs(t *testing.T) {
 	p := test.NewPersona()
 	test.NewRepo().MustSaveIAPSubs(p.IAPSubs())
 
