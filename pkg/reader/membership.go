@@ -182,7 +182,7 @@ func (m Membership) canRenewViaAliWx() bool {
 }
 
 // AliWxSubsKind determines what kind of order a user is creating based on existing membership.
-// SubsKind  |   Membership
+// Kind  |   Membership
 // ---------------------------
 // Create  | Zero / Status is not active / Expired
 // Renewal | Tier === Plan.Tier
