@@ -50,7 +50,8 @@ LIMIT ? OFFSET ?`
 
 const StmtCountSubs = `
 SELECT COUNT(*) AS row_count
-FROM premium.apple_subscription`
+FROM premium.apple_subscription
+WHERE ftc_user_id = ?`
 
 const StmtLinkSubs = `
 UPDATE premium.apple_subscription
