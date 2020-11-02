@@ -79,20 +79,12 @@ func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	// Only free upgrade could go to here.
 	// Save snapshot.
 	go func() {
-		_ = router.readerRepo.ArchiveMember(intent.Result.Snapshot)
-	}()
+		err := router.readerRepo.ArchiveMember(intent.Result.Snapshot)
+		if err != nil {
+			sugar.Error(err)
+		}
 
-	// Save client app info
-	go func() {
-		_ = router.subRepo.LogOrderMeta(subs.OrderMeta{
-			OrderID: intent.Result.Order.ID,
-			Client:  clientApp,
-		})
-	}()
-
-	// Send email
-	go func() {
-		// Find this user's personal data
+		// Send email
 		parcel, err := letter.NewFreeUpgradeParcel(
 			account,
 			intent.Result.Order,
@@ -105,6 +97,9 @@ func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}()
+
+	// Save client app info
+	_ = router.postOrderCreation(intent.Result.Order, clientApp)
 
 	_ = render.New(w).NoContent()
 }
