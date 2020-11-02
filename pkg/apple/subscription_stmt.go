@@ -67,7 +67,7 @@ LIMIT 1`
 
 const StmtArchiveLinkCheat = `
 INSERT INTO premium.apple_cheat
-SET original_transaction_id = :original_transaction_id
+SET original_transaction_id = :original_transaction_id,
 	ftc_user_id = :ftc_user_id,
 	created_utc = UTC_TIMESTAMP()`
 
