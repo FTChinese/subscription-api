@@ -8,11 +8,9 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -336,64 +334,4 @@ func GenProratedOrders(upOrderID string) []subs.ProratedOrder {
 	})
 
 	return orders
-}
-
-func (p *Persona) IAPSubs() apple.Subscription {
-	s := apple.Subscription{
-		BaseSchema: apple.BaseSchema{
-			Environment:           apple.EnvSandbox,
-			OriginalTransactionID: p.AppleSubID,
-		},
-		LastTransactionID: faker.GenAppleSubID(),
-		ProductID:         "",
-		PurchaseDateUTC:   chrono.TimeNow(),
-		ExpiresDateUTC:    chrono.TimeFrom(time.Now().AddDate(1, 0, 0)),
-		Edition:           p.plan.Edition,
-		AutoRenewal:       true,
-	}
-
-	if p.expired {
-		s.ExpiresDateUTC = chrono.TimeFrom(time.Now().AddDate(-1, 0, 0))
-	}
-
-	return s
-}
-
-func (p *Persona) WxAccess() wxlogin.OAuthAccess {
-	acc := wxlogin.OAuthAccess{
-		AccessToken:  faker.GenWxAccessToken(),
-		ExpiresIn:    7200,
-		RefreshToken: faker.GenWxAccessToken(),
-		OpenID:       p.OpenID,
-		Scope:        "snsapi_userinfo",
-		UnionID:      null.StringFrom(p.UnionID),
-	}
-	acc.GenerateSessionID()
-	acc.CreatedAt = chrono.TimeNow()
-	acc.UpdatedAt = chrono.TimeNow()
-	return acc
-}
-
-func (p *Persona) WxUser() wxlogin.UserInfoSchema {
-	faker.SeedGoFake()
-	return wxlogin.UserInfoSchema{
-		UserInfoShared: wxlogin.UserInfoShared{
-			UnionID:   p.UnionID,
-			OpenID:    "",
-			NickName:  null.StringFrom(gofakeit.Username()),
-			AvatarURL: null.StringFrom(faker.GenAvatar()),
-			Country:   null.StringFrom(gofakeit.Country()),
-			Province:  null.StringFrom(gofakeit.State()),
-			City:      null.StringFrom(gofakeit.City()),
-		},
-		Gender:    faker.RandomGender(),
-		Privilege: null.String{},
-	}
-}
-
-func (p *Persona) IAPLinkInput() apple.LinkInput {
-	return apple.LinkInput{
-		FtcID:        p.FtcID,
-		OriginalTxID: p.AppleSubID,
-	}
 }
