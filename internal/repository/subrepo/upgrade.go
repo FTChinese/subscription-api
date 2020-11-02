@@ -75,6 +75,7 @@ func (env Env) UpgradeIntent(config subs.PaymentConfig) (subs.UpgradeIntent, err
 		_ = tx.Rollback()
 		return subs.UpgradeIntent{}, err
 	}
+	sugar.Infof("Free upgrade order saved %s", intent.Result.Order)
 
 	if err := tx.ConfirmOrder(intent.Result.Order); err != nil {
 		sugar.Error(err)
@@ -89,7 +90,9 @@ func (env Env) UpgradeIntent(config subs.PaymentConfig) (subs.UpgradeIntent, err
 		return subs.UpgradeIntent{}, err
 	}
 
-	if err := tx.SaveProratedOrders(intent.Wallet.Sources); err != nil {
+	// Save balance source as prorated.
+	pos := intent.ProratedOrders(intent.Result.Order.ID)
+	if err := tx.SaveProratedOrders(pos); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.UpgradeIntent{}, err
