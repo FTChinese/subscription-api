@@ -44,6 +44,20 @@ var planStdYear = product.ExpandedPlan{
 	},
 }
 
+var planPrmYear = product.ExpandedPlan{
+	Plan: product.Plan{
+		ID:        "plan_vRUzRQ3aglea",
+		ProductID: "prod_IaoK5SbK79g8",
+		Price:     1998,
+		Edition: product.Edition{
+			Tier:  enum.TierPremium,
+			Cycle: enum.CycleYear,
+		},
+		Description: null.String{},
+	},
+	Discount: product.Discount{},
+}
+
 func TestNewCheckedItem1(t *testing.T) {
 	type args struct {
 		ep product.ExpandedPlan
@@ -131,7 +145,7 @@ func TestPaymentConfig_Checkout(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := PaymentConfig{
-				dryRun:  tt.fields.dryRun,
+				DryRun:  tt.fields.dryRun,
 				Account: tt.fields.Account,
 				Plan:    tt.fields.Plan,
 				Method:  tt.fields.Method,
@@ -206,7 +220,7 @@ func TestPaymentConfig_BuildOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := PaymentConfig{
-				dryRun:  tt.fields.dryRun,
+				DryRun:  tt.fields.dryRun,
 				Account: tt.fields.Account,
 				Plan:    tt.fields.Plan,
 				Method:  tt.fields.Method,
@@ -261,7 +275,7 @@ func TestPaymentConfig_BuildIntent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := PaymentConfig{
-				dryRun:  tt.fields.dryRun,
+				DryRun:  tt.fields.dryRun,
 				Account: tt.fields.Account,
 				Plan:    tt.fields.Plan,
 				Method:  tt.fields.Method,
@@ -270,6 +284,73 @@ func TestPaymentConfig_BuildIntent(t *testing.T) {
 			got, err := c.BuildIntent(tt.args.bs, tt.args.kind)
 			assert.NoError(t, err)
 			assert.NotZero(t, got.Checkout)
+		})
+	}
+}
+
+func TestPaymentConfig_UpgradeIntent(t *testing.T) {
+
+	config := NewPayment(account, planPrmYear)
+	mmb := reader.Membership{
+		MemberID: reader.MemberID{
+			FtcID: null.StringFrom(uuid.New().String()),
+		}.MustNormalize(),
+		Edition:       product.NewStdYearEdition(),
+		LegacyTier:    null.Int{},
+		LegacyExpire:  null.Int{},
+		ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
+		PaymentMethod: enum.PayMethodWx,
+		FtcPlanID:     null.StringFrom(planStdYear.Plan.ID),
+	}
+
+	type args struct {
+		bs []BalanceSource
+		m  reader.Membership
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantFree bool
+		wantErr  bool
+	}{
+		{
+			name: "Free upgrade",
+			args: args{
+				bs: MockBalanceSourceN(10),
+				m:  mmb,
+			},
+			wantFree: true,
+			wantErr:  false,
+		},
+		{
+			name: "Not free upgrade",
+			args: args{
+				bs: MockBalanceSourceN(3),
+				m:  mmb,
+			},
+			wantFree: false,
+			wantErr:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := config.UpgradeIntent(tt.args.bs, tt.args.m)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UpgradeIntent() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if got.IsFree != tt.wantFree {
+				t.Errorf("UpradeIntent() IsFree = %t, wantFree %t", got.IsFree, tt.wantFree)
+			}
+
+			t.Logf("Wallet: %+v", got.Wallet)
+			t.Logf("Payable: %+v", got.Payable)
+			t.Logf("Duration: %+v", got.Length)
+			t.Logf("Is free: %t", got.IsFree)
+			t.Logf("Order: %v", got.Result.Order)
+			t.Logf("New member: %v", got.Result.Membership)
 		})
 	}
 }
