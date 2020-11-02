@@ -73,6 +73,6 @@ SET original_transaction_id = :original_transaction_id,
 
 const StmtArchiveUnlink = `
 INSERT INTO premium.apple_unlink_archive
-SET original_transaction_id = :original_transaction_id
+SET original_transaction_id = :original_transaction_id,
 	ftc_user_id = :ftc_user_id,
 	created_utc = UTC_TIMESTAMP()`
