@@ -5,7 +5,50 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/guregu/null"
 )
+
+func (env Env) GetSubAndSetFtcID(input apple.LinkInput) (apple.Subscription, error) {
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
+
+	tx, err := env.BeginTx()
+	if err != nil {
+		sugar.Error(err)
+		return apple.Subscription{}, err
+	}
+
+	sub, err := tx.RetrieveAppleSubs(input.OriginalTxID)
+	if err != nil {
+		sugar.Error(err)
+		_ = tx.Rollback()
+		return apple.Subscription{}, err
+	}
+
+	// If sub.FtcUserID is not empty, and not equal to input.FtcID
+	// link should be denied and this is possible cheating.
+	if !sub.PermitLink(input.FtcID) {
+		_ = tx.Rollback()
+		return apple.Subscription{}, apple.ErrIAPAlreadyLinked
+	}
+
+	// Set ftc_user_id field if it is empty.
+	if sub.FtcUserID.IsZero() {
+		sub.FtcUserID = null.StringFrom(input.FtcID)
+		err := tx.LinkAppleSubs(input)
+		if err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return apple.Subscription{}, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return apple.Subscription{}, err
+	}
+
+	return sub, nil
+}
 
 // Link links an apple subscription to an ftc account.
 // We should first retrieves membership by
@@ -27,7 +70,7 @@ import (
 // This is a suspicious operation that should always be denied.
 // The returned error could be *render.ValidationError
 // if link if forbidden.
-func (env Env) Link(input apple.LinkInput, account reader.FtcAccount) (apple.LinkResult, error) {
+func (env Env) Link(account reader.FtcAccount, sub apple.Subscription) (apple.LinkResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -37,21 +80,8 @@ func (env Env) Link(input apple.LinkInput, account reader.FtcAccount) (apple.Lin
 		return apple.LinkResult{}, err
 	}
 
-	sub, err := tx.RetrieveAppleSubs(input.OriginalTxID)
-	if err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return apple.LinkResult{}, err
-	}
-
-	// Possible cheating.
-	if !sub.PermitLink(input.FtcID) {
-		_ = tx.Rollback()
-		return apple.LinkResult{}, apple.ErrIAPAlreadyLinked
-	}
-
 	// Try to retrieve membership by apple original transaction id.
-	iapMember, err := tx.RetrieveAppleMember(input.OriginalTxID)
+	iapMember, err := tx.RetrieveAppleMember(sub.OriginalTransactionID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -88,16 +118,6 @@ func (env Env) Link(input apple.LinkInput, account reader.FtcAccount) (apple.Lin
 	// Save membership only when it is touched.
 	if result.Touched {
 		err := tx.CreateMember(result.Member)
-		if err != nil {
-			sugar.Error(err)
-			_ = tx.Rollback()
-			return apple.LinkResult{}, err
-		}
-	}
-
-	// Set ftc_user_id field if it is empty.
-	if sub.FtcUserID.IsZero() {
-		err := tx.LinkAppleSubs(input)
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
