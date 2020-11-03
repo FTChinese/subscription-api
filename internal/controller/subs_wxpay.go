@@ -160,6 +160,9 @@ func (router SubsRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFu
 func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
+
+	sugar.Infow("Wxpay webhook")
+
 	resp := wxpay.Notifies{}
 
 	var send = func(err error) {
@@ -177,6 +180,7 @@ func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 
 	// Decode Wechat XML request body.
 	// If it cannot be decoded, tell wechat to resend it.
+	sugar.Info("Getting webhook payload")
 	payload, err := router.wxPayClients.GetWebhookPayload(req)
 	//params, err := wechat.DecodeXML(req.Body)
 	if err != nil {
@@ -190,11 +194,13 @@ func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	// Log the response, regardless of whether it is an error
 	// or not.
 	go func() {
+		sugar.Info("Saving wxpay webhook raw payload")
 		if err := router.subRepo.SaveWxNotification(payload); err != nil {
 			sugar.Error(err)
 		}
 	}()
 
+	sugar.Info("Checking payload unprocessable")
 	if payload.IsUnprocessable() {
 		sugar.Error(payload.UnprocessableMsg())
 		send(errors.New(payload.ErrorMessage.String))
@@ -211,6 +217,7 @@ func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	payResult := subs.NewWxWebhookResult(payload)
 	sugar.Infof("Payment result %+v", payResult)
 
+	sugar.Info("Start processing payment result")
 	_, cfmErr := router.processPaymentResult(payResult)
 
 	// Handle confirmation error.
