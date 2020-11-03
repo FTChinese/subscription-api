@@ -4,10 +4,11 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
-func TestSaveReceiptTokenFile(t *testing.T) {
+func TestSaveReceiptToDisk(t *testing.T) {
 	type args struct {
 		r apple.ReceiptSchema
 	}
@@ -33,11 +34,12 @@ func TestSaveReceiptTokenFile(t *testing.T) {
 	}
 }
 
-func TestLoadReceipt(t *testing.T) {
+func TestLoadReceiptFromDisk(t *testing.T) {
+	rt := test.MustVerificationResponse().ReceiptToken()
+
 	type args struct {
 		s apple.BaseSchema
 	}
-	rt := test.MustVerificationResponse().ReceiptToken()
 
 	tests := []struct {
 		name    string
@@ -66,6 +68,71 @@ func TestLoadReceipt(t *testing.T) {
 			assert.NotNil(t, got)
 
 			t.Logf("Token: %s", got)
+		})
+	}
+}
+
+func TestEnv_SaveReceiptToDB(t *testing.T) {
+
+	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
+
+	type args struct {
+		r apple.ReceiptSchema
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Save receipt to db",
+			args: args{
+				r: test.NewPersona().IAPReceiptSchema(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := env.SaveReceiptToDB(tt.args.r); (err != nil) != tt.wantErr {
+				t.Errorf("SaveReceiptToDB() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnv_LoadReceiptFromDB(t *testing.T) {
+	p := test.NewPersona()
+	rt := p.IAPReceiptSchema()
+	test.NewRepo().MustSaveIAPReceipt(rt)
+
+	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
+
+	type args struct {
+		s apple.BaseSchema
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Load receipt from db",
+			args: args{
+				s: rt.BaseSchema,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := env.LoadReceiptFromDB(tt.args.s)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LoadReceiptFromDB() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			t.Logf("%v", got)
 		})
 	}
 }
