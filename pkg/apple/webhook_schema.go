@@ -13,7 +13,7 @@ type WebHookSchema struct {
 	AutoRenewProductID          string           `db:"auto_renew_product_id"`
 	AutoRenewStatus             null.Bool        `db:"auto_renew_status"`
 	AutoRenewStatusChangeDateMs int64            `db:"auto_renew_status_change_date_ms"`
-	ExpirationIntent            null.String      `db:"expiration_intent"`
+	ExpirationIntent            null.Int         `db:"expiration_intent"`
 	NotificationType            NotificationType `db:"notification_type"`
 	Password                    string           `db:"password"`
 	Status                      int64            `db:"status"`
@@ -21,13 +21,13 @@ type WebHookSchema struct {
 
 func NewWebHookSchema(w WebHook) WebHookSchema {
 	return WebHookSchema{
-		BaseTransactionSchema: w.LatestTransaction.schema(
+		BaseTransactionSchema: w.LatestReceiptInfo.schema(
 			w.Environment,
-			w.LatestTransaction.ExpiresDate,
+			w.LatestReceiptInfo.ExpiresDate,
 		),
 
-		AppItemID: MustParseInt64(w.LatestTransaction.AppItemID),
-		ItemID:    MustParseInt64(w.LatestTransaction.ItemID),
+		AppItemID: MustParseInt64(w.LatestReceiptInfo.AppItemID),
+		ItemID:    MustParseInt64(w.LatestReceiptInfo.ItemID),
 
 		AutoRenewAdamID:    w.AutoRenewAdamID,
 		AutoRenewProductID: w.AutoRenewProductID,
@@ -35,7 +35,7 @@ func NewWebHookSchema(w WebHook) WebHookSchema {
 			MustParseBoolean(w.AutoRenewStatus),
 			w.AutoRenewStatus != ""),
 		AutoRenewStatusChangeDateMs: MustParseInt64(w.AutoRenewStatusChangeDateMs),
-		ExpirationIntent:            w.ExpirationIntent,
+		ExpirationIntent:            null.NewInt(w.ExpirationIntent, w.ExpirationIntent != 0),
 		NotificationType:            w.NotificationType,
 		Password:                    w.Password,
 		Status:                      w.UnifiedReceipt.Status,

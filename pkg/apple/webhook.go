@@ -1,9 +1,5 @@
 package apple
 
-import (
-	"github.com/guregu/null"
-)
-
 type LatestTransaction struct {
 	BaseTransaction
 
@@ -37,19 +33,22 @@ type WebHook struct {
 	AutoRenewStatusChangeDate    string `json:"auto_renew_status_change_date"`
 	AutoRenewStatusChangeDateMs  string `json:"auto_renew_status_change_date_ms"`
 	AutoRenewStatusChangeDatePST string `json:"auto_renew_status_change_date_pst"`
+	BundleID                     string `json:"bid"` //  the app bundle ID.
+	BundleVersion                string `json:"bvrs"`
 
 	// The environment for which the receipt was generated.
 	//Possible values: Sandbox, PROD
-	Environment Environment `json:"environment"`
+	Environment Environment `json:"environment"` // the app bundle version.
 
-	// The reason a subscription expired. This field is only present for an expired auto-renewable subscription.
+	// The reason a subscription expired.
+	// This field is only present for an expired auto-renewable subscription.
 	// 1 The customer voluntarily canceled their subscription.
 	// 2 Billing error; for example, the customer's payment information was no longer valid.
 	// 3 The customer did not agree to a recent price increase.
 	// 4 The product was not available for purchase at the time of renewal.
 	// 5 Unknown error.
 	// Also found in PendingRenewal.
-	ExpirationIntent null.String `json:"expiration_intent"`
+	ExpirationIntent int64 `json:"expiration_intent"`
 
 	// The latest Base64-encoded transaction receipt
 	LatestExpiredReceipt     string        `json:"latest_expired_receipt"`
@@ -57,7 +56,7 @@ type WebHook struct {
 	// It seems this one is the same as UnifiedReceipt.LatestReceipt.
 	LatestToken string `json:"latest_receipt"`
 	// Saved to db.
-	LatestTransaction LatestTransaction `json:"latest_receipt_info"`
+	LatestReceiptInfo LatestTransaction `json:"latest_receipt_info"`
 	NotificationType  NotificationType  `json:"notification_type"`
 	Password          string            `json:"password"`
 	// An object that contains information about the most recent in-app purchase transactions for the app.
