@@ -176,6 +176,7 @@ func (tx MemberTx) UpdateMember(m reader.Membership) error {
 // is the correct operation since the membership is granted
 // by IAP. You cannot simply remove the apple_subscription_id
 // column which will keep the membership on FTC account.
+// Deprecated. DELETE operation is not allowed by DB.
 func (tx MemberTx) DeleteMember(id reader.MemberID) error {
 	_, err := tx.NamedExec(
 		reader.StmtDeleteMember,
