@@ -4,7 +4,6 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"log"
 )
 
 // SaveSubs saves an apple.Subscription instance and
@@ -55,10 +54,11 @@ func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 		return reader.MemberSnapshot{}, err
 	}
 
+	sugar.Infof("Membership linked to %s: %v", s.OriginalTransactionID, currMember)
 	// If the subscription is not linked to FTC account, return empty MemberSnapshot and not error.
 	// We need to take into account a situation where payment method is not apple but apple subscription id is not empty.
 	if !s.ShouldUpdate(currMember) {
-		sugar.Info("Membership liked to original transaction id %s is either empty or non-iap, or expires later")
+		sugar.Infof("Membership liked to original transaction id %s is either empty or non-iap, or expiration date not changed", s.OriginalTransactionID)
 		_ = tx.Rollback()
 		return reader.MemberSnapshot{}, nil
 	}
@@ -67,8 +67,10 @@ func (env Env) updateMembership(s apple.Subscription) (reader.MemberSnapshot, er
 	// Since we are polling IAP everyday, chances of membership
 	// staying the same are every high.
 	// We should compare the old and new memberships expiration time.
+	sugar.Infof("Building membership based on %s", s.OriginalTransactionID)
 	newMember := s.BuildOn(currMember)
 
+	sugar.Infof("Membership %s expiration date updated from %s to %s", newMember.CompoundID, currMember.ExpireDate, newMember.ExpireDate)
 	if err := tx.UpdateMember(newMember); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -118,6 +120,9 @@ func (env Env) listSubs(ftcID string, p gorest.Pagination) ([]apple.Subscription
 }
 
 func (env Env) ListSubs(ftcID string, p gorest.Pagination) (apple.SubsList, error) {
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
+
 	countCh := make(chan int64)
 	listCh := make(chan apple.SubsList)
 
@@ -126,7 +131,7 @@ func (env Env) ListSubs(ftcID string, p gorest.Pagination) (apple.SubsList, erro
 		n, err := env.countSubs(ftcID)
 		// Ignore error
 		if err != nil {
-			log.Print(err)
+			sugar.Error(err)
 		}
 		countCh <- n
 	}()
@@ -134,6 +139,9 @@ func (env Env) ListSubs(ftcID string, p gorest.Pagination) (apple.SubsList, erro
 	go func() {
 		defer close(listCh)
 		s, err := env.listSubs(ftcID, p)
+		if err != nil {
+			sugar.Error(err)
+		}
 		listCh <- apple.SubsList{
 			Total:      0,
 			Pagination: gorest.Pagination{},
