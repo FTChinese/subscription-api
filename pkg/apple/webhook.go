@@ -1,19 +1,5 @@
 package apple
 
-type LatestTransaction struct {
-	BaseTransaction
-
-	// An identifier that App Store Connect generates and the App Store uses to uniquely identify the app purchased.
-	AppItemID string `json:"app_item_id"`
-	// An identifier that App Store Connect generates and the App Store uses to uniquely identify the in-app product purchased.
-	ItemID string `json:"item_id"`
-
-	// The time a subscription expires or when it will renew, in UNIX epoch time format, in milliseconds.
-	ExpiresDate             string `json:"expires_date"`
-	ExpiresDateFormatted    string `json:"expires_date_formatted"`
-	ExpiresDateFormattedPST string `json:"expires_date_formatted_pst"`
-}
-
 // WebHook contains the JSON data sent in the server notification from the App Store.
 // It seems the top level data is a mix of ClientReceipt
 // and PendingRenewal.
