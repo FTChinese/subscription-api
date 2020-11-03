@@ -144,3 +144,19 @@ func (r *Repo) MustSaveIAPSubs(s apple.Subscription) {
 		panic(err)
 	}
 }
+
+func (r *Repo) SaveIAPReceipt(schema apple.ReceiptSchema) error {
+	_, err := r.db.NamedExec(apple.StmtSaveReceiptToken, schema)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repo) MustSaveIAPReceipt(schema apple.ReceiptSchema) {
+	err := r.SaveIAPReceipt(schema)
+	if err != nil {
+		panic(err)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
 	"time"
 )
@@ -71,5 +72,16 @@ func (p *Persona) IAPLinkInput() apple.LinkInput {
 	return apple.LinkInput{
 		FtcID:        p.FtcID,
 		OriginalTxID: p.AppleSubID,
+	}
+}
+
+func (p *Persona) IAPReceiptSchema() apple.ReceiptSchema {
+	return apple.ReceiptSchema{
+		BaseSchema: apple.BaseSchema{
+			Environment:           apple.EnvProduction,
+			OriginalTransactionID: p.AppleSubID,
+		},
+		LatestReceipt: gofakeit.Sentence(100),
+		CreatedUTC:    chrono.TimeNow(),
 	}
 }
