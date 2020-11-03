@@ -165,7 +165,6 @@ func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	var send = func(err error) {
 		var e error
 		if err != nil {
-			sugar.Error(err)
 			_, e = w.Write([]byte(resp.NotOK(err.Error())))
 		} else {
 			_, e = w.Write([]byte(resp.OK()))
@@ -181,6 +180,7 @@ func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	payload, err := router.wxPayClients.GetWebhookPayload(req)
 	//params, err := wechat.DecodeXML(req.Body)
 	if err != nil {
+		sugar.Error(err)
 		send(err)
 		return
 	}
@@ -215,6 +215,7 @@ func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 
 	// Handle confirmation error.
 	if cfmErr != nil {
+		sugar.Error(cfmErr)
 		if cfmErr.Retry {
 			send(cfmErr)
 		} else {

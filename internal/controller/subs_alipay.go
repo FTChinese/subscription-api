@@ -152,6 +152,7 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	payload, err := router.aliPayClient.GetWebhookPayload(req)
 	sugar.Infof("+%v", payload)
 	if err != nil {
+		sugar.Error(err)
 		send(false)
 		return
 	}
@@ -182,7 +183,7 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	_, cfmErr := router.processPaymentResult(payResult)
 
 	if cfmErr != nil {
-
+		sugar.Error(cfmErr)
 		if cfmErr.Retry {
 			send(false)
 			return
