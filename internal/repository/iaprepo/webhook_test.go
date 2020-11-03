@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/test"
-	"github.com/guregu/null"
 	"testing"
 )
 
@@ -18,11 +17,11 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 		AutoRenewStatusChangeDateMs:  "1532683981000",
 		AutoRenewStatusChangeDatePST: "",
 		Environment:                  apple.EnvSandbox,
-		ExpirationIntent:             null.StringFrom("1"),
+		ExpirationIntent:             1,
 		LatestExpiredReceipt:         "",
 		LatestExpiredReceiptInfo:     nil,
 		LatestToken:                  "",
-		LatestTransaction:            apple.LatestTransaction{},
+		LatestReceiptInfo:            apple.LatestTransaction{},
 		NotificationType:             apple.NotificationTypeInitialBuy,
 		Password:                     "12345678",
 		UnifiedReceipt: apple.UnifiedReceipt{
@@ -69,11 +68,11 @@ func TestGenerateWebhook(t *testing.T) {
 		AutoRenewStatusChangeDateMs:  "1532683981000",
 		AutoRenewStatusChangeDatePST: "",
 		Environment:                  apple.EnvSandbox,
-		ExpirationIntent:             null.StringFrom("1"),
+		ExpirationIntent:             1,
 		LatestExpiredReceipt:         "",
 		LatestExpiredReceiptInfo:     nil,
 		LatestToken:                  "",
-		LatestTransaction:            apple.LatestTransaction{},
+		LatestReceiptInfo:            apple.LatestTransaction{},
 		NotificationType:             apple.NotificationTypeInitialBuy,
 		Password:                     "12345678",
 		UnifiedReceipt: apple.UnifiedReceipt{
