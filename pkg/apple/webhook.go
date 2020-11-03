@@ -33,8 +33,9 @@ type WebHook struct {
 	AutoRenewStatusChangeDate    string `json:"auto_renew_status_change_date"`
 	AutoRenewStatusChangeDateMs  string `json:"auto_renew_status_change_date_ms"`
 	AutoRenewStatusChangeDatePST string `json:"auto_renew_status_change_date_pst"`
-	BundleID                     string `json:"bid"` //  the app bundle ID.
-	BundleVersion                string `json:"bvrs"`
+
+	BundleID      string `json:"bid"` //  the app bundle ID.
+	BundleVersion string `json:"bvrs"`
 
 	// The environment for which the receipt was generated.
 	//Possible values: Sandbox, PROD
@@ -49,16 +50,9 @@ type WebHook struct {
 	// 5 Unknown error.
 	// Also found in PendingRenewal.
 	ExpirationIntent int64 `json:"expiration_intent"`
-
-	// The latest Base64-encoded transaction receipt
-	LatestExpiredReceipt     string        `json:"latest_expired_receipt"`
-	LatestExpiredReceiptInfo []Transaction `json:"latest_expired_receipt_info"`
-	// It seems this one is the same as UnifiedReceipt.LatestReceipt.
-	LatestToken string `json:"latest_receipt"`
-	// Saved to db.
-	LatestReceiptInfo LatestTransaction `json:"latest_receipt_info"`
-	NotificationType  NotificationType  `json:"notification_type"`
-	Password          string            `json:"password"`
+	//LatestReceiptInfo LatestTransaction `json:"latest_receipt_info"` // Deprecated. Use the unified_receipt.Latest_receipt_info
+	NotificationType NotificationType `json:"notification_type"`
+	Password         string           `json:"password"`
 	// An object that contains information about the most recent in-app purchase transactions for the app.
 	UnifiedReceipt UnifiedReceipt `json:"unified_receipt"`
 }

@@ -46,7 +46,7 @@ func (x *NotificationType) Scan(src interface{}) error {
 
 	switch s := src.(type) {
 	case []byte:
-		*x = NotificationType(string(s))
+		*x = NotificationType(s)
 		return nil
 
 	case string:
