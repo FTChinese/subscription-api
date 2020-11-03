@@ -51,12 +51,18 @@ func (p *Persona) IAPSubs() apple.Subscription {
 		ExpiresDateUTC:    chrono.TimeFrom(time.Now().AddDate(1, 0, 0)),
 		Edition:           p.plan.Edition,
 		AutoRenewal:       true,
-		FtcUserID:         null.StringFrom(p.FtcID),
 	}
 
 	if p.expired {
 		s.ExpiresDateUTC = chrono.TimeFrom(time.Now().AddDate(-1, 0, 0))
 	}
+
+	return s
+}
+
+func (p *Persona) IAPSubsLinked() apple.Subscription {
+	s := p.IAPSubs()
+	s.FtcUserID = null.StringFrom(p.FtcID)
 
 	return s
 }
