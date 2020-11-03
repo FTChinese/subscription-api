@@ -56,7 +56,7 @@ func (env Env) SavePendingRenewal(p apple.PendingRenewalSchema) error {
 	return nil
 }
 
-// SaveResponsePayload saves the payload of common fields
+// SaveUnifiedReceipt saves the payload of common fields
 // in either verification response or webhook. It includes:
 //
 // * LatestReceiptInfo
@@ -65,7 +65,7 @@ func (env Env) SavePendingRenewal(p apple.PendingRenewalSchema) error {
 //
 // The LatestReceipt field is saved on disk as a file for now.
 // This part is separated since it its also used in webhook.
-func (env Env) SaveResponsePayload(ur apple.UnifiedReceipt) {
+func (env Env) SaveUnifiedReceipt(ur apple.UnifiedReceipt) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
