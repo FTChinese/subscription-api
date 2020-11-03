@@ -131,7 +131,7 @@ func (r *Repo) MustSaveProratedOrders(pos []subs.ProratedOrder) {
 }
 
 func (r *Repo) SaveIAPSubs(s apple.Subscription) error {
-	_, err := r.db.NamedExec(apple.StmtUpsertSubs, s)
+	_, err := r.db.NamedExec(apple.StmtCreateSubs, s)
 	if err != nil {
 		return err
 	}
