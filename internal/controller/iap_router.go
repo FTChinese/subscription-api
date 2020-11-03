@@ -72,7 +72,7 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 	}()
 
 	// Dissect and save other fields in the verification response.
-	router.iapRepo.SaveResponsePayload(resp.UnifiedReceipt)
+	router.iapRepo.SaveUnifiedReceipt(resp.UnifiedReceipt)
 	return resp, nil
 }
 
@@ -183,7 +183,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// history.
 	wh.UnifiedReceipt.Parse()
 
-	router.iapRepo.SaveResponsePayload(wh.UnifiedReceipt)
+	router.iapRepo.SaveUnifiedReceipt(wh.UnifiedReceipt)
 
 	// Build apple's subscription and save it.
 	sub, err := wh.UnifiedReceipt.Subscription()
