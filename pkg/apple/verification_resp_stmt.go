@@ -1,5 +1,10 @@
 package apple
 
+const colShared = `
+environment = :environment,
+original_transaction_id = :original_transaction_id
+`
+
 // StmtSaveDecodedReceipt saves the decoded receipt.
 // It includes all the fields of `receipt` field in a
 // verification response.

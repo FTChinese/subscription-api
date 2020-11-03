@@ -2,9 +2,7 @@ package apple
 
 const StmtLoggingWebhook = `
 INSERT IGNORE INTO premium.apple_webhook
-SET ` + transactionBaseCols + `,
-	app_item_id = :app_item_id,
-	item_id = :item_id,
+SET ` + colShared + `,
 	auto_renew_adam_id = :auto_renew_adam_id,
 	auto_renew_product_id = :auto_renew_product_id,
 	auto_renew_status = :auto_renew_status,
