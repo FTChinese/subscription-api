@@ -2,7 +2,7 @@ package apple
 
 import "github.com/guregu/null"
 
-// WebHookSchema saves the value of WebHook root fields and the values of its LatestTransaction fields.
+// WebHookSchema saves the value of WebHook root fields.
 type WebHookSchema struct {
 	BaseSchema
 	AutoRenewAdamID             int64            `db:"auto_renew_adam_id"`
