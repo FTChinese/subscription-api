@@ -101,7 +101,7 @@ func (c Consumer) saveReceipt(resp apple.VerificationResp) {
 	sugar := c.logger.Sugar()
 
 	sugar.Info("Saving verification response in background")
-	c.iapRepo.SaveResponsePayload(resp.UnifiedReceipt)
+	c.iapRepo.SaveUnifiedReceipt(resp.UnifiedReceipt)
 
 	sub, err := resp.Subscription()
 	if err != nil {
