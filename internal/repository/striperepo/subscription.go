@@ -61,7 +61,6 @@ func (env Env) CreateSubscription(input stripePkg.SubsInput) (stripePkg.SubsResu
 	sugar.Info("Creating stripe subscription")
 	// Contact Stripe API.
 	ss, err := input.CreateSubs()
-	sugar.Infof("Subscription id %s, status %s, payment intent status %s", ss.ID, ss.Status, ss.LatestInvoice.PaymentIntent.Status)
 
 	// {"status":400,
 	// "message":"Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than '4a857eb3-396c-4c91-a8f1-4014868a8437' if you meant to execute a different request.","request_id":"req_Dv6N7d9lF8uDHJ",
@@ -73,22 +72,28 @@ func (env Env) CreateSubscription(input stripePkg.SubsInput) (stripePkg.SubsResu
 		return stripePkg.SubsResult{}, err
 	}
 
+	sugar.Infof("Subscription id %s, status %s, payment intent status %s", ss.ID, ss.Status, ss.LatestInvoice.PaymentIntent.Status)
+
 	// Create Membership based on stripe subscription.
 	// Keep existing membership's union id if exists.
 	newMmb := input.NewMembership(mmb, ss)
 	sugar.Infof("A new stripe membership: %+v", newMmb)
 
 	// Create membership from Stripe subscription.
-	if !mmb.IsZero() {
-		if err := tx.DeleteMember(mmb.MemberID); err != nil {
+	if mmb.IsZero() {
+		err := tx.CreateMember(newMmb)
+		if err != nil {
+			sugar.Error(err)
 			_ = tx.Rollback()
 			return stripePkg.SubsResult{}, err
 		}
-	}
-
-	if err := tx.CreateMember(newMmb); err != nil {
-		_ = tx.Rollback()
-		return stripePkg.SubsResult{}, err
+	} else {
+		err := tx.UpdateMember(newMmb)
+		if err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return stripePkg.SubsResult{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

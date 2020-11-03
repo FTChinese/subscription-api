@@ -63,7 +63,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// This order might be invalid for upgrading.
 	// If user is already a premium member and this order is used
 	// for upgrading, decline retry.
-	sugar.Info("Validate duplicate upgrrading")
+	sugar.Info("Validate duplicate upgrading")
 	if err := order.ValidateDupUpgrade(member); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -92,22 +92,22 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 
 	// STEP 7: Insert or update membership.
 	// This error should allow retry
-	if !member.IsZero() {
-		sugar.Infof("Delete membership %s", member.CompoundID)
-		err := tx.DeleteMember(member.MemberID)
+	if member.IsZero() {
+		sugar.Infof("Inserting membership %v", confirmed.Membership)
+		err := tx.CreateMember(confirmed.Membership)
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
 			return subs.ConfirmationResult{}, result.ConfirmError(err, true)
 		}
-	}
-
-	sugar.Infof("Inserting membership %v", confirmed.Membership)
-	err = tx.CreateMember(confirmed.Membership)
-	if err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+	} else {
+		sugar.Infof("Updating membership %v", confirmed.Membership)
+		err := tx.UpdateMember(confirmed.Membership)
+		if err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
