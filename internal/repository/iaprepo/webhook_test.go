@@ -18,10 +18,6 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 		AutoRenewStatusChangeDatePST: "",
 		Environment:                  apple.EnvSandbox,
 		ExpirationIntent:             1,
-		LatestExpiredReceipt:         "",
-		LatestExpiredReceiptInfo:     nil,
-		LatestToken:                  "",
-		LatestReceiptInfo:            apple.LatestTransaction{},
 		NotificationType:             apple.NotificationTypeInitialBuy,
 		Password:                     "12345678",
 		UnifiedReceipt: apple.UnifiedReceipt{
@@ -68,11 +64,6 @@ func TestGenerateWebhook(t *testing.T) {
 		AutoRenewStatusChangeDateMs:  "1532683981000",
 		AutoRenewStatusChangeDatePST: "",
 		Environment:                  apple.EnvSandbox,
-		ExpirationIntent:             1,
-		LatestExpiredReceipt:         "",
-		LatestExpiredReceiptInfo:     nil,
-		LatestToken:                  "",
-		LatestReceiptInfo:            apple.LatestTransaction{},
 		NotificationType:             apple.NotificationTypeInitialBuy,
 		Password:                     "12345678",
 		UnifiedReceipt: apple.UnifiedReceipt{

@@ -1,6 +1,9 @@
 package apple
 
-import "strconv"
+import (
+	"github.com/guregu/null"
+	"strconv"
+)
 
 func MustParseBoolean(str string) bool {
 	b, err := strconv.ParseBool(str)
@@ -18,4 +21,13 @@ func MustParseInt64(str string) int64 {
 	}
 
 	return i
+}
+
+func ParseOptionalInt(str string) null.Int {
+	i, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return null.Int{}
+	}
+
+	return null.NewInt(i, i != 0)
 }
