@@ -20,6 +20,13 @@ SET original_transaction_id = :original_transaction_id,
 ON DUPLICATE KEY  UPDATE
 ` + colsUpsertSubs
 
+const StmtCreateSubs = `
+INSERT INTO premium.apple_subscription
+SET original_transaction_id = :original_transaction_id,
+` + colsUpsertSubs + `,
+ftc_user_id = :ftc_user_id
+`
+
 const colsSubs = `
 SELECT environment,
 	original_transaction_id,
