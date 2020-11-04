@@ -111,7 +111,7 @@ func (tx MemberTx) RetrieveOrder(orderID string) (subs.Order, error) {
 
 	err := tx.Get(
 		&order,
-		subs.StmtSelectOrder,
+		subs.StmtLockOrder,
 		orderID,
 	)
 
