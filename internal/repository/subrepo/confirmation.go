@@ -11,11 +11,9 @@ import (
 func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
 
 	defer env.logger.Sync()
-	sugar := env.logger.With().Sugar()
-	sugar.Infow("Start confirming order",
-		"orderId", result.OrderID,
-	)
+	sugar := env.logger.With().Sugar().With("orderId", result.OrderID)
 
+	sugar.Info("Start confirming order")
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		sugar.Error(err)
@@ -73,7 +71,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// STEP 4: Confirm this order
 	// Populate the ConfirmedAt, StartDate and EndDate.
 	// If there are calculation errors, allow retry.
-	sugar.Info("Conform order")
+	sugar.Info("Confirm order")
 	confirmed, err := order.Confirm(result, member)
 	if err != nil {
 		sugar.Error(err)
