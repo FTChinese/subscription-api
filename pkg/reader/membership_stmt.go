@@ -35,7 +35,7 @@ LIMIT 1
 FOR UPDATE
 `
 
-const StmtAppleMember = colMembership + `
+const StmtLockAppleMember = colMembership + `
 WHERE apple_subscription_id = ?
 FOR UPDATE`
 
