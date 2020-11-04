@@ -22,7 +22,6 @@ SET trade_no = :order_id,
 	wx_app_id = :wx_app_id,
 	created_utc = UTC_TIMESTAMP()`
 
-// Retrieves an order. This is mostly used upon confirmation.
 const StmtSelectOrder = `
 SELECT trade_no AS order_id,
 	trade_price AS price,
@@ -47,6 +46,10 @@ SELECT trade_no AS order_id,
 FROM premium.ftc_trade
 WHERE trade_no = ?
 LIMIT 1
+`
+
+// Retrieves an order. This is mostly used upon confirmation.
+const StmtLockOrder = StmtSelectOrder + `
 FOR UPDATE`
 
 // StmtConfirmOrder build SQL to set an order confirmed.
