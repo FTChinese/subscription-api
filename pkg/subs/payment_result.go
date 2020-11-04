@@ -85,7 +85,7 @@ func (r PaymentResult) ConfirmError(err error, retry bool) *ConfirmError {
 // NewWxWebhookResult builds PaymentResult from wechat pay webhook notification.
 func NewWxWebhookResult(payload wechat.Notification) PaymentResult {
 	return PaymentResult{
-		PaymentState:     "",
+		PaymentState:     payload.ResultCode.String,
 		PaymentStateDesc: "",
 		Amount:           payload.TotalFee.Int64,
 		TransactionID:    payload.TransactionID.String,
