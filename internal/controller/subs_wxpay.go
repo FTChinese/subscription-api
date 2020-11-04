@@ -36,7 +36,7 @@ func (router SubsRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFu
 		defer router.logger.Sync()
 		sugar := router.logger.Sugar()
 
-		sugar.Info("Start placing a wechat pi")
+		sugar.Info("Start creating a wechat order")
 
 		clientApp := client.NewClientApp(req)
 		readerIDs := getReaderIDs(req.Header)
