@@ -78,7 +78,7 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership,
 
 	err := tx.Get(
 		&m,
-		reader.StmtAppleMember,
+		reader.StmtLockAppleMember,
 		transactionID)
 
 	if err != nil && err != sql.ErrNoRows {
