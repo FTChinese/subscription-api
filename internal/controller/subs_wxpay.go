@@ -161,7 +161,7 @@ func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	sugar.Infow("Wxpay webhook")
+	sugar.Info("Wxpay webhook received message")
 
 	resp := wxpay.Notifies{}
 
