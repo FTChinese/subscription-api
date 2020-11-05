@@ -52,6 +52,13 @@ LIMIT 1
 const StmtLockOrder = StmtSelectOrder + `
 FOR UPDATE`
 
+const StmtLockOrderExpedient = `
+SELECT trade_no
+FROM premium.ftc_trade
+WHERE trade_no = ?
+LIMIT 1
+FOR UPDATE`
+
 const StmtOrderHeader = `
 SELECT trade_no AS order_id,
 	trade_price AS price,

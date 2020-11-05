@@ -11,7 +11,12 @@ import (
 func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
 
 	defer env.logger.Sync()
-	sugar := env.logger.With().Sugar().With("orderId", result.OrderID)
+	sugar := env.logger.Sugar().With("orderId", result.OrderID)
+
+	order, err := env.LoadFullOrder(result.OrderID)
+	if err != nil {
+		return subs.ConfirmationResult{}, result.ConfirmError(err, err != sql.ErrNoRows)
+	}
 
 	sugar.Info("Start confirming order")
 	tx, err := env.BeginOrderTx()
@@ -26,7 +31,13 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// tell provider not sending notification any longer;
 	// otherwise, allow retry.
 	sugar.Info("Start retrieving order")
-	order, err := tx.RetrieveOrder(result.OrderID)
+	//order, err := tx.RetrieveOrder(result.OrderID)
+	//if err != nil {
+	//	sugar.Error(err)
+	//	_ = tx.Rollback()
+	//	return subs.ConfirmationResult{}, result.ConfirmError(err, err != sql.ErrNoRows)
+	//}
+	_, err = tx.LockOrder(result.OrderID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()

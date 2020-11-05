@@ -347,7 +347,7 @@ func TestPaymentConfig_UpgradeIntent(t *testing.T) {
 
 			t.Logf("Wallet: %+v", got.Wallet)
 			t.Logf("Payable: %+v", got.Payable)
-			t.Logf("Duration: %+v", got.Length)
+			t.Logf("Duration: %+v", got.Duration)
 			t.Logf("Is free: %t", got.IsFree)
 			t.Logf("Order: %v", got.Result.Order)
 			t.Logf("New member: %v", got.Result.Membership)
