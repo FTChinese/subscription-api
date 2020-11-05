@@ -52,8 +52,8 @@ func (o Order) IsAliWxPay() bool {
 }
 
 func (o Order) ValidatePayment(result PaymentResult) error {
-	if o.AmountInCent() != result.Amount {
-		return fmt.Errorf("amount mismatched: expected: %d, actual: %d", o.AmountInCent(), result.Amount)
+	if o.AmountInCent() != result.Amount.Int64 {
+		return fmt.Errorf("amount mismatched: expected: %d, actual: %d", o.AmountInCent(), result.Amount.Int64)
 	}
 
 	return nil
