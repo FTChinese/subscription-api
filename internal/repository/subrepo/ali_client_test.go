@@ -80,3 +80,16 @@ func TestAliPayClient_CreateOrder(t *testing.T) {
 		})
 	}
 }
+
+func TestAliPayClient_QueryOrder(t *testing.T) {
+	c := NewAliPayClient(test.AliApp, zaptest.NewLogger(t))
+
+	resp, err := c.QueryOrder("FT8F0438FFE67C7443")
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("%+v", resp)
+}
