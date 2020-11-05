@@ -183,7 +183,7 @@ func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 	go func() {
 		defer close(headerCh)
 
-		order, err := env.orderTail(orderID)
+		order, err := env.orderHeader(orderID)
 		headerCh <- orderResult{
 			order: order,
 			err:   err,
