@@ -8,6 +8,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
@@ -24,23 +25,18 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	t.Logf("Wx Order id %s", order2.ID)
 	repo.MustSaveOrder(order2)
 
-	type fields struct {
-		db *sqlx.DB
-	}
+	env := NewEnv(test.DB, test.Cache, zaptest.NewLogger(t))
+
 	type args struct {
 		result subs.PaymentResult
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Confirm ali order",
-			fields: fields{
-				db: test.DB,
-			},
 			args: args{
 				result: p1.PaymentResult(order1),
 			},
@@ -48,19 +44,14 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		},
 		{
 			name: "Confirm wx order",
-			fields: fields{
-				db: test.DB,
-			},
 			args: args{
 				result: p1.PaymentResult(order2),
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db: tt.fields.db,
-			}
 
 			t.Logf("Payment result: %+v", tt.args.result)
 
