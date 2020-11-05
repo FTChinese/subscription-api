@@ -91,7 +91,7 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 	sugar.Infow("Verify payment",
 		"orderId", orderID)
 
-	order, err := router.subRepo.RetrieveOrder(orderID)
+	order, err := router.subRepo.LoadFullOrder(orderID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
