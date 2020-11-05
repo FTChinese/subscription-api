@@ -8,6 +8,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
@@ -199,6 +200,49 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 			}
 
 			t.Logf("Order %+v", got)
+		})
+	}
+}
+
+func TestEnv_LoadFullOrder(t *testing.T) {
+
+	p := test.NewPersona()
+	order := p.CreateOrder()
+
+	t.Logf("Order id: %s", order.ID)
+
+	test.NewRepo().MustSaveOrder(order)
+
+	env := NewEnv(test.DB, test.Cache, zaptest.NewLogger(t))
+
+	type args struct {
+		orderID string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Load full order",
+			args: args{
+				orderID: order.ID,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := env.LoadFullOrder(tt.args.orderID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LoadFullOrder() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			t.Logf("%v", got)
+
+			assert.NotZero(t, got.ID, order.ID)
 		})
 	}
 }
