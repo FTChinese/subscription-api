@@ -197,6 +197,56 @@ func TestOrderTx_RetrieveOrder(t *testing.T) {
 	_ = otx.Commit()
 }
 
+func TestMemberTx_LockOrder(t *testing.T) {
+	p := test.NewPersona()
+	orderAli := p.CreateOrder()
+
+	test.NewRepo().MustSaveOrder(orderAli)
+
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		orderID string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Lock order",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				orderID: orderAli.ID,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+			got, err := tx.LockOrder(tt.args.orderID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LockOrder() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			t.Logf("Locked order: %v", got)
+
+			if err := tx.Commit(); err != nil {
+				t.Error(err)
+			}
+
+		})
+	}
+}
+
 func TestOrderTx_ConfirmedOrder(t *testing.T) {
 	p := test.NewPersona()
 	order := p.CreateOrder()

@@ -8,10 +8,10 @@ import (
 
 // ConfirmOrder updates the order received from webhook,
 // create or update membership, and optionally flag prorated orders as consumed.
-func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
+func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
 
 	defer env.logger.Sync()
-	sugar := env.logger.With().Sugar().With("orderId", result.OrderID)
+	sugar := env.logger.Sugar().With("orderId", result.OrderID)
 
 	sugar.Info("Start confirming order")
 	tx, err := env.BeginOrderTx()
@@ -25,15 +25,21 @@ func (env Env) ConfirmOrder(result subs.PaymentResult) (subs.ConfirmationResult,
 	// If the order is not found, or is already confirmed,
 	// tell provider not sending notification any longer;
 	// otherwise, allow retry.
-	sugar.Info("Start retrieving order")
-	order, err := tx.RetrieveOrder(result.OrderID)
+	sugar.Info("Start locking order")
+	//order, err := tx.RetrieveOrder(result.OrderID)
+	//if err != nil {
+	//	sugar.Error(err)
+	//	_ = tx.Rollback()
+	//	return subs.ConfirmationResult{}, result.ConfirmError(err, err != sql.ErrNoRows)
+	//}
+	lo, err := tx.LockOrder(result.OrderID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, result.ConfirmError(err, err != sql.ErrNoRows)
 	}
 
-	if order.IsConfirmed() {
+	if !lo.ConfirmedAt.IsZero() {
 		_ = tx.Rollback()
 		err := errors.New("duplicate confirmation")
 		sugar.Error(err)

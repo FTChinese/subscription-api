@@ -135,11 +135,24 @@ func (router SubsRouter) verifyAliPayment(order subs.Order) (subs.PaymentResult,
 	return subs.NewAliPayResult(aliOrder), nil
 }
 
-func (router SubsRouter) processPaymentResult(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
+func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	confirmed, cfmErr := router.subRepo.ConfirmOrder(result)
+	order, err := router.subRepo.LoadFullOrder(result.OrderID)
+	if err != nil {
+		sugar.Error(err)
+		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+	}
+
+	return router.confirmOrder(result, order)
+}
+
+func (router SubsRouter) confirmOrder(result subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	confirmed, cfmErr := router.subRepo.ConfirmOrder(result, order)
 	if cfmErr != nil {
 		go func() {
 			err := router.subRepo.SaveConfirmationErr(cfmErr)
