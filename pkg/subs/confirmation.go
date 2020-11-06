@@ -18,8 +18,11 @@ func (c ConfirmError) Error() string {
 	return c.Message
 }
 
+// ConfirmationResult contains all the data in the process of confirming an order.
+// This is also used as the http response for manual confirmation.
 type ConfirmationResult struct {
-	Order      Order                 // The confirmed order.
-	Membership reader.Membership     // The updated membership.
-	Snapshot   reader.MemberSnapshot // // Snapshot of previous membership
+	Order      Order                 `json:"order"`      // The confirmed order.
+	Membership reader.Membership     `json:"membership"` // The updated membership. Empty if order is already confirmed.
+	Payment    PaymentResult         `json:"payment"`    // Empty if order is already confirmed.
+	Snapshot   reader.MemberSnapshot `json:"-"`          // Snapshot of previous membership
 }
