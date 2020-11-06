@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Account contains the minimal data to identify a user.
+// FtcAccount contains the minimal data to identify a user.
 type FtcAccount struct {
 	FtcID    string      `json:"ftcId" db:"ftc_id"`
 	UnionID  null.String `json:"unionId" db:"union_id"`
