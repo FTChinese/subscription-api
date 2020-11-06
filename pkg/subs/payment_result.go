@@ -9,7 +9,6 @@ import (
 	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
 	"strconv"
-	"time"
 )
 
 func priceToCent(s string) null.Int {
@@ -78,8 +77,8 @@ func (r PaymentResult) ConfirmError(err error, retry bool) *ConfirmError {
 // NewWxWebhookResult builds PaymentResult from wechat pay webhook notification.
 func NewWxWebhookResult(payload wechat.Notification) PaymentResult {
 	return PaymentResult{
-		PaymentState:     "",
-		PaymentStateDesc: "",
+		PaymentState:     payload.ResultCode.String,
+		PaymentStateDesc: payload.ErrorMessage.String,
 		Amount:           payload.TotalFee,
 		TransactionID:    payload.TransactionID.String,
 		OrderID:          payload.FTCOrderID.String,
@@ -91,20 +90,20 @@ func NewWxWebhookResult(payload wechat.Notification) PaymentResult {
 // NewWxPayResult creates a new PaymentResult from the result of querying wechat order.
 // The payment status should be returned to client as is, whether it is paid or not.
 func NewWxPayResult(r wechat.OrderQueryResp) PaymentResult {
-	// If the payment is not done, we should not add confirmation time.
-	var confirmedAt time.Time
-	if r.TimeEnd.Valid {
-		confirmedAt = dt.MustParseWxTime(r.TimeEnd.String)
-	}
-	return PaymentResult{
+	pr := PaymentResult{
 		PaymentState:     r.TradeState.String,
 		PaymentStateDesc: r.TradeStateDesc.String,
 		Amount:           null.IntFrom(r.TotalFee.Int64),
 		TransactionID:    r.TransactionID.String,
 		OrderID:          r.FTCOrderID.String,
-		ConfirmedAt:      chrono.TimeFrom(confirmedAt),
 		PayMethod:        enum.PayMethodWx,
 	}
+
+	if pr.IsOrderPaid() {
+		pr.ConfirmedAt = chrono.TimeNow()
+	}
+
+	return pr
 }
 
 // NewAliPayResult converts ali payment result.
@@ -151,15 +150,21 @@ func NewWxPayResult(r wechat.OrderQueryResp) PaymentResult {
 // IndustrySepcDetail:
 // VoucherDetailList:[]
 func NewAliPayResult(r *alipay.AliPayTradeQueryResponse) PaymentResult {
-	return PaymentResult{
+	pr := PaymentResult{
 		PaymentState:     r.AliPayTradeQuery.TradeStatus,
 		PaymentStateDesc: ali.TradeStatusMsg[r.AliPayTradeQuery.TradeStatus],
 		Amount:           priceToCent(r.AliPayTradeQuery.TotalAmount),
 		TransactionID:    r.AliPayTradeQuery.TradeNo,
 		OrderID:          r.AliPayTradeQuery.OutTradeNo,
-		ConfirmedAt:      chrono.TimeNow(),
+		ConfirmedAt:      chrono.TimeNow(), // If an order is not confirmed, always use now as confirmation time.
 		PayMethod:        enum.PayMethodAli,
 	}
+
+	if pr.IsOrderPaid() {
+		pr.ConfirmedAt = chrono.TimeNow()
+	}
+
+	return pr
 }
 
 // NewAliWebhookResult builds PaymentResult from alipay webhook notification.
