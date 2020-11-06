@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -20,21 +19,31 @@ func (router SubsRouter) ManualConfirm(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	order, err := router.subRepo.RetrieveOrder(orderID)
+	order, err := router.subRepo.LoadFullOrder(orderID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	// Return error or data?
-	if order.IsConfirmed() {
-		_ = render.New(w).Forbidden("Order already confirmed")
+	if !order.IsAliWxPay() {
+		_ = render.New(w).BadRequest("order not paid via ali or wx")
 		return
 	}
 
-	if !order.IsAliWxPay() {
-		_ = render.New(w).BadRequest("order not paid via ali or wx")
+	// Return error or data?
+	if order.IsConfirmed() {
+		m, err := router.readerRepo.RetrieveMember(order.MemberID)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			return
+		}
+
+		_ = render.New(w).OK(subs.ConfirmationResult{
+			Order:      order,
+			Membership: m,
+			Payment:    subs.PaymentResult{},
+		})
 		return
 	}
 
@@ -56,19 +65,27 @@ func (router SubsRouter) ManualConfirm(w http.ResponseWriter, req *http.Request)
 	}
 
 	if !payResult.IsOrderPaid() {
-		_ = render.New(w).BadRequest("This order is not paid")
+		m, err := router.readerRepo.RetrieveMember(order.MemberID)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			return
+		}
+		_ = render.New(w).OK(subs.ConfirmationResult{
+			Order:      order,
+			Membership: m,
+			Payment:    payResult,
+		})
+
 		return
 	}
 
-	payResult.ConfirmedAt = chrono.TimeNow()
-
-	confirmed, err := router.processPaymentResult(payResult)
-	if err != nil {
-		_ = render.New(w).DBError(err)
+	confirmed, cfmErr := router.confirmOrder(payResult, order)
+	if cfmErr != nil {
+		_ = render.New(w).DBError(cfmErr)
 		return
 	}
 
-	_ = render.New(w).OK(confirmed.Order)
+	_ = render.New(w).OK(confirmed)
 }
 
 // VerifyPayment checks against payment provider's api to get
@@ -99,7 +116,7 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 	}
 
 	if !order.IsAliWxPay() {
-		_ = render.New(w).BadRequest("Order not paid vai alipay or wxpay")
+		_ = render.New(w).BadRequest("Order not paid via alipay or wxpay")
 		return
 	}
 
@@ -130,7 +147,7 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	_, _ = router.processPaymentResult(payResult)
+	_, _ = router.confirmOrder(payResult, order)
 
 	_ = render.New(w).OK(payResult)
 
