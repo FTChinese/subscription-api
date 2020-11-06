@@ -29,7 +29,7 @@ func NewWxWHUnsigned(order subs.Order) wechat.Notification {
 	}
 
 	noti.ReturnCode = "SUCCESS"
-	noti.ReturnMessage = "OK"
+	noti.ReturnMessage = null.StringFrom("OK")
 	noti.AppID = null.StringFrom(WxPayApp.AppID)
 	noti.MID = null.StringFrom(WxPayApp.MchID)
 	noti.Nonce = null.StringFrom(nonce)
@@ -46,7 +46,7 @@ func NewWxOrderUnsigned() wechat.OrderResp {
 	}
 
 	or.ReturnCode = "SUCCESS"
-	or.ReturnMessage = "OK"
+	or.ReturnMessage = null.StringFrom("OK")
 	or.AppID = null.StringFrom(WxPayApp.AppID)
 	or.MID = null.StringFrom(WxPayApp.MchID)
 	or.Nonce = null.StringFrom(nonce)
