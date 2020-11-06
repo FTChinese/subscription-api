@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -34,7 +35,7 @@ func TestOrder_Confirm(t *testing.T) {
 			order: order,
 			args: args{
 				pr: PaymentResult{
-					Amount:        12800,
+					Amount:        null.IntFrom(12800),
 					TransactionID: "1234",
 					OrderID:       order.ID,
 					ConfirmedAt:   chrono.TimeNow(),

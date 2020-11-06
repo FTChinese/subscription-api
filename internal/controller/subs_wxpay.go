@@ -218,7 +218,7 @@ func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	sugar.Infof("Payment result %+v", payResult)
 
 	sugar.Info("Start processing payment result")
-	_, cfmErr := router.processPaymentResult(payResult)
+	_, cfmErr := router.processWebhookResult(payResult)
 
 	// Handle confirmation error.
 	if cfmErr != nil {

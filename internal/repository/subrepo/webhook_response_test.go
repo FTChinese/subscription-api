@@ -1,6 +1,7 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
@@ -26,7 +27,7 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 	}{
 		{
 			name:    "Save Ali Notification",
-			args:    args{n: test.AliNoti(p.CreateOrder())},
+			args:    args{n: subs.MockAliNoti(p.CreateOrder())},
 			wantErr: false,
 		},
 	}

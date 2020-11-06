@@ -122,6 +122,18 @@ func (tx MemberTx) RetrieveOrder(orderID string) (subs.Order, error) {
 	return order, nil
 }
 
+func (tx MemberTx) LockOrder(orderID string) (subs.LockedOrder, error) {
+	var lo subs.LockedOrder
+
+	err := tx.Get(&lo, subs.StmtLockOrderExpedient, orderID)
+
+	if err != nil {
+		return subs.LockedOrder{}, err
+	}
+
+	return lo, nil
+}
+
 // ConfirmOrder set an order's confirmation time.
 func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 	_, err := tx.NamedExec(

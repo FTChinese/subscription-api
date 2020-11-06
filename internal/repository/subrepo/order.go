@@ -140,3 +140,91 @@ func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 
 	return order, nil
 }
+
+func (env Env) orderHeader(orderID string) (subs.Order, error) {
+	var order subs.Order
+
+	err := env.db.Get(
+		&order,
+		subs.StmtOrderHeader,
+		orderID)
+
+	if err != nil {
+		return subs.Order{}, nil
+	}
+
+	return order, nil
+}
+
+func (env Env) orderTail(orderID string) (subs.Order, error) {
+	var order subs.Order
+
+	err := env.db.Get(
+		&order,
+		subs.StmtOrderTail,
+		orderID)
+
+	if err != nil {
+		return subs.Order{}, nil
+	}
+
+	return order, nil
+}
+
+type orderResult struct {
+	order subs.Order
+	err   error
+}
+
+func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
+	headerCh := make(chan orderResult)
+	tailCh := make(chan orderResult)
+
+	go func() {
+		defer close(headerCh)
+
+		order, err := env.orderHeader(orderID)
+		headerCh <- orderResult{
+			order: order,
+			err:   err,
+		}
+	}()
+
+	go func() {
+		defer close(tailCh)
+
+		order, err := env.orderTail(orderID)
+		tailCh <- orderResult{
+			order: order,
+			err:   err,
+		}
+	}()
+
+	headerRes, tailRes := <-headerCh, <-tailCh
+	if headerRes.err != nil {
+		return subs.Order{}, headerRes.err
+	}
+
+	if tailRes.err != nil {
+		return subs.Order{}, tailRes.err
+	}
+
+	return subs.Order{
+		ID:              headerRes.order.ID,
+		MemberID:        headerRes.order.MemberID,
+		PlanID:          headerRes.order.PlanID,
+		DiscountID:      headerRes.order.DiscountID,
+		Price:           headerRes.order.Price,
+		Edition:         headerRes.order.Edition,
+		Charge:          headerRes.order.Charge,
+		Duration:        tailRes.order.Duration,
+		Kind:            tailRes.order.Kind,
+		PaymentMethod:   tailRes.order.PaymentMethod,
+		TotalBalance:    tailRes.order.TotalBalance,
+		WxAppID:         tailRes.order.WxAppID,
+		CreatedAt:       tailRes.order.CreatedAt,
+		ConfirmedAt:     tailRes.order.ConfirmedAt,
+		PurchasedPeriod: tailRes.order.PurchasedPeriod,
+		LiveMode:        true,
+	}, nil
+}

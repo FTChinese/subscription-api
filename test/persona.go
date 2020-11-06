@@ -3,6 +3,7 @@
 package test
 
 import (
+	"github.com/FTChinese/go-rest/rand"
 	"time"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -319,16 +320,27 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 
 	switch p.payMethod {
 	case enum.PayMethodWx:
-		result := subs.NewWxWebhookResult(NewWxWHUnsigned(order))
+		result := subs.PaymentResult{
+			PaymentState:     "SUCCESS",
+			PaymentStateDesc: "",
+			Amount:           null.IntFrom(order.AmountInCent()),
+			TransactionID:    rand.String(28),
+			OrderID:          order.ID,
+			ConfirmedAt:      chrono.TimeNow(),
+			PayMethod:        enum.PayMethodWx,
+		}
 		return result
 
 	case enum.PayMethodAli:
-		n := AliNoti(order)
-		result, err := subs.NewAliWebhookResult(&n)
-		if err != nil {
-			panic(err)
+		return subs.PaymentResult{
+			PaymentState:     "TRADE_SUCCESS",
+			PaymentStateDesc: "",
+			Amount:           null.IntFrom(order.AmountInCent()),
+			TransactionID:    rand.String(28),
+			OrderID:          order.ID,
+			ConfirmedAt:      chrono.TimeNow(),
+			PayMethod:        enum.PayMethodAli,
 		}
-		return result
 
 	default:
 		panic("Not ali or wx pay")

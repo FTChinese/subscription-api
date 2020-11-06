@@ -52,6 +52,44 @@ LIMIT 1
 const StmtLockOrder = StmtSelectOrder + `
 FOR UPDATE`
 
+const StmtLockOrderExpedient = `
+SELECT trade_no AS order_id,
+	confirmed_utc
+FROM premium.ftc_trade
+WHERE trade_no = ?
+LIMIT 1
+FOR UPDATE`
+
+const StmtOrderHeader = `
+SELECT trade_no AS order_id,
+	trade_price AS price,
+	trade_amount AS charged_amount,
+	user_id AS compound_id,
+	ftc_user_id AS ftc_id,
+	wx_union_id AS union_id,
+	IFNULL(plan_id, '') AS plan_id,
+	discount_id,
+	tier_to_buy AS tier,
+	billing_cycle AS cycle
+FROM premium.ftc_trade
+WHERE trade_no = ?
+LIMIT 1`
+
+const StmtOrderTail = `
+SELECT cycle_count AS cycle_count,
+	extra_days AS extra_days,
+	category AS kind,
+	payment_method,
+	total_balance,
+	wx_app_id,
+	created_utc,
+	confirmed_utc,
+	start_date,
+	end_date
+FROM premium.ftc_trade
+WHERE trade_no = ?
+LIMIT 1`
+
 // StmtConfirmOrder build SQL to set an order confirmed.
 const StmtConfirmOrder = `
 UPDATE premium.ftc_trade

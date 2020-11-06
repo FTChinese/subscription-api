@@ -80,7 +80,7 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 
 // CreateCustomer creates stripe customer if not present.
 // PUT /stripe/customers
-// Response: reader.Account
+// Response: reader.FtcAccount
 func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(ftcIDKey)
 
