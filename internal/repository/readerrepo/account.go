@@ -1,6 +1,7 @@
 package readerrepo
 
 import (
+	"database/sql"
 	"errors"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
@@ -53,4 +54,19 @@ func (env Env) FtcAccountByStripeID(cusID string) (reader.FtcAccount, error) {
 	}
 
 	return u, nil
+}
+
+func (env Env) RetrieveMember(id reader.MemberID) (reader.Membership, error) {
+	var m reader.Membership
+
+	err := env.db.Get(
+		&m,
+		reader.StmtSelectMember,
+		id.BuildFindInSet())
+
+	if err != nil && err != sql.ErrNoRows {
+		return reader.Membership{}, err
+	}
+
+	return m.Normalize(), nil
 }
