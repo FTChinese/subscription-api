@@ -29,6 +29,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 
 	type args struct {
 		result subs.PaymentResult
+		order  subs.Order
 	}
 	tests := []struct {
 		name    string
@@ -39,6 +40,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			name: "Confirm ali order",
 			args: args{
 				result: p1.PaymentResult(order1),
+				order:  order1,
 			},
 			wantErr: false,
 		},
@@ -46,6 +48,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			name: "Confirm wx order",
 			args: args{
 				result: p1.PaymentResult(order2),
+				order:  order2,
 			},
 			wantErr: false,
 		},
@@ -55,7 +58,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 
 			t.Logf("Payment result: %+v", tt.args.result)
 
-			got, err := env.ConfirmOrder(tt.args.result)
+			got, err := env.ConfirmOrder(tt.args.result, tt.args.order)
 			if tt.wantErr {
 				assert.NotNil(t, err)
 				return
