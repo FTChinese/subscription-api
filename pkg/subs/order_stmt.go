@@ -53,7 +53,8 @@ const StmtLockOrder = StmtSelectOrder + `
 FOR UPDATE`
 
 const StmtLockOrderExpedient = `
-SELECT trade_no
+SELECT trade_no AS order_id,
+	confirmed_utc
 FROM premium.ftc_trade
 WHERE trade_no = ?
 LIMIT 1
