@@ -19,6 +19,11 @@ SELECT vip_id AS compound_id,
 	b2b_licence_id
 FROM premium.ftc_vip`
 
+const StmtSelectMember = colMembership + `
+WHERE FIND_IN_SET(vip_id, ?) > 0
+LIMIT 1
+`
+
 // StmtLockMember builds SQL to retrieve membership in a transaction.
 // Retrieve membership by compound id extracted from request header.
 // The request might provide ftc id or union id, or both,
@@ -29,11 +34,8 @@ FROM premium.ftc_vip`
 // (Chances of such case are rare).
 // In such case we won't be able to find the membership
 // simply querying the vip_id column.
-const StmtLockMember = colMembership + `
-WHERE FIND_IN_SET(vip_id, ?) > 0
-LIMIT 1
-FOR UPDATE
-`
+const StmtLockMember = StmtSelectMember + `
+FOR UPDATE`
 
 const StmtLockAppleMember = colMembership + `
 WHERE apple_subscription_id = ?
