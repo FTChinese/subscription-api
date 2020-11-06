@@ -10,6 +10,11 @@ import (
 	"github.com/guregu/null"
 )
 
+type LockedOrder struct {
+	ID          string      `db:"order_id"`
+	ConfirmedAt chrono.Time `db:"confirmed_utc"`
+}
+
 // Subscription contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 // An order could represents 12 status of user:
@@ -136,5 +141,6 @@ func (o Order) Confirm(pr PaymentResult, m reader.Membership) (ConfirmationResul
 		Order:      o,
 		Membership: newMember,
 		Snapshot:   snapshot,
+		Payment:    pr,
 	}, nil
 }
