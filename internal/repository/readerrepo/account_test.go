@@ -127,3 +127,39 @@ func TestReaderEnv_AccountByStripeID(t *testing.T) {
 		})
 	}
 }
+
+func TestEnv_RetrieveMember(t *testing.T) {
+	p := test.NewPersona()
+	m := p.Membership()
+	test.NewRepo().MustSaveMembership(m)
+
+	env := NewEnv(test.DB)
+
+	type args struct {
+		id reader.MemberID
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Load member",
+			args: args{
+				id: m.MemberID,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := env.RetrieveMember(tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			t.Logf("%v", got)
+		})
+	}
+}
