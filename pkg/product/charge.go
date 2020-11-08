@@ -1,7 +1,6 @@
 package product
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -22,9 +21,6 @@ func (c Charge) AmountInCent() int64 {
 	return int64(c.Amount * 100)
 }
 
-// ReadableAmount turns the charged amount to human readable format.
-func (c Charge) ReadableAmount() string {
-	return fmt.Sprintf("¥ %.2f",
-		c.Amount,
-	)
+func FormatMoney(n float64) string {
+	return strconv.FormatFloat(n, 'f', 2, 32)
 }
