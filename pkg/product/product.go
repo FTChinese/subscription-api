@@ -3,6 +3,7 @@ package product
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
+	"strings"
 )
 
 // Product defines a product without plans.
@@ -31,6 +32,12 @@ func BuildPaywallProducts(prods []Product, plans []ExpandedPlan) []ExpandedProdu
 
 		if !ok {
 			gPlans = []ExpandedPlan{}
+		}
+
+		for _, plan := range gPlans {
+			dailyCost := plan.DailyCost()
+			desc := strings.Replace(prod.Description.String, dailyCost.Holder, dailyCost.Replacer, 1)
+			prod.Description = null.NewString(desc, desc != "")
 		}
 
 		result = append(result, ExpandedProduct{

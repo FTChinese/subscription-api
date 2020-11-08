@@ -6,12 +6,43 @@ import (
 	"github.com/guregu/null"
 )
 
+type DailyCost struct {
+	Holder   string
+	Replacer string
+}
+
+func NewDailyCostOfYear(price float64) DailyCost {
+	return DailyCost{
+		Holder:   "{{dailyAverageOfYear}}",
+		Replacer: FormatMoney(price / 360),
+	}
+}
+
+func NewDailyCostOfMonth(price float64) DailyCost {
+	return DailyCost{
+		Holder:   "{{dailyAverageOfMonth}}",
+		Replacer: FormatMoney(price / 30),
+	}
+}
+
 type Plan struct {
 	ID        string  `json:"id" db:"plan_id"`
 	ProductID string  `json:"productId" db:"product_id"`
 	Price     float64 `json:"price" db:"price"`
 	Edition
 	Description null.String `json:"description" db:"description"`
+}
+
+func (p Plan) DailyCost() DailyCost {
+	switch p.Cycle {
+	case enum.CycleYear:
+		return NewDailyCostOfYear(p.Price)
+
+	case enum.CycleMonth:
+		return NewDailyCostOfMonth(p.Price)
+	}
+
+	return DailyCost{}
 }
 
 // PaymentTitle is used as the value of `subject` for alipay,
