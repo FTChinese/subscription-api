@@ -3,6 +3,7 @@ package subrepo
 import (
 	"fmt"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/smartwalle/alipay"
 	"go.uber.org/zap"
 	"net/http"
@@ -123,6 +124,18 @@ func (c AliPayClient) QueryOrder(id string) (*alipay.AliPayTradeQueryResponse, e
 	}
 
 	return qr, nil
+}
+
+// VerifyPayment calls QueryOrder and turns the response data to
+// PaymentResult.
+func (c AliPayClient) VerifyPayment(order subs.Order) (subs.PaymentResult, error) {
+	aliOrder, err := c.QueryOrder(order.ID)
+
+	if err != nil {
+		return subs.PaymentResult{}, err
+	}
+
+	return subs.NewAliPayResult(aliOrder), nil
 }
 
 // GetWebhookPayload retrieves wehbook data from request and verify if it targeted at us.
