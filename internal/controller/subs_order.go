@@ -53,7 +53,7 @@ func (router SubsRouter) ManualConfirm(w http.ResponseWriter, req *http.Request)
 		payResult, err = router.verifyWxPayment(order)
 
 	case enum.PayMethodAli:
-		payResult, err = router.verifyAliPayment(order)
+		payResult, err = router.aliPayClient.VerifyPayment(order)
 	}
 
 	sugar.Infof("Payment result: %+v", payResult)
@@ -126,7 +126,7 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 		payResult, err = router.verifyWxPayment(order)
 
 	case enum.PayMethodAli:
-		payResult, err = router.verifyAliPayment(order)
+		payResult, err = router.aliPayClient.VerifyPayment(order)
 	}
 
 	if err != nil {

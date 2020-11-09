@@ -120,21 +120,6 @@ func (router SubsRouter) verifyWxPayment(order subs.Order) (subs.PaymentResult, 
 	return subs.NewWxPayResult(wxOrder), nil
 }
 
-// https://opendocs.alipay.com/apis/api_1/alipay.trade.query/
-func (router SubsRouter) verifyAliPayment(order subs.Order) (subs.PaymentResult, error) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	aliOrder, err := router.aliPayClient.QueryOrder(order.ID)
-
-	if err != nil {
-		sugar.Error(err)
-		return subs.PaymentResult{}, err
-	}
-
-	return subs.NewAliPayResult(aliOrder), nil
-}
-
 func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()

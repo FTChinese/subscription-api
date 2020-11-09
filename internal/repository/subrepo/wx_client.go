@@ -183,6 +183,15 @@ func (c WxPayClient) SignJSApiParams(or wechat.OrderResp) wechat.JSApiParams {
 	return p
 }
 
+//func (c WxPayClient) VerifyPayment(order subs.Order) (subs.PaymentResult, error) {
+//	ordRep, err := c.QueryOrder(order)
+//	if err != nil {
+//		return subs.PaymentResult{}, err
+//	}
+//
+//
+//}
+
 // SignAppParams re-sign wxpay's order to build the parameters used by native app sdk to call wechat service.
 func (c WxPayClient) SignAppParams(or wechat.OrderResp) wechat.NativeAppParams {
 	p := wechat.NewNativeAppParams(or)
