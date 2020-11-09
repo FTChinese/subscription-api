@@ -5,7 +5,6 @@ package faker
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
-	"github.com/guregu/null"
 )
 
 var PlanStdYear = product.ExpandedPlan{
@@ -17,7 +16,7 @@ var PlanStdYear = product.ExpandedPlan{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,
 		},
-		Description: null.String{},
+		Description: "",
 	},
 	Discount: product.Discount{
 		//DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
@@ -40,7 +39,7 @@ var PlanStdMonth = product.ExpandedPlan{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleMonth,
 		},
-		Description: null.String{},
+		Description: "",
 	},
 	Discount: product.Discount{},
 }
@@ -54,7 +53,7 @@ var PlanPrm = product.ExpandedPlan{
 			Tier:  enum.TierPremium,
 			Cycle: enum.CycleYear,
 		},
-		Description: null.String{},
+		Description: "",
 	},
 	Discount: product.Discount{},
 }
