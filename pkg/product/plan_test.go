@@ -16,7 +16,7 @@ var planStdYear = ExpandedPlan{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,
 		},
-		Description: null.String{},
+		Description: "",
 	},
 	Discount: Discount{
 		DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
@@ -39,7 +39,7 @@ var planStdMonth = ExpandedPlan{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleMonth,
 		},
-		Description: null.String{},
+		Description: "",
 	},
 	Discount: Discount{},
 }
@@ -53,7 +53,7 @@ var planPrm = ExpandedPlan{
 			Tier:  enum.TierPremium,
 			Cycle: enum.CycleYear,
 		},
-		Description: null.String{},
+		Description: "",
 	},
 	Discount: Discount{},
 }
