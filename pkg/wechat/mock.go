@@ -8,7 +8,7 @@ func (r BaseResp) MockToMap() wxpay.Params {
 	p := make(wxpay.Params)
 
 	p.SetString("return_code", r.ReturnCode)
-	p.SetString("return_msg", r.ReturnMessage.String)
+	p.SetString("return_msg", r.ReturnMessage)
 	p.SetString("appid", r.AppID.String)
 	p.SetString("mch_id", r.MID.String)
 	p.SetString("nonce_str", r.Nonce.String)

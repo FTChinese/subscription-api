@@ -18,7 +18,7 @@ type BaseResp struct {
 	// 此字段是通信标识，非交易标识，交易是否成功需要查看trade_state来判断
 	ReturnCode string `db:"status_code"`
 	// return_msg. 返回信息，如非空，为错误原因
-	ReturnMessage null.String `db:"status_message"`
+	ReturnMessage string `db:"status_message"`
 	// 以下字段在return_code为SUCCESS的时候有返回
 	// appid
 	AppID null.String `db:"app_id"`
@@ -43,7 +43,7 @@ type BaseResp struct {
 func NewBaseResp(p wxpay.Params) BaseResp {
 	r := BaseResp{
 		ReturnCode:    p.GetString("return_code"),
-		ReturnMessage: null.String{},
+		ReturnMessage: p.GetString("return_msg"),
 		AppID:         null.String{},
 		MID:           null.String{},
 		Nonce:         null.String{},
@@ -52,9 +52,6 @@ func NewBaseResp(p wxpay.Params) BaseResp {
 		ErrorCode:     null.String{},
 		ErrorMessage:  null.String{},
 	}
-
-	v := p.GetString("return_msg")
-	r.ReturnMessage = null.NewString(v, v == "")
 
 	v, ok := p["appid"]
 	r.AppID = null.NewString(v, ok)
@@ -86,7 +83,7 @@ func (r BaseResp) IsBadRequest() bool {
 }
 
 func (r BaseResp) BadRequestMsg() string {
-	return fmt.Sprintf("wxpay api bad requeest: %s, %s", r.ReturnCode, r.ReturnMessage.String)
+	return fmt.Sprintf("wxpay api bad requeest: %s, %s", r.ReturnCode, r.ReturnMessage)
 }
 
 // IsUnprocessable tests if `result_code` field is SUCCESS. Treat FAIL as 422 Unprocessable.
