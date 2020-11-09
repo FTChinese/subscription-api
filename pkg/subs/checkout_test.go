@@ -30,7 +30,7 @@ var planStdYear = product.ExpandedPlan{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,
 		},
-		Description: null.String{},
+		Description: "",
 	},
 	Discount: product.Discount{
 		DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
@@ -53,7 +53,7 @@ var planPrmYear = product.ExpandedPlan{
 			Tier:  enum.TierPremium,
 			Cycle: enum.CycleYear,
 		},
-		Description: null.String{},
+		Description: "",
 	},
 	Discount: product.Discount{},
 }

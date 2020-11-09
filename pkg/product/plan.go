@@ -3,7 +3,6 @@ package product
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/guregu/null"
 )
 
 type DailyCost struct {
@@ -30,7 +29,7 @@ type Plan struct {
 	ProductID string  `json:"productId" db:"product_id"`
 	Price     float64 `json:"price" db:"price"`
 	Edition
-	Description null.String `json:"description" db:"description"`
+	Description string `json:"description" db:"description"`
 }
 
 func (p Plan) DailyCost() DailyCost {
