@@ -20,7 +20,7 @@ type PaywallRouter struct {
 // NewPaywallRouter creates a new instance of pricing router.
 func NewPaywallRouter(db *sqlx.DB, c *cache.Cache, logger *zap.Logger) PaywallRouter {
 	return PaywallRouter{
-		subRepo: subrepo.NewEnv(db, c, logger),
+		subRepo: subrepo.NewEnv(db, logger),
 		repo:    products.NewEnv(db, c),
 		logger:  logger,
 	}
