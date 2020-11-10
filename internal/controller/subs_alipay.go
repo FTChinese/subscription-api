@@ -32,8 +32,8 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 	webhookURL := subs.WebhookURL(router.config.Sandbox(), enum.PayMethodAli)
 
 	return func(w http.ResponseWriter, req *http.Request) {
-		defer router.logger.Sync()
-		sugar := router.logger.Sugar()
+		defer router.Logger.Sync()
+		sugar := router.Logger.Sugar()
 
 		err := req.ParseForm()
 		if err != nil {
@@ -46,7 +46,7 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 		readerIDs := getReaderIDs(req.Header)
 
 		// Find user account.
-		account, err := router.readerRepo.FindAccount(readerIDs)
+		account, err := router.ReaderRepo.FindAccount(readerIDs)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).DBError(err)
@@ -77,7 +77,7 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 		config := subs.NewPayment(account, plan).
 			WithAlipay()
 
-		pi, err := router.subRepo.CreateOrder(config)
+		pi, err := router.SubsRepo.CreateOrder(config)
 		if err != nil {
 			_ = render.New(w).InternalServerError(err.Error())
 			return
@@ -100,7 +100,7 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 			ReturnURL:   input.ReturnURL,
 		}
 
-		param, err := router.aliPayClient.CreateOrder(or)
+		param, err := router.AliPayClient.CreateOrder(or)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).InternalServerError(err.Error())
@@ -125,8 +125,8 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 // AliWebHook handles alipay server-side notification.
 // POST /webhook/alipay
 func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	var send = func(ok bool) {
 		var err error
@@ -149,7 +149,7 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If err is nil, then the signature is verified.
-	payload, err := router.aliPayClient.GetWebhookPayload(req)
+	payload, err := router.AliPayClient.GetWebhookPayload(req)
 	sugar.Infof("+%v", payload)
 	if err != nil {
 		sugar.Error(err)
@@ -158,7 +158,7 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		if err := router.subRepo.SaveAliNotification(*payload); err != nil {
+		if err := router.SubsRepo.SaveAliNotification(*payload); err != nil {
 			sugar.Error(err)
 		}
 	}()
