@@ -14,7 +14,6 @@ var (
 	version    string
 	build      string
 	commit     string
-	port       string
 	production bool
 	sandbox    bool
 )
@@ -40,7 +39,7 @@ func main() {
 		Version:    version,
 		Build:      build,
 		Commit:     commit,
-		Port:       port,
+		Port:       "8200",
 		Production: production,
 		Sandbox:    sandbox,
 	}
