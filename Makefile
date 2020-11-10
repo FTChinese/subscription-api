@@ -1,25 +1,28 @@
-# One of `api | sandbox | consumer`.
+# One of `api | sandbox | consumer | aliwx`.
 APP := api
 
 version := `git tag -l --sort=-v:refname | head -n 1`
 build_time := `date +%FT%T%z`
 commit := `git log --max-count=1 --pretty=format:%aI_%h`
 
+ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
+
 app_name := subscription-api
-port := 8200
 src_dir := .
 
 ifeq ($(APP), sandbox)
 	app_name := subs_sandbox
-	port := 8201
+	src_dir := ./cmd/subs_sandbox/
 endif 
-
-ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit) -X main.port=$(port)"
 
 ifeq ($(APP), consumer)
 	app_name := iap-kafka-consumer
 	src_dir := ./cmd/iap-kafka-consumer/
-	ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
+endif
+
+ifeq ($(APP), aliwx)
+	app_name := aliwx-poller
+	src_dir := ./cmd/aliwx-poller/
 endif
 
 build_dir := build
@@ -36,6 +39,7 @@ build_executable := go build -o $(executable) $(ldflags) -tags production -v $(s
 # Development
 .PHONY: dev
 dev :
+	@echo "Build dev version $(version)"
 	$(build_executable)
 
 .PHONY: run
@@ -45,6 +49,7 @@ run :
 # For CI/CD
 .PHONY: build
 build :
+	@echo "Build production version $(version)"
 	$(goos) $(build_executable)
 
 .PHONY: install-go
