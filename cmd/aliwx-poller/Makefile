@@ -8,29 +8,24 @@ app_name := aliwx-poller
 src_dir := .
 
 build_dir := ../../build
-executable := $(build_dir)/$(app_name)
+default_exec := $(build_dir)/$(app_name)
 linux_exec := $(build_dir)/linux/$(app_name)
-
-goos := GOOS=linux GOARCH=amd64
-
-build_executable := go build -o $(executable) $(ldflags) -tags production -v $(src_dir)
-build_linux := go build -o $(linux_exec) $(ldflags) -tags production -v $(src_dir)
 
 # Development
 .PHONY: dev
 dev :
 	@echo "Build dev version $(version)"
-	$(build_executable)
+	go build -o $(default_exec) $(ldflags) -tags production -v $(src_dir)
 
 .PHONY: run
 run :
-	$(executable)
+	$(default_exec)
 
 # For CI/CD
 .PHONY: build
 build :
 	@echo "Build production version $(version)"
-	$(goos) $(build_linux)
+	GOOS=linux GOARCH=amd64 go build -o $(linux_exec) $(ldflags) -tags production -v $(src_dir)
 
 .PHONY: publish
 publish :
