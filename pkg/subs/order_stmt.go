@@ -22,7 +22,7 @@ SET trade_no = :order_id,
 	wx_app_id = :wx_app_id,
 	created_utc = UTC_TIMESTAMP()`
 
-const colOrder = `
+const StmtOrderCols = `
 SELECT o.trade_no AS order_id,
 	o.trade_price AS price,
 	o.trade_amount AS charged_amount,
@@ -45,7 +45,7 @@ SELECT o.trade_no AS order_id,
 	o.end_date
 `
 
-const StmtSelectOrder = colOrder + `
+const StmtSelectOrder = StmtOrderCols + `
 FROM premium.ftc_trade AS o
 WHERE trade_no = ?
 LIMIT 1
