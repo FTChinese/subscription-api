@@ -48,7 +48,6 @@ func TestEnv_CreateOrder(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
 				db:     tt.fields.db,
-				cache:  tt.fields.cache,
 				logger: tt.fields.logger,
 			}
 			got, err := env.CreateOrder(tt.args.config)
@@ -101,7 +100,6 @@ func TestEnv_ProratedOrdersUsed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
 				db:     tt.fields.db,
-				cache:  tt.fields.cache,
 				logger: tt.fields.logger,
 			}
 			if err := env.ProratedOrdersUsed(tt.args.upOrderID); (err != nil) != tt.wantErr {
@@ -144,7 +142,6 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
 				db:     tt.fields.db,
-				cache:  tt.fields.cache,
 				logger: tt.fields.logger,
 			}
 			if err := env.LogOrderMeta(tt.args.m); (err != nil) != tt.wantErr {
@@ -190,7 +187,6 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
 				db:     tt.fields.db,
-				cache:  tt.fields.cache,
 				logger: tt.fields.logger,
 			}
 			got, err := env.RetrieveOrder(tt.args.orderID)
@@ -213,7 +209,7 @@ func TestEnv_LoadFullOrder(t *testing.T) {
 
 	test.NewRepo().MustSaveOrder(order)
 
-	env := NewEnv(test.DB, test.Cache, zaptest.NewLogger(t))
+	env := NewEnv(test.DB, zaptest.NewLogger(t))
 
 	type args struct {
 		orderID string
