@@ -70,7 +70,6 @@ func TestEnv_UpgradeIntent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
 				db:     tt.fields.db,
-				cache:  tt.fields.cache,
 				logger: tt.fields.logger,
 			}
 			got, err := env.UpgradeIntent(tt.args.config)

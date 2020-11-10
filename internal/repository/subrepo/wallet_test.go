@@ -45,7 +45,6 @@ func TestEnv_ListProratedOrders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
 				db:     tt.fields.db,
-				cache:  tt.fields.cache,
 				logger: tt.fields.logger,
 			}
 			got, err := env.ListProratedOrders(tt.args.upOrderID)
