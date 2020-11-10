@@ -84,7 +84,7 @@ func (c AliPayClient) QueryOrder(id string) (*alipay.AliPayTradeQueryResponse, e
 		return nil, err
 	}
 
-	sugar.Info("Alipay order query result: %v", qr)
+	sugar.Infof("Alipay order query result: %v", qr)
 
 	// Check if the http request is successfully made.
 	// Example failure response:

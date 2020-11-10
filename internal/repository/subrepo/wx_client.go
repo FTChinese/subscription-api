@@ -101,6 +101,19 @@ func (s WxPayClientStore) GetWebhookPayload(req *http.Request) (wechat.Notificat
 	return payload, nil
 }
 
+func (s WxPayClientStore) VerifyPayment(order subs.Order) (subs.PaymentResult, error) {
+	defer s.logger.Sync()
+	sugar := s.logger.Sugar()
+
+	client, err := s.ClientByAppID(order.WxAppID.String)
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, err
+	}
+
+	return client.VerifyPayment(order)
+}
+
 // Client extends wxpay.Client
 type WxPayClient struct {
 	app    wechat.PayApp
@@ -176,21 +189,37 @@ func (c WxPayClient) QueryOrder(order subs.Order) (wechat.OrderQueryResp, error)
 	return wechat.NewOrderQueryResp(raw), nil
 }
 
+func (c WxPayClient) VerifyPayment(order subs.Order) (subs.PaymentResult, error) {
+	defer c.logger.Sync()
+	sugar := c.logger.Sugar()
+
+	ordResp, err := c.QueryOrder(order)
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, err
+	}
+
+	// Validate if response is correct. This does not verify the payment is successful.
+	// We have to send the payment status as is to client.
+	// field: return_code, code: invalid
+	// field: result_code, code: invalid
+	// field: app_id, code: invalid
+	// field: mch_id, code: invalid
+	err = ordResp.Validate(c.app)
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, err
+	}
+
+	return subs.NewWxPayResult(ordResp), nil
+}
+
 func (c WxPayClient) SignJSApiParams(or wechat.OrderResp) wechat.JSApiParams {
 	p := wechat.NewJSApiParams(or)
 	p.Signature = c.sdk.Sign(p.ToMap())
 
 	return p
 }
-
-//func (c WxPayClient) VerifyPayment(order subs.Order) (subs.PaymentResult, error) {
-//	ordRep, err := c.QueryOrder(order)
-//	if err != nil {
-//		return subs.PaymentResult{}, err
-//	}
-//
-//
-//}
 
 // SignAppParams re-sign wxpay's order to build the parameters used by native app sdk to call wechat service.
 func (c WxPayClient) SignAppParams(or wechat.OrderResp) wechat.NativeAppParams {
