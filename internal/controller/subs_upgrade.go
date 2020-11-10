@@ -12,7 +12,7 @@ import (
 func (router SubsRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request) {
 	readerIDs := getReaderIDs(req.Header)
 
-	account, err := router.readerRepo.FindAccount(readerIDs)
+	account, err := router.ReaderRepo.FindAccount(readerIDs)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -26,7 +26,7 @@ func (router SubsRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request
 	config := subs.NewPayment(account, plan).
 		WithPreview(true)
 
-	pi, err := router.subRepo.UpgradeIntent(config)
+	pi, err := router.SubsRepo.UpgradeIntent(config)
 
 	if err != nil {
 		switch err {
@@ -43,11 +43,11 @@ func (router SubsRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request
 
 // FreeUpgrade handles free upgrade request.
 func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	readerIDs := getReaderIDs(req.Header)
-	account, err := router.readerRepo.FindAccount(readerIDs)
+	account, err := router.ReaderRepo.FindAccount(readerIDs)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -58,7 +58,7 @@ func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	p, _ := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
 
 	config := subs.NewPayment(account, p)
-	intent, err := router.subRepo.UpgradeIntent(config)
+	intent, err := router.SubsRepo.UpgradeIntent(config)
 	// Check whether intent if free. If not free, return it to client and stop.
 	if err != nil {
 		switch err {
@@ -79,7 +79,7 @@ func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 	// Only free upgrade could go to here.
 	// Save snapshot.
 	go func() {
-		err := router.readerRepo.ArchiveMember(intent.Result.Snapshot)
+		err := router.ReaderRepo.ArchiveMember(intent.Result.Snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -91,7 +91,7 @@ func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 			intent.Wallet.Sources,
 		)
 
-		err = router.postman.Deliver(parcel)
+		err = router.Postman.Deliver(parcel)
 		if err != nil {
 			sugar.Error(err)
 			return
