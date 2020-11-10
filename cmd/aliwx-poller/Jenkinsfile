@@ -1,0 +1,29 @@
+#!/usr/bing/env groovy
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Build ali-wx poller'
+                sh 'make build APP=aliwx'
+                archiveArtifacts artifacts: 'build/*', fingerprint: true
+            }
+        }
+        stage('Deploy') {
+            when {
+                expression {
+                    currentBuild.result == null || currentBuild.result == 'SUCCESS'
+                }
+            }
+            steps {
+                echo 'Sync config file'
+                sh 'make config'
+                echo 'Copy binary'
+                sh 'make publish APP=aliwx'
+                sh 'make restart APP=aliwx'
+            }
+        }
+    }
+}
