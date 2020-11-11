@@ -15,9 +15,9 @@ ifeq ($(APP), sandbox)
 	src_dir := ./cmd/subs_sandbox/
 endif 
 
-ifeq ($(APP), consumer)
-	app_name := iap-kafka-consumer
-	src_dir := ./cmd/iap-kafka-consumer/
+ifeq ($(APP), iap)
+	app_name := iap-poller
+	src_dir := ./cmd/iap-poller/
 endif
 
 ifeq ($(APP), aliwx)
