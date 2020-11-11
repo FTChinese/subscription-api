@@ -124,11 +124,20 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 	return confirmed, nil
 }
 
-func (env Env) SaveConfirmationErr(e *subs.ConfirmError) error {
+func (env Env) SaveConfirmErr(e *subs.ConfirmError) error {
 	_, err := env.db.NamedExec(
 		subs.StmtSaveConfirmResult,
 		e)
 
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (env Env) SavePayResult(result subs.PaymentResult) error {
+	_, err := env.db.NamedExec(subs.StmtSavePayResult, result)
 	if err != nil {
 		return err
 	}
