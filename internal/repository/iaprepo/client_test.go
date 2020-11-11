@@ -2,43 +2,14 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
-func TestClient_pickUrl(t *testing.T) {
-	config.MustSetupViper()
-
-	tests := []struct {
-		name   string
-		fields Client
-		want   string
-	}{
-		{
-			name:   "Sandbox",
-			fields: NewClient(true, zaptest.NewLogger(t)),
-			want:   "https://sandbox.itunes.apple.com/verifyReceipt",
-		},
-		{
-			name:   "Production",
-			fields: NewClient(false, zaptest.NewLogger(t)),
-			want:   "https://buy.itunes.apple.com/verifyReceipt",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := tt.fields
-			if got := c.pickUrl(); got != tt.want {
-				t.Errorf("pickUrl() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestClient_Verify(t *testing.T) {
 	type args struct {
 		receipt string
+		sandbox bool
 	}
 	tests := []struct {
 		name    string
@@ -47,21 +18,19 @@ func TestClient_Verify(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "A sandbox receipt",
-			fields:  NewClient(true, zaptest.NewLogger(t)),
-			args:    args{receipt: faker.IAPReceipt},
+			name:   "A sandbox receipt",
+			fields: NewClient(zaptest.NewLogger(t)),
+			args: args{
+				receipt: faker.IAPReceipt,
+				sandbox: true,
+			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := Client{
-				isSandbox:  tt.fields.isSandbox,
-				sandboxUrl: tt.fields.sandboxUrl,
-				prodUrl:    tt.fields.prodUrl,
-				password:   tt.fields.password,
-			}
-			got, err := c.Verify(tt.args.receipt)
+			c := tt.fields
+			got, err := c.Verify(tt.args.receipt, tt.args.sandbox)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)
 				return
