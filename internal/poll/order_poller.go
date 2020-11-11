@@ -10,8 +10,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
-	"golang.org/x/sync/semaphore"
-	"runtime"
 )
 
 const StmtAliUnconfirmed = subs.StmtOrderCols + `
@@ -42,7 +40,11 @@ func NewOrderPoller(db *sqlx.DB, logger *zap.Logger) OrderPoller {
 	}
 }
 
-func (p OrderPoller) createOrderChannel() <-chan subs.Order {
+// retrieveOrders loads all orders created for alipay and wechat pay
+// that are not confirmed but have valid webhook payloads.
+// Returns a channel of order so that we could streaming each row
+// rather than loading all rows in memory.
+func (p OrderPoller) retrieveOrders() <-chan subs.Order {
 	defer p.Logger.Sync()
 	sugar := p.Logger.Sugar()
 
@@ -129,22 +131,17 @@ func (p OrderPoller) saveLog(l *poller.Log) error {
 	return nil
 }
 
-var (
-	maxWorkers = runtime.GOMAXPROCS(0)
-	sem        = semaphore.NewWeighted(int64(maxWorkers))
-)
-
 func (p OrderPoller) Start(dryRun bool) error {
 	defer p.Logger.Sync()
 	sugar := p.Logger.Sugar()
 	ctx := context.Background()
 
-	orderCh := p.createOrderChannel()
+	orderCh := p.retrieveOrders()
 
 	pollerLog := poller.NewLog(poller.AppNameFtc)
 
 	for order := range orderCh {
-		if err := sem.Acquire(ctx, 1); err != nil {
+		if err := orderSem.Acquire(ctx, 1); err != nil {
 			sugar.Errorf("Failed to acquire semaphore: %v", err)
 			break
 		}
@@ -152,7 +149,7 @@ func (p OrderPoller) Start(dryRun bool) error {
 		go func(o subs.Order) {
 			pollerLog.IncTotal()
 
-			defer sem.Release(1)
+			defer orderSem.Release(1)
 
 			if dryRun {
 				return
@@ -172,14 +169,14 @@ func (p OrderPoller) Start(dryRun bool) error {
 	//
 	// If you are already waiting for the workers by some other means (such as an
 	// errgroup.Group), you can omit this final Acquire call.
-	if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
+	if err := orderSem.Acquire(ctx, int64(maxWorkers)); err != nil {
 		sugar.Infof("Failed to acquire semaphore: %v", err)
 		return nil
 	}
 
 	pollerLog.EndUTC = chrono.TimeNow()
 
-	err := p.saveLog(pollerLog)
+	err := savePollerLog(p.db, pollerLog)
 	if err != nil {
 		return err
 	}
