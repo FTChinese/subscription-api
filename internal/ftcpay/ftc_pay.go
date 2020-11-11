@@ -95,7 +95,7 @@ func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (sub
 	confirmed, cfmErr := pay.SubsRepo.ConfirmOrder(result, order)
 	if cfmErr != nil {
 		go func() {
-			err := pay.SubsRepo.SaveConfirmationErr(cfmErr)
+			err := pay.SubsRepo.SaveConfirmErr(cfmErr)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -147,6 +147,13 @@ func (pay FtcPay) VerifyOrder(order subs.Order) (subs.PaymentResult, error) {
 		sugar.Error(err)
 		return subs.PaymentResult{}, err
 	}
+
+	go func() {
+		err := pay.SubsRepo.SavePayResult(payResult)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
 
 	return payResult, nil
 }
