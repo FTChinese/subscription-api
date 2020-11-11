@@ -24,6 +24,30 @@ func priceToCent(s string) null.Int {
 	return null.IntFrom(int64(f * 100))
 }
 
+const colSavePayResult = `
+payment_status = :payment_status,
+	status_detail = :status_detail,
+	paid_amount = :paid_amount,
+	tx_id = :tx_id,
+	updated = UTC_TIMESTAMP()
+`
+
+const StmtSavePayResult = `
+INSERT INTO premium.ftc_pay_result
+SET order_id = :order_id,` +
+	colSavePayResult + `,
+	created = UTC_TIMESTAMP()
+ON DUPLICATE KEY UPDATE
+` + colSavePayResult
+
+// VerificationResult is a backward-compatible type.
+// Android app only defines PaymentResult fields.
+// Scheduled to be removed by the end of Jan 2021.
+type VerificationResult struct {
+	PaymentResult // Deprecated
+	ConfirmationResult
+}
+
 // PaymentResult unifies ali and wx webhook payload, or query order.
 // TRADE_FINISHED：交易成功且结束，即不可再做任何操作
 // 例如在高级即时到帐接口里面，支付成功之后返回的是TRADE_SUCCESS，此时三个月之内可以操作退款，三个月之后不允许对该笔交易操作，支付宝会返回TRADE_FINISHED，所以必须要在TRADE_SUCCESS下执行你网站业务逻辑代码，TRADE_FINISHED不做任何业务逻辑处理，避免一笔交易重复执行业务逻辑而给您带来不必要的损失。
@@ -41,17 +65,17 @@ type PaymentResult struct {
 	// REVOKED—已撤销（刷卡支付）
 	// USERPAYING--用户支付中
 	// PAYERROR--支付失败(其他原因，如银行返回失败)
-	PaymentState string `json:"paymentState"`
+	PaymentState string `json:"paymentState" db:"payment_status"`
 	// For wechat `trade_state_desc` field.
-	PaymentStateDesc string `json:"paymentStateDesc"`
+	PaymentStateDesc string `json:"paymentStateDesc" db:"status_detail"`
 	// In cent.
 	// For alipay, we use the total_amount, which is
 	// 交易的订单金额，单位为元，两位小数。该参数的值为支付时传入的total_amount.
 	// For our purpose, that is the amount we actually charged user.
-	Amount        null.Int       `json:"totalFee"` // In cent
-	TransactionID string         `json:"transactionId"`
-	OrderID       string         `json:"ftcOrderId"`
-	ConfirmedAt   chrono.Time    `json:"paidAt"`
+	Amount        null.Int       `json:"totalFee" db:"paid_amount"` // In cent
+	TransactionID string         `json:"transactionId" db:"tx_id"`
+	OrderID       string         `json:"ftcOrderId" db:"order_id"`
+	ConfirmedAt   chrono.Time    `json:"paidAt" db:"paid_at"`
 	PayMethod     enum.PayMethod `json:"payMethod"`
 }
 
