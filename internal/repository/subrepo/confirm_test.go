@@ -25,7 +25,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	t.Logf("Wx Order id %s", order2.ID)
 	repo.MustSaveOrder(order2)
 
-	env := NewEnv(test.DB, test.Cache, zaptest.NewLogger(t))
+	env := NewEnv(test.DB, zaptest.NewLogger(t))
 
 	type args struct {
 		result subs.PaymentResult
@@ -104,11 +104,10 @@ func TestEnv_SaveConfirmationErr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
 				db:     tt.fields.db,
-				cache:  tt.fields.cache,
 				logger: tt.fields.logger,
 			}
-			if err := env.SaveConfirmationErr(tt.args.e); (err != nil) != tt.wantErr {
-				t.Errorf("SaveConfirmationErr() error = %v, wantErr %v", err, tt.wantErr)
+			if err := env.SaveConfirmErr(tt.args.e); (err != nil) != tt.wantErr {
+				t.Errorf("SaveConfirmErr() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
