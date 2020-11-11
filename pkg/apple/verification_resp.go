@@ -1,9 +1,9 @@
 package apple
 
 import (
-	"github.com/FTChinese/go-rest/render"
+	"errors"
+	"fmt"
 	"github.com/guregu/null"
-	"log"
 )
 
 const bundleID = "com.ft.ftchinese.mobile"
@@ -39,34 +39,20 @@ func (v *VerificationResp) GetStatusMessage() string {
 
 // Validate ensures the response from Apple API is correct.
 // Checks Status and BundleID.
-func (v *VerificationResp) Validate() *render.ValidationError {
+func (v *VerificationResp) Validate() error {
 
 	// Status above 0 is error.
 	if v.Status != 0 {
-		log.Printf("Expected response status 0, got %d", v.Status)
-		return &render.ValidationError{
-			Message: getStatusMessage(v.Status),
-			Field:   "status",
-			Code:    render.CodeInvalid,
-		}
+		return fmt.Errorf("verification response error: status %d", v.Status)
 	}
 
 	if v.Receipt.BundleID != bundleID {
-		log.Printf("Bundle ID does not match, got %s", v.Receipt.BundleID)
-		return &render.ValidationError{
-			Message: "Bundle ID does not match",
-			Field:   "bundle_id",
-			Code:    render.CodeInvalid,
-		}
+		return errors.New("verification response bundle id mismatched")
 	}
 
 	// LatestReceiptInfo should not be empty.
 	if !v.UnifiedReceipt.Validate() {
-		return &render.ValidationError{
-			Message: "Latest receipt info should not be empty",
-			Field:   "latest_receipt_info",
-			Code:    render.CodeMissingField,
-		}
+		return errors.New("verification response has empty latest_receipt_info")
 	}
 
 	return nil
