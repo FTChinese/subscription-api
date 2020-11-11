@@ -120,7 +120,7 @@ func (a OAuthApp) GetAccessToken(code string) (OAuthAccess, error) {
 			"grant_type": "authorization_code",
 		}).
 		AcceptLang(acceptLang).
-		EndRaw()
+		EndBytes()
 
 	if errs != nil {
 		return acc, errs[0]
@@ -160,7 +160,7 @@ func (a OAuthApp) GetUserInfo(accessToken, openID string) (UserInfo, error) {
 			"openid":       openID,
 		}).
 		AcceptLang(acceptLang).
-		EndRaw()
+		EndBytes()
 
 	// {
 	// "openid":"ofP-k1LSVS-ObmrySM1aXKbv1Hjs",
@@ -202,7 +202,7 @@ func (a OAuthApp) RefreshAccess(refreshToken string) (OAuthAccess, error) {
 			"refresh_token": refreshToken,
 		}).
 		AcceptLang(acceptLang).
-		EndRaw()
+		EndBytes()
 
 	log.Printf("Response: %s", body)
 
@@ -230,7 +230,7 @@ func (a OAuthApp) IsValidAccess(accessToken, openID string) bool {
 			"access_token": accessToken,
 			"openid":       openID,
 		}).
-		AcceptLang(acceptLang).EndRaw()
+		AcceptLang(acceptLang).EndBytes()
 
 	if errs != nil {
 		log.Print(errs)
