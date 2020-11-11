@@ -143,6 +143,9 @@ func (env Env) SaveReceipt(rs apple.ReceiptSchema) {
 }
 
 // LoadReceipt loads receipt from disk, then redis, and fallback to MySQL.
+// This is used by the /apple/receipt endpoint.
+// For polling service, it should use redis, mysql since it might run on
+// different machines and the disk files might not be available.
 func (env Env) LoadReceipt(s apple.BaseSchema) (string, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
