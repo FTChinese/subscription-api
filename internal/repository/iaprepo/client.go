@@ -9,35 +9,29 @@ import (
 	"log"
 )
 
-type Client struct {
-	isSandbox  bool
-	sandboxUrl string
-	prodUrl    string
-	password   string
-	logger     *zap.Logger
-}
-
-func NewClient(sandbox bool, logger *zap.Logger) Client {
-	return Client{
-		isSandbox:  sandbox,
-		sandboxUrl: "https://sandbox.itunes.apple.com/verifyReceipt",
-		prodUrl:    "https://buy.itunes.apple.com/verifyReceipt",
-		password:   config.MustIAPSecret(),
-		logger:     logger,
-	}
-}
-
-func (c Client) pickUrl() string {
-	if c.isSandbox {
+func verifyURL(sandbox bool) string {
+	if sandbox {
 		log.Print("Using IAP sandbox url")
-		return c.sandboxUrl
+		return "https://sandbox.itunes.apple.com/verifyReceipt"
 	}
 
 	log.Print("Using IAP production url")
-	return c.prodUrl
+	return "https://buy.itunes.apple.com/verifyReceipt"
 }
 
-func (c Client) Verify(receipt string) (apple.VerificationResp, error) {
+type Client struct {
+	password string
+	logger   *zap.Logger
+}
+
+func NewClient(logger *zap.Logger) Client {
+	return Client{
+		password: config.MustIAPSecret(),
+		logger:   logger,
+	}
+}
+
+func (c Client) Verify(receipt string, sandbox bool) (apple.VerificationResp, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
 
@@ -48,9 +42,9 @@ func (c Client) Verify(receipt string) (apple.VerificationResp, error) {
 	}
 
 	resp, b, errs := fetch.New().
-		Post(c.pickUrl()).
+		Post(verifyURL(sandbox)).
 		SendJSON(payload).
-		EndRaw()
+		EndBytes()
 
 	sugar.Infof("App store response status code %d", resp.StatusCode)
 	sugar.Infof("App store verification raw content %s", resp.StatusCode, b)
@@ -67,4 +61,19 @@ func (c Client) Verify(receipt string) (apple.VerificationResp, error) {
 	sugar.Infof("Environment %s, is retryable %t, status %d", vrfResult.Environment, vrfResult.IsRetryable, vrfResult.Status)
 
 	return vrfResult, nil
+}
+
+func (c Client) VerifyAndValidate(receipt string, sandbox bool) (apple.VerificationResp, error) {
+	resp, err := c.Verify(receipt, sandbox)
+	if err != nil {
+		return apple.VerificationResp{}, err
+	}
+
+	if err := resp.Validate(); err != nil {
+		return apple.VerificationResp{}, err
+	}
+
+	resp.Parse()
+
+	return resp, nil
 }
