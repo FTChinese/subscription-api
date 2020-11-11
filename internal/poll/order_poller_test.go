@@ -12,9 +12,9 @@ import (
 
 func TestOrderPoller_createOrderChannel(t *testing.T) {
 
-	poller := NewOrderPoller(test.DB, zaptest.NewLogger(t))
+	p := NewOrderPoller(test.DB, zaptest.NewLogger(t))
 
-	orderCh := poller.createOrderChannel()
+	orderCh := p.retrieveOrders()
 
 	for order := range orderCh {
 		t.Logf("%v", order)
