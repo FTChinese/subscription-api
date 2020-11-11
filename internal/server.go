@@ -140,12 +140,16 @@ func StartServer(s ServerStatus) {
 		// List a user's orders
 		//r.Get("/", payRouter.ListOrders)
 		//r.Get("/{id}", payRouter.LoadOrder)
+
+		// Get a payment's result from providers.
+		r.Get("/{id}/payment-result", payRouter.PaymentResult)
 		// Verify if an order is confirmed, and returns PaymentResult.
 		r.Post("/{id}/verify-payment", payRouter.VerifyPayment)
 
 		// Manually confirm an order if not confirmed yet by verifying against
 		// alipay of wxpay APIs. If it's already confirmed, nothing changes.
-		r.Patch("/{id}", payRouter.ManualConfirm)
+		// Deprecated.
+		r.Patch("/{id}", payRouter.VerifyPayment)
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
