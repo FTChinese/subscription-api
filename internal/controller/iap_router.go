@@ -23,7 +23,7 @@ type IAPRouter struct {
 	readerRepo readerrepo.Env
 	postman    postoffice.PostOffice
 
-	secret    string
+	sandbox   bool
 	iapClient iaprepo.Client
 	logger    *zap.Logger
 }
@@ -34,10 +34,9 @@ func NewIAPRouter(db *sqlx.DB, rdb *redis.Client, logger *zap.Logger, p postoffi
 		iapRepo:    iaprepo.NewEnv(db, rdb, logger),
 		readerRepo: readerrepo.NewEnv(db),
 		postman:    p,
-
-		secret:    config.MustIAPSecret(),
-		iapClient: iaprepo.NewClient(cfg.Sandbox(), logger),
-		logger:    logger,
+		sandbox:    cfg.Sandbox(),
+		iapClient:  iaprepo.NewClient(logger),
+		logger:     logger,
 	}
 }
 
@@ -50,19 +49,16 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 	sugar := router.logger.Sugar()
 
 	// Send data to IAP endpoint for verification
-	resp, err := router.iapClient.Verify(receipt)
+	resp, err := router.iapClient.VerifyAndValidate(receipt, router.sandbox)
+
 	if err != nil {
-		return apple.VerificationResp{}, render.NewInternalError(err.Error())
+		sugar.Error(err)
+		return apple.VerificationResp{}, render.NewUnprocessable(&render.ValidationError{
+			Message: err.Error(),
+			Field:   "verification",
+			Code:    render.CodeInvalid,
+		})
 	}
-
-	// If the response is not valid.
-	if ve := resp.Validate(); ve != nil {
-		sugar.Info("IAP verification response is not valid")
-		return apple.VerificationResp{}, render.NewUnprocessable(ve)
-	}
-
-	// Find the latest valid transaction.
-	resp.Parse()
 
 	// Save the decoded receipt as a session of verification
 	go func() {
