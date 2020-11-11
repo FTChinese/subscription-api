@@ -2,6 +2,10 @@
 
 API for subscription service
 
+## TODO
+
+* Save alipay and wechat pay result to DB so that we could see the results without mining various tables. Every order has one row which reflects only the latest state. They should be updated every time a webhook payload received or order manually verified.  
+
 ## Build
 
 This project produces 3 binaries: `subscription-api`, `subs_sandbox` and `iap-kafka-consumer`. By default, all make targets handles `subscripiton-api`. Set `APP` command line arguments to make to handle other binaries. The value could be one of `sandbox` or `consumer` for `subs_sandbox` and `iap-kafka-consumer` respectively.
