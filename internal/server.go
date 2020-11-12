@@ -145,11 +145,6 @@ func StartServer(s ServerStatus) {
 		r.Get("/{id}/payment-result", payRouter.VerifyPayment(true))
 		// Verify if an order is confirmed, and returns PaymentResult.
 		r.Post("/{id}/verify-payment", payRouter.VerifyPayment(false))
-
-		// Manually confirm an order if not confirmed yet by verifying against
-		// alipay of wxpay APIs. If it's already confirmed, nothing changes.
-		// Deprecated.
-		r.Patch("/{id}", payRouter.VerifyPayment(false))
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
@@ -205,6 +200,7 @@ func StartServer(s ServerStatus) {
 		r.Patch("/subs/{id}", iapRouter.RefreshSubs)
 
 		// Load a receipt and its associated subscription. Internal only.
+		// ?fs=true
 		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
 	})
 
