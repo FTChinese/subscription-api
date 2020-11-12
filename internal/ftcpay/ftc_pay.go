@@ -1,6 +1,7 @@
 package ftcpay
 
 import (
+	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
@@ -87,7 +88,8 @@ func (pay FtcPay) SendConfirmEmail(order subs.Order) error {
 	return nil
 }
 
-// ConfirmOrder confirms that an order is paid and updates membership.
+// ConfirmOrder confirms an order, update membership, backup previous
+// membership state, and send email.
 func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
@@ -148,12 +150,36 @@ func (pay FtcPay) VerifyOrder(order subs.Order) (subs.PaymentResult, error) {
 		return subs.PaymentResult{}, err
 	}
 
+	return payResult, nil
+}
+
+func (pay FtcPay) ProcessWebhookResult(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
+	defer pay.Logger.Sync()
+	sugar := pay.Logger.Sugar()
+
+	sugar.Infof("Payment result %v", result)
+
 	go func() {
-		err := pay.SubsRepo.SavePayResult(payResult)
+		err := pay.SubsRepo.SavePayResult(result)
 		if err != nil {
 			sugar.Error(err)
 		}
 	}()
 
-	return payResult, nil
+	if result.ShouldRetry() {
+		msg := fmt.Sprintf("payment status %s", result.PaymentState)
+		return subs.ConfirmationResult{}, result.ConfirmError(msg, true)
+	}
+
+	if !result.IsOrderPaid() {
+		return subs.ConfirmationResult{}, result.ConfirmError("order not paid", false)
+	}
+
+	order, err := pay.SubsRepo.LoadFullOrder(result.OrderID)
+	if err != nil {
+		sugar.Error(err)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
+	}
+
+	return pay.ConfirmOrder(result, order)
 }
