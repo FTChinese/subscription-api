@@ -22,7 +22,7 @@ func NewAPIClient(prod bool) APIClient {
 }
 
 func (c APIClient) GetReceipt(origTxID string) (string, error) {
-	url := c.baseURL + "/apple/receipt/" + origTxID
+	url := c.baseURL + "/apple/receipt/" + origTxID + "?fs=true"
 
 	resp, b, errs := fetch.New().Get(url).SetBearerAuth(c.key).EndBytes()
 	if errs != nil {
