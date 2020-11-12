@@ -137,6 +137,10 @@ func (env Env) SaveConfirmErr(e *subs.ConfirmError) error {
 }
 
 func (env Env) SavePayResult(result subs.PaymentResult) error {
+	if result.OrderID == "" {
+		return nil
+	}
+
 	_, err := env.db.NamedExec(subs.StmtSavePayResult, result)
 	if err != nil {
 		return err
