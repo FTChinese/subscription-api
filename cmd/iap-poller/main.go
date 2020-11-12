@@ -68,6 +68,8 @@ func main() {
 		return
 	}
 
+	c.Start()
+
 	for {
 		select {}
 	}
