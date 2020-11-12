@@ -1,6 +1,7 @@
 package iaprepo
 
 import (
+	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -146,19 +147,24 @@ func (env Env) SaveReceipt(rs apple.ReceiptSchema) {
 // This is used by the /apple/receipt endpoint.
 // For polling service, it should use redis, mysql since it might run on
 // different machines and the disk files might not be available.
-func (env Env) LoadReceipt(s apple.BaseSchema) (string, error) {
+// If ftOnly is true, only read file from file system.
+func (env Env) LoadReceipt(s apple.BaseSchema, fsOnly bool) (string, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
-
-	r, err := env.LoadReceiptFromRedis(s)
-	if err == nil {
-		return r, nil
-	}
-	sugar.Error(err)
 
 	b, err := LoadReceiptFromDisk(s)
 	if err == nil {
 		return string(b), nil
+	}
+	sugar.Error(err)
+
+	if fsOnly {
+		return "", sql.ErrNoRows
+	}
+
+	r, err := env.LoadReceiptFromRedis(s)
+	if err == nil {
+		return r, nil
 	}
 	sugar.Error(err)
 
