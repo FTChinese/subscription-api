@@ -76,7 +76,8 @@ type PaymentResult struct {
 	Amount        null.Int       `json:"totalFee" db:"paid_amount"` // In cent
 	TransactionID string         `json:"transactionId" db:"tx_id"`
 	OrderID       string         `json:"ftcOrderId" db:"order_id"`
-	ConfirmedAt   chrono.Time    `json:"paidAt" db:"paid_at"`
+	PaidAt        chrono.Time    `json:"paidAt" db:"paid_at"`
+	ConfirmedUTC  chrono.Time    `json:"confirmedUtc"` // Use this an order's confirmation time. For webhook this is the same as PaidAt. For order query, they are different.
 	PayMethod     enum.PayMethod `json:"payMethod"`
 }
 
@@ -112,13 +113,16 @@ func (r PaymentResult) ConfirmError(msg string, retry bool) *ConfirmError {
 
 // NewWxWebhookResult builds PaymentResult from wechat pay webhook notification.
 func NewWxWebhookResult(payload wechat.Notification) PaymentResult {
+	paidAt := chrono.TimeFrom(dt.MustParseWxTime(payload.TimeEnd.String))
+
 	return PaymentResult{
 		PaymentState:     payload.ResultCode.String,
 		PaymentStateDesc: payload.ErrorMessage.String,
 		Amount:           payload.TotalFee,
 		TransactionID:    payload.TransactionID.String,
 		OrderID:          payload.FTCOrderID.String,
-		ConfirmedAt:      chrono.TimeFrom(dt.MustParseWxTime(payload.TimeEnd.String)),
+		PaidAt:           paidAt,
+		ConfirmedUTC:     paidAt,
 		PayMethod:        enum.PayMethodWx,
 	}
 }
@@ -126,17 +130,21 @@ func NewWxWebhookResult(payload wechat.Notification) PaymentResult {
 // NewWxPayResult creates a new PaymentResult from the result of querying wechat order.
 // The payment status should be returned to client as is, whether it is paid or not.
 func NewWxPayResult(r wechat.OrderQueryResp) PaymentResult {
+
+	paidAt, _ := dt.ParseWxTime(r.TimeEnd.String)
+
 	pr := PaymentResult{
 		PaymentState:     r.TradeState.String,
 		PaymentStateDesc: r.TradeStateDesc.String,
 		Amount:           null.IntFrom(r.TotalFee.Int64),
 		TransactionID:    r.TransactionID.String,
 		OrderID:          r.FTCOrderID.String,
+		PaidAt:           chrono.TimeFrom(paidAt),
 		PayMethod:        enum.PayMethodWx,
 	}
 
 	if pr.IsOrderPaid() {
-		pr.ConfirmedAt = chrono.TimeNow()
+		pr.ConfirmedUTC = chrono.TimeNow()
 	}
 
 	return pr
@@ -186,18 +194,20 @@ func NewWxPayResult(r wechat.OrderQueryResp) PaymentResult {
 // IndustrySepcDetail:
 // VoucherDetailList:[]
 func NewAliPayResult(r *alipay.AliPayTradeQueryResponse) PaymentResult {
+	paidAt, _ := dt.ParseAliTime(r.AliPayTradeQuery.SendPayDate)
+
 	pr := PaymentResult{
 		PaymentState:     r.AliPayTradeQuery.TradeStatus,
 		PaymentStateDesc: ali.TradeStatusMsg[r.AliPayTradeQuery.TradeStatus],
 		Amount:           priceToCent(r.AliPayTradeQuery.TotalAmount),
 		TransactionID:    r.AliPayTradeQuery.TradeNo,
 		OrderID:          r.AliPayTradeQuery.OutTradeNo,
-		ConfirmedAt:      chrono.TimeNow(), // If an order is not confirmed, always use now as confirmation time.
+		PaidAt:           chrono.TimeFrom(paidAt), // If an order is not confirmed, always use now as confirmation time.
 		PayMethod:        enum.PayMethodAli,
 	}
 
 	if pr.IsOrderPaid() {
-		pr.ConfirmedAt = chrono.TimeNow()
+		pr.ConfirmedUTC = chrono.TimeNow()
 	}
 
 	return pr
@@ -209,14 +219,15 @@ func NewAliPayResult(r *alipay.AliPayTradeQueryResponse) PaymentResult {
 //	invoice_amount		VARCHAR(10), 用户在交易中支付的可开发票的金额
 func NewAliWebhookResult(payload *alipay.TradeNotification) (PaymentResult, error) {
 	// ReceiptAmount is the actually paid.
-
+	paidAt := chrono.TimeFrom(dt.MustParseAliTime(payload.GmtPayment))
 	return PaymentResult{
 		PaymentState:     payload.TradeStatus,
 		PaymentStateDesc: ali.TradeStatusMsg[payload.TradeStatus],
 		Amount:           priceToCent(payload.ReceiptAmount),
 		TransactionID:    payload.TradeNo,
 		OrderID:          payload.OutTradeNo,
-		ConfirmedAt:      chrono.TimeFrom(dt.MustParseAliTime(payload.GmtPayment)),
+		PaidAt:           paidAt,
+		ConfirmedUTC:     paidAt,
 		PayMethod:        enum.PayMethodAli,
 	}, nil
 }

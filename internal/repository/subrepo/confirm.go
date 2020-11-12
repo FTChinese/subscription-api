@@ -26,12 +26,6 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 	// tell provider not sending notification any longer;
 	// otherwise, allow retry.
 	sugar.Info("Start locking order")
-	//order, err := tx.RetrieveOrder(result.OrderID)
-	//if err != nil {
-	//	sugar.Error(err)
-	//	_ = tx.Rollback()
-	//	return subs.ConfirmationResult{}, result.ConfirmError(err, err != sql.ErrNoRows)
-	//}
 	lo, err := tx.LockOrder(result.OrderID)
 	if err != nil {
 		sugar.Error(err)

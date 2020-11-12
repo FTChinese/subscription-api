@@ -138,7 +138,7 @@ func TestEnv_SavePayResult(t *testing.T) {
 					Amount:           null.IntFrom(28000),
 					TransactionID:    faker.GenTxID(),
 					OrderID:          subs.MustGenerateOrderID(),
-					ConfirmedAt:      chrono.TimeNow(),
+					PaidAt:           chrono.TimeNow(),
 					PayMethod:        enum.PayMethodAli,
 				},
 			},
