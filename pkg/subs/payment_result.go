@@ -29,14 +29,14 @@ payment_status = :payment_status,
 	status_detail = :status_detail,
 	paid_amount = :paid_amount,
 	tx_id = :tx_id,
-	updated = UTC_TIMESTAMP()
+	updated_utc = UTC_TIMESTAMP()
 `
 
 const StmtSavePayResult = `
 INSERT INTO premium.ftc_pay_result
 SET order_id = :order_id,` +
 	colSavePayResult + `,
-	created = UTC_TIMESTAMP()
+	created_utc = UTC_TIMESTAMP()
 ON DUPLICATE KEY UPDATE
 ` + colSavePayResult
 
