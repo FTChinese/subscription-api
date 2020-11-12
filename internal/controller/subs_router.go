@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
@@ -58,4 +59,35 @@ func (router SubsRouter) postOrderCreation(order subs.Order, client client.Clien
 	}()
 
 	return nil
+}
+
+func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
+	sugar.Infof("Webhook Payment result %v", result)
+
+	go func() {
+		err := router.SubsRepo.SavePayResult(result)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
+	if result.ShouldRetry() {
+		msg := fmt.Sprintf("payment status %s", result.PaymentState)
+		return subs.ConfirmationResult{}, result.ConfirmError(msg, true)
+	}
+
+	if !result.IsOrderPaid() {
+		return subs.ConfirmationResult{}, result.ConfirmError("order not paid", false)
+	}
+
+	order, err := router.SubsRepo.LoadFullOrder(result.OrderID)
+	if err != nil {
+		sugar.Error(err)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
+	}
+
+	return router.ConfirmOrder(result, order)
 }
