@@ -115,7 +115,7 @@ func (o Order) Membership() (reader.Membership, error) {
 // If this order is used for upgrading, it always starts
 // at now.
 func (o Order) Confirm(pr PaymentResult, m reader.Membership) (ConfirmationResult, error) {
-	o.ConfirmedAt = chrono.TimeFrom(pr.ConfirmedAt.Time)
+	o.ConfirmedAt = pr.ConfirmedUTC
 
 	period, err := NewPeriodBuilder(
 		o.Edition,

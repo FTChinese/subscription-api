@@ -236,7 +236,7 @@ func (p *Persona) CreateOrder() subs.Order {
 func (p *Persona) ConfirmOrder(o subs.Order) subs.ConfirmationResult {
 
 	res, err := o.Confirm(subs.PaymentResult{
-		ConfirmedAt: chrono.TimeNow(),
+		PaidAt: chrono.TimeNow(),
 	}, p.Member)
 	if err != nil {
 		panic(err)
@@ -326,7 +326,7 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 			Amount:           null.IntFrom(order.AmountInCent()),
 			TransactionID:    rand.String(28),
 			OrderID:          order.ID,
-			ConfirmedAt:      chrono.TimeNow(),
+			PaidAt:           chrono.TimeNow(),
 			PayMethod:        enum.PayMethodWx,
 		}
 		return result
@@ -338,7 +338,7 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 			Amount:           null.IntFrom(order.AmountInCent()),
 			TransactionID:    rand.String(28),
 			OrderID:          order.ID,
-			ConfirmedAt:      chrono.TimeNow(),
+			PaidAt:           chrono.TimeNow(),
 			PayMethod:        enum.PayMethodAli,
 		}
 

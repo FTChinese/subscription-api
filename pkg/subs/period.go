@@ -38,7 +38,7 @@ func (b PeriodBuilder) Build(start chrono.Date) (PurchasedPeriod, error) {
 		endTime = start.AddDate(0, int(b.CycleCount), int(b.ExtraDays))
 
 	default:
-		return PurchasedPeriod{}, errors.New("invalid billing cycle")
+		return PurchasedPeriod{}, errors.New("build purchased period: invalid billing cycle")
 	}
 
 	return PurchasedPeriod{
