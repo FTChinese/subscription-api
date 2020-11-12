@@ -94,7 +94,7 @@ func StartServer(s ServerStatus) {
 
 		// Query order
 		// Deprecated
-		r.Get("/query/{id}", payRouter.VerifyPayment)
+		r.Get("/query/{id}", payRouter.VerifyPayment(false))
 	})
 
 	// Require user id.
@@ -123,7 +123,7 @@ func StartServer(s ServerStatus) {
 			Post("/app", payRouter.PlaceAliOrder(ali.EntryApp))
 
 		// Deprecated.
-		r.Get("/query/{id}", payRouter.VerifyPayment)
+		r.Get("/query/{id}", payRouter.VerifyPayment(false))
 	})
 
 	r.Route("/upgrade", func(r chi.Router) {
@@ -142,14 +142,14 @@ func StartServer(s ServerStatus) {
 		//r.Get("/{id}", payRouter.LoadOrder)
 
 		// Get a payment's result from providers.
-		r.Get("/{id}/payment-result", payRouter.PaymentResult)
+		r.Get("/{id}/payment-result", payRouter.VerifyPayment(true))
 		// Verify if an order is confirmed, and returns PaymentResult.
-		r.Post("/{id}/verify-payment", payRouter.VerifyPayment)
+		r.Post("/{id}/verify-payment", payRouter.VerifyPayment(false))
 
 		// Manually confirm an order if not confirmed yet by verifying against
 		// alipay of wxpay APIs. If it's already confirmed, nothing changes.
 		// Deprecated.
-		r.Patch("/{id}", payRouter.VerifyPayment)
+		r.Patch("/{id}", payRouter.VerifyPayment(false))
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
