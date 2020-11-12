@@ -17,7 +17,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
 	// Step 1: Find the subscription order by order id
@@ -36,21 +36,21 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err, err != sql.ErrNoRows)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), err != sql.ErrNoRows)
 	}
 
 	if !lo.ConfirmedAt.IsZero() {
 		_ = tx.Rollback()
 		err := errors.New("duplicate confirmation")
 		sugar.Error(err)
-		return subs.ConfirmationResult{}, result.ConfirmError(err, false)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
 	}
 
 	sugar.Info("Validate payment result")
 	if err := order.ValidatePayment(result); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err, false)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
 	}
 
 	// STEP 2: query membership
@@ -60,7 +60,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
 	// STEP 3: validate the retrieved order.
@@ -71,7 +71,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 	if err := order.ValidateDupUpgrade(member); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err, false)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
 	}
 
 	// STEP 4: Confirm this order
@@ -82,7 +82,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
 	// STEP 5: Update confirmed order
@@ -91,7 +91,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 	if err := tx.ConfirmOrder(confirmed.Order); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
 	// STEP 7: Insert or update membership.
@@ -102,7 +102,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+			return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 		}
 	} else {
 		sugar.Infof("Updating membership %v", confirmed.Membership)
@@ -110,13 +110,13 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+			return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return subs.ConfirmationResult{}, result.ConfirmError(err, true)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
 	sugar.Infof("Order %s confirmed", result.OrderID)
