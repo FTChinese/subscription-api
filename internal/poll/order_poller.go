@@ -108,6 +108,12 @@ func (p OrderPoller) verify(order subs.Order) error {
 		return err
 	}
 
+	// Save/update payment result.
+	err = p.SubsRepo.SavePayResult(payResult)
+	if err != nil {
+		sugar.Error(err)
+	}
+
 	if !payResult.IsOrderPaid() {
 		sugar.Infof("Payment result is not success: %s", payResult.PaymentState)
 		return err
