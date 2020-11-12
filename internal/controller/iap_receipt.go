@@ -20,6 +20,8 @@ func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	fsOnly := req.FormValue("fs") == "true"
+
 	sub, err := router.iapRepo.LoadSubs(origTxID)
 	if err != nil {
 		sugar.Error(err)
@@ -27,7 +29,7 @@ func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema)
+	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema, fsOnly)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound()
