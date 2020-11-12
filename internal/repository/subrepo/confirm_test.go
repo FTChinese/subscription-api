@@ -1,9 +1,13 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
+	"github.com/guregu/null"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
@@ -108,6 +112,44 @@ func TestEnv_SaveConfirmationErr(t *testing.T) {
 			}
 			if err := env.SaveConfirmErr(tt.args.e); (err != nil) != tt.wantErr {
 				t.Errorf("SaveConfirmErr() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnv_SavePayResult(t *testing.T) {
+
+	env := NewEnv(test.DB, zaptest.NewLogger(t))
+
+	type args struct {
+		result subs.PaymentResult
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Save payment result",
+			args: args{
+				result: subs.PaymentResult{
+					PaymentState:     ali.TradeStatusSuccess,
+					PaymentStateDesc: "",
+					Amount:           null.IntFrom(28000),
+					TransactionID:    faker.GenTxID(),
+					OrderID:          subs.MustGenerateOrderID(),
+					ConfirmedAt:      chrono.TimeNow(),
+					PayMethod:        enum.PayMethodAli,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := env.SavePayResult(tt.args.result); (err != nil) != tt.wantErr {
+				t.Errorf("SavePayResult() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
