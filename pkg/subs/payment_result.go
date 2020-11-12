@@ -52,6 +52,7 @@ type VerificationResult struct {
 // TRADE_FINISHED：交易成功且结束，即不可再做任何操作
 // 例如在高级即时到帐接口里面，支付成功之后返回的是TRADE_SUCCESS，此时三个月之内可以操作退款，三个月之后不允许对该笔交易操作，支付宝会返回TRADE_FINISHED，所以必须要在TRADE_SUCCESS下执行你网站业务逻辑代码，TRADE_FINISHED不做任何业务逻辑处理，避免一笔交易重复执行业务逻辑而给您带来不必要的损失。
 type PaymentResult struct {
+	// // 在支付宝的业务通知中，只有交易通知状态为TRADE_SUCCESS或TRADE_FINISHED时，支付宝才会认定为买家付款成功。
 	// For Alipay `trade_status` field:
 	// WAIT_BUYER_PAY（交易创建，等待买家付款）
 	// TRADE_CLOSED（未付款交易超时关闭，或支付完成后全额退款）
@@ -79,6 +80,17 @@ type PaymentResult struct {
 	PayMethod     enum.PayMethod `json:"payMethod"`
 }
 
+// ShouldRetry checks if we should tell webhook should resend notification.
+func (r PaymentResult) ShouldRetry() bool {
+	switch r.PaymentState {
+	case ali.TradeStatusPending, wechat.TradeStatePaying:
+		return true
+
+	default:
+		return false
+	}
+}
+
 // IsOrderPaid checks if a wx or ali order is paid.
 // Do not call it for webhook since the payload does not contain these fields.
 func (r PaymentResult) IsOrderPaid() bool {
@@ -90,10 +102,10 @@ func (r PaymentResult) IsOrderPaid() bool {
 	return false
 }
 
-func (r PaymentResult) ConfirmError(err error, retry bool) *ConfirmError {
+func (r PaymentResult) ConfirmError(msg string, retry bool) *ConfirmError {
 	return &ConfirmError{
 		OrderID: r.OrderID,
-		Message: err.Error(),
+		Message: msg,
 		Retry:   retry,
 	}
 }
