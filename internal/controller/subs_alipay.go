@@ -163,19 +163,7 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 		}
 	}()
 
-	// 在支付宝的业务通知中，只有交易通知状态为TRADE_SUCCESS或TRADE_FINISHED时，支付宝才会认定为买家付款成功。
-	if !ali.IsStatusSuccess(payload.TradeStatus) {
-		sugar.Infof("Status %s", payload.TradeStatus)
-
-		if ali.ShouldRetry(payload) {
-			send(false)
-			return
-		}
-
-		send(true)
-		return
-	}
-
+	sugar.Info("Start processing ali webhook")
 	payResult, err := subs.NewAliWebhookResult(payload)
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
