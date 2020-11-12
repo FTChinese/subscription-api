@@ -126,7 +126,7 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 
 	// Load the receipt file from disk.
 	// If error occurred, returns 404.
-	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema)
+	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound()
