@@ -38,7 +38,7 @@ func TestOrder_Confirm(t *testing.T) {
 					Amount:        null.IntFrom(12800),
 					TransactionID: "1234",
 					OrderID:       order.ID,
-					ConfirmedAt:   chrono.TimeNow(),
+					PaidAt:        chrono.TimeNow(),
 				},
 				m: reader.Membership{},
 			},
