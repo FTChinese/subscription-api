@@ -69,6 +69,10 @@ func GenWxAccessToken() string {
 	return token
 }
 
+func GenTxID() string {
+	return rand.String(28)
+}
+
 func RandomPayMethod() enum.PayMethod {
 	return enum.PayMethod(rand.IntRange(1, 3))
 }
