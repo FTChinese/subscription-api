@@ -101,6 +101,15 @@ func (s WxPayClientStore) GetWebhookPayload(req *http.Request) (wechat.Notificat
 	return payload, nil
 }
 
+func (s WxPayClientStore) QueryOrderRaw(order subs.Order) (wxpay.Params, error) {
+	client, err := s.ClientByAppID(order.WxAppID.String)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.queryOrderRaw(order.ID)
+}
+
 func (s WxPayClientStore) VerifyPayment(order subs.Order) (subs.PaymentResult, error) {
 	defer s.logger.Sync()
 	sugar := s.logger.Sugar()
@@ -150,6 +159,13 @@ func (c WxPayClient) CreateOrder(o wechat.OrderReq) (wechat.OrderResp, error) {
 	}
 
 	return wechat.NewOrderResp(o.SellerOrderID, resp), nil
+}
+
+func (c WxPayClient) queryOrderRaw(id string) (wxpay.Params, error) {
+	reqParams := make(wxpay.Params)
+	reqParams.SetString("out_trade_no", id)
+
+	return c.sdk.OrderQuery(reqParams)
 }
 
 //https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
