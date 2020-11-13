@@ -196,7 +196,7 @@ func StartServer(s ServerStatus) {
 		// Load one subscription.
 
 		// ?page=<int>&per_page<int>
-		r.Get("/subs", iapRouter.ListSubs)
+		r.With(controller.FtcID).Get("/subs", iapRouter.ListSubs)
 		// Load a single subscription.
 		r.Get("/subs/{id}", iapRouter.LoadSubs)
 		// Refresh an existing subscription of an original transaction id.
