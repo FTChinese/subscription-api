@@ -48,8 +48,9 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 	sub, err := router.iapRepo.GetSubAndSetFtcID(input)
 	if err != nil {
-		switch err {
-		case apple.ErrIAPAlreadyLinked:
+		// Only ErrIAPAlreadyLinked happens here.
+		ve, ok := apple.ConvertLinkErr(err)
+		if ok {
 			// Archive possible cheating.
 			go func() {
 				err := router.iapRepo.ArchiveLinkCheating(input)
@@ -58,43 +59,27 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 				}
 			}()
 
-			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: "Apple subscription is already claimed by another ftc account.",
-				Field:   "iap",
-				Code:    "link_taken",
-			})
-
-		default:
-			_ = render.New(w).DBError(err)
+			_ = render.New(w).Unprocessable(ve)
+			return
 		}
 
+		_ = render.New(w).DBError(err)
 		return
 	}
+
 	// Start to link apple subscription to ftc membership.
 	result, err := router.iapRepo.Link(ftcAccount, sub)
 
 	if err != nil {
 		sugar.Error(err)
-
-		switch err {
-		case apple.ErrFtcAlreadyLinked:
-			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: "FTC account is already linked to another Apple subscription",
-				Field:   "ftc",
-				Code:    "link_taken",
-			})
-
-		case apple.ErrFtcMemberValid:
-			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: "FTC account already has a valid membership via non-Apple channel",
-				Field:   "ftc",
-				Code:    render.CodeAlreadyExists,
-			})
-
-		default:
-			_ = render.New(w).DBError(err)
+		// ErrIAPAlreadyLinked is already handled in the above step.
+		ve, ok := apple.ConvertLinkErr(err)
+		if ok {
+			_ = render.New(w).Unprocessable(ve)
+			return
 		}
 
+		_ = render.New(w).DBError(err)
 		return
 	}
 
