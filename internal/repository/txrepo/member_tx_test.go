@@ -2,9 +2,11 @@ package txrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -368,40 +370,6 @@ func TestOrderTx_UpdateMember(t *testing.T) {
 	_ = otx.Commit()
 }
 
-func TestMemberTx_DeleteMember(t *testing.T) {
-	p := test.NewPersona()
-	m := p.Membership()
-
-	test.NewRepo().MustSaveMembership(m)
-
-	tx := NewMemberTx(test.DB.MustBegin())
-
-	type args struct {
-		id reader.MemberID
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Delete a member",
-			args: args{
-				id: p.AccountID(),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			if err := tx.DeleteMember(tt.args.id); (err != nil) != tt.wantErr {
-				t.Errorf("DeleteMember() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestOrderTx_FindBalanceSources(t *testing.T) {
 	p := test.NewPersona()
 
@@ -482,6 +450,111 @@ func TestMemberTx_SaveProratedOrders(t *testing.T) {
 			if err := tx.SaveProratedOrders(tt.args.po); (err != nil) != tt.wantErr {
 				t.Errorf("SaveProratedOrders() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestMemberTx_RetrieveAppleSubs(t *testing.T) {
+
+	tx := NewMemberTx(test.DB.MustBegin())
+
+	type args struct {
+		origTxID string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Retrieve apple subscription",
+			args: args{
+				origTxID: "320000437711395",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := tx.RetrieveAppleSubs(tt.args.origTxID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RetrieveAppleSubs() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			t.Logf("%v", got)
+		})
+
+		_ = tx.Commit()
+	}
+}
+
+func TestMemberTx_LinkAppleSubs(t *testing.T) {
+	tx := NewMemberTx(test.DB.MustBegin())
+
+	type args struct {
+		link apple.LinkInput
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Set ftc id to iap subscription",
+			args: args{
+				link: apple.LinkInput{
+					FtcID:        uuid.New().String(),
+					OriginalTxID: "320000437711395",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := tx.LinkAppleSubs(tt.args.link); (err != nil) != tt.wantErr {
+				t.Errorf("LinkAppleSubs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+		})
+
+		_ = tx.Commit()
+	}
+}
+
+func TestMemberTx_UnlinkAppleSubs(t *testing.T) {
+
+	tx := NewMemberTx(test.DB.MustBegin())
+
+	type args struct {
+		link apple.LinkInput
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Unset ftc id from iap subscription",
+			args: args{
+				link: apple.LinkInput{
+					FtcID:        uuid.New().String(),
+					OriginalTxID: "320000437711395",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := tx.UnlinkAppleSubs(tt.args.link); (err != nil) != tt.wantErr {
+				t.Errorf("UnlinkAppleSubs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			_ = tx.Commit()
 		})
 	}
 }
