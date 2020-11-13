@@ -49,11 +49,11 @@ For Alipay and Wxpay, subscription prices will be set to 0.01 so that you don't 
 * POST `/apple/link` Link an IAP to an FTC account.
 * POST `/apple/unlink` Unlink IAP from an FTC account.
 * POST `/apple/subs` Verify a receipt and get the essential subscription data.
-* GET `/apple/subs?page=<int>&per_page=<int>` Load a list of existing IAP subscription.
-* GET `/apple/subs//<original_transaction_id>` Load a single IAP subscription.
+* GET `/apple/subs?page=<int>&per_page=<int>` Load a list of existing IAP subscription belong to a user.
+* GET `/apple/subs/<original_transaction_id>` Load a single IAP subscription.
 * PATCH `/apple/subs/<original_transaction_id>` Refresh an existing IAP subscription against Apple verification.
 * GET `/apple/receipt/<original_transaction_id>` Load a single IAP subscription together with the receipt file.
-* POST `/webhook/apple`
+* POST `/webhook/apple` Apple's server-to-server notification
 
 ## The verification process
 
