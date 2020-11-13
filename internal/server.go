@@ -33,7 +33,10 @@ func StartServer(s ServerStatus) {
 
 	stripe.Key = cfg.MustStripeAPIKey()
 
-	myDB := db.MustNewMySQL(config.MustMySQLMasterConn(s.Production))
+	dbRW := db.MustNewMySQL(config.MustMySQLMasterConn(s.Production))
+	// DB connection with delete privilege.
+	dbRWD := db.MustNewMySQL(config.MustMySQLAPIConn(s.Production))
+
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
 	// Set the cache default expiration time to 2 hours.
@@ -41,16 +44,16 @@ func StartServer(s ServerStatus) {
 
 	post := postoffice.New(config.MustGetHanqiConn())
 
-	guard := access.NewGuard(myDB)
+	guard := access.NewGuard(dbRW)
 
-	payRouter := controller.NewSubsRouter(myDB, promoCache, cfg, post, logger)
-	iapRouter := controller.NewIAPRouter(myDB, rdb, logger, post, cfg)
-	stripeRouter := controller.NewStripeRouter(myDB, cfg, logger)
+	payRouter := controller.NewSubsRouter(dbRW, promoCache, cfg, post, logger)
+	iapRouter := controller.NewIAPRouter(dbRWD, rdb, logger, post, cfg)
+	stripeRouter := controller.NewStripeRouter(dbRW, cfg, logger)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := controller.NewPaywallRouter(myDB, promoCache, logger)
+	paywallRouter := controller.NewPaywallRouter(dbRW, promoCache, logger)
 
-	wxAuth := controller.NewWxAuth(myDB, logger)
+	wxAuth := controller.NewWxAuth(dbRW, logger)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
