@@ -100,7 +100,7 @@ func gatherAliPayInput(req *http.Request) (subs.AliPayInput, error) {
 // It panic if both ftc id and union id are missing.
 // However it won't happen since middlewares already ensured at least one of them should exist.
 func getReaderIDs(h http.Header) reader.MemberID {
-	ftcID := h.Get(ftcIDKey)
+	ftcID := h.Get(userIDKey)
 	unionID := h.Get(unionIDKey)
 
 	return reader.MemberID{
