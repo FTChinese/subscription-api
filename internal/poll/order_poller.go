@@ -18,6 +18,7 @@ FROM premium.log_ali_notification AS a
     ON a.ftc_order_id = o.trade_no
 WHERE o.trade_no IS NOT NULL
 	AND o.confirmed_utc IS NULL
+	AND o.billing_cycle IS NOT NULL
     AND a.trade_status = 'TRADE_SUCCESS'`
 
 const StmtWxUnconfirmed = subs.StmtOrderCols + `
@@ -26,6 +27,7 @@ FROM premium.log_wx_notification AS w
     ON w.ftc_order_id = o.trade_no
 WHERE o.trade_no IS NOT NULL
 	AND o.confirmed_utc IS NULL
+	AND o.billing_cycle IS NOT NULL
     AND w.result_code = 'SUCCESS'`
 
 type OrderPoller struct {
