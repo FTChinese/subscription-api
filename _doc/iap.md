@@ -171,17 +171,11 @@ POST /apple/verify-receipt
 }
 ```
 
-### `200 OK` Response
+### Workflow
 
-Apple's response is transferred to client as is. See https://developer.apple.com/documentation/appstorereceipts/responsebody.
+1. Parse request body. Returns `400` if parsing failed
 
-Please note there is an error in Apple's doc saying the type of`latest_receipt` is `byte`. It is a string type, a string representation of the underlying byte array. You can safely ignore this field.
-
-### Work flow and error response
-
-1. Parse request body. If request body cannot be parsed as valid JSON, returns `400 Bad Request`.
-
-2. Validate request body. If request body has invalid field, e.g, `receiptData` field is missing or empty, returns `422 Unprocessable`
+2. Validate request body. Returns `422` if `receiptData` missed:
 
 ```json
 {
@@ -193,15 +187,23 @@ Please note there is an error in Apple's doc saying the type of`latest_receipt` 
 }
 ```
 
-3. Perform verification to App Store. See above section `The verification process`.
+3. Send receipt data to apple server. Returns `422` if any error occurred in the request to Apple, or response is not valid:
 
-If the http request sent to App Store failed, returns `500 Internal Error`.
+```json
+{
+  "message": "might be anything",
+  "error": {
+    "field": "verification",
+    "code": "invalid"
+  }
+}
+```
 
-If the verification response is not valid, those fields in the response will be checked: 
+4. The response body is dissected and save into DB.
 
-4. App store response is sent to client as is.
+5. Create a `Subscription` base on the response and save it to `premium.apple_subscription`.
 
-5. In background, we extract essential data from the response and build a data structure called apple's `Subscription` sand saved it to table `premium.apple_subscription`. If there's a row in `premium.ftc_vip` whose `apple_subscription_id` matches apple's original transaction id, that row is updated based on `Subscription`.
+6. Apple's response is sent to client as is.
 
 ## Link IAP
 
@@ -334,10 +336,12 @@ This `ftcId` and `originalTxId` combination is also saved to `premium.apple_chea
 ```
 
 
-## Unlinking
+## Unlink IAP
+
+Sever links between an FTC account and Apple subscription.
 
 ```
-POST /apple/link
+POST /apple/unlink
 ```
 
 ### Request Body
@@ -349,24 +353,44 @@ POST /apple/link
 }
 ```
 
-*Unlinking* here is actually a delete operation.
+* `ftcId: string` Required
+* `originalTxId: string` Required
 
-### Request Body
+### Workflow
+
+1. Parse request body. Return `400` if parsing failed.
+
+2. Validate request body. Save as step 2 in `Link IAP`.
+
+3. Start a DB transaction. Retrieve membership by `originalTxId`. Return `404` if membership does not exist.
+
+4. If `ftcId` is not equal to membership's `FtcID` field, returns `422` and db transaction rolled back:
 
 ```json
 {
-  "ftcId": "uuid",
-  "originalTxId": "original transaction id"
+  "message": "IAP is not linked to the ftc account",
+  "error": {
+    "field": "ftcId",
+    "code": "invalid"
+  }
 }
 ```
 
-### Response
+5. Delete this row from `premium.ftc_vip`. Roll back in case of db error.
 
-* `400 Bad Request`
+6. Retrieve apple subscription by `originalTxId`. Roll back in case of db error.
 
-* `422 Unprocessable`
+7. If the subscription's `FtcUserID` field is equal to `ftcId`, set it to null.
 
-* `204 No Content` if unlinked successfully.
+8. Commit db transaction.
+
+9. The deleted membership is archived into `premium.member_snapshot`.
+
+10. The `ftcId` and `originalTxId` is save to `premium.apple_unlink_archive`.
+
+11. An email is sent to user to notify user this unlink operation.
+
+12. Returns `202 No Content` to indicate operation succeeded.
 
 ## Verify Receipt and Get Subscription
 
@@ -392,17 +416,20 @@ If succeeded, the response body will be an instance of `apple.Subscription`:
   "cycle": "month",
   "autoRenewal": true,
   "createdUtc": "2020-06-11T02:56:12Z",
-  "updatedUtc": "2020-06-11T02:56:12Z"
+  "updatedUtc": "2020-06-11T02:56:12Z",
+  "ftcUserId": ""
 }
 ``` 
 
 ## List Subscription
 
+Required header: `X-Ftc-Id: <uuid>`
+
 ```
 GET /apple/subs?page=<int>&per_page<int>
 ```
 
-Get a list of Subscription. Query parameter `page` specifies the current page, and `per_page` specifies how many items should be retrieved per page.
+Get a list of Subscription belong to a user. Query parameter `page` specifies the current page, and `per_page` specifies how many items should be retrieved per page.
 
 ### Response
 
@@ -423,13 +450,12 @@ Get a list of Subscription. Query parameter `page` specifies the current page, a
         "cycle": "month",
         "autoRenewal": false,
         "createdUtc": "2020-09-15T04:04:16Z",
-        "updatedUtc": "2020-09-18T01:20:06Z"
+        "updatedUtc": "2020-09-18T01:20:06Z",
+        "ftcUserId": ""
     }
   ]
 }
 ```
-
-The `data` array is sorted in descending order by `updatedutc`.
 
 ## Load a Single Subscription
 
@@ -437,7 +463,7 @@ The `data` array is sorted in descending order by `updatedutc`.
 GET /apple/subs/<original_transaction_id>
 ```
 
-Retrieve a single `apple.Subscription` by original transaction id.
+Retrieve a row from `premium.apple_subscription`.
 
 ## Refresh a Subscription
 
@@ -449,7 +475,7 @@ This allows you to refresh an existing Apple Subscription based on the receipt p
 
 Response is an instance of `apple.Subscription` extracted from the verified receipt.
 
-Workflow of the refreshing process:
+### Workflow
 
 1. Use the original transaction id to find the `Subscription` from db;
 2. Build file name from the `originalTransactionId` and `envrionment` field. For example, `1000000322563042_Sandbox`;
