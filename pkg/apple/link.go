@@ -40,6 +40,23 @@ type LinkBuilder struct {
 	IAPSubs    Subscription
 }
 
+// Build links IAP subscription to an existing FTC account.
+// Only two cases are allowed to link:
+//
+// * Both sides refer to the same membership (including zero value);
+// * IAP side is zero and FTC side non-zero but invalid.
+//
+// As long as link is allowed to proceed, two side cannot both have memberships simultaneously.
+// We only need to take a snapshot of ftc side if it exists.
+//
+// | FTC\IAP     | None   | Not-Expired | Expired |
+// | ----------- | ------ | ----------- | --------|
+// | None        |  Y     |      N      |  N      |
+// | Not-Expired |  N     |      N      |  N      |
+// | Expired     |  Y     |      N      |  N      |
+//
+// Row 2 Column 2 has an exception:
+// If payMethod is null, ftc side expire time is not after iap side, it is probably comes from IAP.
 func (b LinkBuilder) Build() (LinkResult, error) {
 	// Two sides get the same membership, or both zero values.
 	if b.CurrentIAP.IsEqual(b.CurrentFtc) {
@@ -135,4 +152,34 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
 		Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 	}, nil
+}
+
+func ConvertLinkErr(err error) (*render.ValidationError, bool) {
+	switch err {
+	// Multiple FTC accounts linking to single IAP.
+	case ErrIAPAlreadyLinked:
+		return &render.ValidationError{
+			Message: "Apple subscription is already claimed by another ftc account.",
+			Field:   "originalTxId",
+			Code:    "linked_to_other_ftc",
+		}, true
+
+	// Single FTC account linking to multiple IAP
+	case ErrFtcAlreadyLinked:
+		return &render.ValidationError{
+			Message: "FTC account is already linked to another Apple subscription",
+			Field:   "ftcId",
+			Code:    "linked_to_other_iap",
+		}, true
+
+	case ErrFtcMemberValid:
+		return &render.ValidationError{
+			Message: "FTC account already has a valid membership via non-Apple channel",
+			Field:   "ftcId",
+			Code:    "has_valid_non_iap",
+		}, true
+
+	default:
+		return nil, false
+	}
 }
