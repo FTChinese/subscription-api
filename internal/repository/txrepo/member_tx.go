@@ -41,35 +41,6 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error)
 	return m.Normalize(), nil
 }
 
-func (tx MemberTx) RetrieveAppleSubs(origTxID string) (apple.Subscription, error) {
-	var s apple.Subscription
-	err := tx.Get(&s, apple.StmtLockSubs, origTxID)
-
-	if err != nil {
-		return apple.Subscription{}, err
-	}
-
-	return s, nil
-}
-
-func (tx MemberTx) LinkAppleSubs(link apple.LinkInput) error {
-	_, err := tx.NamedExec(apple.StmtLinkSubs, link)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (tx MemberTx) UnlinkAppleSubs(link apple.LinkInput) error {
-	_, err := tx.NamedExec(apple.StmtUnlinkSubs, link)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // RetrieveAppleMember selects membership by apple original transaction id.
 // // NOTE: sql.ErrNoRows are ignored. The returned
 //// Membership might be a zero value.
@@ -188,7 +159,6 @@ func (tx MemberTx) UpdateMember(m reader.Membership) error {
 // is the correct operation since the membership is granted
 // by IAP. You cannot simply remove the apple_subscription_id
 // column which will keep the membership on FTC account.
-// Deprecated. DELETE operation is not allowed by DB.
 func (tx MemberTx) DeleteMember(id reader.MemberID) error {
 	_, err := tx.NamedExec(
 		reader.StmtDeleteMember,
@@ -237,6 +207,35 @@ func (tx MemberTx) SaveProratedOrders(po []subs.ProratedOrder) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (tx MemberTx) RetrieveAppleSubs(origTxID string) (apple.Subscription, error) {
+	var s apple.Subscription
+	err := tx.Get(&s, apple.StmtLockSubs, origTxID)
+
+	if err != nil {
+		return apple.Subscription{}, err
+	}
+
+	return s, nil
+}
+
+func (tx MemberTx) LinkAppleSubs(link apple.LinkInput) error {
+	_, err := tx.NamedExec(apple.StmtLinkSubs, link)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx MemberTx) UnlinkAppleSubs(link apple.LinkInput) error {
+	_, err := tx.NamedExec(apple.StmtUnlinkSubs, link)
+	if err != nil {
+		return err
 	}
 
 	return nil
