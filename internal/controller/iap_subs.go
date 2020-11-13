@@ -17,15 +17,8 @@ func (router IAPRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	ftcID := GetFtcID(req)
 	p := gorest.GetPagination(req)
-	ftcID := req.FormValue("ftc_id")
-	if ftcID == "" {
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: "Missing required field ftc_id",
-			Field:   "ftc_id",
-			Code:    render.CodeMissing,
-		})
-	}
 
 	list, err := router.iapRepo.ListSubs(ftcID, p)
 	if err != nil {
