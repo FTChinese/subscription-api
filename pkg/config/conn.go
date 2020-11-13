@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func MustMySQLConn(key string, prod bool) connect.Connect {
+func mustMySQLConn(key string, prod bool) connect.Connect {
 	var conn connect.Connect
 	var err error
 
@@ -25,5 +25,9 @@ func MustMySQLConn(key string, prod bool) connect.Connect {
 }
 
 func MustMySQLMasterConn(prod bool) connect.Connect {
-	return MustMySQLConn("mysql.master", prod)
+	return mustMySQLConn("mysql.master", prod)
+}
+
+func MustMySQLAPIConn(prod bool) connect.Connect {
+	return mustMySQLConn("mysql.apisuper", prod)
 }
