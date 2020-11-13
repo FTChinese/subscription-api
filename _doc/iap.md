@@ -57,57 +57,15 @@ For Alipay and Wxpay, subscription prices will be set to 0.01 so that you don't 
 
 ## The verification process
 
-The verification process is performed by multiple endpoints:
-
 * POST `/apple/verify-receipt`;
 * POST `/apple/subs`;
 * PATCH `/apple/subs`.
 
-We dedicate this section to its details.
+1. Send http request to App Store endpoint as required by Apple.
 
-1. Send http request to App Store endpoint as required by Apple. If any errors occurred, we send `500 Internal Error` to client.
+2. Parse the response to get user's valid subscription.
 
-2. Then we validate various fields in the response to ensure it is valid. If Apple's response is not valid, we will send the following errors to our clients:
-
-If `status` is not `0`, it indicates error: 
-
-```json
-{
-  "message": "The data in the receipt-data property was malformed or missing",
-  "error": {
-    "field": "status",
-    "code": "invalid"
-  }
-}
-```
-
-If `bundle_id` does not match:
-
-```json
-{
-    "message": "The data in the receipt-data property was malformed or missing",
-    "error": {
-        "field": "bundle_id",
-        "code": "invalid"
-    }
-}
-```
-
-If `latest_receipt_info` field is empty.
-
-```json
-{
-    "message": "Latest receipt info should not be empty",
-    "error": {
-        "field": "latest_receipt_info",
-        "code": "missing_field"
-    }
-}
-```
-
-3. Parse the response to get user's valid subscription.
-
-4. Dissect the response so that we could save its various fields to relational database. The response has the following structure:
+3. Dissect the response so that we could save its various fields to relational database. The response has the following structure:
 
 ```json
 {
@@ -130,7 +88,7 @@ The data under `latest_receipt`, `latest_receipt_info`, `pending_renewal_info` a
 | pending_renewal_info | premium.apple_pending_renewal      |
 | latest_receipt       | file_store.apple_receipt           |
 
-The `environment` field is saved along each row to all the tables mentioned here so that we know from which environment each row is generated.
+The `environment` field is saved along with each row to all the tables mentioned here so that we know from which environment each row is generated.
 
 Note the `latest_receipt` is original saved to disk. Later it is also save to Redis. Then we also save a copy to MySQL, therefore a receipt might appear in three places:
 
@@ -138,7 +96,7 @@ Note the `latest_receipt` is original saved to disk. Later it is also save to Re
 * Redis
 * MySQL
 
-6. We create a data structure called `Subscripiton` which contains the essential data from the verification response and save it in `premium.apple_subscription`:
+4. We create a data structure called `Subscripiton` which contains the essential data from the verification response and save it in `premium.apple_subscription`:
 
 ```json
 {
