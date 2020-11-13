@@ -82,7 +82,7 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 // PUT /stripe/customers
 // Response: reader.FtcAccount
 func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(ftcIDKey)
+	ftcID := req.Header.Get(userIDKey)
 
 	account, err := router.stripeRepo.CreateStripeCustomer(ftcID)
 
@@ -223,7 +223,7 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	sugar := router.logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
-	ftcID := req.Header.Get(ftcIDKey)
+	ftcID := req.Header.Get(userIDKey)
 
 	input := stripePkg.NewSubsInput(ftcID)
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
@@ -303,7 +303,7 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	ftcID := req.Header.Get(ftcIDKey)
+	ftcID := req.Header.Get(userIDKey)
 
 	result, err := router.stripeRepo.GetSubscription(ftcID)
 	if err != nil {
@@ -342,7 +342,7 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 	sugar := router.logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
-	ftcID := req.Header.Get(ftcIDKey)
+	ftcID := req.Header.Get(userIDKey)
 
 	input := stripePkg.NewSubsInput(ftcID)
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
