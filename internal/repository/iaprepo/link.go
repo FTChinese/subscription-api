@@ -8,6 +8,13 @@ import (
 	"github.com/guregu/null"
 )
 
+// GetSubAndSetFtcID retrieves an existing apple subscription by original transaction id.
+// If the subscription is already have FtcUserID field set and not equal to input.FtcID,
+// it indicates the subscription is claimed by other ftc account and an error will be returned.
+// If the FtcUserId is empty, it will set to the input.FtcID value.
+// This might result to the same ftc user id set to multiple apple subscription, which means
+// one ftc account could have multiple apple subscription under it.
+// In such case, only one of the subscriptions will be reflected in a user's membership.
 func (env Env) GetSubAndSetFtcID(input apple.LinkInput) (apple.Subscription, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
@@ -71,7 +78,7 @@ func (env Env) GetSubAndSetFtcID(input apple.LinkInput) (apple.Subscription, err
 // This is a suspicious operation that should always be denied.
 // The returned error could be *render.ValidationError
 // if link if forbidden.
-func (env Env) Link(account reader.FtcAccount, sub apple.Subscription) (apple.LinkResult, error) {
+func (env Env) Link(account reader.FtcAccount, sub apple.Subscription, force bool) (apple.LinkResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -110,17 +117,18 @@ func (env Env) Link(account reader.FtcAccount, sub apple.Subscription) (apple.Li
 		return apple.LinkResult{}, err
 	}
 
-	// If membership is take a snapshot, we must delete it.
-	if !result.Snapshot.IsZero() {
-		err := tx.DeleteMember(ftcMember.MemberID)
-		if err != nil {
-			sugar.Error(err)
-			_ = tx.Rollback()
-			return apple.LinkResult{}, err
-		}
-	}
 	// Save membership only when it is touched.
 	if result.Touched {
+		// If membership is take a snapshot, we must delete it.
+		if !result.Snapshot.IsZero() {
+			err := tx.DeleteMember(ftcMember.MemberID)
+			if err != nil {
+				sugar.Error(err)
+				_ = tx.Rollback()
+				return apple.LinkResult{}, err
+			}
+		}
+
 		err := tx.CreateMember(result.Member)
 		if err != nil {
 			sugar.Error(err)
