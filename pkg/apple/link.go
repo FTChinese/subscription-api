@@ -12,6 +12,7 @@ import (
 type LinkInput struct {
 	FtcID        string `json:"ftcId" db:"ftc_user_id"`
 	OriginalTxID string `json:"originalTxId" db:"original_transaction_id"`
+	Force        bool   `json:"force"` // If FtcID is already linked to another apple id, it is not allowed to use this OriginalTxId's subscription unless Force is true.
 }
 
 func (i *LinkInput) Validate() *render.ValidationError {
@@ -28,9 +29,9 @@ func (i *LinkInput) Validate() *render.ValidationError {
 
 type LinkResult struct {
 	Notify   bool                  // Whether we should tell user the link. If they are already linked, don't notify.
-	Touched  bool                  // If the membership is actually modified. If link already done, this should be true and  Member should not be inserted to db.
-	Member   reader.Membership     // Updated membership to be inserted. If not changed, set a zero value.
-	Snapshot reader.MemberSnapshot // Previous memberships. The original membership should be deleted, and then archived.
+	Touched  bool                  // If the membership is actually modified. If link already done, this should be false and  Member should not be inserted to db.
+	Member   reader.Membership     // Updated membership or original membership if already linked and expiration date not changed.
+	Snapshot reader.MemberSnapshot // Previous memberships. The original membership should be deleted, and then archived. If snapshot exists, them Touched must be always true.
 }
 
 type LinkBuilder struct {
@@ -38,6 +39,7 @@ type LinkBuilder struct {
 	CurrentFtc reader.Membership
 	CurrentIAP reader.Membership
 	IAPSubs    Subscription
+	Force      bool // If CurrentFtc is already linked to another Subscription, the link request should be denied unless False is explicitly set to true.
 }
 
 // Build links IAP subscription to an existing FTC account.
@@ -116,6 +118,15 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	// Apple Account B <-|-> Ftc Account A.
 	// In such case we should deny it and user should manually unlink that IAP before linking to this one.
 	if b.CurrentFtc.IsIAP() {
+		if b.Force {
+			return LinkResult{
+				Notify:   true,
+				Touched:  true,
+				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+			}, nil
+		}
+
 		return LinkResult{}, ErrFtcAlreadyLinked
 	}
 
