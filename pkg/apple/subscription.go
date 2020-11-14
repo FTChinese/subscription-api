@@ -31,6 +31,7 @@ type Subscription struct {
 	CreatedUTC  chrono.Time `json:"createdUtc" db:"created_utc"`
 	UpdatedUTC  chrono.Time `json:"updatedUtc" db:"updated_utc"`
 	FtcUserID   null.String `json:"ftcUserId" db:"ftc_user_id"` // This field is only manipulated upon link/unlink. We won't touch it upon insert/create.
+	InUse       bool        `json:"inUse" db:"in_use"`          // If this subscription is being used by membership.
 }
 
 // NewSubscription builds a subscription for a user based on
