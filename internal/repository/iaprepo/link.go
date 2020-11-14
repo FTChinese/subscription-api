@@ -154,14 +154,14 @@ func (env Env) ArchiveLinkCheating(link apple.LinkInput) error {
 
 // Unlink removes FtcUserID from a Subscription, and then delete the
 // membership if this subscription is currently being used as user's default membership.
-func (env Env) Unlink(input apple.LinkInput) (reader.MemberSnapshot, error) {
+func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.BeginTx()
 
 	if err != nil {
-		return reader.MemberSnapshot{}, err
+		return apple.UnlinkResult{}, err
 	}
 
 	// Try to remove ftc_user_id from apple_subscription.
@@ -170,14 +170,14 @@ func (env Env) Unlink(input apple.LinkInput) (reader.MemberSnapshot, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, err
+		return apple.UnlinkResult{}, err
 	}
 
 	// Remove the ftc user id in apple_subscription.
 	// Ignore errors.
 	if sub.FtcUserID.IsZero() || sub.FtcUserID.String != input.FtcID {
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, &render.ValidationError{
+		return apple.UnlinkResult{}, &render.ValidationError{
 			Message: "IAP is not linked to the ftc account",
 			Field:   "ftcId",
 			Code:    render.CodeInvalid,
@@ -188,25 +188,31 @@ func (env Env) Unlink(input apple.LinkInput) (reader.MemberSnapshot, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, err
+		return apple.UnlinkResult{}, err
 	}
 
 	// Find current membership by original transaction id.
 	m, err := tx.RetrieveAppleMember(input.OriginalTxID)
 	if err != nil {
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, err
+		return apple.UnlinkResult{}, err
 	}
-	// If membership is not found, stop.
+
+	// If membership is not found, stop and commit previous operations.
 	if m.IsZero() {
-		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, nil
+		if err := tx.Commit(); err != nil {
+			return apple.UnlinkResult{}, err
+		}
+		return apple.UnlinkResult{
+			IAPSubs:  sub,
+			Snapshot: reader.MemberSnapshot{},
+		}, nil
 	}
 
 	// If the found membership's ftc user id does not match the requested ftc user id, stop.
 	if m.FtcID.String != input.FtcID {
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, &render.ValidationError{
+		return apple.UnlinkResult{}, &render.ValidationError{
 			Message: "IAP is not linked to the ftc account",
 			Field:   "ftcId",
 			Code:    render.CodeInvalid,
@@ -216,15 +222,18 @@ func (env Env) Unlink(input apple.LinkInput) (reader.MemberSnapshot, error) {
 	// Delete this membership.
 	if err := tx.DeleteMember(m.MemberID); err != nil {
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, err
+		return apple.UnlinkResult{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return reader.MemberSnapshot{}, err
+		return apple.UnlinkResult{}, err
 	}
 
 	// Return the snapshot of the membership for archiving.
-	return m.Snapshot(reader.ArchiverAppleUnlink), nil
+	return apple.UnlinkResult{
+		IAPSubs:  sub,
+		Snapshot: m.Snapshot(reader.ArchiverAppleUnlink),
+	}, nil
 }
 
 func (env Env) ArchiveUnlink(link apple.LinkInput) error {

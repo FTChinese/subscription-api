@@ -132,7 +132,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 
 	// This will retrieve membership by apple original transaction id.
 	// So if target does not exists, if will simply gives 404 error.
-	snapshot, err := router.iapRepo.Unlink(input)
+	result, err := router.iapRepo.Unlink(input)
 	if err != nil {
 		var ve *render.ValidationError
 		if errors.As(err, &ve) {
@@ -145,9 +145,11 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		err := router.readerRepo.ArchiveMember(snapshot)
-		if err != nil {
-			sugar.Error(err)
+		if !result.Snapshot.IsZero() {
+			err := router.readerRepo.ArchiveMember(result.Snapshot)
+			if err != nil {
+				sugar.Error(err)
+			}
 		}
 
 		err = router.iapRepo.ArchiveUnlink(input)
@@ -155,12 +157,12 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 			sugar.Error(err)
 		}
 
-		account, err := router.readerRepo.AccountByFtcID(snapshot.FtcID.String)
+		account, err := router.readerRepo.AccountByFtcID(result.Snapshot.FtcID.String)
 		if err != nil {
 			return
 		}
 
-		parcel, err := letter.NewIAPUnlinkParcel(account, snapshot.Membership)
+		parcel, err := letter.NewIAPUnlinkParcel(account, result.IAPSubs)
 		if err != nil {
 			return
 		}
