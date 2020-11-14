@@ -18,6 +18,7 @@ import (
 // Input:
 // ftcId: string;
 // originalTxId: string;
+// force: boolean;
 //
 // Response: the linked Membership.
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
@@ -68,7 +69,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Start to link apple subscription to ftc membership.
-	result, err := router.iapRepo.Link(ftcAccount, sub)
+	result, err := router.iapRepo.Link(ftcAccount, sub, input.Force)
 
 	if err != nil {
 		sugar.Error(err)
