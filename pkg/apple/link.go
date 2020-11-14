@@ -34,6 +34,11 @@ type LinkResult struct {
 	Snapshot reader.MemberSnapshot // Previous memberships. The original membership should be deleted, and then archived. If snapshot exists, them Touched must be always true.
 }
 
+type UnlinkResult struct {
+	IAPSubs  Subscription
+	Snapshot reader.MemberSnapshot
+}
+
 type LinkBuilder struct {
 	Account    reader.FtcAccount
 	CurrentFtc reader.Membership
