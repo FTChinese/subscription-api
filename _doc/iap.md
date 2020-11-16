@@ -33,33 +33,21 @@ Client should take HTTP status above 400 as error. Error response always returne
 * Sandbox: `https://www.ftacademy.cn/api/sandbox`
 * Production: `https://www.ftacademy.cn/api/v1`
 
-### Difference between sandbox and production mode
+Apple provided verification endpoints in sandbox and production mode. So does ours. The sandbox api send verification request to apple's sandbox url while prodution to production url.
 
-The sandbox and production URLs are running the same code base, manipulate the same db and tables. Their difference mostly lies in setting webhook URLs of Alipay, Wxpay, Apple and Stripe, as well as Apple's receipt verification endpint..
-
-### Test Account
-
-When you logged in with a test account, which can be found in Superyard, requests should go to sandbox API; otherwise use production API.
-
-For Alipay and Wxpay, subscription prices will be set to 0.01 so that you don't need to be bothered with refunding.
-
-## Paths
+## Endpoints
 
 * POST `/apple/verify-receipt` Verify a receipt.
 * POST `/apple/link` Link an IAP to an FTC account.
 * POST `/apple/unlink` Unlink IAP from an FTC account.
 * POST `/apple/subs` Verify a receipt and get the essential subscription data.
-* GET `/apple/subs?page=<int>&per_page=<int>` Load a list of existing IAP subscription belong to a user.
+* GET `/apple/subs?page=<int>&per_page=<int>` Load a list of existing IAP subscription belonging to a user.
 * GET `/apple/subs/<original_transaction_id>` Load a single IAP subscription.
-* PATCH `/apple/subs/<original_transaction_id>` Refresh an existing IAP subscription against Apple verification.
+* PATCH `/apple/subs/<original_transaction_id>` Refresh an existing IAP subscription by verifying a receipt previously save for the specified original transaction id.
 * GET `/apple/receipt/<original_transaction_id>` Load a single IAP subscription together with the receipt file.
 * POST `/webhook/apple` Apple's server-to-server notification
 
 ## The verification process
-
-* POST `/apple/verify-receipt`;
-* POST `/apple/subs`;
-* PATCH `/apple/subs`.
 
 1. Send http request to App Store endpoint as required by Apple.
 
@@ -114,6 +102,8 @@ Note the `latest_receipt` is original saved to disk. Later it is also save to Re
   "ftcUserId": "uuid if linked to ftc account; otherwise null"
 }
 ```
+
+The `premium.apple_subscription` table plays a vital role in linking ftc account, as explained Link IAP section.
 
 ## Verify Receipt
 
@@ -171,22 +161,48 @@ POST /apple/link
 
 Links apple subscription to an FTC account. This endpoint does not perform receipt validation. It only checks if an `originalTxId` is found in the current database, and tries to link it to the FTC account if found.
 
-### Request Body
-
-```json
-{
-  "ftcId": "xxxxx",
-  "originalTxId": "xxxxx"
-}
-```
-
-* `ftcId: string` FTC uuid. Required.
-* `originalTxId: string` Apple subscription's original transaction id. Required.
-
 ### Link Policy
 
-When performing linking, we need to take into account current memberships of both FTC side and IAP side. There's a lot of combinations and only a few of them are allowed, as shown by the following table:
+A user might have multiple apple accounts and each have a subscription (it's rare but possible), thus we follow this rule:
 
+    An apple subscription can only be owned by one FTC account, while one FTC account can have multiple apple subscriptions.
+    
+as illustrated by the following diagram:
+
+```
+            |--- IAP 1  
+FTC Account-|--- IAP 2
+            |--- IAP 3
+```
+
+An apple subscription should not be owned by more than one FTC account since it would constitute cheating. This is ensured by database design. Let's see how the `premium.apple_subscription` is defined:
+
+```sql
+CREATE TABLE premium.apple_subscription (
+    PRIMARY KEY (id),
+	id 	INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    environment                 ENUM('sandbox', 'production'),
+    original_transaction_id     VARCHAR(128) NOT NULL,
+                                UNIQUE INDEX (original_transaction_id),
+    last_transaction_id         VARCHAR(128),
+    product_id                  VARCHAR(128),
+    purchase_date_utc           DATETIME,
+    expires_date_utc            DATETIME,
+    tier                        ENUM('standard', 'premium'),
+    cycle                       ENUM('month', 'year'),
+    auto_renewal                BOOL,
+    updated_utc DATETIME,
+    created_utc DATETIME,
+    ftc_user_id                 VARCHAR(36),
+                                INDEX (ftc_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
+
+The presence of `original_transaction_id` and `ftc_user_id` indicates an apple subscription links a ftc account. Since `original_transaction_id` is uniquely constrained, the same value cannot appear twice in this column. While the `ftc_user_id` column is not uniquely constrained, the same FTC id can appear multiple times in this column, in which case it indicates the same FTC id owns multiple apple subscription.
+
+Client should provider user a UI to list all subscriptions under current FTC account, and which one is being used as membership. The UI should allow user to unlink any of the subscription from current FTC account. If there are multiple subscriptions, the UI should also allow user to switch the default one being used as membership.
+ 
+When performing linking, we need to take into account current memberships of both FTC side and IAP side. There's a lot of combinations and only a few of them are allowed, as shown by the following table:
 
 | FTC\IAP     | None   | Not-Expired | Expired |
 | ----------- | ------ | ----------- | ------- |
@@ -197,6 +213,20 @@ When performing linking, we need to take into account current memberships of bot
 For IAP side, it must not have a membership prior to linking; otherwise it indicates IAP is already linked to another FTC and user is  trying to link the same IAP to multiple FTC accounts. Therefore, only the first column has cases to be allowed. Among them, if the FTC side has a non-expired membership as in column 1, row 2, it is not allowed to link since this will cause data overriding. 
 
 Case in Column 1, Row 2 has an edge case: The FTC side might be manually created from an IAP result by customer service. It has no payment method, not expired. Should we allow linking in such case? The answer is non-deterministic. Currently my approach is to compare the expiration date the FTC membership against IAP subscription. The IAP subscription expires later, allow linking; otherwise it is forbidden.
+
+### Request Body
+
+```json
+{
+  "ftcId": "xxxxx",
+  "originalTxId": "xxxxx",
+  "force": false
+}
+```
+
+* `ftcId: string` FTC uuid. Required.
+* `originalTxId: string` Apple subscription's original transaction id. Required.
+* `force: boolean` Force the `ftcId` to link to this `originalTxId` is the `ftcId` is already linked to another apple subscription. This will only happen if user has multiple IAP and want to switch the default one.
 
 ### Workflow
 
@@ -248,7 +278,7 @@ This `ftcId` and `originalTxId` combination is also saved to `premium.apple_chea
 
 11. The two `Membership`s are not equal. So at least one of them exists. If iap side `Membership` is not zero, it means iap already has a membership linked to an FTC account, and now another FTC account is trying to link to it. This is a possible cheating similar to step 5: **multiple ftc, single apple id**.
 
-12. Since iap side has no membership, ftc must have one (otherwise it should fall into step 10). Now we should consider if the ftc side membership is also created from an iap (by checking the `app_subscription_id` column). This indicates the current user is already linked to an iap and now it is trying to link to a new iap. This is the case of a **single ftc, multiple apple id**. Such case might arise when a user switched Apple account and both Apple accounts have subscription. Respond `422`:
+12. Since iap side has no membership, ftc must have one (otherwise it should fall into step 10). Now we should consider a case that the ftc side membership also comes from an iap. This indicates the current membership already used an IAP and now it is trying to switch to the specified `originalTxId`. This is the case of a **single ftc, multiple apple id**. If `force` is set to true, user's current membership data will be overridden by the specified `originalTxId`'s subscription; otherwise Respond `422`:
 
 ```json
 {
@@ -260,7 +290,7 @@ This `ftcId` and `originalTxId` combination is also saved to `premium.apple_chea
 }
 ```
 
-13. Now iap side has no membership while ftc side has membership. The above diagram narrows down to column 1. If ftc side membership is not expired (might purcahse via alipay or wxpay, or Stripe), we should not override it. Respond `422` unless step 14 happens:
+13. Now iap side has no membership while ftc side has membership of non-iap. It narrows down to column 1 of the above combination box. If ftc side membership is not expired (might be purchased via alipay or wxpay, or Stripe), we should not override it. Respond `422` unless step 14 happens:
 
 ```json
 {
@@ -320,9 +350,9 @@ POST /apple/unlink
 
 2. Validate request body. Save as step 2 in `Link IAP`.
 
-3. Start a DB transaction. Retrieve membership by `originalTxId`. Return `404` if membership does not exist.
+3. Start a DB transaction. 
 
-4. If `ftcId` is not equal to membership's `FtcID` field, returns `422` and db transaction rolled back:
+4. Retrieve apple subscription from `premium.apple_subscription` table by `originalTxId`. Return `404` if not found. If the value of `ftc_user_id` column does not match the specified `ftcId`, respond `422`:
 
 ```json
 {
@@ -334,19 +364,29 @@ POST /apple/unlink
 }
 ```
 
-5. Delete this row from `premium.ftc_vip`. Roll back in case of db error.
+5. Set `ftc_user_id` column to null. Now we lost track of a user's subscription, therefore unlinking is not encouraged unless user wants to link this subscription to another FTC account.
 
-6. Retrieve apple subscription by `originalTxId`. Roll back in case of db error.
+6. Next retrieve membership from `premium.ftc_vip` by `apple_subscription_id` column with the value of `originalTxId`. If not found, stop and return no error. Previous actions will be committed.
 
-7. If the subscription's `FtcUserID` field is equal to `ftcId`, set it to null.
+7. If `ftcId` is not equal to membership's `FtcID` field, returns `422` and db transaction rolled back:
 
-8. Commit db transaction.
+```json
+{
+  "message": "IAP is not linked to the ftc account",
+  "error": {
+    "field": "ftcId",
+    "code": "invalid"
+  }
+}
+```
 
-9. The deleted membership is archived into `premium.member_snapshot`.
+8. Delete this row from `premium.ftc_vip`. Roll back in case of db error.
 
-10. The `ftcId` and `originalTxId` is save to `premium.apple_unlink_archive`.
+9. Commit db transaction. A snapshot of current membership is archived to `premium.member_snapshot` if step 8 occurred.
 
-11. An email is sent to user to notify user this unlink operation.
+10. The `ftcId` and `originalTxId` is save to `premium.apple_unlink_archive` for archiving purpose.
+
+11. Send user an email to notify the unlinking happened.
 
 12. Returns `202 No Content` to indicate operation succeeded.
 
@@ -409,11 +449,14 @@ Get a list of Subscription belong to a user. Query parameter `page` specifies th
         "autoRenewal": false,
         "createdUtc": "2020-09-15T04:04:16Z",
         "updatedUtc": "2020-09-18T01:20:06Z",
-        "ftcUserId": ""
+        "ftcUserId": "",
+        "inUse": true
     }
   ]
 }
 ```
+
+`inUse` specifies whether this subscription is used as membership's data. Since a user can have multiple subscription, only one of them is used as the active membership.
 
 ## Load a Single Subscription
 
