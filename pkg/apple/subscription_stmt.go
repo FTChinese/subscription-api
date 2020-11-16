@@ -28,29 +28,33 @@ ftc_user_id = :ftc_user_id
 `
 
 const colsSubs = `
-SELECT environment,
-	original_transaction_id,
-	last_transaction_id,
-	product_id,
-	purchase_date_utc,
-	expires_date_utc,
-	tier,
-	cycle,
-	auto_renewal,
-	created_utc,
-	updated_utc,
-	ftc_user_id
-FROM premium.apple_subscription
+SELECT a.environment,
+	a.original_transaction_id,
+	a.last_transaction_id,
+	a.product_id,
+	a.purchase_date_utc,
+	a.expires_date_utc,
+	a.tier,
+	a.cycle,
+	a.auto_renewal,
+	a.created_utc,
+	a.updated_utc,
+	a.ftc_user_id
 `
 
 const StmtLoadSubs = colsSubs + `
+FROM premium.apple_subscription AS a
 WHERE original_transaction_id = ?
 LIMIT 1`
 
 const StmtLockSubs = StmtLoadSubs + `
 FOR UPDATE`
 
-const StmtListSubs = colsSubs + `
+const StmtListSubs = colsSubs + `,
+	m.apple_subscription_id IS NOT NULL AS in_use
+FROM premium.apple_subscription AS a
+	LEFT JOIN premium.ftc_vip AS m
+	ON a.original_transaction_id = m.apple_subscription_id
 WHERE ftc_user_id = ?
 ORDER BY expires_date_utc DESC
 LIMIT ? OFFSET ?`
