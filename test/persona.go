@@ -327,6 +327,7 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 			TransactionID:    rand.String(28),
 			OrderID:          order.ID,
 			PaidAt:           chrono.TimeNow(),
+			ConfirmedUTC:     chrono.TimeNow(),
 			PayMethod:        enum.PayMethodWx,
 		}
 		return result
@@ -339,6 +340,7 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 			TransactionID:    rand.String(28),
 			OrderID:          order.ID,
 			PaidAt:           chrono.TimeNow(),
+			ConfirmedUTC:     chrono.TimeNow(),
 			PayMethod:        enum.PayMethodAli,
 		}
 
