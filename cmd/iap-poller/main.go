@@ -68,9 +68,5 @@ func main() {
 		return
 	}
 
-	c.Start()
-
-	for {
-		select {}
-	}
+	c.Run()
 }
