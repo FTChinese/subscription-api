@@ -31,7 +31,7 @@ WHERE o.trade_no IS NOT NULL
     AND w.result_code = 'SUCCESS'`
 
 type OrderPoller struct {
-	db *sqlx.DB
+	db *sqlx.DB // Needs delete privilege.
 	ftcpay.FtcPay
 }
 
