@@ -5,7 +5,7 @@ import "github.com/FTChinese/subscription-api/pkg/subs"
 func (env Env) ListProratedOrders(upOrderID string) ([]subs.ProratedOrder, error) {
 	var po = make([]subs.ProratedOrder, 0)
 
-	err := env.db.Select(
+	err := env.rwdDB.Select(
 		&po,
 		subs.StmtListProratedOrders,
 		upOrderID)

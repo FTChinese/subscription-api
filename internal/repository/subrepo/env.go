@@ -8,7 +8,7 @@ import (
 
 // Env wraps database connection
 type Env struct {
-	db     *sqlx.DB
+	rwdDB  *sqlx.DB // Need delete privilege.
 	logger *zap.Logger
 }
 
@@ -16,13 +16,13 @@ type Env struct {
 // `sandbox` is used to determine which table to write subscription data.
 func NewEnv(db *sqlx.DB, logger *zap.Logger) Env {
 	return Env{
-		db:     db,
+		rwdDB:  db,
 		logger: logger,
 	}
 }
 
 func (env Env) BeginOrderTx() (txrepo.MemberTx, error) {
-	tx, err := env.db.Beginx()
+	tx, err := env.rwdDB.Beginx()
 
 	if err != nil {
 		return txrepo.MemberTx{}, err
