@@ -96,7 +96,7 @@ func (env Env) CreateOrder(config subs.PaymentConfig) (subs.PaymentIntent, error
 }
 
 func (env Env) ProratedOrdersUsed(upOrderID string) error {
-	_, err := env.db.Exec(
+	_, err := env.rwdDB.Exec(
 		subs.StmtProratedOrdersUsed,
 		upOrderID,
 	)
@@ -109,7 +109,7 @@ func (env Env) ProratedOrdersUsed(upOrderID string) error {
 
 func (env Env) LogOrderMeta(m subs.OrderMeta) error {
 
-	_, err := env.db.NamedExec(
+	_, err := env.rwdDB.NamedExec(
 		subs.StmtInsertOrderMeta,
 		m)
 
@@ -124,7 +124,7 @@ func (env Env) LogOrderMeta(m subs.OrderMeta) error {
 func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 	var order subs.Order
 
-	err := env.db.Get(
+	err := env.rwdDB.Get(
 		&order,
 		subs.StmtSelectOrder,
 		orderID)
@@ -144,7 +144,7 @@ func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 func (env Env) orderHeader(orderID string) (subs.Order, error) {
 	var order subs.Order
 
-	err := env.db.Get(
+	err := env.rwdDB.Get(
 		&order,
 		subs.StmtOrderHeader,
 		orderID)
@@ -159,7 +159,7 @@ func (env Env) orderHeader(orderID string) (subs.Order, error) {
 func (env Env) orderTail(orderID string) (subs.Order, error) {
 	var order subs.Order
 
-	err := env.db.Get(
+	err := env.rwdDB.Get(
 		&order,
 		subs.StmtOrderTail,
 		orderID)
