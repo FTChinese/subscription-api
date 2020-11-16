@@ -10,7 +10,6 @@ import (
 	"github.com/guregu/null"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -28,6 +27,13 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	order2 := p2.CreateOrder()
 	t.Logf("Wx Order id %s", order2.ID)
 	repo.MustSaveOrder(order2)
+
+	p3 := test.NewPersona().SetAccountKind(enum.AccountKindWx)
+	repo.MustSaveMembership(p3.Membership())
+	p3.SetAccountKind(enum.AccountKindLinked)
+	order3 := p3.CreateOrder()
+	t.Logf("Order for linked account %s", order3.ID)
+	repo.MustSaveOrder(order3)
 
 	env := NewEnv(test.DB, zaptest.NewLogger(t))
 
@@ -56,6 +62,13 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Confirmed linked account order",
+			args: args{
+				result: p3.PaymentResult(order3),
+				order:  order3,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -63,12 +76,11 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			t.Logf("Payment result: %+v", tt.args.result)
 
 			got, err := env.ConfirmOrder(tt.args.result, tt.args.order)
-			if tt.wantErr {
-				assert.NotNil(t, err)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ConfirmOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			assert.Nil(t, err)
 			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
@@ -107,7 +119,7 @@ func TestEnv_SaveConfirmationErr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db:     tt.fields.db,
+				rwdDB:  tt.fields.db,
 				logger: tt.fields.logger,
 			}
 			if err := env.SaveConfirmErr(tt.args.e); (err != nil) != tt.wantErr {
