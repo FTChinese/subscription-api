@@ -11,7 +11,7 @@ import (
 func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
 
 	defer env.logger.Sync()
-	sugar := env.logger.Sugar().With("orderId", result.OrderID)
+	sugar := env.logger.Sugar().With("orderId", result.OrderID).With("name", "ConfirmOrder")
 
 	sugar.Info("Start confirming order")
 	tx, err := env.BeginOrderTx()
@@ -57,6 +57,8 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
+	sugar.Infof("Existing membership retrieved %v", member)
+
 	// STEP 3: validate the retrieved order.
 	// This order might be invalid for upgrading.
 	// If user is already a premium member and this order is used
@@ -81,7 +83,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 
 	// STEP 5: Update confirmed order
 	// For any errors, allow retry.
-	sugar.Info("Persist confirmed order")
+	sugar.Info("Update confirmed order")
 	if err := tx.ConfirmOrder(confirmed.Order); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -90,22 +92,29 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 
 	// STEP 7: Insert or update membership.
 	// This error should allow retry
-	if member.IsZero() {
-		sugar.Infof("Inserting membership %v", confirmed.Membership)
-		err := tx.CreateMember(confirmed.Membership)
+	// A problem of low possibility discovered
+	// when using the policy of updating membership if exists:
+	// If current membership is purchased from wechat, the vip_id
+	// is union id.
+	// Later user linked wechat to FTC  account; however, uuid is not
+	// added to vip table for some unknown reason (probably due to manually changing data)
+	// Then a new order is created, new membership created with both ids.
+	// Since FTC uuid have higher priority, it will be used as the value of vip_id to update this row, which is actually the value of union id!
+	if !member.IsZero() {
+		sugar.Infof("Deleting old membership %v", member)
+		err := tx.DeleteMember(member.MemberID)
 		if err != nil {
-			sugar.Error(err)
 			_ = tx.Rollback()
-			return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
-		}
-	} else {
-		sugar.Infof("Updating membership %v", confirmed.Membership)
-		err := tx.UpdateMember(confirmed.Membership)
-		if err != nil {
 			sugar.Error(err)
-			_ = tx.Rollback()
-			return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 		}
+	}
+
+	sugar.Infof("Inserting membership %v", confirmed.Membership)
+	err = tx.CreateMember(confirmed.Membership)
+	if err != nil {
+		sugar.Error(err)
+		_ = tx.Rollback()
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -113,13 +122,13 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
-	sugar.Infof("Order %s confirmed", result.OrderID)
+	sugar.Info("Order confirmation finished")
 
 	return confirmed, nil
 }
 
 func (env Env) SaveConfirmErr(e *subs.ConfirmError) error {
-	_, err := env.db.NamedExec(
+	_, err := env.rwdDB.NamedExec(
 		subs.StmtSaveConfirmResult,
 		e)
 
@@ -135,7 +144,7 @@ func (env Env) SavePayResult(result subs.PaymentResult) error {
 		return nil
 	}
 
-	_, err := env.db.NamedExec(subs.StmtSavePayResult, result)
+	_, err := env.rwdDB.NamedExec(subs.StmtSavePayResult, result)
 	if err != nil {
 		return err
 	}
