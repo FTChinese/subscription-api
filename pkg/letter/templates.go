@@ -90,12 +90,12 @@ FT中文网用户 {{.UserName}},
 	keyIAPUnlinked: `
 FT中文网用户 {{.UserName}},
 
-您的FT中文网账号 {{.Email}} 已经取消了与iOS平台上订阅的FT中文网会员服务的关联。
+您的FT中文网账号 {{.Email}} 已经移除了一项关联的iOS平台的FT中文网订阅。
 
 订阅产品：{{.Tier.StringCN}}
 到期日期：{{.ExpireDate}}
 
-该订阅可以关联其他FT中文网账号。
+您可以在使用该订阅的苹果设备登录FT中文网账号后可以重新绑定。
 
 感谢您对FT中文网的支持。如需帮助，请联系客服：subscriber.service@ftchinese.com。`,
 }

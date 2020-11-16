@@ -1,7 +1,9 @@
 package letter
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
@@ -129,12 +131,12 @@ func NewIAPLinkParcel(account reader.FtcAccount, m reader.Membership) (postoffic
 	}, nil
 }
 
-func NewIAPUnlinkParcel(account reader.FtcAccount, m reader.Membership) (postoffice.Parcel, error) {
+func NewIAPUnlinkParcel(account reader.FtcAccount, m apple.Subscription) (postoffice.Parcel, error) {
 	ctx := CtxIAPLinked{
 		UserName:   account.NormalizeName(),
 		Email:      account.Email,
 		Tier:       m.Tier,
-		ExpireDate: m.ExpireDate,
+		ExpireDate: chrono.DateFrom(m.ExpiresDateUTC.Time),
 	}
 
 	body, err := RenderIAPUnlinked(ctx)
@@ -147,7 +149,7 @@ func NewIAPUnlinkParcel(account reader.FtcAccount, m reader.Membership) (postoff
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   account.Email,
 		ToName:      ctx.UserName,
-		Subject:     "取消关联iOS订阅",
+		Subject:     "移除关联iOS订阅",
 		Body:        body,
 	}, nil
 }
