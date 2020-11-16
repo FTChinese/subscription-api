@@ -79,5 +79,5 @@ LIMIT 1`
 // Delete old membership when linking to IAP.
 const StmtDeleteMember = `
 DELETE FROM premium.ftc_vip
-WHERE  vip_id = :compound_id
+WHERE vip_id = :compound_id
 LIMIT 1`
