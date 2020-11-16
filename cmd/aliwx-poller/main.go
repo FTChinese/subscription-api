@@ -36,11 +36,11 @@ func init() {
 
 func main() {
 	logger := config.MustGetLogger(production)
-	myDB := db.MustNewMySQL(config.MustMySQLMasterConn(production))
+	rwdMyDB := db.MustNewMySQL(config.MustMySQLAPIConn(production))
 
 	log.Println("Launching ali-wx poller...")
 
-	poller := poll.NewOrderPoller(myDB, logger)
+	poller := poll.NewOrderPoller(rwdMyDB, logger)
 	defer poller.Close()
 
 	if run {

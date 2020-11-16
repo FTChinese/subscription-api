@@ -33,9 +33,9 @@ func StartServer(s ServerStatus) {
 
 	stripe.Key = cfg.MustStripeAPIKey()
 
-	dbRW := db.MustNewMySQL(config.MustMySQLMasterConn(s.Production))
+	rwMyDB := db.MustNewMySQL(config.MustMySQLMasterConn(s.Production))
 	// DB connection with delete privilege.
-	dbRWD := db.MustNewMySQL(config.MustMySQLAPIConn(s.Production))
+	rwdMyDB := db.MustNewMySQL(config.MustMySQLAPIConn(s.Production))
 
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
@@ -44,16 +44,16 @@ func StartServer(s ServerStatus) {
 
 	post := postoffice.New(config.MustGetHanqiConn())
 
-	guard := access.NewGuard(dbRW)
+	guard := access.NewGuard(rwMyDB)
 
-	payRouter := controller.NewSubsRouter(dbRW, promoCache, cfg, post, logger)
-	iapRouter := controller.NewIAPRouter(dbRWD, rdb, logger, post, cfg)
-	stripeRouter := controller.NewStripeRouter(dbRW, cfg, logger)
+	payRouter := controller.NewSubsRouter(rwdMyDB, promoCache, cfg, post, logger)
+	iapRouter := controller.NewIAPRouter(rwdMyDB, rdb, logger, post, cfg)
+	stripeRouter := controller.NewStripeRouter(rwMyDB, cfg, logger)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := controller.NewPaywallRouter(dbRW, promoCache, logger)
+	paywallRouter := controller.NewPaywallRouter(rwMyDB, promoCache, logger)
 
-	wxAuth := controller.NewWxAuth(dbRW, logger)
+	wxAuth := controller.NewWxAuth(rwMyDB, logger)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
