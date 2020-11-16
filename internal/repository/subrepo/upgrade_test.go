@@ -69,7 +69,7 @@ func TestEnv_UpgradeIntent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db:     tt.fields.db,
+				rwdDB:  tt.fields.db,
 				logger: tt.fields.logger,
 			}
 			got, err := env.UpgradeIntent(tt.args.config)

@@ -47,7 +47,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db:     tt.fields.db,
+				rwdDB:  tt.fields.db,
 				logger: tt.fields.logger,
 			}
 			got, err := env.CreateOrder(tt.args.config)
@@ -99,7 +99,7 @@ func TestEnv_ProratedOrdersUsed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db:     tt.fields.db,
+				rwdDB:  tt.fields.db,
 				logger: tt.fields.logger,
 			}
 			if err := env.ProratedOrdersUsed(tt.args.upOrderID); (err != nil) != tt.wantErr {
@@ -141,7 +141,7 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db:     tt.fields.db,
+				rwdDB:  tt.fields.db,
 				logger: tt.fields.logger,
 			}
 			if err := env.LogOrderMeta(tt.args.m); (err != nil) != tt.wantErr {
@@ -186,7 +186,7 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db:     tt.fields.db,
+				rwdDB:  tt.fields.db,
 				logger: tt.fields.logger,
 			}
 			got, err := env.RetrieveOrder(tt.args.orderID)

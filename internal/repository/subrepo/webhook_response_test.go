@@ -14,7 +14,7 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 	p := test.NewPersona()
 
 	env := Env{
-		db: test.DB,
+		rwdDB: test.DB,
 	}
 
 	type args struct {
@@ -48,7 +48,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 	or := test.NewWxOrderUnsigned()
 
 	env := Env{
-		db: test.DB,
+		rwdDB: test.DB,
 	}
 
 	type args struct {
@@ -84,7 +84,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 	noti := test.NewWxWHUnsigned(p.CreateOrder())
 
 	env := Env{
-		db: test.DB,
+		rwdDB: test.DB,
 	}
 
 	type args struct {
