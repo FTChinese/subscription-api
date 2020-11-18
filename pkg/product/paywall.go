@@ -1,6 +1,7 @@
 package product
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/guregu/null"
 )
 
@@ -19,7 +20,7 @@ type Promo struct {
 	CoverURL   null.String `json:"coverUrl" db:"promo_cover_url"`
 	Content    null.String `json:"content" db:"promo_content"`
 	Terms      null.String `json:"terms" db:"terms_conditions"`
-	Period
+	dt.DateTimeRange
 }
 
 // BannerSchema represents data when retrieving banner by joining promo.

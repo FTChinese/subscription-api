@@ -1,6 +1,7 @@
 package product
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/guregu/null"
 	"time"
 )
@@ -10,7 +11,7 @@ type Discount struct {
 	DiscID   null.String `json:"id" db:"discount_id"`
 	PriceOff null.Float  `json:"priceOff" db:"price_off"`
 	Percent  null.Int    `json:"percent" db:"percent"`
-	Period
+	dt.DateTimeRange
 	Description null.String `json:"description" db:"discount_desc"`
 }
 
