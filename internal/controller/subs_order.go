@@ -76,6 +76,8 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 
 	sugar = sugar.With("orderId", orderID)
 
+	sugar.Info("Start verifying payment")
+
 	order, err := router.SubsRepo.LoadFullOrder(orderID)
 	if err != nil {
 		sugar.Error(err)
@@ -105,7 +107,7 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 		}
 	}()
 
-	if !payResult.IsOrderPaid() || order.IsConfirmed() {
+	if !payResult.IsOrderPaid() {
 		sugar.Info("Order is either not paid or already confirmed")
 
 		m, err := router.ReaderRepo.RetrieveMember(order.MemberID)

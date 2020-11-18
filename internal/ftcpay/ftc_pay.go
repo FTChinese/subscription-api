@@ -93,6 +93,12 @@ func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (sub
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
+	sugar.Info("Validate payment result")
+	if err := order.ValidatePayment(result); err != nil {
+		sugar.Error(err)
+		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
+	}
+
 	confirmed, cfmErr := pay.SubsRepo.ConfirmOrder(result, order)
 	if cfmErr != nil {
 		go func() {
