@@ -3,6 +3,7 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -194,15 +195,15 @@ func (c PaymentConfig) BuildOrder(checkout Checkout) (Order, error) {
 			Amount:   checkout.Payable.Amount,
 			Currency: checkout.Payable.Currency,
 		},
-		Duration:        checkout.Duration,
-		Kind:            checkout.Kind,
-		PaymentMethod:   c.Method,
-		TotalBalance:    null.NewFloat(checkout.Wallet.Balance, checkout.Wallet.Balance != 0),
-		WxAppID:         c.WxAppID,
-		PurchasedPeriod: PurchasedPeriod{},
-		CreatedAt:       chrono.TimeNow(),
-		ConfirmedAt:     chrono.Time{},
-		LiveMode:        checkout.LiveMode,
+		Duration:      checkout.Duration,
+		Kind:          checkout.Kind,
+		PaymentMethod: c.Method,
+		TotalBalance:  null.NewFloat(checkout.Wallet.Balance, checkout.Wallet.Balance != 0),
+		WxAppID:       c.WxAppID,
+		DateRange:     dt.DateRange{},
+		CreatedAt:     chrono.TimeNow(),
+		ConfirmedAt:   chrono.Time{},
+		LiveMode:      checkout.LiveMode,
 	}, nil
 }
 
@@ -244,21 +245,18 @@ func (c PaymentConfig) UpgradeIntent(bs []BalanceSource, m reader.Membership) (U
 	}
 
 	confirmedAt := chrono.TimeNow()
-	period, err := NewPeriodBuilder(
-		c.Plan.Edition,
+	dateRange, err := product.NewDurationBuilder(
+		c.Plan.Cycle,
 		checkout.Duration,
-	).Build(chrono.DateNow())
+	).ToDateRange(chrono.DateNow())
 	if err != nil {
 		return UpgradeIntent{}, err
 	}
 
 	order.ConfirmedAt = confirmedAt
-	order.PurchasedPeriod = period
+	order.DateRange = dateRange
 
-	newMember, err := order.Membership()
-	if err != nil {
-		return UpgradeIntent{}, err
-	}
+	newMember := order.newMembership()
 
 	intent.Result = ConfirmationResult{
 		Order:      order,
