@@ -46,7 +46,7 @@ type Membership struct {
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
 	FtcPlanID     null.String    `json:"ftcPlanId" db:"ftc_plan_id"`
 	StripeSubsID  null.String    `json:"stripeSubsId" db:"stripe_subs_id"`
-	StripePlanID  null.String    `json:"stripePlanId" db:"stripe_plan_id"`
+	StripePlanID  null.String    `json:"-" db:"stripe_plan_id"`
 	AutoRenewal   bool           `json:"autoRenew" db:"auto_renewal"`
 	// This is used to save stripe subscription status.
 	// Since wechat and alipay treats everything as one-time purchase, they do not have a complex state machine.
