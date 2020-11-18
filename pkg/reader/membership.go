@@ -23,6 +23,12 @@ var codeToTier = map[int64]enum.Tier{
 	100: enum.TierPremium,
 }
 
+// AddOn specifies extra days that can be used after current expiration date reached.
+type AddOn struct {
+	Standard int64 `json:"standardAddOn" db:"standard_addon"`
+	Premium  int64 `json:"premiumAddOn" db:"premium_addon"`
+}
+
 // Membership contains a user's membership details
 // This is actually called subscription by Stripe.
 // A membership might be create from various sources:
