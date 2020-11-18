@@ -17,6 +17,13 @@ func TestOrder_Confirm(t *testing.T) {
 	pi := NewPayment(account, planStdYear).WithAlipay()
 
 	order, err := pi.BuildOrder(pi.Checkout(nil, enum.OrderKindCreate))
+
+	order2, err := pi.BuildOrder(pi.Checkout(nil, enum.OrderKindCreate))
+	assert.Nil(t, err)
+	order2.ConfirmedAt = chrono.TimeNow()
+	order2.StartDate = chrono.DateNow()
+	order2.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 0))
+
 	if err != nil {
 		t.Error(err)
 	}
@@ -48,6 +55,22 @@ func TestOrder_Confirm(t *testing.T) {
 				m: reader.Membership{},
 			},
 			wantErr: false,
+		},
+		{
+			name:  "Already confirmed but out of sync",
+			order: order2,
+			args: args{
+				pr: PaymentResult{
+					PaymentState:  ali.TradeStatusSuccess,
+					Amount:        null.IntFrom(12800),
+					TransactionID: "1234",
+					OrderID:       order.ID,
+					PaidAt:        chrono.TimeNow(),
+					ConfirmedUTC:  chrono.TimeNow(),
+					PayMethod:     enum.PayMethodAli,
+				},
+				m: reader.Membership{},
+			},
 		},
 	}
 	for _, tt := range tests {
