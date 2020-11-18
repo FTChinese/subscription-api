@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -40,7 +41,7 @@ type Order struct {
 	WxAppID       null.String    `json:"-" db:"wx_app_id"`                // Wechat specific. Used by webhook to verify notification.
 	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
-	PurchasedPeriod
+	dt.DateRange
 	LiveMode bool `json:"live"`
 }
 
@@ -83,13 +84,9 @@ func (o Order) pickStartDate(expireDate chrono.Date) chrono.Date {
 	return expireDate
 }
 
-// Membership build a membership based on this order.
-// The order must be already confirmed.
-func (o Order) Membership() (reader.Membership, error) {
-	if !o.IsConfirmed() {
-		return reader.Membership{}, fmt.Errorf("order %s used to build membership is not confirmed yet", o.ID)
-	}
-
+// Build a new membership by copying data from an order.
+// The order must be already confirmed and have start date and end date.
+func (o Order) newMembership() reader.Membership {
 	return reader.Membership{
 		MemberID:      o.MemberID,
 		Edition:       o.Edition,
@@ -104,7 +101,7 @@ func (o Order) Membership() (reader.Membership, error) {
 		Status:        enum.SubsStatusNull,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
-	}, nil
+	}
 }
 
 // Confirm an order based on existing membership.
@@ -115,22 +112,42 @@ func (o Order) Membership() (reader.Membership, error) {
 // If this order is used for upgrading, it always starts
 // at now.
 func (o Order) Confirm(pr PaymentResult, m reader.Membership) (ConfirmationResult, error) {
+
+	if o.IsConfirmed() {
+		// In case the order is confirmed but end time is not synced.
+		var outOfSync = m.ExpireDate.Before(o.EndDate.Time)
+		var snapshot reader.MemberSnapshot
+		// If out of sync, you need to update membership.
+		if outOfSync {
+			if !m.IsZero() {
+				snapshot = m.Snapshot(reader.FtcArchiver(o.Kind))
+			}
+			m = o.newMembership()
+		}
+
+		// Nothing changed. No need to touch db. Send directly to client.
+		return ConfirmationResult{
+			orderModified: false,
+			Order:         o,
+			memberUpdated: outOfSync,
+			Membership:    m,
+			Payment:       pr,
+			Snapshot:      snapshot,
+		}, nil
+	}
+
 	o.ConfirmedAt = pr.ConfirmedUTC
 
-	period, err := NewPeriodBuilder(
-		o.Edition,
+	dateRange, err := product.NewDurationBuilder(
+		o.Cycle,
 		o.Duration).
-		Build(o.pickStartDate(m.ExpireDate))
+		ToDateRange(o.pickStartDate(m.ExpireDate))
+
 	if err != nil {
 		return ConfirmationResult{}, err
 	}
 
-	o.PurchasedPeriod = period
-
-	newMember, err := o.Membership()
-	if err != nil {
-		return ConfirmationResult{}, err
-	}
+	o.DateRange = dateRange
 
 	snapshot := m.Snapshot(reader.FtcArchiver(o.Kind))
 	if !m.IsZero() {
@@ -138,9 +155,11 @@ func (o Order) Confirm(pr PaymentResult, m reader.Membership) (ConfirmationResul
 	}
 
 	return ConfirmationResult{
-		Order:      o,
-		Membership: newMember,
-		Snapshot:   snapshot,
-		Payment:    pr,
+		orderModified: true,
+		Order:         o,
+		memberUpdated: true,
+		Membership:    o.newMembership(),
+		Payment:       pr,
+		Snapshot:      snapshot,
 	}, nil
 }
