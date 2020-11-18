@@ -2,7 +2,6 @@ package subrepo
 
 import (
 	"database/sql"
-	"errors"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
@@ -20,31 +19,16 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
-	// Step 1: Find the subscription order by order id
-	// The row is locked for update.
+	// Step 1: Find the order by order id and lock it.
+	sugar.Info("Start locking order")
+	_, err = tx.LockOrder(result.OrderID)
 	// If the order is not found, or is already confirmed,
 	// tell provider not sending notification any longer;
 	// otherwise, allow retry.
-	sugar.Info("Start locking order")
-	lo, err := tx.LockOrder(result.OrderID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), err != sql.ErrNoRows)
-	}
-
-	if !lo.ConfirmedAt.IsZero() {
-		_ = tx.Rollback()
-		err := errors.New("duplicate confirmation")
-		sugar.Error(err)
-		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
-	}
-
-	sugar.Info("Validate payment result")
-	if err := order.ValidatePayment(result); err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
 	}
 
 	// STEP 2: query membership
@@ -81,13 +65,23 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
-	// STEP 5: Update confirmed order
-	// For any errors, allow retry.
-	sugar.Info("Update confirmed order")
-	if err := tx.ConfirmOrder(confirmed.Order); err != nil {
-		sugar.Error(err)
+	// If order modified, membership must be modified.
+	// If order is not modified, membership might still be modified.
+	if !confirmed.Modified() {
+		sugar.Error("Both order and membership not modified")
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
+		return confirmed, nil
+	}
+
+	// STEP 5: Update confirmed order if acutally changed.
+	// For any errors, allow retry.
+	if confirmed.ShouldUpdateOrder() {
+		sugar.Info("Update confirmed order")
+		if err := tx.ConfirmOrder(confirmed.Order); err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
+		}
 	}
 
 	// STEP 7: Insert or update membership.

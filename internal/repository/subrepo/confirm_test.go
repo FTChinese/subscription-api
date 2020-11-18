@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"testing"
+	"time"
 )
 
 func TestEnv_ConfirmOrder(t *testing.T) {
@@ -34,6 +35,23 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	order3 := p3.CreateOrder()
 	t.Logf("Order for linked account %s", order3.ID)
 	repo.MustSaveOrder(order3)
+
+	p4 := test.NewPersona()
+	order4 := p4.CreateOrder()
+	order4.ConfirmedAt = chrono.TimeNow()
+	order4.StartDate = chrono.DateNow()
+	order4.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 0))
+	t.Logf("Confirmed order %v", order4)
+	repo.MustSaveOrder(order4)
+
+	p5 := test.NewPersona().SetExpired(true)
+	repo.MustSaveMembership(p5.Membership())
+	order5 := p5.CreateOrder()
+	order5.ConfirmedAt = chrono.TimeNow()
+	order5.StartDate = chrono.DateNow()
+	order5.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 0))
+	t.Logf("Confirmed order without sync %v", order4)
+	repo.MustSaveOrder(order5)
 
 	env := NewEnv(test.DB, zaptest.NewLogger(t))
 
@@ -68,6 +86,23 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 				result: p3.PaymentResult(order3),
 				order:  order3,
 			},
+			wantErr: false,
+		},
+		{
+			name: "Confirmed order without membership",
+			args: args{
+				result: p4.PaymentResult(order4),
+				order:  order4,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Confirmed order without sync membership",
+			args: args{
+				result: p5.PaymentResult(order5),
+				order:  order5,
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
