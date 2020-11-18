@@ -3,6 +3,7 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
@@ -36,7 +37,7 @@ var planStdYear = product.ExpandedPlan{
 		DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
 		PriceOff: null.FloatFrom(130),
 		Percent:  null.Int{},
-		Period: product.Period{
+		DateTimeRange: dt.DateTimeRange{
 			StartUTC: chrono.TimeNow(),
 			EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 2)),
 		},
