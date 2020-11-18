@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 
@@ -82,14 +83,14 @@ func MockOrder() Order {
 			CycleCount: 1,
 			ExtraDays:  1,
 		},
-		Kind:            enum.OrderKindCreate,
-		PaymentMethod:   enum.PayMethodAli,
-		TotalBalance:    null.Float{},
-		WxAppID:         null.String{},
-		CreatedAt:       chrono.TimeNow(),
-		ConfirmedAt:     chrono.Time{},
-		PurchasedPeriod: PurchasedPeriod{},
-		LiveMode:        true,
+		Kind:          enum.OrderKindCreate,
+		PaymentMethod: enum.PayMethodAli,
+		TotalBalance:  null.Float{},
+		WxAppID:       null.String{},
+		CreatedAt:     chrono.TimeNow(),
+		ConfirmedAt:   chrono.Time{},
+		DateRange:     dt.DateRange{},
+		LiveMode:      true,
 	}
 }
 
