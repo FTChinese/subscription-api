@@ -44,7 +44,7 @@ type LinkBuilder struct {
 	CurrentFtc reader.Membership
 	CurrentIAP reader.Membership
 	IAPSubs    Subscription
-	Force      bool // If CurrentFtc is already linked to another Subscription, the link request should be denied unless False is explicitly set to true.
+	Force      bool // If CurrentFtc is already linked to another Subscription, the link request should be denied unless Force is explicitly set to true.
 }
 
 // Build links IAP subscription to an existing FTC account.
