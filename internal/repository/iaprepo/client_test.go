@@ -40,3 +40,15 @@ func TestClient_Verify(t *testing.T) {
 		})
 	}
 }
+
+func TestClient_VerifyAndValidate(t *testing.T) {
+	c := NewClient(zaptest.NewLogger(t))
+
+	resp, err := c.VerifyAndValidate(faker.IAPReceipt, true)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("Verification response %v", resp)
+}
