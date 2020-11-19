@@ -421,7 +421,7 @@ If succeeded, the response body will be an instance of `apple.Subscription`:
 
 ## List Subscription
 
-Required header: `X-Ftc-Id: <uuid>`
+Required header: `X-User-Id: <uuid>`
 
 ```
 GET /apple/subs?page=<int>&per_page<int>

@@ -49,7 +49,7 @@ func NewWxAuth(db *sqlx.DB, logger *zap.Logger) WxAuthRouter {
 // Client should also include the app id issued by Wechat which it used to apply for the code.
 // Since the code is bound to the app id, this API must know which which app id to use to perform the folowing steps.
 // Use the `X-App-Id` key in request header.
-// Returns a Session wxlogin.Session instance. Client could then fetch user account with the the UnionID field.
+// Returns a Session wxlogin.Session instance. Client could then fetch user account with the the RequireUnionID field.
 //
 // Request:
 // body {code: xxxxx}

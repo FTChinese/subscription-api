@@ -34,7 +34,7 @@ func NoCache(next http.Handler) http.Handler {
 //
 // - 401 Unauthorized if request header does not have `X-User-Name`,
 // or the value is empty.
-func UserOrUnionID(next http.Handler) http.Handler {
+func RequireFtcOrUnionID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		userID := req.Header.Get(userIDKey)
 		unionID := req.Header.Get(unionIDKey)
@@ -57,20 +57,18 @@ func UserOrUnionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// FtcID middleware makes sure all request header contains `X-User-Id` field.
+// RequireFtcID middleware makes sure all request header contains `X-User-Id` field.
 //
 // - 401 Unauthorized if request header does not have `X-User-Name`,
 // or the value is empty.
-func FtcID(next http.Handler) http.Handler {
+func RequireFtcID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		userID := req.Header.Get(userIDKey)
-		ftcID := req.Header.Get(ftcIDKey)
 
 		userID = strings.TrimSpace(userID)
-		ftcID = strings.TrimSpace(ftcID)
 
-		if userID == "" && ftcID == "" {
-			log.Print("Missing X-Ftc-Id header")
+		if userID == "" {
+			log.Print("Missing X-User-Id header")
 
 			_ = render.New(w).Unauthorized("")
 
@@ -85,20 +83,11 @@ func FtcID(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func GetFtcID(req *http.Request) string {
-	ftcID := req.Header.Get(ftcIDKey)
-	if ftcID != "" {
-		return ftcID
-	}
-
-	return req.Header.Get(userIDKey)
-}
-
 // CheckUnionID middleware makes sure all request header contains `X-Union-Id` field.
 //
 // - 401 Unauthorized if request header does not have `X-User-Name`,
 // or the value is empty.
-func UnionID(next http.Handler) http.Handler {
+func RequireUnionID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		unionID := req.Header.Get(unionIDKey)
 

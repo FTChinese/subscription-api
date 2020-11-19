@@ -65,34 +65,34 @@ func StartServer(s ServerStatus) {
 	r.Route("/wxpay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
-		r.Use(controller.UserOrUnionID)
+		r.Use(controller.RequireFtcOrUnionID)
 
 		// Create a new subscription for desktop browser
 		// Deprecated
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/desktop/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeDesktop))
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/desktop", payRouter.PlaceWxOrder(wechat.TradeTypeDesktop))
 
 		// Create an order for mobile browser
 		// Deprecated
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/mobile/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeMobile))
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/mobile", payRouter.PlaceWxOrder(wechat.TradeTypeMobile))
 
 		// Create an order for wx-embeded browser
 		// Deprecated
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/jsapi/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeJSAPI))
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/jsapi", payRouter.PlaceWxOrder(wechat.TradeTypeJSAPI))
 
 		// Creat ean order for native app
 		// Deprecated
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/app/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeApp))
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/app", payRouter.PlaceWxOrder(wechat.TradeTypeApp))
 
 		// Query order
@@ -106,23 +106,23 @@ func StartServer(s ServerStatus) {
 
 		// Create an order for desktop browser
 		// Deprecated
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/desktop/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryDesktopWeb))
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/desktop", payRouter.PlaceAliOrder(ali.EntryDesktopWeb))
 
 		// Create an order for mobile browser
 		// Deprecated
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/mobile/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryMobileWeb))
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/mobile", payRouter.PlaceAliOrder(ali.EntryMobileWeb))
 
 		// Create an order for native app.
 		// Deprecated
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/app/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryApp))
-		r.With(controller.UserOrUnionID).
+		r.With(controller.RequireFtcOrUnionID).
 			Post("/app", payRouter.PlaceAliOrder(ali.EntryApp))
 
 		// Deprecated.
@@ -131,7 +131,7 @@ func StartServer(s ServerStatus) {
 
 	r.Route("/upgrade", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.UserOrUnionID)
+		r.Use(controller.RequireFtcOrUnionID)
 		r.Get("/balance", payRouter.PreviewUpgrade)
 		// Get membership information when user want to upgrade: days remaining, account balance, amount
 		r.Put("/free", payRouter.FreeUpgrade)
@@ -152,7 +152,7 @@ func StartServer(s ServerStatus) {
 
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.FtcID)
+		r.Use(controller.RequireFtcID)
 
 		// Get a stripe plan.
 		r.Get("/plans/{id}", stripeRouter.GetPlan)
@@ -196,7 +196,7 @@ func StartServer(s ServerStatus) {
 		// Load one subscription.
 
 		// ?page=<int>&per_page<int>
-		r.With(controller.FtcID).Get("/subs", iapRouter.ListSubs)
+		r.With(controller.RequireFtcID).Get("/subs", iapRouter.ListSubs)
 		// Load a single subscription.
 		r.Get("/subs/{id}", iapRouter.LoadSubs)
 		// Refresh an existing subscription of an original transaction id.
