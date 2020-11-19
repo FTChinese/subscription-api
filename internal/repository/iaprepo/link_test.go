@@ -77,54 +77,38 @@ func TestEnv_Link(t *testing.T) {
 	repo.MustSaveMembership(p2.Membership())
 	repo.MustSaveMembership(p3.Membership())
 
-	type fields struct {
-		db     *sqlx.DB
-		rdb    *redis.Client
-		logger *zap.Logger
-	}
+	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
+
 	type args struct {
 		account reader.FtcAccount
 		sub     apple.Subscription
+		force   bool
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Both sides have no existing membership",
-			fields: fields{
-				db:     test.DB,
-				rdb:    test.Redis,
-				logger: zaptest.NewLogger(t),
-			},
 			args: args{
 				account: test.NewPersona().FtcAccount(),
 				sub:     test.NewPersona().IAPSubs(),
+				force:   false,
 			},
 			wantErr: false,
 		},
 		{
 			name: "IAP current empty cannot link to FTC non-expired",
-			fields: fields{
-				db:     test.DB,
-				rdb:    test.Redis,
-				logger: zaptest.NewLogger(t),
-			},
 			args: args{
 				account: p1.FtcAccount(),
 				sub:     p1.IAPSubs(),
+				force:   false,
 			},
 			wantErr: true,
 		},
 		{
 			name: "IAP current empty can link to FTC expired",
-			fields: fields{
-				db:     test.DB,
-				rdb:    test.Redis,
-				logger: zaptest.NewLogger(t),
-			},
 			args: args{
 				account: p2.FtcAccount(),
 				sub:     test.NewPersona().IAPSubs(),
@@ -133,11 +117,6 @@ func TestEnv_Link(t *testing.T) {
 		},
 		{
 			name: "IAP exists and should not link to any new ftc account",
-			fields: fields{
-				db:     test.DB,
-				rdb:    test.Redis,
-				logger: zaptest.NewLogger(t),
-			},
 			args: args{
 				account: test.NewPersona().FtcAccount(),
 				sub:     p3.IAPSubs(),
@@ -147,12 +126,8 @@ func TestEnv_Link(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db:     tt.fields.db,
-				rdb:    tt.fields.rdb,
-				logger: tt.fields.logger,
-			}
-			got, err := env.Link(tt.args.account, tt.args.sub)
+
+			got, err := env.Link(tt.args.account, tt.args.sub, tt.args.force)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Link() error = %v, wantErr %v", err, tt.wantErr)
 				return
