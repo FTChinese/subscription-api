@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
@@ -53,11 +54,13 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 
 	if err != nil {
 		sugar.Error(err)
-		return apple.VerificationResp{}, render.NewUnprocessable(&render.ValidationError{
-			Message: err.Error(),
-			Field:   "verification",
-			Code:    render.CodeInvalid,
-		})
+
+		var ve *render.ValidationError
+		if errors.As(err, &ve) {
+			return apple.VerificationResp{}, render.NewUnprocessable(ve)
+		}
+
+		return apple.VerificationResp{}, render.NewBadRequest(err.Error())
 	}
 
 	// Save the decoded receipt as a session of verification
@@ -166,7 +169,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		sugar.Error(err)
 	}
 
-	if !wh.UnifiedReceipt.Validate() {
+	if !wh.UnifiedReceipt.IsSubscribed() {
 		sugar.Infof("invalid webhook unified receipt")
 		_ = render.New(w).Unprocessable(&render.ValidationError{
 			Message: "unified receipt field is not valid",

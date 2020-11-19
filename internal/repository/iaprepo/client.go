@@ -47,7 +47,7 @@ func (c Client) Verify(receipt string, sandbox bool) (apple.VerificationResp, er
 		EndBytes()
 
 	sugar.Infof("App store response status code %d", resp.StatusCode)
-	sugar.Infof("App store verification raw content %s", resp.StatusCode, b)
+	sugar.Infof("App store verification raw content %s", b)
 
 	if errs != nil {
 		return apple.VerificationResp{}, errs[0]
@@ -63,6 +63,8 @@ func (c Client) Verify(receipt string, sandbox bool) (apple.VerificationResp, er
 	return vrfResult, nil
 }
 
+// VerifyAndValidate verifies an receipt and validate if the response is valid.
+// The return error might be an instance of render.ValidationError.
 func (c Client) VerifyAndValidate(receipt string, sandbox bool) (apple.VerificationResp, error) {
 	resp, err := c.Verify(receipt, sandbox)
 	if err != nil {

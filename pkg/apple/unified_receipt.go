@@ -45,8 +45,8 @@ type UnifiedReceipt struct {
 	latestTransaction Transaction // hold the latest transaction sorted from LatestReceiptInfo array.
 }
 
-// Validate ensures the response contains the latest_receipt_info field.
-func (u *UnifiedReceipt) Validate() bool {
+// IsSubscribed ensures the response contains the latest_receipt_info field.
+func (u *UnifiedReceipt) IsSubscribed() bool {
 	if u.LatestReceiptInfo == nil || len(u.LatestReceiptInfo) == 0 {
 		return false
 	}
