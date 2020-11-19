@@ -47,13 +47,49 @@ Apple provided verification endpoints in sandbox and production mode. So does ou
 * GET `/apple/receipt/<original_transaction_id>` Load a single IAP subscription together with the receipt file.
 * POST `/webhook/apple` Apple's server-to-server notification
 
+## Verify Receipt
+
+```
+POST /apple/verify-receipt
+```
+
+### Request Body
+
+```json
+{
+  "receiptData": "the base64 encode apple receipt"
+}
+```
+
+### Workflow
+
 ## The verification process
 
-1. Send http request to App Store endpoint as required by Apple.
+1. Parse request body. Returns `400` if parsing failed
 
-2. Parse the response to get user's valid subscription.
+2. Validate request body. Returns `422` if `receiptData` missed:
 
-3. Dissect the response so that we could save its various fields to relational database. The response has the following structure:
+```json
+{
+  "message": "Missing required field",
+  "error": {
+    "field": "receiptData",
+    "code": "missing_field"
+  }
+}
+```
+
+3. Send receipt data to apple server. 
+
+If any error occurred in the request itself (like network break down), returns `400`:
+
+```json
+{
+  "message": "error description."
+}
+```
+
+4. After receiving response, perform validation to check if the response is valid. A valid from App Store should contain:
 
 ```json
 {
@@ -63,28 +99,70 @@ Apple provided verification endpoints in sandbox and production mode. So does ou
   "pending_renewal_info": [],
   "status": 0,
   "is-retryable": false,
-  "receipt": {}
+  "receipt": {
+    "bundle_id": ""
+  }
 }
 ```
 
-The data under `latest_receipt`, `latest_receipt_info`, `pending_renewal_info` and `receipt` are saved into those tables:
+Fields validated are `status`, `receipt.bundle_id` and `latest_receipt_info`, in that order.
 
+The `status` above 0 indicates an error. Returns `422`:
+
+```json
+{
+  "message": "This receipt is from the production environment, but it was sent to the test environment for verification",
+  "error": {
+    "field": "status",
+    "code": "21008"
+  }
+}
+```
+
+The value of `status` is forwarded in the `code` field. See https://developer.apple.com/documentation/appstorereceipts/status for all possible values.
+
+If `bundle_id` is mismatched, returns `422`:
+
+```json
+{
+  "message": "Bundle id mismatched",
+  "error": {
+    "field": "bundle_id",
+    "code": "invalid"
+  }
+}
+```
+
+If `latest_receipt_info` is missing, returns `422`:
+
+```json
+{
+  "message": "No subscription found",
+  "error": {
+    "field": "latest_receipt_info",
+    "code": "missing_field"
+  }
+}
+```
+
+5. Dissect the response so that we could save its various fields to relational database. The fields and their corresponding tables:
+   
 | Field                | Table Name                         |
 | -------------------- | ---------------------------------- |
 | receipt              | premium.apple_verification_session |
 | latest_receipt_info  | premium.apple_transaction          |
 | pending_renewal_info | premium.apple_pending_renewal      |
 | latest_receipt       | file_store.apple_receipt           |
-
+   
 The `environment` field is saved along with each row to all the tables mentioned here so that we know from which environment each row is generated.
+   
+Note the `latest_receipt` is originally saved to disk. Later it is also save to Redis. Then we also save a copy to MySQL, therefore a receipt might appear in three places:
+   
+   * Disk on ucloud
+   * Redis
+   * MySQL
 
-Note the `latest_receipt` is original saved to disk. Later it is also save to Redis. Then we also save a copy to MySQL, therefore a receipt might appear in three places:
-
-* Disk on ucloud;
-* Redis
-* MySQL
-
-4. We create a data structure called `Subscripiton` which contains the essential data from the verification response and save it in `premium.apple_subscription`:
+6. Create a `Subscription` base on the response. It contains the essential data from the response and is saved to `premium.apple_subscription`:
 
 ```json
 {
@@ -105,53 +183,7 @@ Note the `latest_receipt` is original saved to disk. Later it is also save to Re
 
 The `premium.apple_subscription` table plays a vital role in linking ftc account, as explained Link IAP section.
 
-## Verify Receipt
-
-```
-POST /apple/verify-receipt
-```
-
-### Request Body
-
-```json
-{
-  "receiptData": "the base64 encode apple receipt"
-}
-```
-
-### Workflow
-
-1. Parse request body. Returns `400` if parsing failed
-
-2. Validate request body. Returns `422` if `receiptData` missed:
-
-```json
-{
-  "message": "Missing required field",
-  "error": {
-    "field": "receiptData",
-    "code": "missing_field"
-  }
-}
-```
-
-3. Send receipt data to apple server. Returns `422` if any error occurred in the request to Apple, or response is not valid:
-
-```json
-{
-  "message": "might be anything",
-  "error": {
-    "field": "verification",
-    "code": "invalid"
-  }
-}
-```
-
-4. The response body is dissected and save into DB.
-
-5. Create a `Subscription` base on the response and save it to `premium.apple_subscription`.
-
-6. Apple's response is sent to client as is.
+7. Send Apple's response to client as is.
 
 ## Link IAP
 

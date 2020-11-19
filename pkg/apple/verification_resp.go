@@ -1,9 +1,9 @@
 package apple
 
 import (
-	"errors"
-	"fmt"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/guregu/null"
+	"strconv"
 )
 
 const bundleID = "com.ft.ftchinese.mobile"
@@ -29,30 +29,34 @@ type VerificationResp struct {
 	Receipt ClientReceipt `json:"receipt"`
 }
 
-func (v *VerificationResp) GetStatusMessage() string {
-	if v.Status >= 21100 && v.Status <= 21199 {
-		return "Internal data access errors"
-	}
-
-	return statusMessage[v.Status]
-}
-
 // Validate ensures the response from Apple API is correct.
 // Checks Status and BundleID.
-func (v *VerificationResp) Validate() error {
+func (v *VerificationResp) Validate() *render.ValidationError {
 
 	// Status above 0 is error.
 	if v.Status != 0 {
-		return fmt.Errorf("verification response error: status %d", v.Status)
+		return &render.ValidationError{
+			Message: getStatusMessage(v.Status),
+			Field:   "status",
+			Code:    render.InvalidCode(strconv.FormatInt(v.Status, 10)),
+		}
 	}
 
 	if v.Receipt.BundleID != bundleID {
-		return errors.New("verification response bundle id mismatched")
+		return &render.ValidationError{
+			Message: "Bundle id mismatched",
+			Field:   "bundle_id",
+			Code:    render.CodeInvalid,
+		}
 	}
 
 	// LatestReceiptInfo should not be empty.
-	if !v.UnifiedReceipt.Validate() {
-		return errors.New("verification response has empty latest_receipt_info")
+	if !v.IsSubscribed() {
+		return &render.ValidationError{
+			Message: "No subscription found",
+			Field:   "latest_receipt_info",
+			Code:    render.CodeMissingField,
+		}
 	}
 
 	return nil

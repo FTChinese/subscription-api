@@ -1,6 +1,7 @@
 package apple
 
 // The message corresponding to response status code.
+// See https://developer.apple.com/documentation/appstorereceipts/status
 var statusMessage = map[int64]string{
 	21000: "The request to the App Store was not made using the HTTP POST request method",
 	21001: "This status code is no longer sent by the App Store",
