@@ -44,7 +44,7 @@ type Membership struct {
 	LegacyExpire  null.Int       `json:"-" db:"expire_time"`
 	ExpireDate    chrono.Date    `json:"expireDate" db:"expire_date"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
-	FtcPlanID     null.String    `json:"ftcPlanId" db:"ftc_plan_id"`
+	FtcPlanID     null.String    `json:"-" db:"ftc_plan_id"`
 	StripeSubsID  null.String    `json:"stripeSubsId" db:"stripe_subs_id"`
 	StripePlanID  null.String    `json:"-" db:"stripe_plan_id"`
 	AutoRenewal   bool           `json:"autoRenew" db:"auto_renewal"`
