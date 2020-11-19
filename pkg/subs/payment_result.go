@@ -77,7 +77,7 @@ type PaymentResult struct {
 	TransactionID string         `json:"transactionId" db:"tx_id"`
 	OrderID       string         `json:"ftcOrderId" db:"order_id"`
 	PaidAt        chrono.Time    `json:"paidAt" db:"paid_at"`
-	ConfirmedUTC  chrono.Time    `json:"confirmedUtc"` // Use this an order's confirmation time. For webhook this is the same as PaidAt. For order query, they are different.
+	ConfirmedUTC  chrono.Time    `json:"-"` // Use this an order's confirmation time. For webhook this is the same as PaidAt. For order query, they are different.
 	PayMethod     enum.PayMethod `json:"payMethod"`
 }
 
