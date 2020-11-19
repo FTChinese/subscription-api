@@ -107,6 +107,7 @@ func (env Env) Link(account reader.FtcAccount, sub apple.Subscription, force boo
 		CurrentFtc: ftcMember,
 		CurrentIAP: iapMember,
 		IAPSubs:    sub,
+		Force:      force,
 	}
 
 	result, err := builder.Build()
