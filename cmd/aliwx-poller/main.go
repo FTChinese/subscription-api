@@ -68,5 +68,5 @@ func main() {
 		return
 	}
 
-	c.Start()
+	c.Run()
 }
