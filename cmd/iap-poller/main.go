@@ -38,7 +38,7 @@ func main() {
 	logger := config.MustGetLogger(production)
 	myDB := db.MustNewMySQL(config.MustMySQLMasterConn(production))
 
-	log.Println("Launching ali-wx poller...")
+	log.Println("Launching IAP poller...")
 
 	poller := poll.NewIAPPoller(myDB, production, logger)
 	defer poller.Close()
@@ -68,5 +68,5 @@ func main() {
 		return
 	}
 
-	c.Start()
+	c.Run()
 }
