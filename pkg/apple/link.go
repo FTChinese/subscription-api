@@ -115,13 +115,12 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 
 	// Case 3:
 	// Current IAP side is empty, then FTC side must not be empty.
-	// We need to consider 2 cases here:
-	// Case 3-1:
-	// FTC side is created via another IAP. Such case might arise when user is switching between 2 apple account
+	// We need to consider whetherFTC side is created via another IAP.
+	// Such case might arise when user is switching between 2 apple account
 	// and both accounts have a subscription:
 	// Apple Account A <--> Ftc Account A;
 	// Apple Account B <-|-> Ftc Account A.
-	// In such case we should deny it and user should manually unlink that IAP before linking to this one.
+	// In such case we should deny it unless user is manually changing it and the `force` parameter should be provided.
 	if b.CurrentFtc.IsIAP() {
 		if b.Force {
 			return LinkResult{
@@ -135,11 +134,14 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		return LinkResult{}, ErrFtcAlreadyLinked
 	}
 
-	// Case 3-2:
-	// FTC side is non-IAP.
-	// Then check whether it is expired.
-	// If the FTC side is still valid, merging is not allowed since it will override valid data.
-
+	// Now we can be sure that FTC side has membership and it does not come from IAP,
+	// or `payMethod` field might be null due to data being changed manually.
+	// We need to consider this matrix:
+	//
+	// | FTC Member\IAP Subs | Expired | Not-Expired |
+	// | ------------------- | ------- | ----------- |
+	// | Expired             |   N     |  Y          |
+	// | Not-Expired         |   N     |  N          |
 	if !b.CurrentFtc.IsExpired() {
 		// An edge case here: if the data is in legacy format and payMethod is null, which might be created by wxpay or
 		// or alipay, or might be manually created by customer service, we could not determine whether the linked should
@@ -148,26 +150,33 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		// If apple's expiration date comes later, allow the FTC
 		// side to be overridden; otherwise we shall keep the FTC
 		// side intact.
-		if b.CurrentFtc.PaymentMethod == enum.PayMethodNull {
-			if b.CurrentFtc.ExpireDate.Before(b.IAPSubs.ExpiresDateUTC.Time) {
-				return LinkResult{
-					Notify:   true,
-					Touched:  true,
-					Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
-					Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
-				}, nil
-			}
+		if b.isFtcLegacyFormat() {
+			return LinkResult{
+				Notify:   true,
+				Touched:  true,
+				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+			}, nil
 		}
 
 		return LinkResult{}, ErrFtcMemberValid
 	}
 
-	return LinkResult{
-		Notify:   true,
-		Touched:  true,
-		Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
-		Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
-	}, nil
+	// Even if ftc side expired, only replace it by IAP when IAP expiration comes later.
+	if b.CurrentFtc.ExpireDate.Before(b.IAPSubs.ExpiresDateUTC.Time) {
+		return LinkResult{
+			Notify:   true,
+			Touched:  true,
+			Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+			Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+		}, nil
+	}
+
+	return LinkResult{}, ErrIAPAlreadyExpired
+}
+
+func (b LinkBuilder) isFtcLegacyFormat() bool {
+	return b.CurrentFtc.PaymentMethod == enum.PayMethodNull && b.CurrentFtc.ExpireDate.AddDate(0, 0, -1).Before(b.IAPSubs.ExpiresDateUTC.Time)
 }
 
 func ConvertLinkErr(err error) (*render.ValidationError, bool) {
@@ -193,6 +202,13 @@ func ConvertLinkErr(err error) (*render.ValidationError, bool) {
 			Message: "FTC account already has a valid membership via non-Apple channel",
 			Field:   "ftcId",
 			Code:    "has_valid_non_iap",
+		}, true
+
+	case ErrIAPAlreadyExpired:
+		return &render.ValidationError{
+			Message: "You are not allowed to link to an already expired IAP subscription",
+			Field:   "originalTxId",
+			Code:    "already_expired",
 		}, true
 
 	default:
