@@ -53,3 +53,21 @@ func MustParseAliTime(value string) time.Time {
 
 	return t
 }
+
+func ParseSQLTime(value string, loc *time.Location) (time.Time, error) {
+	t, err := time.ParseInLocation(chrono.SQLDateTime, value, loc)
+	if err != nil {
+		return t, err
+	}
+
+	return t, nil
+}
+
+func MustParseSQLTime(value string, loc *time.Location) time.Time {
+	t, err := ParseSQLTime(value, loc)
+	if err != nil {
+		panic(err)
+	}
+
+	return t
+}
