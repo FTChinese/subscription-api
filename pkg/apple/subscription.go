@@ -74,6 +74,14 @@ func NewSubscription(u UnifiedReceipt) (Subscription, error) {
 	}, nil
 }
 
+func (s Subscription) IsExpired() bool {
+	if s.AutoRenewal {
+		return false
+	}
+
+	return s.ExpiresDateUTC.Before(time.Now())
+}
+
 // PermitLink checks whether a Subscription is allowed to link
 // to an ftc  account. It is allowed only when the FtcUserID
 // field is still empty, or is the same as the target id.
