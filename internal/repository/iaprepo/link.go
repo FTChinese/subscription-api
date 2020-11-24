@@ -79,7 +79,9 @@ func (env Env) GetSubAndSetFtcID(input apple.LinkInput) (apple.Subscription, err
 // if link if forbidden.
 func (env Env) Link(account reader.FtcAccount, sub apple.Subscription, force bool) (apple.LinkResult, error) {
 	defer env.logger.Sync()
-	sugar := env.logger.Sugar()
+	sugar := env.logger.Sugar().With("name", "LinkIAP").With("originalTxId", sub.OriginalTransactionID).With("ftcId", account.FtcID)
+
+	sugar.Info("Start linking")
 
 	tx, err := env.BeginTx()
 	if err != nil {
@@ -109,6 +111,8 @@ func (env Env) Link(account reader.FtcAccount, sub apple.Subscription, force boo
 		IAPSubs:    sub,
 		Force:      force,
 	}
+
+	sugar.Info("Build link result")
 
 	result, err := builder.Build()
 	if err != nil {
@@ -140,6 +144,8 @@ func (env Env) Link(account reader.FtcAccount, sub apple.Subscription, force boo
 	if err := tx.Commit(); err != nil {
 		return apple.LinkResult{}, err
 	}
+
+	sugar.Info("Link finished")
 
 	return result, nil
 }
