@@ -33,14 +33,11 @@ func TestLinkBuilder_Build(t *testing.T) {
 		ProductID:         "",
 		PurchaseDateUTC:   chrono.TimeNow(),
 		ExpiresDateUTC:    expire,
-		Edition: product.Edition{
-			Tier:  enum.TierStandard,
-			Cycle: enum.CycleYear,
-		},
-		AutoRenewal: true,
-		CreatedUTC:  chrono.TimeNow(),
-		UpdatedUTC:  chrono.TimeNow(),
-		FtcUserID:   null.String{},
+		Edition:           product.NewStdYearEdition(),
+		AutoRenewal:       true,
+		CreatedUTC:        chrono.TimeNow(),
+		UpdatedUTC:        chrono.TimeNow(),
+		FtcUserID:         null.String{},
 	}
 
 	type fields struct {
@@ -120,6 +117,60 @@ func TestLinkBuilder_Build(t *testing.T) {
 			want:    LinkResult{},
 			wantErr: true,
 		},
+		{
+			name: "Ftc manually copied from IAP",
+			fields: fields{
+				Account: reader.FtcAccount{
+					FtcID: ftcId,
+				},
+				CurrentFtc: reader.Membership{
+					MemberID:      memberID,
+					Edition:       product.NewStdYearEdition(),
+					ExpireDate:    chrono.DateFrom(time.Now()),
+					PaymentMethod: 0,
+				},
+				CurrentIAP: reader.Membership{},
+				IAPSubs:    iapSub,
+			},
+			want: LinkResult{
+				Notify:   true,
+				Touched:  true,
+				Member:   iapSub.NewMembership(memberID),
+				Snapshot: reader.MemberSnapshot{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Both expired but iap expires earlier",
+			fields: fields{
+				Account: reader.FtcAccount{
+					FtcID: ftcId,
+				},
+				CurrentFtc: reader.Membership{
+					MemberID:      memberID,
+					Edition:       product.NewStdYearEdition(),
+					ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, 0, -1)),
+					PaymentMethod: 0,
+				},
+				CurrentIAP: reader.Membership{},
+				IAPSubs: Subscription{
+					BaseSchema: BaseSchema{
+						Environment:           EnvProduction,
+						OriginalTransactionID: origTxId,
+					},
+					LastTransactionID: faker.GenAppleSubID(),
+					ProductID:         "",
+					ExpiresDateUTC:    chrono.TimeFrom(time.Now().AddDate(0, 0, -2)),
+					Edition:           product.NewStdYearEdition(),
+					AutoRenewal:       true,
+					CreatedUTC:        chrono.TimeNow(),
+					UpdatedUTC:        chrono.TimeNow(),
+					FtcUserID:         null.String{},
+				},
+			},
+			want:    LinkResult{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,8 +185,11 @@ func TestLinkBuilder_Build(t *testing.T) {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
+			got.Snapshot = reader.MemberSnapshot{}
+
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Build() got = %v, want %v", got, tt.want)
+				t.Errorf("Build() got = %s, want %s", faker.MustMarshalIndent(got), faker.MustMarshalIndent(tt.want))
 			}
 		})
 	}
