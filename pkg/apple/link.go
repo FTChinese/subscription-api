@@ -162,17 +162,18 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		return LinkResult{}, ErrFtcMemberValid
 	}
 
-	// Even if ftc side expired, only replace it by IAP when IAP expiration comes later.
-	if b.CurrentFtc.ExpireDate.Before(b.IAPSubs.ExpiresDateUTC.Time) {
-		return LinkResult{
-			Notify:   true,
-			Touched:  true,
-			Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
-			Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
-		}, nil
+	// Both sides expired, there's no need to touch data.
+	if b.IAPSubs.IsExpired() {
+		return LinkResult{}, ErrIAPAlreadyExpired
 	}
 
-	return LinkResult{}, ErrIAPAlreadyExpired
+	// IAP not expired, use it.
+	return LinkResult{
+		Notify:   true,
+		Touched:  true,
+		Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+		Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+	}, nil
 }
 
 func (b LinkBuilder) isFtcLegacyFormat() bool {
