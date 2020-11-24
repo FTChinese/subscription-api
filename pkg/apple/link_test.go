@@ -141,7 +141,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Both expired but iap expires earlier",
+			name: "Both expired iap not auto renew",
 			fields: fields{
 				Account: reader.FtcAccount{
 					FtcID: ftcId,
@@ -162,7 +162,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 					ProductID:         "",
 					ExpiresDateUTC:    chrono.TimeFrom(time.Now().AddDate(0, 0, -2)),
 					Edition:           product.NewStdYearEdition(),
-					AutoRenewal:       true,
+					AutoRenewal:       false,
 					CreatedUTC:        chrono.TimeNow(),
 					UpdatedUTC:        chrono.TimeNow(),
 					FtcUserID:         null.String{},
@@ -170,6 +170,29 @@ func TestLinkBuilder_Build(t *testing.T) {
 			},
 			want:    LinkResult{},
 			wantErr: true,
+		},
+		{
+			name: "FTC expired but iap auto renew",
+			fields: fields{
+				Account: reader.FtcAccount{
+					FtcID: ftcId,
+				},
+				CurrentFtc: reader.Membership{
+					MemberID:      memberID,
+					Edition:       product.NewStdYearEdition(),
+					ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, 0, -1)),
+					PaymentMethod: 0,
+				},
+				CurrentIAP: reader.Membership{},
+				IAPSubs:    iapSub,
+			},
+			want: LinkResult{
+				Notify:   true,
+				Touched:  true,
+				Member:   iapSub.NewMembership(memberID),
+				Snapshot: reader.MemberSnapshot{},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
