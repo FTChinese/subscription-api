@@ -12,7 +12,6 @@ import (
 
 const (
 	userIDKey  = "X-User-Id"
-	ftcIDKey   = "X-Ftc-Id"
 	unionIDKey = "X-Union-Id"
 	appIDKey   = "X-App-Id"
 )
