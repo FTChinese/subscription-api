@@ -52,7 +52,8 @@ stripe_subscription_id = :stripe_subs_id,
 stripe_plan_id = :stripe_plan_id,
 auto_renewal = :auto_renewal,
 sub_status = :subs_status,
-apple_subscription_id = :apple_subs_id
+apple_subscription_id = :apple_subs_id,
+b2b_licence_id = :b2b_licence_id
 `
 
 const mUpsertCols = `
