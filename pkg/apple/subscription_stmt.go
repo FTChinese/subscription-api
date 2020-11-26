@@ -55,7 +55,7 @@ const StmtListSubs = colsSubs + `,
 FROM premium.apple_subscription AS a
 	LEFT JOIN premium.ftc_vip AS m
 	ON a.original_transaction_id = m.apple_subscription_id
-WHERE ftc_user_id = ?
+WHERE a.ftc_user_id = ?
 ORDER BY expires_date_utc DESC
 LIMIT ? OFFSET ?`
 
