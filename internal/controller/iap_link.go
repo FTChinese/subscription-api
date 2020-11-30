@@ -79,6 +79,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
+		return
 	}
 	sugar.Infof("FTC side membership %v", ftcMember)
 
@@ -86,6 +87,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
+		return
 	}
 	sugar.Infof("IAP side membership %v", iapMember)
 
@@ -122,6 +124,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
+		return
 	}
 
 	go func() {
