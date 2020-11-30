@@ -39,6 +39,10 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	sugar = sugar.With("name", "LinkIAP").
+		With("originalTxId", input.OriginalTxID).
+		With("ftcId", input.FtcID)
+
 	// Check if the user actually exists.
 	ftcAccount, err := router.readerRepo.AccountByFtcID(input.FtcID)
 	if err != nil {
@@ -47,6 +51,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	sugar.Info("Getting IAP subscription and set ftc id")
 	sub, err := router.iapRepo.GetSubAndSetFtcID(input)
 	if err != nil {
 		// Only ErrIAPAlreadyLinked happens here.
@@ -68,12 +73,39 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Start to link apple subscription to ftc membership.
-	result, err := router.iapRepo.Link(ftcAccount, sub, input.Force)
-
+	// Do not retrieve memberships for both ftc and iap in a transaction.
+	// If they are already linked, retrieving a single row multiple times will result in deadlock.
+	ftcMember, err := router.readerRepo.RetrieveMember(ftcAccount.MemberID())
 	if err != nil {
 		sugar.Error(err)
-		// ErrIAPAlreadyLinked is already handled in the above step.
+		_ = render.New(w).DBError(err)
+	}
+	sugar.Infof("FTC side membership %v", ftcMember)
+
+	iapMember, err := router.readerRepo.RetrieveAppleMember(sub.OriginalTransactionID)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+	}
+	sugar.Infof("IAP side membership %v", iapMember)
+
+	builder := apple.LinkBuilder{
+		Account:    ftcAccount,
+		CurrentFtc: ftcMember,
+		CurrentIAP: iapMember,
+		IAPSubs:    sub,
+		Force:      input.Force,
+	}
+
+	result, err := builder.Build()
+	if err != nil {
+		sugar.Error(err)
+
+		if err == apple.ErrAlreadyLinked {
+			_ = render.New(w).OK(ftcMember)
+			return
+		}
+
 		ve, ok := apple.ConvertLinkErr(err)
 		if ok {
 			_ = render.New(w).Unprocessable(ve)
@@ -82,6 +114,14 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 		_ = render.New(w).DBError(err)
 		return
+	}
+	sugar.Infof("Link result %v", result)
+
+	// Start to link apple subscription to ftc membership.
+	err = router.iapRepo.Link(result)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
 	}
 
 	go func() {
@@ -93,7 +133,8 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		if result.Notify {
+		sugar.Info("Sending iap link email")
+		if result.Initial {
 			parcel, err := letter.NewIAPLinkParcel(ftcAccount, result.Member)
 			if err != nil {
 				return
