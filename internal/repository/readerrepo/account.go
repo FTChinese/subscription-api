@@ -1,7 +1,6 @@
 package readerrepo
 
 import (
-	"database/sql"
 	"errors"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
@@ -31,6 +30,7 @@ func (env Env) AccountByWxID(unionID string) (reader.FtcAccount, error) {
 	return a, nil
 }
 
+// FindAccount retrieve account by ftc id if exists, then fallback to union id.
 func (env Env) FindAccount(ids reader.MemberID) (reader.FtcAccount, error) {
 	if ids.FtcID.Valid {
 		return env.AccountByFtcID(ids.FtcID.String)
@@ -54,19 +54,4 @@ func (env Env) FtcAccountByStripeID(cusID string) (reader.FtcAccount, error) {
 	}
 
 	return u, nil
-}
-
-func (env Env) RetrieveMember(id reader.MemberID) (reader.Membership, error) {
-	var m reader.Membership
-
-	err := env.db.Get(
-		&m,
-		reader.StmtSelectMember,
-		id.BuildFindInSet())
-
-	if err != nil && err != sql.ErrNoRows {
-		return reader.Membership{}, err
-	}
-
-	return m.Normalize(), nil
 }
