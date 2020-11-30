@@ -13,7 +13,7 @@ SELECT vip_id AS compound_id,
 	ftc_plan_id,
 	stripe_subscription_id AS stripe_subs_id,
 	stripe_plan_id,
-	auto_renewal,
+	IFNULL(auto_renewal, FALSE) AS auto_renewal,
 	sub_status AS subs_status,
 	apple_subscription_id AS apple_subs_id,
 	b2b_licence_id
