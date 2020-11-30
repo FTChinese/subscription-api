@@ -162,8 +162,17 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		return LinkResult{}, ErrFtcMemberValid
 	}
 
-	// Both sides expired, there's no need to touch data.
+	// Both sides expired, there's no need to touch data unless FTC side is in legacy format.
 	if b.IAPSubs.IsExpired() {
+		if b.isFtcLegacyFormat() {
+			return LinkResult{
+				Notify:   false,
+				Touched:  true,
+				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+			}, nil
+		}
+
 		return LinkResult{}, ErrIAPAlreadyExpired
 	}
 
