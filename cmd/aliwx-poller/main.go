@@ -7,7 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/poll"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/robfig/cron/v3"
+	"github.com/go-co-op/gocron"
 	"log"
 	"os"
 )
@@ -52,21 +52,15 @@ func main() {
 		return
 	}
 
-	// Schedule chronicle task.
-	c := cron.New(cron.WithLocation(chrono.TZShanghai))
-
-	_, err := c.AddFunc("@daily", func() {
-		err := poller.Start(false)
-		if err != nil {
-			logger.Error(err.Error())
-			_ = logger.Sync()
-		}
-	})
+	s := gocron.NewScheduler(chrono.TZShanghai)
+	_, err := s.Every(1).
+		Day().
+		At("00:00").
+		Do(poller.Start, false)
 
 	if err != nil {
-		log.Println(err)
-		return
+		panic(err)
 	}
 
-	c.Run()
+	s.StartBlocking()
 }
