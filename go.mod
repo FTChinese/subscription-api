@@ -5,6 +5,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200817114649-df4adffc9d8c
 	github.com/brianvoe/gofakeit/v5 v5.9.0
 	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/go-co-op/gocron v0.3.3
 	github.com/go-redis/redis/v8 v8.1.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/google/uuid v1.1.1
@@ -17,7 +18,6 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/segmentio/kafka-go v0.4.2
 	github.com/smartwalle/alipay v1.0.2
 	github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304 // indirect
 	github.com/spf13/afero v1.3.4 // indirect
@@ -33,7 +33,7 @@ require (
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20200814200057-3d37ad5750ed // indirect
 	gopkg.in/ini.v1 v1.58.0 // indirect
 )
