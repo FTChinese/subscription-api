@@ -24,7 +24,11 @@ WHERE FIND_IN_SET(vip_id, ?) > 0
 LIMIT 1
 `
 
-// StmtLockMember builds SQL to retrieve membership in a transaction.
+const StmtAppleMember = colMembership + `
+WHERE apple_subscription_id = ?
+LIMIT 1`
+
+// StmtGetLockMember builds SQL to retrieve membership in a transaction.
 // Retrieve membership by compound id extracted from request header.
 // The request might provide ftc id or union id, or both,
 // and we cannot be sure the current state account ids
@@ -34,11 +38,19 @@ LIMIT 1
 // (Chances of such case are rare).
 // In such case we won't be able to find the membership
 // simply querying the vip_id column.
-const StmtLockMember = StmtSelectMember + `
+const StmtGetLockMember = StmtSelectMember + `
 FOR UPDATE`
 
-const StmtLockAppleMember = colMembership + `
+const StmtGetLockAppleMember = colMembership + `
 WHERE apple_subscription_id = ?
+LIMIT 1
+FOR UPDATE`
+
+const StmtFtcMemberOnly = `
+SELECT vip_id
+FROM premium.ftc_vip
+WHERE vip_id = ?
+LIMIT 1
 FOR UPDATE`
 
 // The common columns when inserting or updating membership.

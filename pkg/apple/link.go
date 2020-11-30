@@ -28,8 +28,7 @@ func (i *LinkInput) Validate() *render.ValidationError {
 }
 
 type LinkResult struct {
-	Notify   bool                  // Whether we should tell user the link. If they are already linked, don't notify.
-	Touched  bool                  // If the membership is actually modified. If link already done, this should be false and  Member should not be inserted to db.
+	Initial  bool                  // Is this initial link?
 	Member   reader.Membership     // Updated membership or original membership if already linked and expiration date not changed.
 	Snapshot reader.MemberSnapshot // Previous memberships. The original membership should be deleted, and then archived. If snapshot exists, them Touched must be always true.
 }
@@ -70,31 +69,23 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		// If one does not exist, both do not exist. We are creating a new membership in such case.
 		if b.CurrentIAP.IsZero() {
 			return LinkResult{
-				Notify:   true, // Send email
-				Touched:  true, // Membership changed.
+				Initial:  true, // Send email
 				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
 				Snapshot: reader.MemberSnapshot{}, // Nothing to archive.
 			}, nil
 		}
 
-		// Current membership exists.
-		// If expiration date not changed, tell caller do nothing.
-		if b.CurrentIAP.ExpireDate.Equal(b.IAPSubs.ExpiresDateUTC.Time) {
+		// If current membership is older than IAP, update it.
+		if b.CurrentFtc.ExpireDate.Before(b.IAPSubs.ExpiresDateUTC.Time) {
 			return LinkResult{
-				Notify:   false,                   // Linked in prior session. Do not resend email
-				Touched:  false,                   // Membership not modified.
-				Member:   b.CurrentIAP,            // Will be sent to client.
-				Snapshot: reader.MemberSnapshot{}, // Nothing changed. No archiving.
+				Initial:  false,
+				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
 		}
 
-		// If expiration date changed, updated it based on subscription.
-		return LinkResult{
-			Notify:   false,
-			Touched:  true,
-			Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
-			Snapshot: b.CurrentIAP.Snapshot(reader.ArchiverAppleLink), // Archive current membership.
-		}, nil
+		// This error indicates you do not need to handle it and send current membership back to client.
+		return LinkResult{}, ErrAlreadyLinked
 	}
 
 	// If the two sides are not equal, they must be totally different memberships and the two sides cannot be both empty.
@@ -124,8 +115,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	if b.CurrentFtc.IsIAP() {
 		if b.Force {
 			return LinkResult{
-				Notify:   true,
-				Touched:  true,
+				Initial:  true,
 				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
@@ -152,8 +142,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		// side intact.
 		if b.isFtcLegacyFormat() {
 			return LinkResult{
-				Notify:   true,
-				Touched:  true,
+				Initial:  true,
 				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
@@ -166,8 +155,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	if b.IAPSubs.IsExpired() {
 		if b.isFtcLegacyFormat() {
 			return LinkResult{
-				Notify:   false,
-				Touched:  true,
+				Initial:  true,
 				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
@@ -178,8 +166,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 
 	// IAP not expired, use it.
 	return LinkResult{
-		Notify:   true,
-		Touched:  true,
+		Initial:  true,
 		Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
 		Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 	}, nil
