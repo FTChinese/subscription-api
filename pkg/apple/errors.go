@@ -3,11 +3,12 @@ package apple
 import "errors"
 
 var (
+	ErrAlreadyLinked = errors.New("iap already linked to the ftc account")
 	// This error is a possible cheating.
-	ErrIAPAlreadyLinked = errors.New("iap subscription is already taken by another ftc account")
+	ErrIAPAlreadyLinked = errors.New("iap subscription is already claimed by another ftc account")
 	// This error might be caused by one ftc account linking to multiple IAP.
-	ErrFtcAlreadyLinked = errors.New("ftc account is already linked to an iap subscription")
+	ErrFtcAlreadyLinked = errors.New("ftc account is already linked to a iap subscription")
 	// Ftc account has a non-expired membership that comes from other payment method, thus we cannot override it.
-	ErrFtcMemberValid    = errors.New("ftc account has non-expired, non-iap membership")
-	ErrIAPAlreadyExpired = errors.New("iap subscription already expired")
+	ErrFtcMemberValid    = errors.New("ftc account has valid membership purchased via non-apple method")
+	ErrIAPAlreadyExpired = errors.New("iap subscription expired before ftc expires")
 )

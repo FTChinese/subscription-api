@@ -77,77 +77,42 @@ func (env Env) GetSubAndSetFtcID(input apple.LinkInput) (apple.Subscription, err
 // This is a suspicious operation that should always be denied.
 // The returned error could be *render.ValidationError
 // if link if forbidden.
-func (env Env) Link(account reader.FtcAccount, sub apple.Subscription, force bool) (apple.LinkResult, error) {
+func (env Env) Link(result apple.LinkResult) error {
 	defer env.logger.Sync()
-	sugar := env.logger.Sugar().With("name", "LinkIAP").With("originalTxId", sub.OriginalTransactionID).With("ftcId", account.FtcID)
-
-	sugar.Info("Start linking")
+	sugar := env.logger.Sugar()
 
 	tx, err := env.BeginTx()
 	if err != nil {
 		sugar.Error(err)
-		return apple.LinkResult{}, err
-	}
-
-	// Try to retrieve membership by apple original transaction id.
-	iapMember, err := tx.RetrieveAppleMember(sub.OriginalTransactionID)
-	if err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return apple.LinkResult{}, err
-	}
-	// Try to retrieve membership by ftc id.
-	ftcMember, err := tx.RetrieveMember(account.MemberID())
-	if err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return apple.LinkResult{}, err
-	}
-
-	builder := apple.LinkBuilder{
-		Account:    account,
-		CurrentFtc: ftcMember,
-		CurrentIAP: iapMember,
-		IAPSubs:    sub,
-		Force:      force,
-	}
-
-	sugar.Info("Build link result")
-
-	result, err := builder.Build()
-	if err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return apple.LinkResult{}, err
+		return err
 	}
 
 	// Save membership only when it is touched.
-	if result.Touched {
-		// If membership is take a snapshot, we must delete it.
-		if !result.Snapshot.IsZero() {
-			err := tx.DeleteMember(ftcMember.MemberID)
-			if err != nil {
-				sugar.Error(err)
-				_ = tx.Rollback()
-				return apple.LinkResult{}, err
-			}
-		}
-
-		err := tx.CreateMember(result.Member)
+	// If membership is take a snapshot, we must delete it.
+	if !result.Snapshot.IsZero() {
+		// Should we lock this row first?
+		err := tx.DeleteMember(result.Snapshot.MemberID)
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return apple.LinkResult{}, err
+			return err
 		}
 	}
 
+	err = tx.CreateMember(result.Member)
+	if err != nil {
+		sugar.Error(err)
+		_ = tx.Rollback()
+		return err
+	}
+
 	if err := tx.Commit(); err != nil {
-		return apple.LinkResult{}, err
+		return err
 	}
 
 	sugar.Info("Link finished")
 
-	return result, nil
+	return nil
 }
 
 func (env Env) ArchiveLinkCheating(link apple.LinkInput) error {

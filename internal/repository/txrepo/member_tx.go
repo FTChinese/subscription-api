@@ -29,7 +29,7 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error)
 
 	err := tx.Get(
 		&m,
-		reader.StmtLockMember,
+		reader.StmtGetLockMember,
 		id.BuildFindInSet(),
 	)
 
@@ -49,7 +49,7 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership,
 
 	err := tx.Get(
 		&m,
-		reader.StmtLockAppleMember,
+		reader.StmtGetLockAppleMember,
 		transactionID)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -171,6 +171,17 @@ func (tx MemberTx) DeleteMember(id reader.MemberID) error {
 	return nil
 }
 
+func (tx MemberTx) RetrieveAppleSubs(origTxID string) (apple.Subscription, error) {
+	var s apple.Subscription
+	err := tx.Get(&s, apple.StmtLockSubs, origTxID)
+
+	if err != nil {
+		return apple.Subscription{}, err
+	}
+
+	return s, nil
+}
+
 // FindBalanceSources retrieves all orders that has unused portions.
 // Used to build upgrade order for alipay and wxpay
 func (tx MemberTx) FindBalanceSources(userIDs reader.MemberID) ([]subs.BalanceSource, error) {
@@ -210,17 +221,6 @@ func (tx MemberTx) SaveProratedOrders(po []subs.ProratedOrder) error {
 	}
 
 	return nil
-}
-
-func (tx MemberTx) RetrieveAppleSubs(origTxID string) (apple.Subscription, error) {
-	var s apple.Subscription
-	err := tx.Get(&s, apple.StmtLockSubs, origTxID)
-
-	if err != nil {
-		return apple.Subscription{}, err
-	}
-
-	return s, nil
 }
 
 func (tx MemberTx) LinkAppleSubs(link apple.LinkInput) error {

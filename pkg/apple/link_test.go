@@ -63,8 +63,6 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs:    iapSub,
 			},
 			want: LinkResult{
-				Notify:   true,
-				Touched:  true,
 				Member:   iapSub.NewMembership(memberID),
 				Snapshot: reader.MemberSnapshot{},
 			},
@@ -133,8 +131,6 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs:    iapSub,
 			},
 			want: LinkResult{
-				Notify:   true,
-				Touched:  true,
 				Member:   iapSub.NewMembership(memberID),
 				Snapshot: reader.MemberSnapshot{},
 			},
@@ -187,8 +183,6 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs:    iapSub,
 			},
 			want: LinkResult{
-				Notify:   true,
-				Touched:  true,
 				Member:   iapSub.NewMembership(memberID),
 				Snapshot: reader.MemberSnapshot{},
 			},
