@@ -130,8 +130,8 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	//
 	// | FTC Member\IAP Subs | Expired | Not-Expired |
 	// | ------------------- | ------- | ----------- |
-	// | Expired             |   N     |  Y          |
 	// | Not-Expired         |   N     |  N          |
+	// | Expired             |   N     |  Y          |
 	if !b.CurrentFtc.IsExpired() {
 		// An edge case here: if the data is in legacy format and payMethod is null, which might be created by wxpay or
 		// or alipay, or might be manually created by customer service, we could not determine whether the linked should
