@@ -38,7 +38,7 @@ func CanonicalizeUnix(s int64) time.Time {
 	return time.Time{}
 }
 
-func NewSubsResponse(s *stripe.Subscription) Subscription {
+func NewSubs(s *stripe.Subscription) Subscription {
 	if s == nil {
 		return Subscription{}
 	}
@@ -89,4 +89,8 @@ func (s Subscription) ReadableStatus() string {
 
 func (s Subscription) RequiresAction() bool {
 	return s.Status == stripe.SubscriptionStatusIncomplete
+}
+
+func IsAutoRenewal(s *stripe.Subscription) bool {
+	return s.CancelAt == 0 && s.CanceledAt == 0 && !s.CancelAtPeriodEnd
 }
