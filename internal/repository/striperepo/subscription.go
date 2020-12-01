@@ -120,14 +120,14 @@ func (env Env) SaveSubsError(e stripePkg.APIError) error {
 }
 
 // GetSubscription refresh stripe subscription data if stale.
-func (env Env) GetSubscription(ftcID string) (stripePkg.SubsResult, error) {
+func (env Env) GetSubscription(ftcID string) (stripePkg.Subscription, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return stripePkg.SubsResult{}, err
+		return stripePkg.Subscription{}, err
 	}
 
 	mmb, err := tx.RetrieveMember(reader.MemberID{
@@ -138,13 +138,13 @@ func (env Env) GetSubscription(ftcID string) (stripePkg.SubsResult, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripePkg.SubsResult{}, err
+		return stripePkg.Subscription{}, err
 	}
 
 	if !mmb.IsStripe() {
 		sugar.Infof("Stripe membership not found for %v", ftcID)
 		_ = tx.Rollback()
-		return stripePkg.SubsResult{}, sql.ErrNoRows
+		return stripePkg.Subscription{}, sql.ErrNoRows
 	}
 	sugar.Infof("Retrieve a member: %+v", mmb)
 
@@ -153,7 +153,7 @@ func (env Env) GetSubscription(ftcID string) (stripePkg.SubsResult, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripePkg.SubsResult{}, err
+		return stripePkg.Subscription{}, err
 	}
 
 	sugar.Infof("Subscription id %s, status %s", ss.ID, ss.Status)
@@ -166,18 +166,14 @@ func (env Env) GetSubscription(ftcID string) (stripePkg.SubsResult, error) {
 	if err := tx.UpdateMember(newMmb); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripePkg.SubsResult{}, err
+		return stripePkg.Subscription{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return stripePkg.SubsResult{}, err
+		return stripePkg.Subscription{}, err
 	}
 
 	sugar.Info("Refresh stripe subscription finished.")
-	return stripePkg.SubsResult{
-		StripeSubs: ss,
-		Member:     newMmb,
-		Snapshot:   reader.MemberSnapshot{},
-	}, nil
+	return stripePkg.NewSubs(ss), nil
 }
