@@ -193,7 +193,19 @@ POST /apple/link
 
 Links apple subscription to an FTC account. This endpoint does not perform receipt validation. It only checks if an `originalTxId` is found in the current database, and tries to link it to the FTC account if found.
 
+### Definition
+
+Some vocabularies have specific meaning here:
+
+*Membership* refers to a row in `ftc_vip` table.
+
+*Subscription* refers to a row in `apple_subscription` table.
+
+*Expiration* for both membership and subscription indicates its expiration time is before now, and it is not auto renewable.
+
 ### Link Policy
+
+NOTE: this section describes the process of how server performs  linking. Client does not need to implement it unless you want to pre-emptively prevent illegal linking on the client and give user more details and feedback.
 
 A user might have multiple apple accounts and each have a subscription (it's rare but possible), thus we follow this rule:
 
@@ -207,13 +219,10 @@ FTC Account-|--- IAP 2
             |--- IAP 3
 ```
 
-An apple subscription should not be owned by more than one FTC account since it would constitute cheating. This is ensured by database design. Let's see how the `premium.apple_subscription` is defined:
+An apple subscription should not be owned by more than one FTC account since it would constitute cheating. This is ensured by database design. Let's see how the unique columns in `premium.apple_subscription` are defined:
 
 ```sql
 CREATE TABLE premium.apple_subscription (
-    PRIMARY KEY (id),
-	id 	INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    environment                 ENUM('sandbox', 'production'),
     original_transaction_id     VARCHAR(128) NOT NULL,
                                 UNIQUE INDEX (original_transaction_id),
     last_transaction_id         VARCHAR(128),
@@ -232,19 +241,41 @@ CREATE TABLE premium.apple_subscription (
 
 The presence of `original_transaction_id` and `ftc_user_id` indicates an apple subscription links a ftc account. Since `original_transaction_id` is uniquely constrained, the same value cannot appear twice in this column. While the `ftc_user_id` column is not uniquely constrained, the same FTC id can appear multiple times in this column, in which case it indicates the same FTC id owns multiple apple subscription.
 
-Client should provider user a UI to list all subscriptions under current FTC account, and which one is being used as membership. The UI should allow user to unlink any of the subscription from current FTC account. If there are multiple subscriptions, the UI should also allow user to switch the default one being used as membership.
+Client should provider user a UI to list all subscriptions under current FTC account, and which one is currently used as membership. The UI should allow user to unlink any of the subscription from current FTC account. If there are multiple subscriptions, the UI should also allow user to switch the default one being used as membership.
  
-When performing linking, we need to take into account current memberships of both FTC side and IAP side. There's a lot of combinations and only a few of them are allowed, as shown by the following table:
+When performing linking, we need to take into account current memberships under `ftc_vip.vip_id` and `ftc_vip.apple_subscription_id` columns respectively. You have to retrieve two memberships by each id, compare them and determine whether you can merge the two. There are various combinations and only a few of them are allowed, as shown by the following table:
 
 | FTC\IAP     | None   | Not-Expired | Expired |
 | ----------- | ------ | ----------- | ------- |
 | None        |  Y     |      N      |  N      |
-| Not-Expired |  N     |      N      |  N      |
-| Expired     |  Y     |      N      |  N      |
+| Not-Expired |  N?    |      N      |  N      |
+| Expired     |  Y?    |      N      |  N      |
 
-For IAP side, it must not have a membership prior to linking; otherwise it indicates IAP is already linked to another FTC and user is  trying to link the same IAP to multiple FTC accounts. Therefore, only the first column has cases to be allowed. Among them, if the FTC side has a non-expired membership as in column 1, row 2, it is not allowed to link since this will cause data overriding. 
+For IAP side, it must not have a membership prior to linking; otherwise it indicates IAP is already linked to another FTC and user is  trying to link the same IAP to multiple FTC accounts. Therefore, only *Column 1* has cases to be allowed. 
 
-Case in Column 1, Row 2 has an edge case: The FTC side might be manually created from an IAP result by customer service. It has no payment method, not expired. Should we allow linking in such case? The answer is non-deterministic. Currently my approach is to compare the expiration date the FTC membership against IAP subscription. The IAP subscription expires later, allow linking; otherwise it is forbidden.
+Next we are focusing on the 3 cases under *Column 1*.
+
+*Row 1* is the simplest case since we can insert data directly.
+
+*Row 2* and *Row 3* requires further comparison between FTC membership and IAP subscription. It has the following possible combinations:
+
+| FTC Member\IAP Subs | Expired | Not-Expired |
+| ------------------- | ------- | ----------- |
+| Not-Expired         |   N?    |  N?         |
+| Expired             |   N?    |  Y          |
+ 
+For *Row 1*, membership is not expired. Linking should be denied regardless of whether IAP subscription expired or not, unless an edge case arises:   
+
+The FTC side might be manually created from an IAP by customer service with these characteristics:
+ 
+ * It has no payment method. 
+ * The expiration times are similar ( taking into account of a deviation of 1 day).
+ 
+ In such case we will re-create the membership from IAP subscription.
+
+For *Row 2 Column 1*, if the above-mentioned edge case is present, perform linking; otherwise deny it.
+
+For *Row 2 Column 2*, we are safe to override membership with IAP subscription. 
 
 ### Request Body
 
@@ -258,7 +289,7 @@ Case in Column 1, Row 2 has an edge case: The FTC side might be manually created
 
 * `ftcId: string` FTC uuid. Required.
 * `originalTxId: string` Apple subscription's original transaction id. Required.
-* `force: boolean` Force the `ftcId` to link to this `originalTxId` is the `ftcId` is already linked to another apple subscription. This will only happen if user has multiple IAP and want to switch the default one.
+* `force: boolean` Force the `ftcId` to link to this `originalTxId` if this user has multiple IAPs and wants to switch the current one to a new one.
 
 ### Workflow
 
@@ -280,7 +311,7 @@ Case in Column 1, Row 2 has an edge case: The FTC side might be manually created
 
 4. Retrieve IAP subscription by `originalTxId` from `premium.apple_subscription` table. Respond `404` if not found.
 
-5. The retrieve subscription has a nullable field `ftcUserId`. If it is not null and not equal to the passed in `ftcId`, it indicates a new ftc account is trying to use an existing IAP which is already claimed by another ftc account. Since we should not allow multiple ftc accounts using the same IAP, this might be cheating. Respond `422` with:
+5. The retrieved subscription has a nullable field `ftcUserId`. If it is not null and not equal to the passed in `ftcId`, it indicates a new ftc account is trying to use an existing IAP which is already claimed by another ftc account. Since we should not allow multiple ftc accounts using the same IAP, this might be cheating. Respond `422` with:
 
 ```json
 {
@@ -296,11 +327,11 @@ This `ftcId` and `originalTxId` combination is also saved to `premium.apple_chea
 
 6. Otherwise we set `ftcId` to the `ftc_user_id` column if it is still empty.
 
-7. Now we have valid `FtcAccount` and iap `Subscription`, starting linking  them.
+7. Now we have a valid account and iap `Subscription`, starting linking them.
 
 8. First retrieve `Membership` by the `ftc_vip.apple_subscription_id` column using the IAP's original transaction id. Then retrieve `Membershp` again by the `ftc_vip.vip_id` using the ftc id. Note if both are not found in DB, we do not treat them as error since zero value of `Membership` is a valid value to operate on.
 
-9. Now that we have `FtcAccount`, existing iap side `Membership`, existing ftc side `Membership`, and an update-to-date iap `Subscription`, we'll validate whether the `Subscription` is allowed to link to `FtcAccount`.
+9. Now we have user's account, existing iap side `Membership`, existing ftc side `Membership`, and an iap `Subscription`, we'll validate whether the `Subscription` is allowed to link to `FtcAccount`.
 
 10. If current iap side `Membership` is equal to ftc side `Membership`, it indicates 2 possibilities: 
 
@@ -322,7 +353,7 @@ This `ftcId` and `originalTxId` combination is also saved to `premium.apple_chea
 }
 ```
 
-13. Now iap side has no membership while ftc side has membership of non-iap. It narrows down to column 1 of the above combination box. If ftc side membership is not expired (might be purchased via alipay or wxpay, or Stripe), we should not override it. Respond `422` unless step 14 happens:
+13. Now iap side has no membership while ftc side has membership of (possibly) non-iap. It narrows down to column 1 of the above combination box. If ftc side membership is not expired (might be purchased via alipay or wxpay, or Stripe), we should not override it. Respond `422` unless it is an edge case as described in the Link Policy:
 
 ```json
 {
@@ -334,9 +365,21 @@ This `ftcId` and `originalTxId` combination is also saved to `premium.apple_chea
 }
 ```
 
-14. There's an edge case in step 13: ftc side `Membership` does not has `PaymentMethod` (`payment_method` column in db) field set, which might be true if it manually touched, we cannot determine the source of this membership. So we will check the ftc-side `Membership`'s expiration date against iap `Subscription` expiration date. If iap subscription expires later, override the ftc side.
+14. For the edge case, linking is performed.
 
-15. Link done and send `200 OK`. Response body is an instance of updated `Membership`
+16. If IAP subscription expired, we should not alter user's membership unless it also falls into the above-said edge case:
+
+```json
+{
+  "message": "You are not allowed to link to an already expired IAP subscription",
+  "error": {
+    "field": "originalTxId",
+    "code": "already_expired"
+  }
+}
+```
+ 
+17. Link done and send `200 OK`. Response body is an instance of updated `Membership`
 
 ```json
 {
