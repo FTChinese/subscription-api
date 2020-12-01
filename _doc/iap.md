@@ -63,8 +63,6 @@ POST /apple/verify-receipt
 
 ### Workflow
 
-## The verification process
-
 1. Parse request body. Returns `400` if parsing failed
 
 2. Validate request body. Returns `422` if `receiptData` missed:
@@ -181,7 +179,7 @@ Note the `latest_receipt` is originally saved to disk. Later it is also save to 
 }
 ```
 
-The `premium.apple_subscription` table plays a vital role in linking ftc account, as explained Link IAP section.
+The `premium.apple_subscription` table plays a vital role in linking ftc account, as explained in Link IAP section.
 
 7. Send Apple's response to client as is.
 
@@ -209,7 +207,9 @@ NOTE: this section describes the process of how server performs  linking. Client
 
 A user might have multiple apple accounts and each have a subscription (it's rare but possible), thus we follow this rule:
 
-    An apple subscription can only be owned by one FTC account, while one FTC account can have multiple apple subscriptions.
+
+> An apple subscription can only be owned by one FTC account, while one FTC account can have multiple apple subscriptions.
+
     
 as illustrated by the following diagram:
 
@@ -232,8 +232,8 @@ CREATE TABLE premium.apple_subscription (
     tier                        ENUM('standard', 'premium'),
     cycle                       ENUM('month', 'year'),
     auto_renewal                BOOL,
-    updated_utc DATETIME,
-    created_utc DATETIME,
+    updated_utc                 DATETIME,
+    created_utc                 DATETIME,
     ftc_user_id                 VARCHAR(36),
                                 INDEX (ftc_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -599,7 +599,7 @@ You can put the access token in Xcode configuration files and use `git-crypt` to
 
 ### XCode configuration file
 
-In you Xcode project, click `File > New > File...`. Scroll to the `Other` section in the opened dialog. Select `Configuration Settings File`. You are asked to save the file. Name it `Keys.xcconfig`. Make sure nothing is check in the `Targets` section. Click `Create`.
+In you Xcode project, click `File > New > File...`. Scroll to the `Other` section in the opened dialog. Select `Configuration Settings File`. You are asked to save the file. Name it `Keys.xcconfig`. Make sure nothing is checked in the `Targets` section. Click `Create`.
 
 Add the access token to it:
 
