@@ -128,7 +128,7 @@ func (i SubsInput) NewMembership(oldM reader.Membership, ss *stripe.Subscription
 		PaymentMethod: enum.PayMethodStripe,
 		StripeSubsID:  null.StringFrom(ss.ID),
 		StripePlanID:  null.StringFrom(i.PlanID),
-		AutoRenewal:   !ss.CancelAtPeriodEnd,
+		AutoRenewal:   status == enum.SubsStatusActive && IsAutoRenewal(ss),
 		Status:        status,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
@@ -147,7 +147,7 @@ func (i SubsInput) UpdateMembership(m reader.Membership, ss *stripe.Subscription
 	m.FtcPlanID = null.String{}
 	m.StripeSubsID = null.StringFrom(ss.ID)
 	m.StripePlanID = null.StringFrom(i.PlanID)
-	m.AutoRenewal = !ss.CancelAtPeriodEnd
+	m.AutoRenewal = status == enum.SubsStatusActive && IsAutoRenewal(ss)
 	m.Status = status
 	m.AppleSubsID = null.String{}
 	m.B2BLicenceID = null.String{}
@@ -164,8 +164,8 @@ func RefreshMembership(m reader.Membership, ss *stripe.Subscription) reader.Memb
 	periodEnd := CanonicalizeUnix(ss.CurrentPeriodEnd)
 
 	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
-	m.AutoRenewal = !ss.CancelAtPeriodEnd
 	m.Status, _ = enum.ParseSubsStatus(string(ss.Status))
+	m.AutoRenewal = m.Status == enum.SubsStatusActive && IsAutoRenewal(ss)
 
 	return m
 }
