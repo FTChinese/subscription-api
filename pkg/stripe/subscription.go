@@ -2,10 +2,10 @@ package stripe
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/stripe/stripe-go"
-	"time"
 )
 
 // Subscription is a reduced version of stripe.Subscription.
@@ -28,16 +28,6 @@ type Subscription struct {
 	Status stripe.SubscriptionStatus `json:"status"`
 }
 
-// Bridge between chrono pkg and unix timestamp.
-// Unix 0 represent year 1970, while Golang's zero time is actually 0.
-func CanonicalizeUnix(s int64) time.Time {
-	if s > 0 {
-		return time.Unix(s, 0)
-	}
-
-	return time.Time{}
-}
-
 func NewSubs(s *stripe.Subscription) Subscription {
 	if s == nil {
 		return Subscription{}
@@ -45,15 +35,15 @@ func NewSubs(s *stripe.Subscription) Subscription {
 
 	return Subscription{
 		CancelAtPeriodEnd:  s.CancelAtPeriodEnd,
-		Created:            chrono.TimeFrom(CanonicalizeUnix(s.Created)),
-		CurrentPeriodEnd:   chrono.TimeFrom(CanonicalizeUnix(s.CurrentPeriodEnd)),
-		CurrentPeriodStart: chrono.TimeFrom(CanonicalizeUnix(s.CurrentPeriodStart)),
+		Created:            chrono.TimeFrom(dt.FromUnix(s.Created)),
+		CurrentPeriodEnd:   chrono.TimeFrom(dt.FromUnix(s.CurrentPeriodEnd)),
+		CurrentPeriodStart: chrono.TimeFrom(dt.FromUnix(s.CurrentPeriodStart)),
 		CustomerID:         s.Customer.ID,
-		EndedAt:            chrono.TimeFrom(CanonicalizeUnix(s.EndedAt)),
+		EndedAt:            chrono.TimeFrom(dt.FromUnix(s.EndedAt)),
 		ID:                 s.ID,
 		LatestInvoiceID:    s.LatestInvoice.ID,
 		Livemode:           s.Livemode,
-		StartDate:          chrono.TimeFrom(CanonicalizeUnix(s.StartDate)),
+		StartDate:          chrono.TimeFrom(dt.FromUnix(s.StartDate)),
 		Status:             s.Status,
 	}
 }

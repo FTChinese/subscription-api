@@ -71,3 +71,13 @@ func MustParseSQLTime(value string, loc *time.Location) time.Time {
 
 	return t
 }
+
+// FromUnix convert unix timestamp to time.Time. If sec <= 0,
+// return the zero value of time rather than epoch time.
+func FromUnix(sec int64) time.Time {
+	if sec > 0 {
+		return time.Unix(sec, 0)
+	}
+
+	return time.Time{}
+}

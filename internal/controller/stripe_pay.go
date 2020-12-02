@@ -225,6 +225,8 @@ func (router StripeRouter) CreateSubscription(w http.ResponseWriter, req *http.R
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(userIDKey)
 
+	// TODO: retrieve user account by ftc id.
+
 	input := stripePkg.NewSubsInput(ftcID)
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		sugar.Error(err)
