@@ -13,49 +13,51 @@ var editionKeySuffix = map[bool]string{
 	false: "test",
 }
 
-type PlanConfig struct {
+// Plan contains ftc associates ftc product edition with Stripe
+// plan/price id.
+type Plan struct {
 	product.Edition
-	PlanID string
-	Live   bool
+	PriceID string
+	Live    bool
 }
 
 type planStore struct {
-	plans        []PlanConfig
-	indexEdition map[string]int
-	indexID      map[string]int
+	plans        []Plan
+	indexEdition map[string]int // Index the plans array by `<tier>_<cycle>_<live | test>`
+	indexID      map[string]int // Index the plans array by stripe plan/price id.
 }
 
 func newPlanStore() *planStore {
 	s := &planStore{
-		plans: []PlanConfig{
+		plans: []Plan{
 			{
 				Edition: product.NewStdMonthEdition(),
-				PlanID:  "plan_FXZYLOEbcvj5Tx",
+				PriceID: "plan_FXZYLOEbcvj5Tx",
 				Live:    true,
 			},
 			{
 				Edition: product.NewStdMonthEdition(),
-				PlanID:  "plan_FOdgPTznDwHU4i",
+				PriceID: "plan_FOdgPTznDwHU4i",
 				Live:    false,
 			},
 			{
 				Edition: product.NewStdYearEdition(),
-				PlanID:  "plan_FXZZUEDpToPlZK",
+				PriceID: "plan_FXZZUEDpToPlZK",
 				Live:    true,
 			},
 			{
 				Edition: product.NewStdYearEdition(),
-				PlanID:  "plan_FOdfeaqzczp6Ag",
+				PriceID: "plan_FOdfeaqzczp6Ag",
 				Live:    false,
 			},
 			{
 				Edition: product.NewPremiumEdition(),
-				PlanID:  "plan_FXZbv1cDTsUKOg",
+				PriceID: "plan_FXZbv1cDTsUKOg",
 				Live:    true,
 			},
 			{
 				Edition: product.NewPremiumEdition(),
-				PlanID:  "plan_FOde0uAr0V4WmT",
+				PriceID: "plan_FOde0uAr0V4WmT",
 				Live:    false,
 			},
 		},
@@ -66,54 +68,48 @@ func newPlanStore() *planStore {
 	for i, v := range s.plans {
 		key := v.NamedKey() + "_" + editionKeySuffix[v.Live]
 		s.indexEdition[key] = i
-		s.indexID[v.PlanID] = i
+		s.indexID[v.PriceID] = i
 	}
 
 	return s
 }
 
-func (s *planStore) add(p PlanConfig) *planStore {
-	s.plans = append(s.plans, p)
-
-	pos := len(s.plans) - 1
-	key := p.NamedKey() + "_" + editionKeySuffix[p.Live]
-
-	// Uses <tier>_<cycle>_<live|test> as key.
-	// Example: `standard_year_live`
-	s.indexEdition[key] = pos
-	// Use plan id as index
-	s.indexID[p.PlanID] = pos
-
-	return s
-}
-
-func (s planStore) findByEdition(key string, live bool) (PlanConfig, error) {
+func (s planStore) FindByEdition(key string, live bool) (Plan, error) {
 	i, ok := s.indexEdition[key+"_"+editionKeySuffix[live]]
 	if !ok {
-		return PlanConfig{}, fmt.Errorf("stripe plan for %s is not found", key)
+		return Plan{}, fmt.Errorf("stripe plan for %s is not found", key)
 	}
 
 	return s.plans[i], nil
 }
 
-func (s planStore) findByID(planID string) (PlanConfig, error) {
+func (s planStore) FindByEditionV2(e product.Edition, live bool) (Plan, error) {
+	i, ok := s.indexEdition[e.NamedKey()+"_"+editionKeySuffix[live]]
+	if !ok {
+		return Plan{}, fmt.Errorf("stripe plan for %s is not found", e)
+	}
+
+	return s.plans[i], nil
+}
+
+func (s planStore) FindByID(planID string) (Plan, error) {
 	i, ok := s.indexID[planID]
 	if !ok {
-		return PlanConfig{}, fmt.Errorf("stripe plan with id %s is not found", planID)
+		return Plan{}, fmt.Errorf("stripe plan with id %s is not found", planID)
 	}
 
 	return s.plans[i], nil
 }
 
-var stripePlans = newPlanStore()
+var PlanStore = newPlanStore()
 
 // FetchPlan gets stripe plan from API.
 // The key is one of standard_month, standard_year, premium_year.
 func FetchPlan(key string, live bool) (*stripe.Plan, error) {
-	p, err := stripePlans.findByEdition(key, live)
+	p, err := PlanStore.FindByEdition(key, live)
 	if err != nil {
 		return nil, sql.ErrNoRows
 	}
 
-	return plan.Get(p.PlanID, nil)
+	return plan.Get(p.PriceID, nil)
 }

@@ -31,6 +31,11 @@ func NewClient(logger *zap.Logger) Client {
 	}
 }
 
+// Verify the passed in receipt against App Store.
+// `sandbox` determines which endpoint to use.
+// For subscription-api, sandbox is determined by cli args upon startup. It will never change after server started.
+// However, when polling App Store, sandbox is dynamically determined
+// by environment value retrieved from DB.
 func (c Client) Verify(receipt string, sandbox bool) (apple.VerificationResp, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()

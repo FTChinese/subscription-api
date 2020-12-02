@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/validator"
@@ -16,12 +17,12 @@ import (
 // SubsInput is the request body to create a new subscription.
 type SubsInput struct {
 	product.Edition
-	FtcID                string      `json:"-"` // Acquired from header.
-	PlanID               string      `json:"-"`
-	CustomerID           string      `json:"customer"`
+	FtcID                string      `json:"-"`        // Deprecated. Acquired from header.
+	PlanID               string      `json:"-"`        // Deprecated
+	CustomerID           string      `json:"customer"` // Deprecated. Use FtcID to retrieve user account.
 	CouponID             null.String `json:"coupon"`
 	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
-	IdempotencyKey       string      `json:"idempotency"`
+	IdempotencyKey       string      `json:"idempotency"` // TODO: add when and why this is needed.
 }
 
 func NewSubsInput(ftcID string) SubsInput {
@@ -30,6 +31,7 @@ func NewSubsInput(ftcID string) SubsInput {
 	}
 }
 
+// Validate checks if customer and idempotency fields are set.
 func (i SubsInput) Validate() *render.ValidationError {
 	ve := validator.New("customer").Required().Validate(i.CustomerID)
 	if ve != nil {
@@ -40,12 +42,12 @@ func (i SubsInput) Validate() *render.ValidationError {
 }
 
 func (i SubsInput) WithPlanID(live bool) (SubsInput, error) {
-	p, err := stripePlans.findByEdition(i.NamedKey(), live)
+	p, err := PlanStore.FindByEdition(i.NamedKey(), live)
 	if err != nil {
 		return i, sql.ErrNoRows
 	}
 
-	i.PlanID = p.PlanID
+	i.PlanID = p.PriceID
 
 	return i, nil
 }
@@ -114,7 +116,7 @@ func (i SubsInput) UpgradeSubs(subsID string) (*stripe.Subscription, error) {
 // The user might have an invalid membership and we should keep its union id if the account is lined to wechat.
 func (i SubsInput) NewMembership(oldM reader.Membership, ss *stripe.Subscription) reader.Membership {
 
-	periodEnd := CanonicalizeUnix(ss.CurrentPeriodEnd)
+	periodEnd := dt.FromUnix(ss.CurrentPeriodEnd)
 	status, _ := enum.ParseSubsStatus(string(ss.Status))
 
 	return reader.Membership{
@@ -137,7 +139,7 @@ func (i SubsInput) NewMembership(oldM reader.Membership, ss *stripe.Subscription
 
 // UpdateMembership updates an existing membership for a new stripe subscription.
 func (i SubsInput) UpdateMembership(m reader.Membership, ss *stripe.Subscription) reader.Membership {
-	periodEnd := CanonicalizeUnix(ss.CurrentPeriodEnd)
+	periodEnd := dt.FromUnix(ss.CurrentPeriodEnd)
 	status, _ := enum.ParseSubsStatus(string(ss.Status))
 
 	m.Tier = i.Tier
@@ -161,7 +163,7 @@ func GetSubscription(subsID string) (*stripe.Subscription, error) {
 
 // RefreshMembership refreshes an existing valid stripe membership.
 func RefreshMembership(m reader.Membership, ss *stripe.Subscription) reader.Membership {
-	periodEnd := CanonicalizeUnix(ss.CurrentPeriodEnd)
+	periodEnd := dt.FromUnix(ss.CurrentPeriodEnd)
 
 	m.ExpireDate = chrono.DateFrom(periodEnd.AddDate(0, 0, 1))
 	m.Status, _ = enum.ParseSubsStatus(string(ss.Status))
