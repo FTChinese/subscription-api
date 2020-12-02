@@ -62,7 +62,7 @@ func (r *Repo) MustSaveWxUser(u wxlogin.UserInfoSchema) {
 }
 
 func (r *Repo) SaveMembership(m reader.Membership) error {
-	m = m.Normalize()
+	m = m.Sync()
 
 	_, err := r.db.NamedExec(
 		reader.StmtCreateMember,

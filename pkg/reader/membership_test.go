@@ -245,7 +245,7 @@ func TestMembership_Normalize(t *testing.T) {
 				AppleSubsID:   tt.fields.AppleSubsID,
 				B2BLicenceID:  tt.fields.B2BLicenceID,
 			}
-			got := m.Normalize()
+			got := m.Sync()
 
 			assert.Equal(t, got.Tier, codeToTier[got.LegacyTier.Int64])
 			assert.Equal(t, chrono.DateFrom(time.Unix(got.LegacyExpire.Int64, 0)).Time, got.ExpireDate.Time)

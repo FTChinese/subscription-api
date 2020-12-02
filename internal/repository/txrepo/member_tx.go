@@ -38,7 +38,7 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error)
 	}
 
 	// Treat a non-existing member as a valid value.
-	return m.Normalize(), nil
+	return m.Sync(), nil
 }
 
 // RetrieveAppleMember selects membership by apple original transaction id.
@@ -56,7 +56,7 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership,
 		return m, err
 	}
 
-	return m.Normalize(), nil
+	return m.Sync(), nil
 }
 
 // SaveOrder saves an order to db.
@@ -121,7 +121,7 @@ func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 
 // CreateMember creates a new membership.
 func (tx MemberTx) CreateMember(m reader.Membership) error {
-	m = m.Normalize()
+	m = m.Sync()
 
 	_, err := tx.NamedExec(
 		reader.StmtCreateMember,
@@ -137,7 +137,7 @@ func (tx MemberTx) CreateMember(m reader.Membership) error {
 
 // UpdateMember updates existing membership.
 func (tx MemberTx) UpdateMember(m reader.Membership) error {
-	m = m.Normalize()
+	m = m.Sync()
 
 	_, err := tx.NamedExec(
 		reader.StmtUpdateMember,
