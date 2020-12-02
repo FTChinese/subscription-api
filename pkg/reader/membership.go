@@ -108,9 +108,9 @@ func (m Membership) isAPIOnly() bool {
 	return false
 }
 
-// Normalize turns legacy vip_type and expire_time into
+// Sync turns legacy vip_type and expire_time into
 // member_tier and expire_date columns, or vice versus.
-func (m Membership) Normalize() Membership {
+func (m Membership) Sync() Membership {
 	if m.IsZero() {
 		return m
 	}
