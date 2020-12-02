@@ -34,7 +34,7 @@ func Test_newPlanStore(t *testing.T) {
 }
 
 func Test_planStore_findByEdition(t *testing.T) {
-	p, err := stripePlans.findByEdition("standard_year", false)
+	p, err := PlanStore.FindByEdition("standard_year", false)
 	if err != nil {
 		t.Error(err)
 	}
