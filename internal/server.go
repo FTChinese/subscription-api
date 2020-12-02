@@ -173,11 +173,27 @@ func StartServer(s ServerStatus) {
 
 		// Create Stripe subscription.
 		r.Route("/subscriptions", func(r chi.Router) {
-			r.Get("/", stripeRouter.GetSubscription)
+			// Create a subscription
 			r.Post("/", stripeRouter.CreateSubscription)
+			// Get a list of subscriptions
+			r.Get("/", stripeRouter.GetSubscription)
+
 			// Upgrade membership.
 			r.Patch("/", stripeRouter.UpgradeSubscription)
 		})
+
+		//r.Route("/subs", func(r chi.Router) {
+		//	// Create a subscription
+		//	r.Post("/")
+		//	// List all subscriptions of a user
+		//	r.Get("/")
+		//	// Get a single subscription
+		//	r.Get("/{id}",)
+		//	// Update a subscription
+		//	r.Post("/{id}")
+		//	// Delete a subscription
+		//	r.Delete("/{id}")
+		//})
 	})
 
 	r.Route("/apple", func(r chi.Router) {
