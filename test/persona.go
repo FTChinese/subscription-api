@@ -190,7 +190,7 @@ func (p *Persona) Membership() reader.Membership {
 		m.B2BLicenceID = null.StringFrom(faker.GenLicenceID())
 	}
 
-	return m.Normalize()
+	return m.Sync()
 }
 
 func (p *Persona) WxOrderBuilder() subs.PaymentConfig {

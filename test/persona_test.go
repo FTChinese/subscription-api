@@ -58,7 +58,7 @@ func TestPersona_IAPSubs(t *testing.T) {
 
 	m := sub.NewMembership(p.AccountID())
 
-	m = m.Normalize()
+	m = m.Sync()
 
 	assert.NotZero(t, m.LegacyExpire)
 	assert.NotZero(t, m.LegacyTier)

@@ -17,7 +17,7 @@ func (env Env) RetrieveMember(id reader.MemberID) (reader.Membership, error) {
 		return reader.Membership{}, err
 	}
 
-	return m.Normalize(), nil
+	return m.Sync(), nil
 }
 
 // RetrieveAppleMember selects membership by apple original transaction id.
@@ -35,5 +35,5 @@ func (env Env) RetrieveAppleMember(txID string) (reader.Membership, error) {
 		return m, err
 	}
 
-	return m.Normalize(), nil
+	return m.Sync(), nil
 }
