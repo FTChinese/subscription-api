@@ -25,7 +25,7 @@ func TestSubscription_NewMembership(t *testing.T) {
 		UnionID:    null.String{},
 	}.MustNormalize())
 
-	got = got.Normalize()
+	got = got.Sync()
 
 	t.Logf("%+v", got)
 
@@ -63,7 +63,7 @@ func TestSubscription_BuildOn(t *testing.T) {
 		B2BLicenceID:  null.String{},
 	})
 
-	got = got.Normalize()
+	got = got.Sync()
 
 	t.Logf("%+v", got)
 

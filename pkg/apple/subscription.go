@@ -131,7 +131,7 @@ func (s Subscription) NewMembership(id reader.MemberID) reader.Membership {
 		B2BLicenceID:  null.String{},
 	}
 
-	return m
+	return m.Sync()
 }
 
 // BuildOn updates an existing IAP membership based on this
@@ -151,7 +151,7 @@ func (s Subscription) BuildOn(m reader.Membership) reader.Membership {
 	m.AppleSubsID = null.StringFrom(s.OriginalTransactionID)
 	m.B2BLicenceID = null.String{}
 
-	return m
+	return m.Sync()
 }
 
 type SubsList struct {
