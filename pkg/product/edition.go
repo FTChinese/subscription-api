@@ -2,6 +2,7 @@ package product
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/render"
 )
 
 type Edition struct {
@@ -28,6 +29,26 @@ func NewPremiumEdition() Edition {
 		Tier:  enum.TierPremium,
 		Cycle: enum.CycleYear,
 	}
+}
+
+func (e Edition) Validate() *render.ValidationError {
+	if e.Tier == enum.TierNull {
+		return &render.ValidationError{
+			Message: "Please specify the edition you want to subscribe to",
+			Field:   "tier",
+			Code:    render.CodeMissingField,
+		}
+	}
+
+	if e.Cycle == enum.CycleNull {
+		return &render.ValidationError{
+			Message: "Please specify the billing cycle of your subscription",
+			Field:   "cycle",
+			Code:    render.CodeMissingField,
+		}
+	}
+
+	return nil
 }
 
 func (e Edition) NamedKey() string {

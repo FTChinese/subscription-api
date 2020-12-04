@@ -1,12 +1,9 @@
 package striperepo
 
 import (
-	"database/sql"
-	"errors"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	stripePkg "github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/guregu/null"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
 // CreateSubscription creates a new subscription.
@@ -19,48 +16,45 @@ import (
 //
 // error could be:
 // util.ErrNonStripeValidSub
-// util.ErrActiveStripeSub
+// util.ErrStripeDuplicateSub
 // util.ErrUnknownSubState
-func (env Env) CreateSubscription(input stripePkg.SubsInput) (stripePkg.SubsResult, error) {
+func (env Env) CreateSubscription(co stripe.Checkout) (stripe.CheckoutResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return stripePkg.SubsResult{}, err
+		return stripe.CheckoutResult{}, err
 	}
 
 	// Retrieve member for this user to check whether the operation is allowed.
-	mmb, err := tx.RetrieveMember(reader.MemberID{
-		CompoundID: "",
-		FtcID:      null.StringFrom(input.FtcID),
-		UnionID:    null.String{},
-	}.MustNormalize())
-	sugar.Infof("A stripe membership: %+v", mmb)
+	mmb, err := tx.RetrieveMember(co.Account.MemberID())
+
+	sugar.Infof("Current membership before creating stripe subscription: %+v", mmb)
 
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripePkg.SubsResult{}, err
+		return stripe.CheckoutResult{}, err
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
-	subsKind, ve := mmb.StripeSubsKind(input.Edition)
-	if ve != nil {
+	subsKind, err := mmb.StripeSubsKind(co.Plan.Edition)
+	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripePkg.SubsResult{}, err
+		return stripe.CheckoutResult{}, err
 	}
 	if subsKind != enum.OrderKindCreate {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripePkg.SubsResult{}, errors.New("invalid request to create Stripe subscription")
+		return stripe.CheckoutResult{}, reader.ErrStripeNotCreate
 	}
 
 	sugar.Info("Creating stripe subscription")
 	// Contact Stripe API.
-	ss, err := input.CreateSubs()
+	ss, err := env.client.CreateSubs(co.StripeParams())
 
 	// {"status":400,
 	// "message":"Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than '4a857eb3-396c-4c91-a8f1-4014868a8437' if you meant to execute a different request.","request_id":"req_Dv6N7d9lF8uDHJ",
@@ -69,14 +63,16 @@ func (env Env) CreateSubscription(input stripePkg.SubsInput) (stripePkg.SubsResu
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripePkg.SubsResult{}, err
+		return stripe.CheckoutResult{}, err
 	}
 
 	sugar.Infof("Subscription id %s, status %s, payment intent status %s", ss.ID, ss.Status, ss.LatestInvoice.PaymentIntent.Status)
 
+	subs := co.NewSubs(ss)
+
 	// Create Membership based on stripe subscription.
 	// Keep existing membership's union id if exists.
-	newMmb := input.NewMembership(mmb, ss)
+	newMmb := co.Membership(subs)
 	sugar.Infof("A new stripe membership: %+v", newMmb)
 
 	// Create membership from Stripe subscription.
@@ -85,32 +81,39 @@ func (env Env) CreateSubscription(input stripePkg.SubsInput) (stripePkg.SubsResu
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return stripePkg.SubsResult{}, err
+			return stripe.CheckoutResult{}, err
 		}
 	} else {
 		err := tx.UpdateMember(newMmb)
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return stripePkg.SubsResult{}, err
+			return stripe.CheckoutResult{}, err
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return stripePkg.SubsResult{}, err
+		return stripe.CheckoutResult{}, err
 	}
 
-	return stripePkg.SubsResult{
-		StripeSubs: ss,
-		Member:     newMmb,
-		Snapshot:   mmb.Snapshot(reader.ArchiverStripeCreate),
+	payResult, err := stripe.NewPaymentResult(ss)
+	if err != nil {
+		sugar.Error(err)
+	}
+
+	return stripe.CheckoutResult{
+		PaymentResult: payResult,
+		Subs:          subs,
+		Payment:       payResult,
+		Member:        newMmb,
+		Snapshot:      mmb.Snapshot(reader.ArchiverStripeCreate),
 	}, err
 }
 
 // SaveSubsError saves any error in stripe response.
-func (env Env) SaveSubsError(e stripePkg.APIError) error {
-	_, err := env.db.NamedExec(stripePkg.StmtSaveAPIError, e)
+func (env Env) SaveSubsError(e stripe.APIError) error {
+	_, err := env.db.NamedExec(stripe.StmtSaveAPIError, e)
 
 	if err != nil {
 		return err
@@ -119,46 +122,32 @@ func (env Env) SaveSubsError(e stripePkg.APIError) error {
 	return nil
 }
 
-// GetSubscription refresh stripe subscription data if stale.
-func (env Env) GetSubscription(ftcID string) (stripePkg.Subscription, error) {
+// RefreshSubs refresh stripe subscription data if stale.
+func (env Env) RefreshSubs(s stripe.Subs) (stripe.CheckoutResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
+
+	ss, err := env.client.RetrieveSubs(s.ID)
+	if err != nil {
+		return stripe.CheckoutResult{}, err
+	}
 
 	tx, err := env.beginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return stripePkg.Subscription{}, err
+		return stripe.CheckoutResult{}, err
 	}
 
-	mmb, err := tx.RetrieveMember(reader.MemberID{
-		CompoundID: "",
-		FtcID:      null.StringFrom(ftcID),
-		UnionID:    null.String{},
-	}.MustNormalize())
+	mmb, err := tx.RetrieveStripeMember(s.ID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripePkg.Subscription{}, err
+		return stripe.CheckoutResult{}, err
 	}
 
-	if !mmb.IsStripe() {
-		sugar.Infof("Stripe membership not found for %v", ftcID)
-		_ = tx.Rollback()
-		return stripePkg.Subscription{}, sql.ErrNoRows
-	}
-	sugar.Infof("Retrieve a member: %+v", mmb)
+	sugar.Infof("Retrieve a stripe member: %+v", mmb)
 
-	ss, err := stripePkg.GetSubscription(mmb.StripeSubsID.String)
-
-	if err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return stripePkg.Subscription{}, err
-	}
-
-	sugar.Infof("Subscription id %s, status %s", ss.ID, ss.Status)
-
-	newMmb := stripePkg.RefreshMembership(mmb, ss)
+	newMmb := stripe.RefreshMembership(mmb, ss)
 
 	sugar.Infof("Refreshed membership: %+v", newMmb)
 
@@ -166,14 +155,39 @@ func (env Env) GetSubscription(ftcID string) (stripePkg.Subscription, error) {
 	if err := tx.UpdateMember(newMmb); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripePkg.Subscription{}, err
+		return stripe.CheckoutResult{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return stripePkg.Subscription{}, err
+		return stripe.CheckoutResult{}, err
 	}
 
 	sugar.Info("Refresh stripe subscription finished.")
-	return stripePkg.NewSubs(ss), nil
+	return stripe.CheckoutResult{
+		PaymentResult: stripe.PaymentResult{},
+		Subs:          s,
+		Payment:       stripe.PaymentResult{},
+		Member:        reader.Membership{},
+		Snapshot:      reader.MemberSnapshot{},
+	}, nil
+}
+
+func (env Env) UpsertSubs(s stripe.Subs) error {
+	_, err := env.db.NamedExec(stripe.StmtInsertSubs, s)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (env Env) RetrieveSubs(id string) (stripe.Subs, error) {
+	var s stripe.Subs
+	err := env.db.Get(&s, stripe.StmtRetrieveSubs, id)
+	if err != nil {
+		return s, err
+	}
+
+	return s, nil
 }

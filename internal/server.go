@@ -156,6 +156,7 @@ func StartServer(s ServerStatus) {
 
 		// Get a stripe plan.
 		r.Get("/plans/{id}", stripeRouter.GetPlan)
+		r.Get("/prices/{tier}/{cycle}", stripeRouter.GetPrice)
 
 		r.Route("/customers", func(r chi.Router) {
 			// Create a stripe customer if not exists yet, or
@@ -174,7 +175,7 @@ func StartServer(s ServerStatus) {
 		// Create Stripe subscription.
 		r.Route("/subscriptions", func(r chi.Router) {
 			// Create a subscription
-			r.Post("/", stripeRouter.CreateSubscription)
+			r.Post("/", stripeRouter.CreateSubs)
 			// Get a list of subscriptions
 			r.Get("/", stripeRouter.GetSubscription)
 
@@ -182,18 +183,19 @@ func StartServer(s ServerStatus) {
 			r.Patch("/", stripeRouter.UpgradeSubscription)
 		})
 
-		//r.Route("/subs", func(r chi.Router) {
-		//	// Create a subscription
-		//	r.Post("/")
-		//	// List all subscriptions of a user
-		//	r.Get("/")
-		//	// Get a single subscription
-		//	r.Get("/{id}",)
-		//	// Update a subscription
-		//	r.Post("/{id}")
-		//	// Delete a subscription
-		//	r.Delete("/{id}")
-		//})
+		r.Route("/subs", func(r chi.Router) {
+			// Create a subscription
+			r.Post("/", stripeRouter.CreateSubs)
+			// List all subscriptions of a user
+			r.Get("/", stripeRouter.ListSubs)
+			// Get a single subscription
+			r.Get("/{id}", stripeRouter.LoadSubs)
+			// Update a subscription
+			r.Post("/{id}/refresh", stripeRouter.RefreshSubs)
+			r.Post("/{id}/upgrade", stripeRouter.UpgradeSubscription)
+			r.Post("/{id}/cancel", stripeRouter.CancelSubs)
+			r.Post("/{id}/undo-cancel", stripeRouter.UndoSubsCancel)
+		})
 	})
 
 	r.Route("/apple", func(r chi.Router) {

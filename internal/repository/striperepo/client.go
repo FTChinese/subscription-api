@@ -1,19 +1,29 @@
 package striperepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/stripe/stripe-go/v71"
-	"github.com/stripe/stripe-go/v71/customer"
-	"github.com/stripe/stripe-go/v71/ephemeralkey"
-	"github.com/stripe/stripe-go/v71/plan"
-	"github.com/stripe/stripe-go/v71/sub"
+	"github.com/stripe/stripe-go/v71/client"
 	"go.uber.org/zap"
 )
 
 type Client struct {
 	live   bool
+	sc     *client.API
 	logger *zap.Logger
+}
+
+func NewClient(live bool, logger *zap.Logger) Client {
+
+	key := config.MustLoadStripeAPIKeys().Pick(live)
+
+	return Client{
+		live:   live,
+		sc:     client.New(key, nil),
+		logger: logger,
+	}
 }
 
 // GetPlan retrieves stripe plan details depending on the edition selected.
@@ -23,7 +33,7 @@ func (c Client) GetPlan(edition product.Edition) (*stripe.Plan, error) {
 		return nil, err
 	}
 
-	return plan.Get(p.PriceID, nil)
+	return c.sc.Plans.Get(p.PriceID, nil)
 }
 
 func (c Client) CreateCustomer(email string) (*stripe.Customer, error) {
@@ -34,7 +44,7 @@ func (c Client) CreateCustomer(email string) (*stripe.Customer, error) {
 		Email: stripe.String(email),
 	}
 
-	cus, err := customer.New(params)
+	cus, err := c.sc.Customers.New(params)
 
 	if err != nil {
 		sugar.Error(err)
@@ -52,7 +62,7 @@ func (c Client) RetrieveCustomer(cusID string) (*stripe.Customer, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
 
-	cus, err := customer.Get(cusID, nil)
+	cus, err := c.sc.Customers.Get(cusID, nil)
 	if err != nil {
 		sugar.Error(err)
 		return nil, err
@@ -71,7 +81,7 @@ func (c Client) SetDefaultPaymentMethod(pm ftcStripe.PaymentInput) (*stripe.Cust
 		},
 	}
 
-	return customer.Update(pm.CustomerID, params)
+	return c.sc.Customers.Update(pm.CustomerID, params)
 }
 
 // CreateEphemeralKey generate a key so that client could restricted customer API directly.
@@ -81,7 +91,7 @@ func (c Client) CreateEphemeralKey(cusID, version string) ([]byte, error) {
 		StripeVersion: stripe.String(version),
 	}
 
-	key, err := ephemeralkey.New(params)
+	key, err := c.sc.EphemeralKeys.New(params)
 	if err != nil {
 		return nil, err
 	}
@@ -90,40 +100,12 @@ func (c Client) CreateEphemeralKey(cusID, version string) ([]byte, error) {
 }
 
 // CreateSubs create a new subscription for a customer.
-func (c Client) CreateSubs(cusID string, opts ftcStripe.SubsInput) (*stripe.Subscription, error) {
-	plan, err := ftcStripe.PlanStore.FindByEditionV2(opts.Edition, c.live)
-	if err != nil {
-		return nil, err
-	}
+func (c Client) CreateSubs(params *stripe.SubscriptionParams) (*stripe.Subscription, error) {
+	return c.sc.Subscriptions.New(params)
+}
 
-	params := &stripe.SubscriptionParams{
-		Customer: stripe.String(cusID),
-		Items: []*stripe.SubscriptionItemsParams{
-			{
-				Plan: stripe.String(plan.PriceID),
-			},
-		},
-	}
-
-	// {
-	// "status":400,
-	// "message":"Idempotent key length is 0 characters long, which is outside accepted lengths. Idempotent Keys must be 1-255 characters long. If you're looking for a decent generator, try using a UUID defined by IETF RFC 4122.",
-	// "request_id":"req_O6zILK5QEVpViw",
-	// "type":"idempotency_error"
-	// }
-	if opts.IdempotencyKey != "" {
-		params.SetIdempotencyKey(opts.IdempotencyKey)
-	}
-
-	if opts.CouponID.Valid {
-		params.Coupon = stripe.String(opts.DefaultPaymentMethod.String)
-	}
-
-	if opts.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripe.String(opts.DefaultPaymentMethod.String)
-	}
-
-	return sub.New(params)
+func (c Client) RetrieveSubs(subID string) (*stripe.Subscription, error) {
+	return c.sc.Subscriptions.Get(subID, nil)
 }
 
 // CancelSubs cancels a subscription at current period end.
@@ -132,39 +114,19 @@ func (c Client) CancelSubs(subID string) (*stripe.Subscription, error) {
 		CancelAtPeriodEnd: stripe.Bool(true),
 	}
 
-	return sub.Update(subID, params)
+	return c.sc.Subscriptions.Update(subID, params)
+}
+
+// UndoCancel set cancel_at_period_end to false before current_period_end past.
+func (c Client) UndoCancel(subID string) (*stripe.Subscription, error) {
+	params := &stripe.SubscriptionParams{
+		CancelAtPeriodEnd: stripe.Bool(false),
+	}
+
+	return c.sc.Subscriptions.Update(subID, params)
 }
 
 // UpgradeSubs switch subscription from standard to premium.
-func (c Client) UpgradeSubs(subID string, opts ftcStripe.SubsInput) (*stripe.Subscription, error) {
-	plan, err := ftcStripe.PlanStore.FindByEditionV2(opts.Edition, c.live)
-	if err != nil {
-		return nil, err
-	}
-
-	params := &stripe.SubscriptionParams{
-		Items: []*stripe.SubscriptionItemsParams{
-			{
-				Plan: stripe.String(plan.PriceID),
-			},
-		},
-	}
-
-	params.AddExpand("latest_invoice.payment_intent")
-
-	if opts.IdempotencyKey != "" {
-		params.IdempotencyKey = stripe.String(opts.IdempotencyKey)
-	}
-
-	if opts.CouponID.Valid {
-		params.Coupon = stripe.String(opts.CouponID.String)
-	}
-
-	if opts.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripe.String(opts.DefaultPaymentMethod.String)
-	}
-
-	params.SetIdempotencyKey(opts.IdempotencyKey)
-
-	return sub.Update(subID, params)
+func (c Client) UpgradeSubs(subID string, params *stripe.SubscriptionParams) (*stripe.Subscription, error) {
+	return c.sc.Subscriptions.Update(subID, params)
 }
