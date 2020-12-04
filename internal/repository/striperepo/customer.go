@@ -2,22 +2,18 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
 )
 
-// CreateStripeCustomer create a customer under ftc account for user with `ftcID`.
-// If readers current account already have stripe customer id, this action
+// CreateCustomer create a customer under ftc account for user with `ftcID`.
+// If reader's current account already have stripe customer id, this action
 // is aborted and current reader account is returned.
-// It is done in a transaction so that we won't create duplicate customer
-// for the same reader.
-func (env Env) CreateStripeCustomer(ftcID string) (reader.FtcAccount, error) {
+func (env Env) CreateCustomer(ftcID string) (reader.FtcAccount, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.beginAccountTx()
 	if err != nil {
-		sugar.Error(err)
 		sugar.Error(err)
 		return reader.FtcAccount{}, err
 	}
@@ -39,7 +35,7 @@ func (env Env) CreateStripeCustomer(ftcID string) (reader.FtcAccount, error) {
 
 	// Request stripe api to create customer.
 	// Return *stripe.Error if occurred.
-	stripeID, err := stripe.CreateCustomer(account.Email)
+	cus, err := env.client.CreateCustomer(account.Email)
 	if err != nil {
 		_ = tx.Rollback()
 		sugar.Error(err)
@@ -47,7 +43,7 @@ func (env Env) CreateStripeCustomer(ftcID string) (reader.FtcAccount, error) {
 	}
 
 	// Add stripe customer id to current account.
-	account.StripeID = null.StringFrom(stripeID)
+	account.StripeID = null.StringFrom(cus.ID)
 
 	// Save customer id in our db.
 	// There might be SQL errors.

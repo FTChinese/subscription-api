@@ -9,14 +9,16 @@ import (
 // Env wraps database connection
 type Env struct {
 	db     *sqlx.DB
+	client Client
 	logger *zap.Logger
 }
 
 // NewSubEnv creates a new instance of SubEnv.
 // `sandbox` is used to determine which table to write subscription data.
-func NewEnv(db *sqlx.DB, logger *zap.Logger) Env {
+func NewEnv(db *sqlx.DB, client Client, logger *zap.Logger) Env {
 	return Env{
 		db:     db,
+		client: client,
 		logger: logger,
 	}
 }

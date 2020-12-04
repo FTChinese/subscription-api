@@ -57,12 +57,12 @@ var expirationDate: Date
 if status == "canceled" {
     autoRenew = false
 
-    if !cancel_at && !cancel_at_period {
+    if !cancel_at && !cancel_at_period_end {
         expirationDate = canceled_at
         return        
     }
     
-    if cancel_at_period {
+    if cancel_at_period_end {
         expirationDate = current_period_end
         return
     }
@@ -71,6 +71,9 @@ if status == "canceled" {
 }
 ```
 
+## Subscription Kind
+
+Since all subscriptions are auto renewable by default, a subscription could be either creation or upgrading. There won't be renewal cases.
 
 
 

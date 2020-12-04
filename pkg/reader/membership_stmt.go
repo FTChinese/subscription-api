@@ -46,6 +46,11 @@ WHERE apple_subscription_id = ?
 LIMIT 1
 FOR UPDATE`
 
+const StmtGetLockStripeMember = colMembership + `
+WHERE stripe_subscription_id = ?
+LIMIT 1
+FOR UPDATE`
+
 const StmtFtcMemberOnly = `
 SELECT vip_id
 FROM premium.ftc_vip

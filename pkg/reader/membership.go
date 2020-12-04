@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/product"
 
 	"github.com/FTChinese/go-rest/chrono"
@@ -240,158 +239,52 @@ func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, error) {
 	return enum.OrderKindNull, errors.New("cannot determine subscription kind")
 }
 
-// ================================
-// The following section handles stripe.
-// ================================
-
 // StripeSubsKind deduce what kind of subscription a request is trying to create.
-// You can create or upgrade a subscripiton via stripe.
+// You can create or upgrade a subscription via stripe.
 // Cases for permission:
 // 1. Membership does not exist;
 // 2. Membership exists via alipay or wxpay but expired;
 // 3. Membership exits via stripe but is expired and it is not auto renewable.
 // 4. A stripe subscription that is not expired, auto renewable, but its current status is not active.
-func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, *render.ValidationError) {
+func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, error) {
 	// If a membership does not exist, allow create stripe
 	// subscription
 	if m.IsZero() {
 		return enum.OrderKindCreate, nil
 	}
 
+	// If current membership already expired.
 	if m.IsExpired() {
 		return enum.OrderKindCreate, nil
 	}
 
 	// If not purchased via stripe.
 	if m.PaymentMethod != enum.PayMethodStripe {
-		return enum.OrderKindNull, &render.ValidationError{
-			Message: fmt.Sprintf("Already subscribed via %s", m.PaymentMethod),
-			Field:   "paymentMethod",
-			Code:    render.CodeInvalid,
-		}
+		return enum.OrderKindNull, ErrNonStripeValidSub
 	}
 
-	// Now it is purchase via stripe.
-	// Check subscription status.
+	// If user previously subscribed via stripe and canceled, it expiration date is not past yet, and auto renewal is off.
+	// In such case we should allow user to create a new subscription of the same tier.
+	// If current membership is not expired yet, it could be either due to auto renewal, or expiration date is in the future.
+	// Status.IsValid is equal to auto renewal.
+	// If it is not auto renewal, it might be in canceled state.
 	if !m.Status.IsValid() {
 		return enum.OrderKindCreate, nil
 	}
 
-	// Stripe subscription is still valid
+	// Auto renewable is not needed.
 	if m.Tier == e.Tier {
-		return enum.OrderKindNull, &render.ValidationError{
-			Message: "Already subscribed via Stripe",
-			Field:   "tier",
-			Code:    render.CodeAlreadyExists,
-		}
+		return enum.OrderKindNull, ErrStripeDuplicateSub
 	}
 
-	// Trying to switch tier.
+	// current tier != requested tier.
+	// If current is premium, requested must be standard.
 	if m.Tier == enum.TierPremium {
-		return enum.OrderKindNull, &render.ValidationError{
-			Message: "Downgrading is forbidden.",
-			Field:   "downgrade",
-			Code:    render.CodeInvalid,
-		}
+		return enum.OrderKindNull, ErrStripeNoDowngrade
 	}
 
+	// Current is standard, requested must be premium.
 	return enum.OrderKindUpgrade, nil
-}
-
-// =======================================
-// The following section handles Apple IAP
-// =======================================
-
-// ValidateMergeIAP checks if it is allowed to merge iap membership into an FTC membership.
-// Only two cases are allowed to merge:
-// * Both sides refer to the same membership (including zero value);
-// * IAP side is zero and FTC side non-zero but invalid.
-// As long as link is allowed to proceed, two side cannot both have memberships simultaneously.
-// We only need to take a snapshot of ftc side if it exists.
-//
-// | FTC\IAP     | None   | Not-Expired | Expired |
-// | ----------- | ------ | ----------- | --------|
-// | None        |  Y     |      N      |  N      |
-// | Not-Expired |  N     |      N      |  N      |
-// | Expired     |  Y     |      N      |  N      |
-//
-// Row 2 Column 2 has an exception:
-// If payMethod is null, ftc side expire time is not after iap side, it is probably comes from IAP.
-func (m Membership) ValidateMergeIAP(iapMember Membership, iapExpires chrono.Time) error {
-	// Equal means either both are zero values, or they refer to the same instance.
-	// In such case it is fine to return any of them.
-	// The caller should then check whether the returned value is zero.
-	// For zero value, build a new membership based on IAP transaction.
-	// If any of them is not zero, it indicates they already linked.
-	// We should stop processing.
-	if iapMember.IsEqual(m) {
-		if m.IsZero() {
-			return nil
-		}
-
-		// Tell calle to stop processing.
-		return ErrIAPFtcLinked
-	}
-
-	// If the two sides are not equal, they must be totally different memberships and the two sides cannot be both empty.
-	//
-	// a != b might indicates those cases:
-	// * a == 0, b != 0;
-	// * a != 0, b != 0;
-	// * a != 0, b == 0.
-	//
-	// Case 1 and 2:
-	// The presence of IAP side itself indicates it is already linked to a FTC account.
-	// Now it is trying to link to another FTC account since the two sides are not the same one.
-	// Such action should be denied regardless of whether the FTC side is valid or not, and it is mostly a fraudulent behavior.
-	// If an exiting linked IAP is trying to switch the linked FTC account, it falls into this category and user should first perform unlink.
-	// In such case we still need to update the IAP side membership based on apple latest transaction.
-	if !iapMember.IsZero() {
-		return &render.ValidationError{
-			Message: "An apple subscription cannot link to multiple FTC accounts",
-			Field:   "iap_membership",
-			Code:    "already_linked",
-		}
-	}
-
-	// Case 3:
-	// Current IAP side is empty, then FTC side must not be empty.
-	// We need to consider 2 cases here:
-	// * FTC side is created via another IAP. In such case we should deny it and user should manually unlink that IAP before linking to this one.
-	if m.IsIAP() {
-		return &render.ValidationError{
-			Message: "Target ftc account is already linked to another apple subscription",
-			Field:   "ftc_membership",
-			Code:    "already_linked",
-		}
-	}
-
-	// * FTC side is non-IAP.
-	// Then check whether it is expired.
-	// If the FTC side is still valid, merging is not allowed since it will override valid data.
-	if !m.IsExpired() {
-		// An edge case here: if the data is in legacy format and payMethod is null, which might be created by wxpay or
-		// or alipay, or might be manually created by customer service, we could not determine whether the linked should
-		// be allowed or not.
-		// In such case, we will compare the expiration date.
-		// If apple's expiration date comes later, allow the FTC
-		// side to be overridden; otherwise we shall keep the FTC
-		// side intact.
-		if m.PaymentMethod == enum.PayMethodNull {
-			if m.ExpireDate.Before(iapExpires.Time) {
-				return nil
-			}
-		}
-
-		return &render.ValidationError{
-			Message: "Target ftc account already has a valid non-iap membership",
-			Field:   "ftc_membership",
-			Code:    "valid_non_iap",
-		}
-	}
-
-	// Otherwise merging to an exiting expired non-iap FTC membership is allowed.
-	return nil
 }
 
 // Snapshot takes a snapshot of membership, usually before modifying it.

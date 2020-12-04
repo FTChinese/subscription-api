@@ -3,7 +3,7 @@ package stripe
 import (
 	"errors"
 	"github.com/guregu/null"
-	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/v71"
 )
 
 // PaymentResult tells client whether user a subscription is created successfully.
