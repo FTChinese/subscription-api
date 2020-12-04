@@ -41,17 +41,3 @@ func Test_planStore_findByEdition(t *testing.T) {
 
 	assert.Equal(t, p.Tier, enum.TierStandard)
 }
-
-func TestFetchPlan(t *testing.T) {
-
-	cfg := mustConfigViper()
-
-	p, err := FetchPlan("standard_year", cfg.Live())
-	if err != nil {
-		t.Error(err)
-	}
-
-	assert.NotNil(t, p)
-
-	t.Logf("%+v", p)
-}

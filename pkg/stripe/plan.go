@@ -1,11 +1,8 @@
 package stripe
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/FTChinese/subscription-api/pkg/product"
-	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/plan"
 )
 
 var editionKeySuffix = map[bool]string{
@@ -17,8 +14,8 @@ var editionKeySuffix = map[bool]string{
 // plan/price id.
 type Plan struct {
 	product.Edition
-	PriceID string
-	Live    bool
+	PriceID string `json:"priceId"`
+	Live    bool   `json:"-"`
 }
 
 type planStore struct {
@@ -102,14 +99,3 @@ func (s planStore) FindByID(planID string) (Plan, error) {
 }
 
 var PlanStore = newPlanStore()
-
-// FetchPlan gets stripe plan from API.
-// The key is one of standard_month, standard_year, premium_year.
-func FetchPlan(key string, live bool) (*stripe.Plan, error) {
-	p, err := PlanStore.FindByEdition(key, live)
-	if err != nil {
-		return nil, sql.ErrNoRows
-	}
-
-	return plan.Get(p.PriceID, nil)
-}

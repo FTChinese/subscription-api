@@ -59,6 +59,21 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership,
 	return m.Sync(), nil
 }
 
+func (tx MemberTx) RetrieveStripeMember(subID string) (reader.Membership, error) {
+	var m reader.Membership
+
+	err := tx.Get(
+		&m,
+		reader.StmtGetLockStripeMember,
+		subID)
+
+	if err != nil && err != sql.ErrNoRows {
+		return m, err
+	}
+
+	return m.Sync(), nil
+}
+
 // SaveOrder saves an order to db.
 // This is only limited to alipay and wechat pay.
 // Stripe pay does not generate any orders on our side.
