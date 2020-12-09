@@ -19,7 +19,7 @@ func (router StripeRouter) GetDefaultPaymentMethod(w http.ResponseWriter, req *h
 
 	cus, err := router.client.RetrieveCustomer(id)
 	if err != nil {
-		err = forwardStripeErr(w, err)
+		err = handleErrResp(w, err)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 		}
@@ -60,7 +60,7 @@ func (router StripeRouter) SetDefaultPaymentMethod(w http.ResponseWriter, req *h
 
 	cus, err := router.client.SetDefaultPaymentMethod(pm)
 	if err != nil {
-		err = forwardStripeErr(w, err)
+		err = handleErrResp(w, err)
 		if err != nil {
 			_ = render.New(w).BadRequest(err.Error())
 		}

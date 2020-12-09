@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/stripe/stripe-go/v71"
 )
 
 // Subscription is a reduced version of stripe.Subscription.
@@ -27,26 +26,4 @@ type Subscription struct {
 
 	// Possible values are incomplete, incomplete_expired, trialing, active, past_due, canceled, or unpaid.
 	Status enum.SubsStatus `json:"status"`
-}
-
-// NewSubs creates a new Subscription.
-// Deprecated.
-func NewSubs(s Subs) Subscription {
-	return Subscription{
-		CancelAtPeriodEnd:  s.CancelAtPeriodEnd,
-		Created:            s.CreatedUTC,
-		CurrentPeriodEnd:   s.CurrentPeriodEnd,
-		CurrentPeriodStart: s.CurrentPeriodStart,
-		CustomerID:         s.CustomerID,
-		EndedAt:            s.EndedUTC,
-		ID:                 s.ID,
-		LatestInvoiceID:    s.LatestInvoiceID,
-		Livemode:           s.LiveMode,
-		StartDate:          s.StartDateUTC,
-		Status:             s.Status,
-	}
-}
-
-func IsAutoRenewal(s *stripe.Subscription) bool {
-	return s.CancelAt == 0 && s.CanceledAt == 0 && !s.CancelAtPeriodEnd
 }

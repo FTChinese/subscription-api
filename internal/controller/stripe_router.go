@@ -1,15 +1,18 @@
 package controller
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/jmoiron/sqlx"
-	stripeSdk "github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/webhook"
+	stripeSdk "github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/webhook"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
@@ -39,19 +42,41 @@ func NewStripeRouter(db *sqlx.DB, cfg config.BuildConfig, logger *zap.Logger) St
 }
 
 // Forward stripe error to client, and give the error back to caller to handle if it is not stripe error.
-func forwardStripeErr(w http.ResponseWriter, err error) error {
+func handleErrResp(w http.ResponseWriter, err error) error {
 
-	if stripeErr, ok := err.(*stripeSdk.Error); ok {
-		return render.New(w).
-			JSON(stripeErr.HTTPStatusCode, stripeErr)
-	}
-
+	var se *stripeSdk.Error
 	var ve *render.ValidationError
-	if errors.As(err, &ve) {
+	var re *render.ResponseError
+	switch {
+	case errors.As(err, &se):
+		return render.New(w).JSON(se.HTTPStatusCode, se)
+
+	case errors.As(err, &ve):
 		return render.New(w).Unprocessable(ve)
+
+	case errors.As(err, &re):
+		return render.New(w).JSON(re.StatusCode, re)
+
+	default:
+		return err
+	}
+}
+
+func (router StripeRouter) handleSubsResult(result stripe.SubsResult) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	err := router.stripeRepo.UpsertSubs(result.Subs)
+	if err != nil {
+		sugar.Error(err)
 	}
 
-	return err
+	if !result.Snapshot.IsZero() {
+		err := router.readerRepo.ArchiveMember(result.Snapshot)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}
 }
 
 // IssueKey creates an ephemeral key.
@@ -76,7 +101,7 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 
 	keyData, err := router.client.CreateEphemeralKey(id, stripeVersion)
 	if err != nil {
-		err = forwardStripeErr(w, err)
+		err = handleErrResp(w, err)
 		if err != nil {
 			_ = render.New(w).BadRequest(err.Error())
 		}
@@ -89,23 +114,42 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (router StripeRouter) onSubscription(s *stripeSdk.Subscription) error {
+func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	account, err := router.readerRepo.FtcAccountByStripeID(s.Customer.ID)
+	// Find user account by stripe customer id.
+	account, err := router.readerRepo.FtcAccountByStripeID(ss.Customer.ID)
+	if err != nil {
+		sugar.Error(err)
+		// If user account is not found, we still want to save this subscription.
+		if err == sql.ErrNoRows {
+			subs, err := stripe.NewSubs(ss, reader.MemberID{})
+			if err != nil {
+				sugar.Error(err)
+				return err
+			}
+
+			err = router.stripeRepo.UpsertSubs(subs)
+			if err != nil {
+				return err
+			}
+		}
+		return err
+	}
+
+	snapshot, err := router.stripeRepo.WebHookOnSubscription(account, ss)
 	if err != nil {
 		sugar.Error(err)
 		return err
 	}
 
-	memberID := account.MemberID()
-
-	_, err = router.stripeRepo.WebHookOnSubscription(memberID, s)
-	if err != nil {
-		sugar.Error(err)
-		return err
+	if !snapshot.IsZero() {
+		err := router.readerRepo.ArchiveMember(snapshot)
+		if err != nil {
+			return err
+		}
 	}
 
 	return err
@@ -130,6 +174,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	sugar.Infof("Stripe event received: %s", event.Type)
+	sugar.Infof("Stripe event raw data: %s", event.Data.Raw)
 
 	switch event.Type {
 
@@ -180,6 +225,10 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+		if err != nil {
+			sugar.Error()
+		}
 		w.WriteHeader(http.StatusOK)
 		return
 
@@ -191,17 +240,23 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+		if err != nil {
+			sugar.Error()
+		}
 		w.WriteHeader(http.StatusOK)
 		return
 
 	// Handling payments that require additional action
 	case "invoice.payment_action_required":
-		// Send email to user.
-		// Send email to user.
 		var i stripeSdk.Invoice
 		if err := json.Unmarshal(event.Data.Raw, &i); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
+		}
+		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+		if err != nil {
+			sugar.Error()
 		}
 		w.WriteHeader(http.StatusOK)
 		return
@@ -214,6 +269,10 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+		if err != nil {
+			sugar.Error()
+		}
 		w.WriteHeader(http.StatusOK)
 		return
 
@@ -224,6 +283,10 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+		if err != nil {
+			sugar.Error()
+		}
 		w.WriteHeader(http.StatusOK)
 		return
 
@@ -232,6 +295,10 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		if err := json.Unmarshal(event.Data.Raw, &i); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
+		}
+		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+		if err != nil {
+			sugar.Error()
 		}
 		w.WriteHeader(http.StatusOK)
 		return

@@ -14,7 +14,7 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 	account, err := router.stripeRepo.CreateCustomer(ftcID)
 
 	if err != nil {
-		err := forwardStripeErr(w, err)
+		err := handleErrResp(w, err)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 		}
