@@ -1,66 +1,65 @@
 package stripe
 
 import (
-	"errors"
-	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/dt"
-	"github.com/stripe/stripe-go"
-	"strings"
+	"github.com/guregu/null"
+	"github.com/stripe/stripe-go/v72"
 )
 
 type Invoice struct {
-	*stripe.Invoice
+	ID                   string      `db:"id"`
+	AutoAdvance          bool        `db:"auto_advance"`
+	ChargeID             string      `db:"charge_id"`
+	CollectionMethod     string      `db:"collection_method"`
+	Currency             string      `db:"currency"`
+	CustomerID           string      `db:"customer_id"`
+	DefaultPaymentMethod null.String `json:"default_payment_method"`
+	HostedInvoiceURL     null.String `db:"hosted_invoice_url"`
+	Paid                 bool        `db:"paid"`
+	PaymentIntentID      string      `db:"payment_intent_id"`
+	PeriodEndUTC         chrono.Time `db:"period_end_utc"`
+	PeriodStartUTC       chrono.Time `db:"period_start_utc"`
+	ReceiptNumber        string      `db:"receipt_number"`
+	Status               string      `db:"invoice_status"`
+	Total                int64       `db:"total"`
+	CreatedUTC           chrono.Time `db:"created_utc"`
+	UpdatedUTC           chrono.Time `db:"updated_utc"`
 }
 
-func (i Invoice) CreationTime() chrono.Time {
-	return chrono.TimeFrom(dt.FromUnix(i.Created))
-}
-
-func (i Invoice) GetPlanConfig() (Plan, error) {
-	if i.Lines == nil {
-		return Plan{}, errors.New("empty lines")
+func NewInvoice(si *stripe.Invoice) Invoice {
+	var cm string
+	if si.CollectionMethod != nil {
+		cm = string(*si.CollectionMethod)
 	}
 
-	if len(i.Lines.Data) == 0 {
-		return Plan{}, errors.New("empty lines.data")
+	var pmID string
+	if si.DefaultPaymentMethod != nil {
+		pmID = si.DefaultPaymentMethod.ID
 	}
 
-	stripePlan := i.Lines.Data[0].Plan
-
-	planConfig, err := PlanStore.FindByID(stripePlan.ID)
-
-	if err != nil {
-		return Plan{}, err
+	var piID string
+	if si.PaymentIntent != nil {
+		piID = si.PaymentIntent.ID
 	}
 
-	return planConfig, nil
-}
-
-func (i Invoice) Price() string {
-	return fmt.Sprintf("%s%.2f", strings.ToUpper(string(i.Currency)), float64(i.Total/100))
-}
-
-// ReadableStatus turns stripe invoice status into human readable
-// text.
-// See https://stripe.com/docs/billing/invoices/workflow#workflow-overview
-func (i Invoice) ReadableStatus() string {
-	switch i.Status {
-	case stripe.InvoiceBillingStatusDraft:
-		return "草稿"
-
-	case stripe.InvoiceBillingStatusOpen:
-		return "等待支付"
-
-	case stripe.InvoiceBillingStatusPaid:
-		return "已支付"
-
-	case stripe.InvoiceBillingStatusUncollectible:
-		return "无法收款"
-
-	case stripe.InvoiceBillingStatusVoid:
-		return "撤销"
+	return Invoice{
+		ID:                   si.ID,
+		AutoAdvance:          si.AutoAdvance,
+		ChargeID:             si.Charge.ID,
+		CollectionMethod:     cm,
+		Currency:             string(si.Currency),
+		CustomerID:           si.Customer.ID,
+		DefaultPaymentMethod: null.NewString(pmID, pmID == ""),
+		HostedInvoiceURL:     null.NewString(si.HostedInvoiceURL, si.HostedInvoiceURL != ""),
+		Paid:                 si.Paid,
+		PaymentIntentID:      piID,
+		PeriodEndUTC:         chrono.TimeFrom(dt.FromUnix(si.PeriodEnd)),
+		PeriodStartUTC:       chrono.TimeFrom(dt.FromUnix(si.PeriodStart)),
+		ReceiptNumber:        si.ReceiptNumber,
+		Status:               string(si.Status),
+		Total:                si.Total,
+		CreatedUTC:           chrono.TimeFrom(dt.FromUnix(si.Created)),
+		UpdatedUTC:           chrono.TimeNow(),
 	}
-
-	return "未知"
 }

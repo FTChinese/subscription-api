@@ -7,11 +7,12 @@ current_period_end = :current_period_end,
 current_period_start = :current_period_start,
 customer_id = :customer_id,
 default_payment_method = :default_payment_method,
+subs_item_id = :subs_item_id,
+price_id = :price_id,
 latest_invoice_id = :latest_invoice_id,
 live_mode = :live_mode,
 start_date_utc = :start_date_utc,
 end_date_utc = :end_date_utc,
-created_utc = :created_utc,
 updated_utc = :updated_utc,
 sub_status = :status
 `
@@ -20,6 +21,7 @@ const StmtInsertSubs = `
 INSERT INTO premium.stripe_subscription
 SET id = :id,
 ` + colUpsertSubs + `,
+created_utc = :created_utc,
 ftc_user_id = :ftc_user_id
 ON DUPLICATE KEY UPDATE
 ` + colUpsertSubs
@@ -32,6 +34,8 @@ SELECT id,
 	current_period_start,
 	customer_id,
 	default_payment_method,
+	subs_item_id,
+	price_id,
 	latest_invoice_id,
 	live_mode,
 	start_date_utc,
@@ -43,3 +47,10 @@ SELECT id,
 FROM premium.stripe_subscription
 WHERE id = ?
 LIMIT 1`
+
+const StmtSubsExists = `
+SELECT EXISTS(
+	SELECT (*)
+	FROM premium.stripe_subscription
+	WHERE ID = ?
+) AS already_exists`

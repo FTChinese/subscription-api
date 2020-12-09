@@ -14,8 +14,8 @@ var editionKeySuffix = map[bool]string{
 // plan/price id.
 type Plan struct {
 	product.Edition
-	PriceID string `json:"priceId"`
-	Live    bool   `json:"-"`
+	PriceID string
+	Live    bool
 }
 
 type planStore struct {
@@ -71,16 +71,7 @@ func newPlanStore() *planStore {
 	return s
 }
 
-func (s planStore) FindByEdition(key string, live bool) (Plan, error) {
-	i, ok := s.indexEdition[key+"_"+editionKeySuffix[live]]
-	if !ok {
-		return Plan{}, fmt.Errorf("stripe plan for %s is not found", key)
-	}
-
-	return s.plans[i], nil
-}
-
-func (s planStore) FindByEditionV2(e product.Edition, live bool) (Plan, error) {
+func (s planStore) FindByEdition(e product.Edition, live bool) (Plan, error) {
 	i, ok := s.indexEdition[e.NamedKey()+"_"+editionKeySuffix[live]]
 	if !ok {
 		return Plan{}, fmt.Errorf("stripe plan for %s is not found", e)
@@ -89,10 +80,11 @@ func (s planStore) FindByEditionV2(e product.Edition, live bool) (Plan, error) {
 	return s.plans[i], nil
 }
 
-func (s planStore) FindByID(planID string) (Plan, error) {
-	i, ok := s.indexID[planID]
+// FindByID gets Plan by stripe price id.
+func (s planStore) FindByID(priceID string) (Plan, error) {
+	i, ok := s.indexID[priceID]
 	if !ok {
-		return Plan{}, fmt.Errorf("stripe plan with id %s is not found", planID)
+		return Plan{}, fmt.Errorf("stripe plan with id %s is not found", priceID)
 	}
 
 	return s.plans[i], nil

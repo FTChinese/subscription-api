@@ -4,9 +4,13 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/stripe/stripe-go/v71"
-	"github.com/stripe/stripe-go/v71/client"
+	"github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/client"
 	"go.uber.org/zap"
+)
+
+const (
+	expandPI = "latest_invoice.payment_intent"
 )
 
 type Client struct {
@@ -28,7 +32,7 @@ func NewClient(live bool, logger *zap.Logger) Client {
 
 // GetPlan retrieves stripe plan details depending on the edition selected.
 func (c Client) GetPlan(edition product.Edition) (*stripe.Plan, error) {
-	p, err := ftcStripe.PlanStore.FindByEditionV2(edition, c.live)
+	p, err := ftcStripe.PlanStore.FindByEdition(edition, c.live)
 	if err != nil {
 		return nil, err
 	}
@@ -100,33 +104,91 @@ func (c Client) CreateEphemeralKey(cusID, version string) ([]byte, error) {
 }
 
 // CreateSubs create a new subscription for a customer.
-func (c Client) CreateSubs(params *stripe.SubscriptionParams) (*stripe.Subscription, error) {
+func (c Client) CreateSubs(cfg ftcStripe.PaymentConfig) (*stripe.Subscription, error) {
+	params := &stripe.SubscriptionParams{
+		CancelAtPeriodEnd: stripe.Bool(false),
+		Items: []*stripe.SubscriptionItemsParams{
+			{
+				Plan: stripe.String(cfg.Plan.PriceID),
+			},
+		},
+	}
+
+	// Expand latest_invoice.
+	params.AddExpand(expandPI)
+
+	// {
+	// "status":400,
+	// "message":"Idempotent key length is 0 characters long, which is outside accepted lengths. Idempotent Keys must be 1-255 characters long. If you're looking for a decent generator, try using a UUID defined by IETF RFC 4122.",
+	// "request_id":"req_O6zILK5QEVpViw",
+	// "type":"idempotency_error"
+	// }
+	if cfg.Params.IdempotencyKey != "" {
+		params.SetIdempotencyKey(cfg.Params.IdempotencyKey)
+	}
+
+	if cfg.Params.CouponID.Valid {
+		params.Coupon = stripe.String(cfg.Params.DefaultPaymentMethod.String)
+	}
+
+	if cfg.Params.DefaultPaymentMethod.Valid {
+		params.DefaultPaymentMethod = stripe.String(cfg.Params.DefaultPaymentMethod.String)
+	}
+
 	return c.sc.Subscriptions.New(params)
 }
 
-func (c Client) RetrieveSubs(subID string) (*stripe.Subscription, error) {
-	return c.sc.Subscriptions.Get(subID, nil)
-}
-
-// CancelSubs cancels a subscription at current period end.
-func (c Client) CancelSubs(subID string) (*stripe.Subscription, error) {
-	params := &stripe.SubscriptionParams{
-		CancelAtPeriodEnd: stripe.Bool(true),
+// UpgradeSubs switch subscription from standard to premium.
+func (c Client) UpgradeSubs(subID string, cfg ftcStripe.PaymentConfig) (*stripe.Subscription, error) {
+	// Retrieve the subscription first.
+	ss, err := c.sc.Subscriptions.Get(subID, nil)
+	if err != nil {
+		return nil, err
 	}
 
-	return c.sc.Subscriptions.Update(subID, params)
-}
-
-// UndoCancel set cancel_at_period_end to false before current_period_end past.
-func (c Client) UndoCancel(subID string) (*stripe.Subscription, error) {
 	params := &stripe.SubscriptionParams{
 		CancelAtPeriodEnd: stripe.Bool(false),
+		ProrationBehavior: stripe.String(string(stripe.SubscriptionProrationBehaviorCreateProrations)),
+		Items: []*stripe.SubscriptionItemsParams{
+			{
+				ID:    stripe.String(ss.Items.Data[0].ID),
+				Price: stripe.String(cfg.Plan.PriceID),
+			},
+		},
+	}
+
+	// Expand latest_invoice.
+	params.AddExpand(expandPI)
+
+	if cfg.Params.IdempotencyKey != "" {
+		params.SetIdempotencyKey(cfg.Params.IdempotencyKey)
+	}
+
+	if cfg.Params.CouponID.Valid {
+		params.Coupon = stripe.String(cfg.Params.DefaultPaymentMethod.String)
+	}
+
+	if cfg.Params.DefaultPaymentMethod.Valid {
+		params.DefaultPaymentMethod = stripe.String(cfg.Params.DefaultPaymentMethod.String)
 	}
 
 	return c.sc.Subscriptions.Update(subID, params)
 }
 
-// UpgradeSubs switch subscription from standard to premium.
-func (c Client) UpgradeSubs(subID string, params *stripe.SubscriptionParams) (*stripe.Subscription, error) {
+func (c Client) RetrieveSubs(subID string) (*stripe.Subscription, error) {
+	p := stripe.Params{}
+	p.AddExpand(expandPI)
+
+	return c.sc.Subscriptions.Get(subID, &stripe.SubscriptionParams{
+		Params: p,
+	})
+}
+
+// CancelSubs cancels a subscription at current period end if the passed in parameter `cancel` is true, or reactivate it if false.
+func (c Client) CancelSubs(subID string, cancel bool) (*stripe.Subscription, error) {
+	params := &stripe.SubscriptionParams{
+		CancelAtPeriodEnd: stripe.Bool(cancel),
+	}
+
 	return c.sc.Subscriptions.Update(subID, params)
 }

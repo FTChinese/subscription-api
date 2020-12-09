@@ -65,7 +65,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	sp, err := ftcStripe.PlanStore.FindByEditionV2(input.Edition, router.config.Live())
+	sp, err := ftcStripe.PlanStore.FindByEdition(input.Edition, router.config.Live())
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -73,27 +73,18 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Create stripe subscription.
-	result, err := router.stripeRepo.CreateSubscription(ftcStripe.Checkout{
-		Account: account,
-		Plan:    sp,
-		Params:  input.SubsParams,
+	result, err := router.stripeRepo.CreateSubscription(ftcStripe.PaymentConfig{
+		CusID:  account.StripeID.String,
+		IDs:    account.MemberID(),
+		Plan:   sp,
+		Params: input.SubsParams,
 	})
 
 	if err != nil {
 		sugar.Error(err)
-		respErr, ok := reader.ParseStripeSubError(err)
-		if ok {
-			_ = render.New(w).JSON(respErr.StatusCode, respErr)
-			return
-		}
 
-		err := forwardStripeErr(w, err)
+		err := handleErrResp(w, err)
 		if err == nil {
-			go func() {
-				apiErr := ftcStripe.NewAPIError(input.FtcID, castStripeError(err))
-				_ = router.stripeRepo.SaveSubsError(apiErr)
-			}()
-
 			return
 		}
 
@@ -104,26 +95,18 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	// Save ftc id to stripe subscription id mapping.
 	// Backup previous membership if exists.
 	go func() {
-		err := router.stripeRepo.UpsertSubs(result.Subs)
-		if err != nil {
-			sugar.Error(err)
-		}
-
-		if !result.Snapshot.IsZero() {
-			err := router.readerRepo.ArchiveMember(result.Snapshot)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}
+		router.handleSubsResult(result)
 	}()
+
+	if result.MissingPaymentIntent {
+		_ = render.New(w).BadRequest("PaymentIntent is not expanded")
+	}
 
 	_ = render.New(w).OK(result)
 }
 
 // GetSubscription fetches a user's subscription and update membership if data in our db is stale.
 //
-// Error Response:
-// 404: membership for this user is not found.
 // Deprecated.
 func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
@@ -146,13 +129,30 @@ func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Requ
 		_ = render.New(w).NotFound()
 	}
 
-	subs, err := router.stripeRepo.RetrieveSubs(mmb.StripeSubsID.String)
+	ss, err := router.client.RetrieveSubs(mmb.StripeSubsID.String)
+	if err != nil {
+		err = handleErrResp(w, err)
+		if err == nil {
+			return
+		}
+
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	result, err := router.stripeRepo.RefreshSubs(ss)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_ = render.New(w).OK(ftcStripe.NewSubs(subs))
+	if result.Modified {
+		go func() {
+			router.handleSubsResult(result)
+		}()
+	}
+
+	_ = render.New(w).OK(result.Subs.LegacySubscription())
 }
 
 func (router StripeRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
@@ -177,32 +177,116 @@ func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 }
 
 func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
-	id, err := getURLParam(req, "id").ToString()
+	subsID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	s, err := router.stripeRepo.RetrieveSubs(id)
+	// Retrieve current subscription save in ftc's db.
+	// Ignore this step now for backward compatibility.
+	//ok, err := router.stripeRepo.SubsExists(id)
+	//if err != nil {
+	//	_ = render.New(w).DBError(err)
+	//	return
+	//}
+
+	ss, err := router.client.RetrieveSubs(subsID)
+	if err != nil {
+		err = handleErrResp(w, err)
+		if err == nil {
+			return
+		}
+
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	result, err := router.stripeRepo.RefreshSubs(ss)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	result, err := router.stripeRepo.RefreshSubs(s)
-	if err != nil {
-		return
+	// Only update subs and snapshot if actually modified.
+	if result.Modified {
+		go func() {
+			router.handleSubsResult(result)
+		}()
 	}
 
 	_ = render.New(w).OK(result)
 }
 
+// CancelSubs cancels a stripe subscription at period end.
+// See https://stripe.com/docs/billing/subscriptions/cancel
 func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) {
-	// TODO: implementation
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	subsID, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	result, err := router.stripeRepo.CancelSubscription(subsID, true)
+
+	if err != nil {
+		sugar.Error(err)
+		err := handleErrResp(w, err)
+		if err == nil {
+			return
+		}
+
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	// Remember uuid to stripe subscription mapping;
+	// Backup previous membership.
+	if result.Modified {
+		go func() {
+			router.handleSubsResult(result)
+		}()
+	}
+
+	_ = render.New(w).OK(result)
 }
 
-func (router StripeRouter) UndoSubsCancel(w http.ResponseWriter, req *http.Request) {
-	// TODO: implementation
+// ReactivateSubscription undo subscription cancellation before period ends.
+func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	subsID, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	result, err := router.stripeRepo.CancelSubscription(subsID, false)
+
+	if err != nil {
+		sugar.Error(err)
+		err := handleErrResp(w, err)
+		if err == nil {
+			return
+		}
+
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	// Remember uuid to stripe subscription mapping;
+	// Backup previous membership.
+	if result.Modified {
+		go func() {
+			router.handleSubsResult(result)
+		}()
+	}
+
+	_ = render.New(w).OK(result)
 }
 
 // UpgradeSubscription create a stripe subscription.
@@ -225,17 +309,6 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(userIDKey)
 
-	account, err := router.readerRepo.AccountByFtcID(ftcID)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-	// If this user is not a stripe customer yet.
-	if account.StripeID.IsZero() {
-		_ = render.New(w).NotFound()
-		return
-	}
-
 	var input ftcStripe.SubsInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
@@ -246,47 +319,44 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		return
 	}
 
-	sp, err := ftcStripe.PlanStore.FindByEditionV2(input.Edition, router.config.Live())
+	sp, err := ftcStripe.PlanStore.FindByEdition(input.Edition, router.config.Live())
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	result, err := router.stripeRepo.UpgradeSubscription(ftcStripe.Checkout{
-		Account: account,
-		Plan:    sp,
-		Params:  input.SubsParams,
+	result, err := router.stripeRepo.UpgradeSubscription(ftcStripe.PaymentConfig{
+		IDs: reader.MemberID{
+			CompoundID: ftcID,
+			FtcID:      null.StringFrom(ftcID),
+			UnionID:    null.String{},
+		},
+		CusID:  "", // Do not provide customer id for upgrading.
+		Plan:   sp,
+		Params: input.SubsParams,
 	})
 
 	if err != nil {
-		err := forwardStripeErr(w, err)
+		sugar.Error(err)
+		err := handleErrResp(w, err)
 		if err == nil {
-			go func() {
-				apiErr := ftcStripe.NewAPIError(input.FtcID, castStripeError(err))
-				_ = router.stripeRepo.SaveSubsError(apiErr)
-			}()
-
 			return
 		}
 
-		_ = render.New(w).BadRequest(err.Error())
+		_ = render.New(w).DBError(err)
 		return
 	}
 
 	// Remember uuid to stripe subscription mapping;
 	// Backup previous membership.
 	go func() {
-		err := router.stripeRepo.UpsertSubs(result.Subs)
-		if err != nil {
-			sugar.Error(err)
-		}
-
-		err = router.readerRepo.ArchiveMember(result.Snapshot)
-		if err != nil {
-			sugar.Error(err)
-		}
+		router.handleSubsResult(result)
 	}()
+
+	if result.MissingPaymentIntent {
+		_ = render.New(w).BadRequest("PaymentIntent not expanded")
+	}
 
 	_ = render.New(w).OK(result)
 }

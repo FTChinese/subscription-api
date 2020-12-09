@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
-	"github.com/stripe/stripe-go"
 	"log"
 	"net/http"
 	"time"
@@ -30,8 +29,6 @@ type ServerStatus struct {
 func StartServer(s ServerStatus) {
 	cfg := config.NewBuildConfig(s.Production, s.Sandbox)
 	logger := config.MustGetLogger(s.Production)
-
-	stripe.Key = cfg.MustStripeAPIKey()
 
 	rwMyDB := db.MustNewMySQL(config.MustMySQLMasterConn(s.Production))
 	// DB connection with delete privilege.
@@ -194,7 +191,7 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/refresh", stripeRouter.RefreshSubs)
 			r.Post("/{id}/upgrade", stripeRouter.UpgradeSubscription)
 			r.Post("/{id}/cancel", stripeRouter.CancelSubs)
-			r.Post("/{id}/undo-cancel", stripeRouter.UndoSubsCancel)
+			r.Post("/{id}/undo-cancel", stripeRouter.ReactivateSubscription)
 		})
 	})
 

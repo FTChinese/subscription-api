@@ -9,7 +9,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/go-chi/chi"
 	"github.com/guregu/null"
-	"github.com/stripe/stripe-go"
 	"net/http"
 )
 
@@ -108,13 +107,4 @@ func getReaderIDs(h http.Header) reader.MemberID {
 		FtcID:      null.NewString(ftcID, ftcID != ""),
 		UnionID:    null.NewString(unionID, unionID != ""),
 	}.MustNormalize()
-}
-
-// castStripeError tries to cast an error to stripe.Error, or nil if it is not.
-func castStripeError(err error) *stripe.Error {
-	if stripeErr, ok := err.(*stripe.Error); ok {
-		return stripeErr
-	}
-
-	return nil
 }
