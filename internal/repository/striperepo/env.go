@@ -33,7 +33,7 @@ func (env Env) beginAccountTx() (txrepo.AccountTx, error) {
 	return txrepo.NewAccountTx(tx), nil
 }
 
-func (env Env) beginOrderTx() (txrepo.MemberTx, error) {
+func (env Env) beginSubsTx() (txrepo.MemberTx, error) {
 	tx, err := env.db.Beginx()
 
 	if err != nil {

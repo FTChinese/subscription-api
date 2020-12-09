@@ -38,7 +38,7 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 	})
 
 	if err != nil {
-		err = forwardStripeErr(w, err)
+		err = handleErrResp(w, err)
 		if err == nil {
 			return
 		}
@@ -59,7 +59,7 @@ func (router StripeRouter) GetPrice(w http.ResponseWriter, req *http.Request) {
 
 	sp, err := router.client.GetPlan(edition)
 	if err != nil {
-		err = forwardStripeErr(w, err)
+		err = handleErrResp(w, err)
 		if err == nil {
 			return
 		}
