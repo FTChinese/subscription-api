@@ -21,13 +21,15 @@ const (
 type ArchiveAction string
 
 const (
-	ActionCreate  ArchiveAction = "create"
-	ActionRenew   ArchiveAction = "renew"
-	ActionUpgrade ArchiveAction = "upgrade"
-	ActionVerify  ArchiveAction = "verify"
-	ActionPoll    ArchiveAction = "poll"
-	ActionLink    ArchiveAction = "link"
-	ActionUnlink  ArchiveAction = "unlink"
+	ActionCreate  ArchiveAction = "create"  // Alipay, wechat, stripe
+	ActionRenew   ArchiveAction = "renew"   // Alipay, wechat
+	ActionUpgrade ArchiveAction = "upgrade" // Alipay, wechat, stripe
+	ActionVerify  ArchiveAction = "verify"  // Apple
+	ActionPoll    ArchiveAction = "poll"    // Apple, alipay, wechat
+	ActionLink    ArchiveAction = "link"    // Apple
+	ActionUnlink  ArchiveAction = "unlink"  // Apple
+	ActionRefresh ArchiveAction = "refresh" // Stripe refresh.
+	ActionWebhook ArchiveAction = "webhook" // Apple, Stripe webhook
 )
 
 type Archiver struct {
@@ -40,10 +42,6 @@ var (
 		Name:   NameApple,
 		Action: ActionVerify,
 	}
-	ArchiverApplePoll = Archiver{
-		Name:   NameApple,
-		Action: ActionPoll,
-	}
 	ArchiverAppleLink = Archiver{
 		Name:   NameApple,
 		Action: ActionLink,
@@ -51,14 +49,6 @@ var (
 	ArchiverAppleUnlink = Archiver{
 		Name:   NameApple,
 		Action: ActionUnlink,
-	}
-	ArchiverStripeCreate = Archiver{
-		Name:   NameStripe,
-		Action: ActionCreate,
-	}
-	ArchiverStripeUpgrade = Archiver{
-		Name:   NameStripe,
-		Action: ActionUpgrade,
 	}
 )
 
@@ -86,6 +76,20 @@ func FtcArchiver(k enum.OrderKind) Archiver {
 	return Archiver{
 		Name:   NameOrder,
 		Action: "Unknown",
+	}
+}
+
+func StripeArchiver(a ArchiveAction) Archiver {
+	return Archiver{
+		Name:   NameStripe,
+		Action: a,
+	}
+}
+
+func AppleArchiver(a ArchiveAction) Archiver {
+	return Archiver{
+		Name:   NameApple,
+		Action: a,
 	}
 }
 
