@@ -3,7 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/guregu/null"
-	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/v72"
 )
 
 type APIError struct {
