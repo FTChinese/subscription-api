@@ -94,6 +94,8 @@ func (s Subscription) PermitLink(ftcID string) bool {
 	return false
 }
 
+// ShouldUpdate checks if the subscription modified.
+// If not, we won't touch db for membership.
 func (s Subscription) ShouldUpdate(m reader.Membership) bool {
 	if !m.IsIAP() {
 		return false
