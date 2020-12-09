@@ -3,6 +3,8 @@ package reader
 import (
 	"errors"
 	"fmt"
+	"github.com/FTChinese/go-rest/render"
+	"net/http"
 	"time"
 
 	"github.com/FTChinese/subscription-api/pkg/product"
@@ -20,6 +22,10 @@ var tierToCode = map[enum.Tier]int64{
 var codeToTier = map[int64]enum.Tier{
 	10:  enum.TierStandard,
 	100: enum.TierPremium,
+}
+
+func GetTierCode(tier enum.Tier) int64 {
+	return tierToCode[tier]
 }
 
 // AddOn specifies extra days that can be used after current expiration date reached.
@@ -84,7 +90,38 @@ func (m Membership) IsEqual(other Membership) bool {
 		return true
 	}
 
-	return m.CompoundID == other.CompoundID && m.StripeSubsID == other.StripeSubsID && m.AppleSubsID.String == other.AppleSubsID.String && m.Tier == other.Tier
+	return m.CompoundID == other.CompoundID &&
+		m.StripeSubsID == other.StripeSubsID &&
+		m.AppleSubsID.String == other.AppleSubsID.String &&
+		m.Tier == other.Tier
+}
+
+func (m Membership) IsModified(other Membership) bool {
+	if !m.IsEqual(other) {
+		return true
+	}
+
+	if !m.ExpireDate.Equal(other.ExpireDate.Time) {
+		return true
+	}
+
+	if m.PaymentMethod != other.PaymentMethod {
+		return true
+	}
+
+	if m.FtcPlanID != other.FtcPlanID {
+		return true
+	}
+
+	if m.AutoRenewal != other.AutoRenewal {
+		return true
+	}
+
+	if m.Status != other.Status {
+		return true
+	}
+
+	return false
 }
 
 // isLegacyOnly checks whether the edition information only comes from
@@ -260,7 +297,11 @@ func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, error) {
 
 	// If not purchased via stripe.
 	if m.PaymentMethod != enum.PayMethodStripe {
-		return enum.OrderKindNull, ErrNonStripeValidSub
+		return enum.OrderKindNull, &render.ValidationError{
+			Message: "You are already subscribed via non-stripe method",
+			Field:   "payMethod",
+			Code:    render.CodeInvalid,
+		}
 	}
 
 	// If user previously subscribed via stripe and canceled, it expiration date is not past yet, and auto renewal is off.
@@ -274,17 +315,77 @@ func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, error) {
 
 	// Auto renewable is not needed.
 	if m.Tier == e.Tier {
-		return enum.OrderKindNull, ErrStripeDuplicateSub
+		return enum.OrderKindNull, &render.ValidationError{
+			Message: "You are already subscribed via Stripe",
+			Field:   "membership",
+			Code:    render.CodeAlreadyExists,
+		}
 	}
 
 	// current tier != requested tier.
 	// If current is premium, requested must be standard.
 	if m.Tier == enum.TierPremium {
-		return enum.OrderKindNull, ErrStripeNoDowngrade
+		return enum.OrderKindNull, &render.ValidationError{
+			Message: "Downgrading is not supported currently",
+			Field:   "downgrade",
+			Code:    render.CodeInvalid,
+		}
 	}
 
 	// Current is standard, requested must be premium.
 	return enum.OrderKindUpgrade, nil
+}
+
+// PermitStripeCreate checks whether current membership permit creating subscription via stripe.
+// Returned error is either render.ValidationError or render.ResponseError.
+func (m Membership) PermitStripeCreate(e product.Edition) error {
+	k, err := m.StripeSubsKind(e)
+	if err != nil {
+		return err
+	}
+
+	if k != enum.OrderKindCreate {
+		return &render.ResponseError{
+			StatusCode: http.StatusBadRequest,
+			Message:    "This endpoint only support creating new subscription",
+			Invalid:    nil,
+		}
+	}
+
+	return nil
+}
+
+func (m Membership) PermitStripeUpgrade(e product.Edition) error {
+	if m.IsZero() {
+		return &render.ResponseError{
+			StatusCode: http.StatusNotFound,
+			Message:    "The subscription to upgrade not found",
+			Invalid:    nil,
+		}
+	}
+
+	if m.StripeSubsID.IsZero() {
+		return &render.ResponseError{
+			StatusCode: http.StatusNotFound,
+			Message:    "Subscription not created via stripe",
+			Invalid:    nil,
+		}
+	}
+
+	k, err := m.StripeSubsKind(e)
+	if err != nil {
+		return err
+	}
+
+	if k != enum.OrderKindUpgrade {
+		return &render.ResponseError{
+			StatusCode: http.StatusBadRequest,
+			Message:    "This endpoint only support upgrading an existing stripe subscription",
+			Invalid:    nil,
+		}
+	}
+
+	return nil
 }
 
 // Snapshot takes a snapshot of membership, usually before modifying it.
