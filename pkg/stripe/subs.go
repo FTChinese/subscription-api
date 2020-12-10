@@ -115,7 +115,7 @@ type Subs struct {
 	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
 	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
 
-	Status    enum.SubsStatus `json:"status" db:"subs_status"`
+	Status    enum.SubsStatus `json:"status" db:"sub_status"`
 	FtcUserID null.String     `json:"ftcUserId" db:"ftc_user_id"`
 }
 
