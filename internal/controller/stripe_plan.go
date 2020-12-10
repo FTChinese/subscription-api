@@ -20,14 +20,14 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 
 	parts := strings.Split(namedKey, "_")
 	if len(parts) < 2 {
-		_ = render.New(w).NotFound()
+		_ = render.New(w).NotFound("")
 		return
 	}
 
 	tier, err := enum.ParseTier(parts[0])
 	cycle, err := enum.ParseCycle(parts[1])
 	if tier == enum.TierNull || cycle == enum.CycleNull {
-		_ = render.New(w).NotFound()
+		_ = render.New(w).NotFound("")
 		return
 	}
 
