@@ -2,29 +2,22 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/stripe/stripe-go/v72"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
+	stripeSdk "github.com/stripe/stripe-go/v72"
 )
 
-// WebHookOnSubscription saves a user's membership derived from
-// stripe subscription data.
-// TARGET: save the subscription to db whether membership exists or not.
-func (env Env) WebHookOnSubscription(account reader.FtcAccount, ss *stripe.Subscription) (reader.MemberSnapshot, error) {
+// OnSubscription save stripe subscription and optionally update membership linked to it.
+func (env Env) OnSubscription(account reader.FtcAccount, ss *stripeSdk.Subscription) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar().
 		With("webhook", "stripe-subscription").
 		With("id", ss.ID)
 
 	// Build ftc style subscription.
-	subs, err := ftcStripe.NewSubs(ss, account.MemberID())
+	subs, err := stripe.NewSubs(ss, account.MemberID())
 	if err != nil {
 		sugar.Error(err)
-		return reader.MemberSnapshot{}, err
-	}
-
-	// Upsert the subscription. If error occurred, ignore.
-	if err := env.UpsertSubs(subs); err != nil {
-		sugar.Error(err)
+		return stripe.SubsResult{}, err
 	}
 
 	// Build the new membership.
@@ -34,7 +27,7 @@ func (env Env) WebHookOnSubscription(account reader.FtcAccount, ss *stripe.Subsc
 	tx, err := env.beginSubsTx()
 	if err != nil {
 		sugar.Error(err)
-		return reader.MemberSnapshot{}, err
+		return stripe.SubsResult{}, err
 	}
 
 	// Retrieve current membership by ftc id.
@@ -43,20 +36,36 @@ func (env Env) WebHookOnSubscription(account reader.FtcAccount, ss *stripe.Subsc
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, err
+		return stripe.SubsResult{}, err
 	}
 
 	// Ensure that current membership is create via stripe.
 	if !subs.ShouldUpsert(currMmb) {
 		_ = tx.Rollback()
 		sugar.Infof("Stripe subscription cannot update/insert its membership")
-		return reader.MemberSnapshot{}, nil
+		return stripe.SubsResult{
+			Modified:             false,
+			MissingPaymentIntent: false,
+			PaymentResult:        stripe.PaymentResult{},
+			Payment:              stripe.PaymentResult{},
+			Subs:                 subs,
+			Member:               currMmb,
+			Snapshot:             reader.MemberSnapshot{},
+		}, nil
 	}
 
 	// If nothing changed.
 	if !newMmb.IsModified(currMmb) {
 		_ = tx.Rollback()
-		return reader.MemberSnapshot{}, nil
+		return stripe.SubsResult{
+			Modified:             false,
+			MissingPaymentIntent: false,
+			PaymentResult:        stripe.PaymentResult{},
+			Payment:              stripe.PaymentResult{},
+			Subs:                 subs,
+			Member:               newMmb,
+			Snapshot:             reader.MemberSnapshot{},
+		}, nil
 	}
 
 	// Insert to update membership.
@@ -64,20 +73,28 @@ func (env Env) WebHookOnSubscription(account reader.FtcAccount, ss *stripe.Subsc
 		if err := tx.CreateMember(newMmb); err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return reader.MemberSnapshot{}, err
+			return stripe.SubsResult{}, err
 		}
 	} else {
 		if err := tx.UpdateMember(newMmb); err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return reader.MemberSnapshot{}, err
+			return stripe.SubsResult{}, err
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return reader.MemberSnapshot{}, err
+		return stripe.SubsResult{}, err
 	}
 
-	return currMmb.Snapshot(reader.StripeArchiver(reader.ActionWebhook)), nil
+	return stripe.SubsResult{
+		Modified:             true,
+		MissingPaymentIntent: false,
+		PaymentResult:        stripe.PaymentResult{},
+		Payment:              stripe.PaymentResult{},
+		Subs:                 subs,
+		Member:               newMmb,
+		Snapshot:             currMmb.Snapshot(reader.StripeArchiver(reader.ActionWebhook)),
+	}, nil
 }
