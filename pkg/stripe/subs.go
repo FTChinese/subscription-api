@@ -235,6 +235,7 @@ type SubsBuilder struct {
 
 // Build creates Subs, reader.Membership, reader.MemberSnapshot
 // based on ftc user id and stripe subscription.
+// The error is sent to client as an internal server error.
 func (b SubsBuilder) Build() (SubsResult, error) {
 	subs, err := NewSubs(b.SS, b.IDs)
 	if err != nil {
