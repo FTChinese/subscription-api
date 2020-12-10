@@ -32,7 +32,7 @@ func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
 	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema, fsOnly)
 	if err != nil {
 		sugar.Error(err)
-		_ = render.New(w).NotFound()
+		_ = render.New(w).NotFound("Apple subscription not found")
 		return
 	}
 

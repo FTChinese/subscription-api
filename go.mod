@@ -1,7 +1,7 @@
 module github.com/FTChinese/subscription-api
 
 require (
-	github.com/FTChinese/go-rest v0.7.1
+	github.com/FTChinese/go-rest v0.8.0
 	github.com/asaskevich/govalidator v0.0.0-20200817114649-df4adffc9d8c
 	github.com/brianvoe/gofakeit/v5 v5.9.0
 	github.com/go-chi/chi v4.1.2+incompatible

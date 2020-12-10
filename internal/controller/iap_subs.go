@@ -122,7 +122,7 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema, false)
 	if err != nil {
 		sugar.Error(err)
-		_ = render.New(w).NotFound()
+		_ = render.New(w).NotFound("Not found the Apple subscription to refresh")
 		return
 	}
 
