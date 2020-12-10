@@ -27,6 +27,24 @@ func (a FtcAccount) IsTest() bool {
 	return strings.HasSuffix(a.Email, ".test@ftchinese.com")
 }
 
+func (a FtcAccount) ValidateEnv(liveEnv bool) string {
+	if liveEnv {
+		// Live environment.
+		if a.IsTest() {
+			return "Please use sandbox environment for test account."
+		}
+
+		return ""
+	} else {
+		// Sandbox environment.
+		if !a.IsTest() {
+			return "Please use production environment for live account"
+		}
+
+		return ""
+	}
+}
+
 func (a FtcAccount) IsFtc() bool {
 	return a.FtcID != ""
 }
