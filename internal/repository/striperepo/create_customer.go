@@ -28,7 +28,6 @@ func (env Env) CreateCustomer(ftcID string) (reader.FtcAccount, error) {
 
 	// If stripe customer id already exists, abort.
 	if account.StripeID.Valid {
-		sugar.Error(err)
 		_ = tx.Rollback()
 		return account, nil
 	}
@@ -37,8 +36,8 @@ func (env Env) CreateCustomer(ftcID string) (reader.FtcAccount, error) {
 	// Return *stripe.Error if occurred.
 	cus, err := env.client.CreateCustomer(account.Email)
 	if err != nil {
-		_ = tx.Rollback()
 		sugar.Error(err)
+		_ = tx.Rollback()
 		return reader.FtcAccount{}, err
 	}
 
