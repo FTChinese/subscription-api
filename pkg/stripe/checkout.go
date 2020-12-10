@@ -44,8 +44,7 @@ func (i SubsInput) Validate(isUpgrade bool) *render.ValidationError {
 
 // PaymentConfig contains the data used to create/upgrade a subscription.
 type PaymentConfig struct {
-	CusID  string // Present only when creating a new subscription.
-	IDs    reader.MemberID
-	Plan   Plan
-	Params SubsParams
+	Account reader.FtcAccount
+	Plan    Plan
+	Params  SubsParams
 }
