@@ -10,6 +10,7 @@ import (
 	"github.com/go-co-op/gocron"
 	"log"
 	"os"
+	"time"
 )
 
 var (
@@ -34,6 +35,23 @@ func init() {
 	config.MustSetupViper()
 }
 
+func task() {
+
+	log.Printf("Starting aliwx polling job at %s", time.Now().Format(time.RFC3339))
+
+	logger := config.MustGetLogger(production)
+	rwdMyDB := db.MustNewMySQL(config.MustMySQLAPIConn(production))
+
+	poller := poll.NewOrderPoller(rwdMyDB, logger)
+
+	err := poller.Start(false)
+	if err != nil {
+		log.Println(err)
+	}
+
+	poller.Close()
+}
+
 func main() {
 	logger := config.MustGetLogger(production)
 	rwdMyDB := db.MustNewMySQL(config.MustMySQLAPIConn(production))
@@ -44,10 +62,7 @@ func main() {
 	defer poller.Close()
 
 	if run {
-		err := poller.Start(false)
-		if err != nil {
-			log.Println(err)
-		}
+		task()
 
 		return
 	}
@@ -56,7 +71,7 @@ func main() {
 	_, err := s.Every(1).
 		Day().
 		At("00:00").
-		Do(poller.Start, false)
+		Do(task)
 
 	if err != nil {
 		panic(err)
