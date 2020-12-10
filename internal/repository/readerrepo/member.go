@@ -37,3 +37,15 @@ func (env Env) RetrieveAppleMember(txID string) (reader.Membership, error) {
 
 	return m.Sync(), nil
 }
+
+func (env Env) UpdateMember(m reader.Membership) error {
+	_, err := env.db.NamedExec(
+		reader.StmtUpdateMember,
+		m)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
