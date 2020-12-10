@@ -10,8 +10,10 @@ import (
 func main() {
 	s := gocron.NewScheduler(chrono.TZShanghai)
 
-	_, err := s.Every(1).Seconds().Do(func() {
-		log.Printf("I am a running task at %d", time.Now().Unix())
+	log.Println("Cron job started")
+
+	_, err := s.Every(1).Hour().Do(func() {
+		log.Printf("I am a running task at %s", time.Now().Format(time.RFC3339))
 	})
 
 	if err != nil {
