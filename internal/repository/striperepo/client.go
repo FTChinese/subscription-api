@@ -106,6 +106,7 @@ func (c Client) CreateEphemeralKey(cusID, version string) ([]byte, error) {
 // CreateSubs create a new subscription for a customer.
 func (c Client) CreateSubs(cfg ftcStripe.PaymentConfig) (*stripe.Subscription, error) {
 	params := &stripe.SubscriptionParams{
+		Customer:          stripe.String(cfg.Account.StripeID.String),
 		CancelAtPeriodEnd: stripe.Bool(false),
 		Items: []*stripe.SubscriptionItemsParams{
 			{
