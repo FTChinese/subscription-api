@@ -17,7 +17,7 @@ func (env Env) UpgradeSubscription(cfg stripe.PaymentConfig) (stripe.SubsResult,
 	}
 
 	// Retrieve current membership.
-	mmb, err := tx.RetrieveMember(cfg.IDs)
+	mmb, err := tx.RetrieveMember(cfg.Account.MemberID())
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
