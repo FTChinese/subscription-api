@@ -14,7 +14,7 @@ type Invoice struct {
 	CollectionMethod     string      `db:"collection_method"`
 	Currency             string      `db:"currency"`
 	CustomerID           string      `db:"customer_id"`
-	DefaultPaymentMethod null.String `json:"default_payment_method"`
+	DefaultPaymentMethod null.String `db:"default_payment_method"`
 	HostedInvoiceURL     null.String `db:"hosted_invoice_url"`
 	Paid                 bool        `db:"paid"`
 	PaymentIntentID      string      `db:"payment_intent_id"`
