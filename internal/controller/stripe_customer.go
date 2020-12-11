@@ -1,12 +1,14 @@
 package controller
 
 import (
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
 )
 
 // CreateCustomer creates stripe customer if not present.
-// PUT /stripe/customers
+// POST /stripe/customers
 // Response: reader.FtcAccount
 func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(userIDKey)
@@ -15,12 +17,111 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 
 	if err != nil {
 		err := handleErrResp(w, err)
-		if err != nil {
-			_ = render.New(w).DBError(err)
+		if err == nil {
+			return
 		}
 
+		_ = render.New(w).DBError(err)
 		return
 	}
 
 	_ = render.New(w).OK(account)
+}
+
+func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request) {
+	ftcID := req.Header.Get(userIDKey)
+	cusID, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	account, err := router.readerRepo.AccountByFtcID(ftcID)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+	if account.StripeID.IsZero() {
+		_ = render.New(w).NotFound("Not a stripe customer")
+		return
+	}
+	if account.StripeID.String != cusID {
+		_ = render.New(w).NotFound("")
+	}
+
+	cus, err := router.client.RetrieveCustomer(account.StripeID.String)
+	if err != nil {
+		err := handleErrResp(w, err)
+		if err == nil {
+			return
+		}
+
+		_ = render.NewInternalError(err.Error())
+		return
+	}
+
+	_ = render.New(w).OK(stripe.NewCustomer(account, cus))
+}
+
+// GetDefaultPaymentMethod retrieves a user's invoice default payment method.
+// GET /stripe/customers/{id}/default_payment_method
+func (router StripeRouter) GetDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
+	// Get stripe customer id from url.
+	id, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	cus, err := router.client.RetrieveCustomer(id)
+	if err != nil {
+		err = handleErrResp(w, err)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+		}
+		return
+	}
+
+	if cus.InvoiceSettings == nil || cus.InvoiceSettings.DefaultPaymentMethod == nil {
+		_ = render.New(w).NotFound("Default payment method not set yet")
+		return
+	}
+
+	_ = render.New(w).OK(cus.InvoiceSettings.DefaultPaymentMethod)
+}
+
+// SetDefaultPaymentMethod sets stripe customer's invoice_settings.default_payment_method.
+// POST /stripe/customers/{id}/default_payment_method
+//
+// Input: {defaultPaymentMethod: string}. The id of the default payment method.
+func (router StripeRouter) SetDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
+	// Get stripe customer id from url.
+	id, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	var pm stripe.PaymentInput
+	if err := gorest.ParseJSON(req.Body, &pm); err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+	pm.CustomerID = id
+
+	if ve := pm.Validate(); ve != nil {
+		_ = render.New(w).Unprocessable(ve)
+		return
+	}
+
+	cus, err := router.client.SetDefaultPaymentMethod(pm)
+	if err != nil {
+		err = handleErrResp(w, err)
+		if err != nil {
+			_ = render.New(w).BadRequest(err.Error())
+		}
+		return
+	}
+
+	_ = render.New(w).OK(cus)
 }
