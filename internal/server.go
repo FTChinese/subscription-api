@@ -156,14 +156,24 @@ func StartServer(s ServerStatus) {
 		r.Get("/prices/{tier}/{cycle}", stripeRouter.GetPrice)
 
 		r.Route("/customers", func(r chi.Router) {
+
 			// Create a stripe customer if not exists yet, or
 			// just return the customer id if already exists.
+			r.Post("/", stripeRouter.CreateCustomer)
+
 			// Deprecated
 			r.Put("/", stripeRouter.CreateCustomer)
+
+			// Use this to check customer's default source and default payment method.
+			r.Get("/{id}", stripeRouter.GetCustomer)
+
 			// Get stripe user's default payment method.
+			// Deprecated
 			r.Get("/{id}/default_payment_method", stripeRouter.GetDefaultPaymentMethod)
 			// Set stripe user's default payment method.
+			// Deprecated
 			r.Post("/{id}/default_payment_method", stripeRouter.SetDefaultPaymentMethod)
+
 			// Generate ephemeral key for client when it is
 			// trying to modify customer data.
 			r.Post("/{id}/ephemeral_keys", stripeRouter.IssueKey)
@@ -191,7 +201,7 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/refresh", stripeRouter.RefreshSubs)
 			r.Post("/{id}/upgrade", stripeRouter.UpgradeSubscription)
 			r.Post("/{id}/cancel", stripeRouter.CancelSubs)
-			r.Post("/{id}/undo-cancel", stripeRouter.ReactivateSubscription)
+			r.Post("/{id}/reactivate", stripeRouter.ReactivateSubscription)
 		})
 	})
 
