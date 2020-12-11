@@ -116,7 +116,7 @@ func (s Subscription) ShouldUpdate(m reader.Membership) bool {
 // from apple if this subscription is not linked
 // to an ftc account.
 func (s Subscription) NewMembership(id reader.MemberID) reader.Membership {
-	m := reader.Membership{
+	return reader.Membership{
 		MemberID: id,
 		Edition: product.Edition{
 			Tier:  s.Tier,
@@ -131,9 +131,7 @@ func (s Subscription) NewMembership(id reader.MemberID) reader.Membership {
 		Status:        enum.SubsStatusNull,
 		AppleSubsID:   null.StringFrom(s.OriginalTransactionID),
 		B2BLicenceID:  null.String{},
-	}
-
-	return m.Sync()
+	}.Sync()
 }
 
 // BuildOn updates an existing IAP membership based on this
