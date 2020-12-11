@@ -101,7 +101,7 @@ func (o Order) newMembership() reader.Membership {
 		Status:        enum.SubsStatusNull,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
-	}
+	}.Sync()
 }
 
 // Confirm an order based on existing membership.
