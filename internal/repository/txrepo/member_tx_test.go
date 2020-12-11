@@ -102,6 +102,45 @@ func TestMemberTx_RetrieveAppleMember(t *testing.T) {
 	_ = tx.Commit()
 }
 
+func TestMemberTx_RetrieveStripeMember(t *testing.T) {
+	tx := NewMemberTx(test.DB.MustBegin())
+
+	type args struct {
+		subID string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Retrieve stripe member",
+			args: args{
+				subID: "sub_IY75arTimVigIr",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tx.RetrieveStripeMember(tt.args.subID)
+			if (err != nil) != tt.wantErr {
+				_ = tx.Rollback()
+				t.Errorf("RetrieveStripeMember() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			_ = tx.Commit()
+
+			if got.IsZero() {
+				t.Error("Stripe membership not retrieved!")
+				return
+			}
+
+			t.Logf("%v", got)
+		})
+	}
+}
+
 func TestOrderTx_SaveOrder(t *testing.T) {
 
 	otx := NewMemberTx(test.DB.MustBegin())
