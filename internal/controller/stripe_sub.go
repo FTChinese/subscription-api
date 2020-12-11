@@ -113,7 +113,8 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 // tier: string;
 // cycle: string;
 // coupon?: "",
-// defaultPaymentMethod?: "",
+// defaultPaymentMethod?: ""
+// idempotency?: string
 //
 // Error response:
 // 404 if membership if not found.
@@ -319,13 +320,19 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
+	ftcID := req.Header.Get(userIDKey)
+
 	subsID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	result, err := router.stripeRepo.CancelSubscription(subsID, true)
+	result, err := router.stripeRepo.CancelSubscription(stripe.CancelParams{
+		FtcID:  ftcID,
+		SubID:  subsID,
+		Cancel: true,
+	})
 
 	if err != nil {
 		sugar.Error(err)
@@ -354,13 +361,19 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
+	ftcID := req.Header.Get(userIDKey)
+
 	subsID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	result, err := router.stripeRepo.CancelSubscription(subsID, false)
+	result, err := router.stripeRepo.CancelSubscription(stripe.CancelParams{
+		FtcID:  ftcID,
+		SubID:  subsID,
+		Cancel: false,
+	})
 
 	if err != nil {
 		sugar.Error(err)
