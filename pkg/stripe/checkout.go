@@ -48,3 +48,9 @@ type PaymentConfig struct {
 	Plan    Plan
 	Params  SubsParams
 }
+
+type CancelParams struct {
+	FtcID  string
+	SubID  string
+	Cancel bool // True for cancel, false for reactivation.
+}
