@@ -104,6 +104,16 @@ func (c Client) CreateEphemeralKey(cusID, version string) ([]byte, error) {
 }
 
 // CreateSubs create a new subscription for a customer.
+// Error returned in case you missed Customer field:
+// {
+//    "code": "parameter_missing",
+//    "doc_url": "https://stripe.com/docs/error-codes/parameter-missing",
+//    "status": 400,
+//    "message": "Missing required param: customer.",
+//    "param": "customer",
+//    "request_id": "req_BthzW5QZzNDTwN",
+//    "type": "invalid_request_error"
+// }
 func (c Client) CreateSubs(cfg ftcStripe.PaymentConfig) (*stripe.Subscription, error) {
 	params := &stripe.SubscriptionParams{
 		Customer:          stripe.String(cfg.Account.StripeID.String),
