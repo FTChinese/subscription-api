@@ -136,8 +136,6 @@ func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 
 // CreateMember creates a new membership.
 func (tx MemberTx) CreateMember(m reader.Membership) error {
-	m = m.Sync()
-
 	_, err := tx.NamedExec(
 		reader.StmtCreateMember,
 		m,
@@ -153,8 +151,6 @@ func (tx MemberTx) CreateMember(m reader.Membership) error {
 // UpdateMember updates existing membership.
 // TODO: removed syn here. Membership created via stripe usually do not need to be synced.
 func (tx MemberTx) UpdateMember(m reader.Membership) error {
-	m = m.Sync()
-
 	_, err := tx.NamedExec(
 		reader.StmtUpdateMember,
 		m)
