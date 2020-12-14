@@ -97,7 +97,7 @@ type Subs struct {
 	// End of the current period that the subscription has been invoiced for. At the end of this period, a new invoice will be created.
 	CurrentPeriodEnd chrono.Time `json:"currentPeriodEnd" db:"current_period_end"`
 	// Start of the current period that the subscription has been invoiced for.
-	CurrentPeriodStart chrono.Time `json:"current_period_start" db:"current_period_start"`
+	CurrentPeriodStart chrono.Time `json:"currentPeriodStart" db:"current_period_start"`
 
 	CustomerID string `json:"customerId" db:"customer_id"`
 	// ID of the default payment method for the subscription. It must belong to the customer associated with the subscription. This takes precedence over default_source. If neither are set, invoices will use the customer’s invoice_settings.default_payment_method or default_source.
