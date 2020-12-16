@@ -29,6 +29,7 @@ func (p *PaymentInput) Validate() *render.ValidationError {
 	return validator.New("defaultPaymentMethod").Required().Validate(p.DefaultMethod)
 }
 
+// Customer contains the minimal data of a stripe.Customer.
 type Customer struct {
 	ID                   string      `json:"id"`
 	FtcID                string      `json:"ftcId"`
@@ -58,5 +59,19 @@ func NewCustomer(a reader.FtcAccount, c *stripe.Customer) Customer {
 		Email:                a.Email,
 		LiveMode:             c.Livemode,
 		CreatedUTC:           chrono.TimeFrom(dt.FromUnix(c.Created)),
+	}
+}
+
+type CustomerAccount struct {
+	FtcAccount reader.FtcAccount
+	Customer   Customer
+}
+
+func NewCustomerAccount(a reader.FtcAccount, c *stripe.Customer) CustomerAccount {
+	a.StripeID = null.StringFrom(c.ID)
+
+	return CustomerAccount{
+		FtcAccount: a,
+		Customer:   NewCustomer(a, c),
 	}
 }

@@ -13,7 +13,7 @@ import (
 func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(userIDKey)
 
-	account, err := router.stripeRepo.CreateCustomer(ftcID)
+	cusAccount, err := router.stripeRepo.CreateCustomer(ftcID)
 
 	if err != nil {
 		err := handleErrResp(w, err)
@@ -25,7 +25,27 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	_ = render.New(w).OK(account)
+	_ = render.New(w).OK(cusAccount.Customer)
+}
+
+// CreateCustomerLegacy create a stripe customer.
+// Deprecated.
+func (router StripeRouter) CreateCustomerLegacy(w http.ResponseWriter, req *http.Request) {
+	ftcID := req.Header.Get(userIDKey)
+
+	cusAccount, err := router.stripeRepo.CreateCustomer(ftcID)
+
+	if err != nil {
+		err := handleErrResp(w, err)
+		if err == nil {
+			return
+		}
+
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(cusAccount.FtcAccount)
 }
 
 func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request) {
