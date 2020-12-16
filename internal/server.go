@@ -149,15 +149,15 @@ func StartServer(s ServerStatus) {
 
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcID)
 
 		// Get a stripe plan.
+		// Deprecated
 		r.Get("/plans/{id}", stripeRouter.GetPlan)
 
+		// ?refresh=true|false
 		r.Get("/prices", stripeRouter.ListPrices)
-		r.Get("/prices/{tier}/{cycle}", stripeRouter.GetPrice)
 
-		r.Route("/customers", func(r chi.Router) {
+		r.With(controller.RequireFtcID).Route("/customers", func(r chi.Router) {
 
 			// Create a stripe customer if not exists yet, or
 			// just return the customer id if already exists.
@@ -182,7 +182,7 @@ func StartServer(s ServerStatus) {
 		})
 
 		// Create Stripe subscription.
-		r.Route("/subscriptions", func(r chi.Router) {
+		r.With(controller.RequireFtcID).Route("/subscriptions", func(r chi.Router) {
 			// Create a subscription
 			r.Post("/", stripeRouter.CreateSubs)
 			// Get a list of subscriptions
@@ -192,7 +192,7 @@ func StartServer(s ServerStatus) {
 			r.Patch("/", stripeRouter.UpgradeSubscription)
 		})
 
-		r.Route("/subs", func(r chi.Router) {
+		r.With(controller.RequireFtcID).Route("/subs", func(r chi.Router) {
 			// Create a subscription
 			r.Post("/", stripeRouter.CreateSubs)
 			// List all subscriptions of a user

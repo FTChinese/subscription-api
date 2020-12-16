@@ -30,7 +30,12 @@ func NewClient(live bool, logger *zap.Logger) Client {
 	}
 }
 
+func (c Client) Live() bool {
+	return c.live
+}
+
 // GetPlan retrieves stripe plan details depending on the edition selected.
+// Deprecated
 func (c Client) GetPlan(edition product.Edition) (*stripe.Plan, error) {
 	p, err := ftcStripe.PlanStore.FindByEdition(edition, c.live)
 	if err != nil {
@@ -202,4 +207,10 @@ func (c Client) CancelSubs(subID string, cancel bool) (*stripe.Subscription, err
 	}
 
 	return c.sc.Subscriptions.Update(subID, params)
+}
+
+func (c Client) ListPrices() []*stripe.Price {
+	return c.sc.Prices.List(&stripe.PriceListParams{
+		Active: stripe.Bool(true),
+	}).PriceList().Data
 }

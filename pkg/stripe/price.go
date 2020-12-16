@@ -1,9 +1,12 @@
 package stripe
 
 import (
+	"database/sql"
+	"fmt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
+	"sync"
 )
 
 type PricePreset struct {
@@ -65,32 +68,87 @@ func NewPrice(preset PricePreset, price *stripe.Price) Price {
 }
 
 type priceStore struct {
-	presets    map[string]PricePreset
-	livePrices []Price
-	testPrices []Price
+	len     int
+	prices  []Price
+	idIndex map[string]int
+	mux     sync.Mutex
 }
 
 func newPriceStore() *priceStore {
 	return &priceStore{
-		presets:    presetPrices,
-		livePrices: make([]Price, 0),
-		testPrices: make([]Price, 0),
+		len:     0,
+		prices:  make([]Price, 0),
+		idIndex: map[string]int{},
 	}
 }
-func (store *priceStore) SetAll(sps []*stripe.Price) {
+
+func (store *priceStore) Len() int {
+	return store.len
+}
+
+func (store *priceStore) AddAll(sps []*stripe.Price) {
+	store.mux.Lock()
 	for _, sp := range sps {
-		preset, ok := store.presets[sp.ID]
-		if !ok {
+		_ = store.upsert(sp)
+	}
+	store.mux.Unlock()
+}
+
+func (store *priceStore) Upsert(sp *stripe.Price) error {
+	store.mux.Lock()
+	defer store.mux.Unlock()
+
+	return store.upsert(sp)
+}
+
+func (store *priceStore) upsert(sp *stripe.Price) error {
+	preset, ok := presetPrices[sp.ID]
+	if !ok {
+		return fmt.Errorf("unknown stripe price %s", sp.ID)
+	}
+
+	index, ok := store.idIndex[sp.ID]
+	if ok {
+		store.prices[index] = NewPrice(preset, sp)
+		return nil
+	}
+
+	// If stripe plan is not active and not added to the store, ignore it.
+	if !sp.Active {
+		return nil
+	}
+
+	store.prices = append(store.prices, NewPrice(preset, sp))
+	store.len++
+	return nil
+}
+
+func (store *priceStore) Find(id string, live bool) (Price, error) {
+	index, ok := store.idIndex[id]
+	if ok {
+		return Price{}, sql.ErrNoRows
+	}
+
+	price := store.prices[index]
+	if price.LiveMode != live {
+		return Price{}, sql.ErrNoRows
+	}
+
+	return price, nil
+}
+
+func (store *priceStore) List(live bool) []Price {
+	var prices = make([]Price, 0)
+
+	for _, v := range store.prices {
+		if v.LiveMode != live {
 			continue
 		}
 
-		price := NewPrice(preset, sp)
-		if sp.Livemode {
-			store.livePrices = append(store.livePrices, price)
-		} else {
-			store.testPrices = append(store.testPrices, price)
-		}
+		prices = append(prices, v)
 	}
+
+	return prices
 }
 
 var PriceStore = newPriceStore()
