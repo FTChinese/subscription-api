@@ -63,3 +63,34 @@ func NewPrice(preset PricePreset, price *stripe.Price) Price {
 		Created:    price.Created,
 	}
 }
+
+type priceStore struct {
+	presets    map[string]PricePreset
+	livePrices []Price
+	testPrices []Price
+}
+
+func newPriceStore() *priceStore {
+	return &priceStore{
+		presets:    presetPrices,
+		livePrices: make([]Price, 0),
+		testPrices: make([]Price, 0),
+	}
+}
+func (store *priceStore) SetAll(sps []*stripe.Price) {
+	for _, sp := range sps {
+		preset, ok := store.presets[sp.ID]
+		if !ok {
+			continue
+		}
+
+		price := NewPrice(preset, sp)
+		if sp.Livemode {
+			store.livePrices = append(store.livePrices, price)
+		} else {
+			store.testPrices = append(store.testPrices, price)
+		}
+	}
+}
+
+var PriceStore = newPriceStore()
