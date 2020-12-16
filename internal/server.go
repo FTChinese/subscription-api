@@ -153,6 +153,8 @@ func StartServer(s ServerStatus) {
 
 		// Get a stripe plan.
 		r.Get("/plans/{id}", stripeRouter.GetPlan)
+
+		r.Get("/prices", stripeRouter.ListPrices)
 		r.Get("/prices/{tier}/{cycle}", stripeRouter.GetPrice)
 
 		r.Route("/customers", func(r chi.Router) {
@@ -162,7 +164,7 @@ func StartServer(s ServerStatus) {
 			r.Post("/", stripeRouter.CreateCustomer)
 
 			// Deprecated
-			r.Put("/", stripeRouter.CreateCustomer)
+			r.Put("/", stripeRouter.CreateCustomerLegacy)
 
 			// Use this to check customer's default source and default payment method.
 			r.Get("/{id}", stripeRouter.GetCustomer)

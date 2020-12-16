@@ -70,3 +70,7 @@ func (router StripeRouter) GetPrice(w http.ResponseWriter, req *http.Request) {
 
 	_ = render.New(w).OK(sp)
 }
+
+func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) {
+
+}
