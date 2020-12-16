@@ -1,21 +1,20 @@
 package striperepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/guregu/null"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
 // CreateCustomer create a customer under ftc account for user with `ftcID`.
 // If reader's current account already have stripe customer id, this action
 // is aborted and current reader account is returned.
-func (env Env) CreateCustomer(ftcID string) (reader.FtcAccount, error) {
+func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	tx, err := env.beginAccountTx()
 	if err != nil {
 		sugar.Error(err)
-		return reader.FtcAccount{}, err
+		return stripe.CustomerAccount{}, err
 	}
 
 	// Account might not be found, though it is rare.
@@ -23,13 +22,18 @@ func (env Env) CreateCustomer(ftcID string) (reader.FtcAccount, error) {
 	if err != nil {
 		_ = tx.Rollback()
 		sugar.Error(err)
-		return reader.FtcAccount{}, err
+		return stripe.CustomerAccount{}, err
 	}
 
 	// If stripe customer id already exists, abort.
 	if account.StripeID.Valid {
 		_ = tx.Rollback()
-		return account, nil
+		cus, err := env.client.RetrieveCustomer(account.StripeID.String)
+		if err != nil {
+			return stripe.CustomerAccount{}, err
+		}
+
+		return stripe.NewCustomerAccount(account, cus), nil
 	}
 
 	// Request stripe api to create customer.
@@ -38,24 +42,23 @@ func (env Env) CreateCustomer(ftcID string) (reader.FtcAccount, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.FtcAccount{}, err
+		return stripe.CustomerAccount{}, err
 	}
 
-	// Add stripe customer id to current account.
-	account.StripeID = null.StringFrom(cus.ID)
+	ca := stripe.NewCustomerAccount(account, cus)
 
 	// Save customer id in our db.
 	// There might be SQL errors.
-	if err := tx.SavedStripeID(account); err != nil {
+	if err := tx.SavedStripeID(ca.FtcAccount); err != nil {
 		_ = tx.Rollback()
 		sugar.Error(err)
-		return reader.FtcAccount{}, err
+		return stripe.CustomerAccount{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return reader.FtcAccount{}, err
+		return stripe.CustomerAccount{}, err
 	}
 
-	return account, nil
+	return ca, nil
 }
