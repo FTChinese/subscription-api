@@ -5,38 +5,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/product"
 )
 
-type PricePreset struct {
-	product.Edition
-	Live bool
-}
-
-var presetPrices = map[string]PricePreset{
-	"plan_FXZYLOEbcvj5Tx": {
-		Edition: product.NewStdMonthEdition(),
-		Live:    true,
-	},
-	"plan_FXZZUEDpToPlZK": {
-		Edition: product.NewStdYearEdition(),
-		Live:    true,
-	},
-	"plan_FXZbv1cDTsUKOg": {
-		Edition: product.NewPremiumEdition(),
-		Live:    true,
-	},
-	"plan_FOdgPTznDwHU4i": {
-		Edition: product.NewStdMonthEdition(),
-		Live:    false,
-	},
-	"plan_FOdfeaqzczp6Ag": {
-		Edition: product.NewStdYearEdition(),
-		Live:    false,
-	},
-	"plan_FOde0uAr0V4WmT": {
-		Edition: product.NewPremiumEdition(),
-		Live:    false,
-	},
-}
-
 var editionKeySuffix = map[bool]string{
 	true:  "live",
 	false: "test",
