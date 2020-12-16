@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
 	"strings"
 )
@@ -50,27 +51,24 @@ func (router StripeRouter) GetPlan(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(p)
 }
 
-func (router StripeRouter) GetPrice(w http.ResponseWriter, req *http.Request) {
-	edition, err := getEdition(req)
-	if err != nil {
+func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) {
+	if err := req.ParseForm(); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	sp, err := router.client.GetPlan(edition)
-	if err != nil {
-		err = handleErrResp(w, err)
-		if err == nil {
-			return
-		}
+	refresh := req.FormValue("refresh") == "true"
 
-		_ = render.New(w).DBError(err)
-		return
+	var prices []stripe.Price
+	if refresh {
+		prices = router.stripeRepo.RefreshPrices()
+	} else {
+		prices = router.stripeRepo.ListPrices()
 	}
 
-	_ = render.New(w).OK(sp)
-}
+	if len(prices) == 0 {
+		_ = render.New(w).NotFound("No prices found")
+	}
 
-func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) {
-
+	_ = render.New(w).OK(prices)
 }
