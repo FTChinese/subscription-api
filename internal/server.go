@@ -184,11 +184,13 @@ func StartServer(s ServerStatus) {
 		// Create Stripe subscription.
 		r.With(controller.RequireFtcID).Route("/subscriptions", func(r chi.Router) {
 			// Create a subscription
+			// Deprecated
 			r.Post("/", stripeRouter.CreateSubs)
 			// Get a list of subscriptions
 			r.Get("/", stripeRouter.GetSubscription)
 
 			// Upgrade membership.
+			// Deprecated
 			r.Patch("/", stripeRouter.UpgradeSubscription)
 		})
 
@@ -234,6 +236,17 @@ func StartServer(s ServerStatus) {
 		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
 	})
 
+	r.Route("/paywall", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+
+		// Data used to build a paywall.
+		r.Get("/", paywallRouter.LoadPaywall)
+		// List all active pricing plans.
+		r.Get("/plans", paywallRouter.LoadPricing)
+		// Bust cache.
+		r.Get("/__refresh", paywallRouter.BustCache)
+	})
+
 	// Deprecate. Use /webhook
 	r.Route("/callback", func(r1 chi.Router) {
 		r1.Post("/wxpay", payRouter.WxWebHook)
@@ -245,17 +258,6 @@ func StartServer(s ServerStatus) {
 		r.Post("/alipay", payRouter.AliWebHook)
 		r.Post("/stripe", stripeRouter.WebHook)
 		r.Post("/apple", iapRouter.WebHook)
-	})
-
-	r.Route("/paywall", func(r chi.Router) {
-		r.Use(guard.CheckToken)
-
-		// Data used to build a paywall.
-		r.Get("/", paywallRouter.LoadPaywall)
-		// List all active pricing plans.
-		r.Get("/pricing", paywallRouter.LoadPricing)
-		// Bust cache.
-		r.Get("/__refresh", paywallRouter.BustCache)
 	})
 
 	// Handle wechat oauth.
