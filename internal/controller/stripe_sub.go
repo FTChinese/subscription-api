@@ -275,14 +275,19 @@ func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 }
 
 func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	subsID, err := getURLParam(req, "id").ToString()
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
 	ss, err := router.client.RetrieveSubs(subsID)
 	if err != nil {
+		sugar.Error(err)
 		err = handleErrResp(w, err)
 		if err == nil {
 			return
@@ -294,22 +299,22 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 
 	account, err := router.readerRepo.FtcAccountByStripeID(ss.Customer.ID)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).NotFound("Stripe customer not found")
 		return
 	}
 
 	result, err := router.stripeRepo.OnSubscription(account, ss)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	// Only update subs and snapshot if actually modified.
-	if result.Modified {
-		go func() {
-			router.handleSubsResult(result)
-		}()
-	}
+	go func() {
+		router.handleSubsResult(result)
+	}()
 
 	_ = render.New(w).OK(result)
 }
@@ -324,6 +329,7 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 
 	subsID, err := getURLParam(req, "id").ToString()
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
@@ -347,11 +353,9 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 
 	// Remember uuid to stripe subscription mapping;
 	// Backup previous membership.
-	if result.Modified {
-		go func() {
-			router.handleSubsResult(result)
-		}()
-	}
+	go func() {
+		router.handleSubsResult(result)
+	}()
 
 	_ = render.New(w).OK(result)
 }
