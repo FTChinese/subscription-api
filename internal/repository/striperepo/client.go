@@ -93,6 +93,14 @@ func (c Client) SetDefaultPaymentMethod(pm ftcStripe.PaymentInput) (*stripe.Cust
 	return c.sc.Customers.Update(pm.CustomerID, params)
 }
 
+func (c Client) CreateSetupIntent(cusID string) (*stripe.SetupIntent, error) {
+	params := &stripe.SetupIntentParams{
+		Customer: stripe.String(cusID),
+		Usage:    stripe.String("on_session"),
+	}
+	return c.sc.SetupIntents.New(params)
+}
+
 // CreateEphemeralKey generate a key so that client could restricted customer API directly.
 func (c Client) CreateEphemeralKey(cusID, version string) ([]byte, error) {
 	params := &stripe.EphemeralKeyParams{

@@ -116,7 +116,7 @@ func (router StripeRouter) GetDefaultPaymentMethod(w http.ResponseWriter, req *h
 // Input: {defaultPaymentMethod: string}. The id of the default payment method.
 func (router StripeRouter) SetDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
 	// Get stripe customer id from url.
-	id, err := getURLParam(req, "id").ToString()
+	cusID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -127,7 +127,7 @@ func (router StripeRouter) SetDefaultPaymentMethod(w http.ResponseWriter, req *h
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
-	pm.CustomerID = id
+	pm.CustomerID = cusID
 
 	if ve := pm.Validate(); ve != nil {
 		_ = render.New(w).Unprocessable(ve)
