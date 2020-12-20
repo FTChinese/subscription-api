@@ -181,6 +181,10 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/ephemeral_keys", stripeRouter.IssueKey)
 		})
 
+		r.With(controller.RequireFtcID).Route("/setup-intents", func(r chi.Router) {
+			r.Post("/", stripeRouter.CreateSetupIntent)
+		})
+
 		// Create Stripe subscription.
 		r.With(controller.RequireFtcID).Route("/subscriptions", func(r chi.Router) {
 			// Create a subscription
