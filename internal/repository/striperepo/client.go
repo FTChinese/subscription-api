@@ -217,8 +217,15 @@ func (c Client) CancelSubs(subID string, cancel bool) (*stripe.Subscription, err
 	return c.sc.Subscriptions.Update(subID, params)
 }
 
-func (c Client) ListPrices() []*stripe.Price {
-	return c.sc.Prices.List(&stripe.PriceListParams{
+func (c Client) ListPrices() ([]*stripe.Price, error) {
+	iter := c.sc.Prices.List(&stripe.PriceListParams{
 		Active: stripe.Bool(true),
-	}).PriceList().Data
+	})
+
+	list := iter.PriceList()
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
+
+	return list.Data, nil
 }
