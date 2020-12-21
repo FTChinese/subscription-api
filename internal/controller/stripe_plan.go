@@ -68,6 +68,7 @@ func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) 
 
 	if len(prices) == 0 {
 		_ = render.New(w).NotFound("No prices found")
+		return
 	}
 
 	_ = render.New(w).OK(prices)
