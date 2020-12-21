@@ -60,10 +60,21 @@ func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) 
 	refresh := req.FormValue("refresh") == "true"
 
 	var prices []stripe.Price
+	var err error
 	if refresh {
-		prices = router.stripeRepo.RefreshPrices()
+		prices, err = router.stripeRepo.RefreshPrices()
 	} else {
-		prices = router.stripeRepo.ListPrices()
+		prices, err = router.stripeRepo.ListPrices()
+	}
+
+	if err != nil {
+		err := handleErrResp(w, err)
+		if err == nil {
+			return
+		}
+
+		_ = render.New(w).InternalServerError(err.Error())
+		return
 	}
 
 	if len(prices) == 0 {
