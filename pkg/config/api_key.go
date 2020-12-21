@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"github.com/spf13/viper"
 	"log"
 )
@@ -53,6 +54,14 @@ type AuthKeys struct {
 	name string
 }
 
+func (k AuthKeys) Validate() error {
+	if k.Dev == "" || k.Prod == "" {
+		return errors.New("dev or prod key found")
+	}
+
+	return nil
+}
+
 func (k AuthKeys) Pick(prod bool) string {
 	log.Printf("Using %s for production %t", k.name, prod)
 
@@ -67,6 +76,10 @@ func LoadAuthKeys(name string) (AuthKeys, error) {
 	var keys AuthKeys
 	err := viper.UnmarshalKey(name, &keys)
 	if err != nil {
+		return keys, err
+	}
+
+	if err := keys.Validate(); err != nil {
 		return keys, err
 	}
 
