@@ -84,6 +84,7 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 	// Get stripe customer id.
 	cusID, err := getURLParam(req, "id").ToString()
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
@@ -96,10 +97,12 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 
 	keyData, err := router.client.CreateEphemeralKey(cusID, stripeVersion)
 	if err != nil {
+		sugar.Error(err)
 		err = handleErrResp(w, err)
-		if err != nil {
-			_ = render.New(w).BadRequest(err.Error())
+		if err == nil {
+			return
 		}
+		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
