@@ -2,8 +2,8 @@ package reader
 
 import (
 	"errors"
-	"fmt"
 	"github.com/FTChinese/go-rest/render"
+	"math"
 	"net/http"
 	"time"
 
@@ -83,6 +83,15 @@ func (m Membership) IsExpired() bool {
 	// If ExpireDate is passed, but auto renew is true, we still
 	// treat this one as not expired.
 	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
+}
+
+// RemainingDays calculates how many day left up until now.
+// If the returned days is less than 0, the membership is expired
+// if it is not auto renewable.
+func (m Membership) RemainingDays() int64 {
+	h := time.Until(m.ExpireDate.Time).Hours()
+
+	return int64(math.Ceil(h / 24))
 }
 
 func (m Membership) IsEqual(other Membership) bool {
@@ -224,18 +233,8 @@ func (m Membership) canRenewViaAliWx() bool {
 }
 
 // AliWxSubsKind determines what kind of order a user is creating based on existing membership.
-// Kind  |   Membership
-// ---------------------------
-// Create  | Zero / Status is not active / Expired
-// Renewal | Tier === Plan.Tier
-// Upgrade | Tier is Standard while Plan.Tier is Premium
 func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, error) {
 	if m.IsZero() {
-		return enum.OrderKindCreate, nil
-	}
-
-	// If it is purchased via stripe but the status is not valid.
-	if m.PaymentMethod == enum.PayMethodStripe && !m.Status.IsValid() {
 		return enum.OrderKindCreate, nil
 	}
 
@@ -244,36 +243,44 @@ func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, error) {
 		return enum.OrderKindCreate, nil
 	}
 
-	// Member is not expired. We need to consider current payment method.
-	// If current membership is purchased via methods other than wx or ali, requesting to pay via wx or ali is invalid.
-	if !m.IsAliOrWxPay() {
-		return enum.OrderKindNull, fmt.Errorf("already subscribed via %s", m.PaymentMethod)
-	}
-
-	// Renewal.
-	if m.Tier == e.Tier {
-		if m.canRenewViaAliWx() {
-			return enum.OrderKindRenew, nil
-		} else {
+	switch m.PaymentMethod {
+	case enum.PayMethodAli, enum.PayMethodWx:
+		// Renewal
+		if m.Tier == e.Tier {
+			if m.canRenewViaAliWx() {
+				return enum.OrderKindRenew, nil
+			}
 			return enum.OrderKindNull, errors.New("beyond max allowed renewal period")
 		}
+
+		switch e.Tier {
+		// Upgrade
+		case enum.TierPremium:
+			return enum.OrderKindUpgrade, nil
+
+		// Downgrade
+		case enum.TierStandard:
+			return enum.OrderKindNull, errors.New("downgrading is not supported currently")
+
+		// Shouldn't happen.
+		case enum.TierNull:
+			return enum.OrderKindNull, errors.New("please select the product edition to subscribe")
+		}
+
+	case enum.PayMethodStripe:
+		if m.Status.IsValid() {
+			return enum.OrderKindAddOn, nil
+		}
+		return enum.OrderKindCreate, nil
+
+	case enum.PayMethodApple:
+		return enum.OrderKindAddOn, nil
+
+	case enum.PayMethodB2B:
+		return enum.OrderKindNull, errors.New("b2b subscription does not support payment via alipay or wxpay")
 	}
 
-	// Trying to upgrade.
-	if m.Tier == enum.TierStandard && e.Tier == enum.TierPremium {
-		return enum.OrderKindUpgrade, nil
-	}
-
-	// Trying to downgrade.
-	// TODO: to allow downgrading, we should establish a system that
-	// keep order in reserved state.
-	// Only change current membership based on reserved order after expiration date reached.
-	// The same approach could be used to handle a valid B2B, IAP or Stripe user creating orders via wx and ali.
-	if m.Tier == enum.TierPremium && e.Tier == enum.TierStandard {
-		return enum.OrderKindNull, errors.New("downgrading is not supported currently")
-	}
-
-	return enum.OrderKindNull, errors.New("cannot determine subscription kind")
+	return enum.OrderKindNull, errors.New("cannot determine the payment method of your current subscription")
 }
 
 // StripeSubsKind deduce what kind of subscription a request is trying to create.
