@@ -604,3 +604,28 @@ func TestMembership_StripeSubsKind(t *testing.T) {
 		})
 	}
 }
+
+func TestMembership_RemainingDays(t *testing.T) {
+	oneDayLater := time.Now().AddDate(0, 0, 1)
+
+	hours := time.Until(oneDayLater).Hours()
+	t.Logf("Hours: %f", hours)
+
+	tomorrow := chrono.DateFrom(oneDayLater)
+	remainHours := time.Until(tomorrow.Time).Hours()
+	t.Logf("Remain hours: %f", remainHours)
+
+	t.Logf("To days: %f", remainHours/24)
+
+	m1 := Membership{
+		ExpireDate: chrono.DateFrom(oneDayLater),
+	}
+
+	t.Logf("%d", m1.RemainingDays())
+
+	m2 := Membership{
+		ExpireDate: chrono.DateFrom(time.Now().AddDate(0, 0, -1)),
+	}
+
+	t.Logf("%d", m2.RemainingDays())
+}
