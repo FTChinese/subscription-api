@@ -28,7 +28,7 @@ const (
 // tier: string;
 // cycle: string;
 // planId?: string;
-func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
+func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 	webhookURL := subs.WebhookURL(router.config.Sandbox(), enum.PayMethodAli)
 
 	return func(w http.ResponseWriter, req *http.Request) {

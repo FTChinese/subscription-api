@@ -194,47 +194,6 @@ func (tx MemberTx) RetrieveAppleSubs(origTxID string) (apple.Subscription, error
 	return s, nil
 }
 
-// FindBalanceSources retrieves all orders that has unused portions.
-// Used to build upgrade order for alipay and wxpay
-func (tx MemberTx) FindBalanceSources(userIDs reader.MemberID) ([]subs.BalanceSource, error) {
-
-	var orders = make([]subs.BalanceSource, 0)
-
-	err := tx.Select(
-		&orders,
-		subs.StmtBalanceSource,
-		userIDs.BuildFindInSet())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return orders, nil
-}
-
-// SaveProratedOrders saved user's current total balance
-// the the upgrade plan at this moment.
-// It also saves all orders with unused portion to calculate each order's balance.
-// Go's SQL does not support batch insert now.
-// We use a loop here to insert all record.
-// Most users won't have much  valid orders
-// at a specific moment, so this should not pose a severe
-// performance issue.
-func (tx MemberTx) SaveProratedOrders(po []subs.ProratedOrder) error {
-
-	for _, v := range po {
-		_, err := tx.NamedExec(
-			subs.StmtSaveProratedOrder,
-			v)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (tx MemberTx) LinkAppleSubs(link apple.LinkInput) error {
 	_, err := tx.NamedExec(apple.StmtLinkSubs, link)
 	if err != nil {
