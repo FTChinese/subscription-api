@@ -115,21 +115,6 @@ func (r *Repo) MustSaveRenewalOrders(orders []subs.Order) {
 	}
 }
 
-// MustSaveProratedOrders inserts prorated Orders
-// to test ProratedOrdersUsed.
-func (r *Repo) MustSaveProratedOrders(pos []subs.ProratedOrder) {
-
-	for _, v := range pos {
-		_, err := r.db.NamedExec(
-			subs.StmtSaveProratedOrder,
-			v)
-
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
 func (r *Repo) SaveIAPSubs(s apple.Subscription) error {
 	_, err := r.db.NamedExec(apple.StmtCreateSubs, s)
 	if err != nil {
