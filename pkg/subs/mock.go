@@ -6,8 +6,8 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
-	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -18,74 +18,25 @@ import (
 	"time"
 )
 
-func MockBalanceSource() BalanceSource {
-	return BalanceSource{
-		OrderID:   MustGenerateOrderID(),
-		Amount:    258.00,
-		StartDate: chrono.DateFrom(time.Now()),
-		EndDate:   chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
-	}
-}
-
-func MockBalanceSourceN(n int) []BalanceSource {
-	bs := make([]BalanceSource, 0)
-	for i := 0; i < n; i++ {
-		bs = append(bs, MockBalanceSource())
-	}
-
-	return bs
-}
-
-func MockProratedOrder() ProratedOrder {
-	return ProratedOrder{
-		OrderID:        MustGenerateOrderID(),
-		Balance:        float64(rand.IntRange(10, 259)),
-		CreatedUTC:     chrono.TimeNow(),
-		ConsumedUTC:    chrono.Time{},
-		UpgradeOrderID: "",
-	}
-}
-
-func MockProratedOrderN(n int) []ProratedOrder {
-	upID := MustGenerateOrderID()
-
-	pos := make([]ProratedOrder, 0)
-
-	for i := 0; i < n; i++ {
-		o := MockProratedOrder()
-		o.ConsumedUTC = chrono.TimeNow()
-		o.UpgradeOrderID = upID
-
-		pos = append(pos, o)
-	}
-
-	return pos
-}
-
-func MockOrder() Order {
+func MockOrder(plan product.ExpandedPlan, kind enum.OrderKind) Order {
 	id := uuid.New().String()
 	return Order{
-		ID: MustGenerateOrderID(),
+		ID: db.MustOrderID(),
 		MemberID: reader.MemberID{
 			CompoundID: id,
 			FtcID:      null.StringFrom(id),
 			UnionID:    null.String{},
 		},
-		PlanID:     "",
-		DiscountID: null.String{},
-		Price:      faker.PlanStdYear.Price,
-		Edition:    faker.PlanStdYear.Edition,
+		PlanID:     plan.ID,
+		DiscountID: plan.Discount.DiscID,
+		Price:      plan.Price,
+		Edition:    plan.Edition,
 		Charge: product.Charge{
-			Amount:   faker.PlanStdYear.Price,
+			Amount:   plan.Price,
 			Currency: "cny",
 		},
-		Duration: product.Duration{
-			CycleCount: 1,
-			ExtraDays:  1,
-		},
-		Kind:          enum.OrderKindCreate,
+		Kind:          kind,
 		PaymentMethod: enum.PayMethodAli,
-		TotalBalance:  null.Float{},
 		WxAppID:       null.String{},
 		CreatedAt:     chrono.TimeNow(),
 		ConfirmedAt:   chrono.Time{},
