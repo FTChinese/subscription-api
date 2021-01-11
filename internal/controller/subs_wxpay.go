@@ -22,7 +22,7 @@ import (
 // TODO: put all those fields in request body
 // tier: string; Currently acquired from URL param
 // cycle: string; Currently acquired from URL param
-func (router SubsRouter) PlaceWxOrder(tradeType wechat.TradeType) http.HandlerFunc {
+func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 	webhookURL := subs.WebhookURL(router.config.Sandbox(), enum.PayMethodWx)
 

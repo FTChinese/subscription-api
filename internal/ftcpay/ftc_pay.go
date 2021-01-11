@@ -39,38 +39,24 @@ func New(db *sqlx.DB, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
 }
 
 // SendConfirmEmail sends an email to user after an order is confirmed.
-func (pay FtcPay) SendConfirmEmail(order subs.Order) error {
+func (pay FtcPay) SendConfirmEmail(pc subs.PaymentConfirmed) error {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
 	// If the FtcID field is null, it indicates this user
 	// does not have an FTC account linked. You cannot find out
 	// its email address.
-	if !order.FtcID.Valid {
+	if !pc.Order.FtcID.Valid {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := pay.ReaderRepo.AccountByFtcID(order.FtcID.String)
+	account, err := pay.ReaderRepo.AccountByFtcID(pc.Order.FtcID.String)
 
 	if err != nil {
 		return err
 	}
 
-	var parcel postoffice.Parcel
-	switch order.Kind {
-	case enum.OrderKindCreate:
-		parcel, err = letter.NewSubParcel(account, order)
-
-	case enum.OrderKindRenew:
-		parcel, err = letter.NewRenewalParcel(account, order)
-
-	case enum.OrderKindUpgrade:
-		pos, err := pay.SubsRepo.ListProratedOrders(order.ID)
-		if err != nil {
-			return err
-		}
-		parcel, err = letter.NewUpgradeParcel(account, order, pos)
-	}
+	parcel, err := letter.NewSubParcel(account, pc)
 
 	if err != nil {
 		sugar.Error(err)
@@ -118,16 +104,11 @@ func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (sub
 			}
 		}
 
-		// Flag upgrade balance as consumed.
-		if confirmed.Order.Kind == enum.OrderKindUpgrade {
-			err := pay.SubsRepo.ProratedOrdersUsed(confirmed.Order.ID)
+		if confirmed.Notify {
+			err := pay.SendConfirmEmail(confirmed.PaymentConfirmed)
 			if err != nil {
 				sugar.Error(err)
 			}
-		}
-
-		if err := pay.SendConfirmEmail(confirmed.Order); err != nil {
-			sugar.Error(err)
 		}
 	}()
 

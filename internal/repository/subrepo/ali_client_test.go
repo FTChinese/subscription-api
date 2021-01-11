@@ -3,7 +3,7 @@ package subrepo
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/ali"
-	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
 	"go.uber.org/zap/zaptest"
@@ -29,7 +29,7 @@ func TestAliPayClient_CreateOrder(t *testing.T) {
 			args: args{
 				or: ali.OrderReq{
 					Title:       "Desktop order",
-					FtcOrderID:  subs.MustGenerateOrderID(),
+					FtcOrderID:  db.MustOrderID(),
 					TotalAmount: "258.00",
 					WebhookURL:  gofakeit.URL(),
 					TxKind:      ali.EntryDesktopWeb,
@@ -43,7 +43,7 @@ func TestAliPayClient_CreateOrder(t *testing.T) {
 			args: args{
 				or: ali.OrderReq{
 					Title:       "Mobile order",
-					FtcOrderID:  subs.MustGenerateOrderID(),
+					FtcOrderID:  db.MustOrderID(),
 					TotalAmount: "258.00",
 					WebhookURL:  gofakeit.URL(),
 					TxKind:      ali.EntryMobileWeb,
@@ -57,7 +57,7 @@ func TestAliPayClient_CreateOrder(t *testing.T) {
 			args: args{
 				or: ali.OrderReq{
 					Title:       "App order",
-					FtcOrderID:  subs.MustGenerateOrderID(),
+					FtcOrderID:  db.MustOrderID(),
 					TotalAmount: "258.00",
 					WebhookURL:  gofakeit.URL(),
 					TxKind:      ali.EntryApp,
