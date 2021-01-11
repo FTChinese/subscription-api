@@ -65,32 +65,20 @@ func StartServer(s ServerStatus) {
 		r.Use(controller.RequireFtcOrUnionID)
 
 		// Create a new subscription for desktop browser
-		// Deprecated
 		r.With(controller.RequireFtcOrUnionID).
-			Post("/desktop/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeDesktop))
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/desktop", payRouter.PlaceWxOrder(wechat.TradeTypeDesktop))
+			Post("/desktop", payRouter.WxPay(wechat.TradeTypeDesktop))
 
 		// Create an order for mobile browser
-		// Deprecated
 		r.With(controller.RequireFtcOrUnionID).
-			Post("/mobile/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeMobile))
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/mobile", payRouter.PlaceWxOrder(wechat.TradeTypeMobile))
+			Post("/mobile", payRouter.WxPay(wechat.TradeTypeMobile))
 
-		// Create an order for wx-embeded browser
-		// Deprecated
+		// Create an order for wx-embedded browser
 		r.With(controller.RequireFtcOrUnionID).
-			Post("/jsapi/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeJSAPI))
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/jsapi", payRouter.PlaceWxOrder(wechat.TradeTypeJSAPI))
+			Post("/jsapi", payRouter.WxPay(wechat.TradeTypeJSAPI))
 
-		// Creat ean order for native app
-		// Deprecated
+		// Creat an order for native app
 		r.With(controller.RequireFtcOrUnionID).
-			Post("/app/{tier}/{cycle}", payRouter.PlaceWxOrder(wechat.TradeTypeApp))
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/app", payRouter.PlaceWxOrder(wechat.TradeTypeApp))
+			Post("/app", payRouter.WxPay(wechat.TradeTypeApp))
 
 		// Query order
 		// Deprecated
@@ -102,36 +90,19 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		// Create an order for desktop browser
-		// Deprecated
 		r.With(controller.RequireFtcOrUnionID).
-			Post("/desktop/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryDesktopWeb))
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/desktop", payRouter.PlaceAliOrder(ali.EntryDesktopWeb))
+			Post("/desktop", payRouter.AliPay(ali.EntryDesktopWeb))
 
 		// Create an order for mobile browser
-		// Deprecated
 		r.With(controller.RequireFtcOrUnionID).
-			Post("/mobile/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryMobileWeb))
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/mobile", payRouter.PlaceAliOrder(ali.EntryMobileWeb))
+			Post("/mobile", payRouter.AliPay(ali.EntryMobileWeb))
 
 		// Create an order for native app.
-		// Deprecated
 		r.With(controller.RequireFtcOrUnionID).
-			Post("/app/{tier}/{cycle}", payRouter.PlaceAliOrder(ali.EntryApp))
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/app", payRouter.PlaceAliOrder(ali.EntryApp))
+			Post("/app", payRouter.AliPay(ali.EntryApp))
 
 		// Deprecated.
 		r.Get("/query/{id}", payRouter.VerifyPayment)
-	})
-
-	r.Route("/upgrade", func(r chi.Router) {
-		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
-		r.Get("/balance", payRouter.PreviewUpgrade)
-		// Get membership information when user want to upgrade: days remaining, account balance, amount
-		r.Put("/free", payRouter.FreeUpgrade)
 	})
 
 	r.Route("/orders", func(r chi.Router) {

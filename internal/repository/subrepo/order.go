@@ -9,6 +9,12 @@ import (
 // For backward compatibility.
 const wxAppNativeApp = "wxacddf1c20516eb69" // Used by native app to pay and log in.
 
+// CreateOrder creates an order and save it to db.
+// This version is applicable to all users, regardless of how their current membership is purchased. It no longer calculates user's
+// current account balance.
+// For upgrading to premium with valid standard subscription,
+// the remaining days is converted to add-on.
+// For Stripe and IAP, the purchase is taken as add-on directly.
 func (env Env) CreateOrder(config subs.PaymentConfig) (subs.PaymentIntent, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
@@ -31,39 +37,7 @@ func (env Env) CreateOrder(config subs.PaymentConfig) (subs.PaymentIntent, error
 	}
 	sugar.Infof("Membership retrieved %+v", member)
 
-	// Deduce order kind.
-	kind, ve := member.AliWxSubsKind(config.Plan.Edition)
-	if ve != nil {
-		sugar.Error(ve)
-		_ = otx.Rollback()
-		return subs.PaymentIntent{}, ve
-	}
-	sugar.Infof("Subscription kind %s", kind)
-
-	// Step 2: Build an order for the user's chosen plan
-	// with chosen payment method based on previous
-	// membership so that we could how this order
-	// is used: create, renew or upgrade.
-
-	var balanceSources []subs.BalanceSource
-	// Step 3: required only if this order is used for
-	// upgrading.
-	if kind == enum.OrderKindUpgrade {
-		// Step 3.1: find previous orders with balance
-		// remaining.
-		// DO not save sources directly. The balance is not
-		// calculated at this point.
-		sugar.Infof("Get balance sources for an upgrading order")
-		balanceSources, err = otx.FindBalanceSources(config.Account.MemberID())
-		if err != nil {
-			sugar.Error(err)
-			_ = otx.Rollback()
-			return subs.PaymentIntent{}, err
-		}
-		sugar.Infof("Find balance source: %+v", balanceSources)
-	}
-
-	pi, err := config.BuildIntent(balanceSources, kind)
+	pi, err := config.BuildIntent(member)
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
@@ -78,33 +52,12 @@ func (env Env) CreateOrder(config subs.PaymentConfig) (subs.PaymentIntent, error
 	}
 	sugar.Infof("Order saved %s", pi.Order.ID)
 
-	if balanceSources != nil {
-		pos := pi.ProratedOrders(pi.Order.ID)
-		err := otx.SaveProratedOrders(pos)
-		if err != nil {
-			_ = otx.Rollback()
-			return subs.PaymentIntent{}, err
-		}
-	}
-
 	if err := otx.Commit(); err != nil {
 		sugar.Error(err)
 		return subs.PaymentIntent{}, err
 	}
 
 	return pi, nil
-}
-
-func (env Env) ProratedOrdersUsed(upOrderID string) error {
-	_, err := env.rwdDB.Exec(
-		subs.StmtProratedOrdersUsed,
-		upOrderID,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (env Env) LogOrderMeta(m subs.OrderMeta) error {
