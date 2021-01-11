@@ -1,7 +1,6 @@
 package subs
 
 import (
-	"errors"
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
@@ -10,6 +9,8 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
+
+const trialDays = 1
 
 type LockedOrder struct {
 	ID          string      `db:"order_id"`
@@ -33,16 +34,16 @@ type Order struct {
 	Price      float64     `json:"price" db:"price"` // Price of a plan, prior to discount.
 	product.Edition
 	product.Charge
-	product.Duration
-	Kind enum.OrderKind `json:"usageType" db:"kind"` // The usage of this order: creat new, renew, or upgrade?
-	//LastUpgradeID null.String    `json:"-" db:"last_upgrade_id"`
+	Kind          enum.OrderKind `json:"kind" db:"kind"` // The usage of this order: creat new, renew, or upgrade?
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
-	TotalBalance  null.Float     `json:"totalBalance" db:"total_balance"` // Only for upgrade
-	WxAppID       null.String    `json:"-" db:"wx_app_id"`                // Wechat specific. Used by webhook to verify notification.
+	WxAppID       null.String    `json:"-" db:"wx_app_id"` // Wechat specific. Used by webhook to verify notification.
 	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
 	dt.DateRange
 	LiveMode bool `json:"live"`
+
+	product.Duration            // Deprecated.
+	TotalBalance     null.Float `json:"totalBalance" db:"total_balance"` // Deprecated.
 }
 
 func (o Order) IsZero() bool {
@@ -57,6 +58,22 @@ func (o Order) IsAliWxPay() bool {
 	return o.PaymentMethod == enum.PayMethodAli || o.PaymentMethod == enum.PayMethodWx
 }
 
+// IsSynced tests whether an order is confirmed and the end date is
+// transferred to membership.
+func (o Order) IsSynced(m reader.Membership) bool {
+	if o.ConfirmedAt.IsZero() {
+		return false
+	}
+
+	// As long the current membership expiration date is not before
+	// this order's end date, we think the order is already synced to membership.
+	if o.IsAliWxPay() {
+		return !m.ExpireDate.Before(o.EndDate.Time)
+	}
+
+	return true
+}
+
 func (o Order) ValidatePayment(result PaymentResult) error {
 	if o.AmountInCent() != result.Amount.Int64 {
 		return fmt.Errorf("amount mismatched: expected: %d, actual: %d", o.AmountInCent(), result.Amount.Int64)
@@ -65,101 +82,23 @@ func (o Order) ValidatePayment(result PaymentResult) error {
 	return nil
 }
 
-func (o Order) ValidateDupUpgrade(m reader.Membership) error {
-	if o.Kind == enum.OrderKindUpgrade && m.IsValidPremium() {
-		return errors.New("duplicate upgrading")
-	}
+func (o Order) newOrRenewalConfirm(confirmedAt chrono.Time, exp chrono.Date) Order {
+	o.ConfirmedAt = confirmedAt
 
-	return nil
+	startTime := dt.PickLater(confirmedAt.Time, exp.Time)
+	o.DateRange = dt.NewDateRange(startTime).
+		WithCycle(o.Cycle).
+		AddDays(trialDays)
+
+	return o
 }
 
-// pick which date to use as start date upon confirmation.
-// expireDate refers to current membership's expireDate.
-func (o Order) pickStartDate(expireDate chrono.Date) chrono.Date {
-	// If this is an upgrade order, or membership is expired, use confirmation time.
-	if o.Kind == enum.OrderKindUpgrade || o.ConfirmedAt.Time.After(expireDate.Time) {
-		return chrono.DateFrom(o.ConfirmedAt.Time)
-	}
+func (o Order) upgradeConfirm(confirmedAt chrono.Time) Order {
+	o.ConfirmedAt = confirmedAt
 
-	return expireDate
-}
+	o.DateRange = dt.NewDateRange(confirmedAt.Time).
+		WithCycle(o.Cycle).
+		AddDays(trialDays)
 
-// Build a new membership by copying data from an order.
-// The order must be already confirmed and have start date and end date.
-func (o Order) newMembership() reader.Membership {
-	return reader.Membership{
-		MemberID:      o.MemberID,
-		Edition:       o.Edition,
-		LegacyTier:    null.Int{},
-		LegacyExpire:  null.Int{},
-		ExpireDate:    o.EndDate,
-		PaymentMethod: o.PaymentMethod,
-		FtcPlanID:     null.StringFrom(o.PlanID),
-		StripeSubsID:  null.String{},
-		StripePlanID:  null.String{},
-		AutoRenewal:   false,
-		Status:        enum.SubsStatusNull,
-		AppleSubsID:   null.String{},
-		B2BLicenceID:  null.String{},
-	}.Sync()
-}
-
-// Confirm an order based on existing membership.
-// If current membership is not expired, the order's
-// purchased start date starts from the membership's
-// expiration date; otherwise it starts from the
-// confirmation time received by webhook.
-// If this order is used for upgrading, it always starts
-// at now.
-func (o Order) Confirm(pr PaymentResult, m reader.Membership) (ConfirmationResult, error) {
-
-	if o.IsConfirmed() {
-		// In case the order is confirmed but end time is not synced.
-		var outOfSync = m.ExpireDate.Before(o.EndDate.Time)
-		var snapshot reader.MemberSnapshot
-		// If out of sync, you need to update membership.
-		if outOfSync {
-			if !m.IsZero() {
-				snapshot = m.Snapshot(reader.FtcArchiver(o.Kind))
-			}
-			m = o.newMembership()
-		}
-
-		// Nothing changed. No need to touch db. Send directly to client.
-		return ConfirmationResult{
-			orderModified: false,
-			Order:         o,
-			memberUpdated: outOfSync,
-			Membership:    m,
-			Payment:       pr,
-			Snapshot:      snapshot,
-		}, nil
-	}
-
-	o.ConfirmedAt = pr.ConfirmedUTC
-
-	dateRange, err := product.NewDurationBuilder(
-		o.Cycle,
-		o.Duration).
-		ToDateRange(o.pickStartDate(m.ExpireDate))
-
-	if err != nil {
-		return ConfirmationResult{}, err
-	}
-
-	o.DateRange = dateRange
-
-	snapshot := m.Snapshot(reader.FtcArchiver(o.Kind))
-	if !m.IsZero() {
-		snapshot = snapshot.WithOrder(o.ID)
-	}
-
-	return ConfirmationResult{
-		orderModified: true,
-		Order:         o,
-		memberUpdated: true,
-		Membership:    o.newMembership(),
-		Payment:       pr,
-		Snapshot:      snapshot,
-	}, nil
+	return o
 }
