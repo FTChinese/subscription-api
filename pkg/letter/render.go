@@ -1,7 +1,11 @@
 package letter
 
 import (
+	"errors"
 	"fmt"
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/subs"
 	"strconv"
 	"strings"
 	"text/template"
@@ -13,7 +17,7 @@ const (
 	keyNewSubs     = "newSubs"
 	keyRenewalSubs = "renewalSubs"
 	keyUpgradeSubs = "upgradeSubs"
-	keyFreeUpgrade = "freeUpgrade"
+	keyAddOn       = "addOn"
 	keyIAPLinked   = "iapLinked"
 	keyIAPUnlinked = "iapUnlinked"
 )
@@ -57,20 +61,36 @@ func Render(name string, ctx interface{}) (string, error) {
 	return body.String(), nil
 }
 
-func RenderNewSubs(ctx CtxSubs) (string, error) {
-	return Render(keyNewSubs, ctx)
+type CtxSubs struct {
+	UserName string
+	Order    subs.Order
+	AddOn    subs.AddOn
 }
 
-func RenderRenewalSubs(ctx CtxSubs) (string, error) {
-	return Render(keyRenewalSubs, ctx)
+func (ctx CtxSubs) Render() (string, error) {
+	switch ctx.Order.Kind {
+	case enum.OrderKindCreate:
+		return Render(keyNewSubs, ctx)
+
+	case enum.OrderKindRenew:
+		return Render(keyRenewalSubs, ctx)
+
+	case enum.OrderKindUpgrade:
+		return Render(keyUpgradeSubs, ctx)
+
+	case enum.OrderKindAddOn:
+		return Render(keyAddOn, ctx)
+
+	default:
+		return "", errors.New("cannot render email for unknown subscription kind")
+	}
 }
 
-func RenderUpgrade(ctx CtxUpgrade) (string, error) {
-	return Render(keyUpgradeSubs, ctx)
-}
-
-func RenderFreeUpgrade(ctx CtxUpgrade) (string, error) {
-	return Render(keyFreeUpgrade, ctx)
+type CtxIAPLinked struct {
+	UserName   string
+	Email      string
+	Tier       enum.Tier
+	ExpireDate chrono.Date
 }
 
 func RenderIAPLinked(ctx CtxIAPLinked) (string, error) {

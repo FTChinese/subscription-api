@@ -2,20 +2,29 @@ package letter
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
-func NewSubParcel(a reader.FtcAccount, order subs.Order) (postoffice.Parcel, error) {
+var subjects = map[enum.OrderKind]string{
+	enum.OrderKindCreate:  "FT会员订阅",
+	enum.OrderKindRenew:   "FT会员续订",
+	enum.OrderKindUpgrade: "FT会员升级",
+	enum.OrderKindAddOn:   "购买FT订阅服务",
+}
+
+func NewSubParcel(a reader.FtcAccount, pc subs.PaymentConfirmed) (postoffice.Parcel, error) {
 
 	ctx := CtxSubs{
 		UserName: a.NormalizeName(),
-		Order:    order,
+		Order:    pc.Order,
+		AddOn:    pc.AddOn,
 	}
 
-	body, err := RenderNewSubs(ctx)
+	body, err := ctx.Render()
 	if err != nil {
 		return postoffice.Parcel{}, err
 	}
@@ -25,85 +34,7 @@ func NewSubParcel(a reader.FtcAccount, order subs.Order) (postoffice.Parcel, err
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   a.Email,
 		ToName:      ctx.UserName,
-		Subject:     "会员订阅",
-		Body:        body,
-	}, nil
-}
-
-func NewRenewalParcel(
-	a reader.FtcAccount,
-	order subs.Order,
-) (postoffice.Parcel, error) {
-
-	ctx := CtxSubs{
-		UserName: a.NormalizeName(),
-		Order:    order,
-	}
-
-	body, err := RenderRenewalSubs(ctx)
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	return postoffice.Parcel{
-		FromAddress: "no-reply@ftchinese.com",
-		FromName:    "FT中文网会员订阅",
-		ToAddress:   a.Email,
-		ToName:      ctx.UserName,
-		Subject:     "会员续订",
-		Body:        body,
-	}, nil
-}
-
-func NewUpgradeParcel(
-	a reader.FtcAccount,
-	order subs.Order,
-	pos []subs.ProratedOrder,
-) (postoffice.Parcel, error) {
-
-	ctx := CtxUpgrade{
-		UserName: a.NormalizeName(),
-		Order:    order,
-		Prorated: pos,
-	}
-
-	body, err := RenderUpgrade(ctx)
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	return postoffice.Parcel{
-		FromAddress: "no-reply@ftchinese.com",
-		FromName:    "FT中文网会员订阅",
-		ToAddress:   a.Email,
-		ToName:      ctx.UserName,
-		Subject:     "会员升级",
-		Body:        body,
-	}, nil
-}
-
-func NewFreeUpgradeParcel(
-	a reader.FtcAccount,
-	order subs.Order,
-	pos []subs.ProratedOrder) (postoffice.Parcel, error) {
-
-	ctx := CtxUpgrade{
-		UserName: a.NormalizeName(),
-		Order:    order,
-		Prorated: pos,
-	}
-
-	body, err := RenderFreeUpgrade(ctx)
-	if err != nil {
-		return postoffice.Parcel{}, err
-	}
-
-	return postoffice.Parcel{
-		FromAddress: "no-reply@ftchinese.com",
-		FromName:    "FT中文网会员订阅",
-		ToAddress:   a.Email,
-		ToName:      ctx.UserName,
-		Subject:     "会员升级",
+		Subject:     subjects[pc.Order.Kind],
 		Body:        body,
 	}, nil
 }

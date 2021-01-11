@@ -44,38 +44,32 @@ FT中文网用户 {{.UserName}},
 支付金额 {{.Order.Amount | currency}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
-本次升级前余额 {{.Order.TotalBalance.Float64 | currency}}，余额来自如下订单未使用部分：
-
-{{range .Prorated}}
-{{.OrderID}}: {{.Balance | currency}}
-{{end}}
+本次升级前标准版订阅剩余 {{.AddOn.ExtraDays}} 天，将在高端版到期后再次启用
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
 再次感谢您对FT中文网的持续支持。
 
 FT中文网`,
-	keyFreeUpgrade: `
+	keyAddOn: `
 FT中文网用户 {{.UserName}},
 
-感谢您升级订阅FT中文网高端会员。
+感谢您购买FT中文网会员服务。
 
-您于 {{.Order.CreatedAt.StringCN}} 从标准会员免费升级到 {{.Order.Tier.StringCN}}。
+您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 购买一份 {{.Order.Tier.StringCN}}。
 
 订单号 {{.Order.ID}}
-订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
+支付金额 {{.Order.Amount | currency}}
+购买天数: {{.AddOn.GetDays}}
 
-本次升级前余额 {{.Order.TotalBalance.Float64 | currency}}，余额来自如下订单未使用部分：
-
-{{range .Prorated}}
-{{.OrderID}}: {{.Balance | currency}}
-{{end}}
+由于您当前会员使用了采取订阅模式的 {{.Snapshot.PaymentMethod.StringCN}}，通过{{.Order.PaymentMethod.StringCN}}进行的一次性购买将在当前订阅到期后启用。
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
 再次感谢您对FT中文网的持续支持。
 
-FT中文网`,
+FT中文网
+`,
 	keyIAPLinked: `
 FT中文网用户 {{.UserName}},
 
