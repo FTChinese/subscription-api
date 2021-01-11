@@ -35,9 +35,6 @@ type Persona struct {
 	plan      product.ExpandedPlan
 	payMethod enum.PayMethod
 	expired   bool
-
-	Orders map[string]subs.Order
-	Member reader.Membership
 }
 
 func NewPersona() *Persona {
@@ -60,9 +57,6 @@ func NewPersona() *Persona {
 		plan:      faker.PlanStdYear,
 		payMethod: enum.PayMethodAli,
 		expired:   false,
-
-		Orders: make(map[string]subs.Order),
-		Member: reader.Membership{},
 	}
 }
 
@@ -193,127 +187,43 @@ func (p *Persona) Membership() reader.Membership {
 	return m.Sync()
 }
 
-func (p *Persona) WxOrderBuilder() subs.PaymentConfig {
-	return subs.NewPayment(p.FtcAccount(), p.plan).
-		WithWxpay(WxPayApp)
-}
-
-func (p *Persona) AliOrderBuilder() subs.PaymentConfig {
-	return subs.NewPayment(p.FtcAccount(), p.plan).
-		WithAlipay()
-}
-
 func (p *Persona) CreateOrder() subs.Order {
 	var payConfig subs.PaymentConfig
 	if p.payMethod == enum.PayMethodWx {
-		payConfig = p.WxOrderBuilder()
+		payConfig = subs.
+			NewPayment(p.FtcAccount(), p.plan).
+			WithWxpay(WxPayApp)
 	} else if p.payMethod == enum.PayMethodAli {
-		payConfig = p.AliOrderBuilder()
+		payConfig = subs.
+			NewPayment(p.FtcAccount(), p.plan).
+			WithAlipay()
 	} else {
 		panic("only alipay or wxpay supported")
 	}
 
-	kind, ve := p.Member.AliWxSubsKind(p.plan.Edition)
-	if ve != nil {
-		panic(ve)
-	}
-
-	var bs []subs.BalanceSource
-	if kind == enum.OrderKindUpgrade {
-		bs = p.findBalanceSources(time.Now())
-	}
-
-	pi, err := payConfig.BuildIntent(bs, kind)
+	pi, err := payConfig.BuildIntent(p.Membership())
 	if err != nil {
 		panic(err)
 	}
-
-	p.Orders[pi.Order.ID] = pi.Order
 
 	return pi.Order
 }
 
 func (p *Persona) ConfirmOrder(o subs.Order) subs.ConfirmationResult {
 
-	res, err := o.Confirm(subs.PaymentResult{
-		PaidAt: chrono.TimeNow(),
-	}, p.Member)
+	res, err := subs.NewConfirmationResult(subs.ConfirmationParams{
+		Payment: subs.PaymentResult{
+			PaidAt: chrono.TimeNow(),
+		},
+		Order:  o,
+		Member: reader.Membership{},
+	})
+
 	if err != nil {
 		panic(err)
 	}
 
-	p.Orders[res.Order.ID] = res.Order
-	p.Member = res.Membership
-
 	return res
-}
-
-func (p *Persona) findBalanceSources(anchor time.Time) []subs.BalanceSource {
-
-	sources := make([]subs.BalanceSource, 0)
-
-	for _, v := range p.Orders {
-		if v.IsZero() || !v.IsConfirmed() {
-			continue
-		}
-
-		if v.Tier != enum.TierStandard {
-			continue
-		}
-
-		if v.EndDate.Time.Before(anchor) {
-			continue
-		}
-
-		bs := subs.BalanceSource{
-			OrderID:   v.ID,
-			Amount:    v.Amount,
-			StartDate: v.StartDate,
-			EndDate:   v.EndDate,
-		}
-
-		sources = append(sources, bs)
-	}
-
-	return sources
-}
-
-func (p *Persona) RenewN(n int) []subs.Order {
-	orders := make([]subs.Order, 0)
-
-	for i := 0; i < n; i++ {
-		result := p.ConfirmOrder(p.CreateOrder())
-
-		orders = append(orders, result.Order)
-	}
-
-	return orders
-}
-
-func (p *Persona) CreateBalanceSources(n int) []subs.Order {
-	orders := make([]subs.Order, 0)
-
-	var payConfig subs.PaymentConfig
-	if p.payMethod == enum.PayMethodWx {
-		payConfig = p.WxOrderBuilder()
-	} else if p.payMethod == enum.PayMethodAli {
-		payConfig = p.AliOrderBuilder()
-	} else {
-		panic("only alipay or wxpay supported")
-	}
-
-	for i := 0; i < n; i++ {
-		pi, err := payConfig.BuildIntent(nil, enum.OrderKindRenew)
-		if err != nil {
-			panic(err)
-		}
-
-		result := p.ConfirmOrder(pi.Order)
-
-		orders = append(orders, result.Order)
-	}
-
-	return orders
 }
 
 func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
@@ -347,18 +257,4 @@ func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
 	default:
 		panic("Not ali or wx pay")
 	}
-}
-
-func GenProratedOrders(upOrderID string) []subs.ProratedOrder {
-	orders := make([]subs.ProratedOrder, 0)
-
-	orders = append(orders, subs.ProratedOrder{
-		OrderID:        subs.MustGenerateOrderID(),
-		Balance:        99,
-		CreatedUTC:     chrono.TimeNow(),
-		ConsumedUTC:    chrono.Time{},
-		UpgradeOrderID: upOrderID,
-	})
-
-	return orders
 }
