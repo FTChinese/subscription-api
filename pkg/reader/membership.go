@@ -28,10 +28,17 @@ func GetTierCode(tier enum.Tier) int64 {
 	return tierToCode[tier]
 }
 
-// AddOn specifies extra days that can be used after current expiration date reached.
-type AddOn struct {
+// ReservedDays contains the subscription period that will become effective once current membership expired.
+type ReservedDays struct {
 	Standard int64 `json:"standardAddOn" db:"standard_addon"`
 	Premium  int64 `json:"premiumAddOn" db:"premium_addon"`
+}
+
+func (d ReservedDays) Plus(other ReservedDays) ReservedDays {
+	return ReservedDays{
+		Standard: d.Standard + other.Standard,
+		Premium:  d.Premium + other.Premium,
+	}
 }
 
 // Membership contains a user's membership details
@@ -62,6 +69,7 @@ type Membership struct {
 	Status       enum.SubsStatus `json:"status" db:"subs_status"`
 	AppleSubsID  null.String     `json:"appleSubsId" db:"apple_subs_id"`
 	B2BLicenceID null.String     `json:"b2bLicenceId" db:"b2b_licence_id"`
+	ReservedDays
 }
 
 // IsZero test whether the instance is empty.
@@ -215,6 +223,11 @@ func (m Membership) IsB2B() bool {
 
 func (m Membership) IsValidPremium() bool {
 	return m.Tier == enum.TierPremium && !m.IsExpired()
+}
+
+func (m Membership) WithReservedDays(days ReservedDays) Membership {
+	m.ReservedDays = m.ReservedDays.Plus(days)
+	return m
 }
 
 // canRenewViaAliWx test if current membership is allowed to renew for wxpay or alipay.
