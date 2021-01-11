@@ -3,12 +3,12 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
-	"time"
 )
 
 func WebhookURL(sandbox bool, method enum.PayMethod) string {
@@ -49,46 +49,25 @@ func NewCheckedItem(ep product.ExpandedPlan) CheckedItem {
 	}
 }
 
-// Checkout is intermediate bridge between payment request and the final result.
-type Checkout struct {
-	Kind     enum.OrderKind   `json:"kind"`
-	Item     CheckedItem      `json:"item"`
-	Wallet   Wallet           `json:"wallet"`
-	Duration product.Duration `json:"duration"`
-	Payable  product.Charge   `json:"payable"`
-	IsFree   bool             `json:"isFree"`
-	LiveMode bool             `json:"live"`
+// Amount calculates the actual amount user should pay for a plan,
+// after taking into account applicable discount, coupon, limited time offer, etc..
+func (i CheckedItem) Payable() product.Charge {
+	return product.Charge{
+		Amount:   i.Plan.Price - i.Discount.PriceOff.Float64,
+		Currency: "cny",
+	}
 }
 
-func (c Checkout) ProratedOrders(upOrderID string) []ProratedOrder {
-	if c.Kind != enum.OrderKindUpgrade {
-		return nil
-	}
-	if c.Wallet.Sources == nil || len(c.Wallet.Sources) == 0 {
-		return nil
-	}
-
-	now := chrono.TimeNow()
-
-	var pos = make([]ProratedOrder, 0)
-	for _, v := range c.Wallet.Sources {
-		v.UpgradeOrderID = upOrderID
-		if c.IsFree {
-			v.ConsumedUTC = now
-		}
-
-		pos = append(pos, v)
-	}
-
-	return pos
+// Checkout is intermediate bridge between payment request and the final result.
+type Checkout struct {
+	Kind     enum.OrderKind `json:"kind"`
+	Item     CheckedItem    `json:"item"`
+	Payable  product.Charge `json:"payable"`
+	LiveMode bool           `json:"live"`
 }
 
 func (c Checkout) WithTest(t bool) Checkout {
 	c.LiveMode = !t
-
-	if c.IsFree {
-		return c
-	}
 
 	if t {
 		c.Payable.Amount = 0.01
@@ -100,7 +79,6 @@ func (c Checkout) WithTest(t bool) Checkout {
 // PaymentConfig collects parameters to build an order.
 // These are experimental refactoring.
 type PaymentConfig struct {
-	DryRun  bool                 // Only for upgrade preview.
 	Account reader.FtcAccount    // Required. Who is paying.
 	Plan    product.ExpandedPlan // Required. What is purchased.
 	Method  enum.PayMethod       // Optional if no payment is actually involved.
@@ -127,59 +105,29 @@ func (c PaymentConfig) WithWxpay(app wechat.PayApp) PaymentConfig {
 	return c
 }
 
-// WithPreview set the DryRun field.
-// Used by upgrade preview and the free uprade.
-func (c PaymentConfig) WithPreview(preview bool) PaymentConfig {
-	c.DryRun = preview
-	return c
-}
+// Checkout determines how a user should check out. This version
+// allows all user to pay via alipay or wxpay, even if current membership is a valid stripe or iap.
+// If Kind == OrderKindAddOn,
+func (c PaymentConfig) checkout(m reader.Membership) (Checkout, error) {
 
-func (c PaymentConfig) Checkout(bs []BalanceSource, kind enum.OrderKind) Checkout {
+	kind, err := m.AliWxSubsKind(c.Plan.Edition)
+	if err != nil {
+		return Checkout{}, err
+	}
 
 	item := NewCheckedItem(c.Plan)
-
-	w := Wallet{}
-	if kind == enum.OrderKindUpgrade {
-		w = NewWallet(bs, time.Now())
-	}
-
-	duration := w.ConvertLength(item.Plan)
-
-	amount := item.Plan.Price - item.Discount.PriceOff.Float64 - w.Balance
-
-	// Balance is large enough to cover price.
-	if amount < 0 {
-		return Checkout{
-			Kind:     kind,
-			Item:     item,
-			Wallet:   w,
-			Duration: duration,
-			Payable: product.Charge{
-				Amount:   0,
-				Currency: "cny",
-			},
-			IsFree:   true,
-			LiveMode: true,
-		}.WithTest(c.Account.IsTest())
-	}
-
 	return Checkout{
-		Kind:   kind,
-		Item:   item,
-		Wallet: w,
-		Payable: product.Charge{
-			Amount:   amount,
-			Currency: "cny",
-		},
-		Duration: duration,
-		IsFree:   false,
+		Kind:     kind,
+		Item:     item,
+		Payable:  item.Payable(),
 		LiveMode: true,
-	}.WithTest(c.Account.IsTest())
+	}.WithTest(c.Account.IsTest()), nil
 }
 
-func (c PaymentConfig) BuildOrder(checkout Checkout) (Order, error) {
+// BuildOrder creates an Order based on a checkout action.
+func (c PaymentConfig) order(checkout Checkout) (Order, error) {
 
-	orderID, err := GenerateOrderID()
+	orderID, err := db.OrderID()
 	if err != nil {
 		return Order{}, err
 	}
@@ -195,10 +143,8 @@ func (c PaymentConfig) BuildOrder(checkout Checkout) (Order, error) {
 			Amount:   checkout.Payable.Amount,
 			Currency: checkout.Payable.Currency,
 		},
-		Duration:      checkout.Duration,
 		Kind:          checkout.Kind,
 		PaymentMethod: c.Method,
-		TotalBalance:  null.NewFloat(checkout.Wallet.Balance, checkout.Wallet.Balance != 0),
 		WxAppID:       c.WxAppID,
 		DateRange:     dt.DateRange{},
 		CreatedAt:     chrono.TimeNow(),
@@ -207,9 +153,14 @@ func (c PaymentConfig) BuildOrder(checkout Checkout) (Order, error) {
 	}, nil
 }
 
-func (c PaymentConfig) BuildIntent(bs []BalanceSource, kind enum.OrderKind) (PaymentIntent, error) {
-	checkout := c.Checkout(bs, kind)
-	order, err := c.BuildOrder(checkout)
+// BuildIntent builds payment intent.
+func (c PaymentConfig) BuildIntent(m reader.Membership) (PaymentIntent, error) {
+	checkout, err := c.checkout(m)
+	if err != nil {
+		return PaymentIntent{}, err
+	}
+
+	order, err := c.order(checkout)
 	if err != nil {
 		return PaymentIntent{}, err
 	}
@@ -218,51 +169,4 @@ func (c PaymentConfig) BuildIntent(bs []BalanceSource, kind enum.OrderKind) (Pay
 		Checkout: checkout,
 		Order:    order,
 	}, nil
-}
-
-func (c PaymentConfig) UpgradeIntent(bs []BalanceSource, m reader.Membership) (UpgradeIntent, error) {
-
-	checkout := c.Checkout(bs, enum.OrderKindUpgrade)
-
-	intent := UpgradeIntent{
-		Charge:         checkout.Payable,
-		CycleCount:     checkout.Duration.CycleCount,
-		ExtraDays:      checkout.Duration.ExtraDays,
-		LegacySubsKind: enum.OrderKindUpgrade,
-		Plan:           c.Plan,
-		Checkout:       checkout,
-		Result:         ConfirmationResult{},
-	}
-
-	// This order is used for upgrade but the balance is not enough to cover the cost.
-	if c.DryRun || !checkout.IsFree {
-		return intent, nil
-	}
-
-	order, err := c.BuildOrder(checkout)
-	if err != nil {
-		return UpgradeIntent{}, err
-	}
-
-	confirmedAt := chrono.TimeNow()
-	dateRange, err := product.NewDurationBuilder(
-		c.Plan.Cycle,
-		checkout.Duration,
-	).ToDateRange(chrono.DateNow())
-	if err != nil {
-		return UpgradeIntent{}, err
-	}
-
-	order.ConfirmedAt = confirmedAt
-	order.DateRange = dateRange
-
-	newMember := order.newMembership()
-
-	intent.Result = ConfirmationResult{
-		Order:      order,
-		Membership: newMember,
-		Snapshot:   m.Snapshot(reader.FtcArchiver(order.Kind)),
-	}
-
-	return intent, nil
 }
