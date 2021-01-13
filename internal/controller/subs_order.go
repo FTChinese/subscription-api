@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"net/http"
 )
@@ -116,13 +117,14 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 			return
 		}
 
-		_ = render.New(w).OK(subs.VerificationResult{
-			PaymentResult: payResult,
-			ConfirmationResult: subs.ConfirmationResult{
-				Order:      order,
-				Membership: m,
-				Payment:    payResult,
+		_ = render.New(w).OK(subs.ConfirmationResult{
+			Payment: payResult,
+			PaymentConfirmed: subs.PaymentConfirmed{
+				Order:    order,
+				AddOn:    subs.AddOn{},
+				Snapshot: reader.MemberSnapshot{},
 			},
+			Membership: m,
 		})
 
 		return
