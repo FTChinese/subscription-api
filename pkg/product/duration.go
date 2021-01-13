@@ -6,4 +6,9 @@ type Duration struct {
 	ExtraDays  int64 `json:"extraDays" db:"extra_days"`
 }
 
-// DefaultDuration specifies the default value for a duration
+func (d Duration) Plus(other Duration) Duration {
+	return Duration{
+		CycleCount: d.CycleCount + other.CycleCount,
+		ExtraDays:  d.ExtraDays + other.ExtraDays,
+	}
+}
