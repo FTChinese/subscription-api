@@ -35,7 +35,7 @@ func (env Env) TransferAddOn(ids []string) (subs.AddOnConsumed, error) {
 	// otherwise we might override valid data.
 	result := subs.TransferAddOn(addOns, member)
 
-	err = otx.AddOnsConsumed(subs.GetAddOnIDs(result.AddOns))
+	err = otx.AddOnsConsumed(result.AddOnIDs.ToArray())
 	if err != nil {
 		_ = otx.Rollback()
 		return subs.AddOnConsumed{}, err
