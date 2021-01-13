@@ -136,8 +136,5 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	_ = render.New(w).OK(subs.VerificationResult{
-		PaymentResult:      payResult,
-		ConfirmationResult: cfmResult,
-	})
+	_ = render.New(w).OK(cfmResult)
 }
