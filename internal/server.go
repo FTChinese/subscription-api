@@ -61,48 +61,34 @@ func StartServer(s ServerStatus) {
 	// Requires user id.
 	r.Route("/wxpay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-
 		r.Use(controller.RequireFtcOrUnionID)
 
 		// Create a new subscription for desktop browser
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/desktop", payRouter.WxPay(wechat.TradeTypeDesktop))
+		r.Post("/desktop", payRouter.WxPay(wechat.TradeTypeDesktop))
 
 		// Create an order for mobile browser
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/mobile", payRouter.WxPay(wechat.TradeTypeMobile))
+		r.Post("/mobile", payRouter.WxPay(wechat.TradeTypeMobile))
 
 		// Create an order for wx-embedded browser
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/jsapi", payRouter.WxPay(wechat.TradeTypeJSAPI))
+		r.Post("/jsapi", payRouter.WxPay(wechat.TradeTypeJSAPI))
 
 		// Creat an order for native app
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/app", payRouter.WxPay(wechat.TradeTypeApp))
-
-		// Query order
-		// Deprecated
-		r.Get("/query/{id}", payRouter.VerifyPayment)
+		r.Post("/app", payRouter.WxPay(wechat.TradeTypeApp))
 	})
 
 	// Require user id.
 	r.Route("/alipay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
+		r.Use(controller.RequireFtcOrUnionID)
 
 		// Create an order for desktop browser
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/desktop", payRouter.AliPay(ali.EntryDesktopWeb))
+		r.Post("/desktop", payRouter.AliPay(ali.EntryDesktopWeb))
 
 		// Create an order for mobile browser
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/mobile", payRouter.AliPay(ali.EntryMobileWeb))
+		r.Post("/mobile", payRouter.AliPay(ali.EntryMobileWeb))
 
 		// Create an order for native app.
-		r.With(controller.RequireFtcOrUnionID).
-			Post("/app", payRouter.AliPay(ali.EntryApp))
-
-		// Deprecated.
-		r.Get("/query/{id}", payRouter.VerifyPayment)
+		r.Post("/app", payRouter.AliPay(ali.EntryApp))
 	})
 
 	r.Route("/orders", func(r chi.Router) {
@@ -116,6 +102,15 @@ func StartServer(s ServerStatus) {
 		r.Get("/{id}/payment-result", payRouter.RawPaymentResult)
 		// Verify if an order is confirmed, and returns PaymentResult.
 		r.Post("/{id}/verify-payment", payRouter.VerifyPayment)
+	})
+
+	r.Route("/addon", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+		r.Use(controller.RequireFtcOrUnionID)
+		// List a list of add-on belong to a user.
+		//r.Get("/", )
+		// Redeem add-on
+		r.Post("/", payRouter.RedeemAddOn)
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
