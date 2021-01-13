@@ -108,3 +108,19 @@ func getReaderIDs(h http.Header) reader.MemberID {
 		UnionID:    null.NewString(unionID, unionID != ""),
 	}.MustNormalize()
 }
+
+func readerIDSet(h http.Header) []string {
+	ftcID := h.Get(userIDKey)
+	unionID := h.Get(unionIDKey)
+
+	var ids []string
+	if ftcID != "" {
+		ids = append(ids, ftcID)
+	}
+
+	if unionID != "" {
+		ids = append(ids, unionID)
+	}
+
+	return ids
+}
