@@ -12,7 +12,7 @@ SET id = :id,
 	compound_id = :compound_id,
 	created_utc = UTC_TIMESTAMP()`
 
-const StmtListAddOn = `
+const stmtListAddOn = `
 SELECT id,
 	tier,
 	cycle,
@@ -24,10 +24,17 @@ SELECT id,
 	created_utc,
 	consumed_utc
 FROM premium.ftc_addon
-WHERE FIND_IN_SET(compound_id, ?)
-	AND consumed_utc IS NULL`
+WHERE FIND_IN_SET(compound_id, ?) > 0
+	AND consumed_utc IS NULL
+ORDER BY created_utc DESC`
+
+const StmtListAddOn = stmtListAddOn + `
+LIMIT ? OFFSET ?`
+
+const StmtListAddOnLock = stmtListAddOn + `
+FOR UPDATE`
 
 const StmtAddOnConsumed = `
 UPDATE premium.ftc_addon
 SET consumed_utc = UTC_TIMESTAMP()
-WHERE FIND_IN_SET(id, ?)`
+WHERE FIND_IN_SET(id, ?) > 0`
