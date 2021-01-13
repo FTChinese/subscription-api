@@ -3,6 +3,7 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/collection"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
@@ -19,42 +20,49 @@ var cycleDays = map[enum.Cycle]int64{
 type AddOn struct {
 	ID string `json:"id" db:"id"`
 	product.Edition
-	CycleCount    int64          `json:"cycleCount" db:"cycle_count"`
-	DaysRemained  int64          `json:"daysRemained" db:"days_remained"`
-	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
-	OrderID       null.String    `json:"orderId" db:"order_id"`
-	CompoundID    string         `json:"compoundId" db:"compound_id"`
-	CreatedUTC    chrono.Time    `json:"createdUtc" db:"created_utc"`
-	ConsumedUTC   chrono.Time    `json:"consumedUtc" db:"consumed_utc"`
+	CycleCount         int64          `json:"cycleCount" db:"cycle_count"`
+	DaysRemained       int64          `json:"daysRemained" db:"days_remained"`
+	IsUpgradeCarryOver bool           `json:"isUpgradeCarryOver" db:"is_upgrade_carry_over"`
+	PaymentMethod      enum.PayMethod `json:"payMethod" db:"payment_method"`
+	CompoundID         string         `json:"compoundId" db:"compound_id"`
+	OrderID            null.String    `json:"orderId" db:"order_id"`
+	PlanID             null.String    `json:"planId" db:"plan_id"`
+	CreatedUTC         chrono.Time    `json:"createdUtc" db:"created_utc"`
+	ConsumedUTC        chrono.Time    `json:"consumedUtc" db:"consumed_utc"`
 }
 
 func NewAddOn(o Order) AddOn {
 	return AddOn{
-		ID:            db.AddOnID(),
-		Edition:       o.Edition,
-		CycleCount:    1,
-		DaysRemained:  trialDays,
-		PaymentMethod: o.PaymentMethod,
-		OrderID:       null.StringFrom(o.ID),
-		CompoundID:    o.CompoundID,
-		CreatedUTC:    chrono.TimeNow(),
-		ConsumedUTC:   chrono.Time{},
+		ID:                 db.AddOnID(),
+		Edition:            o.Edition,
+		CycleCount:         1,
+		DaysRemained:       trialDays,
+		IsUpgradeCarryOver: false,
+		PaymentMethod:      o.PaymentMethod,
+		CompoundID:         o.CompoundID,
+		OrderID:            null.StringFrom(o.ID),
+		PlanID:             null.StringFrom(o.PlanID),
+		CreatedUTC:         chrono.TimeNow(),
+		ConsumedUTC:        chrono.Time{},
 	}
 }
 
-// NewUpgradeAddOn moves the remaining days of a standard subscription
-// to addon portion upon upgrading to premium.
-func NewUpgradeAddOn(o Order, m reader.Membership) AddOn {
+// NewUpgradeCarryOver moves the remaining days of a standard subscription
+// to addon portion upon upgrading to premium, and it will be
+// restored when
+func NewUpgradeCarryOver(o Order, m reader.Membership) AddOn {
 	return AddOn{
-		ID:            db.AddOnID(),
-		Edition:       m.Edition,
-		CycleCount:    0,
-		DaysRemained:  m.RemainingDays(),
-		PaymentMethod: m.PaymentMethod,
-		OrderID:       null.StringFrom(o.ID), // Which order caused the current membership to move remaining days to reserved state.
-		CompoundID:    o.CompoundID,
-		CreatedUTC:    chrono.TimeNow(),
-		ConsumedUTC:   chrono.Time{},
+		ID:                 db.AddOnID(),
+		Edition:            m.Edition,
+		CycleCount:         0,
+		DaysRemained:       m.RemainingDays(),
+		IsUpgradeCarryOver: true,
+		PaymentMethod:      m.PaymentMethod,
+		CompoundID:         o.CompoundID,
+		OrderID:            null.StringFrom(o.ID), // Which order caused the current membership to move remaining days to reserved state.
+		PlanID:             m.FtcPlanID,           // Save it so that it could be restored together with the remaining days.
+		CreatedUTC:         chrono.TimeNow(),
+		ConsumedUTC:        chrono.Time{},
 	}
 }
 
@@ -124,7 +132,7 @@ func newMembershipFromAddOn(addOns []AddOn, m reader.Membership) reader.Membersh
 		LegacyExpire:  null.Int{},
 		ExpireDate:    dateRange.EndDate,
 		PaymentMethod: latestAddOn.PaymentMethod,
-		FtcPlanID:     null.String{}, // TODO: carry over plan id from order
+		FtcPlanID:     latestAddOn.PlanID,
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
@@ -135,56 +143,52 @@ func newMembershipFromAddOn(addOns []AddOn, m reader.Membership) reader.Membersh
 			Standard: m.ReservedDays.Standard,
 			Premium:  0, // Clear premium days
 		},
-	}
+	}.Sync()
 }
 
 func TransferAddOn(addOns []AddOn, m reader.Membership) AddOnConsumed {
 	g := groupAddOns(addOns)
 
 	snapshot := m.Snapshot(reader.FtcArchiver(enum.OrderKindAddOn))
+	var ids = collection.NewStringSet()
 
 	prmAddOns, ok := g[product.PremiumEdition]
 	if ok && len(prmAddOns) > 0 {
+		collectAddOnIDs(ids, prmAddOns)
 		return AddOnConsumed{
-			AddOns:     prmAddOns,
+			AddOnIDs:   ids,
 			Membership: newMembershipFromAddOn(prmAddOns, m),
 			Snapshot:   snapshot,
 		}
 	}
 
-	var consumed []AddOn
-
 	stdYearAddOns, ok := g[product.StdYearEdition]
 	if ok && len(stdYearAddOns) > 0 {
-		consumed = append(addOns, stdYearAddOns...)
+		collectAddOnIDs(ids, stdYearAddOns)
 		m = newMembershipFromAddOn(stdYearAddOns, m)
 	}
 
 	stdMonthAddOns, ok := g[product.StdMonthEdition]
 	if ok && len(stdMonthAddOns) > 0 {
-		consumed = append(addOns, stdMonthAddOns...)
+		collectAddOnIDs(ids, stdMonthAddOns)
 		m = newMembershipFromAddOn(stdMonthAddOns, m)
 	}
 
 	return AddOnConsumed{
-		AddOns:     consumed,
+		AddOnIDs:   ids,
 		Membership: m,
 		Snapshot:   snapshot,
 	}
 }
 
-type AddOnConsumed struct {
-	AddOns     []AddOn
-	Membership reader.Membership
-	Snapshot   reader.MemberSnapshot
+func collectAddOnIDs(dest collection.StringSet, addOns []AddOn) {
+	for _, v := range addOns {
+		dest[v.ID] = nil
+	}
 }
 
-func GetAddOnIDs(addOns []AddOn) []string {
-	ids := make([]string, 0)
-
-	for _, v := range addOns {
-		ids = append(ids, v.ID)
-	}
-
-	return ids
+type AddOnConsumed struct {
+	AddOnIDs   collection.StringSet
+	Membership reader.Membership
+	Snapshot   reader.MemberSnapshot
 }
