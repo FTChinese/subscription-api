@@ -85,6 +85,16 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 		}
 	}
 
+	// Save add-on if having one.
+	if !confirmed.AddOn.IsZero() {
+		sugar.Info("Creating add-on")
+		if err := tx.SaveAddOn(confirmed.AddOn); err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+		}
+	}
+
 	// Insert or update membership.
 	// This error should allow retry
 	// A problem of low possibility discovered
@@ -110,11 +120,6 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
-	}
-
-	// TODO: save add on.
-	if !confirmed.AddOn.IsZero() {
-
 	}
 
 	if err := tx.Commit(); err != nil {
