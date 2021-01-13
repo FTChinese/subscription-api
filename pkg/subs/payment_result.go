@@ -40,14 +40,6 @@ SET order_id = :order_id,` +
 ON DUPLICATE KEY UPDATE
 ` + colSavePayResult
 
-// VerificationResult is a backward-compatible type.
-// Android app only defines PaymentResult fields.
-// Scheduled to be removed by the end of Jan 2021.
-type VerificationResult struct {
-	PaymentResult // Deprecated
-	ConfirmationResult
-}
-
 // PaymentResult unifies ali and wx webhook payload, or query order.
 // TRADE_FINISHED：交易成功且结束，即不可再做任何操作
 // 例如在高级即时到帐接口里面，支付成功之后返回的是TRADE_SUCCESS，此时三个月之内可以操作退款，三个月之后不允许对该笔交易操作，支付宝会返回TRADE_FINISHED，所以必须要在TRADE_SUCCESS下执行你网站业务逻辑代码，TRADE_FINISHED不做任何业务逻辑处理，避免一笔交易重复执行业务逻辑而给您带来不必要的损失。
