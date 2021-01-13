@@ -61,7 +61,7 @@ func NewPaymentConfirmed(p ConfirmationParams) (PaymentConfirmed, error) {
 
 		return PaymentConfirmed{
 			Order:    p.Order.upgradeConfirm(p.Payment.ConfirmedUTC),
-			AddOn:    NewUpgradeAddOn(p.Order, p.Member),
+			AddOn:    NewUpgradeCarryOver(p.Order, p.Member),
 			Snapshot: snapshot,
 		}, nil
 
