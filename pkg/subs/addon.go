@@ -4,9 +4,11 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
+	"time"
 )
 
 var cycleDays = map[enum.Cycle]int64{
@@ -80,4 +82,109 @@ func (a AddOn) ToReservedDays() reader.ReservedDays {
 	default:
 		return reader.ReservedDays{}
 	}
+}
+
+func groupAddOns(l []AddOn) map[product.Edition][]AddOn {
+	g := make(map[product.Edition][]AddOn)
+
+	for _, v := range l {
+		g[v.Edition] = append(g[v.Edition], v)
+	}
+
+	return g
+}
+
+func sumAddOns(addOns []AddOn) product.Duration {
+	var cycles, days int64
+	for _, v := range addOns {
+		cycles += v.CycleCount
+		days += v.DaysRemained
+	}
+
+	return product.Duration{
+		CycleCount: cycles,
+		ExtraDays:  days,
+	}
+}
+
+func newMembershipFromAddOn(addOns []AddOn, m reader.Membership) reader.Membership {
+	startTime := dt.PickLater(time.Now(), m.ExpireDate.Time)
+
+	latestAddOn := addOns[0]
+
+	dur := sumAddOns(addOns)
+	dateRange := dt.NewDateRange(startTime).
+		WithCycleN(latestAddOn.Cycle, int(dur.CycleCount)).
+		AddDays(int(dur.ExtraDays))
+
+	return reader.Membership{
+		MemberID:      m.MemberID,
+		Edition:       latestAddOn.Edition,
+		LegacyTier:    null.Int{},
+		LegacyExpire:  null.Int{},
+		ExpireDate:    dateRange.EndDate,
+		PaymentMethod: latestAddOn.PaymentMethod,
+		FtcPlanID:     null.String{}, // TODO: carry over plan id from order
+		StripeSubsID:  null.String{},
+		StripePlanID:  null.String{},
+		AutoRenewal:   false,
+		Status:        0,
+		AppleSubsID:   null.String{},
+		B2BLicenceID:  null.String{},
+		ReservedDays: reader.ReservedDays{
+			Standard: m.ReservedDays.Standard,
+			Premium:  0, // Clear premium days
+		},
+	}
+}
+
+func TransferAddOn(addOns []AddOn, m reader.Membership) AddOnConsumed {
+	g := groupAddOns(addOns)
+
+	snapshot := m.Snapshot(reader.FtcArchiver(enum.OrderKindAddOn))
+
+	prmAddOns, ok := g[product.PremiumEdition]
+	if ok && len(prmAddOns) > 0 {
+		return AddOnConsumed{
+			AddOns:     prmAddOns,
+			Membership: newMembershipFromAddOn(prmAddOns, m),
+			Snapshot:   snapshot,
+		}
+	}
+
+	var consumed []AddOn
+
+	stdYearAddOns, ok := g[product.StdYearEdition]
+	if ok && len(stdYearAddOns) > 0 {
+		consumed = append(addOns, stdYearAddOns...)
+		m = newMembershipFromAddOn(stdYearAddOns, m)
+	}
+
+	stdMonthAddOns, ok := g[product.StdMonthEdition]
+	if ok && len(stdMonthAddOns) > 0 {
+		consumed = append(addOns, stdMonthAddOns...)
+		m = newMembershipFromAddOn(stdMonthAddOns, m)
+	}
+
+	return AddOnConsumed{
+		AddOns:     consumed,
+		Membership: m,
+		Snapshot:   snapshot,
+	}
+}
+
+type AddOnConsumed struct {
+	AddOns     []AddOn
+	Membership reader.Membership
+	Snapshot   reader.MemberSnapshot
+}
+
+func GetAddOnIDs(addOns []AddOn) []string {
+	ids := make([]string, 0)
+
+	for _, v := range addOns {
+		ids = append(ids, v.ID)
+	}
+
+	return ids
 }
