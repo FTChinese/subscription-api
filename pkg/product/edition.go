@@ -5,30 +5,38 @@ import (
 	"github.com/FTChinese/go-rest/render"
 )
 
+var (
+	StdMonthEdition = Edition{
+		Tier:  enum.TierStandard,
+		Cycle: enum.CycleMonth,
+	}
+
+	StdYearEdition = Edition{
+		Tier:  enum.TierStandard,
+		Cycle: enum.CycleYear,
+	}
+
+	PremiumEdition = Edition{
+		Tier:  enum.TierPremium,
+		Cycle: enum.CycleYear,
+	}
+)
+
 type Edition struct {
 	Tier  enum.Tier  `json:"tier" db:"tier"`
 	Cycle enum.Cycle `json:"cycle" db:"cycle"`
 }
 
 func NewStdMonthEdition() Edition {
-	return Edition{
-		Tier:  enum.TierStandard,
-		Cycle: enum.CycleMonth,
-	}
+	return StdMonthEdition
 }
 
 func NewStdYearEdition() Edition {
-	return Edition{
-		Tier:  enum.TierStandard,
-		Cycle: enum.CycleYear,
-	}
+	return StdYearEdition
 }
 
 func NewPremiumEdition() Edition {
-	return Edition{
-		Tier:  enum.TierPremium,
-		Cycle: enum.CycleYear,
-	}
+	return PremiumEdition
 }
 
 func (e Edition) Validate() *render.ValidationError {
