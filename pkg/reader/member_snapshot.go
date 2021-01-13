@@ -24,6 +24,7 @@ const (
 	ActionCreate  ArchiveAction = "create"  // Alipay, wechat, stripe
 	ActionRenew   ArchiveAction = "renew"   // Alipay, wechat
 	ActionUpgrade ArchiveAction = "upgrade" // Alipay, wechat, stripe
+	ActionAddOn   ArchiveAction = "transfer_addon"
 	ActionVerify  ArchiveAction = "verify"  // Apple
 	ActionPoll    ArchiveAction = "poll"    // Apple, alipay, wechat
 	ActionLink    ArchiveAction = "link"    // Apple
@@ -70,6 +71,12 @@ func FtcArchiver(k enum.OrderKind) Archiver {
 		return Archiver{
 			Name:   NameOrder,
 			Action: ActionUpgrade,
+		}
+
+	case enum.OrderKindAddOn:
+		return Archiver{
+			Name:   NameOrder,
+			Action: ActionAddOn,
 		}
 	}
 
