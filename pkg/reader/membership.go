@@ -230,6 +230,17 @@ func (m Membership) WithReservedDays(days ReservedDays) Membership {
 	return m
 }
 
+func (m Membership) HasAddOns() bool {
+	return m.Standard > 0 || m.Premium > 0
+}
+
+func (m Membership) ShouldUseAddOn() bool {
+	if m.IsZero() {
+		return false
+	}
+	return m.IsExpired() && m.HasAddOns()
+}
+
 // canRenewViaAliWx test if current membership is allowed to renew for wxpay or alipay.
 // now <= expire date <= 3 years later
 func (m Membership) canRenewViaAliWx() bool {
