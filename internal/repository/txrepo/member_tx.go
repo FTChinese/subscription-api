@@ -3,6 +3,7 @@ package txrepo
 import (
 	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -31,6 +32,23 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error)
 		&m,
 		reader.StmtGetLockMember,
 		id.BuildFindInSet(),
+	)
+
+	if err != nil && err != sql.ErrNoRows {
+		return m, err
+	}
+
+	// Treat a non-existing member as a valid value.
+	return m.Sync(), nil
+}
+
+func (tx MemberTx) RetrieveMemberV2(ids []string) (reader.Membership, error) {
+	var m reader.Membership
+
+	err := tx.Get(
+		&m,
+		reader.StmtGetLockMember,
+		db.GetFindInSet(ids),
 	)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -134,6 +152,15 @@ func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 	return nil
 }
 
+func (tx MemberTx) SaveAddOn(addOn subs.AddOn) error {
+	_, err := tx.NamedExec(subs.StmtCreateAddOn, addOn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CreateMember creates a new membership.
 func (tx MemberTx) CreateMember(m reader.Membership) error {
 	_, err := tx.NamedExec(
@@ -148,8 +175,26 @@ func (tx MemberTx) CreateMember(m reader.Membership) error {
 	return nil
 }
 
+func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]subs.AddOn, error) {
+	var dest []subs.AddOn
+	err := tx.Select(&dest, subs.StmtListAddOnLock, ids.BuildFindInSet())
+	if err != nil {
+		return nil, err
+	}
+
+	return dest, nil
+}
+
+func (tx MemberTx) AddOnsConsumed(ids []string) error {
+	_, err := tx.NamedExec(subs.StmtAddOnConsumed, db.GetFindInSet(ids))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // UpdateMember updates existing membership.
-// TODO: removed syn here. Membership created via stripe usually do not need to be synced.
 func (tx MemberTx) UpdateMember(m reader.Membership) error {
 	_, err := tx.NamedExec(
 		reader.StmtUpdateMember,
