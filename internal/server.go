@@ -116,10 +116,6 @@ func StartServer(s ServerStatus) {
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
-		// Get a stripe plan.
-		// Deprecated
-		r.Get("/plans/{id}", stripeRouter.GetPlan)
-
 		// ?refresh=true|false
 		r.Get("/prices", stripeRouter.ListPrices)
 
@@ -129,20 +125,9 @@ func StartServer(s ServerStatus) {
 			// just return the customer id if already exists.
 			r.Post("/", stripeRouter.CreateCustomer)
 
-			// Deprecated
-			r.Put("/", stripeRouter.CreateCustomerLegacy)
-
 			// Use this to check customer's default source and default payment method.
 			r.Get("/{id}", stripeRouter.GetCustomer)
 			r.Post("/{id}/default-payment-method", stripeRouter.ChangeDefaultPaymentMethod)
-
-			// Get stripe user's default payment method.
-			// Deprecated
-			r.Get("/{id}/default_payment_method", stripeRouter.GetDefaultPaymentMethod)
-			// Set stripe user's default payment method.
-			// Deprecated
-			r.Post("/{id}/default_payment_method", stripeRouter.SetDefaultPaymentMethod)
-
 			// Generate ephemeral key for client when it is
 			// trying to modify customer data.
 			r.Post("/{id}/ephemeral_keys", stripeRouter.IssueKey)
@@ -150,19 +135,6 @@ func StartServer(s ServerStatus) {
 
 		r.With(controller.RequireFtcID).Route("/setup-intents", func(r chi.Router) {
 			r.Post("/", stripeRouter.CreateSetupIntent)
-		})
-
-		// Create Stripe subscription.
-		r.With(controller.RequireFtcID).Route("/subscriptions", func(r chi.Router) {
-			// Create a subscription
-			// Deprecated
-			r.Post("/", stripeRouter.CreateSubs)
-			// Get a list of subscriptions
-			r.Get("/", stripeRouter.GetSubscription)
-
-			// Upgrade membership.
-			// Deprecated
-			r.Patch("/", stripeRouter.UpgradeSubscription)
 		})
 
 		r.With(controller.RequireFtcID).Route("/subs", func(r chi.Router) {

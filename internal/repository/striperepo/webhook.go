@@ -13,17 +13,6 @@ func (env Env) OnSubscription(account reader.FtcAccount, ss *stripeSdk.Subscript
 		With("webhook", "stripe-subscription").
 		With("id", ss.ID)
 
-	// Build ftc style subscription.
-	subs, err := stripe.NewSubs(ss, account.MemberID())
-	if err != nil {
-		sugar.Error(err)
-		return stripe.SubsResult{}, err
-	}
-
-	// Build the new membership.
-	newMmb := subs.Membership(ss, account.MemberID())
-	sugar.Infof("Updated stripe membership from webhook: %v", newMmb)
-
 	tx, err := env.beginSubsTx()
 	if err != nil {
 		sugar.Error(err)
@@ -32,51 +21,61 @@ func (env Env) OnSubscription(account reader.FtcAccount, ss *stripeSdk.Subscript
 
 	// Retrieve current membership by ftc id.
 	// If current membership is empty, we should create it.
-	currMmb, err := tx.RetrieveMember(newMmb.MemberID)
+	currMmb, err := tx.RetrieveMember(account.MemberID())
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, err
 	}
 
+	result, err := stripe.NewSubsResult(stripe.SubsResultParams{
+		UserIDs:       account.MemberID(),
+		SS:            ss,
+		CurrentMember: currMmb,
+		Action:        "", // TODO: refresh or webhook
+	})
+
+	if err != nil {
+		sugar.Error(err)
+		return stripe.SubsResult{}, err
+	}
+
 	// Ensure that current membership is create via stripe.
-	if !subs.ShouldUpsert(currMmb) {
+	if !result.Subs.ShouldUpsert(currMmb) {
 		_ = tx.Rollback()
 		sugar.Infof("Stripe subscription cannot update/insert its membership")
 		return stripe.SubsResult{
 			Modified:             false,
 			MissingPaymentIntent: false,
-			PaymentResult:        stripe.PaymentResult{},
 			Payment:              stripe.PaymentResult{},
-			Subs:                 subs,
+			Subs:                 result.Subs,
 			Member:               currMmb,
 			Snapshot:             reader.MemberSnapshot{},
 		}, nil
 	}
 
 	// If nothing changed.
-	if !newMmb.IsModified(currMmb) {
+	if !result.Member.IsModified(currMmb) {
 		_ = tx.Rollback()
 		return stripe.SubsResult{
 			Modified:             false,
 			MissingPaymentIntent: false,
-			PaymentResult:        stripe.PaymentResult{},
 			Payment:              stripe.PaymentResult{},
-			Subs:                 subs,
-			Member:               newMmb,
+			Subs:                 result.Subs,
+			Member:               result.Member,
 			Snapshot:             reader.MemberSnapshot{},
 		}, nil
 	}
 
 	// Insert to update membership.
 	if currMmb.IsZero() {
-		if err := tx.CreateMember(newMmb); err != nil {
+		if err := tx.CreateMember(result.Member); err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
 			return stripe.SubsResult{}, err
 		}
 	} else {
-		if err := tx.UpdateMember(newMmb); err != nil {
+		if err := tx.UpdateMember(result.Member); err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
 			return stripe.SubsResult{}, err
@@ -88,13 +87,5 @@ func (env Env) OnSubscription(account reader.FtcAccount, ss *stripeSdk.Subscript
 		return stripe.SubsResult{}, err
 	}
 
-	return stripe.SubsResult{
-		Modified:             true,
-		MissingPaymentIntent: false,
-		PaymentResult:        stripe.PaymentResult{},
-		Payment:              stripe.PaymentResult{},
-		Subs:                 subs,
-		Member:               newMmb,
-		Snapshot:             currMmb.Snapshot(reader.StripeArchiver(reader.ActionWebhook)),
-	}, nil
+	return result, nil
 }
