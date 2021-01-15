@@ -1,7 +1,6 @@
 package stripe
 
 import (
-	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/dt"
@@ -12,22 +11,12 @@ import (
 	"time"
 )
 
-// IsSubscribed checks if stripe subscription has valid subscription items.
-func IsSubscribed(ss *stripe.Subscription) bool {
+// isSubscribed checks if stripe subscription has valid subscription items.
+func isSubscribed(ss *stripe.Subscription) bool {
 	return ss.Items != nil && len(ss.Items.Data) > 0
 }
 
-func IsAutoRenewal(ss *stripe.Subscription) bool {
-	if ss.CancelAtPeriodEnd {
-		return false
-	}
-
-	return ss.Status == stripe.SubscriptionStatusActive ||
-		ss.Status == stripe.SubscriptionStatusIncomplete ||
-		ss.Status == stripe.SubscriptionStatusTrialing
-}
-
-func GetExpirationTime(ss *stripe.Subscription) time.Time {
+func getExpirationTime(ss *stripe.Subscription) time.Time {
 	// If status is not in canceled state.
 	if ss.Status != stripe.SubscriptionStatusCanceled {
 		return dt.FromUnix(ss.CurrentPeriodEnd)
@@ -49,14 +38,19 @@ func GetExpirationTime(ss *stripe.Subscription) time.Time {
 	return dt.FromUnix(ss.CancelAt)
 }
 
-func GetStatus(sts stripe.SubscriptionStatus) enum.SubsStatus {
+func getStatus(sts stripe.SubscriptionStatus) enum.SubsStatus {
 	status, _ := enum.ParseSubsStatus(string(sts))
 	return status
 }
 
-// GetSubsItem gets the subscription item id and price id from a stripe subscription.
-func GetSubsItem(ss *stripe.Subscription) SubsItem {
-	if IsSubscribed(ss) {
+type SubsItem struct {
+	ItemID  string `json:"subsItemId" db:"subs_item_id"`
+	PriceID string `json:"priceId" db:"price_id"`
+}
+
+// NewSubsItem gets the subscription item id and price id from a stripe subscription.
+func NewSubsItem(ss *stripe.Subscription) SubsItem {
+	if isSubscribed(ss) {
 		return SubsItem{
 			ItemID:  ss.Items.Data[0].ID,
 			PriceID: ss.Items.Data[0].Price.ID,
@@ -66,19 +60,6 @@ func GetSubsItem(ss *stripe.Subscription) SubsItem {
 	return SubsItem{}
 }
 
-type SubsItem struct {
-	ItemID  string `json:"subsItemId" db:"subs_item_id"`
-	PriceID string `json:"priceId" db:"price_id"`
-}
-
-func (i SubsItem) Plan() (Plan, error) {
-	if i.PriceID == "" {
-		return Plan{}, errors.New("missing price id in stripe subscription")
-	}
-
-	return PlanStore.FindByID(i.PriceID)
-}
-
 // Subs contains the essential data of a stripe subscription.
 // It it created from stripe's subscription upon initial creation,
 // or refresh, or upgrade.
@@ -86,7 +67,7 @@ type Subs struct {
 	ID string `json:"id" db:"id"`
 	product.Edition
 	// A date in the future at which the subscription will automatically get canceled
-	CancelAtUtc chrono.Time `json:"cancelAtUtc" db:"cancel_at_utc"`
+	WillCancelAtUtc chrono.Time `json:"cancelAtUtc" db:"cancel_at_utc"`
 	// If the subscription has been canceled with the at_period_end flag set to true, cancel_at_period_end on the subscription will be true. You can use this attribute to determine whether a subscription that has a status of active is scheduled to be canceled at the end of the current period.
 	// When this field is true and it is not the end of current period,
 	// status is still active.
@@ -134,19 +115,19 @@ func NewSubs(ss *stripe.Subscription, ids reader.MemberID) (Subs, error) {
 		invID = ss.LatestInvoice.ID
 	}
 
-	subsItem := GetSubsItem(ss)
+	subsItem := NewSubsItem(ss)
 
-	plan, err := subsItem.Plan()
+	edition, err := FindPriceEdition(subsItem.PriceID)
 	if err != nil {
 		return Subs{}, err
 	}
 
-	status := GetStatus(ss.Status)
+	status := getStatus(ss.Status)
 
 	return Subs{
 		ID:                   ss.ID,
-		Edition:              plan.Edition,
-		CancelAtUtc:          chrono.TimeFrom(dt.FromUnix(ss.CancelAt)),
+		Edition:              edition,
+		WillCancelAtUtc:      chrono.TimeFrom(dt.FromUnix(ss.CancelAt)),
 		CancelAtPeriodEnd:    ss.CancelAtPeriodEnd,
 		CanceledUTC:          chrono.TimeFrom(dt.FromUnix(ss.CanceledAt)),
 		CurrentPeriodEnd:     chrono.TimeFrom(dt.FromUnix(ss.CurrentPeriodEnd)),
@@ -165,25 +146,36 @@ func NewSubs(ss *stripe.Subscription, ids reader.MemberID) (Subs, error) {
 	}, nil
 }
 
-// Membership creates a reader.Membership for a user.
-func (s Subs) Membership(ss *stripe.Subscription, ids reader.MemberID) reader.Membership {
-	expTime := GetExpirationTime(ss)
-
-	return reader.Membership{
-		MemberID:      ids,
-		Edition:       s.Edition,
-		LegacyTier:    null.IntFrom(reader.GetTierCode(s.Tier)),
-		LegacyExpire:  null.IntFrom(expTime.Unix()),
-		ExpireDate:    chrono.DateFrom(expTime),
-		PaymentMethod: enum.PayMethodStripe,
-		FtcPlanID:     null.String{},
-		StripeSubsID:  null.StringFrom(s.ID),
-		StripePlanID:  null.StringFrom(s.PriceID),
-		AutoRenewal:   IsAutoRenewal(ss),
-		Status:        s.Status,
-		AppleSubsID:   null.String{},
-		B2BLicenceID:  null.String{},
+func (s Subs) ExpiresAt() time.Time {
+	// If status is not in canceled state.
+	if s.Status != enum.SubsStatusCanceled {
+		return s.CurrentPeriodEnd.Time
 	}
+
+	// If canceled.
+	// If it is neither scheduled to cancel at period end, nor
+	// in a future time, use the canceled_at field.
+	if !s.CancelAtPeriodEnd && s.WillCancelAtUtc.IsZero() {
+		return s.CanceledUTC.Time
+	}
+
+	// If it is scheduled to cancel at period end, use current_period_end
+	if s.CancelAtPeriodEnd {
+		return s.CurrentPeriodEnd.Time
+	}
+
+	// cancel_at is set, use it.
+	return s.WillCancelAtUtc.Time
+}
+
+func (s Subs) IsAutoRenewal() bool {
+	if s.CancelAtPeriodEnd {
+		return false
+	}
+
+	return s.Status == enum.SubsStatusActive ||
+		s.Status == enum.SubsStatusIncomplete ||
+		s.Status == enum.SubsStatusTrialing
 }
 
 // ShouldUpsert checks whether stripe subscription should be allowed to
@@ -202,77 +194,4 @@ func (s Subs) ShouldUpsert(m reader.Membership) bool {
 	}
 
 	return false
-}
-
-// LegacySubscription builds backward compatible data of a subscription.
-// Deprecated.
-func (s Subs) LegacySubscription() Subscription {
-	return Subscription{
-		CancelAtPeriodEnd:  s.CancelAtPeriodEnd,
-		Created:            s.CreatedUTC,
-		CurrentPeriodEnd:   s.CurrentPeriodEnd,
-		CurrentPeriodStart: s.CurrentPeriodStart,
-		CustomerID:         s.CustomerID,
-		EndedAt:            s.EndedUTC,
-		ID:                 s.ID,
-		LatestInvoiceID:    s.LatestInvoiceID,
-		Livemode:           s.LiveMode,
-		StartDate:          s.StartDateUTC,
-		Status:             s.Status,
-	}
-}
-
-// SubsBuilder uses the data of a user's subscription to build the data
-// to be saved to db.
-type SubsBuilder struct {
-	IDs reader.MemberID // IDs might comes from user account, or from current membership for refreshing.
-	SS  *stripe.Subscription
-	// To build membership, the above three fields are enough.
-
-	CurrentMember reader.Membership    // Used for backup.
-	Action        reader.ArchiveAction // Who performed the backup.
-}
-
-// Build creates Subs, reader.Membership, reader.MemberSnapshot
-// based on ftc user id and stripe subscription.
-// The error is sent to client as an internal server error.
-func (b SubsBuilder) Build() (SubsResult, error) {
-	subs, err := NewSubs(b.SS, b.IDs)
-	if err != nil {
-		return SubsResult{}, err
-	}
-
-	m := subs.Membership(b.SS, b.IDs)
-
-	// For refreshing, nothing might be changed.
-	isModified := m.IsModified(b.CurrentMember)
-
-	// Only create a snapshot if membership exists and is actually modified.
-	var snapshot reader.MemberSnapshot
-	if !b.CurrentMember.IsZero() && isModified {
-		snapshot = b.CurrentMember.Snapshot(reader.StripeArchiver(b.Action))
-	}
-
-	pr, err := NewPaymentResult(b.SS)
-
-	return SubsResult{
-		Modified:             isModified,
-		MissingPaymentIntent: err != nil,
-		PaymentResult:        pr,
-		Payment:              pr,
-		Subs:                 subs,
-		Member:               m,
-		Snapshot:             snapshot,
-	}, nil
-}
-
-// SubsResult contains the data to save to db.
-type SubsResult struct {
-	Modified             bool                  `json:"-"` // Indicate whether membership actually modified.
-	MissingPaymentIntent bool                  `json:"-"` // Whether we failed to expanded latest_invoice.payment_intent. It is not required to create/upgrade a subscription, so we should not return an error.
-	PaymentResult                              // Deprecated
-	Payment              PaymentResult         `json:"payment"` // Tells user to take further action if any.
-	Subs                 Subs                  `json:"subs"`
-	Member               reader.Membership     `json:"membership"` // New membership.
-	Snapshot             reader.MemberSnapshot `json:"-"`          // If Modified is false, this must exists. If Modified is true, its existence depends -- a newly created membership should not produce a snapshot.
 }
