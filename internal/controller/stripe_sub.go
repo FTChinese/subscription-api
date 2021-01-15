@@ -3,9 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/guregu/null"
 	"net/http"
 )
 
@@ -189,68 +187,6 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 	}
 
 	_ = render.New(w).OK(result)
-}
-
-// GetSubscription fetches a user's subscription and update membership if data in our db is stale.
-//
-// Deprecated.
-func (router StripeRouter) GetSubscription(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	ftcID := req.Header.Get(userIDKey)
-
-	mmb, err := router.readerRepo.RetrieveMember(reader.MemberID{
-		FtcID: null.StringFrom(ftcID),
-	}.MustNormalize())
-
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	if !mmb.IsStripe() {
-		sugar.Error("Not a stripe membership")
-		_ = render.New(w).NotFound("Stripe subscription not found")
-		return
-	}
-
-	ss, err := router.client.RetrieveSubs(mmb.StripeSubsID.String)
-	if err != nil {
-		err = handleErrResp(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-
-	result, err := stripe.SubsBuilder{
-		IDs:           mmb.MemberID,
-		SS:            ss,
-		CurrentMember: mmb,
-		Action:        reader.ActionRefresh,
-	}.Build()
-
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).InternalServerError(err.Error())
-		return
-	}
-
-	if result.Modified {
-		go func() {
-			err := router.readerRepo.UpdateMember(result.Member)
-			if err != nil {
-				sugar.Error(err)
-			}
-			router.handleSubsResult(result)
-		}()
-	}
-
-	_ = render.New(w).OK(result.Subs.LegacySubscription())
 }
 
 func (router StripeRouter) ListSubs(w http.ResponseWriter, req *http.Request) {

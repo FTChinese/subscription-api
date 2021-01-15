@@ -56,7 +56,6 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 		return stripe.SubsResult{
 			Modified:             false,
 			MissingPaymentIntent: false,
-			PaymentResult:        stripe.PaymentResult{},
 			Payment:              stripe.PaymentResult{},
 			Subs:                 stripe.Subs{},
 			Member:               mmb,
@@ -73,12 +72,12 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 
 	sugar.Infof("Canceled/reactivated subscription %s, status %s", ss.ID, ss.Status)
 
-	result, err := stripe.SubsBuilder{
-		IDs:           mmb.MemberID,
+	result, err := stripe.NewSubsResult(stripe.SubsResultParams{
+		UserIDs:       mmb.MemberID,
 		SS:            ss,
 		CurrentMember: mmb,
 		Action:        reader.ActionRefresh,
-	}.Build()
+	})
 
 	if err != nil {
 		sugar.Error(err)

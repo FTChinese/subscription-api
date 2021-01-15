@@ -229,3 +229,15 @@ func (c Client) ListPrices() ([]*stripe.Price, error) {
 
 	return list.Data, nil
 }
+
+func (c Client) GetPrice(id string) (*stripe.Price, error) {
+	p, err := c.sc.Prices.Get(id, &stripe.PriceParams{
+		Active: stripe.Bool(true),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
