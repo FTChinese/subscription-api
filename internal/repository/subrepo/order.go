@@ -129,6 +129,9 @@ type orderResult struct {
 	err   error
 }
 
+// LoadFullOrder retrieves an order by splitting a single row into two
+// concurrent retrieval since for unknown reasons the DB does not
+// respond if a row has two much columns.
 func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 	headerCh := make(chan orderResult)
 	tailCh := make(chan orderResult)
@@ -170,10 +173,8 @@ func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 		Price:         headerRes.order.Price,
 		Edition:       headerRes.order.Edition,
 		Charge:        headerRes.order.Charge,
-		Duration:      tailRes.order.Duration,
 		Kind:          tailRes.order.Kind,
 		PaymentMethod: tailRes.order.PaymentMethod,
-		TotalBalance:  tailRes.order.TotalBalance,
 		WxAppID:       tailRes.order.WxAppID,
 		CreatedAt:     tailRes.order.CreatedAt,
 		ConfirmedAt:   tailRes.order.ConfirmedAt,

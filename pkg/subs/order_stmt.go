@@ -14,11 +14,8 @@ SET trade_no = :order_id,
 	discount_id = :discount_id,
 	tier_to_buy = :tier,
 	billing_cycle = :cycle,
-	cycle_count = :cycle_count,
-	extra_days = :extra_days,
 	category = :kind,
 	payment_method = :payment_method,
-	total_balance = :total_balance,
 	wx_app_id = :wx_app_id,
 	created_utc = UTC_TIMESTAMP()`
 
@@ -33,11 +30,8 @@ SELECT o.trade_no AS order_id,
 	o.discount_id,
 	o.tier_to_buy AS tier,
 	o.billing_cycle AS cycle,
-	o.cycle_count AS cycle_count,
-	o.extra_days AS extra_days,
 	o.category AS kind,
 	o.payment_method,
-	o.total_balance,
 	o.wx_app_id,
 	o.created_utc,
 	o.confirmed_utc,
@@ -51,11 +45,7 @@ WHERE trade_no = ?
 LIMIT 1
 `
 
-// Retrieves an order. This is mostly used upon confirmation.
-const StmtLockOrder = StmtSelectOrder + `
-FOR UPDATE`
-
-const StmtLockOrderExpedient = `
+const StmtLockOrder = `
 SELECT trade_no AS order_id,
 	confirmed_utc
 FROM premium.ftc_trade
@@ -82,11 +72,8 @@ WHERE trade_no = ?
 LIMIT 1`
 
 const StmtOrderTail = `
-SELECT cycle_count AS cycle_count,
-	extra_days AS extra_days,
-	category AS kind,
+SELECT category AS kind,
 	payment_method,
-	total_balance,
 	wx_app_id,
 	created_utc,
 	confirmed_utc,
