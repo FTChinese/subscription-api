@@ -182,62 +182,6 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 	_ = otx.Commit()
 }
 
-func TestOrderTx_RetrieveOrder(t *testing.T) {
-	p := test.NewPersona()
-	orderAli := p.CreateOrder()
-	orderWx := p.SetPayMethod(enum.PayMethodWx).CreateOrder()
-
-	test.NewRepo().MustSaveOrder(orderAli)
-	test.NewRepo().MustSaveOrder(orderWx)
-
-	otx := NewMemberTx(test.DB.MustBegin())
-
-	type args struct {
-		orderID string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Retrieve empty order",
-			args: args{
-				orderID: p.CreateOrder().ID,
-			},
-			wantErr: true,
-		},
-		{
-			name: "Retrieve ali order",
-			args: args{
-				orderID: orderAli.ID,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Retrieve wx order",
-			args: args{
-				orderID: orderWx.ID,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			got, err := otx.RetrieveOrder(tt.args.orderID)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("RetrieveOrder() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			t.Logf("Order ID: %s", got.ID)
-		})
-	}
-
-	_ = otx.Commit()
-}
-
 func TestMemberTx_LockOrder(t *testing.T) {
 	p := test.NewPersona()
 	orderAli := p.CreateOrder()

@@ -108,28 +108,10 @@ func (tx MemberTx) SaveOrder(order subs.Order) error {
 	return nil
 }
 
-// RetrieveOrder loads a previously saved order that is not
-// confirmed yet.
-func (tx MemberTx) RetrieveOrder(orderID string) (subs.Order, error) {
-	var order subs.Order
-
-	err := tx.Get(
-		&order,
-		subs.StmtLockOrder,
-		orderID,
-	)
-
-	if err != nil {
-		return order, err
-	}
-
-	return order, nil
-}
-
 func (tx MemberTx) LockOrder(orderID string) (subs.LockedOrder, error) {
 	var lo subs.LockedOrder
 
-	err := tx.Get(&lo, subs.StmtLockOrderExpedient, orderID)
+	err := tx.Get(&lo, subs.StmtLockOrder, orderID)
 
 	if err != nil {
 		return subs.LockedOrder{}, err
