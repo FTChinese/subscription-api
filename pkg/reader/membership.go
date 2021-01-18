@@ -3,6 +3,7 @@ package reader
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"math"
 	"net/http"
 	"time"
@@ -426,7 +427,7 @@ func (m Membership) Snapshot(by Archiver) MemberSnapshot {
 	}
 
 	return MemberSnapshot{
-		SnapshotID: GenerateSnapshotID(),
+		SnapshotID: db.SnapshotID(),
 		CreatedBy:  null.StringFrom(by.String()),
 		CreatedUTC: chrono.TimeNow(),
 		Membership: m,

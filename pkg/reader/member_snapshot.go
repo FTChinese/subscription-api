@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/rand"
 	"github.com/guregu/null"
 )
 
@@ -102,10 +101,6 @@ func AppleArchiver(a ArchiveAction) Archiver {
 
 func (a Archiver) String() string {
 	return fmt.Sprintf("%s.%s", a.Name, a.Action)
-}
-
-func GenerateSnapshotID() string {
-	return "snp_" + rand.String(12)
 }
 
 const StmtSnapshotMember = `
