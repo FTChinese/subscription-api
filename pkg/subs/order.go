@@ -41,9 +41,6 @@ type Order struct {
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
 	dt.DateRange
 	LiveMode bool `json:"live"`
-
-	product.Duration            // Deprecated.
-	TotalBalance     null.Float `json:"totalBalance" db:"total_balance"` // Deprecated.
 }
 
 func (o Order) IsZero() bool {
