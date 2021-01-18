@@ -1,17 +1,242 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/dt"
+	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
+	"github.com/guregu/null"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"reflect"
 	"testing"
 )
+
+func TestEnv_CreateOrder(t *testing.T) {
+	wxID := faker.GenWxID()
+	repo := test.NewRepo()
+
+	p := test.NewPersona()
+	repo.MustSaveMembership(p.Membership())
+
+	p2 := test.NewPersona().SetPayMethod(enum.PayMethodApple)
+	repo.MustSaveMembership(p2.Membership())
+
+	type fields struct {
+		rwdDB  *sqlx.DB
+		logger *zap.Logger
+	}
+	type args struct {
+		config subs.PaymentConfig
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    subs.PaymentIntent
+		wantErr bool
+	}{
+		{
+			name: "New order",
+			fields: fields{
+				rwdDB:  test.DB,
+				logger: zaptest.NewLogger(t),
+			},
+			args: args{
+				config: subs.PaymentConfig{
+					Account: p.FtcAccount(),
+					Plan:    faker.PlanStdYear,
+					Method:  enum.PayMethodAli,
+					WxAppID: null.String{},
+				},
+			},
+			want: subs.PaymentIntent{
+				Checkout: subs.Checkout{
+					Kind:     enum.OrderKindCreate,
+					Item:     subs.NewCheckedItem(faker.PlanStdYear),
+					Payable:  subs.NewCheckedItem(faker.PlanStdYear).Payable(),
+					LiveMode: true,
+				},
+				Order: subs.Order{
+					ID:         "",
+					MemberID:   p.AccountID(),
+					PlanID:     faker.PlanStdYear.ID,
+					DiscountID: null.String{},
+					Price:      faker.PlanStdYear.Price,
+					Edition:    faker.PlanStdYear.Edition,
+					Charge: product.Charge{
+						Amount:   faker.PlanStdYear.Price,
+						Currency: "cny",
+					},
+					Kind:          enum.OrderKindCreate,
+					PaymentMethod: enum.PayMethodAli,
+					WxAppID:       null.String{},
+					CreatedAt:     chrono.Time{},
+					ConfirmedAt:   chrono.Time{},
+					DateRange:     dt.DateRange{},
+					LiveMode:      true,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Renewal order",
+			fields: fields{
+				rwdDB:  test.DB,
+				logger: zaptest.NewLogger(t),
+			},
+			args: args{
+				config: subs.PaymentConfig{
+					Account: p.FtcAccount(),
+					Plan:    faker.PlanStdYear,
+					Method:  enum.PayMethodWx,
+					WxAppID: null.StringFrom(wxID),
+				},
+			},
+			want: subs.PaymentIntent{
+				Checkout: subs.Checkout{
+					Kind:     enum.OrderKindRenew,
+					Item:     subs.NewCheckedItem(faker.PlanStdYear),
+					Payable:  subs.NewCheckedItem(faker.PlanStdYear).Payable(),
+					LiveMode: true,
+				},
+				Order: subs.Order{
+					ID:         "",
+					MemberID:   p.AccountID(),
+					PlanID:     faker.PlanStdYear.ID,
+					DiscountID: null.String{},
+					Price:      faker.PlanStdYear.Price,
+					Edition:    faker.PlanStdYear.Edition,
+					Charge: product.Charge{
+						Amount:   faker.PlanStdYear.Price,
+						Currency: "cny",
+					},
+					Kind:          enum.OrderKindRenew,
+					PaymentMethod: enum.PayMethodWx,
+					WxAppID:       null.StringFrom(wxID),
+					CreatedAt:     chrono.Time{},
+					ConfirmedAt:   chrono.Time{},
+					DateRange:     dt.DateRange{},
+					LiveMode:      true,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Upgrade order",
+			fields: fields{
+				rwdDB:  test.DB,
+				logger: zaptest.NewLogger(t),
+			},
+			args: args{
+				config: subs.PaymentConfig{
+					Account: p.FtcAccount(),
+					Plan:    faker.PlanPrm,
+					Method:  enum.PayMethodWx,
+					WxAppID: null.StringFrom(wxID),
+				},
+			},
+			want: subs.PaymentIntent{
+				Checkout: subs.Checkout{
+					Kind:     enum.OrderKindUpgrade,
+					Item:     subs.NewCheckedItem(faker.PlanPrm),
+					Payable:  subs.NewCheckedItem(faker.PlanPrm).Payable(),
+					LiveMode: true,
+				},
+				Order: subs.Order{
+					ID:         "",
+					MemberID:   p.AccountID(),
+					PlanID:     faker.PlanPrm.ID,
+					DiscountID: null.String{},
+					Price:      faker.PlanPrm.Price,
+					Edition:    faker.PlanPrm.Edition,
+					Charge: product.Charge{
+						Amount:   faker.PlanPrm.Price,
+						Currency: "cny",
+					},
+					Kind:          enum.OrderKindUpgrade,
+					PaymentMethod: enum.PayMethodWx,
+					WxAppID:       null.StringFrom(wxID),
+					CreatedAt:     chrono.Time{},
+					ConfirmedAt:   chrono.Time{},
+					DateRange:     dt.DateRange{},
+					LiveMode:      true,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Add-on order",
+			fields: fields{
+				rwdDB:  test.DB,
+				logger: zaptest.NewLogger(t),
+			},
+			args: args{
+				config: subs.PaymentConfig{
+					Account: p2.FtcAccount(),
+					Plan:    faker.PlanStdYear,
+					Method:  enum.PayMethodWx,
+					WxAppID: null.StringFrom(wxID),
+				},
+			},
+			want: subs.PaymentIntent{
+				Checkout: subs.Checkout{
+					Kind:     enum.OrderKindAddOn,
+					Item:     subs.NewCheckedItem(faker.PlanStdYear),
+					Payable:  subs.NewCheckedItem(faker.PlanStdYear).Payable(),
+					LiveMode: true,
+				},
+				Order: subs.Order{
+					ID:         "",
+					MemberID:   p2.AccountID(),
+					PlanID:     faker.PlanStdYear.ID,
+					DiscountID: null.String{},
+					Price:      faker.PlanStdYear.Price,
+					Edition:    faker.PlanStdYear.Edition,
+					Charge: product.Charge{
+						Amount:   faker.PlanStdYear.Price,
+						Currency: "cny",
+					},
+					Kind:          enum.OrderKindAddOn,
+					PaymentMethod: enum.PayMethodWx,
+					WxAppID:       null.StringFrom(wxID),
+					CreatedAt:     chrono.Time{},
+					ConfirmedAt:   chrono.Time{},
+					DateRange:     dt.DateRange{},
+					LiveMode:      true,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				rwdDB:  tt.fields.rwdDB,
+				logger: tt.fields.logger,
+			}
+			got, err := env.CreateOrder(tt.args.config)
+
+			tt.want.Order.ID = got.Order.ID
+			tt.want.Order.CreatedAt = got.Order.CreatedAt
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateOrder() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CreateOrder() got = %v\n, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestEnv_LogOrderMeta(t *testing.T) {
 	type fields struct {
