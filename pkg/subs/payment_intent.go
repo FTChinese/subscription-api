@@ -6,10 +6,15 @@ import (
 
 // WxPayNativeAppIntent creates an order used by native apps.
 type WxPayNativeAppIntent struct {
-	Order            // Deprecated
-	OrderField Order `json:"order"`
-	//wechat.NativeAppParams // Deprecated
+	Order  Order                  `json:"order"`
 	Params wechat.NativeAppParams `json:"params"`
+}
+
+func NewWxNativeAppIntent(order Order, p wechat.NativeAppParams) WxPayNativeAppIntent {
+	return WxPayNativeAppIntent{
+		Order:  order,
+		Params: p,
+	}
 }
 
 // WepayEmbedBrowserOrder responds to purchase made in wechat
@@ -19,9 +24,15 @@ type WxPayNativeAppIntent struct {
 // It's a shame wechat cannot even use the same data structure
 // for such insignificant differences.
 type WxPayJSApiIntent struct {
-	Order                         // Deprecated
-	OrderField Order              `json:"order"`
-	Params     wechat.JSApiParams `json:"params"`
+	Order  Order              `json:"order"`
+	Params wechat.JSApiParams `json:"params"`
+}
+
+func NewWxPayJSApiIntent(order Order, p wechat.JSApiParams) WxPayJSApiIntent {
+	return WxPayJSApiIntent{
+		Order:  order,
+		Params: p,
+	}
 }
 
 // WxPayBrowserIntent creates order for payment via wechat
@@ -32,82 +43,55 @@ type WxPayJSApiIntent struct {
 // that can be redirected to.
 // and MobileOrder into a single data structure.
 type WxPayBrowserIntent struct {
-	Order            // Deprecated
-	OrderField Order `json:"order"`
-	// TODO: rename json tag codeUrl to qrCode
+	Order   Order  `json:"order"`
 	QRCode  string `json:"qrCodeUrl,omitempty"`         // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
 	MWebURL string `json:"mobileRedirectUrl,omitempty"` // This is a standard url that can be redirected to.
+}
+
+func NewWxPayDesktopIntent(order Order, wxOrder wechat.OrderResp) WxPayBrowserIntent {
+	return WxPayBrowserIntent{
+		Order:   order,
+		QRCode:  wxOrder.QRCode.String,
+		MWebURL: "",
+	}
 }
 
 // AlipayBrowserIntent represents an order creates for alipay inside
 // browsers
 type AlipayBrowserIntent struct {
-	Order              // Deprecated
-	OrderField  Order  `json:"order"`
+	Order       Order  `json:"order"`
 	RedirectURL string `json:"redirectUrl"`
+}
+
+func NewAliPayBrowserIntent(order Order, redirectURL string) AlipayBrowserIntent {
+	return AlipayBrowserIntent{
+		Order:       order,
+		RedirectURL: redirectURL,
+	}
+}
+
+func NewWxPayMobileIntent(order Order, wxOrder wechat.OrderResp) WxPayBrowserIntent {
+	return WxPayBrowserIntent{
+		Order:   order,
+		QRCode:  "",
+		MWebURL: wxOrder.MWebURL.String,
+	}
 }
 
 // AliPayNative is an order created inside a native app.
 type AlipayNativeIntent struct {
-	Order             // Deprecated
-	OrderField Order  `json:"order"`
-	Param      string `json:"param"`
+	Order Order  `json:"order"`
+	Param string `json:"param"`
+}
+
+func NewAliAppPayIntent(order Order, param string) AlipayNativeIntent {
+	return AlipayNativeIntent{
+		Order: order,
+		Param: param,
+	}
 }
 
 type PaymentIntent struct {
 	Checkout
 	Order Order
-}
-
-// AliAppPayIntent build the data to be sent to native apps.
-// The param is Alipsy sdk's signed string.
-func (pi PaymentIntent) AliAppPayIntent(param string) AlipayNativeIntent {
-	return AlipayNativeIntent{
-		Order:      pi.Order,
-		OrderField: pi.Order,
-		Param:      param,
-	}
-}
-
-// AliPayBrowserIntent build the data required to pay inside desktop or mobile browsers.
-func (pi PaymentIntent) AliPayBrowserIntent(redirectURL string) AlipayBrowserIntent {
-	return AlipayBrowserIntent{
-		Order:       pi.Order,
-		OrderField:  pi.Order,
-		RedirectURL: redirectURL,
-	}
-}
-
-func (pi PaymentIntent) WxPayDesktopIntent(wxOrder wechat.OrderResp) WxPayBrowserIntent {
-	return WxPayBrowserIntent{
-		Order:      pi.Order,
-		OrderField: pi.Order,
-		QRCode:     wxOrder.QRCode.String,
-		MWebURL:    "",
-	}
-}
-
-func (pi PaymentIntent) WxPayMobileIntent(wxOrder wechat.OrderResp) WxPayBrowserIntent {
-	return WxPayBrowserIntent{
-		Order:      pi.Order,
-		OrderField: pi.Order,
-		QRCode:     "",
-		MWebURL:    wxOrder.MWebURL.String,
-	}
-}
-
-func (pi PaymentIntent) WxPayJSApiIntent(p wechat.JSApiParams) WxPayJSApiIntent {
-	return WxPayJSApiIntent{
-		Order:      pi.Order,
-		OrderField: pi.Order,
-		Params:     p,
-	}
-}
-
-func (pi PaymentIntent) WxNativeAppIntent(p wechat.NativeAppParams) WxPayNativeAppIntent {
-	return WxPayNativeAppIntent{
-		Order:      pi.Order,
-		OrderField: pi.Order,
-		Params:     p,
-	}
 }
