@@ -153,7 +153,8 @@ func (c PaymentConfig) order(checkout Checkout) (Order, error) {
 	}, nil
 }
 
-// BuildIntent builds payment intent.
+// BuildIntent builds new a new payment intent based on
+// current membership status.
 func (c PaymentConfig) BuildIntent(m reader.Membership) (PaymentIntent, error) {
 	checkout, err := c.checkout(m)
 	if err != nil {
