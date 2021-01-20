@@ -3,10 +3,8 @@
 package test
 
 import (
-	"github.com/FTChinese/go-rest/rand"
 	"time"
 
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/product"
@@ -115,90 +113,35 @@ func (p *Persona) AccountID() reader.MemberID {
 }
 
 func (p *Persona) FtcAccount() reader.FtcAccount {
-	switch p.kind {
-	case enum.AccountKindFtc:
-		return reader.FtcAccount{
-			FtcID:    p.FtcID,
-			UnionID:  null.String{},
-			StripeID: null.StringFrom(p.StripeID),
-			Email:    p.Email,
-			UserName: null.StringFrom(p.UserName),
-		}
-
-	case enum.AccountKindWx:
-		return reader.FtcAccount{
-			FtcID:    "",
-			UnionID:  null.StringFrom(p.UnionID),
-			StripeID: null.String{},
-			Email:    "",
-			UserName: null.String{},
-		}
-
-	case enum.AccountKindLinked:
-		return reader.FtcAccount{
-			FtcID:    p.FtcID,
-			UnionID:  null.StringFrom(p.UnionID),
-			StripeID: null.StringFrom(p.StripeID),
-			Email:    p.Email,
-			UserName: null.StringFrom(p.UserName),
-		}
-	}
-
-	return reader.FtcAccount{}
+	return reader.MockNewFtcAccount(p.kind)
 }
 
 func (p *Persona) Membership() reader.Membership {
-	m := reader.Membership{
-		MemberID:      p.AccountID(),
-		Edition:       p.plan.Edition,
-		ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
-		PaymentMethod: p.payMethod,
-		FtcPlanID:     null.String{},
-		StripeSubsID:  null.String{},
-		StripePlanID:  null.String{},
-		AutoRenewal:   false,
-		Status:        enum.SubsStatusNull,
-		AppleSubsID:   null.String{},
-		B2BLicenceID:  null.String{},
-	}
-
+	expiresDate := time.Now().AddDate(1, 0, 1)
 	if p.expired {
-		m.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, -6, 0))
+		expiresDate = time.Now().AddDate(0, -6, 0)
 	}
 
-	switch p.payMethod {
-	case enum.PayMethodWx, enum.PayMethodAli:
-		m.FtcPlanID = null.StringFrom(p.plan.ID)
-
-	case enum.PayMethodStripe:
-		m.StripeSubsID = null.StringFrom(faker.GenStripeSubID())
-		m.StripePlanID = null.StringFrom(faker.GenStripePlanID())
-		m.AutoRenewal = true
-		m.Status = enum.SubsStatusActive
-
-	case enum.PayMethodApple:
-		m.AppleSubsID = null.StringFrom(p.AppleSubID)
-		m.AutoRenewal = true
-
-	case enum.PayMethodB2B:
-		m.B2BLicenceID = null.StringFrom(faker.GenLicenceID())
-	}
-
-	return m.Sync()
+	return reader.NewMockMemberBuilder("").
+		WithIDs(p.AccountID()).
+		WithExpiration(expiresDate).
+		WithPayMethod(p.payMethod).
+		WithPlan(p.plan.Plan).
+		Build()
 }
 
 func (p *Persona) CreateOrder() subs.Order {
 	var payConfig subs.PaymentConfig
-	if p.payMethod == enum.PayMethodWx {
+	switch p.payMethod {
+	case enum.PayMethodWx:
 		payConfig = subs.
 			NewPayment(p.FtcAccount(), p.plan).
 			WithWxpay(WxPayApp)
-	} else if p.payMethod == enum.PayMethodAli {
+
+	case enum.PayMethodAli:
 		payConfig = subs.
 			NewPayment(p.FtcAccount(), p.plan).
 			WithAlipay()
-	} else {
-		panic("only alipay or wxpay supported")
 	}
 
 	pi, err := payConfig.BuildIntent(p.Membership())
@@ -209,52 +152,11 @@ func (p *Persona) CreateOrder() subs.Order {
 	return pi.Order
 }
 
-func (p *Persona) ConfirmOrder(o subs.Order) subs.ConfirmationResult {
-
-	res, err := subs.NewConfirmationResult(subs.ConfirmationParams{
-		Payment: subs.PaymentResult{
-			PaidAt: chrono.TimeNow(),
-		},
-		Order:  o,
-		Member: reader.Membership{},
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	return res
-}
-
-func (p *Persona) PaymentResult(order subs.Order) subs.PaymentResult {
-
-	switch p.payMethod {
-	case enum.PayMethodWx:
-		result := subs.PaymentResult{
-			PaymentState:     "SUCCESS",
-			PaymentStateDesc: "",
-			Amount:           null.IntFrom(order.AmountInCent()),
-			TransactionID:    rand.String(28),
-			OrderID:          order.ID,
-			PaidAt:           chrono.TimeNow(),
-			ConfirmedUTC:     chrono.TimeNow(),
-			PayMethod:        enum.PayMethodWx,
-		}
-		return result
-
-	case enum.PayMethodAli:
-		return subs.PaymentResult{
-			PaymentState:     "TRADE_SUCCESS",
-			PaymentStateDesc: "",
-			Amount:           null.IntFrom(order.AmountInCent()),
-			TransactionID:    rand.String(28),
-			OrderID:          order.ID,
-			PaidAt:           chrono.TimeNow(),
-			ConfirmedUTC:     chrono.TimeNow(),
-			PayMethod:        enum.PayMethodAli,
-		}
-
-	default:
-		panic("Not ali or wx pay")
-	}
+func (p *Persona) NewOrder(k enum.OrderKind) subs.Order {
+	return subs.NewMockOrderBuilder("").
+		WithUserIDs(p.AccountID()).
+		WithPlan(p.plan).
+		WithKind(k).
+		WithPayMethod(p.payMethod).
+		Build()
 }
