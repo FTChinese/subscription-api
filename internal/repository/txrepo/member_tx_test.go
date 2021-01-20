@@ -199,7 +199,7 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 
 func TestMemberTx_LockOrder(t *testing.T) {
 	p := test.NewPersona()
-	orderAli := p.CreateOrder()
+	orderAli := p.NewOrder(enum.OrderKindCreate)
 
 	test.NewRepo().MustSaveOrder(orderAli)
 
