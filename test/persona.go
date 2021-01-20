@@ -3,6 +3,8 @@
 package test
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"time"
 
 	"github.com/FTChinese/go-rest/enum"
@@ -137,4 +139,32 @@ func (p *Persona) NewOrder(k enum.OrderKind) subs.Order {
 		WithKind(k).
 		WithPayMethod(p.payMethod).
 		Build()
+}
+
+func (p *Persona) AddOn() subs.AddOn {
+	return subs.AddOn{
+		ID: db.AddOnID(),
+		Edition: product.Edition{
+			Tier:  faker.RandomTier(),
+			Cycle: enum.CycleYear,
+		},
+		CycleCount:         1,
+		DaysRemained:       1,
+		IsUpgradeCarryOver: false,
+		PaymentMethod:      faker.RandomPayMethod(),
+		CompoundID:         p.AccountID().CompoundID,
+		OrderID:            null.StringFrom(db.MustOrderID()),
+		PlanID:             null.StringFrom(p.plan.ID),
+		CreatedUTC:         chrono.TimeNow(),
+		ConsumedUTC:        chrono.Time{},
+	}
+}
+
+func (p *Persona) AddOnN(n int) []subs.AddOn {
+	var addOns []subs.AddOn
+	for i := 0; i < n; i++ {
+		addOns = append(addOns, p.AddOn())
+	}
+
+	return addOns
 }

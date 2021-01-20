@@ -115,6 +115,39 @@ func (r *Repo) MustSaveRenewalOrders(orders []subs.Order) {
 	}
 }
 
+func (r *Repo) SaveAddOn(a subs.AddOn) error {
+	_, err := r.db.NamedExec(subs.StmtCreateAddOn, a)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repo) MustSaveAddOn(a subs.AddOn) {
+	if err := r.SaveAddOn(a); err != nil {
+		panic(err)
+	}
+}
+
+func (r *Repo) SaveAddOnN(addOns []subs.AddOn) error {
+	for _, v := range addOns {
+		err := r.SaveAddOn(v)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *Repo) MustSaveAddOnN(addOns []subs.AddOn) {
+	err := r.SaveAddOnN(addOns)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (r *Repo) SaveIAPSubs(s apple.Subscription) error {
 	_, err := r.db.NamedExec(apple.StmtCreateSubs, s)
 	if err != nil {
