@@ -47,6 +47,7 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 	// Change nothing.
 	if order.IsSynced(member) {
 		_ = tx.Rollback()
+		sugar.Infof("Order %s already synced to membership", order.ID)
 		return subs.ConfirmationResult{
 			Payment: pr,
 			PaymentConfirmed: subs.PaymentConfirmed{
