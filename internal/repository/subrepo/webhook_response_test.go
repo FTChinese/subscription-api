@@ -1,6 +1,7 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/test"
@@ -27,7 +28,7 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 	}{
 		{
 			name:    "Save Ali Notification",
-			args:    args{n: subs.MockAliNoti(p.CreateOrder())},
+			args:    args{n: subs.MockAliNoti(p.NewOrder(enum.OrderKindCreate))},
 			wantErr: false,
 		},
 	}
@@ -62,7 +63,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 		{
 			name: "Save Prepay Response",
 			args: args{
-				resp: wechat.NewOrderResp(p.CreateOrder().ID, client.MockOrderPayload(or)),
+				resp: wechat.NewOrderResp(p.NewOrder(enum.OrderKindCreate).ID, client.MockOrderPayload(or)),
 			},
 		},
 	}
@@ -81,7 +82,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 	client := NewWxPayClient(test.WxPayApp, zaptest.NewLogger(t))
 
 	p := test.NewPersona()
-	noti := test.NewWxWHUnsigned(p.CreateOrder())
+	noti := test.NewWxWHUnsigned(p.NewOrder(enum.OrderKindCreate))
 
 	env := Env{
 		rwdDB: test.DB,
