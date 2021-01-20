@@ -58,17 +58,25 @@ func (o Order) IsAliWxPay() bool {
 // IsSynced tests whether an order is confirmed and the end date is
 // transferred to membership.
 func (o Order) IsSynced(m reader.Membership) bool {
+	if m.IsZero() {
+		return false
+	}
+
 	if o.ConfirmedAt.IsZero() {
 		return false
 	}
 
 	// As long the current membership expiration date is not before
 	// this order's end date, we think the order is already synced to membership.
-	if o.IsAliWxPay() {
-		return !m.ExpireDate.Before(o.EndDate.Time)
+	if !o.IsAliWxPay() {
+		return true
 	}
 
-	return true
+	if o.EndDate.IsZero() {
+		return false
+	}
+
+	return !m.ExpireDate.Before(o.EndDate.Time)
 }
 
 func (o Order) ValidatePayment(result PaymentResult) error {
