@@ -143,6 +143,8 @@ func TestMemberTx_RetrieveStripeMember(t *testing.T) {
 
 func TestOrderTx_SaveOrder(t *testing.T) {
 
+	p := test.NewPersona()
+
 	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
@@ -154,16 +156,29 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save Ali Order",
+			name: "New order via ali",
 			args: args{
-				order: test.NewPersona().CreateOrder(),
+				order: p.NewOrder(enum.OrderKindCreate),
 			},
 			wantErr: false,
 		},
 		{
-			name: "Save wx order",
+			name: "New order via wx",
 			args: args{
-				order: test.NewPersona().SetPayMethod(enum.PayMethodWx).CreateOrder(),
+				order: p.SetPayMethod(enum.PayMethodWx).
+					NewOrder(enum.OrderKindRenew),
+			},
+		},
+		{
+			name: "Renewal order via ali",
+			args: args{
+				order: p.NewOrder(enum.OrderKindRenew),
+			},
+		},
+		{
+			name: "Turn IAP renewal to add-on",
+			args: args{
+				order: p.NewOrder(enum.OrderKindAddOn),
 			},
 		},
 	}
@@ -233,13 +248,23 @@ func TestMemberTx_LockOrder(t *testing.T) {
 }
 
 func TestOrderTx_ConfirmedOrder(t *testing.T) {
+	repo := test.NewRepo()
+
 	p := test.NewPersona()
-	order := p.CreateOrder()
 
-	test.NewRepo().
-		MustSaveOrder(order)
+	currentMember := p.Membership()
 
-	confirmed := p.ConfirmOrder(order)
+	orderCreate := p.NewOrder(enum.OrderKindCreate)
+	repo.MustSaveOrder(orderCreate)
+
+	orderRenewal := p.NewOrder(enum.OrderKindRenew)
+	repo.MustSaveOrder(orderRenewal)
+
+	orderUpgrade := p.NewOrder(enum.OrderKindUpgrade)
+	repo.MustSaveOrder(orderUpgrade)
+
+	orderAddOn := p.NewOrder(enum.OrderKindAddOn)
+	repo.MustSaveOrder(orderAddOn)
 
 	otx := NewMemberTx(test.DB.MustBegin())
 
@@ -252,9 +277,46 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Update Confirmed Order",
+			name: "Confirm order for create",
 			args: args{
-				order: confirmed.Order,
+				order: subs.MustConfirmPayment(subs.ConfirmationParams{
+					Payment: subs.MockNewPaymentResult(orderCreate),
+					Order:   orderCreate,
+					Member:  reader.Membership{},
+				}).Order,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Confirm order for renewal",
+			args: args{
+				order: subs.MustConfirmPayment(subs.ConfirmationParams{
+					Payment: subs.MockNewPaymentResult(orderRenewal),
+					Order:   orderRenewal,
+					Member:  currentMember,
+				}).Order,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Confirm order for upgrade",
+			args: args{
+				order: subs.MustConfirmPayment(subs.ConfirmationParams{
+					Payment: subs.MockNewPaymentResult(orderUpgrade),
+					Order:   orderUpgrade,
+					Member:  currentMember,
+				}).Order,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Confirm order for add-on",
+			args: args{
+				order: subs.MustConfirmPayment(subs.ConfirmationParams{
+					Payment: subs.MockNewPaymentResult(orderAddOn),
+					Order:   orderAddOn,
+					Member:  currentMember,
+				}).Order,
 			},
 			wantErr: false,
 		},
@@ -268,7 +330,6 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 			}
 
 			t.Logf("Confirmed order ID: %s", tt.args.order.ID)
-			_ = otx.Commit()
 		})
 	}
 
