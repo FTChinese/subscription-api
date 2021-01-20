@@ -130,16 +130,17 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		switch tradeType {
 		// Desktop returns a url that can be turned to QR code
 		case wechat.TradeTypeDesktop:
-			_ = render.New(w).OK(pi.WxPayDesktopIntent(wxOrder))
+			_ = render.New(w).OK(subs.NewWxPayDesktopIntent(pi.Order, wxOrder))
 
 		// Mobile returns a url which is redirect in browser
 		case wechat.TradeTypeMobile:
-			_ = render.New(w).OK(pi.WxPayMobileIntent(wxOrder))
+			_ = render.New(w).OK(subs.NewWxPayMobileIntent(pi.Order, wxOrder))
 
 		// Create the json data used by js api
 		case wechat.TradeTypeJSAPI:
 			_ = render.New(w).OK(
-				pi.WxPayJSApiIntent(
+				subs.NewWxPayJSApiIntent(
+					pi.Order,
 					payClient.SignJSApiParams(wxOrder),
 				),
 			)
@@ -147,7 +148,8 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		// Create the json data used by native app.
 		case wechat.TradeTypeApp:
 			_ = render.New(w).OK(
-				pi.WxNativeAppIntent(
+				subs.NewWxNativeAppIntent(
+					pi.Order,
 					payClient.SignAppParams(wxOrder),
 				),
 			)
