@@ -120,7 +120,7 @@ func (tx MemberTx) LockOrder(orderID string) (subs.LockedOrder, error) {
 	return lo, nil
 }
 
-// ConfirmOrder set an order's confirmation time.
+// ConfirmOrder set an order's confirmation time and the purchased period.
 func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 	_, err := tx.NamedExec(
 		subs.StmtConfirmOrder,
