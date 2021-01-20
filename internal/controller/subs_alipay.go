@@ -110,14 +110,11 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 
 		switch kind {
 		case ali.EntryApp:
-			_ = render.New(w).OK(pi.AliAppPayIntent(param))
+			_ = render.New(w).OK(subs.NewAliAppPayIntent(pi.Order, param))
 			return
 
-		case ali.EntryDesktopWeb:
-			_ = render.New(w).OK(pi.AliPayBrowserIntent(param))
-
-		case ali.EntryMobileWeb:
-			_ = render.New(w).OK(pi.AliPayBrowserIntent(param))
+		case ali.EntryDesktopWeb, ali.EntryMobileWeb:
+			_ = render.New(w).OK(subs.NewAliPayBrowserIntent(pi.Order, param))
 		}
 	}
 }
