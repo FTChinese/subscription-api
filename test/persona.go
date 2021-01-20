@@ -130,28 +130,6 @@ func (p *Persona) Membership() reader.Membership {
 		Build()
 }
 
-func (p *Persona) CreateOrder() subs.Order {
-	var payConfig subs.PaymentConfig
-	switch p.payMethod {
-	case enum.PayMethodWx:
-		payConfig = subs.
-			NewPayment(p.FtcAccount(), p.plan).
-			WithWxpay(WxPayApp)
-
-	case enum.PayMethodAli:
-		payConfig = subs.
-			NewPayment(p.FtcAccount(), p.plan).
-			WithAlipay()
-	}
-
-	pi, err := payConfig.BuildIntent(p.Membership())
-	if err != nil {
-		panic(err)
-	}
-
-	return pi.Order
-}
-
 func (p *Persona) NewOrder(k enum.OrderKind) subs.Order {
 	return subs.NewMockOrderBuilder("").
 		WithUserIDs(p.AccountID()).

@@ -282,7 +282,7 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 
 func TestEnv_RetrieveOrder(t *testing.T) {
 	p := test.NewPersona()
-	order := p.CreateOrder()
+	order := p.NewOrder(enum.OrderKindCreate)
 
 	repo := test.NewRepo()
 	repo.MustSaveOrder(order)
@@ -332,7 +332,7 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 func TestEnv_LoadFullOrder(t *testing.T) {
 
 	p := test.NewPersona()
-	order := p.CreateOrder()
+	order := p.NewOrder(enum.OrderKindCreate)
 
 	t.Logf("Order id: %s", order.ID)
 
