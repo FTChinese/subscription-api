@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
@@ -21,38 +22,41 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	repo := test.NewRepo()
 
 	p1 := test.NewPersona()
-	order1 := p1.CreateOrder()
-	t.Logf("Ali Order id %s", order1.ID)
-	repo.MustSaveOrder(order1)
+	aliCreateOrder := p1.NewOrder(enum.OrderKindCreate)
+	t.Logf("Ali Order id %s", aliCreateOrder.ID)
 
-	p2 := test.NewPersona()
-	order2 := p2.CreateOrder()
-	t.Logf("Wx Order id %s", order2.ID)
-	repo.MustSaveOrder(order2)
+	p2 := test.NewPersona().SetPayMethod(enum.PayMethodWx)
+	wxCreateOrder := p2.NewOrder(enum.OrderKindCreate)
+	t.Logf("Wx Order id %s", wxCreateOrder.ID)
 
-	p3 := test.NewPersona().SetAccountKind(enum.AccountKindWx)
-	repo.MustSaveMembership(p3.Membership())
-	p3.SetAccountKind(enum.AccountKindLinked)
-	order3 := p3.CreateOrder()
-	t.Logf("Order for linked account %s", order3.ID)
-	repo.MustSaveOrder(order3)
+	p3 := test.NewPersona().SetAccountKind(enum.AccountKindLinked)
+	linkedAccountOrder := p3.NewOrder(enum.OrderKindCreate)
+	t.Logf("Order for linked account %s", linkedAccountOrder.ID)
 
+	// Order confirmed but not synced to membership
 	p4 := test.NewPersona()
-	order4 := p4.CreateOrder()
-	order4.ConfirmedAt = chrono.TimeNow()
-	order4.StartDate = chrono.DateNow()
-	order4.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 0))
-	t.Logf("Confirmed order %v", order4)
-	repo.MustSaveOrder(order4)
+	outOfSyncOrder := subs.NewMockOrderBuilder("").
+		WithUserIDs(p4.AccountID()).
+		WithPlan(faker.PlanStdYear).
+		WithKind(enum.OrderKindRenew).
+		WithPayMethod(enum.PayMethodAli).
+		WithConfirmed().
+		WithPeriod(time.Now()).
+		Build()
+	t.Logf("Out of sync order %v", outOfSyncOrder)
 
-	p5 := test.NewPersona().SetExpired(true)
-	repo.MustSaveMembership(p5.Membership())
-	order5 := p5.CreateOrder()
-	order5.ConfirmedAt = chrono.TimeNow()
-	order5.StartDate = chrono.DateNow()
-	order5.EndDate = chrono.DateFrom(time.Now().AddDate(1, 0, 0))
-	t.Logf("Confirmed order without sync %v", order4)
-	repo.MustSaveOrder(order5)
+	p5 := test.NewPersona()
+	memberPriorRenewal := p5.Membership()
+	renewalOrder := p5.NewOrder(enum.OrderKindRenew)
+
+	p6 := test.NewPersona()
+	memberPriorUpgrade := p6.Membership()
+	upgradeOrder := p6.NewOrder(enum.OrderKindUpgrade)
+
+	p7 := test.NewPersona().SetPayMethod(enum.PayMethodApple)
+	iapMember := p7.Membership()
+	p7.SetPayMethod(enum.PayMethodAli)
+	addOnOrder := p7.NewOrder(enum.OrderKindAddOn)
 
 	env := NewEnv(test.DB, zaptest.NewLogger(t))
 
@@ -60,56 +64,88 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		result subs.PaymentResult
 		order  subs.Order
 	}
+	type requisite struct {
+		currentMember reader.Membership
+	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name      string
+		requisite requisite
+		args      args
+		wantErr   bool
 	}{
 		{
-			name: "Confirm ali order",
+			name: "Confirm new ali order",
 			args: args{
-				result: p1.PaymentResult(order1),
-				order:  order1,
+				result: subs.MockNewPaymentResult(aliCreateOrder),
+				order:  aliCreateOrder,
 			},
 			wantErr: false,
 		},
 		{
-			name: "Confirm wx order",
+			name: "Confirm new wx order",
 			args: args{
-				result: p1.PaymentResult(order2),
-				order:  order2,
+				result: subs.MockNewPaymentResult(wxCreateOrder),
+				order:  wxCreateOrder,
 			},
 			wantErr: false,
 		},
 		{
-			name: "Confirmed linked account order",
+			name: "Confirmed new linked account order",
 			args: args{
-				result: p3.PaymentResult(order3),
-				order:  order3,
+				result: subs.MockNewPaymentResult(linkedAccountOrder),
+				order:  linkedAccountOrder,
 			},
 			wantErr: false,
 		},
 		{
-			name: "Confirmed order without membership",
+			name: "Confirmed out of sync order",
 			args: args{
-				result: p4.PaymentResult(order4),
-				order:  order4,
+				result: subs.MockNewPaymentResult(outOfSyncOrder),
+				order:  outOfSyncOrder,
 			},
 			wantErr: false,
 		},
 		{
-			name: "Confirmed order without sync membership",
+			name: "Confirm renewal",
+			requisite: requisite{
+				currentMember: memberPriorRenewal,
+			},
 			args: args{
-				result: p5.PaymentResult(order5),
-				order:  order5,
+				result: subs.MockNewPaymentResult(renewalOrder),
+				order:  renewalOrder,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Confirm upgrade",
+			requisite: requisite{
+				currentMember: memberPriorUpgrade,
+			},
+			args: args{
+				result: subs.MockNewPaymentResult(upgradeOrder),
+				order:  upgradeOrder,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Confirm IAP add-on",
+			requisite: requisite{
+				currentMember: iapMember,
+			},
+			args: args{
+				result: subs.MockNewPaymentResult(addOnOrder),
+				order:  addOnOrder,
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			t.Logf("Payment result: %+v", tt.args.result)
+			// Prerequisite.
+			if !tt.requisite.currentMember.IsZero() {
+				repo.MustSaveMembership(tt.requisite.currentMember)
+			}
+			repo.MustSaveOrder(tt.args.order)
 
 			got, err := env.ConfirmOrder(tt.args.result, tt.args.order)
 			if (err != nil) != tt.wantErr {
