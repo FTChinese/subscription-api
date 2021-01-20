@@ -78,6 +78,16 @@ func NewPaymentConfirmed(p ConfirmationParams) (PaymentConfirmed, error) {
 	}
 }
 
+func MustConfirmPayment(p ConfirmationParams) PaymentConfirmed {
+	c, err := NewPaymentConfirmed(p)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return c
+}
+
 func NewMembership(p PaymentConfirmed) reader.Membership {
 	// If an order is created as an add-on, only add the reserved days
 	// to current membership.
