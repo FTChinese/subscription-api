@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
@@ -19,29 +20,135 @@ import (
 )
 
 func MockOrder(plan product.ExpandedPlan, kind enum.OrderKind) Order {
-	id := uuid.New().String()
-	return Order{
-		ID: db.MustOrderID(),
-		MemberID: reader.MemberID{
-			CompoundID: id,
-			FtcID:      null.StringFrom(id),
+	return NewMockOrderBuilder("").
+		WithPlan(plan).
+		WithKind(kind).
+		Build()
+}
+
+type MockOrderBuilder struct {
+	id        string
+	userIDs   reader.MemberID
+	plan      product.ExpandedPlan
+	kind      enum.OrderKind
+	payMethod enum.PayMethod
+	wxAppId   null.String
+	confirmed bool
+	period    dt.DateRange
+}
+
+func NewMockOrderBuilder(id string) MockOrderBuilder {
+	if id == "" {
+		id = db.MustOrderID()
+	}
+
+	return MockOrderBuilder{
+		id: id,
+		userIDs: reader.MemberID{
+			CompoundID: "",
+			FtcID:      null.StringFrom(uuid.New().String()),
 			UnionID:    null.String{},
-		},
-		PlanID:     plan.ID,
-		DiscountID: plan.Discount.DiscID,
-		Price:      plan.Price,
-		Edition:    plan.Edition,
+		}.MustNormalize(),
+		plan:      faker.PlanStdYear,
+		kind:      enum.OrderKindCreate,
+		payMethod: enum.PayMethodAli,
+		confirmed: false,
+	}
+}
+
+func (b MockOrderBuilder) WithUserIDs(ids reader.MemberID) MockOrderBuilder {
+	b.userIDs = ids
+	return b
+}
+
+func (b MockOrderBuilder) WithPlan(p product.ExpandedPlan) MockOrderBuilder {
+	b.plan = p
+	return b
+}
+
+func (b MockOrderBuilder) WithKind(k enum.OrderKind) MockOrderBuilder {
+	b.kind = k
+	return b
+}
+
+func (b MockOrderBuilder) WithPayMethod(m enum.PayMethod) MockOrderBuilder {
+	b.payMethod = m
+	if m == enum.PayMethodWx {
+		b.wxAppId = null.StringFrom(faker.GenWxID())
+	}
+	return b
+}
+
+func (b MockOrderBuilder) WithConfirmed() MockOrderBuilder {
+	b.confirmed = true
+	return b
+}
+
+func (b MockOrderBuilder) WithPeriod(from time.Time) MockOrderBuilder {
+	b.period = dt.NewDateRange(from).WithCycle(b.plan.Cycle)
+	return b
+}
+
+func (b MockOrderBuilder) Build() Order {
+	item := NewCheckedItem(b.plan)
+
+	payable := item.Payable()
+
+	var confirmed time.Time
+	if b.confirmed {
+		confirmed = time.Now()
+	}
+
+	return Order{
+		ID:         b.id,
+		MemberID:   b.userIDs,
+		PlanID:     item.Plan.ID,
+		DiscountID: item.Discount.DiscID,
+		Price:      item.Plan.Price,
+		Edition:    item.Plan.Edition,
 		Charge: product.Charge{
-			Amount:   plan.Price,
-			Currency: "cny",
+			Amount:   payable.Amount,
+			Currency: payable.Currency,
 		},
-		Kind:          kind,
-		PaymentMethod: enum.PayMethodAli,
-		WxAppID:       null.String{},
+		Kind:          b.kind,
+		PaymentMethod: b.payMethod,
+		WxAppID:       b.wxAppId,
 		CreatedAt:     chrono.TimeNow(),
-		ConfirmedAt:   chrono.Time{},
+		ConfirmedAt:   chrono.TimeFrom(confirmed),
 		DateRange:     dt.DateRange{},
 		LiveMode:      true,
+	}
+}
+
+func MockNewPaymentResult(o Order) PaymentResult {
+	switch o.PaymentMethod {
+	case enum.PayMethodWx:
+		result := PaymentResult{
+			PaymentState:     "SUCCESS",
+			PaymentStateDesc: "",
+			Amount:           null.IntFrom(o.AmountInCent()),
+			TransactionID:    rand.String(28),
+			OrderID:          o.ID,
+			PaidAt:           chrono.TimeNow(),
+			ConfirmedUTC:     chrono.TimeNow(),
+			PayMethod:        enum.PayMethodWx,
+		}
+		return result
+
+	case enum.PayMethodAli:
+		return PaymentResult{
+			PaymentState:     "TRADE_SUCCESS",
+			PaymentStateDesc: "",
+			Amount:           null.IntFrom(o.AmountInCent()),
+			TransactionID:    rand.String(28),
+			OrderID:          o.ID,
+			PaidAt:           chrono.TimeNow(),
+			ConfirmedUTC:     chrono.TimeNow(),
+			PayMethod:        enum.PayMethodAli,
+		}
+
+	default:
+		panic("Not ali or wx pay")
 	}
 }
 
