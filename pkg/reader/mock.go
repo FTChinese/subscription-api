@@ -47,7 +47,7 @@ func MockNewFtcAccount(kind enum.AccountKind) FtcAccount {
 }
 
 type MockMemberBuilder struct {
-	ftcID      string
+	ids        MemberID
 	plan       product.Plan
 	payMethod  enum.PayMethod
 	expiration time.Time
@@ -59,11 +59,20 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 	}
 
 	return MockMemberBuilder{
-		ftcID:      ftcID,
+		ids: MemberID{
+			CompoundID: ftcID,
+			FtcID:      null.StringFrom(ftcID),
+			UnionID:    null.String{},
+		},
 		plan:       faker.PlanStdYear.Plan,
 		payMethod:  enum.PayMethodAli,
 		expiration: time.Now().AddDate(0, 1, 0),
 	}
+}
+
+func (b MockMemberBuilder) WithIDs(ids MemberID) MockMemberBuilder {
+	b.ids = ids
+	return b
 }
 
 func (b MockMemberBuilder) WithPlan(p product.Plan) MockMemberBuilder {
@@ -76,6 +85,7 @@ func (b MockMemberBuilder) WithPayMethod(m enum.PayMethod) MockMemberBuilder {
 	b.payMethod = m
 	return b
 }
+
 func (b MockMemberBuilder) WithExpiration(t time.Time) MockMemberBuilder {
 	b.expiration = t
 	return b
@@ -83,10 +93,7 @@ func (b MockMemberBuilder) WithExpiration(t time.Time) MockMemberBuilder {
 
 func (b MockMemberBuilder) Build() Membership {
 	m := Membership{
-		MemberID: MemberID{
-			CompoundID: b.ftcID,
-			FtcID:      null.StringFrom(b.ftcID),
-		},
+		MemberID:      b.ids,
 		Edition:       b.plan.Edition,
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},
