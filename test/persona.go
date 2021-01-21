@@ -3,8 +3,6 @@
 package test
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"time"
 
 	"github.com/FTChinese/go-rest/enum"
@@ -35,6 +33,8 @@ type Persona struct {
 	plan      product.ExpandedPlan
 	payMethod enum.PayMethod
 	expired   bool
+	autoRenew bool
+	reserved  reader.ReservedDays
 }
 
 func NewPersona() *Persona {
@@ -57,6 +57,7 @@ func NewPersona() *Persona {
 		plan:      faker.PlanStdYear,
 		payMethod: enum.PayMethodAli,
 		expired:   false,
+		autoRenew: false,
 	}
 }
 
@@ -67,6 +68,12 @@ func (p *Persona) SetAccountKind(k enum.AccountKind) *Persona {
 
 func (p *Persona) SetPlan(subPlan product.ExpandedPlan) *Persona {
 	p.plan = subPlan
+	return p
+}
+
+func (p *Persona) SetReservedDays(r reader.ReservedDays) *Persona {
+	p.reserved = r
+
 	return p
 }
 
@@ -81,6 +88,11 @@ func (p *Persona) SetPayMethod(m enum.PayMethod) *Persona {
 
 func (p *Persona) SetExpired(expired bool) *Persona {
 	p.expired = expired
+	return p
+}
+
+func (p *Persona) SetAutoRenew(t bool) *Persona {
+	p.autoRenew = t
 	return p
 }
 
@@ -129,6 +141,8 @@ func (p *Persona) Membership() reader.Membership {
 		WithExpiration(expiresDate).
 		WithPayMethod(p.payMethod).
 		WithPlan(p.plan.Plan).
+		WithReservedDays(p.reserved).
+		WithAutoRenewal(p.autoRenew).
 		Build()
 }
 
@@ -142,28 +156,20 @@ func (p *Persona) NewOrder(k enum.OrderKind) subs.Order {
 }
 
 func (p *Persona) AddOn() subs.AddOn {
-	return subs.AddOn{
-		ID: db.AddOnID(),
-		Edition: product.Edition{
-			Tier:  faker.RandomTier(),
-			Cycle: enum.CycleYear,
-		},
-		CycleCount:         1,
-		DaysRemained:       1,
-		IsUpgradeCarryOver: false,
-		PaymentMethod:      faker.RandomPayMethod(),
-		CompoundID:         p.AccountID().CompoundID,
-		OrderID:            null.StringFrom(db.MustOrderID()),
-		PlanID:             null.StringFrom(p.plan.ID),
-		CreatedUTC:         chrono.TimeNow(),
-		ConsumedUTC:        chrono.Time{},
-	}
+	return subs.NewMockAddOnBuilder().
+		WithUserIDs(p.AccountID()).
+		WithPlan(p.plan).
+		BuildNew()
 }
 
 func (p *Persona) AddOnN(n int) []subs.AddOn {
+	factory := subs.NewMockAddOnBuilder().
+		WithUserIDs(p.AccountID()).
+		WithPlan(p.plan)
+
 	var addOns []subs.AddOn
 	for i := 0; i < n; i++ {
-		addOns = append(addOns, p.AddOn())
+		addOns = append(addOns, factory.BuildNew())
 	}
 
 	return addOns
