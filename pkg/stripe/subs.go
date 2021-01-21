@@ -16,28 +16,6 @@ func isSubscribed(ss *stripe.Subscription) bool {
 	return ss.Items != nil && len(ss.Items.Data) > 0
 }
 
-func getExpirationTime(ss *stripe.Subscription) time.Time {
-	// If status is not in canceled state.
-	if ss.Status != stripe.SubscriptionStatusCanceled {
-		return dt.FromUnix(ss.CurrentPeriodEnd)
-	}
-
-	// If canceled.
-	// If it is neither scheduled to cancel at period end, nor
-	// in a future time, use the canceled_at field.
-	if !ss.CancelAtPeriodEnd && ss.CancelAt == 0 {
-		return dt.FromUnix(ss.CanceledAt)
-	}
-
-	// If it is scheduled to cancel at period end, use current_period_end
-	if ss.CancelAtPeriodEnd {
-		return dt.FromUnix(ss.CurrentPeriodEnd)
-	}
-
-	// cancel_at is set, use it.
-	return dt.FromUnix(ss.CancelAt)
-}
-
 func getStatus(sts stripe.SubscriptionStatus) enum.SubsStatus {
 	status, _ := enum.ParseSubsStatus(string(sts))
 	return status
