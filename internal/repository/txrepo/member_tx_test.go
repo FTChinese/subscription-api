@@ -518,3 +518,141 @@ func TestMemberTx_UnlinkAppleSubs(t *testing.T) {
 		})
 	}
 }
+
+func TestMemberTx_SaveAddOn(t *testing.T) {
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		addOn subs.AddOn
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Save add-on",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				addOn: subs.NewAddOn(test.NewPersona().NewOrder(enum.OrderKindAddOn)),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+			if err := tx.SaveAddOn(tt.args.addOn); (err != nil) != tt.wantErr {
+				_ = tx.Rollback()
+				t.Errorf("SaveAddOn() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			_ = tx.Commit()
+		})
+	}
+}
+
+func TestMemberTx_ListAddOn(t *testing.T) {
+	p := test.NewPersona()
+
+	repo := test.NewRepo()
+	repo.MustSaveAddOnN(p.AddOnN(3))
+
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		ids reader.MemberID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    int
+		wantErr bool
+	}{
+		{
+			name: "List add-ons",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				ids: p.AccountID(),
+			},
+			want:    3,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+			got, err := tx.ListAddOn(tt.args.ids)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListAddOn() error = %v, wantErr %v", err, tt.wantErr)
+				_ = tx.Rollback()
+				return
+			}
+			if len(got) != tt.want {
+				t.Errorf("ListAddOn() got = %v, want %v", got, tt.want)
+			}
+
+			_ = tx.Commit()
+		})
+	}
+}
+
+func TestMemberTx_AddOnsConsumed(t *testing.T) {
+	p := test.NewPersona()
+	addOns := p.AddOnN(3)
+
+	repo := test.NewRepo()
+	repo.MustSaveAddOnN(addOns)
+
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		ids []string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Add-on consumed",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				ids: subs.CollectAddOnIDs(addOns).ToSlice(),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			t.Logf("Add on IDs %v", tt.args.ids)
+
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+			if err := tx.AddOnsConsumed(tt.args.ids); (err != nil) != tt.wantErr {
+				_ = tx.Rollback()
+				t.Errorf("AddOnsConsumed() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			_ = tx.Commit()
+		})
+	}
+}
