@@ -14,7 +14,7 @@ SET id = :id,
 	plan_id = :plan_id,
 	created_utc = UTC_TIMESTAMP()`
 
-const stmtListAddOn = `
+const stmtColAddOn = `
 SELECT id,
 	tier,
 	cycle,
@@ -28,11 +28,12 @@ SELECT id,
 	created_utc,
 	consumed_utc
 FROM premium.ftc_addon
-WHERE FIND_IN_SET(compound_id, ?) > 0
-	AND consumed_utc IS NULL
-ORDER BY created_utc DESC`
+`
 
-const StmtListAddOnLock = stmtListAddOn + `
+const StmtListAddOnLock = stmtColAddOn + `
+WHERE FIND_IN_SET(user_compound_id, ?) > 0
+	AND consumed_utc IS NULL
+ORDER BY created_utc DESC
 FOR UPDATE`
 
 const StmtAddOnConsumed = `
