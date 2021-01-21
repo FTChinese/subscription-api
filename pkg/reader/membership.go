@@ -235,11 +235,20 @@ func (m Membership) HasAddOns() bool {
 	return m.Standard > 0 || m.Premium > 0
 }
 
-func (m Membership) ShouldUseAddOn() bool {
+func (m Membership) ShouldUseAddOn() error {
 	if m.IsZero() {
-		return false
+		return errors.New("subscription backup days only applicable to an existing membership")
 	}
-	return m.IsExpired() && m.HasAddOns()
+
+	if !m.IsExpired() {
+		return errors.New("backup days come into effect only after current subscription expired")
+	}
+
+	if !m.HasAddOns() {
+		return errors.New("current membership does not have backup days")
+	}
+
+	return nil
 }
 
 // canRenewViaAliWx test if current membership is allowed to renew for wxpay or alipay.
