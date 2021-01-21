@@ -42,23 +42,6 @@ func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error)
 	return m.Sync(), nil
 }
 
-func (tx MemberTx) RetrieveMemberV2(ids []string) (reader.Membership, error) {
-	var m reader.Membership
-
-	err := tx.Get(
-		&m,
-		reader.StmtGetLockMember,
-		db.GetFindInSet(ids),
-	)
-
-	if err != nil && err != sql.ErrNoRows {
-		return m, err
-	}
-
-	// Treat a non-existing member as a valid value.
-	return m.Sync(), nil
-}
-
 // RetrieveAppleMember selects membership by apple original transaction id.
 // // NOTE: sql.ErrNoRows are ignored. The returned
 //// Membership might be a zero value.
@@ -143,20 +126,6 @@ func (tx MemberTx) SaveAddOn(addOn subs.AddOn) error {
 	return nil
 }
 
-// CreateMember creates a new membership.
-func (tx MemberTx) CreateMember(m reader.Membership) error {
-	_, err := tx.NamedExec(
-		reader.StmtCreateMember,
-		m,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]subs.AddOn, error) {
 	var dest []subs.AddOn
 	err := tx.Select(&dest, subs.StmtListAddOnLock, ids.BuildFindInSet())
@@ -168,7 +137,21 @@ func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]subs.AddOn, error) {
 }
 
 func (tx MemberTx) AddOnsConsumed(ids []string) error {
-	_, err := tx.NamedExec(subs.StmtAddOnConsumed, db.GetFindInSet(ids))
+	_, err := tx.Exec(subs.StmtAddOnConsumed, db.GetFindInSet(ids))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateMember creates a new membership.
+func (tx MemberTx) CreateMember(m reader.Membership) error {
+	_, err := tx.NamedExec(
+		reader.StmtCreateMember,
+		m,
+	)
+
 	if err != nil {
 		return err
 	}
