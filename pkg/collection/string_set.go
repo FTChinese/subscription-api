@@ -6,7 +6,7 @@ func NewStringSet() StringSet {
 	return make(StringSet)
 }
 
-func (s StringSet) ToArray() []string {
+func (s StringSet) ToSlice() []string {
 	var a []string
 	for k := range s {
 		a = append(a, k)
