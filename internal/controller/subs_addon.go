@@ -6,7 +6,7 @@ import (
 )
 
 func (router SubsRouter) RedeemAddOn(w http.ResponseWriter, req *http.Request) {
-	readerIDs := readerIDSet(req.Header)
+	readerIDs := getReaderIDs(req.Header)
 
 	result, err := router.SubsRepo.TransferAddOn(readerIDs)
 	if err != nil {
