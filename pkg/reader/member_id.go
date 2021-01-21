@@ -60,3 +60,17 @@ func (m MemberID) BuildFindInSet() string {
 
 	return strings.Join(strList, ",")
 }
+
+func (m MemberID) IDSlice() []string {
+	strList := make([]string, 0)
+
+	if m.FtcID.Valid {
+		strList = append(strList, m.FtcID.String)
+	}
+
+	if m.UnionID.Valid {
+		strList = append(strList, m.UnionID.String)
+	}
+
+	return strList
+}
