@@ -120,6 +120,64 @@ func (b MockOrderBuilder) Build() Order {
 	}
 }
 
+type MockAddOnBuilder struct {
+	userIDs   reader.MemberID
+	plan      product.ExpandedPlan
+	payMethod enum.PayMethod
+}
+
+func NewMockAddOnBuilder() MockAddOnBuilder {
+	return MockAddOnBuilder{
+		userIDs: reader.MemberID{
+			FtcID: null.StringFrom(uuid.New().String()),
+		}.MustNormalize(),
+		plan:      faker.PlanStdYear,
+		payMethod: enum.PayMethodAli,
+	}
+}
+
+func (b MockAddOnBuilder) WithUserIDs(ids reader.MemberID) MockAddOnBuilder {
+	b.userIDs = ids
+	return b
+}
+
+func (b MockAddOnBuilder) WithPlan(p product.ExpandedPlan) MockAddOnBuilder {
+	b.plan = p
+	return b
+}
+
+func (b MockAddOnBuilder) BuildNew() AddOn {
+	return AddOn{
+		ID:                 db.AddOnID(),
+		Edition:            b.plan.Edition,
+		CycleCount:         1,
+		DaysRemained:       1,
+		IsUpgradeCarryOver: false,
+		PaymentMethod:      b.payMethod,
+		CompoundID:         b.userIDs.CompoundID,
+		OrderID:            null.StringFrom(db.MustOrderID()),
+		PlanID:             null.StringFrom(b.plan.ID),
+		CreatedUTC:         chrono.TimeNow(),
+		ConsumedUTC:        chrono.Time{},
+	}
+}
+
+func (b MockAddOnBuilder) BuildUpgrade() AddOn {
+	return AddOn{
+		ID:                 db.AddOnID(),
+		Edition:            faker.PlanStdYear.Edition,
+		CycleCount:         0,
+		DaysRemained:       int64(rand.IntRange(1, 367)),
+		IsUpgradeCarryOver: false,
+		PaymentMethod:      b.payMethod,
+		CompoundID:         b.userIDs.CompoundID,
+		OrderID:            null.StringFrom(db.MustOrderID()),
+		PlanID:             null.StringFrom(faker.PlanStdYear.ID),
+		CreatedUTC:         chrono.TimeNow(),
+		ConsumedUTC:        chrono.Time{},
+	}
+}
+
 func MockNewPaymentResult(o Order) PaymentResult {
 	switch o.PaymentMethod {
 	case enum.PayMethodWx:
