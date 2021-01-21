@@ -77,6 +77,10 @@ func RandomPayMethod() enum.PayMethod {
 	return enum.PayMethod(rand.IntRange(1, 3))
 }
 
+func RandomTier() enum.Tier {
+	return enum.Tier(rand.IntRange(1, 3))
+}
+
 func RandomGender() enum.Gender {
 	return enum.Gender(rand.IntRange(0, 3))
 }
