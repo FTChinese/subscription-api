@@ -16,7 +16,9 @@ SELECT vip_id AS compound_id,
 	IFNULL(auto_renewal, FALSE) AS auto_renewal,
 	sub_status AS subs_status,
 	apple_subscription_id AS apple_subs_id,
-	b2b_licence_id
+	b2b_licence_id,
+	standard_addon,
+	premium_addon
 FROM premium.ftc_vip`
 
 const StmtSelectMember = colMembership + `
@@ -51,13 +53,6 @@ WHERE stripe_subscription_id = ?
 LIMIT 1
 FOR UPDATE`
 
-const StmtFtcMemberOnly = `
-SELECT vip_id
-FROM premium.ftc_vip
-WHERE vip_id = ?
-LIMIT 1
-FOR UPDATE`
-
 // The common columns when inserting or updating membership.
 // Not the b2b_licence_id column is ignored since it is not
 // generated here. Treat it as read-only across the whole app.
@@ -70,7 +65,9 @@ stripe_plan_id = :stripe_plan_id,
 auto_renewal = :auto_renewal,
 sub_status = :subs_status,
 apple_subscription_id = :apple_subs_id,
-b2b_licence_id = :b2b_licence_id
+b2b_licence_id = :b2b_licence_id,
+standard_addon = :standard_addon,
+premium_addon = :premium_addon
 `
 
 const mUpsertCols = `
