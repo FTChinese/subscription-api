@@ -2,11 +2,12 @@ package subrepo
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
-func (env Env) TransferAddOn(ids reader.MemberID) (subs.AddOnConsumed, error) {
+func (env Env) RedeemAddOn(ids reader.MemberID) (subs.AddOnConsumed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -16,7 +17,7 @@ func (env Env) TransferAddOn(ids reader.MemberID) (subs.AddOnConsumed, error) {
 		return subs.AddOnConsumed{}, err
 	}
 
-	sugar.Info("Start retrieving membership for %v", ids)
+	sugar.Infof("Start retrieving membership for %v", ids)
 
 	member, err := otx.RetrieveMember(ids)
 	if err != nil {
@@ -25,7 +26,14 @@ func (env Env) TransferAddOn(ids reader.MemberID) (subs.AddOnConsumed, error) {
 		return subs.AddOnConsumed{}, err
 	}
 
-	if !member.ShouldUseAddOn() {
+	sugar.Infof("Membership retrieved %v", member)
+
+	if member.IsZero() {
+		_ = otx.Rollback()
+		return subs.AddOnConsumed{}, errors.New("")
+	}
+
+	if err := member.ShouldUseAddOn(); err != nil {
 		sugar.Info("Add on cannot be transferred to membership %v", member)
 		_ = otx.Rollback()
 		return subs.AddOnConsumed{}, err
