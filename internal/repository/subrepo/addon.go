@@ -1,8 +1,12 @@
 package subrepo
 
-import "github.com/FTChinese/subscription-api/pkg/subs"
+import (
+	"database/sql"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/subs"
+)
 
-func (env Env) TransferAddOn(ids []string) (subs.AddOnConsumed, error) {
+func (env Env) TransferAddOn(ids reader.MemberID) (subs.AddOnConsumed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -14,7 +18,7 @@ func (env Env) TransferAddOn(ids []string) (subs.AddOnConsumed, error) {
 
 	sugar.Info("Start retrieving membership for %v", ids)
 
-	member, err := otx.RetrieveMemberV2(ids)
+	member, err := otx.RetrieveMember(ids)
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
@@ -22,27 +26,37 @@ func (env Env) TransferAddOn(ids []string) (subs.AddOnConsumed, error) {
 	}
 
 	if !member.ShouldUseAddOn() {
+		sugar.Info("Add on cannot be transferred to membership %v", member)
 		_ = otx.Rollback()
 		return subs.AddOnConsumed{}, err
 	}
 
 	addOns, err := otx.ListAddOn(member.MemberID)
 	if err != nil {
+		sugar.Error(err)
 		_ = otx.Rollback()
 		return subs.AddOnConsumed{}, err
 	}
 
-	// otherwise we might override valid data.
-	result := subs.TransferAddOn(addOns, member)
+	if len(addOns) == 0 {
+		sugar.Info("No add-on")
+		_ = otx.Rollback()
+		return subs.AddOnConsumed{}, sql.ErrNoRows
+	}
 
-	err = otx.AddOnsConsumed(result.AddOnIDs.ToArray())
+	// otherwise we might override valid data.
+	result := subs.ConsumeAddOns(addOns, member)
+
+	err = otx.AddOnsConsumed(result.AddOnIDs.ToSlice())
 	if err != nil {
+		sugar.Error(err)
 		_ = otx.Rollback()
 		return subs.AddOnConsumed{}, err
 	}
 
 	err = otx.UpdateMember(result.Membership)
 	if err != nil {
+		sugar.Error(err)
 		_ = otx.Rollback()
 		return subs.AddOnConsumed{}, err
 	}
