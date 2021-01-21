@@ -63,3 +63,9 @@ func (d DateRange) AddDays(days int) DateRange {
 
 	return d
 }
+
+func (d DateRange) AddDate(years, months, days int) DateRange {
+	d.EndDate = chrono.DateFrom(d.EndDate.AddDate(years, months, days))
+
+	return d
+}
