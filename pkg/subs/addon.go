@@ -92,103 +92,122 @@ func (a AddOn) ToReservedDays() reader.ReservedDays {
 	}
 }
 
-func groupAddOns(l []AddOn) map[product.Edition][]AddOn {
-	g := make(map[product.Edition][]AddOn)
-
-	for _, v := range l {
-		g[v.Edition] = append(g[v.Edition], v)
-	}
-
-	return g
+type AddOnSum struct {
+	Years  int
+	Months int
+	Days   int
+	Latest AddOn
 }
 
-func sumAddOns(addOns []AddOn) product.Duration {
-	var cycles, days int64
-	for _, v := range addOns {
-		cycles += v.CycleCount
-		days += v.DaysRemained
-	}
-
-	return product.Duration{
-		CycleCount: cycles,
-		ExtraDays:  days,
-	}
-}
-
-func newMembershipFromAddOn(addOns []AddOn, m reader.Membership) reader.Membership {
+func (s AddOnSum) Membership(m reader.Membership) reader.Membership {
 	startTime := dt.PickLater(time.Now(), m.ExpireDate.Time)
 
-	latestAddOn := addOns[0]
+	endTime := startTime.AddDate(s.Years, s.Months, s.Days)
 
-	dur := sumAddOns(addOns)
-	dateRange := dt.NewDateRange(startTime).
-		WithCycleN(latestAddOn.Cycle, int(dur.CycleCount)).
-		AddDays(int(dur.ExtraDays))
+	// Clear the migrated days.
+	reserved := m.ReservedDays
+	switch s.Latest.Tier {
+	case enum.TierStandard:
+		reserved.Standard = 0
+
+	case enum.TierPremium:
+		reserved.Premium = 0
+	}
 
 	return reader.Membership{
 		MemberID:      m.MemberID,
-		Edition:       latestAddOn.Edition,
+		Edition:       s.Latest.Edition,
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},
-		ExpireDate:    dateRange.EndDate,
-		PaymentMethod: latestAddOn.PaymentMethod,
-		FtcPlanID:     latestAddOn.PlanID,
+		ExpireDate:    chrono.DateFrom(endTime),
+		PaymentMethod: s.Latest.PaymentMethod,
+		FtcPlanID:     s.Latest.PlanID,
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
 		Status:        0,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
-		ReservedDays: reader.ReservedDays{
-			Standard: m.ReservedDays.Standard,
-			Premium:  0, // Clear premium days
-		},
+		ReservedDays:  reserved,
 	}.Sync()
 }
 
-func TransferAddOn(addOns []AddOn, m reader.Membership) AddOnConsumed {
-	g := groupAddOns(addOns)
+func GroupAddOns(addOns []AddOn) map[enum.Tier][]AddOn {
+	g := make(map[enum.Tier][]AddOn)
 
-	snapshot := m.Snapshot(reader.FtcArchiver(enum.OrderKindAddOn))
-	var ids = collection.NewStringSet()
+	for _, v := range addOns {
+		g[v.Tier] = append(g[v.Tier], v)
+	}
 
-	prmAddOns, ok := g[product.PremiumEdition]
-	if ok && len(prmAddOns) > 0 {
-		collectAddOnIDs(ids, prmAddOns)
-		return AddOnConsumed{
-			AddOnIDs:   ids,
-			Membership: newMembershipFromAddOn(prmAddOns, m),
-			Snapshot:   snapshot,
+	return g
+}
+
+func ReduceAddOns(addOns []AddOn) AddOnSum {
+	if len(addOns) == 0 {
+		return AddOnSum{}
+	}
+
+	sum := AddOnSum{
+		Latest: addOns[0],
+	}
+
+	for _, v := range addOns {
+		switch v.Cycle {
+		case enum.CycleYear:
+			sum.Years += int(v.CycleCount)
+
+		case enum.CycleMonth:
+			sum.Months += int(v.CycleCount)
+		}
+
+		sum.Days += int(v.DaysRemained)
+	}
+
+	return sum
+}
+
+func CollectAddOnIDs(addOns ...[]AddOn) collection.StringSet {
+	dest := make(collection.StringSet)
+
+	for _, a := range addOns {
+		for _, v := range a {
+			dest[v.ID] = nil
 		}
 	}
 
-	stdYearAddOns, ok := g[product.StdYearEdition]
-	if ok && len(stdYearAddOns) > 0 {
-		collectAddOnIDs(ids, stdYearAddOns)
-		m = newMembershipFromAddOn(stdYearAddOns, m)
-	}
-
-	stdMonthAddOns, ok := g[product.StdMonthEdition]
-	if ok && len(stdMonthAddOns) > 0 {
-		collectAddOnIDs(ids, stdMonthAddOns)
-		m = newMembershipFromAddOn(stdMonthAddOns, m)
-	}
-
-	return AddOnConsumed{
-		AddOnIDs:   ids,
-		Membership: m,
-		Snapshot:   snapshot,
-	}
-}
-
-func collectAddOnIDs(dest collection.StringSet, addOns []AddOn) {
-	for _, v := range addOns {
-		dest[v.ID] = nil
-	}
+	return dest
 }
 
 type AddOnConsumed struct {
 	AddOnIDs   collection.StringSet
 	Membership reader.Membership
 	Snapshot   reader.MemberSnapshot
+}
+
+func ConsumeAddOns(addOns []AddOn, m reader.Membership) AddOnConsumed {
+	g := GroupAddOns(addOns)
+
+	snapshot := m.Snapshot(reader.FtcArchiver(enum.OrderKindAddOn))
+
+	prmAddOns, ok := g[enum.TierPremium]
+	if ok && len(prmAddOns) > 0 {
+		return AddOnConsumed{
+			AddOnIDs:   CollectAddOnIDs(prmAddOns),
+			Membership: ReduceAddOns(prmAddOns).Membership(m),
+			Snapshot:   snapshot,
+		}
+	}
+
+	stdAddOns, ok := g[enum.TierStandard]
+	if ok && len(stdAddOns) > 0 {
+		return AddOnConsumed{
+			AddOnIDs:   CollectAddOnIDs(stdAddOns),
+			Membership: ReduceAddOns(stdAddOns).Membership(m),
+			Snapshot:   snapshot,
+		}
+	}
+
+	return AddOnConsumed{
+		Membership: m,
+	}
 }
