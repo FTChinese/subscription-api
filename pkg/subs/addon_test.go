@@ -6,45 +6,12 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/collection"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 	"time"
 )
-
-var ftcID = uuid.New().String()
-
-var stdAddOn = AddOn{
-	ID:                 ftcID,
-	Edition:            faker.PlanStdYear.Edition,
-	CycleCount:         1,
-	DaysRemained:       1,
-	IsUpgradeCarryOver: false,
-	PaymentMethod:      enum.PayMethodWx,
-	CompoundID:         ftcID,
-	OrderID:            null.StringFrom(db.MustOrderID()),
-	PlanID:             null.StringFrom(faker.PlanStdYear.ID),
-	CreatedUTC:         chrono.TimeNow(),
-	ConsumedUTC:        chrono.Time{},
-}
-
-var prmAddOn = AddOn{
-	ID:                 ftcID,
-	Edition:            faker.PlanPrm.Edition,
-	CycleCount:         1,
-	DaysRemained:       1,
-	IsUpgradeCarryOver: false,
-	PaymentMethod:      enum.PayMethodAli,
-	CompoundID:         ftcID,
-	OrderID:            null.StringFrom(db.MustOrderID()),
-	PlanID:             null.StringFrom(faker.PlanPrm.ID),
-	CreatedUTC:         chrono.TimeNow(),
-	ConsumedUTC:        chrono.Time{},
-}
 
 func TestNewAddOn(t *testing.T) {
 
@@ -252,163 +219,16 @@ func TestAddOn_ToReservedDays(t *testing.T) {
 	}
 }
 
-func Test_groupAddOns(t *testing.T) {
+func TestConsumeAddOns(t *testing.T) {
 
-	type args struct {
-		l []AddOn
-	}
-	tests := []struct {
-		name string
-		args args
-		want map[product.Edition][]AddOn
-	}{
-		{
-			name: "Group add-ons",
-			args: args{
-				l: []AddOn{
-					prmAddOn,
-					stdAddOn,
-				},
-			},
-			want: map[product.Edition][]AddOn{
-				product.StdYearEdition: {
-					stdAddOn,
-				},
-				product.PremiumEdition: {
-					prmAddOn,
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := groupAddOns(tt.args.l); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("groupAddOns() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_sumAddOns(t *testing.T) {
-	type args struct {
-		addOns []AddOn
-	}
-	tests := []struct {
-		name string
-		args args
-		want product.Duration
-	}{
-		{
-			name: "sum add on",
-			args: args{
-				addOns: []AddOn{
-					NewAddOn(MockOrder(faker.PlanStdYear, enum.OrderKindAddOn)),
-					NewAddOn(MockOrder(faker.PlanStdYear, enum.OrderKindAddOn)),
-					NewAddOn(MockOrder(faker.PlanStdYear, enum.OrderKindAddOn)),
-				},
-			},
-			want: product.Duration{
-				CycleCount: 3,
-				ExtraDays:  3,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := sumAddOns(tt.args.addOns); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("sumAddOns() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_newMembershipFromAddOn(t *testing.T) {
-
-	ftcID := uuid.New().String()
-
-	stripeM := reader.NewMockMemberBuilder(ftcID).
-		WithPayMethod(enum.PayMethodStripe).
-		Build()
-
-	prmM := reader.NewMockMemberBuilder(ftcID).
-		WithPlan(faker.PlanPrm.Plan).
-		WithExpiration(time.Now()).
-		Build()
-
-	type args struct {
-		addOns []AddOn
-		m      reader.Membership
-	}
-	tests := []struct {
-		name string
-		args args
-		want reader.Membership
-	}{
-		{
-			name: "Add add-on",
-			args: args{
-				addOns: []AddOn{
-					NewAddOn(MockOrder(faker.PlanStdYear, enum.OrderKindAddOn)),
-					NewAddOn(MockOrder(faker.PlanStdYear, enum.OrderKindAddOn)),
-					NewAddOn(MockOrder(faker.PlanStdYear, enum.OrderKindAddOn)),
-				},
-				m: stripeM,
-			},
-			want: reader.Membership{
-				MemberID:      stripeM.MemberID,
-				Edition:       faker.PlanStdYear.Edition,
-				LegacyTier:    null.Int{},
-				LegacyExpire:  null.Int{},
-				ExpireDate:    chrono.DateFrom(stripeM.ExpireDate.AddDate(3, 0, 3)),
-				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(faker.PlanStdYear.ID),
-			}.Sync(),
-		},
-		{
-			name: "Restored carry-over of a upgrade",
-			args: args{
-				addOns: []AddOn{
-					{
-						ID:                 db.AddOnID(),
-						Edition:            faker.PlanStdYear.Edition,
-						CycleCount:         0,
-						DaysRemained:       30,
-						IsUpgradeCarryOver: true,
-						PaymentMethod:      enum.PayMethodWx,
-						CompoundID:         ftcID,
-						OrderID:            null.StringFrom(db.MustOrderID()),
-						PlanID:             null.StringFrom(faker.PlanStdYear.ID),
-						CreatedUTC:         chrono.TimeNow(),
-					},
-				},
-				m: prmM,
-			},
-			want: reader.Membership{
-				MemberID:      prmM.MemberID,
-				Edition:       faker.PlanStdYear.Edition,
-				LegacyTier:    null.Int{},
-				LegacyExpire:  null.Int{},
-				ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, 0, 30)),
-				PaymentMethod: enum.PayMethodWx,
-				FtcPlanID:     null.StringFrom(faker.PlanStdYear.ID),
-			}.Sync(),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := newMembershipFromAddOn(tt.args.addOns, tt.args.m); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newMembershipFromAddOn() = %v\n, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestTransferAddOn(t *testing.T) {
-
-	stripeM := reader.NewMockMemberBuilder(ftcID).
+	stripeM := reader.NewMockMemberBuilder("").
 		WithPayMethod(enum.PayMethodStripe).
 		WithExpiration(time.Now()).
 		Build()
+
+	addOn := NewMockAddOnBuilder().
+		WithUserIDs(stripeM.MemberID).
+		BuildNew()
 
 	type args struct {
 		addOns []AddOn
@@ -423,22 +243,22 @@ func TestTransferAddOn(t *testing.T) {
 			name: "Transfer add-on",
 			args: args{
 				addOns: []AddOn{
-					stdAddOn,
+					addOn,
 				},
 				m: stripeM,
 			},
 			want: AddOnConsumed{
 				AddOnIDs: collection.StringSet{
-					stdAddOn.ID: nil,
+					addOn.ID: nil,
 				},
 				Membership: reader.Membership{
 					MemberID:      stripeM.MemberID,
-					Edition:       faker.PlanStdYear.Edition,
+					Edition:       addOn.Edition,
 					LegacyTier:    null.Int{},
 					LegacyExpire:  null.Int{},
 					ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
-					PaymentMethod: enum.PayMethodWx,
-					FtcPlanID:     null.StringFrom(faker.PlanStdYear.ID),
+					PaymentMethod: addOn.PaymentMethod,
+					FtcPlanID:     addOn.PlanID,
 				}.Sync(),
 				Snapshot: stripeM.Snapshot(reader.FtcArchiver(enum.OrderKindAddOn)),
 			},
@@ -446,54 +266,178 @@ func TestTransferAddOn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := TransferAddOn(tt.args.addOns, tt.args.m)
+			got := ConsumeAddOns(tt.args.addOns, tt.args.m)
 			tt.want.Snapshot.SnapshotID = got.Snapshot.SnapshotID
 			tt.want.Snapshot.CreatedUTC = got.Snapshot.CreatedUTC
 
 			if !reflect.DeepEqual(got.AddOnIDs, tt.want.AddOnIDs) {
-				t.Errorf("TransferAddOn().AddOnIDs = %v\n, want %v", got.AddOnIDs, tt.want.AddOnIDs)
+				t.Errorf("ConsumeAddOns().AddOnIDs = %v\n, want %v", got.AddOnIDs, tt.want.AddOnIDs)
 			}
 
 			if !reflect.DeepEqual(got.Membership, tt.want.Membership) {
-				t.Errorf("TransferAddOn().Membership = %v\n, want %v", got.Membership, tt.want.Membership)
+				t.Errorf("ConsumeAddOns().Membership = %v\n, want %v", got.Membership, tt.want.Membership)
 			}
 
 			if !reflect.DeepEqual(got.Snapshot, tt.want.Snapshot) {
-				t.Errorf("TransferAddOn().Snapshot = %v\n, want %v", got.Snapshot, tt.want.Snapshot)
+				t.Errorf("ConsumeAddOns().Snapshot = %v\n, want %v", got.Snapshot, tt.want.Snapshot)
 			}
 		})
 	}
 }
 
-func Test_collectAddOnIDs(t *testing.T) {
-	var set = make(collection.StringSet)
+func TestGroupAddOns(t *testing.T) {
+	mocker := NewMockAddOnBuilder()
+
+	a1 := mocker.BuildNew()
+	a2 := mocker.WithPlan(faker.PlanPrm).BuildNew()
+	a3 := mocker.BuildNew()
 
 	type args struct {
-		dest   collection.StringSet
 		addOns []AddOn
 	}
 	tests := []struct {
 		name string
 		args args
+		want map[enum.Tier][]AddOn
 	}{
 		{
-			name: "Collection add-on ids",
+			name: "Group add-ons",
 			args: args{
-				dest: set,
 				addOns: []AddOn{
-					stdAddOn,
-					stdAddOn,
+					a1,
+					a2,
+					a3,
+				},
+			},
+			want: map[enum.Tier][]AddOn{
+				enum.TierStandard: {
+					a1,
+					a3,
+				},
+				enum.TierPremium: {
+					a2,
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collectAddOnIDs(tt.args.dest, tt.args.addOns)
+			got := GroupAddOns(tt.args.addOns)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GroupAddOns() = %v, want %v", got, tt.want)
+			}
 
-			assert.Equal(t, 1, len(tt.args.dest))
+			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
 
-			t.Logf("%v", tt.args.dest)
+func TestReduceAddOns(t *testing.T) {
+	mocker := NewMockAddOnBuilder()
+	a1 := mocker.BuildNew()
+	a2 := mocker.BuildNew()
+	a3 := mocker.BuildUpgrade()
+	a4 := mocker.WithPlan(faker.PlanStdMonth).BuildNew()
+
+	type args struct {
+		addOns []AddOn
+	}
+	tests := []struct {
+		name string
+		args args
+		want AddOnSum
+	}{
+		{
+			name: "Reduce addons",
+			args: args{
+				addOns: []AddOn{
+					a1,
+					a2,
+					a3,
+					a4,
+				},
+			},
+			want: AddOnSum{
+				Years:  2,
+				Months: 1,
+				Days:   3 + int(a3.DaysRemained),
+				Latest: a1,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ReduceAddOns(tt.args.addOns)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ReduceAddOns() = %v\n, want %v", got, tt.want)
+				return
+			}
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
+
+func TestAddOnSum_Membership(t *testing.T) {
+	stripeM := reader.NewMockMemberBuilder("").
+		WithPayMethod(enum.PayMethodStripe).
+		WithExpiration(time.Now()).
+		Build()
+
+	a := NewMockAddOnBuilder().
+		WithUserIDs(stripeM.MemberID).
+		BuildNew()
+
+	type fields struct {
+		Years  int
+		Months int
+		Days   int
+		Latest AddOn
+	}
+	type args struct {
+		m reader.Membership
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   reader.Membership
+	}{
+		{
+			name: "Update membership from add-on",
+			fields: fields{
+				Years:  2,
+				Months: 1,
+				Days:   6,
+				Latest: a,
+			},
+			args: args{
+				m: stripeM,
+			},
+			want: reader.Membership{
+				MemberID:      stripeM.MemberID,
+				Edition:       a.Edition,
+				LegacyTier:    null.Int{},
+				LegacyExpire:  null.Int{},
+				ExpireDate:    chrono.DateFrom(stripeM.ExpireDate.AddDate(2, 1, 6)),
+				PaymentMethod: a.PaymentMethod,
+				FtcPlanID:     a.PlanID,
+				ReservedDays:  reader.ReservedDays{},
+			}.Sync(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := AddOnSum{
+				Years:  tt.fields.Years,
+				Months: tt.fields.Months,
+				Days:   tt.fields.Days,
+				Latest: tt.fields.Latest,
+			}
+			if got := s.Membership(tt.args.m); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Membership() = %v\n, want %v", got, tt.want)
+			}
 		})
 	}
 }
