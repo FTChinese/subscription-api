@@ -72,11 +72,18 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 
 	sugar.Infof("Canceled/reactivated subscription %s, status %s", ss.ID, ss.Status)
 
+	var action reader.ArchiveAction
+	if params.Cancel {
+		action = reader.ActionCancel
+	} else {
+		action = reader.ActionReactivate
+	}
+
 	result, err := stripe.NewSubsResult(stripe.SubsResultParams{
 		UserIDs:       mmb.MemberID,
 		SS:            ss,
 		CurrentMember: mmb,
-		Action:        reader.ActionRefresh,
+		Action:        action,
 	})
 
 	if err != nil {

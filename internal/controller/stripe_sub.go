@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
 )
@@ -210,10 +211,12 @@ func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(s)
 }
 
+// RefreshSubs get the latest data of a subscription if user manually requested it.
 func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
+	// Get the subscription id from url
 	subsID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		sugar.Error(err)
@@ -221,6 +224,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	// Use Stripe SDK to retrieve data.
 	ss, err := router.client.RetrieveSubs(subsID)
 	if err != nil {
 		sugar.Error(err)
@@ -233,6 +237,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	// Use Stripe customer id to find user account.
 	account, err := router.readerRepo.FtcAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
@@ -240,7 +245,12 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	result, err := router.stripeRepo.OnSubscription(account, ss)
+	result, err := router.stripeRepo.OnSubscription(stripe.SubsResultParams{
+		UserIDs: account.MemberID(),
+		SS:      ss,
+		Action:  reader.ActionRefresh,
+	})
+
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)

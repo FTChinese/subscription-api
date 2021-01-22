@@ -20,16 +20,18 @@ const (
 type ArchiveAction string
 
 const (
-	ActionCreate  ArchiveAction = "create"  // Alipay, wechat, stripe
-	ActionRenew   ArchiveAction = "renew"   // Alipay, wechat
-	ActionUpgrade ArchiveAction = "upgrade" // Alipay, wechat, stripe
-	ActionAddOn   ArchiveAction = "transfer_addon"
-	ActionVerify  ArchiveAction = "verify"  // Apple
-	ActionPoll    ArchiveAction = "poll"    // Apple, alipay, wechat
-	ActionLink    ArchiveAction = "link"    // Apple
-	ActionUnlink  ArchiveAction = "unlink"  // Apple
-	ActionRefresh ArchiveAction = "refresh" // Stripe refresh.
-	ActionWebhook ArchiveAction = "webhook" // Apple, Stripe webhook
+	ActionCreate     ArchiveAction = "create"  // Alipay, wechat, stripe
+	ActionRenew      ArchiveAction = "renew"   // Alipay, wechat
+	ActionUpgrade    ArchiveAction = "upgrade" // Alipay, wechat, stripe
+	ActionAddOn      ArchiveAction = "transfer_addon"
+	ActionVerify     ArchiveAction = "verify"  // Apple
+	ActionPoll       ArchiveAction = "poll"    // Apple, alipay, wechat
+	ActionLink       ArchiveAction = "link"    // Apple
+	ActionUnlink     ArchiveAction = "unlink"  // Apple
+	ActionRefresh    ArchiveAction = "refresh" // Stripe refresh.
+	ActionCancel     ArchiveAction = "cancel"
+	ActionReactivate ArchiveAction = "reactivate"
+	ActionWebhook    ArchiveAction = "webhook" // Apple, Stripe webhook
 )
 
 type Archiver struct {
