@@ -37,7 +37,11 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 		return err
 	}
 
-	result, err := router.stripeRepo.OnSubscription(account, ss)
+	result, err := router.stripeRepo.OnSubscription(stripe.SubsResultParams{
+		UserIDs: account.MemberID(),
+		SS:      ss,
+		Action:  reader.ActionWebhook,
+	})
 	if err != nil {
 		sugar.Error(err)
 		return err

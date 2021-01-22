@@ -3,15 +3,14 @@ package striperepo
 import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
-	stripeSdk "github.com/stripe/stripe-go/v72"
 )
 
 // OnSubscription save stripe subscription and optionally update membership linked to it.
-func (env Env) OnSubscription(account reader.FtcAccount, ss *stripeSdk.Subscription) (stripe.SubsResult, error) {
+func (env Env) OnSubscription(param stripe.SubsResultParams) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar().
 		With("webhook", "stripe-subscription").
-		With("id", ss.ID)
+		With("id", param.SS.ID)
 
 	tx, err := env.beginSubsTx()
 	if err != nil {
@@ -21,19 +20,16 @@ func (env Env) OnSubscription(account reader.FtcAccount, ss *stripeSdk.Subscript
 
 	// Retrieve current membership by ftc id.
 	// If current membership is empty, we should create it.
-	currMmb, err := tx.RetrieveMember(account.MemberID())
+	currMmb, err := tx.RetrieveMember(param.UserIDs)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, err
 	}
 
-	result, err := stripe.NewSubsResult(stripe.SubsResultParams{
-		UserIDs:       account.MemberID(),
-		SS:            ss,
-		CurrentMember: currMmb,
-		Action:        "", // TODO: refresh or webhook
-	})
+	param.CurrentMember = currMmb
+
+	result, err := stripe.NewSubsResult(param)
 
 	if err != nil {
 		sugar.Error(err)
