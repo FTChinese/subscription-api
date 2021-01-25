@@ -287,8 +287,9 @@ func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, error) {
 			return enum.OrderKindNull, errors.New("beyond max allowed renewal period")
 		}
 
+		// Current membership tier is not equal to the edition to buy.
 		switch e.Tier {
-		// Upgrade
+		// If edition is premium, current membership must be standard
 		case enum.TierPremium:
 			return enum.OrderKindUpgrade, nil
 
@@ -301,15 +302,18 @@ func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, error) {
 			return enum.OrderKindNull, errors.New("please select the product edition to subscribe")
 		}
 
+	// Current membership is purchased via Stripe.
 	case enum.PayMethodStripe:
 		if m.Status.IsValid() {
 			return enum.OrderKindAddOn, nil
 		}
 		return enum.OrderKindCreate, nil
 
+	// Current membership is purchased via Apple
 	case enum.PayMethodApple:
 		return enum.OrderKindAddOn, nil
 
+	// Current membership is purchased via B2B business.
 	case enum.PayMethodB2B:
 		return enum.OrderKindNull, errors.New("b2b subscription does not support payment via alipay or wxpay")
 	}
