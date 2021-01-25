@@ -1,3 +1,5 @@
+// +build !production
+
 package stripe
 
 import (
