@@ -7,7 +7,7 @@ commit := `git log --max-count=1 --pretty=format:%aI_%h`
 
 ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
-app_name := subscription-api
+app_name := subscription-api-v2
 src_dir := .
 
 ifeq ($(APP), sandbox)
