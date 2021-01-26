@@ -2,6 +2,10 @@
 
 API for subscription service
 
+## Versioning
+
+* v2: starting from January 2021.
+
 ## TODO
 
 * Save alipay and wechat pay result to DB so that we could see the results without mining various tables. Every order has one row which reflects only the latest state. They should be updated every time a webhook payload received or order manually verified.  
