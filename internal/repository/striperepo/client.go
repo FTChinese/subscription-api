@@ -2,7 +2,6 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/pkg/product"
 	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/client"
@@ -32,17 +31,6 @@ func NewClient(live bool, logger *zap.Logger) Client {
 
 func (c Client) Live() bool {
 	return c.live
-}
-
-// GetPlan retrieves stripe plan details depending on the edition selected.
-// Deprecated
-func (c Client) GetPlan(edition product.Edition) (*stripe.Plan, error) {
-	p, err := ftcStripe.PlanStore.FindByEdition(edition, c.live)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.sc.Plans.Get(p.PriceID, nil)
 }
 
 func (c Client) CreateCustomer(email string) (*stripe.Customer, error) {
