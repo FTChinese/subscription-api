@@ -3,9 +3,9 @@ package striperepo
 import "github.com/FTChinese/subscription-api/pkg/stripe"
 
 func (env Env) ListPrices(force bool) ([]stripe.Price, error) {
-	if !force && stripe.PriceStore.Len() != 0 {
+	if !force && stripe.PriceCache.Len() != 0 {
 		return stripe.
-			PriceStore.
+			PriceCache.
 			List(env.client.live), nil
 	}
 
@@ -14,15 +14,15 @@ func (env Env) ListPrices(force bool) ([]stripe.Price, error) {
 		return nil, err
 	}
 
-	stripe.PriceStore.AddAll(sp)
+	stripe.PriceCache.AddAll(sp)
 
 	return stripe.
-		PriceStore.
+		PriceCache.
 		List(env.client.live), nil
 }
 
 func (env Env) GetPrice(id string) (stripe.Price, error) {
-	price, err := stripe.PriceStore.Find(id, env.client.live)
+	price, err := stripe.PriceCache.Find(id, env.client.live)
 	if err == nil {
 		return price, nil
 	}
@@ -32,10 +32,10 @@ func (env Env) GetPrice(id string) (stripe.Price, error) {
 		return stripe.Price{}, err
 	}
 
-	err = stripe.PriceStore.Upsert(sp)
+	err = stripe.PriceCache.Upsert(sp)
 	if err != nil {
 		return stripe.Price{}, err
 	}
 
-	return stripe.PriceStore.Find(id, env.client.live)
+	return stripe.PriceCache.Find(id, env.client.live)
 }
