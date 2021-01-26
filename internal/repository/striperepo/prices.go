@@ -2,8 +2,8 @@ package striperepo
 
 import "github.com/FTChinese/subscription-api/pkg/stripe"
 
-func (env Env) ListPrices() ([]stripe.Price, error) {
-	if stripe.PriceStore.Len() != 0 {
+func (env Env) ListPrices(force bool) ([]stripe.Price, error) {
+	if !force && stripe.PriceStore.Len() != 0 {
 		return stripe.
 			PriceStore.
 			List(env.client.live), nil
@@ -38,17 +38,4 @@ func (env Env) GetPrice(id string) (stripe.Price, error) {
 	}
 
 	return stripe.PriceStore.Find(id, env.client.live)
-}
-
-func (env Env) RefreshPrices() ([]stripe.Price, error) {
-	sp, err := env.client.ListPrices()
-	if err != nil {
-		return nil, err
-	}
-
-	stripe.PriceStore.AddAll(sp)
-
-	return stripe.
-		PriceStore.
-		List(env.client.live), nil
 }
