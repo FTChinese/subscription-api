@@ -1,32 +1,13 @@
 package striperepo
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/brianvoe/gofakeit/v5"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
-
-func TestClient_GetPlan(t *testing.T) {
-
-	client := NewClient(false, zaptest.NewLogger(t))
-
-	p, err := client.GetPlan(product.Edition{
-		Tier:  enum.TierStandard,
-		Cycle: enum.CycleYear,
-	})
-
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	t.Logf("%v", p)
-}
 
 func TestClient_CreateCustomer(t *testing.T) {
 	client := NewClient(false, zaptest.NewLogger(t))
@@ -57,7 +38,11 @@ func TestClient_ListPrices(t *testing.T) {
 	config.MustSetupViper()
 
 	client := NewClient(true, zaptest.NewLogger(t))
-	stripePrices := client.ListPrices()
+	stripePrices, err := client.ListPrices()
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
 	t.Log(len(stripePrices))
 
@@ -67,9 +52,9 @@ func TestClient_ListPrices(t *testing.T) {
 		t.Log(p)
 	}
 
-	stripe.PriceStore.AddAll(stripePrices)
+	stripe.PriceCache.AddAll(stripePrices)
 
-	prices := stripe.PriceStore.List(true)
+	prices := stripe.PriceCache.List(true)
 
 	for _, sp := range prices {
 		t.Logf("%s", faker.MustMarshalIndent(sp))
