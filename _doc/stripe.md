@@ -132,18 +132,17 @@ if status == "canceled" {
 
 ## 处理Stripe的API接口列表
 
-* GET `/stripe/prices`
-* POST `/stripe/customers`
-* GET `/stripe/customers/{id}`
-* POST `/stripe/customers/{id}/default-payment-method`
-* POST `/stripe/customers/{id}/ephemeral-keys`
-* POST `/stripe/subs` 创建订阅
-* GET `/stripe/subs` 获取某用户的所有订阅
-* GET `/stripe/subs/{id}` 获取某个用户的某个订阅
-* POST `/stripe/subs/{id}/refresh` 刷新某个用户的某个订阅
-* POST `/stripe/subs/{id}/upgrade` 升级某个用户的标准版订阅到高级版
-* POST `/stripe/subs/{id}/cancel` 关闭某用户的订阅的自动续订
-* POST `/stripe/subs/{id}/reactivate` 对于用户已经关闭自动续订但本次订阅未到期的订阅，重新打开自动续订
+* `/stripe/prices`
+* `/stripe/customers`
+* `/stripe/customers/{id}`
+* `/stripe/customers/{id}/default-payment-method`
+* `/stripe/customers/{id}/ephemeral-keys`
+* `/stripe/subs`
+* `/stripe/subs/{id}`
+* `/stripe/subs/{id}/refresh`
+* `/stripe/subs/{id}/upgrade`
+* `/stripe/subs/{id}/cancel`
+* `/stripe/subs/{id}/reactivate`
 
 注意：API返回的数据格式并不是Stripe的原始数据格式。
 
