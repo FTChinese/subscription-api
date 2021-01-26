@@ -95,7 +95,7 @@ func NewSubs(ss *stripe.Subscription, ids reader.MemberID) (Subs, error) {
 
 	subsItem := NewSubsItem(ss)
 
-	edition, err := FindPriceEdition(subsItem.PriceID)
+	plan, err := PlanStore.FindByID(subsItem.PriceID)
 	if err != nil {
 		return Subs{}, err
 	}
@@ -104,7 +104,7 @@ func NewSubs(ss *stripe.Subscription, ids reader.MemberID) (Subs, error) {
 
 	return Subs{
 		ID:                   ss.ID,
-		Edition:              edition,
+		Edition:              plan.Edition,
 		WillCancelAtUtc:      chrono.TimeFrom(dt.FromUnix(ss.CancelAt)),
 		CancelAtPeriodEnd:    ss.CancelAtPeriodEnd,
 		CanceledUTC:          chrono.TimeFrom(dt.FromUnix(ss.CanceledAt)),

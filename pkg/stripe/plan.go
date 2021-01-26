@@ -12,21 +12,18 @@ var editionKeySuffix = map[bool]string{
 
 // Plan contains ftc associates ftc product edition with Stripe
 // plan/price id.
-// Deprecated
 type Plan struct {
 	product.Edition
 	PriceID string
 	Live    bool
 }
 
-// Deprecated
 type planStore struct {
 	plans        []Plan
 	indexEdition map[string]int // Index the plans array by `<tier>_<cycle>_<live | test>`
 	indexID      map[string]int // Index the plans array by stripe plan/price id.
 }
 
-// Deprecated
 func newPlanStore() *planStore {
 	s := &planStore{
 		plans: []Plan{
@@ -74,7 +71,6 @@ func newPlanStore() *planStore {
 	return s
 }
 
-// Deprecated
 func (s planStore) FindByEdition(e product.Edition, live bool) (Plan, error) {
 	i, ok := s.indexEdition[e.NamedKey()+"_"+editionKeySuffix[live]]
 	if !ok {
@@ -85,7 +81,6 @@ func (s planStore) FindByEdition(e product.Edition, live bool) (Plan, error) {
 }
 
 // FindByID gets Plan by stripe price id.
-// Deprecated
 func (s planStore) FindByID(priceID string) (Plan, error) {
 	i, ok := s.indexID[priceID]
 	if !ok {
@@ -95,5 +90,4 @@ func (s planStore) FindByID(priceID string) (Plan, error) {
 	return s.plans[i], nil
 }
 
-// Deprecated
 var PlanStore = newPlanStore()
