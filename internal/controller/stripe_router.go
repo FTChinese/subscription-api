@@ -75,8 +75,9 @@ func (router StripeRouter) handleSubsResult(result stripe.SubsResult) {
 }
 
 // IssueKey creates an ephemeral key.
+// https://stripe.com/docs/mobile/android/basic#set-up-ephemeral-key
 //
-// POST /stripe/customers/{id}/key?api_version=<version>
+// POST /stripe/customers/{id}/ephemeral-keys?api_version=<version>
 func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
