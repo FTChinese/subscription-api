@@ -1,6 +1,9 @@
 # One of `api | sandbox | consumer | aliwx`.
 APP := api
 
+config_file_name := api.toml
+local_config_file := $(HOME)/config/$(config_file_name)
+
 version := `git tag -l --sort=-v:refname | head -n 1`
 build_time := `date +%FT%T%z`
 commit := `git log --max-count=1 --pretty=format:%aI_%h`
@@ -8,49 +11,36 @@ commit := `git log --max-count=1 --pretty=format:%aI_%h`
 ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
 app_name := subscription-api-v2
-src_dir := .
-
-ifeq ($(APP), sandbox)
-	app_name := subs_sandbox
-	src_dir := ./cmd/subs_sandbox/
-endif 
-
-ifeq ($(APP), iap)
-	app_name := iap-poller
-	src_dir := ./cmd/iap-poller/
-endif
-
-ifeq ($(APP), aliwx)
-	app_name := aliwx-poller
-	src_dir := ./cmd/aliwx-poller/
-endif
 
 build_dir := build
-executable := $(build_dir)/$(app_name)
 
-goos := GOOS=linux GOARCH=amd64
 go_version := go1.15
 
-config_file_name := api.toml
-local_config_file := $(HOME)/config/$(config_file_name)
+dev_executable := $(build_dir)/$(app_name)
+build_dev := go build -o $(dev_executable) $(ldflags) -tags production -v .
 
-build_executable := go build -o $(executable) $(ldflags) -tags production -v $(src_dir)
+linux_executable := $(build_dir)/linux/$(app_name)
+build_linux := go build -o $(linux_executable) $(ldflags) -tags production -v .
 
 # Development
 .PHONY: dev
 dev :
 	@echo "Build dev version $(version)"
-	$(build_executable)
+	$(build_dev)
 
 .PHONY: run
 run :
-	$(executable) -sandbox=true
+	$(dev_executable) -sandbox=true
 
 # For CI/CD
 .PHONY: build
-build :
+amd64 :
 	@echo "Build production version $(version)"
-	$(goos) $(build_executable)
+	GOOS=linux GOARCH=amd64 $(build_linux)
+
+.PHONY: arm
+arm :
+	GOOS=linux GOARM=7 GOARCH=arm $(build_linux)
 
 .PHONY: install-go
 install-go:
@@ -65,7 +55,7 @@ config :
 .PHONY: publish
 publish :
 	ssh ucloud "rm -f /home/node/go/bin/$(app_name).bak"
-	rsync -v $(executable) bj32:/home/node
+	rsync -v $(dev_executable) bj32:/home/node
 	ssh bj32 "rsync -v /home/node/$(app_name) ucloud:/home/node/go/bin/$(app_name).bak"
 
 .PHONY: restart
@@ -74,9 +64,9 @@ restart :
 	ssh ucloud supervisorctl restart $(app_name)
 
 test-deploy : build
-	rsync -v $(executable) tk11:/home/node/go/bin
+	rsync -v $(dev_executable) tk11:/home/node/go/bin
 
 .PHONY: clean
 clean :
 	go clean -x
-	rm build/*
+	rm -rf build/*
