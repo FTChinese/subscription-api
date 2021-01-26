@@ -130,7 +130,7 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/default-payment-method", stripeRouter.ChangeDefaultPaymentMethod)
 			// Generate ephemeral key for client when it is
 			// trying to modify customer data.
-			r.Post("/{id}/ephemeral_keys", stripeRouter.IssueKey)
+			r.Post("/{id}/ephemeral-keys", stripeRouter.IssueKey)
 		})
 
 		r.With(controller.RequireFtcID).Route("/setup-intents", func(r chi.Router) {
