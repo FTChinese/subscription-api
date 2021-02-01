@@ -1,6 +1,7 @@
 package striperepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
@@ -61,4 +62,16 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 	}
 
 	return ca, nil
+}
+
+func (env Env) SetCustomer(a reader.FtcAccount) error {
+	_, err := env.db.NamedExec(
+		reader.StmtSetStripeID,
+		a)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
