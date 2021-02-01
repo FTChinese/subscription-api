@@ -104,6 +104,31 @@ func (c Client) CreateEphemeralKey(cusID, version string) ([]byte, error) {
 	return key.RawJSON, nil
 }
 
+func (c Client) CreateCheckoutSession(p ftcStripe.CheckoutParams) (*stripe.CheckoutSession, error) {
+	params := &stripe.CheckoutSessionParams{
+		SuccessURL: stripe.String(p.Input.SuccessURL),
+		CancelURL:  stripe.String(p.Input.CancelURL),
+		PaymentMethodTypes: stripe.StringSlice([]string{
+			"card",
+		}),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				Price:    stripe.String(p.Plan.PriceID),
+				Quantity: stripe.Int64(1),
+			},
+		},
+		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+	}
+
+	if p.Account.StripeID.Valid {
+		params.Customer = stripe.String(p.Account.StripeID.String)
+	} else {
+		params.CustomerEmail = stripe.String(p.Account.Email)
+	}
+
+	return c.sc.CheckoutSessions.New(params)
+}
+
 // CreateSubs create a new subscription for a customer.
 // Error returned in case you missed Customer field:
 // {
@@ -115,13 +140,13 @@ func (c Client) CreateEphemeralKey(cusID, version string) ([]byte, error) {
 //    "request_id": "req_BthzW5QZzNDTwN",
 //    "type": "invalid_request_error"
 // }
-func (c Client) CreateSubs(cfg ftcStripe.PaymentConfig) (*stripe.Subscription, error) {
+func (c Client) CreateSubs(cfg ftcStripe.SubsParams) (*stripe.Subscription, error) {
 	params := &stripe.SubscriptionParams{
 		Customer:          stripe.String(cfg.Account.StripeID.String),
 		CancelAtPeriodEnd: stripe.Bool(false),
 		Items: []*stripe.SubscriptionItemsParams{
 			{
-				Plan: stripe.String(cfg.Plan.PriceID),
+				Price: stripe.String(cfg.Plan.PriceID),
 			},
 		},
 	}
@@ -151,7 +176,7 @@ func (c Client) CreateSubs(cfg ftcStripe.PaymentConfig) (*stripe.Subscription, e
 }
 
 // UpgradeSubs switch subscription from standard to premium.
-func (c Client) UpgradeSubs(subID string, cfg ftcStripe.PaymentConfig) (*stripe.Subscription, error) {
+func (c Client) UpgradeSubs(subID string, cfg ftcStripe.SubsParams) (*stripe.Subscription, error) {
 	// Retrieve the subscription first.
 	ss, err := c.sc.Subscriptions.Get(subID, nil)
 	if err != nil {
@@ -219,13 +244,7 @@ func (c Client) ListPrices() ([]*stripe.Price, error) {
 }
 
 func (c Client) GetPrice(id string) (*stripe.Price, error) {
-	p, err := c.sc.Prices.Get(id, &stripe.PriceParams{
+	return c.sc.Prices.Get(id, &stripe.PriceParams{
 		Active: stripe.Bool(true),
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return p, nil
 }
