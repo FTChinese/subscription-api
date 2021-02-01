@@ -124,7 +124,7 @@ func StartServer(s ServerStatus) {
 			// Create a stripe customer if not exists yet, or
 			// just return the customer id if already exists.
 			r.Post("/", stripeRouter.CreateCustomer)
-
+			// TODO: Set an existing customer id to the user if not set yet.
 			// Use this to check customer's default source and default payment method.
 			r.Get("/{id}", stripeRouter.GetCustomer)
 			r.Post("/{id}/default-payment-method", stripeRouter.ChangeDefaultPaymentMethod)
@@ -135,6 +135,10 @@ func StartServer(s ServerStatus) {
 
 		r.With(controller.RequireFtcID).Route("/setup-intents", func(r chi.Router) {
 			r.Post("/", stripeRouter.CreateSetupIntent)
+		})
+
+		r.With(controller.RequireFtcID).Route("/checkout", func(r chi.Router) {
+			r.Post("/", stripeRouter.CreateCheckoutSession)
 		})
 
 		r.With(controller.RequireFtcID).Route("/subs", func(r chi.Router) {
