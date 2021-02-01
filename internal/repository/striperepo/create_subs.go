@@ -17,7 +17,7 @@ import (
 // util.ErrNonStripeValidSub
 // util.ErrStripeDuplicateSub
 // util.ErrUnknownSubState
-func (env Env) CreateSubscription(cfg stripe.PaymentConfig) (stripe.SubsResult, error) {
+func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
