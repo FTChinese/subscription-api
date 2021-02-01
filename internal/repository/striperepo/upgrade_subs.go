@@ -6,7 +6,7 @@ import (
 )
 
 // UpgradeSubscription switches subscription plan.
-func (env Env) UpgradeSubscription(cfg stripe.PaymentConfig) (stripe.SubsResult, error) {
+func (env Env) UpgradeSubscription(cfg stripe.SubsParams) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
