@@ -18,7 +18,7 @@ func (router SubsRouter) PreviewUpgrade(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	plan, err := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
+	plan, err := router.prodRepo.FindActivePlan(product.NewPremiumEdition())
 	if err != nil {
 		_ = render.New(w).DBError(err)
 	}
@@ -55,7 +55,7 @@ func (router SubsRouter) FreeUpgrade(w http.ResponseWriter, req *http.Request) {
 
 	clientApp := client.NewClientApp(req)
 
-	p, _ := router.prodRepo.PlanByEdition(product.NewPremiumEdition())
+	p, _ := router.prodRepo.FindActivePlan(product.NewPremiumEdition())
 
 	config := subs.NewPayment(account, p)
 	intent, err := router.SubsRepo.UpgradeIntent(config)
