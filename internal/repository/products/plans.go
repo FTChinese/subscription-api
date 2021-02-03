@@ -1,12 +1,13 @@
 package products
 
 import (
+	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/patrickmn/go-cache"
 )
 
-// retrieveActivePlans retrieves list plans present on paywall, directly from DB.
-func (env Env) retrieveActivePlans() ([]product.ExpandedPlan, error) {
+// listActivePlans retrieves list plans present on paywall, directly from DB.
+func (env Env) listActivePlans() ([]product.ExpandedPlan, error) {
 	var schema = make([]product.ExpandedPlanSchema, 0)
 	var plans = make([]product.ExpandedPlan, 0)
 
@@ -22,15 +23,15 @@ func (env Env) retrieveActivePlans() ([]product.ExpandedPlan, error) {
 	return plans, nil
 }
 
-// cachePricing caching all currently active plans.
-func (env Env) cachePricing(p []product.ExpandedPlan) {
+// cacheActivePlans caching all currently active plans.
+func (env Env) cacheActivePlans(p []product.ExpandedPlan) {
 	env.cache.Set(keyPricing, p, cache.DefaultExpiration)
 }
 
-// LoadPricing tries to load all active pricing plans from cache,
+// ListActivePlans tries to load all active pricing plans from cache,
 // then fallback to db if not found. If retrieved from DB,
 // the data will be cached.
-func (env Env) LoadPricing() ([]product.ExpandedPlan, error) {
+func (env Env) ListActivePlans() ([]product.ExpandedPlan, error) {
 	x, found := env.cache.Get(keyPricing)
 
 	if found {
@@ -39,14 +40,42 @@ func (env Env) LoadPricing() ([]product.ExpandedPlan, error) {
 		}
 	}
 
-	p, err := env.retrieveActivePlans()
+	p, err := env.listActivePlans()
 	if err != nil {
 		return nil, err
 	}
 
-	env.cachePricing(p)
+	env.cacheActivePlans(p)
 
 	return p, nil
+}
+
+// RetrievePlan retrieves a plan with discount by ID.
+func (env Env) RetrievePlan(id string) (product.ExpandedPlan, error) {
+	var schema product.ExpandedPlanSchema
+
+	err := env.db.Get(&schema, product.StmtExpandedPlanByID, id)
+	if err != nil {
+		return product.ExpandedPlan{}, nil
+	}
+
+	return schema.ExpandedPlan(), nil
+}
+
+// FindActivePlan retrieves an active plan by tier and cycle.
+func (env Env) FindActivePlan(e product.Edition) (product.ExpandedPlan, error) {
+	plans, err := env.ListActivePlans()
+	if err != nil {
+		return product.ExpandedPlan{}, err
+	}
+
+	for _, v := range plans {
+		if v.Edition == e {
+			return v, nil
+		}
+	}
+
+	return product.ExpandedPlan{}, sql.ErrNoRows
 }
 
 // plansResult contains a list of pricing plans and error occurred.
@@ -62,7 +91,7 @@ func (env Env) asyncLoadPlans() <-chan plansResult {
 	go func() {
 		defer close(ch)
 
-		plans, err := env.retrieveActivePlans()
+		plans, err := env.listActivePlans()
 
 		ch <- plansResult{
 			value: plans,
@@ -71,28 +100,4 @@ func (env Env) asyncLoadPlans() <-chan plansResult {
 	}()
 
 	return ch
-}
-
-// PlanByID retrieves a plan with discount by ID.
-func (env Env) PlanByID(id string) (product.ExpandedPlan, error) {
-	var schema product.ExpandedPlanSchema
-
-	err := env.db.Get(&schema, product.StmtExpandedPlanByID, id)
-	if err != nil {
-		return product.ExpandedPlan{}, nil
-	}
-
-	return schema.ExpandedPlan(), nil
-}
-
-// PlanByEdition retrieves an active plan by tier and cycle.
-func (env Env) PlanByEdition(e product.Edition) (product.ExpandedPlan, error) {
-	var schema product.ExpandedPlanSchema
-
-	err := env.db.Get(&schema, product.StmtExpandedPlanByEdition, e.Tier, e.Cycle)
-	if err != nil {
-		return product.ExpandedPlan{}, nil
-	}
-
-	return schema.ExpandedPlan(), nil
 }

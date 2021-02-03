@@ -50,7 +50,7 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 }
 
 func (router PaywallRouter) LoadPricing(w http.ResponseWriter, req *http.Request) {
-	p, err := router.repo.LoadPricing()
+	p, err := router.repo.ListActivePlans()
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
