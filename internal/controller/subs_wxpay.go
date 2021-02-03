@@ -63,7 +63,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		}
 
 		// Retrieve the plan from DB by edition.
-		plan, err := router.prodRepo.PlanByEdition(input.Edition)
+		plan, err := router.prodRepo.FindActivePlan(input.Edition)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).DBError(err)
