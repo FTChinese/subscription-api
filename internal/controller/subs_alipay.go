@@ -67,7 +67,7 @@ func (router SubsRouter) PlaceAliOrder(kind ali.EntryKind) http.HandlerFunc {
 		}
 
 		// Find pricing plan.
-		plan, err := router.prodRepo.PlanByEdition(input.Edition)
+		plan, err := router.prodRepo.FindActivePlan(input.Edition)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
