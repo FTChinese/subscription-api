@@ -3,6 +3,7 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/product"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -35,7 +36,7 @@ var planStdYear = product.ExpandedPlan{
 	},
 	Discount: product.Discount{
 		DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
-		PriceOff: null.FloatFrom(130),
+		PriceOff: null.FloatFrom(40),
 		Percent:  null.Int{},
 		DateTimeRange: dt.DateTimeRange{
 			StartUTC: chrono.TimeNow(),
@@ -56,10 +57,19 @@ var planPrmYear = product.ExpandedPlan{
 		},
 		Description: "",
 	},
-	Discount: product.Discount{},
+	Discount: product.Discount{
+		DiscID:   null.StringFrom("dsc_a1Vp92cfFAih"),
+		PriceOff: null.FloatFrom(300),
+		Percent:  null.Int{},
+		DateTimeRange: dt.DateTimeRange{
+			StartUTC: chrono.TimeNow(),
+			EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 2)),
+		},
+		Description: null.String{},
+	},
 }
 
-func TestNewCheckedItem1(t *testing.T) {
+func TestNewCheckedItem(t *testing.T) {
 	type args struct {
 		ep product.ExpandedPlan
 	}
@@ -69,13 +79,23 @@ func TestNewCheckedItem1(t *testing.T) {
 		want CheckedItem
 	}{
 		{
-			name: "Checkout item",
+			name: "Checkout Standard Edition",
 			args: args{
 				ep: planStdYear,
 			},
 			want: CheckedItem{
 				Plan:     planStdYear.Plan,
 				Discount: planStdYear.Discount,
+			},
+		},
+		{
+			name: "Checkout Premium Edition",
+			args: args{
+				ep: planPrmYear,
+			},
+			want: CheckedItem{
+				Plan:     planPrmYear.Plan,
+				Discount: planPrmYear.Discount,
 			},
 		},
 	}
@@ -107,7 +127,7 @@ func TestPaymentConfig_Checkout(t *testing.T) {
 		want   Checkout
 	}{
 		{
-			name: "New order",
+			name: "New standard order",
 			fields: fields{
 				dryRun:  false,
 				Account: account,
@@ -135,7 +155,38 @@ func TestPaymentConfig_Checkout(t *testing.T) {
 					ExtraDays:  1,
 				},
 				Payable: product.Charge{
-					Amount:   128,
+					Amount:   planStdYear.Price - planStdYear.Discount.PriceOff.Float64,
+					Currency: "cny",
+				},
+				IsFree:   false,
+				LiveMode: true,
+			},
+		},
+		{
+			name: "New premium order",
+			fields: fields{
+				dryRun:  false,
+				Account: account,
+				Plan:    planPrmYear,
+				Method:  enum.PayMethodAli,
+				WxAppID: null.String{},
+			},
+			args: args{
+				bs:   nil,
+				kind: enum.OrderKindCreate,
+			},
+			want: Checkout{
+				Kind: enum.OrderKindCreate,
+				Item: CheckedItem{
+					Plan:     planPrmYear.Plan,
+					Discount: planPrmYear.Discount,
+				},
+				Duration: product.Duration{
+					CycleCount: 1,
+					ExtraDays:  1,
+				},
+				Payable: product.Charge{
+					Amount:   planPrmYear.Price - planPrmYear.Discount.PriceOff.Float64,
 					Currency: "cny",
 				},
 				IsFree:   false,
@@ -160,6 +211,8 @@ func TestPaymentConfig_Checkout(t *testing.T) {
 			assert.Equal(t, got.Payable, tt.want.Payable)
 			assert.Equal(t, got.IsFree, tt.want.IsFree)
 			assert.Equal(t, got.LiveMode, tt.want.LiveMode)
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
