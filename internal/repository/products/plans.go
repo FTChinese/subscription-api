@@ -11,7 +11,7 @@ func (env Env) listActivePlans() ([]product.ExpandedPlan, error) {
 	var schema = make([]product.ExpandedPlanSchema, 0)
 	var plans = make([]product.ExpandedPlan, 0)
 
-	err := env.db.Select(&schema, product.StmtPaywallPlans)
+	err := env.db.Select(&schema, product.StmtActivePlans)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (env Env) ListActivePlans() ([]product.ExpandedPlan, error) {
 func (env Env) RetrievePlan(id string) (product.ExpandedPlan, error) {
 	var schema product.ExpandedPlanSchema
 
-	err := env.db.Get(&schema, product.StmtExpandedPlanByID, id)
+	err := env.db.Get(&schema, product.StmtExpandedPlan, id)
 	if err != nil {
 		return product.ExpandedPlan{}, nil
 	}
