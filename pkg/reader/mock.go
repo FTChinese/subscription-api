@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -48,7 +48,7 @@ func MockNewFtcAccount(kind enum.AccountKind) FtcAccount {
 
 type MockMemberBuilder struct {
 	ids         MemberID
-	plan        product.Plan
+	price       price.Price
 	payMethod   enum.PayMethod
 	expiration  time.Time
 	autoRenewal bool
@@ -66,7 +66,7 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 			FtcID:      null.StringFrom(ftcID),
 			UnionID:    null.String{},
 		},
-		plan:       faker.PlanStdYear.Plan,
+		price:      faker.PriceStdYear.Original,
 		payMethod:  enum.PayMethodAli,
 		expiration: time.Now().AddDate(0, 1, 0),
 	}
@@ -77,8 +77,8 @@ func (b MockMemberBuilder) WithIDs(ids MemberID) MockMemberBuilder {
 	return b
 }
 
-func (b MockMemberBuilder) WithPlan(p product.Plan) MockMemberBuilder {
-	b.plan = p
+func (b MockMemberBuilder) WithPrice(p price.Price) MockMemberBuilder {
+	b.price = p
 
 	return b
 }
@@ -106,7 +106,7 @@ func (b MockMemberBuilder) WithReservedDays(r ReservedDays) MockMemberBuilder {
 func (b MockMemberBuilder) Build() Membership {
 	m := Membership{
 		MemberID:      b.ids,
-		Edition:       b.plan.Edition,
+		Edition:       b.price.Edition,
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},
 		ExpireDate:    chrono.DateFrom(b.expiration),
@@ -122,7 +122,7 @@ func (b MockMemberBuilder) Build() Membership {
 	}
 	switch b.payMethod {
 	case enum.PayMethodAli, enum.PayMethodWx:
-		m.FtcPlanID = null.StringFrom(b.plan.ID)
+		m.FtcPlanID = null.StringFrom(b.price.ID)
 
 	case enum.PayMethodStripe:
 		m.StripeSubsID = null.StringFrom(faker.GenStripeSubID())

@@ -3,7 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -23,28 +23,28 @@ func getURLParam(req *http.Request, key string) gorest.Param {
 	return gorest.NewParam(key, v)
 }
 
-func getEdition(req *http.Request) (product.Edition, error) {
+func getEdition(req *http.Request) (price.Edition, error) {
 	t, err := getURLParam(req, "tier").ToString()
 	if err != nil {
-		return product.Edition{}, err
+		return price.Edition{}, err
 	}
 
 	tier, err := enum.ParseTier(t)
 	if err != nil {
-		return product.Edition{}, err
+		return price.Edition{}, err
 	}
 
 	c, err := getURLParam(req, "cycle").ToString()
 	if err != nil {
-		return product.Edition{}, err
+		return price.Edition{}, err
 	}
 
 	cycle, err := enum.ParseCycle(c)
 	if err != nil {
-		return product.Edition{}, err
+		return price.Edition{}, err
 	}
 
-	return product.Edition{
+	return price.Edition{
 		Tier:  tier,
 		Cycle: cycle,
 	}, nil

@@ -26,7 +26,7 @@ func TestOrder_IsSynced(t *testing.T) {
 	}{
 		{
 			name:   "Unconfirmed order",
-			fields: MockOrder(faker.PlanStdYear, enum.OrderKindCreate),
+			fields: MockOrder(faker.PriceStdYear, enum.OrderKindCreate),
 			args: args{
 				m: reader.Membership{},
 			},
@@ -34,7 +34,7 @@ func TestOrder_IsSynced(t *testing.T) {
 		},
 		{
 			name:   "Confirmed but out of sync",
-			fields: MockOrder(faker.PlanStdYear, enum.OrderKindCreate).newOrRenewalConfirm(chrono.TimeFrom(now), chrono.Date{}),
+			fields: MockOrder(faker.PriceStdYear, enum.OrderKindCreate).newOrRenewalConfirm(chrono.TimeFrom(now), chrono.Date{}),
 			args: args{
 				m: reader.Membership{},
 			},
@@ -42,7 +42,7 @@ func TestOrder_IsSynced(t *testing.T) {
 		},
 		{
 			name:   "Confirmed and synced",
-			fields: MockOrder(faker.PlanStdYear, enum.OrderKindCreate).newOrRenewalConfirm(chrono.TimeFrom(now), chrono.Date{}),
+			fields: MockOrder(faker.PriceStdYear, enum.OrderKindCreate).newOrRenewalConfirm(chrono.TimeFrom(now), chrono.Date{}),
 			args: args{
 				m: reader.Membership{
 					ExpireDate: chrono.DateFrom(now.AddDate(1, 0, 1)),
@@ -82,7 +82,7 @@ func TestOrder_newOrRenewalConfirm(t *testing.T) {
 	}{
 		{
 			name:   "Order for new subscription",
-			fields: MockOrder(faker.PlanStdYear, enum.OrderKindCreate),
+			fields: MockOrder(faker.PriceStdYear, enum.OrderKindCreate),
 			args: args{
 				confirmedAt: chrono.TimeFrom(now),
 				exp:         chrono.Date{},
@@ -94,7 +94,7 @@ func TestOrder_newOrRenewalConfirm(t *testing.T) {
 		},
 		{
 			name:   "Order for renewal subscription",
-			fields: MockOrder(faker.PlanStdYear, enum.OrderKindRenew),
+			fields: MockOrder(faker.PriceStdYear, enum.OrderKindRenew),
 			args: args{
 				confirmedAt: chrono.TimeFrom(now),
 				exp:         chrono.DateFrom(exp),
@@ -106,7 +106,7 @@ func TestOrder_newOrRenewalConfirm(t *testing.T) {
 		},
 		{
 			name:   "Order for addon",
-			fields: MockOrder(faker.PlanStdYear, enum.OrderKindAddOn),
+			fields: MockOrder(faker.PriceStdYear, enum.OrderKindAddOn),
 			args: args{
 				confirmedAt: chrono.TimeFrom(now),
 				exp:         chrono.Date{},
@@ -140,7 +140,7 @@ func TestOrder_upgradeConfirm(t *testing.T) {
 	}{
 		{
 			name:   "Confirm upgrading order",
-			fields: MockOrder(faker.PlanStdYear, enum.OrderKindUpgrade),
+			fields: MockOrder(faker.PriceStdYear, enum.OrderKindUpgrade),
 			args: args{
 				confirmedAt: chrono.TimeFrom(now),
 			},

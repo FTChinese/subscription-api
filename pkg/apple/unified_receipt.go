@@ -80,7 +80,7 @@ func (u *UnifiedReceipt) findLatestTransaction() Transaction {
 	// It would be unreasonable if the the most recent one
 	// is cancelled while a previous one is still valid.
 	// If the above is true, it only indicates the design of
-	// your product and pricing system have problems.
+	// your price and pricing system have problems.
 	i := sort.Search(l, func(i int) bool {
 		t := u.LatestReceiptInfo[i]
 
@@ -131,7 +131,7 @@ func (u *UnifiedReceipt) findPendingRenewal() PendingRenewal {
 
 // Subscription builds a subscription for a user based on
 // the receipt information available.
-// Returns Subscription or error if the corresponding product is not found for this transaction.
+// Returns Subscription or error if the corresponding price is not found for this transaction.
 // TODO: What if the Transaction is a cancelled one?
 func (u *UnifiedReceipt) Subscription() (Subscription, error) {
 	pendingRenewal := u.findPendingRenewal()

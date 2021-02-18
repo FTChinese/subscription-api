@@ -95,11 +95,11 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		// validate the signature
 		// You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
 		wxOrder, err := payClient.CreateOrder(wechat.OrderReq{
-			Body:          pi.Item.Plan.PaymentTitle(pi.Kind),
+			Body:          subs.PaymentTitle(pi.Kind, pi.Item.Price.Edition),
 			SellerOrderID: pi.Order.ID,
 			TotalAmount:   pi.Order.AmountInCent(),
 			WebhookURL:    webhookURL,
-			ProductID:     pi.Item.Plan.ID,
+			ProductID:     pi.Item.Price.ID,
 			TxKind:        tradeType,
 			UserIP:        clientApp.UserIP.String,
 			OpenID:        input.OpenID,

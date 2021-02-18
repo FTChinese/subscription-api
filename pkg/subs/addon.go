@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/collection"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"time"
@@ -19,7 +19,7 @@ var cycleDays = map[enum.Cycle]int64{
 
 type AddOn struct {
 	ID string `json:"id" db:"id"`
-	product.Edition
+	price.Edition
 	CycleCount         int64          `json:"cycleCount" db:"cycle_count"`
 	DaysRemained       int64          `json:"daysRemained" db:"days_remained"`
 	IsUpgradeCarryOver bool           `json:"isUpgradeCarryOver" db:"is_upgrade_carry_over"`

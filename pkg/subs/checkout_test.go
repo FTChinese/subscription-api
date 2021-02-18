@@ -3,7 +3,8 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +14,7 @@ import (
 
 func TestNewCheckedItem(t *testing.T) {
 	type args struct {
-		ep product.ExpandedPlan
+		ep pw.ProductPrice
 	}
 	tests := []struct {
 		name string
@@ -23,11 +24,11 @@ func TestNewCheckedItem(t *testing.T) {
 		{
 			name: "Checkout item",
 			args: args{
-				ep: faker.PlanStdYear,
+				ep: faker.PriceStdYear,
 			},
 			want: CheckedItem{
-				Plan:     faker.PlanStdYear.Plan,
-				Discount: faker.PlanStdYear.Discount,
+				Price:    faker.PriceStdYear.Original,
+				Discount: faker.PriceStdYear.PromotionOffer,
 			},
 		},
 	}
@@ -42,21 +43,21 @@ func TestNewCheckedItem(t *testing.T) {
 
 func TestCheckedItem_Payable(t *testing.T) {
 	type fields struct {
-		Plan     product.Plan
-		Discount product.Discount
+		Price    price.Price
+		Discount price.Discount
 	}
 	tests := []struct {
 		name   string
 		fields fields
-		want   product.Charge
+		want   price.Charge
 	}{
 		{
 			name: "Payable",
 			fields: fields{
-				Plan:     faker.PlanStdYear.Plan,
-				Discount: faker.PlanStdYear.Discount,
+				Price:    faker.PriceStdYear.Original,
+				Discount: faker.PriceStdYear.PromotionOffer,
 			},
-			want: product.Charge{
+			want: price.Charge{
 				Amount:   258,
 				Currency: "cny",
 			},
@@ -65,7 +66,7 @@ func TestCheckedItem_Payable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			i := CheckedItem{
-				Plan:     tt.fields.Plan,
+				Price:    tt.fields.Price,
 				Discount: tt.fields.Discount,
 			}
 			if got := i.Payable(); !reflect.DeepEqual(got, tt.want) {
@@ -91,7 +92,7 @@ func TestPaymentConfig_checkout(t *testing.T) {
 			name: "New order",
 			fields: PaymentConfig{
 				Account: reader.MockNewFtcAccount(enum.AccountKindFtc),
-				Plan:    faker.PlanStdYear,
+				Price:   faker.PriceStdYear,
 				Method:  enum.PayMethodAli,
 				WxAppID: null.String{},
 			},
@@ -101,10 +102,10 @@ func TestPaymentConfig_checkout(t *testing.T) {
 			want: Checkout{
 				Kind: enum.OrderKindCreate,
 				Item: CheckedItem{
-					Plan:     faker.PlanStdYear.Plan,
-					Discount: faker.PlanStdYear.Discount,
+					Price:    faker.PriceStdYear.Original,
+					Discount: faker.PriceStdYear.PromotionOffer,
 				},
-				Payable: product.Charge{
+				Payable: price.Charge{
 					Amount:   258,
 					Currency: "cny",
 				},
@@ -143,7 +144,7 @@ func TestPaymentConfig_order(t *testing.T) {
 			name: "New order",
 			fields: PaymentConfig{
 				Account: reader.MockNewFtcAccount(enum.AccountKindFtc),
-				Plan:    faker.PlanStdYear,
+				Price:   faker.PriceStdYear,
 				Method:  enum.PayMethodAli,
 				WxAppID: null.String{},
 			},
@@ -151,10 +152,10 @@ func TestPaymentConfig_order(t *testing.T) {
 				checkout: Checkout{
 					Kind: enum.OrderKindCreate,
 					Item: CheckedItem{
-						Plan:     faker.PlanStdYear.Plan,
-						Discount: faker.PlanStdYear.Discount,
+						Price:    faker.PriceStdYear.Original,
+						Discount: faker.PriceStdYear.PromotionOffer,
 					},
-					Payable: product.Charge{
+					Payable: price.Charge{
 						Amount:   258,
 						Currency: "cny",
 					},
@@ -168,7 +169,7 @@ func TestPaymentConfig_order(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := PaymentConfig{
 				Account: tt.fields.Account,
-				Plan:    tt.fields.Plan,
+				Price:   tt.fields.Price,
 				Method:  tt.fields.Method,
 				WxAppID: tt.fields.WxAppID,
 			}
@@ -202,7 +203,7 @@ func TestPaymentConfig_BuildIntent(t *testing.T) {
 			name: "New order",
 			fields: PaymentConfig{
 				Account: reader.MockNewFtcAccount(enum.AccountKindFtc),
-				Plan:    faker.PlanStdYear,
+				Price:   faker.PriceStdYear,
 				Method:  enum.PayMethodAli,
 				WxAppID: null.String{},
 			},

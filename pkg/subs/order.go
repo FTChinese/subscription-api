@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/dt"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
@@ -32,8 +32,8 @@ type Order struct {
 	PlanID     string      `json:"planId" db:"plan_id"`
 	DiscountID null.String `json:"discountId" db:"discount_id"`
 	Price      float64     `json:"price" db:"price"` // Price of a plan, prior to discount.
-	product.Edition
-	product.Charge
+	price.Edition
+	price.Charge
 	Kind          enum.OrderKind `json:"kind" db:"kind"` // The usage of this order: creat new, renew, or upgrade?
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
 	WxAppID       null.String    `json:"-" db:"wx_app_id"` // Wechat specific. Used by webhook to verify notification.

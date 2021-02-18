@@ -1,11 +1,13 @@
 package subs
 
 import (
+	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
@@ -29,31 +31,55 @@ func WebhookURL(sandbox bool, method enum.PayMethod) string {
 	return ""
 }
 
-// CheckedItem contains an item user want to buy and all attributes attached to it like applicable discount, coupon, etc..
-type CheckedItem struct {
-	Plan     product.Plan     `json:"plan"`
-	Discount product.Discount `json:"discount"`
+// PaymentTitle is used as the value of `subject` for alipay,
+// and `body` for wechat pay.
+// * 订阅FT中文网标准会员/年
+// * 订阅FT中文网高端会员/年
+// * 购买FT中文网标准会员/年
+// * 购买FT中文网高端会员/年
+func PaymentTitle(k enum.OrderKind, e price.Edition) string {
+	var prefix string
+
+	switch k {
+	case enum.OrderKindCreate:
+	case enum.OrderKindRenew:
+	case enum.OrderKindUpgrade:
+		prefix = "订阅"
+
+	case enum.OrderKindAddOn:
+		prefix = "购买"
+
+	default:
+	}
+
+	return fmt.Sprintf("%sFT中文网%s", prefix, e.StringCN())
 }
 
-func NewCheckedItem(ep product.ExpandedPlan) CheckedItem {
-	if ep.Discount.IsValid() {
+// CheckedItem contains an item user want to buy and all attributes attached to it like applicable discount, coupon, etc..
+type CheckedItem struct {
+	Price    price.Price    `json:"price"`
+	Discount price.Discount `json:"discount"`
+}
+
+func NewCheckedItem(pp pw.ProductPrice) CheckedItem {
+	if pp.PromotionOffer.IsValid() {
 		return CheckedItem{
-			Plan:     ep.Plan,
-			Discount: ep.Discount,
+			Price:    pp.Original,
+			Discount: pp.PromotionOffer,
 		}
 	}
 
 	return CheckedItem{
-		Plan:     ep.Plan,
-		Discount: product.Discount{},
+		Price:    pp.Original,
+		Discount: price.Discount{},
 	}
 }
 
 // Amount calculates the actual amount user should pay for a plan,
 // after taking into account applicable discount, coupon, limited time offer, etc..
-func (i CheckedItem) Payable() product.Charge {
-	return product.Charge{
-		Amount:   i.Plan.Price - i.Discount.PriceOff.Float64,
+func (i CheckedItem) Payable() price.Charge {
+	return price.Charge{
+		Amount:   i.Price.UnitAmount - i.Discount.PriceOff.Float64,
 		Currency: "cny",
 	}
 }
@@ -62,7 +88,7 @@ func (i CheckedItem) Payable() product.Charge {
 type Checkout struct {
 	Kind     enum.OrderKind `json:"kind"`
 	Item     CheckedItem    `json:"item"`
-	Payable  product.Charge `json:"payable"`
+	Payable  price.Charge   `json:"payable"`
 	LiveMode bool           `json:"live"`
 }
 
@@ -79,18 +105,19 @@ func (c Checkout) WithTest(t bool) Checkout {
 // PaymentConfig collects parameters to build an order.
 // These are experimental refactoring.
 type PaymentConfig struct {
-	Account reader.FtcAccount    // Required. Who is paying.
-	Plan    product.ExpandedPlan // Required. What is purchased.
-	Method  enum.PayMethod       // Optional if no payment is actually involved.
+	Account reader.FtcAccount // Required. Who is paying.
+	Plan    price.Price       // Deprecated
+	Price   pw.ProductPrice   // Required. What is purchased.
+	Method  enum.PayMethod    // Optional if no payment is actually involved.
 	WxAppID null.String
 }
 
 // NewPayment initializes a new payment session.
 // Who and what to purchase are the minimal data required to start payment.
-func NewPayment(account reader.FtcAccount, plan product.ExpandedPlan) PaymentConfig {
+func NewPayment(account reader.FtcAccount, price pw.ProductPrice) PaymentConfig {
 	return PaymentConfig{
 		Account: account,
-		Plan:    plan,
+		Price:   price,
 	}
 }
 
@@ -110,12 +137,12 @@ func (c PaymentConfig) WithWxpay(app wechat.PayApp) PaymentConfig {
 // If Kind == OrderKindAddOn,
 func (c PaymentConfig) checkout(m reader.Membership) (Checkout, error) {
 
-	kind, err := m.AliWxSubsKind(c.Plan.Edition)
+	kind, err := m.AliWxSubsKind(c.Price.Original.Edition)
 	if err != nil {
 		return Checkout{}, err
 	}
 
-	item := NewCheckedItem(c.Plan)
+	item := NewCheckedItem(c.Price)
 	return Checkout{
 		Kind:     kind,
 		Item:     item,
@@ -135,11 +162,11 @@ func (c PaymentConfig) order(checkout Checkout) (Order, error) {
 	return Order{
 		ID:         orderID,
 		MemberID:   c.Account.MemberID(),
-		PlanID:     checkout.Item.Plan.ID,
+		PlanID:     checkout.Item.Price.ID,
 		DiscountID: checkout.Item.Discount.DiscID,
-		Price:      checkout.Item.Plan.Price,
-		Edition:    checkout.Item.Plan.Edition,
-		Charge: product.Charge{
+		Price:      checkout.Item.Price.UnitAmount,
+		Edition:    checkout.Item.Price.Edition,
+		Charge: price.Charge{
 			Amount:   checkout.Payable.Amount,
 			Currency: checkout.Payable.Currency,
 		},

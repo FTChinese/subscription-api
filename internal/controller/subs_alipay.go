@@ -67,14 +67,14 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		}
 
 		// Find pricing plan.
-		plan, err := router.prodRepo.ActivePriceOfEdition(input.Edition)
+		price, err := router.prodRepo.ActivePriceOfEdition(input.Edition)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
 
-		config := subs.NewPayment(account, plan).
+		config := subs.NewPayment(account, price).
 			WithAlipay()
 
 		pi, err := router.SubsRepo.CreateOrder(config)
@@ -92,7 +92,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		}
 
 		or := ali.OrderReq{
-			Title:       pi.Item.Plan.PaymentTitle(pi.Kind),
+			Title:       subs.PaymentTitle(pi.Kind, pi.Item.Price.Edition),
 			FtcOrderID:  pi.Order.ID,
 			TotalAmount: pi.Payable.AliPrice(),
 			WebhookURL:  webhookURL,

@@ -1,4 +1,4 @@
-package product
+package pw
 
 const StmtBanner = `
 SELECT b.id AS banner_id,

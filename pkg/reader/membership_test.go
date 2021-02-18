@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ import (
 func TestMembership_IsZero(t *testing.T) {
 	type fields struct {
 		MemberID      MemberID
-		Edition       product.Edition
+		Edition       price.Edition
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
 		ExpireDate    chrono.Date
@@ -49,7 +49,7 @@ func TestMembership_IsZero(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -84,7 +84,7 @@ func TestMembership_IsZero(t *testing.T) {
 func TestMembership_IsExpired(t *testing.T) {
 	type fields struct {
 		MemberID      MemberID
-		Edition       product.Edition
+		Edition       price.Edition
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
 		ExpireDate    chrono.Date
@@ -162,7 +162,7 @@ func TestMembership_IsExpired(t *testing.T) {
 func TestMembership_Normalize(t *testing.T) {
 	type fields struct {
 		MemberID      MemberID
-		Edition       product.Edition
+		Edition       price.Edition
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
 		ExpireDate    chrono.Date
@@ -188,7 +188,7 @@ func TestMembership_Normalize(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition:       product.Edition{},
+				Edition:       price.Edition{},
 				LegacyTier:    null.IntFrom(10),
 				LegacyExpire:  null.IntFrom(time.Now().Unix()),
 				ExpireDate:    chrono.Date{},
@@ -210,7 +210,7 @@ func TestMembership_Normalize(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -268,7 +268,7 @@ func TestMembership_canRenewViaAliWx(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -285,7 +285,7 @@ func TestMembership_canRenewViaAliWx(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -302,7 +302,7 @@ func TestMembership_canRenewViaAliWx(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -319,7 +319,7 @@ func TestMembership_canRenewViaAliWx(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -336,7 +336,7 @@ func TestMembership_canRenewViaAliWx(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -359,7 +359,7 @@ func TestMembership_canRenewViaAliWx(t *testing.T) {
 func TestMembership_AliWxSubsKind(t *testing.T) {
 
 	type args struct {
-		e product.Edition
+		e price.Edition
 	}
 	tests := []struct {
 		name   string
@@ -372,7 +372,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 			name:   "Zero member",
 			fields: Membership{},
 			args: args{
-				e: faker.PlanStdYear.Edition,
+				e: faker.PriceStdYear.Original.Edition,
 			},
 			want:  enum.OrderKindCreate,
 			want1: nil,
@@ -385,7 +385,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -393,7 +393,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 				PaymentMethod: enum.PayMethodAli,
 			},
 			args: args{
-				e: faker.PlanStdYear.Edition,
+				e: faker.PriceStdYear.Original.Edition,
 			},
 			want:  enum.OrderKindCreate,
 			want1: nil,
@@ -406,7 +406,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -417,7 +417,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 				Status:        enum.SubsStatusActive,
 			},
 			args: args{
-				e: faker.PlanStdYear.Edition,
+				e: faker.PriceStdYear.Original.Edition,
 			},
 			want: enum.OrderKindNull,
 			want1: &render.ValidationError{
@@ -434,7 +434,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -442,7 +442,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 				PaymentMethod: enum.PayMethodAli,
 			},
 			args: args{
-				e: faker.PlanStdYear.Edition,
+				e: faker.PriceStdYear.Original.Edition,
 			},
 			want:  enum.OrderKindRenew,
 			want1: nil,
@@ -455,7 +455,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -463,7 +463,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 				PaymentMethod: enum.PayMethodAli,
 			},
 			args: args{
-				e: faker.PlanPrm.Edition,
+				e: faker.PricePrm.Original.Edition,
 			},
 			want:  enum.OrderKindUpgrade,
 			want1: nil,
@@ -476,7 +476,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition: product.Edition{
+				Edition: price.Edition{
 					Tier:  enum.TierPremium,
 					Cycle: enum.CycleYear,
 				},
@@ -484,7 +484,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 				PaymentMethod: enum.PayMethodAli,
 			},
 			args: args{
-				e: faker.PlanStdYear.Edition,
+				e: faker.PriceStdYear.Original.Edition,
 			},
 			want: enum.OrderKindNull,
 			want1: &render.ValidationError{
@@ -511,7 +511,7 @@ func TestMembership_AliWxSubsKind(t *testing.T) {
 func TestMembership_StripeSubsKind(t *testing.T) {
 
 	type args struct {
-		e product.Edition
+		e price.Edition
 	}
 	tests := []struct {
 		name   string
@@ -524,7 +524,7 @@ func TestMembership_StripeSubsKind(t *testing.T) {
 			name:   "Empty member can create stripe subscription",
 			fields: Membership{},
 			args: args{
-				e: product.NewStdYearEdition(),
+				e: price.NewStdYearEdition(),
 			},
 			want:  enum.OrderKindCreate,
 			want1: nil,
@@ -537,12 +537,12 @@ func TestMembership_StripeSubsKind(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition:       product.NewStdYearEdition(),
+				Edition:       price.NewStdYearEdition(),
 				PaymentMethod: enum.PayMethodAli,
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(-1, 0, 0)),
 			},
 			args: args{
-				e: product.NewStdYearEdition(),
+				e: price.NewStdYearEdition(),
 			},
 			want:  enum.OrderKindCreate,
 			want1: nil,
@@ -555,12 +555,12 @@ func TestMembership_StripeSubsKind(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition:       product.NewStdYearEdition(),
+				Edition:       price.NewStdYearEdition(),
 				PaymentMethod: enum.PayMethodAli,
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 			},
 			args: args{
-				e: product.NewStdYearEdition(),
+				e: price.NewStdYearEdition(),
 			},
 			want: enum.OrderKindNull,
 			want1: &render.ValidationError{
@@ -577,7 +577,7 @@ func TestMembership_StripeSubsKind(t *testing.T) {
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
 				}.MustNormalize(),
-				Edition:       product.NewStdYearEdition(),
+				Edition:       price.NewStdYearEdition(),
 				PaymentMethod: enum.PayMethodStripe,
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 				StripeSubsID:  null.StringFrom(faker.GenStripeSubID()),
@@ -585,7 +585,7 @@ func TestMembership_StripeSubsKind(t *testing.T) {
 				Status:        enum.SubsStatusIncompleteExpired,
 			},
 			args: args{
-				e: product.NewStdYearEdition(),
+				e: price.NewStdYearEdition(),
 			},
 			want:  enum.OrderKindCreate,
 			want1: nil,

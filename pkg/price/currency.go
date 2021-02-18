@@ -1,4 +1,4 @@
-package product
+package price
 
 type Currency string
 
