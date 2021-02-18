@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
@@ -31,11 +31,11 @@ func TestCtxSubs_Render(t *testing.T) {
 				UserName: gofakeit.Username(),
 				Order: subs.Order{
 					ID: db.MustOrderID(),
-					Edition: product.Edition{
+					Edition: price.Edition{
 						Tier:  enum.TierStandard,
 						Cycle: enum.CycleYear,
 					},
-					Charge: product.Charge{
+					Charge: price.Charge{
 						Amount:   128,
 						Currency: "",
 					},
@@ -55,11 +55,11 @@ func TestCtxSubs_Render(t *testing.T) {
 				UserName: "",
 				Order: subs.Order{
 					ID: db.MustOrderID(),
-					Edition: product.Edition{
+					Edition: price.Edition{
 						Tier:  enum.TierStandard,
 						Cycle: enum.CycleYear,
 					},
-					Charge: product.Charge{
+					Charge: price.Charge{
 						Amount:   128,
 						Currency: "",
 					},
@@ -79,11 +79,11 @@ func TestCtxSubs_Render(t *testing.T) {
 				UserName: "",
 				Order: subs.Order{
 					ID: db.MustOrderID(),
-					Edition: product.Edition{
+					Edition: price.Edition{
 						Tier:  enum.TierStandard,
 						Cycle: enum.CycleYear,
 					},
-					Charge: product.Charge{
+					Charge: price.Charge{
 						Amount:   128,
 						Currency: "",
 					},
@@ -95,7 +95,7 @@ func TestCtxSubs_Render(t *testing.T) {
 				},
 				AddOn: subs.AddOn{
 					ID:           db.AddOnID(),
-					Edition:      product.NewStdYearEdition(),
+					Edition:      price.NewStdYearEdition(),
 					CycleCount:   0,
 					DaysRemained: 100,
 					OrderID:      null.StringFrom(db.MustOrderID()),
@@ -112,11 +112,11 @@ func TestCtxSubs_Render(t *testing.T) {
 				UserName: "",
 				Order: subs.Order{
 					ID: db.MustOrderID(),
-					Edition: product.Edition{
+					Edition: price.Edition{
 						Tier:  enum.TierStandard,
 						Cycle: enum.CycleYear,
 					},
-					Charge: product.Charge{
+					Charge: price.Charge{
 						Amount:   128,
 						Currency: "",
 					},
@@ -124,7 +124,7 @@ func TestCtxSubs_Render(t *testing.T) {
 				},
 				AddOn: subs.AddOn{
 					ID:           db.AddOnID(),
-					Edition:      product.NewStdYearEdition(),
+					Edition:      price.NewStdYearEdition(),
 					CycleCount:   1,
 					DaysRemained: 1,
 					OrderID:      null.StringFrom(db.MustOrderID()),

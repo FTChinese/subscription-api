@@ -10,7 +10,7 @@ import (
 func TestNewAliWebhookResult(t *testing.T) {
 	config.MustSetupViper()
 
-	order := MockOrder(faker.PlanStdYear, enum.OrderKindCreate)
+	order := MockOrder(faker.PriceStdYear, enum.OrderKindCreate)
 
 	n := MockAliNoti(order)
 	pr, err := NewAliWebhookResult(&n)

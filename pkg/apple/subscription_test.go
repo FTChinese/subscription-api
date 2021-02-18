@@ -3,7 +3,7 @@ package apple
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -46,7 +46,7 @@ func TestSubscription_BuildOn(t *testing.T) {
 			FtcID:      null.StringFrom(uuid.New().String()),
 			UnionID:    null.String{},
 		}.MustNormalize(),
-		Edition: product.Edition{
+		Edition: price.Edition{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,
 		},

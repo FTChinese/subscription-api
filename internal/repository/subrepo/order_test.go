@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
@@ -52,7 +52,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				config: subs.PaymentConfig{
 					Account: p.FtcAccount(),
-					Plan:    faker.PlanStdYear,
+					Price:   faker.PriceStdYear,
 					Method:  enum.PayMethodAli,
 					WxAppID: null.String{},
 				},
@@ -60,19 +60,19 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindCreate,
-					Item:     subs.NewCheckedItem(faker.PlanStdYear),
-					Payable:  subs.NewCheckedItem(faker.PlanStdYear).Payable(),
+					Item:     subs.NewCheckedItem(faker.PriceStdYear),
+					Payable:  subs.NewCheckedItem(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
 					ID:         "",
 					MemberID:   p.AccountID(),
-					PlanID:     faker.PlanStdYear.ID,
+					PlanID:     faker.PriceStdYear.Original.ID,
 					DiscountID: null.String{},
-					Price:      faker.PlanStdYear.Price,
-					Edition:    faker.PlanStdYear.Edition,
-					Charge: product.Charge{
-						Amount:   faker.PlanStdYear.Price,
+					Price:      faker.PriceStdYear.Original.UnitAmount,
+					Edition:    faker.PriceStdYear.Original.Edition,
+					Charge: price.Charge{
+						Amount:   faker.PriceStdYear.Original.UnitAmount,
 						Currency: "cny",
 					},
 					Kind:          enum.OrderKindCreate,
@@ -95,7 +95,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				config: subs.PaymentConfig{
 					Account: p.FtcAccount(),
-					Plan:    faker.PlanStdYear,
+					Price:   faker.PriceStdYear,
 					Method:  enum.PayMethodWx,
 					WxAppID: null.StringFrom(wxID),
 				},
@@ -103,19 +103,19 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindRenew,
-					Item:     subs.NewCheckedItem(faker.PlanStdYear),
-					Payable:  subs.NewCheckedItem(faker.PlanStdYear).Payable(),
+					Item:     subs.NewCheckedItem(faker.PriceStdYear),
+					Payable:  subs.NewCheckedItem(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
 					ID:         "",
 					MemberID:   p.AccountID(),
-					PlanID:     faker.PlanStdYear.ID,
+					PlanID:     faker.PriceStdYear.Original.ID,
 					DiscountID: null.String{},
-					Price:      faker.PlanStdYear.Price,
-					Edition:    faker.PlanStdYear.Edition,
-					Charge: product.Charge{
-						Amount:   faker.PlanStdYear.Price,
+					Price:      faker.PriceStdYear.Original.UnitAmount,
+					Edition:    faker.PriceStdYear.Original.Edition,
+					Charge: price.Charge{
+						Amount:   faker.PriceStdYear.Original.UnitAmount,
 						Currency: "cny",
 					},
 					Kind:          enum.OrderKindRenew,
@@ -138,7 +138,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				config: subs.PaymentConfig{
 					Account: p.FtcAccount(),
-					Plan:    faker.PlanPrm,
+					Price:   faker.PricePrm,
 					Method:  enum.PayMethodWx,
 					WxAppID: null.StringFrom(wxID),
 				},
@@ -146,19 +146,19 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindUpgrade,
-					Item:     subs.NewCheckedItem(faker.PlanPrm),
-					Payable:  subs.NewCheckedItem(faker.PlanPrm).Payable(),
+					Item:     subs.NewCheckedItem(faker.PricePrm),
+					Payable:  subs.NewCheckedItem(faker.PricePrm).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
 					ID:         "",
 					MemberID:   p.AccountID(),
-					PlanID:     faker.PlanPrm.ID,
+					PlanID:     faker.PricePrm.Original.ID,
 					DiscountID: null.String{},
-					Price:      faker.PlanPrm.Price,
-					Edition:    faker.PlanPrm.Edition,
-					Charge: product.Charge{
-						Amount:   faker.PlanPrm.Price,
+					Price:      faker.PricePrm.Original.UnitAmount,
+					Edition:    faker.PricePrm.Original.Edition,
+					Charge: price.Charge{
+						Amount:   faker.PricePrm.Original.UnitAmount,
 						Currency: "cny",
 					},
 					Kind:          enum.OrderKindUpgrade,
@@ -181,7 +181,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				config: subs.PaymentConfig{
 					Account: p2.FtcAccount(),
-					Plan:    faker.PlanStdYear,
+					Price:   faker.PriceStdYear,
 					Method:  enum.PayMethodWx,
 					WxAppID: null.StringFrom(wxID),
 				},
@@ -189,19 +189,19 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindAddOn,
-					Item:     subs.NewCheckedItem(faker.PlanStdYear),
-					Payable:  subs.NewCheckedItem(faker.PlanStdYear).Payable(),
+					Item:     subs.NewCheckedItem(faker.PriceStdYear),
+					Payable:  subs.NewCheckedItem(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
 					ID:         "",
 					MemberID:   p2.AccountID(),
-					PlanID:     faker.PlanStdYear.ID,
+					PlanID:     faker.PriceStdYear.Original.ID,
 					DiscountID: null.String{},
-					Price:      faker.PlanStdYear.Price,
-					Edition:    faker.PlanStdYear.Edition,
-					Charge: product.Charge{
-						Amount:   faker.PlanStdYear.Price,
+					Price:      faker.PriceStdYear.Original.UnitAmount,
+					Edition:    faker.PriceStdYear.Original.Edition,
+					Charge: price.Charge{
+						Amount:   faker.PriceStdYear.Original.UnitAmount,
 						Currency: "cny",
 					},
 					Kind:          enum.OrderKindAddOn,

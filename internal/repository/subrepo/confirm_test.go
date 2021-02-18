@@ -37,7 +37,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	p4 := test.NewPersona()
 	outOfSyncOrder := subs.NewMockOrderBuilder("").
 		WithUserIDs(p4.AccountID()).
-		WithPlan(faker.PlanStdYear).
+		WithPrice(faker.PriceStdYear).
 		WithKind(enum.OrderKindRenew).
 		WithPayMethod(enum.PayMethodAli).
 		WithConfirmed().

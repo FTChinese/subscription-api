@@ -3,7 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/validator"
 	"github.com/guregu/null"
@@ -18,7 +18,7 @@ type SharedParams struct {
 
 // SubsInput is the request body to create a new subscription.
 type SubsInput struct {
-	product.Edition // Use this to find strip's price id.
+	price.Edition // Use this to find strip's price id.
 	SharedParams
 }
 
@@ -53,7 +53,7 @@ type CancelParams struct {
 }
 
 type CheckoutInput struct {
-	product.Edition
+	price.Edition
 	SuccessURL string `json:"successUrl"`
 	CancelURL  string `json:"cancelUrl"`
 }

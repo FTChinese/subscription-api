@@ -3,7 +3,7 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
 	"strings"
@@ -13,7 +13,7 @@ import (
 // both alipay and wxpay.
 type PayInput struct {
 	// Tier and cycle are extracted from url.
-	product.Edition
+	price.Edition
 	// The following fields are not used yet.
 	PlanID string `json:"planId"`
 }
@@ -22,7 +22,7 @@ func (i *PayInput) Validate() *render.ValidationError {
 
 	if i.Tier == enum.TierNull {
 		return &render.ValidationError{
-			Message: "Product edition is required",
+			Message: "ProductBody edition is required",
 			Field:   "tier",
 			Code:    render.CodeMissingField,
 		}

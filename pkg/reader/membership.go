@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
@@ -52,7 +52,7 @@ func (d ReservedDays) Plus(other ReservedDays) ReservedDays {
 // We should keep those sources mutually exclusive.
 type Membership struct {
 	MemberID
-	product.Edition
+	price.Edition
 	LegacyTier    null.Int       `json:"-" db:"vip_type"`
 	LegacyExpire  null.Int       `json:"-" db:"expire_time"`
 	ExpireDate    chrono.Date    `json:"expireDate" db:"expire_date"`
@@ -268,7 +268,7 @@ func (m Membership) canRenewViaAliWx() bool {
 }
 
 // AliWxSubsKind determines what kind of order a user is creating based on existing membership.
-func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, error) {
+func (m Membership) AliWxSubsKind(e price.Edition) (enum.OrderKind, error) {
 	if m.IsZero() {
 		return enum.OrderKindCreate, nil
 	}
@@ -300,7 +300,7 @@ func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, error) {
 
 		// Shouldn't happen.
 		case enum.TierNull:
-			return enum.OrderKindNull, errors.New("please select the product edition to subscribe")
+			return enum.OrderKindNull, errors.New("please select the price edition to subscribe")
 		}
 
 	// Current membership is purchased via Stripe.
@@ -329,7 +329,7 @@ func (m Membership) AliWxSubsKind(e product.Edition) (enum.OrderKind, error) {
 // 2. Membership exists via alipay or wxpay but expired;
 // 3. Membership exits via stripe but is expired and it is not auto renewable.
 // 4. A stripe subscription that is not expired, auto renewable, but its current status is not active.
-func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, error) {
+func (m Membership) StripeSubsKind(e price.Edition) (enum.OrderKind, error) {
 	// If a membership does not exist, allow create stripe
 	// subscription
 	if m.IsZero() {
@@ -384,7 +384,7 @@ func (m Membership) StripeSubsKind(e product.Edition) (enum.OrderKind, error) {
 
 // PermitStripeCreate checks whether current membership permit creating subscription via stripe.
 // Returned error is either render.ValidationError or render.ResponseError.
-func (m Membership) PermitStripeCreate(e product.Edition) error {
+func (m Membership) PermitStripeCreate(e price.Edition) error {
 	k, err := m.StripeSubsKind(e)
 	if err != nil {
 		return err
@@ -401,7 +401,7 @@ func (m Membership) PermitStripeCreate(e product.Edition) error {
 	return nil
 }
 
-func (m Membership) PermitStripeUpgrade(e product.Edition) error {
+func (m Membership) PermitStripeUpgrade(e price.Edition) error {
 	if m.IsZero() {
 		return &render.ResponseError{
 			StatusCode: http.StatusNotFound,

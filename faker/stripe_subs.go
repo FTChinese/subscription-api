@@ -49,8 +49,8 @@ const StripeSubs = `
                         "tier": "premium",
                         "cycle": "year"
                     },
-                    "nickname": "Premium Yearly Plan",
-                    "product": "prod_FOdd1iNT29BIGq",
+                    "nickname": "Premium Yearly Price",
+                    "price": "prod_FOdd1iNT29BIGq",
                     "tiers_mode": null,
                     "transform_usage": null,
                     "trial_period_days": null,
@@ -69,8 +69,8 @@ const StripeSubs = `
                         "tier": "premium",
                         "cycle": "year"
                     },
-                    "nickname": "Premium Yearly Plan",
-                    "product": "prod_FOdd1iNT29BIGq",
+                    "nickname": "Premium Yearly Price",
+                    "price": "prod_FOdd1iNT29BIGq",
                     "recurring": {
                         "aggregate_usage": null,
                         "interval": "year",
@@ -118,8 +118,8 @@ const StripeSubs = `
             "tier": "premium",
             "cycle": "year"
         },
-        "nickname": "Premium Yearly Plan",
-        "product": "prod_FOdd1iNT29BIGq",
+        "nickname": "Premium Yearly Price",
+        "price": "prod_FOdd1iNT29BIGq",
         "tiers_mode": null,
         "transform_usage": null,
         "trial_period_days": null,

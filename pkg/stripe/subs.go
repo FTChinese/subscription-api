@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/dt"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
@@ -43,7 +43,7 @@ func NewSubsItem(ss *stripe.Subscription) SubsItem {
 // or refresh, or upgrade.
 type Subs struct {
 	ID string `json:"id" db:"id"`
-	product.Edition
+	price.Edition
 	// A date in the future at which the subscription will automatically get canceled
 	WillCancelAtUtc chrono.Time `json:"cancelAtUtc" db:"cancel_at_utc"`
 	// If the subscription has been canceled with the at_period_end flag set to true, cancel_at_period_end on the subscription will be true. You can use this attribute to determine whether a subscription that has a status of active is scheduled to be canceled at the end of the current period.

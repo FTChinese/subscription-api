@@ -1,4 +1,4 @@
-package product
+package pw
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/dt"
@@ -30,12 +30,12 @@ type BannerSchema struct {
 }
 
 type Paywall struct {
-	Banner   Banner            `json:"banner"`
-	Promo    Promo             `json:"promo"`
-	Products []ExpandedProduct `json:"products"`
+	Banner   Banner    `json:"banner"`
+	Promo    Promo     `json:"promo"`
+	Products []Product `json:"products"`
 }
 
-func NewPaywall(b BannerSchema, p []ExpandedProduct) Paywall {
+func NewPaywall(b BannerSchema, p []Product) Paywall {
 	return Paywall{
 		Banner:   b.Banner,
 		Promo:    b.Promo,

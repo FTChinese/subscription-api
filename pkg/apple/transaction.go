@@ -44,7 +44,7 @@ func (t Transaction) CancellationUnix() int64 {
 	return MustParseInt64(t.CancellationDateMs) / 1000
 }
 
-// IsValidProduct checks if the product exists.
+// IsValidProduct checks if the price exists.
 func (t Transaction) IsValidProduct() bool {
 	return appleProducts.exists(t.ProductID)
 }

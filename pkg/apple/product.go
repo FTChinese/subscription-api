@@ -2,11 +2,11 @@ package apple
 
 import (
 	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
 type Product struct {
-	product.Edition
+	price.Edition
 	ID string
 }
 
@@ -20,15 +20,15 @@ func newAppleStore() appleStore {
 	s := appleStore{
 		products: []Product{
 			{
-				Edition: product.NewStdMonthEdition(),
+				Edition: price.NewStdMonthEdition(),
 				ID:      "com.ft.ftchinese.mobile.subscription.member.monthly",
 			},
 			{
-				Edition: product.NewStdYearEdition(),
+				Edition: price.NewStdYearEdition(),
 				ID:      "com.ft.ftchinese.mobile.subscription.member",
 			},
 			{
-				Edition: product.NewPremiumEdition(),
+				Edition: price.NewPremiumEdition(),
 				ID:      "com.ft.ftchinese.mobile.subscription.vip",
 			},
 		},
@@ -44,10 +44,10 @@ func newAppleStore() appleStore {
 	return s
 }
 
-func (s appleStore) findByEdition(e product.Edition) (Product, error) {
+func (s appleStore) findByEdition(e price.Edition) (Product, error) {
 	i, ok := s.indexEdition[e.NamedKey()]
 	if !ok {
-		return Product{}, fmt.Errorf("apple product for %s is not found", e.NamedKey())
+		return Product{}, fmt.Errorf("apple price for %s is not found", e.NamedKey())
 	}
 
 	return s.products[i], nil

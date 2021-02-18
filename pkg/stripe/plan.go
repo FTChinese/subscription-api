@@ -2,7 +2,7 @@ package stripe
 
 import (
 	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
 var editionKeySuffix = map[bool]string{
@@ -10,10 +10,10 @@ var editionKeySuffix = map[bool]string{
 	false: "test",
 }
 
-// Plan contains ftc associates ftc product edition with Stripe
+// Plan contains ftc associates ftc price edition with Stripe
 // plan/price id.
 type Plan struct {
-	product.Edition
+	price.Edition
 	PriceID string
 	Live    bool
 }
@@ -28,32 +28,32 @@ func newPlanStore() *planStore {
 	s := &planStore{
 		plans: []Plan{
 			{
-				Edition: product.NewStdMonthEdition(),
+				Edition: price.NewStdMonthEdition(),
 				PriceID: "price_1IM2Z4BzTK0hABgJ9Sh0u35h",
 				Live:    true,
 			},
 			{
-				Edition: product.NewStdMonthEdition(),
+				Edition: price.NewStdMonthEdition(),
 				PriceID: "price_1IM2mgBzTK0hABgJVH8o9Sjm",
 				Live:    false,
 			},
 			{
-				Edition: product.NewStdYearEdition(),
+				Edition: price.NewStdYearEdition(),
 				PriceID: "price_1IM2aNBzTK0hABgJeJVIx3kL",
 				Live:    true,
 			},
 			{
-				Edition: product.NewStdYearEdition(),
+				Edition: price.NewStdYearEdition(),
 				PriceID: "price_1IM2nFBzTK0hABgJiIDeDIox",
 				Live:    false,
 			},
 			{
-				Edition: product.NewPremiumEdition(),
+				Edition: price.NewPremiumEdition(),
 				PriceID: "plan_FXZbv1cDTsUKOg",
 				Live:    true,
 			},
 			{
-				Edition: product.NewPremiumEdition(),
+				Edition: price.NewPremiumEdition(),
 				PriceID: "plan_FOde0uAr0V4WmT",
 				Live:    false,
 			},
@@ -71,7 +71,7 @@ func newPlanStore() *planStore {
 	return s
 }
 
-func (s planStore) FindByEdition(e product.Edition, live bool) (Plan, error) {
+func (s planStore) FindByEdition(e price.Edition, live bool) (Plan, error) {
 	i, ok := s.indexEdition[e.NamedKey()+"_"+editionKeySuffix[live]]
 	if !ok {
 		return Plan{}, fmt.Errorf("stripe plan for %s is not found", e)

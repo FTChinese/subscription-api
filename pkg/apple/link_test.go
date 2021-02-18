@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -33,7 +33,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 		ProductID:         "",
 		PurchaseDateUTC:   chrono.TimeNow(),
 		ExpiresDateUTC:    expire,
-		Edition:           product.NewStdYearEdition(),
+		Edition:           price.NewStdYearEdition(),
 		AutoRenewal:       true,
 		CreatedUTC:        chrono.TimeNow(),
 		UpdatedUTC:        chrono.TimeNow(),
@@ -102,7 +102,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 					ProductID:         "",
 					PurchaseDateUTC:   chrono.TimeNow(),
 					ExpiresDateUTC:    expire,
-					Edition: product.Edition{
+					Edition: price.Edition{
 						Tier:  enum.TierStandard,
 						Cycle: enum.CycleYear,
 					},
@@ -123,7 +123,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 				},
 				CurrentFtc: reader.Membership{
 					MemberID:      memberID,
-					Edition:       product.NewStdYearEdition(),
+					Edition:       price.NewStdYearEdition(),
 					ExpireDate:    chrono.DateFrom(time.Now()),
 					PaymentMethod: 0,
 				},
@@ -144,7 +144,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 				},
 				CurrentFtc: reader.Membership{
 					MemberID:      memberID,
-					Edition:       product.NewStdYearEdition(),
+					Edition:       price.NewStdYearEdition(),
 					ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, 0, -1)),
 					PaymentMethod: 0,
 				},
@@ -157,7 +157,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 					LastTransactionID: faker.GenAppleSubID(),
 					ProductID:         "",
 					ExpiresDateUTC:    chrono.TimeFrom(time.Now().AddDate(0, 0, -2)),
-					Edition:           product.NewStdYearEdition(),
+					Edition:           price.NewStdYearEdition(),
 					AutoRenewal:       false,
 					CreatedUTC:        chrono.TimeNow(),
 					UpdatedUTC:        chrono.TimeNow(),
@@ -175,7 +175,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 				},
 				CurrentFtc: reader.Membership{
 					MemberID:      memberID,
-					Edition:       product.NewStdYearEdition(),
+					Edition:       price.NewStdYearEdition(),
 					ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, 0, -1)),
 					PaymentMethod: 0,
 				},

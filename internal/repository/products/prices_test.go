@@ -2,7 +2,7 @@ package products
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
@@ -35,9 +35,9 @@ func TestEnv_loadPlans(t *testing.T) {
 				db:    tt.fields.db,
 				cache: tt.fields.cache,
 			}
-			got, err := env.pricesFromDB()
+			got, err := env.retrieveProductPrices()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("pricesFromDB() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("retrieveProductPrices() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
@@ -84,7 +84,7 @@ func TestEnv_PlanByID(t *testing.T) {
 				return
 			}
 
-			assert.NotEmpty(t, got.ID)
+			assert.NotEmpty(t, got.Original.ID)
 		})
 	}
 }
@@ -95,7 +95,7 @@ func TestEnv_PlanByEdition(t *testing.T) {
 		cache *cache.Cache
 	}
 	type args struct {
-		e product.Edition
+		e price.Edition
 	}
 	tests := []struct {
 		name    string
@@ -110,7 +110,7 @@ func TestEnv_PlanByEdition(t *testing.T) {
 				cache: test.Cache,
 			},
 			args: args{
-				e: product.Edition{
+				e: price.Edition{
 					Tier:  enum.TierStandard,
 					Cycle: enum.CycleYear,
 				},
@@ -130,7 +130,7 @@ func TestEnv_PlanByEdition(t *testing.T) {
 				return
 			}
 
-			assert.NotEmpty(t, got.ID)
+			assert.NotEmpty(t, got.Original.ID)
 		})
 	}
 }
