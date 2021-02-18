@@ -91,7 +91,7 @@ func (b MockOrderBuilder) WithPeriod(from time.Time) MockOrderBuilder {
 }
 
 func (b MockOrderBuilder) Build() Order {
-	item := NewCheckedItem(b.price)
+	item := NewCheckoutItem(b.price)
 
 	payable := item.Payable()
 
