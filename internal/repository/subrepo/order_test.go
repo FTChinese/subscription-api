@@ -60,8 +60,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindCreate,
-					Item:     subs.NewCheckedItem(faker.PriceStdYear),
-					Payable:  subs.NewCheckedItem(faker.PriceStdYear).Payable(),
+					Item:     subs.NewCheckoutItem(faker.PriceStdYear),
+					Payable:  subs.NewCheckoutItem(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
@@ -103,8 +103,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindRenew,
-					Item:     subs.NewCheckedItem(faker.PriceStdYear),
-					Payable:  subs.NewCheckedItem(faker.PriceStdYear).Payable(),
+					Item:     subs.NewCheckoutItem(faker.PriceStdYear),
+					Payable:  subs.NewCheckoutItem(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
@@ -146,8 +146,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindUpgrade,
-					Item:     subs.NewCheckedItem(faker.PricePrm),
-					Payable:  subs.NewCheckedItem(faker.PricePrm).Payable(),
+					Item:     subs.NewCheckoutItem(faker.PricePrm),
+					Payable:  subs.NewCheckoutItem(faker.PricePrm).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
@@ -189,8 +189,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindAddOn,
-					Item:     subs.NewCheckedItem(faker.PriceStdYear),
-					Payable:  subs.NewCheckedItem(faker.PriceStdYear).Payable(),
+					Item:     subs.NewCheckoutItem(faker.PriceStdYear),
+					Payable:  subs.NewCheckoutItem(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
