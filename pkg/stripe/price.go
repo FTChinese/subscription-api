@@ -15,11 +15,11 @@ type PricePreset struct {
 }
 
 var presetPrices = map[string]PricePreset{
-	"plan_FXZYLOEbcvj5Tx": {
+	"price_1IM2Z4BzTK0hABgJ9Sh0u35h": {
 		Edition: product.NewStdMonthEdition(),
 		Live:    true,
 	},
-	"plan_FXZZUEDpToPlZK": {
+	"price_1IM2aNBzTK0hABgJeJVIx3kL": {
 		Edition: product.NewStdYearEdition(),
 		Live:    true,
 	},
