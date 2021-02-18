@@ -18,20 +18,20 @@ type Product struct {
 // ExpandedProduct contains Product and its plans.
 type ExpandedProduct struct {
 	Product
-	Plans []ExpandedPlan `json:"plans"`
+	Prices []Price `json:"prices"`
 }
 
 // BuildPaywallProducts zips product with its plans.
-func BuildPaywallProducts(prods []Product, plans []ExpandedPlan) []ExpandedProduct {
-	groupedPlans := GroupPlans(plans)
+func BuildPaywallProducts(prods []Product, plans []Price) []ExpandedProduct {
+	groupedPrices := GroupPricesOfProduct(plans)
 
 	var result = make([]ExpandedProduct, 0)
 
 	for _, prod := range prods {
-		gPlans, ok := groupedPlans[prod.ID]
+		gPlans, ok := groupedPrices[prod.ID]
 
 		if !ok {
-			gPlans = []ExpandedPlan{}
+			gPlans = []Price{}
 		}
 
 		for _, plan := range gPlans {
@@ -42,7 +42,7 @@ func BuildPaywallProducts(prods []Product, plans []ExpandedPlan) []ExpandedProdu
 
 		result = append(result, ExpandedProduct{
 			Product: prod,
-			Plans:   gPlans,
+			Prices:  gPlans,
 		})
 	}
 

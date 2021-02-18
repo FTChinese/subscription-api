@@ -32,24 +32,13 @@ type Plan struct {
 	Description string `json:"description" db:"description"`
 }
 
-func (p Plan) DailyCost() DailyCost {
-	switch p.Cycle {
-	case enum.CycleYear:
-		return NewDailyCostOfYear(p.Price)
-
-	case enum.CycleMonth:
-		return NewDailyCostOfMonth(p.Price)
-	}
-
-	return DailyCost{}
-}
-
 // PaymentTitle is used as the value of `subject` for alipay,
 // and `body` for wechat pay.
 // * 订阅FT中文网标准会员/年
 // * 续订FT中文网标准会员/年
 // * 升级订阅FT中文网高端会员/年
 func (p Plan) PaymentTitle(k enum.OrderKind) string {
+
 	return fmt.Sprintf("%sFT中文网%s", k.StringSC(), p.Edition.StringCN())
 }
 
@@ -60,27 +49,24 @@ type ExpandedPlan struct {
 
 // ExpandedPlanSchema contains a plans and its discount.
 type ExpandedPlanSchema struct {
-	Plan
+	PlanID    string  `db:"plan_id"`
+	ProductID string  `db:"product_id"`
+	PlanPrice float64 `db:"price"`
+	Edition
+	PlanDesc string `db:"description"`
 	Discount
 }
 
-func (s ExpandedPlanSchema) ExpandedPlan() ExpandedPlan {
-	return ExpandedPlan{
-		Plan:     s.Plan,
-		Discount: s.Discount,
-	}
-}
+// GroupPricesOfProduct groups plans by product id.
+func GroupPricesOfProduct(prices []Price) map[string][]Price {
+	var g = make(map[string][]Price)
 
-// GroupPlans groups plans by product id.
-func GroupPlans(plans []ExpandedPlan) map[string][]ExpandedPlan {
-	var g = make(map[string][]ExpandedPlan)
-
-	for _, v := range plans {
+	for _, v := range prices {
 		found, ok := g[v.ProductID]
 		if ok {
 			found = append(found, v)
 		} else {
-			found = []ExpandedPlan{v}
+			found = []Price{v}
 		}
 		g[v.ProductID] = found
 	}

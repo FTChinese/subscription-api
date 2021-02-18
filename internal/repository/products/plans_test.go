@@ -35,9 +35,9 @@ func TestEnv_loadPlans(t *testing.T) {
 				db:    tt.fields.db,
 				cache: tt.fields.cache,
 			}
-			got, err := env.listActivePlans()
+			got, err := env.pricesFromDB()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("listActivePlans() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("pricesFromDB() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
@@ -78,7 +78,7 @@ func TestEnv_PlanByID(t *testing.T) {
 				db:    tt.fields.db,
 				cache: tt.fields.cache,
 			}
-			got, err := env.RetrievePlan(tt.args.id)
+			got, err := env.RetrievePrice(tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("retrievePlanByID() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -124,9 +124,9 @@ func TestEnv_PlanByEdition(t *testing.T) {
 				db:    tt.fields.db,
 				cache: tt.fields.cache,
 			}
-			got, err := env.FindActivePlan(tt.args.e)
+			got, err := env.ActivePriceOfEdition(tt.args.e)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("FindActivePlan() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ActivePriceOfEdition() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
