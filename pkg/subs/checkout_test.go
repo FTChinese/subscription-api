@@ -19,14 +19,14 @@ func TestNewCheckedItem(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want CheckedItem
+		want CheckoutItem
 	}{
 		{
 			name: "Checkout item",
 			args: args{
 				ep: faker.PriceStdYear,
 			},
-			want: CheckedItem{
+			want: CheckoutItem{
 				Price:    faker.PriceStdYear.Original,
 				Discount: faker.PriceStdYear.PromotionOffer,
 			},
@@ -34,7 +34,7 @@ func TestNewCheckedItem(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewCheckedItem(tt.args.ep)
+			got := NewCheckoutItem(tt.args.ep)
 			assert.Equal(t, got, tt.want)
 			t.Logf("Checkout item %+v", got)
 		})
@@ -65,7 +65,7 @@ func TestCheckedItem_Payable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := CheckedItem{
+			i := CheckoutItem{
 				Price:    tt.fields.Price,
 				Discount: tt.fields.Discount,
 			}
@@ -101,7 +101,7 @@ func TestPaymentConfig_checkout(t *testing.T) {
 			},
 			want: Checkout{
 				Kind: enum.OrderKindCreate,
-				Item: CheckedItem{
+				Item: CheckoutItem{
 					Price:    faker.PriceStdYear.Original,
 					Discount: faker.PriceStdYear.PromotionOffer,
 				},
@@ -151,7 +151,7 @@ func TestPaymentConfig_order(t *testing.T) {
 			args: args{
 				checkout: Checkout{
 					Kind: enum.OrderKindCreate,
-					Item: CheckedItem{
+					Item: CheckoutItem{
 						Price:    faker.PriceStdYear.Original,
 						Discount: faker.PriceStdYear.PromotionOffer,
 					},
