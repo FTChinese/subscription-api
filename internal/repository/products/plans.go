@@ -6,10 +6,10 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-// listActivePlans retrieves list plans present on paywall, directly from DB.
-func (env Env) listActivePlans() ([]product.ExpandedPlan, error) {
+// pricesFromDB retrieves list plans present on paywall, directly from DB.
+func (env Env) pricesFromDB() ([]product.Price, error) {
 	var schema = make([]product.ExpandedPlanSchema, 0)
-	var plans = make([]product.ExpandedPlan, 0)
+	var prices = make([]product.Price, 0)
 
 	err := env.db.Select(&schema, product.StmtActivePlans)
 	if err != nil {
@@ -17,30 +17,30 @@ func (env Env) listActivePlans() ([]product.ExpandedPlan, error) {
 	}
 
 	for _, v := range schema {
-		plans = append(plans, v.ExpandedPlan())
+		prices = append(prices, product.NewPrice(v))
 	}
 
-	return plans, nil
+	return prices, nil
 }
 
 // cacheActivePlans caching all currently active plans.
-func (env Env) cacheActivePlans(p []product.ExpandedPlan) {
+func (env Env) cacheActivePlans(p []product.Price) {
 	env.cache.Set(keyPricing, p, cache.DefaultExpiration)
 }
 
-// ListActivePlans tries to load all active pricing plans from cache,
+// ActivePricesFromCacheOrDB tries to load all active pricing plans from cache,
 // then fallback to db if not found. If retrieved from DB,
 // the data will be cached.
-func (env Env) ListActivePlans() ([]product.ExpandedPlan, error) {
+func (env Env) ActivePricesFromCacheOrDB() ([]product.Price, error) {
 	x, found := env.cache.Get(keyPricing)
 
 	if found {
-		if p, ok := x.([]product.ExpandedPlan); ok {
+		if p, ok := x.([]product.Price); ok {
 			return p, nil
 		}
 	}
 
-	p, err := env.listActivePlans()
+	p, err := env.pricesFromDB()
 	if err != nil {
 		return nil, err
 	}
@@ -50,50 +50,51 @@ func (env Env) ListActivePlans() ([]product.ExpandedPlan, error) {
 	return p, nil
 }
 
-// RetrievePlan retrieves a plan with discount by ID.
-func (env Env) RetrievePlan(id string) (product.ExpandedPlan, error) {
+// RetrievePrice retrieves a plan with discount by ID.
+func (env Env) RetrievePrice(id string) (product.Price, error) {
 	var schema product.ExpandedPlanSchema
 
 	err := env.db.Get(&schema, product.StmtExpandedPlan, id)
 	if err != nil {
-		return product.ExpandedPlan{}, nil
+		return product.Price{}, nil
 	}
 
-	return schema.ExpandedPlan(), nil
+	return product.NewPrice(schema), nil
 }
 
-// FindActivePlan retrieves an active plan by tier and cycle.
-func (env Env) FindActivePlan(e product.Edition) (product.ExpandedPlan, error) {
-	plans, err := env.ListActivePlans()
+// ActivePriceOfEdition retrieves an active plan by Edition.
+func (env Env) ActivePriceOfEdition(e product.Edition) (product.Price, error) {
+	prices, err := env.ActivePricesFromCacheOrDB()
 	if err != nil {
-		return product.ExpandedPlan{}, err
+		return product.Price{}, err
 	}
 
-	for _, v := range plans {
+	for _, v := range prices {
 		if v.Edition == e {
 			return v, nil
 		}
 	}
 
-	return product.ExpandedPlan{}, sql.ErrNoRows
+	return product.Price{}, sql.ErrNoRows
 }
 
-// plansResult contains a list of pricing plans and error occurred.
-type plansResult struct {
-	value []product.ExpandedPlan
+// pricesResult contains a list of pricing plans and error occurred.
+type pricesResult struct {
+	value []product.Price
 	error error
 }
 
-// asyncLoadPlans retrieves a list of plans in a goroutine.
-func (env Env) asyncLoadPlans() <-chan plansResult {
-	ch := make(chan plansResult)
+// asyncPricesFromDB retrieves a list of plans in a goroutine.
+// This is used to construct the paywall data.
+func (env Env) asyncPricesFromDB() <-chan pricesResult {
+	ch := make(chan pricesResult)
 
 	go func() {
 		defer close(ch)
 
-		plans, err := env.listActivePlans()
+		plans, err := env.pricesFromDB()
 
-		ch <- plansResult{
+		ch <- pricesResult{
 			value: plans,
 			error: err,
 		}

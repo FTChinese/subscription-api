@@ -44,7 +44,7 @@ func (env Env) asyncLoadBanner() <-chan bannerResult {
 // retrievePaywall retrieves all elements of paywall concurrently
 // and then build them into a single Paywall instance.
 func (env Env) retrievePaywall() (product.Paywall, error) {
-	bannerCh, productsCh, plansCh := env.asyncLoadBanner(), env.asyncRetrieveProducts(), env.asyncLoadPlans()
+	bannerCh, productsCh, plansCh := env.asyncLoadBanner(), env.asyncRetrieveProducts(), env.asyncPricesFromDB()
 
 	// Retrieve banner and its promo, products, and each product's plans
 	// in 3 goroutine.
