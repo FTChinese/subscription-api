@@ -27,11 +27,11 @@ var presetPrices = map[string]PricePreset{
 		Edition: product.NewPremiumEdition(),
 		Live:    true,
 	},
-	"plan_FOdgPTznDwHU4i": {
+	"price_1IM2mgBzTK0hABgJVH8o9Sjm": {
 		Edition: product.NewStdMonthEdition(),
 		Live:    false,
 	},
-	"plan_FOdfeaqzczp6Ag": {
+	"price_1IM2nFBzTK0hABgJiIDeDIox": {
 		Edition: product.NewStdYearEdition(),
 		Live:    false,
 	},
