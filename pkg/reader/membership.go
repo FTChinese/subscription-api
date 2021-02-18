@@ -210,6 +210,10 @@ func (m Membership) IsStripe() bool {
 	return !m.IsZero() && m.PaymentMethod == enum.PayMethodStripe && m.StripeSubsID.Valid
 }
 
+func (m Membership) IsInvalidStripe() bool {
+	return m.IsStripe() && (m.Status == enum.SubsStatusIncompleteExpired || m.Status == enum.SubsStatusPastDue || m.Status == enum.SubsStatusCanceled || m.Status == enum.SubsStatusUnpaid)
+}
+
 // IsIAP tests whether this membership comes from Apple.
 // This is actually not necessary. However, as People are allowed to changed DB directly, if an IAP membership is
 // changed to other payment methods, and chances are high that humans only change the payment method column but
@@ -260,6 +264,14 @@ func (m Membership) canRenewViaAliWx() bool {
 		return false
 	}
 
+	today := time.Now().Truncate(24 * time.Hour)
+	threeYearsLater := today.AddDate(3, 0, 0)
+
+	// It should include today and the date three year later.
+	return !m.ExpireDate.Before(today) && !m.ExpireDate.After(threeYearsLater)
+}
+
+func (m Membership) WithinMaxRenewalPeriod() bool {
 	today := time.Now().Truncate(24 * time.Hour)
 	threeYearsLater := today.AddDate(3, 0, 0)
 
