@@ -190,6 +190,7 @@ func (m Membership) Sync() Membership {
 	}
 
 	// Otherwise do not touch it.
+	// PROBLEM: if both sides have data but they are not synced, the discrepancy will be carried forward.
 	return m
 }
 
