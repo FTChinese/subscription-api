@@ -4,25 +4,31 @@ package faker
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/guregu/null"
 )
 
-var PlanStdYear = product.ExpandedPlan{
-	Plan: product.Plan{
-		ID:        "plan_MynUQDQY1TSQ",
-		ProductID: "prod_zjWdiTUpDN8l",
-		Price:     258,
-		Edition: product.Edition{
+var PriceStdYear = pw.ProductPrice{
+	Original: price.Price{
+		ID: "plan_MynUQDQY1TSQ",
+		Edition: price.Edition{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleYear,
 		},
-		Description: "",
+		Active:     true,
+		Currency:   price.CurrencyCNY,
+		LiveMode:   true,
+		Nickname:   null.String{},
+		ProductID:  "prod_zjWdiTUpDN8l",
+		Source:     price.SourceFTC,
+		UnitAmount: 258,
 	},
-	Discount: product.Discount{
+	PromotionOffer: price.Discount{
 		//DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
 		//PriceOff: null.FloatFrom(130),
 		//Percent:  null.Int{},
-		//Period: product.Period{
+		//Period: price.Period{
 		//	StartUTC: chrono.TimeNow(),
 		//	EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 2)),
 		//},
@@ -30,30 +36,38 @@ var PlanStdYear = product.ExpandedPlan{
 	},
 }
 
-var PlanStdMonth = product.ExpandedPlan{
-	Plan: product.Plan{
-		ID:        "plan_1Uz4hrLy3Mzy",
-		ProductID: "prod_zjWdiTUpDN8l",
-		Price:     28,
-		Edition: product.Edition{
+var PriceStdMonth = pw.ProductPrice{
+	Original: price.Price{
+		ID: "plan_1Uz4hrLy3Mzy",
+		Edition: price.Edition{
 			Tier:  enum.TierStandard,
 			Cycle: enum.CycleMonth,
 		},
-		Description: "",
+		Active:     true,
+		Currency:   price.CurrencyCNY,
+		LiveMode:   true,
+		Nickname:   null.String{},
+		ProductID:  "prod_zjWdiTUpDN8l",
+		Source:     price.SourceFTC,
+		UnitAmount: 28,
 	},
-	Discount: product.Discount{},
+	PromotionOffer: price.Discount{},
 }
 
-var PlanPrm = product.ExpandedPlan{
-	Plan: product.Plan{
-		ID:        "plan_vRUzRQ3aglea",
-		ProductID: "prod_IaoK5SbK79g8",
-		Price:     1998,
-		Edition: product.Edition{
+var PricePrm = pw.ProductPrice{
+	Original: price.Price{
+		ID: "plan_vRUzRQ3aglea",
+		Edition: price.Edition{
 			Tier:  enum.TierPremium,
 			Cycle: enum.CycleYear,
 		},
-		Description: "",
+		Active:     true,
+		Currency:   price.CurrencyCNY,
+		LiveMode:   true,
+		Nickname:   null.String{},
+		ProductID:  "prod_IaoK5SbK79g8",
+		Source:     price.SourceFTC,
+		UnitAmount: 1998,
 	},
-	Discount: product.Discount{},
+	PromotionOffer: price.Discount{},
 }

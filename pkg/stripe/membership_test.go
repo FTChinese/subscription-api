@@ -3,7 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"reflect"
@@ -39,7 +39,7 @@ func TestNewMembership(t *testing.T) {
 					CompoundID: subs.FtcUserID.String,
 					FtcID:      subs.FtcUserID,
 				},
-				Edition:       product.PremiumEdition,
+				Edition:       price.PremiumEdition,
 				LegacyTier:    null.IntFrom(reader.GetTierCode(enum.TierPremium)),
 				LegacyExpire:  null.IntFrom(1638943057),
 				ExpireDate:    chrono.DateFrom(time.Unix(1638943057, 0)),

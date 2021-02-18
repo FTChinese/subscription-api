@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ import (
 func TestNewPaymentConfirmed(t *testing.T) {
 	now := time.Now()
 
-	pc := NewPayment(reader.MockNewFtcAccount(enum.AccountKindFtc), faker.PlanStdYear).WithAlipay()
+	pc := NewPayment(reader.MockNewFtcAccount(enum.AccountKindFtc), faker.PriceStdYear).WithAlipay()
 	co, _ := pc.checkout(reader.Membership{})
 
 	order, err := pc.order(co)
@@ -100,16 +100,16 @@ func TestNewMembership(t *testing.T) {
 	now := time.Now()
 
 	orderCreate := MockOrder(
-		faker.PlanStdYear, enum.OrderKindCreate).
+		faker.PriceStdYear, enum.OrderKindCreate).
 		newOrRenewalConfirm(chrono.TimeFrom(now), chrono.Date{})
 
-	orderRenew := MockOrder(faker.PlanStdYear, enum.OrderKindRenew).
+	orderRenew := MockOrder(faker.PriceStdYear, enum.OrderKindRenew).
 		newOrRenewalConfirm(chrono.TimeFrom(now), chrono.DateFrom(now.AddDate(0, 1, 0)))
 
-	orderUpgrade := MockOrder(faker.PlanPrm, enum.OrderKindUpgrade).
+	orderUpgrade := MockOrder(faker.PricePrm, enum.OrderKindUpgrade).
 		upgradeConfirm(chrono.TimeFrom(now))
 
-	orderAddOn := MockOrder(faker.PlanStdYear, enum.OrderKindAddOn)
+	orderAddOn := MockOrder(faker.PriceStdYear, enum.OrderKindAddOn)
 	orderAddOn.ConfirmedAt = chrono.TimeFrom(now)
 
 	iapMember := reader.Membership{
@@ -185,7 +185,7 @@ func TestNewMembership(t *testing.T) {
 					Order: orderUpgrade,
 					AddOn: AddOn{
 						ID:            db.AddOnID(),
-						Edition:       product.NewStdYearEdition(),
+						Edition:       price.NewStdYearEdition(),
 						CycleCount:    0,
 						DaysRemained:  10,
 						PaymentMethod: enum.PayMethodApple,

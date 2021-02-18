@@ -3,7 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
@@ -12,7 +12,7 @@ import (
 // Deprecated
 type Subscription struct {
 	AccountID reader.MemberID `json:"-"`
-	product.Edition
+	price.Edition
 	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time `json:"created"`
 	CurrentPeriodEnd   chrono.Time `json:"currentPeriodEnd"`

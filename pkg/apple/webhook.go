@@ -6,10 +6,10 @@ package apple
 type WebHook struct {
 	// An identifier that App Store Connect generates and the App Store uses to uniquely identify the auto-renewable subscription that the user's subscription renews
 	AutoRenewAdamID int64 `json:"auto_renew_adam_id"`
-	// The product identifier of the auto-renewable subscription that the user's subscription renews.
+	// The price identifier of the auto-renewable subscription that the user's subscription renews.
 	// Also present in PendingRenewal
 	AutoRenewProductID string `json:"auto_renew_product_id"`
-	// The current renewal status for an auto-renewable subscription product.
+	// The current renewal status for an auto-renewable subscription price.
 	// Note that these values are different from those of the auto_renew_status in the receipt.
 	// true | false
 	// Also present in PendingRenewal
@@ -32,7 +32,7 @@ type WebHook struct {
 	// 1 The customer voluntarily canceled their subscription.
 	// 2 Billing error; for example, the customer's payment information was no longer valid.
 	// 3 The customer did not agree to a recent price increase.
-	// 4 The product was not available for purchase at the time of renewal.
+	// 4 The price was not available for purchase at the time of renewal.
 	// 5 Unknown error.
 	// Also found in PendingRenewal.
 	ExpirationIntent int64 `json:"expiration_intent"`

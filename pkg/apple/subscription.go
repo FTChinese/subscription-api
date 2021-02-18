@@ -4,7 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"time"
@@ -26,7 +26,7 @@ type Subscription struct {
 	ProductID         string      `json:"productId" db:"product_id"`
 	PurchaseDateUTC   chrono.Time `json:"purchaseDateUtc" db:"purchase_date_utc"`
 	ExpiresDateUTC    chrono.Time `json:"expiresDateUtc" db:"expires_date_utc"`
-	product.Edition
+	price.Edition
 	AutoRenewal bool        `json:"autoRenewal" db:"auto_renewal"`
 	CreatedUTC  chrono.Time `json:"createdUtc" db:"created_utc"`
 	UpdatedUTC  chrono.Time `json:"updatedUtc" db:"updated_utc"`
@@ -36,7 +36,7 @@ type Subscription struct {
 
 // NewSubscription builds a subscription for a user based on
 // the receipt information available.
-// Returns Subscription or error if the corresponding product is not found for this transaction.
+// Returns Subscription or error if the corresponding price is not found for this transaction.
 // When we build a new Subscription from apple verification response,
 // we do no know user's ftc id,  so leave it empty.
 // And do not touch the ftc_user_id field when you inserting/updating a Subscription.
@@ -118,7 +118,7 @@ func (s Subscription) ShouldUpdate(m reader.Membership) bool {
 func (s Subscription) NewMembership(id reader.MemberID) reader.Membership {
 	return reader.Membership{
 		MemberID: id,
-		Edition: product.Edition{
+		Edition: price.Edition{
 			Tier:  s.Tier,
 			Cycle: s.Cycle,
 		},

@@ -10,7 +10,8 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 
 	"github.com/google/uuid"
@@ -19,9 +20,9 @@ import (
 	"time"
 )
 
-func MockOrder(plan product.ExpandedPlan, kind enum.OrderKind) Order {
+func MockOrder(price pw.ProductPrice, kind enum.OrderKind) Order {
 	return NewMockOrderBuilder("").
-		WithPlan(plan).
+		WithPrice(price).
 		WithKind(kind).
 		Build()
 }
@@ -29,7 +30,7 @@ func MockOrder(plan product.ExpandedPlan, kind enum.OrderKind) Order {
 type MockOrderBuilder struct {
 	id        string
 	userIDs   reader.MemberID
-	plan      product.ExpandedPlan
+	price     pw.ProductPrice
 	kind      enum.OrderKind
 	payMethod enum.PayMethod
 	wxAppId   null.String
@@ -49,7 +50,7 @@ func NewMockOrderBuilder(id string) MockOrderBuilder {
 			FtcID:      null.StringFrom(uuid.New().String()),
 			UnionID:    null.String{},
 		}.MustNormalize(),
-		plan:      faker.PlanStdYear,
+		price:     faker.PriceStdYear,
 		kind:      enum.OrderKindCreate,
 		payMethod: enum.PayMethodAli,
 		confirmed: false,
@@ -61,8 +62,8 @@ func (b MockOrderBuilder) WithUserIDs(ids reader.MemberID) MockOrderBuilder {
 	return b
 }
 
-func (b MockOrderBuilder) WithPlan(p product.ExpandedPlan) MockOrderBuilder {
-	b.plan = p
+func (b MockOrderBuilder) WithPrice(p pw.ProductPrice) MockOrderBuilder {
+	b.price = p
 	return b
 }
 
@@ -85,12 +86,12 @@ func (b MockOrderBuilder) WithConfirmed() MockOrderBuilder {
 }
 
 func (b MockOrderBuilder) WithPeriod(from time.Time) MockOrderBuilder {
-	b.period = dt.NewDateRange(from).WithCycle(b.plan.Cycle)
+	b.period = dt.NewDateRange(from).WithCycle(b.price.Original.Cycle)
 	return b
 }
 
 func (b MockOrderBuilder) Build() Order {
-	item := NewCheckedItem(b.plan)
+	item := NewCheckedItem(b.price)
 
 	payable := item.Payable()
 
@@ -102,11 +103,11 @@ func (b MockOrderBuilder) Build() Order {
 	return Order{
 		ID:         b.id,
 		MemberID:   b.userIDs,
-		PlanID:     item.Plan.ID,
+		PlanID:     item.Price.ID,
 		DiscountID: item.Discount.DiscID,
-		Price:      item.Plan.Price,
-		Edition:    item.Plan.Edition,
-		Charge: product.Charge{
+		Price:      item.Price.UnitAmount,
+		Edition:    item.Price.Edition,
+		Charge: price.Charge{
 			Amount:   payable.Amount,
 			Currency: payable.Currency,
 		},
@@ -122,7 +123,7 @@ func (b MockOrderBuilder) Build() Order {
 
 type MockAddOnBuilder struct {
 	userIDs   reader.MemberID
-	plan      product.ExpandedPlan
+	price     pw.ProductPrice
 	payMethod enum.PayMethod
 }
 
@@ -131,7 +132,7 @@ func NewMockAddOnBuilder() MockAddOnBuilder {
 		userIDs: reader.MemberID{
 			FtcID: null.StringFrom(uuid.New().String()),
 		}.MustNormalize(),
-		plan:      faker.PlanStdYear,
+		price:     faker.PriceStdYear,
 		payMethod: enum.PayMethodAli,
 	}
 }
@@ -141,22 +142,22 @@ func (b MockAddOnBuilder) WithUserIDs(ids reader.MemberID) MockAddOnBuilder {
 	return b
 }
 
-func (b MockAddOnBuilder) WithPlan(p product.ExpandedPlan) MockAddOnBuilder {
-	b.plan = p
+func (b MockAddOnBuilder) WithPlan(p pw.ProductPrice) MockAddOnBuilder {
+	b.price = p
 	return b
 }
 
 func (b MockAddOnBuilder) BuildNew() AddOn {
 	return AddOn{
 		ID:                 db.AddOnID(),
-		Edition:            b.plan.Edition,
+		Edition:            b.price.Original.Edition,
 		CycleCount:         1,
 		DaysRemained:       1,
 		IsUpgradeCarryOver: false,
 		PaymentMethod:      b.payMethod,
 		CompoundID:         b.userIDs.CompoundID,
 		OrderID:            null.StringFrom(db.MustOrderID()),
-		PlanID:             null.StringFrom(b.plan.ID),
+		PlanID:             null.StringFrom(b.price.Original.ID),
 		CreatedUTC:         chrono.TimeNow(),
 		ConsumedUTC:        chrono.Time{},
 	}
@@ -165,14 +166,14 @@ func (b MockAddOnBuilder) BuildNew() AddOn {
 func (b MockAddOnBuilder) BuildUpgrade() AddOn {
 	return AddOn{
 		ID:                 db.AddOnID(),
-		Edition:            faker.PlanStdYear.Edition,
+		Edition:            faker.PriceStdYear.Original.Edition,
 		CycleCount:         0,
 		DaysRemained:       int64(rand.IntRange(1, 367)),
 		IsUpgradeCarryOver: false,
 		PaymentMethod:      b.payMethod,
 		CompoundID:         b.userIDs.CompoundID,
 		OrderID:            null.StringFrom(db.MustOrderID()),
-		PlanID:             null.StringFrom(faker.PlanStdYear.ID),
+		PlanID:             null.StringFrom(faker.PriceStdYear.Original.ID),
 		CreatedUTC:         chrono.TimeNow(),
 		ConsumedUTC:        chrono.Time{},
 	}

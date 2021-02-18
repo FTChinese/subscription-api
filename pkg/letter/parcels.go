@@ -96,11 +96,11 @@ func NewIAPUnlinkParcel(account reader.FtcAccount, m apple.Subscription) (postof
 //	data := struct {
 //		User Account
 //		Order  StripeSub
-//		Plan Plan
+//		Price Price
 //	}{
 //		User: a,
 //		Order:  NewStripeSub(s),
-//		Plan: plan,
+//		Price: plan,
 //	}
 //
 //	var body strings.Builder
@@ -131,11 +131,11 @@ func NewIAPUnlinkParcel(account reader.FtcAccount, m apple.Subscription) (postof
 //	data := struct {
 //		User    Account
 //		Invoice StripeInvoice
-//		Plan    Plan
+//		Price    Price
 //	}{
 //		User:    a,
 //		Invoice: i,
-//		Plan:    plan,
+//		Price:    plan,
 //	}
 //
 //	var body strings.Builder
@@ -166,11 +166,11 @@ func NewIAPUnlinkParcel(account reader.FtcAccount, m apple.Subscription) (postof
 //	data := struct {
 //		User    Account
 //		Invoice StripeInvoice
-//		Plan    Plan
+//		Price    Price
 //	}{
 //		User:    a,
 //		Invoice: i,
-//		Plan:    plan,
+//		Price:    plan,
 //	}
 //
 //	var body strings.Builder
@@ -201,11 +201,11 @@ func NewIAPUnlinkParcel(account reader.FtcAccount, m apple.Subscription) (postof
 //	data := struct {
 //		User    Account
 //		Invoice StripeInvoice
-//		Plan    Plan
+//		Price    Price
 //	}{
 //		User:    a,
 //		Invoice: i,
-//		Plan:    plan,
+//		Price:    plan,
 //	}
 //
 //	var body strings.Builder

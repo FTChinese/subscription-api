@@ -15,7 +15,7 @@ import (
 
 func TestNewAddOn(t *testing.T) {
 
-	order := MockOrder(faker.PlanStdYear, enum.OrderKindAddOn)
+	order := MockOrder(faker.PriceStdYear, enum.OrderKindAddOn)
 
 	type args struct {
 		o Order
@@ -30,7 +30,7 @@ func TestNewAddOn(t *testing.T) {
 			args: args{o: order},
 			want: AddOn{
 				ID:                 "",
-				Edition:            faker.PlanStdYear.Edition,
+				Edition:            faker.PriceStdYear.Original.Edition,
 				CycleCount:         1,
 				DaysRemained:       1,
 				IsUpgradeCarryOver: false,
@@ -57,7 +57,7 @@ func TestNewAddOn(t *testing.T) {
 }
 
 func TestNewUpgradeCarryOver(t *testing.T) {
-	order := MockOrder(faker.PlanPrm, enum.OrderKindUpgrade)
+	order := MockOrder(faker.PricePrm, enum.OrderKindUpgrade)
 
 	type args struct {
 		o Order
@@ -73,22 +73,22 @@ func TestNewUpgradeCarryOver(t *testing.T) {
 			args: args{
 				o: order,
 				m: reader.Membership{
-					Edition:       faker.PlanStdYear.Edition,
+					Edition:       faker.PriceStdYear.Original.Edition,
 					ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, 0, 10)),
 					PaymentMethod: enum.PayMethodWx,
-					FtcPlanID:     null.StringFrom(faker.PlanStdYear.ID),
+					FtcPlanID:     null.StringFrom(faker.PriceStdYear.Original.ID),
 				},
 			},
 			want: AddOn{
 				ID:                 "",
-				Edition:            faker.PlanStdYear.Edition,
+				Edition:            faker.PriceStdYear.Original.Edition,
 				CycleCount:         0,
 				DaysRemained:       10,
 				IsUpgradeCarryOver: true,
 				PaymentMethod:      enum.PayMethodWx,
 				CompoundID:         order.CompoundID,
 				OrderID:            null.StringFrom(order.ID),
-				PlanID:             null.StringFrom(faker.PlanStdYear.ID),
+				PlanID:             null.StringFrom(faker.PriceStdYear.Original.ID),
 				CreatedUTC:         chrono.TimeNow(),
 				ConsumedUTC:        chrono.Time{},
 			},
@@ -149,17 +149,17 @@ func TestAddOn_GetDays(t *testing.T) {
 	}{
 		{
 			name:   "Days of a yearly cycle",
-			fields: NewAddOn(MockOrder(faker.PlanStdYear, enum.OrderKindCreate)),
+			fields: NewAddOn(MockOrder(faker.PriceStdYear, enum.OrderKindCreate)),
 			want:   367,
 		},
 		{
 			name:   "Days of a monthly cycle",
-			fields: NewAddOn(MockOrder(faker.PlanStdMonth, enum.OrderKindCreate)),
+			fields: NewAddOn(MockOrder(faker.PriceStdMonth, enum.OrderKindCreate)),
 			want:   32,
 		},
 		{
 			name: "Remaining days for upgrade",
-			fields: NewUpgradeCarryOver(MockOrder(faker.PlanPrm, enum.OrderKindUpgrade), reader.Membership{
+			fields: NewUpgradeCarryOver(MockOrder(faker.PricePrm, enum.OrderKindUpgrade), reader.Membership{
 				ExpireDate: chrono.DateFrom(now.AddDate(0, 0, 10)),
 			}),
 			want: 10,
@@ -184,7 +184,7 @@ func TestAddOn_ToReservedDays(t *testing.T) {
 	}{
 		{
 			name:   "Reserved days for standard year",
-			fields: NewAddOn(MockOrder(faker.PlanStdYear, enum.OrderKindAddOn)),
+			fields: NewAddOn(MockOrder(faker.PriceStdYear, enum.OrderKindAddOn)),
 			want: reader.ReservedDays{
 				Standard: 367,
 				Premium:  0,
@@ -192,7 +192,7 @@ func TestAddOn_ToReservedDays(t *testing.T) {
 		},
 		{
 			name:   "Reserved days for premium",
-			fields: NewAddOn(MockOrder(faker.PlanPrm, enum.OrderKindAddOn)),
+			fields: NewAddOn(MockOrder(faker.PricePrm, enum.OrderKindAddOn)),
 			want: reader.ReservedDays{
 				Standard: 0,
 				Premium:  367,
@@ -289,7 +289,7 @@ func TestGroupAddOns(t *testing.T) {
 	mocker := NewMockAddOnBuilder()
 
 	a1 := mocker.BuildNew()
-	a2 := mocker.WithPlan(faker.PlanPrm).BuildNew()
+	a2 := mocker.WithPlan(faker.PricePrm).BuildNew()
 	a3 := mocker.BuildNew()
 
 	type args struct {
@@ -337,7 +337,7 @@ func TestReduceAddOns(t *testing.T) {
 	a1 := mocker.BuildNew()
 	a2 := mocker.BuildNew()
 	a3 := mocker.BuildUpgrade()
-	a4 := mocker.WithPlan(faker.PlanStdMonth).BuildNew()
+	a4 := mocker.WithPlan(faker.PriceStdMonth).BuildNew()
 
 	type args struct {
 		addOns []AddOn

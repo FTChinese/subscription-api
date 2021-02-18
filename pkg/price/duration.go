@@ -1,4 +1,4 @@
-package product
+package price
 
 // Duration is the number of billing cycles and trial days a subscription purchased.
 type Duration struct {

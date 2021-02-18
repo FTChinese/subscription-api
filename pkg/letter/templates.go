@@ -105,7 +105,7 @@ FT中文网用户 {{.User.NormalizeName}},
 
 本次订阅创建于 {{.Order.Created.StringCN}}
 
-订阅产品 {{.Plan.Desc}}
+订阅产品 {{.Price.Desc}}
 自动续订 {{if .Order.CancelAtPeriodEnd}}未开启{{else}}已开启{{end}}
 订阅周期 {{.Order.CurrentPeriodStart.StringCN}} - {{.Order.CurrentPeriodEnd.StringCN}}
 订阅状态 {{.Order.ReadableStatus}}
@@ -127,7 +127,7 @@ FT中文网用户 {{.User.NormalizeName}},
 
 单号 {{.Invoice.Number}}
 创建于 {{.Invoice.CreationTime.StringCN}}
-订阅产品 {{.Plan.Desc}}
+订阅产品 {{.Price.Desc}}
 发票状态 {{.Invoice.ReadableStatus}}
 支付金额 {{.Invoice.Price}}
 发票链接 {{.Invoice.HostedInvoiceURL}}
@@ -142,7 +142,7 @@ FT中文网`
 const letterStripePaymentFailed = `
 FT中文网用户 {{.User.NormalizeName}},
 
-您通过Stripe支付订阅FT中文网 {{.Plan.Desc}} 支付失败。本次支付的发票号是 {{.Invoice.Number}}，创建于 {{.Invoice.CreationTime.StringCN}}。
+您通过Stripe支付订阅FT中文网 {{.Price.Desc}} 支付失败。本次支付的发票号是 {{.Invoice.Number}}，创建于 {{.Invoice.CreationTime.StringCN}}。
 
 您可以联系我们的客服：subscriber.service@ftchinese.com 询问支付问题。
 
@@ -155,7 +155,7 @@ FT中文网`
 const letterPaymentActionRequired = `
 FT中文网用户 {{.User.NormalizeName}},
 
-您通过Stripe支付订阅FT中文网 {{.Plan.Desc}} 尚未完成支付，您的发卡行可能需要进行安全验证。请按照Stripe的提示执行下一步操作。
+您通过Stripe支付订阅FT中文网 {{.Price.Desc}} 尚未完成支付，您的发卡行可能需要进行安全验证。请按照Stripe的提示执行下一步操作。
 
 本次支付的发票号是 {{.Invoice.Number}}，创建于 {{.Invoice.CreationTime.StringCN}}。
 

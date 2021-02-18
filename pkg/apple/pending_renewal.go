@@ -19,7 +19,7 @@ type PendingRenewal struct {
 	// 1 The customer voluntarily canceled their subscription.
 	// 2 Billing error; for example, the customer's payment information was no longer valid.
 	// 3 The customer did not agree to a recent price increase.
-	// 4 The product was not available for purchase at the time of renewal.
+	// 4 The price was not available for purchase at the time of renewal.
 	// 5 Unknown error.
 	ExpirationIntent null.String `json:"expiration_intent"`
 	// The time at which the grace period for subscription renewals expires

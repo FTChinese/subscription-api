@@ -1,12 +1,14 @@
 package products
 
-import "github.com/FTChinese/subscription-api/pkg/product"
+import (
+	"github.com/FTChinese/subscription-api/pkg/pw"
+)
 
 // retrieveActiveProducts retrieve all products present on paywall.
-func (env Env) retrieveActiveProducts() ([]product.Product, error) {
-	var products = make([]product.Product, 0)
+func (env Env) retrieveActiveProducts() ([]pw.ProductBody, error) {
+	var products = make([]pw.ProductBody, 0)
 
-	err := env.db.Select(&products, product.StmtPaywallProducts)
+	err := env.db.Select(&products, pw.StmtPaywallProducts)
 
 	if err != nil {
 		return nil, err
@@ -16,7 +18,7 @@ func (env Env) retrieveActiveProducts() ([]product.Product, error) {
 }
 
 type productsResult struct {
-	value []product.Product
+	value []pw.ProductBody
 	error error
 }
 

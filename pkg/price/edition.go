@@ -1,4 +1,4 @@
-package product
+package price
 
 import (
 	"github.com/FTChinese/go-rest/enum"

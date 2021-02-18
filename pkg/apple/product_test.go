@@ -2,7 +2,7 @@ package apple
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -20,7 +20,7 @@ func Test_newAppleStore(t *testing.T) {
 func Test_appleStore_findByEdition(t *testing.T) {
 	store := newAppleStore()
 
-	p, err := store.findByEdition(product.NewStdYearEdition())
+	p, err := store.findByEdition(price.NewStdYearEdition())
 
 	if err != nil {
 		t.Error(err)
@@ -39,6 +39,6 @@ func Test_appleStore_findByID(t *testing.T) {
 			t.Error(err)
 		}
 
-		t.Logf("Found product: %+v", found)
+		t.Logf("Found price: %+v", found)
 	}
 }

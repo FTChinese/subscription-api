@@ -22,7 +22,7 @@ func GetConn(key string) (connect.Connect, error) {
 // Wxpay and alipay's webhook url is also determined by sandbox. Their prices, however, is determined by
 // current account.
 // Local development: sandbox = true, production = false;
-// Online product: sandbox = false, production = true;
+// Online price: sandbox = false, production = true;
 // Online sandbox: sandbox = true, production = true;
 // You should always run this program with `-sandbox` arg option.
 type BuildConfig struct {

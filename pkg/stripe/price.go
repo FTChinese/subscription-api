@@ -2,44 +2,31 @@ package stripe
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/pkg/product"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 	"sync"
 )
 
-// Price is a condensed version of Stripe's price object.
-type Price struct {
-	ID string `json:"id"`
-	product.Edition
-	Active     bool        `json:"active"`
-	Currency   string      `json:"currency"`
-	LiveMode   bool        `json:"liveMode"`
-	Nickname   null.String `json:"nickname"`
-	ProductID  string      `json:"productId"`
-	UnitAmount int64       `json:"unitAmount"`
-	Created    int64       `json:"created"`
-}
-
 // NewPrice extract the essential data from a stripe price.
-func NewPrice(p Plan, price *stripe.Price) Price {
-	return Price{
-		ID:         price.ID,
+func NewPrice(p Plan, sp *stripe.Price) price.Price {
+	return price.Price{
+		ID:         sp.ID,
 		Edition:    p.Edition,
-		Active:     price.Active,
-		Currency:   string(price.Currency),
-		LiveMode:   price.Livemode,
-		Nickname:   null.NewString(price.Nickname, price.Nickname != ""),
-		ProductID:  price.Product.ID,
-		UnitAmount: price.UnitAmount,
-		Created:    price.Created,
+		Active:     sp.Active,
+		Currency:   price.Currency(sp.Currency),
+		LiveMode:   sp.Livemode,
+		Nickname:   null.NewString(sp.Nickname, sp.Nickname != ""),
+		ProductID:  sp.Product.ID,
+		Source:     price.SourceStripe,
+		UnitAmount: float64(sp.UnitAmount / 100),
 	}
 }
 
 // priceCache acts as a cache after retrieving Stripe prices.
 type priceCache struct {
 	len     int
-	prices  []Price        // Use an array to store the prices.
+	prices  []price.Price  // Use an array to store the prices.
 	idIndex map[string]int // price id to its position in the array.
 	mux     sync.Mutex     // The data is global. Lock it for currency.
 }
@@ -47,7 +34,7 @@ type priceCache struct {
 func newPriceStore() *priceCache {
 	return &priceCache{
 		len:     0,
-		prices:  make([]Price, 0),
+		prices:  make([]price.Price, 0),
 		idIndex: map[string]int{},
 	}
 }
@@ -99,23 +86,23 @@ func (store *priceCache) upsert(sp *stripe.Price) error {
 }
 
 // Find searches a price by id in the specified environment.
-func (store *priceCache) Find(id string, live bool) (Price, error) {
+func (store *priceCache) Find(id string, live bool) (price.Price, error) {
 	index, ok := store.idIndex[id]
 	if ok {
-		return Price{}, sql.ErrNoRows
+		return price.Price{}, sql.ErrNoRows
 	}
 
-	price := store.prices[index]
-	if price.LiveMode != live {
-		return Price{}, sql.ErrNoRows
+	cachedPrice := store.prices[index]
+	if cachedPrice.LiveMode != live {
+		return price.Price{}, sql.ErrNoRows
 	}
 
-	return price, nil
+	return cachedPrice, nil
 }
 
 // List returned a list all prices in the specified environment.
-func (store *priceCache) List(live bool) []Price {
-	var prices = make([]Price, 0)
+func (store *priceCache) List(live bool) []price.Price {
+	var prices = make([]price.Price, 0)
 
 	for _, v := range store.prices {
 		if v.LiveMode != live {
