@@ -29,22 +29,22 @@ func newPlanStore() *planStore {
 		plans: []Plan{
 			{
 				Edition: product.NewStdMonthEdition(),
-				PriceID: "plan_FXZYLOEbcvj5Tx",
+				PriceID: "price_1IM2Z4BzTK0hABgJ9Sh0u35h",
 				Live:    true,
 			},
 			{
 				Edition: product.NewStdMonthEdition(),
-				PriceID: "plan_FOdgPTznDwHU4i",
+				PriceID: "price_1IM2mgBzTK0hABgJVH8o9Sjm",
 				Live:    false,
 			},
 			{
 				Edition: product.NewStdYearEdition(),
-				PriceID: "plan_FXZZUEDpToPlZK",
+				PriceID: "price_1IM2aNBzTK0hABgJeJVIx3kL",
 				Live:    true,
 			},
 			{
 				Edition: product.NewStdYearEdition(),
-				PriceID: "plan_FOdfeaqzczp6Ag",
+				PriceID: "price_1IM2nFBzTK0hABgJiIDeDIox",
 				Live:    false,
 			},
 			{
