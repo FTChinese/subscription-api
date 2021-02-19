@@ -47,12 +47,8 @@ func (c PaymentConfig) WithWxpay(app wechat.PayApp) PaymentConfig {
 // If Kind == OrderKindAddOn,
 func (c PaymentConfig) checkout(m reader.Membership) (Checkout, error) {
 
-	intents, err := NewCheckoutIntents(m, c.Price.Original.Edition)
-	if err != nil {
-		return Checkout{}, err
-	}
-
-	intent, err := intents.FindIntent(c.Method)
+	intent, err := NewCheckoutIntents(m, c.Price.Original.Edition).
+		Get(c.Method)
 	if err != nil {
 		return Checkout{}, err
 	}
