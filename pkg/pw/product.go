@@ -2,7 +2,6 @@ package pw
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"strings"
 )
@@ -16,41 +15,15 @@ type ProductBody struct {
 	SmallPrint  null.String `json:"smallPrint" db:"small_print"`
 }
 
-// ProductPrice contains a price's original price and promotion.
-// The actually price user paid should be the original price minus
-// promotion offer if promotion period is valid.
-type ProductPrice struct {
-	Original       price.Price    `json:"original"`
-	PromotionOffer price.Discount `json:"promotionOffer"`
-}
-
-// NewProductPrice turns the raw data from DB into ProductPrice.
-func NewProductPrice(s PriceSchema) ProductPrice {
-	return ProductPrice{
-		Original: price.Price{
-			ID:         s.PlanID,
-			Edition:    s.Edition,
-			Active:     true,
-			Currency:   price.CurrencyCNY,
-			LiveMode:   true,
-			Nickname:   null.String{},
-			ProductID:  s.ProductID,
-			Source:     price.SourceFTC,
-			UnitAmount: s.PlanPrice,
-		},
-		PromotionOffer: s.Discount,
-	}
-}
-
 // Product describes the data used to present to user on paywall.
 type Product struct {
 	ProductBody
-	Prices []ProductPrice `json:"prices"`
+	Prices []FtcPrice `json:"prices"`
 }
 
 // NewPaywallProducts zips price body with its prices.
-// Currently we have two ProductBody, and three ProductPrice.
-func NewPaywallProducts(prods []ProductBody, prices []ProductPrice) []Product {
+// Currently we have two ProductBody, and three FtcPrice.
+func NewPaywallProducts(prods []ProductBody, prices []FtcPrice) []Product {
 	groupedPrices := groupProductPrices(prices)
 
 	var result = make([]Product, 0)
@@ -61,7 +34,7 @@ func NewPaywallProducts(prods []ProductBody, prices []ProductPrice) []Product {
 
 		// If nothing found, assign it an empty array.
 		if !ok {
-			prodPrices = []ProductPrice{}
+			prodPrices = []FtcPrice{}
 		}
 
 		// Calculate daily price.
@@ -82,15 +55,15 @@ func NewPaywallProducts(prods []ProductBody, prices []ProductPrice) []Product {
 }
 
 // GroupProductPrices put prices with the same price id into the same group
-func groupProductPrices(prices []ProductPrice) map[string][]ProductPrice {
-	var g = make(map[string][]ProductPrice)
+func groupProductPrices(prices []FtcPrice) map[string][]FtcPrice {
+	var g = make(map[string][]FtcPrice)
 
 	for _, p := range prices {
 		found, ok := g[p.Original.ProductID]
 		if ok {
 			found = append(found, p)
 		} else {
-			found = []ProductPrice{p}
+			found = []FtcPrice{p}
 		}
 		// Put price of the same price into the same group.
 		g[p.Original.ProductID] = found
