@@ -95,7 +95,7 @@ func NewSubs(ss *stripe.Subscription, ids reader.MemberID) (Subs, error) {
 
 	subsItem := NewSubsItem(ss)
 
-	plan, err := PlanStore.FindByID(subsItem.PriceID)
+	plan, err := price.StripeEditions.FindByID(subsItem.PriceID)
 	if err != nil {
 		return Subs{}, err
 	}
