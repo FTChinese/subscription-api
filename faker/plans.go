@@ -5,11 +5,10 @@ package faker
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/guregu/null"
 )
 
-var PriceStdYear = pw.ProductPrice{
+var PriceStdYear = price.FtcPrice{
 	Original: price.Price{
 		ID: "plan_MynUQDQY1TSQ",
 		Edition: price.Edition{
@@ -36,7 +35,7 @@ var PriceStdYear = pw.ProductPrice{
 	},
 }
 
-var PriceStdMonth = pw.ProductPrice{
+var PriceStdMonth = price.FtcPrice{
 	Original: price.Price{
 		ID: "plan_1Uz4hrLy3Mzy",
 		Edition: price.Edition{
@@ -54,7 +53,7 @@ var PriceStdMonth = pw.ProductPrice{
 	PromotionOffer: price.Discount{},
 }
 
-var PricePrm = pw.ProductPrice{
+var PricePrm = price.FtcPrice{
 	Original: price.Price{
 		ID: "plan_vRUzRQ3aglea",
 		Edition: price.Edition{
