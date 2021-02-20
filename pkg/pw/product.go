@@ -2,6 +2,7 @@ package pw
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"strings"
 )
@@ -18,12 +19,12 @@ type ProductBody struct {
 // Product describes the data used to present to user on paywall.
 type Product struct {
 	ProductBody
-	Prices []FtcPrice `json:"prices"`
+	Prices []price.FtcPrice `json:"prices"`
 }
 
 // NewPaywallProducts zips price body with its prices.
 // Currently we have two ProductBody, and three FtcPrice.
-func NewPaywallProducts(prods []ProductBody, prices []FtcPrice) []Product {
+func NewPaywallProducts(prods []ProductBody, prices []price.FtcPrice) []Product {
 	groupedPrices := groupProductPrices(prices)
 
 	var result = make([]Product, 0)
@@ -34,7 +35,7 @@ func NewPaywallProducts(prods []ProductBody, prices []FtcPrice) []Product {
 
 		// If nothing found, assign it an empty array.
 		if !ok {
-			prodPrices = []FtcPrice{}
+			prodPrices = []price.FtcPrice{}
 		}
 
 		// Calculate daily price.
@@ -55,15 +56,15 @@ func NewPaywallProducts(prods []ProductBody, prices []FtcPrice) []Product {
 }
 
 // GroupProductPrices put prices with the same price id into the same group
-func groupProductPrices(prices []FtcPrice) map[string][]FtcPrice {
-	var g = make(map[string][]FtcPrice)
+func groupProductPrices(prices []price.FtcPrice) map[string][]price.FtcPrice {
+	var g = make(map[string][]price.FtcPrice)
 
 	for _, p := range prices {
 		found, ok := g[p.Original.ProductID]
 		if ok {
 			found = append(found, p)
 		} else {
-			found = []FtcPrice{p}
+			found = []price.FtcPrice{p}
 		}
 		// Put price of the same price into the same group.
 		g[p.Original.ProductID] = found

@@ -8,9 +8,9 @@ import (
 )
 
 // retrieveProductPrices lists active product prices on paywall, directly from DB.
-func (env Env) retrieveProductPrices() ([]pw.FtcPrice, error) {
+func (env Env) retrieveProductPrices() ([]price.FtcPrice, error) {
 	var schema = make([]pw.PriceSchema, 0)
-	var prices = make([]pw.FtcPrice, 0)
+	var prices = make([]price.FtcPrice, 0)
 
 	err := env.db.Select(&schema, pw.StmtActiveProductPrices)
 	if err != nil {
@@ -26,7 +26,7 @@ func (env Env) retrieveProductPrices() ([]pw.FtcPrice, error) {
 
 // pricesResult contains a list of pricing plans and error occurred.
 type pricesResult struct {
-	value []pw.FtcPrice
+	value []price.FtcPrice
 	error error
 }
 
@@ -50,18 +50,18 @@ func (env Env) asyncRetrieveProductPrices() <-chan pricesResult {
 }
 
 // cacheActivePrices caching all currently active prices as an array.
-func (env Env) cacheActivePrices(p []pw.FtcPrice) {
+func (env Env) cacheActivePrices(p []price.FtcPrice) {
 	env.cache.Set(keyPricing, p, cache.DefaultExpiration)
 }
 
 // ActivePricesFromCacheOrDB tries to load all active pricing plans from cache,
 // then fallback to db if not found. If retrieved from DB,
 // the data will be cached.
-func (env Env) ActivePricesFromCacheOrDB() ([]pw.FtcPrice, error) {
+func (env Env) ActivePricesFromCacheOrDB() ([]price.FtcPrice, error) {
 	x, found := env.cache.Get(keyPricing)
 
 	if found {
-		if p, ok := x.([]pw.FtcPrice); ok {
+		if p, ok := x.([]price.FtcPrice); ok {
 			return p, nil
 		}
 	}
@@ -77,22 +77,22 @@ func (env Env) ActivePricesFromCacheOrDB() ([]pw.FtcPrice, error) {
 }
 
 // RetrievePrice retrieves a plan with discount by ID.
-func (env Env) RetrievePrice(id string) (pw.FtcPrice, error) {
+func (env Env) RetrievePrice(id string) (price.FtcPrice, error) {
 	var schema pw.PriceSchema
 
 	err := env.db.Get(&schema, pw.StmtProductPrice, id)
 	if err != nil {
-		return pw.FtcPrice{}, nil
+		return price.FtcPrice{}, nil
 	}
 
 	return pw.NewFtcPrice(schema), nil
 }
 
 // ActivePriceOfEdition retrieves an active plan by Edition.
-func (env Env) ActivePriceOfEdition(e price.Edition) (pw.FtcPrice, error) {
+func (env Env) ActivePriceOfEdition(e price.Edition) (price.FtcPrice, error) {
 	prices, err := env.ActivePricesFromCacheOrDB()
 	if err != nil {
-		return pw.FtcPrice{}, err
+		return price.FtcPrice{}, err
 	}
 
 	for _, v := range prices {
@@ -101,5 +101,5 @@ func (env Env) ActivePriceOfEdition(e price.Edition) (pw.FtcPrice, error) {
 		}
 	}
 
-	return pw.FtcPrice{}, sql.ErrNoRows
+	return price.FtcPrice{}, sql.ErrNoRows
 }

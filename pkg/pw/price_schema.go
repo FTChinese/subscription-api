@@ -17,8 +17,8 @@ type PriceSchema struct {
 }
 
 // NewFtcPrice turns the raw data from DB into FtcPrice.
-func NewFtcPrice(s PriceSchema) FtcPrice {
-	return FtcPrice{
+func NewFtcPrice(s PriceSchema) price.FtcPrice {
+	return price.FtcPrice{
 		Original: price.Price{
 			ID:         s.PlanID,
 			Edition:    s.Edition,
