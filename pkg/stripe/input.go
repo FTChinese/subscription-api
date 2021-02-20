@@ -42,7 +42,7 @@ func (i SubsInput) Validate(isUpgrade bool) *render.ValidationError {
 // SubsParams contains the data used to create/upgrade a subscription.
 type SubsParams struct {
 	Account reader.FtcAccount
-	Plan    Plan
+	Plan    price.StripeEdition
 	Params  SharedParams
 }
 
@@ -81,6 +81,6 @@ func (i *CheckoutInput) Validate() *render.ValidationError {
 
 type CheckoutParams struct {
 	Account reader.FtcAccount
-	Plan    Plan
+	Plan    price.StripeEdition
 	Input   CheckoutInput
 }
