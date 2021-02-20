@@ -27,18 +27,6 @@ type Edition struct {
 	Cycle enum.Cycle `json:"cycle" db:"cycle"`
 }
 
-func NewStdMonthEdition() Edition {
-	return StdMonthEdition
-}
-
-func NewStdYearEdition() Edition {
-	return StdYearEdition
-}
-
-func NewPremiumEdition() Edition {
-	return PremiumEdition
-}
-
 func (e Edition) Validate() *render.ValidationError {
 	if e.Tier == enum.TierNull {
 		return &render.ValidationError{

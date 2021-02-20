@@ -95,7 +95,7 @@ func TestCtxSubs_Render(t *testing.T) {
 				},
 				AddOn: subs.AddOn{
 					ID:           db.AddOnID(),
-					Edition:      price.NewStdYearEdition(),
+					Edition:      price.StdYearEdition,
 					CycleCount:   0,
 					DaysRemained: 100,
 					OrderID:      null.StringFrom(db.MustOrderID()),
@@ -124,7 +124,7 @@ func TestCtxSubs_Render(t *testing.T) {
 				},
 				AddOn: subs.AddOn{
 					ID:           db.AddOnID(),
-					Edition:      price.NewStdYearEdition(),
+					Edition:      price.StdYearEdition,
 					CycleCount:   1,
 					DaysRemained: 1,
 					OrderID:      null.StringFrom(db.MustOrderID()),
