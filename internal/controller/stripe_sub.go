@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
@@ -68,7 +69,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	sp, err := stripe.PlanStore.FindByEdition(input.Edition, router.config.Live())
+	sp, err := price.StripeEditions.FindByEdition(input.Edition, router.config.Live())
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -153,7 +154,7 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		return
 	}
 
-	sp, err := stripe.PlanStore.FindByEdition(input.Edition, router.config.Live())
+	sp, err := price.StripeEditions.FindByEdition(input.Edition, router.config.Live())
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())

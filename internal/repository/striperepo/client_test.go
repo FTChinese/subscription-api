@@ -3,7 +3,7 @@ package striperepo
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/brianvoe/gofakeit/v5"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -52,9 +52,9 @@ func TestClient_ListPrices(t *testing.T) {
 		t.Log(p)
 	}
 
-	stripe.PriceCache.AddAll(stripePrices)
+	price.StripePriceCache.AddAll(stripePrices)
 
-	prices := stripe.PriceCache.List(true)
+	prices := price.StripePriceCache.List(true)
 
 	for _, sp := range prices {
 		t.Logf("%s", faker.MustMarshalIndent(sp))
