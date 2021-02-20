@@ -3,7 +3,7 @@
 package test
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	price2 "github.com/FTChinese/subscription-api/pkg/price"
 	"time"
 
 	"github.com/FTChinese/go-rest/enum"
@@ -30,7 +30,7 @@ type Persona struct {
 	AppleSubID string
 
 	kind      enum.AccountKind
-	price     pw.FtcPrice
+	price     price2.FtcPrice
 	payMethod enum.PayMethod
 	expired   bool
 	autoRenew bool
@@ -66,7 +66,7 @@ func (p *Persona) SetAccountKind(k enum.AccountKind) *Persona {
 	return p
 }
 
-func (p *Persona) SetPrice(pp pw.FtcPrice) *Persona {
+func (p *Persona) SetPrice(pp price2.FtcPrice) *Persona {
 	p.price = pp
 	return p
 }
@@ -77,7 +77,7 @@ func (p *Persona) SetReservedDays(r reader.ReservedDays) *Persona {
 	return p
 }
 
-func (p *Persona) GetPlan() pw.FtcPrice {
+func (p *Persona) GetPlan() price2.FtcPrice {
 	return p.price
 }
 

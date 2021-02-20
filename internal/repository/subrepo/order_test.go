@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -60,8 +61,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindCreate,
-					Item:     subs.NewCheckoutItem(faker.PriceStdYear),
-					Payable:  subs.NewCheckoutItem(faker.PriceStdYear).Payable(),
+					Item:     cart.NewCheckoutItem(faker.PriceStdYear),
+					Payable:  cart.NewCheckoutItem(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
@@ -103,8 +104,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindRenew,
-					Item:     subs.NewCheckoutItem(faker.PriceStdYear),
-					Payable:  subs.NewCheckoutItem(faker.PriceStdYear).Payable(),
+					Item:     cart.NewCheckoutItem(faker.PriceStdYear),
+					Payable:  cart.NewCheckoutItem(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
@@ -146,8 +147,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindUpgrade,
-					Item:     subs.NewCheckoutItem(faker.PricePrm),
-					Payable:  subs.NewCheckoutItem(faker.PricePrm).Payable(),
+					Item:     cart.NewCheckoutItem(faker.PricePrm),
+					Payable:  cart.NewCheckoutItem(faker.PricePrm).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
@@ -189,8 +190,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindAddOn,
-					Item:     subs.NewCheckoutItem(faker.PriceStdYear),
-					Payable:  subs.NewCheckoutItem(faker.PriceStdYear).Payable(),
+					Item:     cart.NewCheckoutItem(faker.PriceStdYear),
+					Payable:  cart.NewCheckoutItem(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
