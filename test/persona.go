@@ -30,7 +30,7 @@ type Persona struct {
 	AppleSubID string
 
 	kind      enum.AccountKind
-	price     pw.ProductPrice
+	price     pw.FtcPrice
 	payMethod enum.PayMethod
 	expired   bool
 	autoRenew bool
@@ -66,7 +66,7 @@ func (p *Persona) SetAccountKind(k enum.AccountKind) *Persona {
 	return p
 }
 
-func (p *Persona) SetPrice(pp pw.ProductPrice) *Persona {
+func (p *Persona) SetPrice(pp pw.FtcPrice) *Persona {
 	p.price = pp
 	return p
 }
@@ -77,7 +77,7 @@ func (p *Persona) SetReservedDays(r reader.ReservedDays) *Persona {
 	return p
 }
 
-func (p *Persona) GetPlan() pw.ProductPrice {
+func (p *Persona) GetPlan() pw.FtcPrice {
 	return p.price
 }
 
