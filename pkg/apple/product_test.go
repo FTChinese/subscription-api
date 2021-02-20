@@ -20,7 +20,7 @@ func Test_newAppleStore(t *testing.T) {
 func Test_appleStore_findByEdition(t *testing.T) {
 	store := newAppleStore()
 
-	p, err := store.findByEdition(price.NewStdYearEdition())
+	p, err := store.findByEdition(price.StdYearEdition)
 
 	if err != nil {
 		t.Error(err)

@@ -20,15 +20,15 @@ func newAppleStore() appleStore {
 	s := appleStore{
 		products: []Product{
 			{
-				Edition: price.NewStdMonthEdition(),
+				Edition: price.StdMonthEdition,
 				ID:      "com.ft.ftchinese.mobile.subscription.member.monthly",
 			},
 			{
-				Edition: price.NewStdYearEdition(),
+				Edition: price.StdYearEdition,
 				ID:      "com.ft.ftchinese.mobile.subscription.member",
 			},
 			{
-				Edition: price.NewPremiumEdition(),
+				Edition: price.PremiumEdition,
 				ID:      "com.ft.ftchinese.mobile.subscription.vip",
 			},
 		},
