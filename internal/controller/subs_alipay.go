@@ -92,7 +92,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		}
 
 		or := ali.OrderReq{
-			Title:       subs.PaymentTitle(pi.Kind, pi.Item.Price.Edition),
+			Title:       subs.PaymentTitle(pi.Kind, pi.Cart.Price.Edition),
 			FtcOrderID:  pi.Order.ID,
 			TotalAmount: pi.Payable.AliPrice(),
 			WebhookURL:  webhookURL,
