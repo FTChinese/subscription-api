@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/dt"
+	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -106,4 +108,20 @@ func (o Order) upgradeConfirm(confirmedAt chrono.Time) Order {
 		AddDays(trialDays)
 
 	return o
+}
+
+func (o Order) ToAddOn() addon.AddOn {
+	return addon.AddOn{
+		ID:            db.AddOnID(),
+		Edition:       o.Edition,
+		CycleCount:    1,
+		DaysRemained:  trialDays,
+		IsCarryOver:   false,
+		PaymentMethod: o.PaymentMethod,
+		CompoundID:    o.CompoundID,
+		OrderID:       null.StringFrom(o.ID),
+		PlanID:        null.StringFrom(o.PlanID),
+		CreatedUTC:    chrono.TimeNow(),
+		ConsumedUTC:   chrono.Time{},
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -134,7 +135,7 @@ func TestNewMembership(t *testing.T) {
 			args: args{
 				p: PaymentConfirmed{
 					Order:    orderCreate,
-					AddOn:    AddOn{},
+					AddOn:    addon.AddOn{},
 					Snapshot: reader.MemberSnapshot{},
 				},
 			},
@@ -152,7 +153,7 @@ func TestNewMembership(t *testing.T) {
 				Status:        0,
 				AppleSubsID:   null.String{},
 				B2BLicenceID:  null.String{},
-				ReservedDays:  reader.ReservedDays{},
+				ReservedDays:  addon.ReservedDays{},
 			}.Sync(),
 		},
 		{
@@ -160,7 +161,7 @@ func TestNewMembership(t *testing.T) {
 			args: args{
 				p: PaymentConfirmed{
 					Order: orderRenew,
-					AddOn: AddOn{},
+					AddOn: addon.AddOn{},
 					Snapshot: reader.MemberSnapshot{
 						SnapshotID: db.SnapshotID(),
 						CreatedBy:  null.String{},
@@ -183,9 +184,9 @@ func TestNewMembership(t *testing.T) {
 			args: args{
 				p: PaymentConfirmed{
 					Order: orderUpgrade,
-					AddOn: AddOn{
+					AddOn: addon.AddOn{
 						ID:            db.AddOnID(),
-						Edition:       price.NewStdYearEdition(),
+						Edition:       price.StdYearEdition,
 						CycleCount:    0,
 						DaysRemained:  10,
 						PaymentMethod: enum.PayMethodApple,
@@ -203,7 +204,7 @@ func TestNewMembership(t *testing.T) {
 				ExpireDate:    chrono.DateFrom(now.AddDate(1, 0, 1)),
 				PaymentMethod: orderUpgrade.PaymentMethod,
 				FtcPlanID:     null.StringFrom(orderUpgrade.PlanID),
-				ReservedDays: reader.ReservedDays{
+				ReservedDays: addon.ReservedDays{
 					Standard: 10,
 				},
 			}.Sync(),
@@ -213,7 +214,7 @@ func TestNewMembership(t *testing.T) {
 			args: args{
 				p: PaymentConfirmed{
 					Order: orderAddOn,
-					AddOn: NewAddOn(orderAddOn),
+					AddOn: orderAddOn.ToAddOn(),
 					Snapshot: reader.MemberSnapshot{
 						SnapshotID: db.SnapshotID(),
 						CreatedBy:  null.String{},
@@ -223,7 +224,7 @@ func TestNewMembership(t *testing.T) {
 					},
 				},
 			},
-			want: iapMember.WithReservedDays(reader.ReservedDays{
+			want: iapMember.WithReservedDays(addon.ReservedDays{
 				Standard: 367,
 			}).Sync(),
 		},
