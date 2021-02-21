@@ -1,8 +1,8 @@
 package reader
 
 import (
-	"errors"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"math"
 	"net/http"
@@ -27,19 +27,6 @@ var codeToTier = map[int64]enum.Tier{
 
 func GetTierCode(tier enum.Tier) int64 {
 	return tierToCode[tier]
-}
-
-// ReservedDays contains the subscription period that will become effective once current membership expired.
-type ReservedDays struct {
-	Standard int64 `json:"standardAddOn" db:"standard_addon"`
-	Premium  int64 `json:"premiumAddOn" db:"premium_addon"`
-}
-
-func (d ReservedDays) Plus(other ReservedDays) ReservedDays {
-	return ReservedDays{
-		Standard: d.Standard + other.Standard,
-		Premium:  d.Premium + other.Premium,
-	}
 }
 
 // Membership contains a user's membership details
@@ -70,7 +57,7 @@ type Membership struct {
 	Status       enum.SubsStatus `json:"status" db:"subs_status"`
 	AppleSubsID  null.String     `json:"appleSubsId" db:"apple_subs_id"`
 	B2BLicenceID null.String     `json:"b2bLicenceId" db:"b2b_licence_id"`
-	ReservedDays
+	addon.ReservedDays
 }
 
 // IsZero test whether the instance is empty.
@@ -194,9 +181,9 @@ func (m Membership) Sync() Membership {
 	return m
 }
 
-// IsAliOrWxPay checks whether current membership is purchased
+// IsOneTime checks whether current membership is purchased
 // via alipay or wechat pay.
-func (m Membership) IsAliOrWxPay() bool {
+func (m Membership) IsOneTime() bool {
 	// For backward compatibility. If Tier field comes from LegacyTier, then PayMethod field will be null.
 	// We treat all those cases as wxpay or alipay.
 	if m.Tier != enum.TierNull && m.PaymentMethod == enum.PayMethodNull {
@@ -227,40 +214,11 @@ func (m Membership) IsB2B() bool {
 	return !m.IsZero() && m.PaymentMethod == enum.PayMethodB2B && m.B2BLicenceID.Valid
 }
 
-func (m Membership) IsValidPremium() bool {
-	return m.Tier == enum.TierPremium && !m.IsExpired()
-}
-
-func (m Membership) WithReservedDays(days ReservedDays) Membership {
-	m.ReservedDays = m.ReservedDays.Plus(days)
-	return m
-}
-
-func (m Membership) HasAddOns() bool {
-	return m.Standard > 0 || m.Premium > 0
-}
-
-func (m Membership) ShouldUseAddOn() error {
-	if m.IsZero() {
-		return errors.New("subscription backup days only applicable to an existing membership")
-	}
-
-	if !m.IsExpired() {
-		return errors.New("backup days come into effect only after current subscription expired")
-	}
-
-	if !m.HasAddOns() {
-		return errors.New("current membership does not have backup days")
-	}
-
-	return nil
-}
-
 // canRenewViaAliWx test if current membership is allowed to renew for wxpay or alipay.
 // now <= expire date <= 3 years later
 func (m Membership) canRenewViaAliWx() bool {
 	// If m does not exist, or not create via alipay or wxpay.
-	if m.IsZero() || !m.IsAliOrWxPay() {
+	if m.IsZero() || !m.IsOneTime() {
 		return false
 	}
 
@@ -277,61 +235,6 @@ func (m Membership) WithinMaxRenewalPeriod() bool {
 
 	// It should include today and the date three year later.
 	return !m.ExpireDate.Before(today) && !m.ExpireDate.After(threeYearsLater)
-}
-
-// AliWxSubsKind determines what kind of order a user is creating based on existing membership.
-func (m Membership) AliWxSubsKind(e price.Edition) (enum.OrderKind, error) {
-	if m.IsZero() {
-		return enum.OrderKindCreate, nil
-	}
-
-	// If an existing member expired, treat it as a new member.
-	if m.IsExpired() {
-		return enum.OrderKindCreate, nil
-	}
-
-	switch m.PaymentMethod {
-	case enum.PayMethodAli, enum.PayMethodWx:
-		// Renewal
-		if m.Tier == e.Tier {
-			if m.canRenewViaAliWx() {
-				return enum.OrderKindRenew, nil
-			}
-			return enum.OrderKindNull, errors.New("beyond max allowed renewal period")
-		}
-
-		// Current membership tier is not equal to the edition to buy.
-		switch e.Tier {
-		// If edition is premium, current membership must be standard
-		case enum.TierPremium:
-			return enum.OrderKindUpgrade, nil
-
-		// Downgrade
-		case enum.TierStandard:
-			return enum.OrderKindNull, errors.New("downgrading is not supported currently")
-
-		// Shouldn't happen.
-		case enum.TierNull:
-			return enum.OrderKindNull, errors.New("please select the price edition to subscribe")
-		}
-
-	// Current membership is purchased via Stripe.
-	case enum.PayMethodStripe:
-		if m.Status.IsValid() {
-			return enum.OrderKindAddOn, nil
-		}
-		return enum.OrderKindCreate, nil
-
-	// Current membership is purchased via Apple
-	case enum.PayMethodApple:
-		return enum.OrderKindAddOn, nil
-
-	// Current membership is purchased via B2B business.
-	case enum.PayMethodB2B:
-		return enum.OrderKindNull, errors.New("b2b subscription does not support payment via alipay or wxpay")
-	}
-
-	return enum.OrderKindNull, errors.New("cannot determine the payment method of your current subscription")
 }
 
 // StripeSubsKind deduce what kind of subscription a request is trying to create.
