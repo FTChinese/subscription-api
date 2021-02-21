@@ -3,8 +3,8 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
@@ -14,19 +14,19 @@ import (
 
 func TestNewCheckedItem(t *testing.T) {
 	type args struct {
-		ep pw.ProductPrice
+		ep price.FtcPrice
 	}
 	tests := []struct {
 		name string
 		args args
-		want CheckoutItem
+		want cart.Cart
 	}{
 		{
 			name: "Checkout item",
 			args: args{
 				ep: faker.PriceStdYear,
 			},
-			want: CheckoutItem{
+			want: cart.Cart{
 				Price:    faker.PriceStdYear.Original,
 				Discount: faker.PriceStdYear.PromotionOffer,
 			},
@@ -34,7 +34,7 @@ func TestNewCheckedItem(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewCheckoutItem(tt.args.ep)
+			got := cart.NewFtcCart(tt.args.ep)
 			assert.Equal(t, got, tt.want)
 			t.Logf("Checkout item %+v", got)
 		})
@@ -65,7 +65,7 @@ func TestCheckedItem_Payable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i := CheckoutItem{
+			i := cart.Cart{
 				Price:    tt.fields.Price,
 				Discount: tt.fields.Discount,
 			}
@@ -83,14 +83,14 @@ func TestPaymentConfig_checkout(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		fields  PaymentConfig
+		fields  Counter
 		args    args
 		want    Checkout
 		wantErr bool
 	}{
 		{
 			name: "New order",
-			fields: PaymentConfig{
+			fields: Counter{
 				Account: reader.MockNewFtcAccount(enum.AccountKindFtc),
 				Price:   faker.PriceStdYear,
 				Method:  enum.PayMethodAli,
@@ -101,7 +101,7 @@ func TestPaymentConfig_checkout(t *testing.T) {
 			},
 			want: Checkout{
 				Kind: enum.OrderKindCreate,
-				Item: CheckoutItem{
+				Cart: cart.Cart{
 					Price:    faker.PriceStdYear.Original,
 					Discount: faker.PriceStdYear.PromotionOffer,
 				},
@@ -136,13 +136,13 @@ func TestPaymentConfig_order(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		fields  PaymentConfig
+		fields  Counter
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "New order",
-			fields: PaymentConfig{
+			fields: Counter{
 				Account: reader.MockNewFtcAccount(enum.AccountKindFtc),
 				Price:   faker.PriceStdYear,
 				Method:  enum.PayMethodAli,
@@ -151,7 +151,7 @@ func TestPaymentConfig_order(t *testing.T) {
 			args: args{
 				checkout: Checkout{
 					Kind: enum.OrderKindCreate,
-					Item: CheckoutItem{
+					Cart: cart.Cart{
 						Price:    faker.PriceStdYear.Original,
 						Discount: faker.PriceStdYear.PromotionOffer,
 					},
@@ -167,7 +167,7 @@ func TestPaymentConfig_order(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := PaymentConfig{
+			c := Counter{
 				Account: tt.fields.Account,
 				Price:   tt.fields.Price,
 				Method:  tt.fields.Method,
@@ -194,14 +194,14 @@ func TestPaymentConfig_BuildIntent(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		fields  PaymentConfig
+		fields  Counter
 		args    args
 		want    PaymentIntent
 		wantErr bool
 	}{
 		{
 			name: "New order",
-			fields: PaymentConfig{
+			fields: Counter{
 				Account: reader.MockNewFtcAccount(enum.AccountKindFtc),
 				Price:   faker.PriceStdYear,
 				Method:  enum.PayMethodAli,

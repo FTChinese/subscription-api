@@ -3,6 +3,7 @@ package subs
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
@@ -48,10 +49,10 @@ func PaymentTitle(k enum.OrderKind, e price.Edition) string {
 	return fmt.Sprintf("%sFT中文网%s", prefix, e.StringCN())
 }
 
-// Checkout is intermediate bridge between payment request and the final result.
+// Checkout contains the calculation result of a purchase transaction.
 type Checkout struct {
 	Kind     enum.OrderKind `json:"kind"`
-	Item     CheckoutItem   `json:"item"`
+	Cart     cart.Cart      `json:"cart"`
 	Payable  price.Charge   `json:"payable"`
 	LiveMode bool           `json:"live"`
 }
