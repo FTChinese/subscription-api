@@ -2,6 +2,7 @@ package subrepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
@@ -52,7 +53,7 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 			Payment: pr,
 			PaymentConfirmed: subs.PaymentConfirmed{
 				Order:    order,
-				AddOn:    subs.AddOn{},
+				AddOn:    addon.AddOn{},
 				Snapshot: reader.MemberSnapshot{},
 			},
 			Notify: false,
