@@ -7,11 +7,12 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 
 	"github.com/google/uuid"
@@ -20,7 +21,7 @@ import (
 	"time"
 )
 
-func MockOrder(price pw.ProductPrice, kind enum.OrderKind) Order {
+func MockOrder(price price.FtcPrice, kind enum.OrderKind) Order {
 	return NewMockOrderBuilder("").
 		WithPrice(price).
 		WithKind(kind).
@@ -30,7 +31,7 @@ func MockOrder(price pw.ProductPrice, kind enum.OrderKind) Order {
 type MockOrderBuilder struct {
 	id        string
 	userIDs   reader.MemberID
-	price     pw.ProductPrice
+	price     price.FtcPrice
 	kind      enum.OrderKind
 	payMethod enum.PayMethod
 	wxAppId   null.String
@@ -62,7 +63,7 @@ func (b MockOrderBuilder) WithUserIDs(ids reader.MemberID) MockOrderBuilder {
 	return b
 }
 
-func (b MockOrderBuilder) WithPrice(p pw.ProductPrice) MockOrderBuilder {
+func (b MockOrderBuilder) WithPrice(p price.FtcPrice) MockOrderBuilder {
 	b.price = p
 	return b
 }
@@ -91,7 +92,7 @@ func (b MockOrderBuilder) WithPeriod(from time.Time) MockOrderBuilder {
 }
 
 func (b MockOrderBuilder) Build() Order {
-	item := NewCheckoutItem(b.price)
+	item := cart.NewFtcCart(b.price)
 
 	payable := item.Payable()
 
@@ -123,7 +124,7 @@ func (b MockOrderBuilder) Build() Order {
 
 type MockAddOnBuilder struct {
 	userIDs   reader.MemberID
-	price     pw.ProductPrice
+	price     price.FtcPrice
 	payMethod enum.PayMethod
 }
 
@@ -142,40 +143,40 @@ func (b MockAddOnBuilder) WithUserIDs(ids reader.MemberID) MockAddOnBuilder {
 	return b
 }
 
-func (b MockAddOnBuilder) WithPlan(p pw.ProductPrice) MockAddOnBuilder {
+func (b MockAddOnBuilder) WithPlan(p price.FtcPrice) MockAddOnBuilder {
 	b.price = p
 	return b
 }
 
-func (b MockAddOnBuilder) BuildNew() AddOn {
-	return AddOn{
-		ID:                 db.AddOnID(),
-		Edition:            b.price.Original.Edition,
-		CycleCount:         1,
-		DaysRemained:       1,
-		IsUpgradeCarryOver: false,
-		PaymentMethod:      b.payMethod,
-		CompoundID:         b.userIDs.CompoundID,
-		OrderID:            null.StringFrom(db.MustOrderID()),
-		PlanID:             null.StringFrom(b.price.Original.ID),
-		CreatedUTC:         chrono.TimeNow(),
-		ConsumedUTC:        chrono.Time{},
+func (b MockAddOnBuilder) BuildNew() addon.AddOn {
+	return addon.AddOn{
+		ID:            db.AddOnID(),
+		Edition:       b.price.Original.Edition,
+		CycleCount:    1,
+		DaysRemained:  1,
+		IsCarryOver:   false,
+		PaymentMethod: b.payMethod,
+		CompoundID:    b.userIDs.CompoundID,
+		OrderID:       null.StringFrom(db.MustOrderID()),
+		PlanID:        null.StringFrom(b.price.Original.ID),
+		CreatedUTC:    chrono.TimeNow(),
+		ConsumedUTC:   chrono.Time{},
 	}
 }
 
-func (b MockAddOnBuilder) BuildUpgrade() AddOn {
-	return AddOn{
-		ID:                 db.AddOnID(),
-		Edition:            faker.PriceStdYear.Original.Edition,
-		CycleCount:         0,
-		DaysRemained:       int64(rand.IntRange(1, 367)),
-		IsUpgradeCarryOver: false,
-		PaymentMethod:      b.payMethod,
-		CompoundID:         b.userIDs.CompoundID,
-		OrderID:            null.StringFrom(db.MustOrderID()),
-		PlanID:             null.StringFrom(faker.PriceStdYear.Original.ID),
-		CreatedUTC:         chrono.TimeNow(),
-		ConsumedUTC:        chrono.Time{},
+func (b MockAddOnBuilder) BuildUpgrade() addon.AddOn {
+	return addon.AddOn{
+		ID:            db.AddOnID(),
+		Edition:       faker.PriceStdYear.Original.Edition,
+		CycleCount:    0,
+		DaysRemained:  int64(rand.IntRange(1, 367)),
+		IsCarryOver:   false,
+		PaymentMethod: b.payMethod,
+		CompoundID:    b.userIDs.CompoundID,
+		OrderID:       null.StringFrom(db.MustOrderID()),
+		PlanID:        null.StringFrom(faker.PriceStdYear.Original.ID),
+		CreatedUTC:    chrono.TimeNow(),
+		ConsumedUTC:   chrono.Time{},
 	}
 }
 

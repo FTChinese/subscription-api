@@ -3,6 +3,7 @@ package subs
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
@@ -31,7 +32,7 @@ type ConfirmationParams struct {
 
 type PaymentConfirmed struct {
 	Order    Order                 `json:"order"` // The confirmed order.
-	AddOn    AddOn                 `json:"addOn"`
+	AddOn    addon.AddOn           `json:"addOn"`
 	Snapshot reader.MemberSnapshot `json:"-"` // Snapshot of previous membership
 }
 
@@ -45,7 +46,7 @@ func NewPaymentConfirmed(p ConfirmationParams) (PaymentConfirmed, error) {
 	case enum.OrderKindCreate, enum.OrderKindRenew:
 		return PaymentConfirmed{
 			Order:    p.Order.newOrRenewalConfirm(p.Payment.ConfirmedUTC, p.Member.ExpireDate),
-			AddOn:    AddOn{},
+			AddOn:    addon.AddOn{},
 			Snapshot: snapshot,
 		}, nil
 
@@ -54,14 +55,14 @@ func NewPaymentConfirmed(p ConfirmationParams) (PaymentConfirmed, error) {
 			p.Order.Kind = enum.OrderKindRenew
 			return PaymentConfirmed{
 				Order:    p.Order.newOrRenewalConfirm(p.Payment.ConfirmedUTC, p.Member.ExpireDate),
-				AddOn:    AddOn{},
+				AddOn:    addon.AddOn{},
 				Snapshot: snapshot,
 			}, nil
 		}
 
 		return PaymentConfirmed{
 			Order:    p.Order.upgradeConfirm(p.Payment.ConfirmedUTC),
-			AddOn:    NewUpgradeCarryOver(p.Order, p.Member),
+			AddOn:    p.Member.CarryOver().WithOrderID(p.Order.ID),
 			Snapshot: snapshot,
 		}, nil
 
@@ -69,7 +70,7 @@ func NewPaymentConfirmed(p ConfirmationParams) (PaymentConfirmed, error) {
 		p.Order.ConfirmedAt = p.Payment.ConfirmedUTC
 		return PaymentConfirmed{
 			Order:    p.Order,
-			AddOn:    NewAddOn(p.Order),
+			AddOn:    p.Order.ToAddOn(),
 			Snapshot: snapshot,
 		}, nil
 
