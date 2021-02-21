@@ -24,7 +24,7 @@ func (env Env) UpgradeSubscription(cfg stripe.SubsParams) (stripe.SubsResult, er
 		return stripe.SubsResult{}, nil
 	}
 
-	err = mmb.PermitStripeUpgrade(cfg.Plan.Edition)
+	err = mmb.PermitStripeUpgrade(cfg.Edition.Edition)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
