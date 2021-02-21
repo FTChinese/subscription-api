@@ -30,6 +30,8 @@ func (a AddOn) IsZero() bool {
 	return a.ID == ""
 }
 
+// GetDays calculates roughly the how many days this add-on has.
+// It is not precise and used only as an indicator that user has add-on.
 func (a AddOn) GetDays() int64 {
 	return a.CycleCount*cycleDays[a.Cycle] + a.DaysRemained
 }
@@ -48,6 +50,7 @@ func (a AddOn) ToReservedDays() ReservedDays {
 			Premium:  a.GetDays(),
 		}
 
+	// Returns zero if current instance is zero.
 	default:
 		return ReservedDays{}
 	}

@@ -9,9 +9,9 @@ import (
 )
 
 type MembershipParams struct {
-	UserIDs   reader.MemberID
-	Subs      Subs
-	AddOnDays addon.ReservedDays
+	UserIDs      reader.MemberID
+	Subs         Subs
+	ReservedDays addon.ReservedDays
 }
 
 func NewMembership(params MembershipParams) reader.Membership {
@@ -32,6 +32,6 @@ func NewMembership(params MembershipParams) reader.Membership {
 		Status:        params.Subs.Status,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
-		ReservedDays:  params.AddOnDays,
+		ReservedDays:  params.ReservedDays,
 	}
 }
