@@ -2,7 +2,7 @@ package stripe
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/pkg/dt"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 )

@@ -1,7 +1,7 @@
 package pw
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/dt"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/guregu/null"
 )
 
