@@ -2,6 +2,7 @@ package txrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -524,7 +525,7 @@ func TestMemberTx_SaveAddOn(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		addOn subs.AddOn
+		addOn addon.AddOn
 	}
 	tests := []struct {
 		name    string
@@ -538,7 +539,9 @@ func TestMemberTx_SaveAddOn(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				addOn: subs.NewAddOn(test.NewPersona().NewOrder(enum.OrderKindAddOn)),
+				addOn: test.NewPersona().
+					NewOrder(enum.OrderKindAddOn).
+					ToAddOn(),
 			},
 			wantErr: false,
 		},
@@ -634,7 +637,11 @@ func TestMemberTx_AddOnsConsumed(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				ids: subs.CollectAddOnIDs(addOns).ToSlice(),
+				ids: []string{
+					addOns[0].ID,
+					addOns[1].ID,
+					addOns[2].ID,
+				},
 			},
 			wantErr: false,
 		},
