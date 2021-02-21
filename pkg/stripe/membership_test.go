@@ -31,8 +31,8 @@ func TestNewMembership(t *testing.T) {
 						CompoundID: subs.FtcUserID.String,
 						FtcID:      subs.FtcUserID,
 					},
-					Subs:      subs,
-					AddOnDays: addon.ReservedDays{},
+					Subs:         subs,
+					ReservedDays: addon.ReservedDays{},
 				},
 			},
 			want: reader.Membership{

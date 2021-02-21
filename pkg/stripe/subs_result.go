@@ -1,6 +1,8 @@
 package stripe
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/stripe/stripe-go/v72"
 )
@@ -9,6 +11,7 @@ import (
 type SubsResultParams struct {
 	UserIDs reader.MemberID // UserIDs might comes from user account, or from current membership for refreshing.
 	SS      *stripe.Subscription
+	Kind    cart.SubsKind
 	// To build membership, the above three fields are enough.
 
 	CurrentMember reader.Membership    // Used for backup.
@@ -23,6 +26,7 @@ type SubsResult struct {
 	Subs                 Subs                  `json:"subs"`
 	Member               reader.Membership     `json:"membership"` // New membership.
 	Snapshot             reader.MemberSnapshot `json:"-"`          // If Modified is false, this must exists. If Modified is true, its existence depends -- a newly created membership should not produce a snapshot.
+	AddOn                addon.AddOn           `json:"-"`
 }
 
 func NewSubsResult(params SubsResultParams) (SubsResult, error) {
@@ -31,10 +35,16 @@ func NewSubsResult(params SubsResultParams) (SubsResult, error) {
 		return SubsResult{}, err
 	}
 
+	var addOn addon.AddOn
+	if params.Kind == cart.SubsKindOneTimeToStripe {
+		addOn = params.CurrentMember.CarryOver()
+	}
+
 	m := NewMembership(MembershipParams{
-		UserIDs:   params.UserIDs,
-		Subs:      subs,
-		AddOnDays: params.CurrentMember.ReservedDays,
+		UserIDs: params.UserIDs,
+		Subs:    subs,
+		ReservedDays: params.CurrentMember.ReservedDays.
+			Plus(addOn.ToReservedDays()),
 	})
 
 	// For refreshing, nothing might be changed.
@@ -55,5 +65,6 @@ func NewSubsResult(params SubsResultParams) (SubsResult, error) {
 		Subs:                 subs,
 		Member:               m,
 		Snapshot:             snapshot,
+		AddOn:                addOn,
 	}, nil
 }

@@ -108,7 +108,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(result)
 }
 
-// UpgradeSubscription create a stripe subscription.
+// UpgradeSubscription updates a stripe subscription.
 // Input:
 // tier: string;
 // cycle: string;

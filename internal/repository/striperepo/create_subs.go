@@ -75,6 +75,7 @@ func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 		UserIDs:       cfg.Account.MemberID(),
 		CurrentMember: mmb,
 		SS:            ss,
+		Kind:          intent.SubsKind,
 		Action:        reader.ActionCreate,
 	})
 
@@ -100,6 +101,13 @@ func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 			sugar.Error(err)
 			_ = tx.Rollback()
 			return stripe.SubsResult{}, err
+		}
+	}
+
+	if !result.AddOn.IsZero() {
+		if err := tx.SaveAddOn(result.AddOn); err != nil {
+			// Since stripe subscription is already created, we should not rollback in case of error.
+			sugar.Error(err)
 		}
 	}
 
