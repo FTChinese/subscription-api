@@ -3,9 +3,9 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/validator"
 	"github.com/guregu/null"
 	"strings"
 )
@@ -42,7 +42,7 @@ func (i SubsInput) Validate(isUpgrade bool) *render.ValidationError {
 // SubsParams contains the data used to create/upgrade a subscription.
 type SubsParams struct {
 	Account reader.FtcAccount
-	Plan    price.StripeEdition
+	Edition price.StripeEdition
 	Params  SharedParams
 }
 

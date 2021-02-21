@@ -2,7 +2,7 @@ package apple
 
 import (
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/validator"
+	"github.com/FTChinese/subscription-api/lib/validator"
 	"strings"
 )
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/pkg/fetch"
+	"github.com/FTChinese/subscription-api/lib/fetch"
 	"github.com/spf13/viper"
 	"log"
 	"net/url"

@@ -3,9 +3,9 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/dt"
+	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/validator"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 	"strings"
