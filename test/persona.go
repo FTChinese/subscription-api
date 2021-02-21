@@ -3,6 +3,7 @@
 package test
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	price2 "github.com/FTChinese/subscription-api/pkg/price"
 	"time"
 
@@ -34,7 +35,7 @@ type Persona struct {
 	payMethod enum.PayMethod
 	expired   bool
 	autoRenew bool
-	reserved  reader.ReservedDays
+	reserved  addon.ReservedDays
 }
 
 func NewPersona() *Persona {
@@ -71,7 +72,7 @@ func (p *Persona) SetPrice(pp price2.FtcPrice) *Persona {
 	return p
 }
 
-func (p *Persona) SetReservedDays(r reader.ReservedDays) *Persona {
+func (p *Persona) SetReservedDays(r addon.ReservedDays) *Persona {
 	p.reserved = r
 
 	return p
@@ -155,19 +156,19 @@ func (p *Persona) NewOrder(k enum.OrderKind) subs.Order {
 		Build()
 }
 
-func (p *Persona) AddOn() subs.AddOn {
+func (p *Persona) AddOn() addon.AddOn {
 	return subs.NewMockAddOnBuilder().
 		WithUserIDs(p.AccountID()).
 		WithPlan(p.price).
 		BuildNew()
 }
 
-func (p *Persona) AddOnN(n int) []subs.AddOn {
+func (p *Persona) AddOnN(n int) []addon.AddOn {
 	factory := subs.NewMockAddOnBuilder().
 		WithUserIDs(p.AccountID()).
 		WithPlan(p.price)
 
-	var addOns []subs.AddOn
+	var addOns []addon.AddOn
 	for i := 0; i < n; i++ {
 		addOns = append(addOns, factory.BuildNew())
 	}

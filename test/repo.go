@@ -3,6 +3,7 @@
 package test
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -115,8 +116,8 @@ func (r *Repo) MustSaveRenewalOrders(orders []subs.Order) {
 	}
 }
 
-func (r *Repo) SaveAddOn(a subs.AddOn) error {
-	_, err := r.db.NamedExec(subs.StmtCreateAddOn, a)
+func (r *Repo) SaveAddOn(a addon.AddOn) error {
+	_, err := r.db.NamedExec(addon.StmtCreateAddOn, a)
 	if err != nil {
 		return err
 	}
@@ -124,13 +125,13 @@ func (r *Repo) SaveAddOn(a subs.AddOn) error {
 	return nil
 }
 
-func (r *Repo) MustSaveAddOn(a subs.AddOn) {
+func (r *Repo) MustSaveAddOn(a addon.AddOn) {
 	if err := r.SaveAddOn(a); err != nil {
 		panic(err)
 	}
 }
 
-func (r *Repo) SaveAddOnN(addOns []subs.AddOn) error {
+func (r *Repo) SaveAddOnN(addOns []addon.AddOn) error {
 	for _, v := range addOns {
 		err := r.SaveAddOn(v)
 		if err != nil {
@@ -141,7 +142,7 @@ func (r *Repo) SaveAddOnN(addOns []subs.AddOn) error {
 	return nil
 }
 
-func (r *Repo) MustSaveAddOnN(addOns []subs.AddOn) {
+func (r *Repo) MustSaveAddOnN(addOns []addon.AddOn) {
 	err := r.SaveAddOnN(addOns)
 	if err != nil {
 		panic(err)
