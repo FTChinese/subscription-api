@@ -146,7 +146,7 @@ func (c Client) CreateSubs(cfg ftcStripe.SubsParams) (*stripe.Subscription, erro
 		CancelAtPeriodEnd: stripe.Bool(false),
 		Items: []*stripe.SubscriptionItemsParams{
 			{
-				Price: stripe.String(cfg.Plan.PriceID),
+				Price: stripe.String(cfg.Edition.PriceID),
 			},
 		},
 	}
@@ -189,7 +189,7 @@ func (c Client) UpgradeSubs(subID string, cfg ftcStripe.SubsParams) (*stripe.Sub
 		Items: []*stripe.SubscriptionItemsParams{
 			{
 				ID:    stripe.String(ss.Items.Data[0].ID),
-				Price: stripe.String(cfg.Plan.PriceID),
+				Price: stripe.String(cfg.Edition.PriceID),
 			},
 		},
 	}
