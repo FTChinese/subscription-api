@@ -23,36 +23,36 @@ type stripeEditions struct {
 	indexID      map[string]int // Index the editions array by stripe plan/price id.
 }
 
-func newPlanStore() *stripeEditions {
+func newStripeEditions() *stripeEditions {
 	s := &stripeEditions{
 		editions: []StripeEdition{
 			{
-				Edition: NewStdMonthEdition(),
+				Edition: StdMonthEdition,
 				PriceID: "price_1IM2Z4BzTK0hABgJ9Sh0u35h",
 				Live:    true,
 			},
 			{
-				Edition: NewStdMonthEdition(),
+				Edition: StdMonthEdition,
 				PriceID: "price_1IM2mgBzTK0hABgJVH8o9Sjm",
 				Live:    false,
 			},
 			{
-				Edition: NewStdYearEdition(),
+				Edition: StdYearEdition,
 				PriceID: "price_1IM2aNBzTK0hABgJeJVIx3kL",
 				Live:    true,
 			},
 			{
-				Edition: NewStdYearEdition(),
+				Edition: StdYearEdition,
 				PriceID: "price_1IM2nFBzTK0hABgJiIDeDIox",
 				Live:    false,
 			},
 			{
-				Edition: NewPremiumEdition(),
+				Edition: PremiumEdition,
 				PriceID: "plan_FXZbv1cDTsUKOg",
 				Live:    true,
 			},
 			{
-				Edition: NewPremiumEdition(),
+				Edition: PremiumEdition,
 				PriceID: "plan_FOde0uAr0V4WmT",
 				Live:    false,
 			},
@@ -89,4 +89,4 @@ func (s stripeEditions) FindByID(priceID string) (StripeEdition, error) {
 	return s.editions[i], nil
 }
 
-var StripeEditions = newPlanStore()
+var StripeEditions = newStripeEditions()
