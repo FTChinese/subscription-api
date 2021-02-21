@@ -1,6 +1,9 @@
 package striperepo
 
 import (
+	"errors"
+	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
@@ -38,11 +41,17 @@ func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
-	err = mmb.PermitStripeCreate(cfg.Plan.Edition)
+	intent, err := cart.NewCheckoutIntents(mmb, cfg.Edition.Edition).
+		Get(enum.PayMethodStripe)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, err
+	}
+
+	if !intent.PermitNewStripe() {
+		_ = tx.Rollback()
+		return stripe.SubsResult{}, errors.New("only creating new subscription supported")
 	}
 
 	sugar.Info("Creating stripe subscription")
