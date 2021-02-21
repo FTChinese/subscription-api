@@ -3,40 +3,38 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
 )
 
-// PaymentConfig collects parameters to build an order.
-// These are experimental refactoring.
-type PaymentConfig struct {
+// Counter is where user present shopping cart and wallet to check out.
+type Counter struct {
 	Account reader.FtcAccount // Required. Who is paying.
-	Plan    price.Price       // Deprecated
-	Price   pw.ProductPrice   // Required. What is purchased.
+	Price   price.FtcPrice    // Required. What is purchased.
 	Method  enum.PayMethod    // Optional if no payment is actually involved.
 	WxAppID null.String
 }
 
 // NewPayment initializes a new payment session.
 // Who and what to purchase are the minimal data required to start payment.
-func NewPayment(account reader.FtcAccount, price pw.ProductPrice) PaymentConfig {
-	return PaymentConfig{
+func NewPayment(account reader.FtcAccount, price price.FtcPrice) Counter {
+	return Counter{
 		Account: account,
 		Price:   price,
 	}
 }
 
-func (c PaymentConfig) WithAlipay() PaymentConfig {
+func (c Counter) WithAlipay() Counter {
 	c.Method = enum.PayMethodAli
 	return c
 }
 
-func (c PaymentConfig) WithWxpay(app wechat.PayApp) PaymentConfig {
+func (c Counter) WithWxpay(app wechat.PayApp) Counter {
 	c.Method = enum.PayMethodWx
 	c.WxAppID = null.StringFrom(app.AppID)
 	return c
@@ -44,26 +42,25 @@ func (c PaymentConfig) WithWxpay(app wechat.PayApp) PaymentConfig {
 
 // Checkout determines how a user should check out. This version
 // allows all user to pay via alipay or wxpay, even if current membership is a valid stripe or iap.
-// If Kind == OrderKindAddOn,
-func (c PaymentConfig) checkout(m reader.Membership) (Checkout, error) {
+func (c Counter) checkout(m reader.Membership) (Checkout, error) {
 
-	intent, err := NewCheckoutIntents(m, c.Price.Original.Edition).
+	intent, err := cart.NewCheckoutIntents(m, c.Price.Original.Edition).
 		Get(c.Method)
 	if err != nil {
 		return Checkout{}, err
 	}
 
-	item := NewCheckoutItem(c.Price)
+	ftcCart := cart.NewFtcCart(c.Price)
 	return Checkout{
-		Kind:     intent.OrderKind,
-		Item:     item,
-		Payable:  item.Payable(),
+		Kind:     intent.OneTimeKind,
+		Cart:     ftcCart,
+		Payable:  ftcCart.Payable(),
 		LiveMode: true,
 	}.WithTest(c.Account.IsTest()), nil
 }
 
 // BuildOrder creates an Order based on a checkout action.
-func (c PaymentConfig) order(checkout Checkout) (Order, error) {
+func (c Counter) order(checkout Checkout) (Order, error) {
 
 	orderID, err := db.OrderID()
 	if err != nil {
@@ -73,10 +70,10 @@ func (c PaymentConfig) order(checkout Checkout) (Order, error) {
 	return Order{
 		ID:         orderID,
 		MemberID:   c.Account.MemberID(),
-		PlanID:     checkout.Item.Price.ID,
-		DiscountID: checkout.Item.Discount.DiscID,
-		Price:      checkout.Item.Price.UnitAmount,
-		Edition:    checkout.Item.Price.Edition,
+		PlanID:     checkout.Cart.Price.ID,
+		DiscountID: checkout.Cart.Discount.DiscID,
+		Price:      checkout.Cart.Price.UnitAmount,
+		Edition:    checkout.Cart.Price.Edition,
 		Charge: price.Charge{
 			Amount:   checkout.Payable.Amount,
 			Currency: checkout.Payable.Currency,
@@ -93,7 +90,7 @@ func (c PaymentConfig) order(checkout Checkout) (Order, error) {
 
 // BuildIntent builds new a new payment intent based on
 // current membership status.
-func (c PaymentConfig) BuildIntent(m reader.Membership) (PaymentIntent, error) {
+func (c Counter) BuildIntent(m reader.Membership) (PaymentIntent, error) {
 	checkout, err := c.checkout(m)
 	if err != nil {
 		return PaymentIntent{}, err
