@@ -1,4 +1,4 @@
-package subs
+package cart
 
 import (
 	"errors"
@@ -7,9 +7,54 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
+// CheckoutIntent decides how user want to purchase a product.
+// This is determined by current membership, product and payment method selected.
+// If user chooses Ali/Wx, it is a one-time purchase; for stripe it is a subscription.
+// `OneTimeKind` and `SubsKind` should not exist at the same time.
 type CheckoutIntent struct {
-	OrderKind  enum.OrderKind
+	// What kind of one-time purchase user is trying to create?
+	OneTimeKind enum.OrderKind
+	// How would user perform a subscription:
+	// creating a new one?
+	// Just updating it to different billing cycle or tier?
+	// Or switching one-time purchase to subscription mode?
+	// In the last case, current remaining days should be transferred to add-on
+	SubsKind   SubsKind
 	PayMethods []enum.PayMethod
+}
+
+func NewOneTimeIntent(kind enum.OrderKind) CheckoutIntent {
+	return CheckoutIntent{
+		OneTimeKind: kind,
+		PayMethods: []enum.PayMethod{
+			enum.PayMethodAli,
+			enum.PayMethodWx,
+		},
+	}
+}
+
+func NewSubsIntent(kind SubsKind) CheckoutIntent {
+	return CheckoutIntent{
+		SubsKind: kind,
+		PayMethods: []enum.PayMethod{
+			enum.PayMethodStripe,
+		},
+	}
+}
+
+func (i CheckoutIntent) PermitNewStripe() bool {
+	return i.SubsKind == SubsKindNew || i.SubsKind == SubsKindOneTimeToStripe
+}
+
+// Contains checks if the payment method contains the specified one.
+func (i CheckoutIntent) Contains(m enum.PayMethod) bool {
+	for _, v := range i.PayMethods {
+		if v == m {
+			return true
+		}
+	}
+
+	return false
 }
 
 type CheckoutIntents struct {
@@ -29,10 +74,8 @@ func (coi CheckoutIntents) Get(m enum.PayMethod) (CheckoutIntent, error) {
 	}
 
 	for _, intent := range coi.intents {
-		for _, pm := range intent.PayMethods {
-			if pm == m {
-				return intent, nil
-			}
+		if intent.Contains(m) {
+			return intent, nil
 		}
 	}
 
@@ -43,14 +86,8 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 	if m.IsExpired() {
 		return CheckoutIntents{
 			intents: []CheckoutIntent{
-				{
-					OrderKind: enum.OrderKindCreate,
-					PayMethods: []enum.PayMethod{
-						enum.PayMethodAli,
-						enum.PayMethodWx,
-						enum.PayMethodStripe,
-					},
-				},
+				NewOneTimeIntent(enum.OrderKindCreate),
+				NewSubsIntent(SubsKindNew),
 			},
 			err: nil,
 		}
@@ -59,14 +96,8 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 	if m.IsInvalidStripe() {
 		return CheckoutIntents{
 			intents: []CheckoutIntent{
-				{
-					OrderKind: enum.OrderKindCreate,
-					PayMethods: []enum.PayMethod{
-						enum.PayMethodAli,
-						enum.PayMethodWx,
-						enum.PayMethodStripe,
-					},
-				},
+				NewOneTimeIntent(enum.OrderKindCreate),
+				NewSubsIntent(SubsKindNew),
 			},
 			err: nil,
 		}
@@ -88,22 +119,11 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 
 			return CheckoutIntents{
 				intents: []CheckoutIntent{
-					{
-						OrderKind: enum.OrderKindRenew,
-						PayMethods: []enum.PayMethod{
-							enum.PayMethodAli,
-							enum.PayMethodWx,
-						},
-					},
+					NewOneTimeIntent(enum.OrderKindRenew),
 					// However, if user want to use Stripe to subscribe,
 					// it should be treated as a new subscription,
 					// with current remaining subscription time reserved for future use.
-					{
-						OrderKind: enum.OrderKindCreate,
-						PayMethods: []enum.PayMethod{
-							enum.PayMethodStripe,
-						},
-					},
+					NewSubsIntent(SubsKindOneTimeToStripe),
 				},
 				err: nil,
 			}
@@ -115,19 +135,8 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 		case enum.TierPremium:
 			return CheckoutIntents{
 				intents: []CheckoutIntent{
-					{
-						OrderKind: enum.OrderKindUpgrade,
-						PayMethods: []enum.PayMethod{
-							enum.PayMethodAli,
-							enum.PayMethodWx,
-						},
-					},
-					{
-						OrderKind: enum.OrderKindCreate,
-						PayMethods: []enum.PayMethod{
-							enum.PayMethodStripe,
-						},
-					},
+					NewOneTimeIntent(enum.OrderKindUpgrade),
+					NewSubsIntent(SubsKindOneTimeToStripe),
 				},
 				err: nil,
 			}
@@ -137,13 +146,7 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 		case enum.TierStandard:
 			return CheckoutIntents{
 				intents: []CheckoutIntent{
-					{
-						OrderKind: enum.OrderKindAddOn,
-						PayMethods: []enum.PayMethod{
-							enum.PayMethodAli,
-							enum.PayMethodWx,
-						},
-					},
+					NewOneTimeIntent(enum.OrderKindAddOn),
 				},
 				err: nil,
 			}
@@ -154,13 +157,7 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 		if m.Tier == enum.TierPremium {
 			return CheckoutIntents{
 				intents: []CheckoutIntent{
-					{
-						OrderKind: enum.OrderKindAddOn,
-						PayMethods: []enum.PayMethod{
-							enum.PayMethodAli,
-							enum.PayMethodWx,
-						},
-					},
+					NewOneTimeIntent(enum.OrderKindAddOn),
 				},
 				err: nil,
 			}
@@ -172,10 +169,7 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 		case enum.TierPremium:
 			return CheckoutIntents{
 				intents: []CheckoutIntent{
-					{
-						OrderKind:  enum.OrderKindUpgrade,
-						PayMethods: []enum.PayMethod{enum.PayMethodStripe},
-					},
+					NewSubsIntent(SubsKindUpgrade),
 				},
 				err: nil,
 			}
@@ -186,13 +180,7 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 			if m.Cycle == e.Cycle {
 				return CheckoutIntents{
 					intents: []CheckoutIntent{
-						{
-							OrderKind: enum.OrderKindAddOn,
-							PayMethods: []enum.PayMethod{
-								enum.PayMethodAli,
-								enum.PayMethodWx,
-							},
-						},
+						NewOneTimeIntent(enum.OrderKindAddOn),
 					},
 					err: nil,
 				}
@@ -200,19 +188,8 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 			// For same tier, different cycle.
 			return CheckoutIntents{
 				intents: []CheckoutIntent{
-					{
-						OrderKind: enum.OrderKindAddOn,
-						PayMethods: []enum.PayMethod{
-							enum.PayMethodAli,
-							enum.PayMethodWx,
-						},
-					},
-					{
-						OrderKind: enum.OrderKindSwitchCycle,
-						PayMethods: []enum.PayMethod{
-							enum.PayMethodStripe,
-						},
-					},
+					NewOneTimeIntent(enum.OrderKindAddOn),
+					NewSubsIntent(SubsKindSwitchCycle),
 				},
 				err: nil,
 			}
@@ -228,13 +205,7 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 
 		return CheckoutIntents{
 			intents: []CheckoutIntent{
-				{
-					OrderKind: enum.OrderKindAddOn,
-					PayMethods: []enum.PayMethod{
-						enum.PayMethodAli,
-						enum.PayMethodWx,
-					},
-				},
+				NewOneTimeIntent(enum.OrderKindAddOn),
 			},
 			err: nil,
 		}
@@ -242,13 +213,7 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 	case enum.PayMethodB2B:
 		return CheckoutIntents{
 			intents: []CheckoutIntent{
-				{
-					OrderKind: enum.OrderKindAddOn,
-					PayMethods: []enum.PayMethod{
-						enum.PayMethodAli,
-						enum.PayMethodWx,
-					},
-				},
+				NewOneTimeIntent(enum.OrderKindAddOn),
 			},
 			err: nil,
 		}
