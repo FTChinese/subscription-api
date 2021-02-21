@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
@@ -52,7 +53,7 @@ type MockMemberBuilder struct {
 	payMethod   enum.PayMethod
 	expiration  time.Time
 	autoRenewal bool
-	reserved    ReservedDays
+	reserved    addon.ReservedDays
 }
 
 func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
@@ -98,7 +99,7 @@ func (b MockMemberBuilder) WithAutoRenewal(t bool) MockMemberBuilder {
 	return b
 }
 
-func (b MockMemberBuilder) WithReservedDays(r ReservedDays) MockMemberBuilder {
+func (b MockMemberBuilder) WithReservedDays(r addon.ReservedDays) MockMemberBuilder {
 	b.reserved = r
 	return b
 }
