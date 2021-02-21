@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/lib/fetch"
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/pkg/fetch"
 	"github.com/tidwall/gjson"
 )
 
