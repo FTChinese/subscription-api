@@ -4,9 +4,9 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
@@ -35,7 +35,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 		logger *zap.Logger
 	}
 	type args struct {
-		config subs.PaymentConfig
+		config subs.Counter
 	}
 	tests := []struct {
 		name    string
@@ -51,7 +51,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				config: subs.PaymentConfig{
+				config: subs.Counter{
 					Account: p.FtcAccount(),
 					Price:   faker.PriceStdYear,
 					Method:  enum.PayMethodAli,
@@ -61,8 +61,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindCreate,
-					Item:     cart.NewCheckoutItem(faker.PriceStdYear),
-					Payable:  cart.NewCheckoutItem(faker.PriceStdYear).Payable(),
+					Cart:     cart.NewFtcCart(faker.PriceStdYear),
+					Payable:  cart.NewFtcCart(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
@@ -94,7 +94,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				config: subs.PaymentConfig{
+				config: subs.Counter{
 					Account: p.FtcAccount(),
 					Price:   faker.PriceStdYear,
 					Method:  enum.PayMethodWx,
@@ -104,8 +104,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindRenew,
-					Item:     cart.NewCheckoutItem(faker.PriceStdYear),
-					Payable:  cart.NewCheckoutItem(faker.PriceStdYear).Payable(),
+					Cart:     cart.NewFtcCart(faker.PriceStdYear),
+					Payable:  cart.NewFtcCart(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
@@ -137,7 +137,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				config: subs.PaymentConfig{
+				config: subs.Counter{
 					Account: p.FtcAccount(),
 					Price:   faker.PricePrm,
 					Method:  enum.PayMethodWx,
@@ -147,8 +147,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindUpgrade,
-					Item:     cart.NewCheckoutItem(faker.PricePrm),
-					Payable:  cart.NewCheckoutItem(faker.PricePrm).Payable(),
+					Cart:     cart.NewFtcCart(faker.PricePrm),
+					Payable:  cart.NewFtcCart(faker.PricePrm).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
@@ -180,7 +180,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				config: subs.PaymentConfig{
+				config: subs.Counter{
 					Account: p2.FtcAccount(),
 					Price:   faker.PriceStdYear,
 					Method:  enum.PayMethodWx,
@@ -190,8 +190,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.PaymentIntent{
 				Checkout: subs.Checkout{
 					Kind:     enum.OrderKindAddOn,
-					Item:     cart.NewCheckoutItem(faker.PriceStdYear),
-					Payable:  cart.NewCheckoutItem(faker.PriceStdYear).Payable(),
+					Cart:     cart.NewFtcCart(faker.PriceStdYear),
+					Payable:  cart.NewFtcCart(faker.PriceStdYear).Payable(),
 					LiveMode: true,
 				},
 				Order: subs.Order{
