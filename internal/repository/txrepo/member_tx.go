@@ -2,6 +2,7 @@ package txrepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -117,8 +118,8 @@ func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 	return nil
 }
 
-func (tx MemberTx) SaveAddOn(addOn subs.AddOn) error {
-	_, err := tx.NamedExec(subs.StmtCreateAddOn, addOn)
+func (tx MemberTx) SaveAddOn(addOn addon.AddOn) error {
+	_, err := tx.NamedExec(addon.StmtCreateAddOn, addOn)
 	if err != nil {
 		return err
 	}
@@ -126,9 +127,9 @@ func (tx MemberTx) SaveAddOn(addOn subs.AddOn) error {
 	return nil
 }
 
-func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]subs.AddOn, error) {
-	var dest []subs.AddOn
-	err := tx.Select(&dest, subs.StmtListAddOnLock, ids.BuildFindInSet())
+func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]addon.AddOn, error) {
+	var dest []addon.AddOn
+	err := tx.Select(&dest, addon.StmtListAddOnLock, ids.BuildFindInSet())
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +138,7 @@ func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]subs.AddOn, error) {
 }
 
 func (tx MemberTx) AddOnsConsumed(ids []string) error {
-	_, err := tx.Exec(subs.StmtAddOnConsumed, db.GetFindInSet(ids))
+	_, err := tx.Exec(addon.StmtAddOnConsumed, db.GetFindInSet(ids))
 	if err != nil {
 		return err
 	}
