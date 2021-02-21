@@ -3,6 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -31,7 +32,7 @@ func TestNewMembership(t *testing.T) {
 						FtcID:      subs.FtcUserID,
 					},
 					Subs:      subs,
-					AddOnDays: reader.ReservedDays{},
+					AddOnDays: addon.ReservedDays{},
 				},
 			},
 			want: reader.Membership{
@@ -51,7 +52,7 @@ func TestNewMembership(t *testing.T) {
 				Status:        enum.SubsStatusActive,
 				AppleSubsID:   null.String{},
 				B2BLicenceID:  null.String{},
-				ReservedDays:  reader.ReservedDays{},
+				ReservedDays:  addon.ReservedDays{},
 			},
 		},
 	}
