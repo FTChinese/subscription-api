@@ -3,6 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
@@ -10,7 +11,7 @@ import (
 type MembershipParams struct {
 	UserIDs   reader.MemberID
 	Subs      Subs
-	AddOnDays reader.ReservedDays
+	AddOnDays addon.ReservedDays
 }
 
 func NewMembership(params MembershipParams) reader.Membership {
