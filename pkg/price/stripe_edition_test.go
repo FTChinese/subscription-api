@@ -6,7 +6,7 @@ import (
 )
 
 func Test_newPlanStore(t *testing.T) {
-	store := newPlanStore()
+	store := newStripeEditions()
 
 	assert.Len(t, store.editions, 6)
 	assert.Len(t, store.indexEdition, 6)
