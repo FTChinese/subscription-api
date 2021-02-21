@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"strconv"
 	"strings"
@@ -64,7 +65,7 @@ func Render(name string, ctx interface{}) (string, error) {
 type CtxSubs struct {
 	UserName string
 	Order    subs.Order
-	AddOn    subs.AddOn
+	AddOn    addon.AddOn
 }
 
 func (ctx CtxSubs) Render() (string, error) {
