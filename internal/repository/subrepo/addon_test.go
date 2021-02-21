@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
@@ -20,7 +21,7 @@ func TestEnv_RedeemAddOn(t *testing.T) {
 		SetPayMethod(enum.PayMethodStripe).
 		SetExpired(true).
 		SetAutoRenew(false).
-		SetReservedDays(reader.ReservedDays{
+		SetReservedDays(addon.ReservedDays{
 			Standard: 366*3 + 3,
 			Premium:  0,
 		})
@@ -63,7 +64,7 @@ func TestEnv_RedeemAddOn(t *testing.T) {
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(3, 0, 3)),
 				PaymentMethod: aos[2].PaymentMethod,
 				FtcPlanID:     aos[2].PlanID,
-				ReservedDays:  reader.ReservedDays{},
+				ReservedDays:  addon.ReservedDays{},
 			}.Sync(),
 			wantErr: false,
 		},
