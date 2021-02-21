@@ -1,4 +1,4 @@
-package subs
+package addon
 
 const StmtCreateAddOn = `
 INSERT INTO premium.ftc_addon
