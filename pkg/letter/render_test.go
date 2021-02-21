@@ -3,8 +3,9 @@ package letter
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/dt"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/brianvoe/gofakeit/v5"
@@ -18,7 +19,7 @@ func TestCtxSubs_Render(t *testing.T) {
 	type fields struct {
 		UserName string
 		Order    subs.Order
-		AddOn    subs.AddOn
+		AddOn    addon.AddOn
 	}
 	tests := []struct {
 		name    string
@@ -45,7 +46,7 @@ func TestCtxSubs_Render(t *testing.T) {
 						EndDate:   chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 					},
 				},
-				AddOn: subs.AddOn{},
+				AddOn: addon.AddOn{},
 			},
 			wantErr: false,
 		},
@@ -69,7 +70,7 @@ func TestCtxSubs_Render(t *testing.T) {
 						EndDate:   chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 					},
 				},
-				AddOn: subs.AddOn{},
+				AddOn: addon.AddOn{},
 			},
 			wantErr: false,
 		},
@@ -93,7 +94,7 @@ func TestCtxSubs_Render(t *testing.T) {
 						EndDate:   chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 					},
 				},
-				AddOn: subs.AddOn{
+				AddOn: addon.AddOn{
 					ID:           db.AddOnID(),
 					Edition:      price.StdYearEdition,
 					CycleCount:   0,
@@ -122,7 +123,7 @@ func TestCtxSubs_Render(t *testing.T) {
 					},
 					CreatedAt: chrono.TimeNow(),
 				},
-				AddOn: subs.AddOn{
+				AddOn: addon.AddOn{
 					ID:           db.AddOnID(),
 					Edition:      price.StdYearEdition,
 					CycleCount:   1,
