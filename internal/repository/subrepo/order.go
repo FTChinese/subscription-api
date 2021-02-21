@@ -15,7 +15,7 @@ const wxAppNativeApp = "***REMOVED***" // Used by native app to pay and log in.
 // For upgrading to premium with valid standard subscription,
 // the remaining days is converted to add-on.
 // For Stripe and IAP, the purchase is taken as add-on directly.
-func (env Env) CreateOrder(config subs.PaymentConfig) (subs.PaymentIntent, error) {
+func (env Env) CreateOrder(config subs.Counter) (subs.PaymentIntent, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
