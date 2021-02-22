@@ -19,6 +19,10 @@ type LockedOrder struct {
 	ConfirmedAt chrono.Time `db:"confirmed_utc"`
 }
 
+func (o LockedOrder) IsConfirmed() bool {
+	return !o.ConfirmedAt.IsZero()
+}
+
 // Subscription contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 // An order could represents 12 status of user:
