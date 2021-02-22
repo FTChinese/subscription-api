@@ -14,9 +14,13 @@ import (
 
 func TestOrder_Confirm(t *testing.T) {
 
-	pi := NewPayment(account, planStdYear).WithAlipay()
+	pi := NewPayment(account, faker.PlanStdYear).WithAlipay()
+
+	piMonth := NewPayment(account, faker.PlanStdMonth).WithAlipay()
 
 	order, err := pi.BuildOrder(pi.Checkout(nil, enum.OrderKindCreate))
+
+	monthOrder, err := piMonth.BuildOrder(pi.Checkout(nil, enum.OrderKindCreate))
 
 	order2, err := pi.BuildOrder(pi.Checkout(nil, enum.OrderKindCreate))
 	assert.Nil(t, err)
@@ -40,8 +44,25 @@ func TestOrder_Confirm(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:  "Confirm",
+			name:  "Confirm Standard Year",
 			order: order,
+			args: args{
+				pr: PaymentResult{
+					PaymentState:  ali.TradeStatusSuccess,
+					Amount:        null.IntFrom(2800),
+					TransactionID: "1234",
+					OrderID:       monthOrder.ID,
+					PaidAt:        chrono.TimeNow(),
+					ConfirmedUTC:  chrono.TimeNow(),
+					PayMethod:     enum.PayMethodAli,
+				},
+				m: reader.Membership{},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Confirm Standard Month",
+			order: monthOrder,
 			args: args{
 				pr: PaymentResult{
 					PaymentState:  ali.TradeStatusSuccess,
@@ -54,7 +75,6 @@ func TestOrder_Confirm(t *testing.T) {
 				},
 				m: reader.Membership{},
 			},
-			wantErr: false,
 		},
 		{
 			name:  "Already confirmed but out of sync",

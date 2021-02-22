@@ -2,6 +2,7 @@ package subrepo
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
@@ -21,7 +22,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 
 	// Step 1: Find the order by order id and lock it.
 	sugar.Info("Start locking order")
-	_, err = tx.LockOrder(result.OrderID)
+	lo, err := tx.LockOrder(result.OrderID)
 	// If the order is not found, or is already confirmed,
 	// tell provider not sending notification any longer;
 	// otherwise, allow retry.
@@ -29,6 +30,13 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), err != sql.ErrNoRows)
+	}
+	// Checkout confirmation once again to prevent de-duplicate webhook.
+	if lo.IsConfirmed() {
+		msg := fmt.Sprintf("Duplicate confirmation of order %s", lo.ID)
+		sugar.Infof(msg)
+		_ = tx.Rollback()
+		return subs.ConfirmationResult{}, result.ConfirmError(msg, false)
 	}
 
 	// STEP 2: query membership
