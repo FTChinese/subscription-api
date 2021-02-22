@@ -24,6 +24,14 @@ func (x *CarryOverSource) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (x CarryOverSource) MarshalJSON() ([]byte, error) {
+	if x == "" {
+		return []byte("null"), nil
+	}
+
+	return []byte(`"` + x + `"`), nil
+}
+
 func (x *CarryOverSource) Scan(src interface{}) error {
 	if src == nil {
 		*x = ""
