@@ -3,6 +3,7 @@ package subrepo
 import (
 	"database/sql"
 	"fmt"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
 
@@ -31,13 +32,6 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 		_ = tx.Rollback()
 		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), err != sql.ErrNoRows)
 	}
-	// Checkout confirmation once again to prevent de-duplicate webhook.
-	if lo.IsConfirmed() {
-		msg := fmt.Sprintf("Duplicate confirmation of order %s", lo.ID)
-		sugar.Infof(msg)
-		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(msg, false)
-	}
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
@@ -51,6 +45,22 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 
 	sugar.Infof("Existing membership retrieved %v", member)
 
+	// Checkout confirmation once again to prevent de-duplicate webhook.
+	// This should not belong to a state to right or wrong.
+	// It should both return the wanted data, and tell caller that the order is already confirmed.
+	if lo.IsConfirmed() {
+		msg := fmt.Sprintf("Duplicate confirmation of order %s", lo.ID)
+		sugar.Infof(msg)
+		_ = tx.Rollback()
+		order.ConfirmedAt = lo.ConfirmedAt
+		return subs.ConfirmationResult{
+			Order:      order,
+			Membership: member,
+			Payment:    result,
+			Snapshot:   reader.MemberSnapshot{},
+		}, nil
+	}
+
 	// STEP 3: validate the retrieved order.
 	// This order might be invalid for upgrading.
 	// If user is already a premium member and this order is used
@@ -59,7 +69,7 @@ func (env Env) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.C
 	if err := order.ValidateDupUpgrade(member); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
+		return subs.ConfirmationResult{}, nil
 	}
 
 	// STEP 4: Confirm this order

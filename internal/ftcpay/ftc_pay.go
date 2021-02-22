@@ -87,8 +87,7 @@ func (pay FtcPay) SendConfirmEmail(order subs.Order) error {
 	return nil
 }
 
-// ConfirmOrder confirms an order, update membership, backup previous
-// membership state, and send email.
+// ConfirmOrder wraps SubsRepo's ConfirmOrder with additional data.
 func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()

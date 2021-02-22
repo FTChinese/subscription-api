@@ -129,7 +129,7 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 	}
 
 	cfmResult, cfmErr := router.ConfirmOrder(payResult, order)
-	if cfmErr != nil {
+	if cfmErr != nil && cfmErr.Retry {
 		_ = render.New(w).DBError(cfmErr)
 		return
 	}
