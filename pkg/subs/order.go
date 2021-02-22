@@ -116,7 +116,6 @@ func (o Order) ToAddOn() addon.AddOn {
 		Edition:       o.Edition,
 		CycleCount:    1,
 		DaysRemained:  trialDays,
-		IsCarryOver:   false,
 		PaymentMethod: o.PaymentMethod,
 		CompoundID:    o.CompoundID,
 		OrderID:       null.StringFrom(o.ID),

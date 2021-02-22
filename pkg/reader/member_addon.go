@@ -43,19 +43,19 @@ func (m Membership) ShouldUseAddOn() error {
 	return nil
 }
 
-func (m Membership) CarryOver() addon.AddOn {
+func (m Membership) CarryOver(source addon.CarryOverSource) addon.AddOn {
 	return addon.AddOn{
-		ID:            db.AddOnID(),
-		Edition:       m.Edition,
-		CycleCount:    0,
-		DaysRemained:  m.RemainingDays(),
-		IsCarryOver:   true,
-		PaymentMethod: m.PaymentMethod,
-		CompoundID:    m.CompoundID,
-		OrderID:       null.String{}, // TODO: for one-time upgrade, it should have the corresponding order id..
-		PlanID:        m.FtcPlanID,   // Save it so that it could be restored together with the remaining days.
-		CreatedUTC:    chrono.TimeNow(),
-		ConsumedUTC:   chrono.Time{},
+		ID:              db.AddOnID(),
+		Edition:         m.Edition,
+		CycleCount:      0,
+		DaysRemained:    m.RemainingDays(),
+		CarryOverSource: source,
+		PaymentMethod:   m.PaymentMethod,
+		CompoundID:      m.CompoundID,
+		OrderID:         null.String{},
+		PlanID:          m.FtcPlanID, // Save it so that it could be restored together with the remaining days.
+		CreatedUTC:      chrono.TimeNow(),
+		ConsumedUTC:     chrono.Time{},
 	}
 }
 
