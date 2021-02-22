@@ -37,7 +37,7 @@ func NewSubsResult(params SubsResultParams) (SubsResult, error) {
 
 	var addOn addon.AddOn
 	if params.Kind == cart.SubsKindOneTimeToStripe {
-		addOn = params.CurrentMember.CarryOver()
+		addOn = params.CurrentMember.CarryOver(addon.CarryOverFromSwitchingStripe)
 	}
 
 	m := NewMembership(MembershipParams{
