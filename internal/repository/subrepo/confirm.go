@@ -23,7 +23,7 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 
 	// Step 1: Find the order by order id and lock it.
 	sugar.Info("Start locking order")
-	_, err = tx.LockOrder(pr.OrderID)
+	lo, err := tx.LockOrder(pr.OrderID)
 	// If the order is not found, or is already confirmed,
 	// tell provider not sending notification any longer;
 	// otherwise, allow retry.
@@ -44,6 +44,22 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 	}
 
 	sugar.Infof("Existing membership retrieved %v", member)
+
+	if lo.IsConfirmed() {
+		sugar.Infof("Duplicate confirmation of order %s", order.ID)
+		_ = tx.Rollback()
+		order.ConfirmedAt = lo.ConfirmedAt
+		return subs.ConfirmationResult{
+			Payment: pr,
+			PaymentConfirmed: subs.PaymentConfirmed{
+				Order:    order,
+				AddOn:    addon.AddOn{},
+				Snapshot: reader.MemberSnapshot{},
+			},
+			Membership: member,
+			Notify:     false,
+		}, nil
+	}
 
 	// Change nothing.
 	if order.IsSynced(member) {
