@@ -24,18 +24,21 @@ func (c ConfirmError) Error() string {
 	return c.Message
 }
 
+// ConfirmationParams contains data used to confirm an order.
 type ConfirmationParams struct {
 	Payment PaymentResult
 	Order   Order
 	Member  reader.Membership
 }
 
+// PaymentConfirmed is the result of confirming an order.
 type PaymentConfirmed struct {
 	Order    Order                 `json:"order"` // The confirmed order.
 	AddOn    addon.AddOn           `json:"addOn"`
 	Snapshot reader.MemberSnapshot `json:"-"` // Snapshot of previous membership
 }
 
+// NewPaymentConfirmed confirms an order base on payment result and current membership.
 func NewPaymentConfirmed(p ConfirmationParams) (PaymentConfirmed, error) {
 	snapshot := p.Member.Snapshot(reader.FtcArchiver(p.Order.Kind))
 	if !p.Member.IsZero() {
@@ -79,6 +82,7 @@ func NewPaymentConfirmed(p ConfirmationParams) (PaymentConfirmed, error) {
 	}
 }
 
+// MustConfirmPayment is the panic version of NewPaymentConfirmed.
 func MustConfirmPayment(p ConfirmationParams) PaymentConfirmed {
 	c, err := NewPaymentConfirmed(p)
 
@@ -89,12 +93,12 @@ func MustConfirmPayment(p ConfirmationParams) PaymentConfirmed {
 	return c
 }
 
-func NewMembership(p PaymentConfirmed) reader.Membership {
+func (p PaymentConfirmed) Membership() reader.Membership {
 	// If an order is created as an add-on, only add the reserved days
 	// to current membership.
 	if p.Order.Kind == enum.OrderKindAddOn {
-		m := p.Snapshot.Membership
-		return m.WithReservedDays(p.AddOn.ToReservedDays())
+		return p.Snapshot.Membership.
+			WithReservedDays(p.AddOn.ToReservedDays())
 	}
 
 	return reader.Membership{
@@ -130,12 +134,10 @@ func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 		return ConfirmationResult{}, err
 	}
 
-	m := NewMembership(pc)
-
 	return ConfirmationResult{
 		Payment:          p.Payment,
 		PaymentConfirmed: pc,
-		Membership:       m,
+		Membership:       pc.Membership(),
 		Notify:           true,
 	}, nil
 }
