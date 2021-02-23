@@ -93,6 +93,7 @@ func (o Order) ValidatePayment(result PaymentResult) error {
 	return nil
 }
 
+// Deprecated
 func (o Order) newOrRenewalConfirm(confirmedAt chrono.Time, exp chrono.Date) Order {
 	o.ConfirmedAt = confirmedAt
 
@@ -104,6 +105,7 @@ func (o Order) newOrRenewalConfirm(confirmedAt chrono.Time, exp chrono.Date) Ord
 	return o
 }
 
+// Deprecated
 func (o Order) upgradeConfirm(confirmedAt chrono.Time) Order {
 	o.ConfirmedAt = confirmedAt
 
