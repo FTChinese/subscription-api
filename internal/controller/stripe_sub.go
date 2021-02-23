@@ -47,7 +47,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 	// Validate input data.
-	if err := input.Validate(false); err != nil {
+	if err := input.Validate(); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).Unprocessable(err)
 		return
@@ -108,7 +108,8 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(result)
 }
 
-// UpgradeSubscription updates a stripe subscription.
+// UpdateSubs updates a stripe subscription:
+// user could switch cycle of the same tier, or upgrading to a higher tier.
 // Input:
 // tier: string;
 // cycle: string;
@@ -122,7 +123,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 // `items` field contains more than one items:
 // one is standard and another if premium.
 // So we cannot rely on this field to find FTC plan.
-func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.Request) {
+func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -133,7 +134,9 @@ func (router StripeRouter) UpgradeSubscription(w http.ResponseWriter, req *http.
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
-	if ve := input.Validate(true); ve != nil {
+	// Validating if user is updating to the same price is postponed to
+	// building checkout intent.
+	if ve := input.Validate(); ve != nil {
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
