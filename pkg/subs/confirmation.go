@@ -3,6 +3,7 @@ package subs
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -31,38 +32,25 @@ type ConfirmationParams struct {
 	Member  reader.Membership
 }
 
-func (params ConfirmationParams) confirmOrder() (ConfirmedOrder, error) {
-	switch params.Order.Kind {
-	case enum.OrderKindCreate, enum.OrderKindRenew:
-		return ConfirmedOrder{
-			Order: params.Order.newOrRenewalConfirm(params.Payment.ConfirmedUTC, params.Member.ExpireDate),
-			AddOn: addon.AddOn{},
-		}, nil
+func (params ConfirmationParams) confirmNewOrRenewalOrder() Order {
+	params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
 
-	case enum.OrderKindUpgrade:
-		if params.Member.Tier == enum.TierPremium {
-			params.Order.Kind = enum.OrderKindRenew
-			return ConfirmedOrder{
-				Order: params.Order.newOrRenewalConfirm(params.Payment.ConfirmedUTC, params.Member.ExpireDate),
-				AddOn: addon.AddOn{},
-			}, nil
-		}
+	startTime := dt.PickLater(params.Payment.ConfirmedUTC.Time, params.Member.ExpireDate.Time)
 
-		return ConfirmedOrder{
-			Order: params.Order.upgradeConfirm(params.Payment.ConfirmedUTC),
-			AddOn: params.Member.CarryOver(addon.CarryOverFromUpgrade).WithOrderID(params.Order.ID),
-		}, nil
+	params.Order.DateRange = dt.NewDateRange(startTime).
+		WithCycle(params.Order.Cycle).
+		AddDays(trialDays)
 
-	case enum.OrderKindAddOn:
-		params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
-		return ConfirmedOrder{
-			Order: params.Order,
-			AddOn: params.Order.ToAddOn(),
-		}, nil
+	return params.Order
+}
 
-	default:
-		return ConfirmedOrder{}, errors.New("unknown order kind")
-	}
+func (params ConfirmationParams) confirmUpgradeOrder() Order {
+	params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
+	params.Order.DateRange = dt.NewDateRange(params.Payment.ConfirmedUTC.Time).
+		WithCycle(params.Order.Cycle).
+		AddDays(trialDays)
+
+	return params.Order
 }
 
 func (params ConfirmationParams) snapshot() reader.MemberSnapshot {
@@ -79,6 +67,44 @@ func (params ConfirmationParams) snapshot() reader.MemberSnapshot {
 type ConfirmedOrder struct {
 	Order Order       `json:"order"`
 	AddOn addon.AddOn `json:"-"`
+}
+
+// NewConfirmedOrder confirms an order based on payment result and
+// current membership.
+func NewConfirmedOrder(params ConfirmationParams) (ConfirmedOrder, error) {
+	switch params.Order.Kind {
+	case enum.OrderKindCreate, enum.OrderKindRenew:
+		return ConfirmedOrder{
+			Order: params.confirmNewOrRenewalOrder(),
+			AddOn: addon.AddOn{},
+		}, nil
+
+	case enum.OrderKindUpgrade:
+		if params.Member.Tier == enum.TierPremium {
+			params.Order.Kind = enum.OrderKindRenew
+			return ConfirmedOrder{
+				Order: params.confirmNewOrRenewalOrder(),
+				AddOn: addon.AddOn{},
+			}, nil
+		}
+
+		return ConfirmedOrder{
+			Order: params.confirmUpgradeOrder(),
+			AddOn: params.Member.
+				CarryOver(addon.CarryOverFromUpgrade).
+				WithOrderID(params.Order.ID),
+		}, nil
+
+	case enum.OrderKindAddOn:
+		params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
+		return ConfirmedOrder{
+			Order: params.Order,
+			AddOn: params.Order.ToAddOn(),
+		}, nil
+
+	default:
+		return ConfirmedOrder{}, errors.New("unknown order kind")
+	}
 }
 
 func newMembership(co ConfirmedOrder, currentMember reader.Membership) reader.Membership {
@@ -119,7 +145,7 @@ type ConfirmationResult struct {
 }
 
 func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
-	co, err := p.confirmOrder()
+	co, err := NewConfirmedOrder(p)
 	if err != nil {
 		return ConfirmationResult{}, err
 	}
