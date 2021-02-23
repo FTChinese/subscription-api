@@ -1,8 +1,12 @@
 package striperepo
 
 import (
+	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
+	"net/http"
 )
 
 // UpgradeSubscription switches subscription plan.
@@ -24,11 +28,26 @@ func (env Env) UpgradeSubscription(cfg stripe.SubsParams) (stripe.SubsResult, er
 		return stripe.SubsResult{}, nil
 	}
 
-	err = mmb.PermitStripeUpgrade(cfg.Edition.Edition)
+	intent, err := cart.NewCheckoutIntents(mmb, cfg.Edition.Edition).
+		Get(enum.PayMethodStripe)
+
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripe.SubsResult{}, err
+		return stripe.SubsResult{}, &render.ResponseError{
+			StatusCode: http.StatusBadRequest,
+			Message:    "Cannot perform Stripe upgrading: " + err.Error(),
+			Invalid:    nil,
+		}
+	}
+
+	if !intent.IsUpgradingStripe() {
+		_ = tx.Rollback()
+		return stripe.SubsResult{}, &render.ResponseError{
+			StatusCode: http.StatusBadGateway,
+			Message:    "This endpoint only support upgrading an existing valid Stripe standard subscription while you can only " + intent.Description(),
+			Invalid:    nil,
+		}
 	}
 
 	ss, err := env.client.UpgradeSubs(mmb.StripeSubsID.String, cfg)
@@ -42,6 +61,7 @@ func (env Env) UpgradeSubscription(cfg stripe.SubsParams) (stripe.SubsResult, er
 	result, err := stripe.NewSubsResult(stripe.SubsResultParams{
 		UserIDs:       mmb.MemberID,
 		SS:            ss,
+		Kind:          intent.SubsKind,
 		CurrentMember: mmb,
 		Action:        reader.ActionUpgrade,
 	})
