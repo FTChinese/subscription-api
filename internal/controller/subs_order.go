@@ -121,12 +121,12 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 
 		_ = render.New(w).OK(subs.ConfirmationResult{
 			Payment: payResult,
-			PaymentConfirmed: subs.PaymentConfirmed{
-				Order:    order,
-				AddOn:    addon.AddOn{},
-				Snapshot: reader.MemberSnapshot{},
+			ConfirmedOrder: subs.ConfirmedOrder{
+				Order: order,
+				AddOn: addon.AddOn{},
 			},
 			Membership: m,
+			Snapshot:   reader.MemberSnapshot{},
 		})
 
 		return

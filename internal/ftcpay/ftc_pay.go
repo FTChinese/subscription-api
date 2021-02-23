@@ -39,7 +39,7 @@ func New(db *sqlx.DB, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
 }
 
 // SendConfirmEmail sends an email to user after an order is confirmed.
-func (pay FtcPay) SendConfirmEmail(pc subs.PaymentConfirmed) error {
+func (pay FtcPay) SendConfirmEmail(pc subs.ConfirmedOrder) error {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
@@ -105,7 +105,7 @@ func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (sub
 		}
 
 		if confirmed.Notify {
-			err := pay.SendConfirmEmail(confirmed.PaymentConfirmed)
+			err := pay.SendConfirmEmail(confirmed.ConfirmedOrder)
 			if err != nil {
 				sugar.Error(err)
 			}
