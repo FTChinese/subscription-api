@@ -175,8 +175,9 @@ func (c Client) CreateSubs(cfg ftcStripe.SubsParams) (*stripe.Subscription, erro
 	return c.sc.Subscriptions.New(params)
 }
 
-// UpgradeSubs switch subscription from standard to premium.
-func (c Client) UpgradeSubs(subID string, cfg ftcStripe.SubsParams) (*stripe.Subscription, error) {
+// UpdateSubs switches subscription billing cycle,
+// or upgrading from standard to premium.
+func (c Client) UpdateSubs(subID string, cfg ftcStripe.SubsParams) (*stripe.Subscription, error) {
 	// Retrieve the subscription first.
 	ss, err := c.sc.Subscriptions.Get(subID, nil)
 	if err != nil {
