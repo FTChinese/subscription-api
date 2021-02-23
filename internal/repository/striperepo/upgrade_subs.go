@@ -36,21 +36,21 @@ func (env Env) UpgradeSubscription(cfg stripe.SubsParams) (stripe.SubsResult, er
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, &render.ResponseError{
 			StatusCode: http.StatusBadRequest,
-			Message:    "Cannot perform Stripe upgrading: " + err.Error(),
+			Message:    "Cannot perform updating Stripe subscription: " + err.Error(),
 			Invalid:    nil,
 		}
 	}
 
-	if !intent.IsUpgradingStripe() {
+	if !intent.IsUpdatingStripe() {
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, &render.ResponseError{
 			StatusCode: http.StatusBadGateway,
-			Message:    "This endpoint only support upgrading an existing valid Stripe standard subscription while you can only " + intent.Description(),
+			Message:    "This endpoint only support updating an existing valid Stripe subscription while you can only " + intent.Description(),
 			Invalid:    nil,
 		}
 	}
 
-	ss, err := env.client.UpgradeSubs(mmb.StripeSubsID.String, cfg)
+	ss, err := env.client.UpdateSubs(mmb.StripeSubsID.String, cfg)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
