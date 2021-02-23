@@ -31,91 +31,80 @@ type ConfirmationParams struct {
 	Member  reader.Membership
 }
 
-// PaymentConfirmed is the result of confirming an order.
-type PaymentConfirmed struct {
-	Order    Order                 `json:"order"` // The confirmed order.
-	AddOn    addon.AddOn           `json:"-"`
-	Snapshot reader.MemberSnapshot `json:"-"` // Snapshot of previous membership
-}
-
-// NewPaymentConfirmed confirms an order base on payment result and current membership.
-func NewPaymentConfirmed(p ConfirmationParams) (PaymentConfirmed, error) {
-	snapshot := p.Member.Snapshot(reader.FtcArchiver(p.Order.Kind))
-	if !p.Member.IsZero() {
-		snapshot = snapshot.WithOrder(p.Order.ID)
-	}
-
-	switch p.Order.Kind {
+func (params ConfirmationParams) confirmOrder() (ConfirmedOrder, error) {
+	switch params.Order.Kind {
 	case enum.OrderKindCreate, enum.OrderKindRenew:
-		return PaymentConfirmed{
-			Order:    p.Order.newOrRenewalConfirm(p.Payment.ConfirmedUTC, p.Member.ExpireDate),
-			AddOn:    addon.AddOn{},
-			Snapshot: snapshot,
+		return ConfirmedOrder{
+			Order: params.Order.newOrRenewalConfirm(params.Payment.ConfirmedUTC, params.Member.ExpireDate),
+			AddOn: addon.AddOn{},
 		}, nil
 
 	case enum.OrderKindUpgrade:
-		if p.Member.Tier == enum.TierPremium {
-			p.Order.Kind = enum.OrderKindRenew
-			return PaymentConfirmed{
-				Order:    p.Order.newOrRenewalConfirm(p.Payment.ConfirmedUTC, p.Member.ExpireDate),
-				AddOn:    addon.AddOn{},
-				Snapshot: snapshot,
+		if params.Member.Tier == enum.TierPremium {
+			params.Order.Kind = enum.OrderKindRenew
+			return ConfirmedOrder{
+				Order: params.Order.newOrRenewalConfirm(params.Payment.ConfirmedUTC, params.Member.ExpireDate),
+				AddOn: addon.AddOn{},
 			}, nil
 		}
 
-		return PaymentConfirmed{
-			Order:    p.Order.upgradeConfirm(p.Payment.ConfirmedUTC),
-			AddOn:    p.Member.CarryOver(addon.CarryOverFromUpgrade).WithOrderID(p.Order.ID),
-			Snapshot: snapshot,
+		return ConfirmedOrder{
+			Order: params.Order.upgradeConfirm(params.Payment.ConfirmedUTC),
+			AddOn: params.Member.CarryOver(addon.CarryOverFromUpgrade).WithOrderID(params.Order.ID),
 		}, nil
 
 	case enum.OrderKindAddOn:
-		p.Order.ConfirmedAt = p.Payment.ConfirmedUTC
-		return PaymentConfirmed{
-			Order:    p.Order,
-			AddOn:    p.Order.ToAddOn(),
-			Snapshot: snapshot,
+		params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
+		return ConfirmedOrder{
+			Order: params.Order,
+			AddOn: params.Order.ToAddOn(),
 		}, nil
 
 	default:
-		return PaymentConfirmed{}, errors.New("unknown order kind")
+		return ConfirmedOrder{}, errors.New("unknown order kind")
 	}
 }
 
-// MustConfirmPayment is the panic version of NewPaymentConfirmed.
-func MustConfirmPayment(p ConfirmationParams) PaymentConfirmed {
-	c, err := NewPaymentConfirmed(p)
-
-	if err != nil {
-		panic(err)
+func (params ConfirmationParams) snapshot() reader.MemberSnapshot {
+	if params.Member.IsZero() {
+		return reader.MemberSnapshot{}
 	}
 
-	return c
+	return params.Member.Snapshot(
+		reader.FtcArchiver(params.Order.Kind))
 }
 
-func (p PaymentConfirmed) Membership() reader.Membership {
+// ConfirmedOrder contains the result of an order in confirmed state,
+// together with optional add-on.
+type ConfirmedOrder struct {
+	Order Order       `json:"order"`
+	AddOn addon.AddOn `json:"-"`
+}
+
+func newMembership(co ConfirmedOrder, currentMember reader.Membership) reader.Membership {
 	// If an order is created as an add-on, only add the reserved days
 	// to current membership.
-	if p.Order.Kind == enum.OrderKindAddOn {
-		return p.Snapshot.Membership.
-			WithReservedDays(p.AddOn.ToReservedDays())
+	if co.Order.Kind == enum.OrderKindAddOn {
+		return currentMember.
+			WithReservedDays(co.AddOn.ToReservedDays())
 	}
 
 	return reader.Membership{
-		MemberID:      p.Order.MemberID,
-		Edition:       p.Order.Edition,
+		MemberID:      co.Order.MemberID,
+		Edition:       co.Order.Edition,
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},
-		ExpireDate:    p.Order.EndDate,
-		PaymentMethod: p.Order.PaymentMethod,
-		FtcPlanID:     null.StringFrom(p.Order.PlanID),
+		ExpireDate:    co.Order.EndDate,
+		PaymentMethod: co.Order.PaymentMethod,
+		FtcPlanID:     null.StringFrom(co.Order.PlanID),
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
 		Status:        enum.SubsStatusNull,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
-		ReservedDays:  p.Snapshot.Membership.ReservedDays.Plus(p.AddOn.ToReservedDays()),
+		ReservedDays: currentMember.ReservedDays.
+			Plus(co.AddOn.ToReservedDays()),
 	}.Sync()
 }
 
@@ -123,21 +112,23 @@ func (p PaymentConfirmed) Membership() reader.Membership {
 // This is also used as the http response for manual confirmation.
 type ConfirmationResult struct {
 	Payment PaymentResult `json:"payment"` // Empty if order is already confirmed.
-	PaymentConfirmed
-	Membership reader.Membership `json:"membership"` // The updated membership. Empty if order is already confirmed.
-	Notify     bool              `json:"-"`
+	ConfirmedOrder
+	Membership reader.Membership     `json:"membership"` // The updated membership. Empty if order is already confirmed.
+	Snapshot   reader.MemberSnapshot `json:"-"`
+	Notify     bool                  `json:"-"`
 }
 
 func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
-	pc, err := NewPaymentConfirmed(p)
+	co, err := p.confirmOrder()
 	if err != nil {
 		return ConfirmationResult{}, err
 	}
 
 	return ConfirmationResult{
-		Payment:          p.Payment,
-		PaymentConfirmed: pc,
-		Membership:       pc.Membership(),
-		Notify:           true,
+		Payment:        p.Payment,
+		ConfirmedOrder: co,
+		Membership:     newMembership(co, p.Member),
+		Snapshot:       p.snapshot(),
+		Notify:         true,
 	}, nil
 }

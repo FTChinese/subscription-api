@@ -16,7 +16,7 @@ var subjects = map[enum.OrderKind]string{
 	enum.OrderKindAddOn:   "购买FT订阅服务",
 }
 
-func NewSubParcel(a reader.FtcAccount, pc subs.PaymentConfirmed) (postoffice.Parcel, error) {
+func NewSubParcel(a reader.FtcAccount, pc subs.ConfirmedOrder) (postoffice.Parcel, error) {
 
 	ctx := CtxSubs{
 		UserName: a.NormalizeName(),

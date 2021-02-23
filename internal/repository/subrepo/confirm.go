@@ -51,12 +51,12 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 		order.ConfirmedAt = lo.ConfirmedAt
 		return subs.ConfirmationResult{
 			Payment: pr,
-			PaymentConfirmed: subs.PaymentConfirmed{
-				Order:    order,
-				AddOn:    addon.AddOn{},
-				Snapshot: reader.MemberSnapshot{},
+			ConfirmedOrder: subs.ConfirmedOrder{
+				Order: order,
+				AddOn: addon.AddOn{},
 			},
 			Membership: member,
+			Snapshot:   reader.MemberSnapshot{},
 			Notify:     false,
 		}, nil
 	}
@@ -67,12 +67,12 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 		sugar.Infof("Order %s already synced to membership", order.ID)
 		return subs.ConfirmationResult{
 			Payment: pr,
-			PaymentConfirmed: subs.PaymentConfirmed{
-				Order:    order,
-				AddOn:    addon.AddOn{},
-				Snapshot: reader.MemberSnapshot{},
+			ConfirmedOrder: subs.ConfirmedOrder{
+				Order: order,
+				AddOn: addon.AddOn{},
 			},
-			Notify: false,
+			Snapshot: reader.MemberSnapshot{},
+			Notify:   false,
 		}, nil
 	}
 
