@@ -93,29 +93,6 @@ func (o Order) ValidatePayment(result PaymentResult) error {
 	return nil
 }
 
-// Deprecated
-func (o Order) newOrRenewalConfirm(confirmedAt chrono.Time, exp chrono.Date) Order {
-	o.ConfirmedAt = confirmedAt
-
-	startTime := dt.PickLater(confirmedAt.Time, exp.Time)
-	o.DateRange = dt.NewDateRange(startTime).
-		WithCycle(o.Cycle).
-		AddDays(trialDays)
-
-	return o
-}
-
-// Deprecated
-func (o Order) upgradeConfirm(confirmedAt chrono.Time) Order {
-	o.ConfirmedAt = confirmedAt
-
-	o.DateRange = dt.NewDateRange(confirmedAt.Time).
-		WithCycle(o.Cycle).
-		AddDays(trialDays)
-
-	return o
-}
-
 func (o Order) ToAddOn() addon.AddOn {
 	return addon.AddOn{
 		ID:            db.AddOnID(),
