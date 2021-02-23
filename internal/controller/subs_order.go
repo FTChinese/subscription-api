@@ -93,6 +93,7 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	// Start fetching payment result from Ali/Wx
 	payResult, err := router.VerifyOrder(order)
 	sugar.Infof("Payment result: %+v", payResult)
 
@@ -131,6 +132,7 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	// If the order is paid, confirm it.
 	cfmResult, cfmErr := router.ConfirmOrder(payResult, order)
 	if cfmErr != nil {
 		_ = render.New(w).DBError(cfmErr)
