@@ -1,11 +1,12 @@
 package striperepo
 
 import (
-	"errors"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
+	"net/http"
 )
 
 // CreateSubscription creates a new subscription.
@@ -46,12 +47,20 @@ func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripe.SubsResult{}, err
+		return stripe.SubsResult{}, &render.ResponseError{
+			StatusCode: http.StatusBadRequest,
+			Message:    "Cannot create a new Stripe subscription: " + err.Error(),
+			Invalid:    nil,
+		}
 	}
 
-	if !intent.PermitNewStripe() {
+	if !intent.IsNewStripe() {
 		_ = tx.Rollback()
-		return stripe.SubsResult{}, errors.New("only creating new subscription supported")
+		return stripe.SubsResult{}, &render.ResponseError{
+			StatusCode: http.StatusBadRequest,
+			Message:    "This ",
+			Invalid:    nil,
+		}
 	}
 
 	sugar.Info("Creating stripe subscription")

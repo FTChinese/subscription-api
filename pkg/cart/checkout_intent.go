@@ -2,10 +2,26 @@ package cart
 
 import (
 	"errors"
+	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"strings"
 )
+
+func formatMethods(methods []enum.PayMethod) string {
+	var str []string
+	lastIndex := len(methods) - 1
+	for i, m := range methods {
+		if i != lastIndex {
+			str = append(str, ","+m.String())
+		} else {
+			str = append(str, "or "+m.String())
+		}
+	}
+
+	return strings.Join(str, " ")
+}
 
 // CheckoutIntent decides how user want to purchase a product.
 // This is determined by current membership, product and payment method selected.
@@ -42,8 +58,28 @@ func NewSubsIntent(kind SubsKind) CheckoutIntent {
 	}
 }
 
-func (i CheckoutIntent) PermitNewStripe() bool {
+func (i CheckoutIntent) Description() string {
+	if i.OneTimeKind != enum.OrderKindNull {
+		return fmt.Sprintf("%s one-time purchase via %s", i.OneTimeKind, formatMethods(i.PayMethods))
+	}
+
+	if i.SubsKind != SubsKindNull {
+		return fmt.Sprintf("%s via %s", i.SubsKind.Localize(), formatMethods(i.PayMethods))
+	}
+
+	return "only one-time purchase or subscription mode supported"
+}
+
+func (i CheckoutIntent) IsNewStripe() bool {
 	return i.SubsKind == SubsKindNew || i.SubsKind == SubsKindOneTimeToStripe
+}
+
+func (i CheckoutIntent) IsUpgradingStripe() bool {
+	return i.SubsKind == SubsKindUpgrade
+}
+
+func (i CheckoutIntent) IsSwitchingStripeCycle() bool {
+	return i.SubsKind == SubsKindSwitchCycle
 }
 
 // Contains checks if the payment method contains the specified one.
@@ -70,7 +106,7 @@ func (coi CheckoutIntents) Get(m enum.PayMethod) (CheckoutIntent, error) {
 	}
 
 	if len(coi.intents) == 0 {
-		return CheckoutIntent{}, errors.New("cannot determine checkout intent")
+		return CheckoutIntent{}, fmt.Errorf("illegal checkout via %s", m)
 	}
 
 	for _, intent := range coi.intents {
@@ -79,7 +115,7 @@ func (coi CheckoutIntents) Get(m enum.PayMethod) (CheckoutIntent, error) {
 		}
 	}
 
-	return CheckoutIntent{}, errors.New("cannot determine checkout intent")
+	return CheckoutIntent{}, fmt.Errorf("illegal checkout via %s", m)
 }
 
 func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
