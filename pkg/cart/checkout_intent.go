@@ -74,12 +74,8 @@ func (i CheckoutIntent) IsNewStripe() bool {
 	return i.SubsKind == SubsKindNew || i.SubsKind == SubsKindOneTimeToStripe
 }
 
-func (i CheckoutIntent) IsUpgradingStripe() bool {
-	return i.SubsKind == SubsKindUpgrade
-}
-
-func (i CheckoutIntent) IsSwitchingStripeCycle() bool {
-	return i.SubsKind == SubsKindSwitchCycle
+func (i CheckoutIntent) IsUpdatingStripe() bool {
+	return i.SubsKind == SubsKindUpgrade || i.SubsKind == SubsKindSwitchCycle
 }
 
 // Contains checks if the payment method contains the specified one.
@@ -215,6 +211,7 @@ func NewCheckoutIntents(m reader.Membership, e price.Edition) CheckoutIntents {
 			// Only add-on is allowed.
 			if m.Cycle == e.Cycle {
 				return CheckoutIntents{
+					// Not allowed to use stripe since changing the same subscription is meaningless.
 					intents: []CheckoutIntent{
 						NewOneTimeIntent(enum.OrderKindAddOn),
 					},
