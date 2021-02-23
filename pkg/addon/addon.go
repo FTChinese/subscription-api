@@ -17,7 +17,6 @@ type AddOn struct {
 	price.Edition
 	CycleCount      int64           `json:"cycleCount" db:"cycle_count"`
 	DaysRemained    int64           `json:"daysRemained" db:"days_remained"`
-	IsCarryOver     bool            `json:"isCarryOver" db:"is_carry_over"`
 	CarryOverSource CarryOverSource `json:"carryOverSource" db:"carry_over_source"`
 	PaymentMethod   enum.PayMethod  `json:"payMethod" db:"payment_method"`
 	CompoundID      string          `json:"compoundId" db:"compound_id"`
