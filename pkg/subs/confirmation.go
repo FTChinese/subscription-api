@@ -34,7 +34,7 @@ type ConfirmationParams struct {
 // PaymentConfirmed is the result of confirming an order.
 type PaymentConfirmed struct {
 	Order    Order                 `json:"order"` // The confirmed order.
-	AddOn    addon.AddOn           `json:"addOn"`
+	AddOn    addon.AddOn           `json:"-"`
 	Snapshot reader.MemberSnapshot `json:"-"` // Snapshot of previous membership
 }
 
