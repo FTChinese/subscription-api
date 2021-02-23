@@ -1,11 +1,9 @@
 package reader
 
 import (
-	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"math"
-	"net/http"
 	"time"
 
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -214,139 +212,14 @@ func (m Membership) IsB2B() bool {
 	return !m.IsZero() && m.PaymentMethod == enum.PayMethodB2B && m.B2BLicenceID.Valid
 }
 
-// canRenewViaAliWx test if current membership is allowed to renew for wxpay or alipay.
+// WithinMaxRenewalPeriod test if current membership is allowed to renew for wxpay or alipay.
 // now <= expire date <= 3 years later
-func (m Membership) canRenewViaAliWx() bool {
-	// If m does not exist, or not create via alipay or wxpay.
-	if m.IsZero() || !m.IsOneTime() {
-		return false
-	}
-
-	today := time.Now().Truncate(24 * time.Hour)
-	threeYearsLater := today.AddDate(3, 0, 0)
-
-	// It should include today and the date three year later.
-	return !m.ExpireDate.Before(today) && !m.ExpireDate.After(threeYearsLater)
-}
-
 func (m Membership) WithinMaxRenewalPeriod() bool {
 	today := time.Now().Truncate(24 * time.Hour)
 	threeYearsLater := today.AddDate(3, 0, 0)
 
 	// It should include today and the date three year later.
 	return !m.ExpireDate.Before(today) && !m.ExpireDate.After(threeYearsLater)
-}
-
-// StripeSubsKind deduce what kind of subscription a request is trying to create.
-// You can create or upgrade a subscription via stripe.
-// Cases for permission:
-// 1. Membership does not exist;
-// 2. Membership exists via alipay or wxpay but expired;
-// 3. Membership exits via stripe but is expired and it is not auto renewable.
-// 4. A stripe subscription that is not expired, auto renewable, but its current status is not active.
-func (m Membership) StripeSubsKind(e price.Edition) (enum.OrderKind, error) {
-	// If a membership does not exist, allow create stripe
-	// subscription
-	if m.IsZero() {
-		return enum.OrderKindCreate, nil
-	}
-
-	// If current membership already expired.
-	if m.IsExpired() {
-		return enum.OrderKindCreate, nil
-	}
-
-	// If not purchased via stripe.
-	if m.PaymentMethod != enum.PayMethodStripe {
-		return enum.OrderKindNull, &render.ValidationError{
-			Message: "You are already subscribed via non-stripe method",
-			Field:   "payMethod",
-			Code:    render.CodeInvalid,
-		}
-	}
-
-	// If user previously subscribed via stripe and canceled, it expiration date is not past yet, and auto renewal is off.
-	// In such case we should allow user to create a new subscription of the same tier.
-	// If current membership is not expired yet, it could be either due to auto renewal, or expiration date is in the future.
-	// Status.IsValid is equal to auto renewal.
-	// If it is not auto renewal, it might be in canceled state.
-	if !m.Status.IsValid() {
-		return enum.OrderKindCreate, nil
-	}
-
-	// Auto renewable is not needed.
-	if m.Tier == e.Tier {
-		return enum.OrderKindNull, &render.ValidationError{
-			Message: "You are already subscribed via Stripe",
-			Field:   "membership",
-			Code:    render.CodeAlreadyExists,
-		}
-	}
-
-	// current tier != requested tier.
-	// If current is premium, requested must be standard.
-	if m.Tier == enum.TierPremium {
-		return enum.OrderKindNull, &render.ValidationError{
-			Message: "Downgrading is not supported currently",
-			Field:   "downgrade",
-			Code:    render.CodeInvalid,
-		}
-	}
-
-	// Current is standard, requested must be premium.
-	return enum.OrderKindUpgrade, nil
-}
-
-// PermitStripeCreate checks whether current membership permit creating subscription via stripe.
-// Returned error is either render.ValidationError or render.ResponseError.
-func (m Membership) PermitStripeCreate(e price.Edition) error {
-	k, err := m.StripeSubsKind(e)
-	if err != nil {
-		return err
-	}
-
-	if k != enum.OrderKindCreate {
-		return &render.ResponseError{
-			StatusCode: http.StatusBadRequest,
-			Message:    "This endpoint only support creating new subscription",
-			Invalid:    nil,
-		}
-	}
-
-	return nil
-}
-
-func (m Membership) PermitStripeUpgrade(e price.Edition) error {
-	if m.IsZero() {
-		return &render.ResponseError{
-			StatusCode: http.StatusNotFound,
-			Message:    "The subscription to upgrade not found",
-			Invalid:    nil,
-		}
-	}
-
-	if m.StripeSubsID.IsZero() {
-		return &render.ResponseError{
-			StatusCode: http.StatusNotFound,
-			Message:    "Subscription not created via stripe",
-			Invalid:    nil,
-		}
-	}
-
-	k, err := m.StripeSubsKind(e)
-	if err != nil {
-		return err
-	}
-
-	if k != enum.OrderKindUpgrade {
-		return &render.ResponseError{
-			StatusCode: http.StatusBadRequest,
-			Message:    "This endpoint only support upgrading an existing stripe subscription",
-			Invalid:    nil,
-		}
-	}
-
-	return nil
 }
 
 // Snapshot takes a snapshot of membership, usually before modifying it.

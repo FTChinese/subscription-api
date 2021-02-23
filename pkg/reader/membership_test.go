@@ -1,10 +1,8 @@
 package reader
 
 import (
-	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -254,7 +252,7 @@ func TestMembership_Normalize(t *testing.T) {
 	}
 }
 
-func TestMembership_canRenewViaAliWx(t *testing.T) {
+func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 
 	tests := []struct {
 		name   string
@@ -350,105 +348,8 @@ func TestMembership_canRenewViaAliWx(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := tt.fields
-			if got := m.canRenewViaAliWx(); got != tt.want {
+			if got := m.WithinMaxRenewalPeriod(); got != tt.want {
 				t.Errorf("canRenewViaAliWx() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestMembership_StripeSubsKind(t *testing.T) {
-
-	type args struct {
-		e price.Edition
-	}
-	tests := []struct {
-		name   string
-		fields Membership
-		args   args
-		want   enum.OrderKind
-		want1  *render.ValidationError
-	}{
-		{
-			name:   "Empty member can create stripe subscription",
-			fields: Membership{},
-			args: args{
-				e: price.StdYearEdition,
-			},
-			want:  enum.OrderKindCreate,
-			want1: nil,
-		},
-		{
-			name: "Expired alipay create stripe subscription",
-			fields: Membership{
-				MemberID: MemberID{
-					CompoundID: "",
-					FtcID:      null.StringFrom(uuid.New().String()),
-					UnionID:    null.String{},
-				}.MustNormalize(),
-				Edition:       price.StdYearEdition,
-				PaymentMethod: enum.PayMethodAli,
-				ExpireDate:    chrono.DateFrom(time.Now().AddDate(-1, 0, 0)),
-			},
-			args: args{
-				e: price.StdYearEdition,
-			},
-			want:  enum.OrderKindCreate,
-			want1: nil,
-		},
-		{
-			name: "Not expired alipay is denied",
-			fields: Membership{
-				MemberID: MemberID{
-					CompoundID: "",
-					FtcID:      null.StringFrom(uuid.New().String()),
-					UnionID:    null.String{},
-				}.MustNormalize(),
-				Edition:       price.StdYearEdition,
-				PaymentMethod: enum.PayMethodAli,
-				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
-			},
-			args: args{
-				e: price.StdYearEdition,
-			},
-			want: enum.OrderKindNull,
-			want1: &render.ValidationError{
-				Message: fmt.Sprintf("Already subscribed via %s", enum.PayMethodAli),
-				Field:   "paymentMethod",
-				Code:    render.CodeInvalid,
-			},
-		},
-		{
-			name: "Invalid stripe can create",
-			fields: Membership{
-				MemberID: MemberID{
-					CompoundID: "",
-					FtcID:      null.StringFrom(uuid.New().String()),
-					UnionID:    null.String{},
-				}.MustNormalize(),
-				Edition:       price.StdYearEdition,
-				PaymentMethod: enum.PayMethodStripe,
-				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
-				StripeSubsID:  null.StringFrom(faker.GenStripeSubID()),
-				StripePlanID:  null.StringFrom(faker.GenStripePlanID()),
-				Status:        enum.SubsStatusIncompleteExpired,
-			},
-			args: args{
-				e: price.StdYearEdition,
-			},
-			want:  enum.OrderKindCreate,
-			want1: nil,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := tt.fields
-			got, got1 := m.StripeSubsKind(tt.args.e)
-			if got != tt.want {
-				t.Errorf("StripeSubsKind() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("StripeSubsKind() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
