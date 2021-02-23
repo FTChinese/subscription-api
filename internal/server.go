@@ -148,9 +148,9 @@ func StartServer(s ServerStatus) {
 			r.Get("/", stripeRouter.ListSubs)
 			// Get a single subscription
 			r.Get("/{id}", stripeRouter.LoadSubs)
+			r.Post("/{id}", stripeRouter.UpdateSubs)
 			// Update a subscription
 			r.Post("/{id}/refresh", stripeRouter.RefreshSubs)
-			r.Post("/{id}/upgrade", stripeRouter.UpgradeSubscription)
 			r.Post("/{id}/cancel", stripeRouter.CancelSubs)
 			r.Post("/{id}/reactivate", stripeRouter.ReactivateSubscription)
 		})
