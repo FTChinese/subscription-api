@@ -96,3 +96,64 @@ func TestDateRange_WithCycle(t *testing.T) {
 		})
 	}
 }
+
+func TestDateRange_WithCycleN(t *testing.T) {
+	now := time.Now()
+
+	type fields struct {
+		StartDate chrono.Date
+		EndDate   chrono.Date
+	}
+	type args struct {
+		cycle enum.Cycle
+		n     int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   DateRange
+	}{
+		{
+			name: "With 3 Years",
+			fields: fields{
+				StartDate: chrono.DateFrom(now),
+				EndDate:   chrono.DateFrom(now),
+			},
+			args: args{
+				cycle: enum.CycleYear,
+				n:     3,
+			},
+			want: DateRange{
+				StartDate: chrono.DateFrom(now),
+				EndDate:   chrono.DateFrom(now.AddDate(3, 0, 0)),
+			},
+		},
+		{
+			name: "With 3 Months",
+			fields: fields{
+				StartDate: chrono.DateFrom(now),
+				EndDate:   chrono.DateFrom(now),
+			},
+			args: args{
+				cycle: enum.CycleMonth,
+				n:     3,
+			},
+			want: DateRange{
+				StartDate: chrono.DateFrom(now),
+				EndDate:   chrono.DateFrom(now.AddDate(0, 3, 0)),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := DateRange{
+				StartDate: tt.fields.StartDate,
+				EndDate:   tt.fields.EndDate,
+			}
+			if got := d.WithCycleN(tt.args.cycle, tt.args.n); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("WithCycleN() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

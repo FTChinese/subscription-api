@@ -11,6 +11,7 @@ type DateTimeRange struct {
 	EndUTC   chrono.Time `json:"endUtc" db:"end_utc"`
 }
 
+// DateRange is used to build the subscription period of a one-time purchase.
 type DateRange struct {
 	// Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
 	StartDate chrono.Date `json:"startDate" db:"start_date"`
@@ -18,6 +19,7 @@ type DateRange struct {
 	EndDate chrono.Date `json:"endDate" db:"end_date"`
 }
 
+// NewDateRange creates a new instance of DateRange from a moment, with both starting and ending time set to the same value.
 func NewDateRange(start time.Time) DateRange {
 	return DateRange{
 		StartDate: chrono.DateFrom(start),
@@ -25,6 +27,7 @@ func NewDateRange(start time.Time) DateRange {
 	}
 }
 
+// WithCycle adds a billing cycle to end date.
 func (d DateRange) WithCycle(cycle enum.Cycle) DateRange {
 	switch cycle {
 	case enum.CycleYear:
@@ -37,6 +40,7 @@ func (d DateRange) WithCycle(cycle enum.Cycle) DateRange {
 	return d
 }
 
+// WithCycleN adds n cycles to end date.
 func (d DateRange) WithCycleN(cycle enum.Cycle, n int) DateRange {
 	switch cycle {
 	case enum.CycleYear:
@@ -64,6 +68,8 @@ func (d DateRange) AddDays(days int) DateRange {
 	return d
 }
 
+// AddDate adds the specified years, months, days to end date.
+// This is a simple wrapper of Time.AddDate.
 func (d DateRange) AddDate(years, months, days int) DateRange {
 	d.EndDate = chrono.DateFrom(d.EndDate.AddDate(years, months, days))
 
