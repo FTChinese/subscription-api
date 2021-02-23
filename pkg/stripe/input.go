@@ -1,7 +1,6 @@
 package stripe
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -23,17 +22,9 @@ type SubsInput struct {
 }
 
 // Validate checks if customer and idempotency fields are set.
-func (i SubsInput) Validate(isUpgrade bool) *render.ValidationError {
+func (i SubsInput) Validate() *render.ValidationError {
 	if ve := i.Edition.Validate(); ve != nil {
 		return ve
-	}
-
-	if isUpgrade && i.Tier != enum.TierPremium {
-		return &render.ValidationError{
-			Message: "Not the correct edition to upgrade to",
-			Field:   "tier",
-			Code:    render.CodeInvalid,
-		}
 	}
 
 	return validator.New("idempotency").Required().Validate(i.IdempotencyKey)
