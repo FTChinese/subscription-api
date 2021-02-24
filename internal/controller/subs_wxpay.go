@@ -72,7 +72,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 		sugar.Infof("Selected plan: %+v", plan)
 
-		config := subs.NewPayment(account, plan).
+		config := subs.NewCounter(account, plan).
 			WithWxpay(payClient.GetApp())
 
 		pi, err := router.SubsRepo.CreateOrder(config)
