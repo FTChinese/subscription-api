@@ -1,6 +1,7 @@
 package addon
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"reflect"
 	"testing"
 )
@@ -45,6 +46,62 @@ func TestReservedDays_Plus(t *testing.T) {
 			}
 			if got := d.Plus(tt.args.other); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Plus() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReservedDays_Clear(t *testing.T) {
+	type fields struct {
+		Standard int64
+		Premium  int64
+	}
+	type args struct {
+		tier enum.Tier
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   ReservedDays
+	}{
+		{
+			name: "Clean Standard",
+			fields: fields{
+				Standard: 10,
+				Premium:  5,
+			},
+			args: args{
+				tier: enum.TierStandard,
+			},
+			want: ReservedDays{
+				Standard: 0,
+				Premium:  5,
+			},
+		},
+		{
+			name: "Clean Premium",
+			fields: fields{
+				Standard: 10,
+				Premium:  5,
+			},
+			args: args{
+				tier: enum.TierPremium,
+			},
+			want: ReservedDays{
+				Standard: 10,
+				Premium:  0,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := ReservedDays{
+				Standard: tt.fields.Standard,
+				Premium:  tt.fields.Premium,
+			}
+			if got := d.Clear(tt.args.tier); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Clear() = %v, want %v", got, tt.want)
 			}
 		})
 	}
