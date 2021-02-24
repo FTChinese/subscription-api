@@ -73,3 +73,12 @@ func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 		Notify:         true,
 	}, nil
 }
+
+// MustNewConfirmationResult is the panic version of NewConfirmationResult
+func MustNewConfirmationResult(p ConfirmationParams) ConfirmationResult {
+	result, err := NewConfirmationResult(p)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
