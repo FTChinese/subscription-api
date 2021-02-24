@@ -8,7 +8,6 @@ import (
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -20,13 +19,6 @@ import (
 	"github.com/smartwalle/alipay"
 	"time"
 )
-
-func MockOrder(price price.FtcPrice, kind enum.OrderKind) Order {
-	return NewMockOrderBuilder("").
-		WithPrice(price).
-		WithKind(kind).
-		Build()
-}
 
 type MockOrderBuilder struct {
 	id        string
@@ -120,13 +112,6 @@ func (b MockOrderBuilder) Build() Order {
 		DateRange:     b.period,
 		LiveMode:      true,
 	}
-}
-
-type MockAddOnBuilder struct {
-	userIDs       reader.MemberID
-	price         price.FtcPrice
-	payMethod     enum.PayMethod
-	carryOverFrom addon.CarryOverSource
 }
 
 func MockNewPaymentResult(o Order) PaymentResult {
