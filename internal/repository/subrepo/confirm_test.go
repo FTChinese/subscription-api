@@ -41,7 +41,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		WithKind(enum.OrderKindRenew).
 		WithPayMethod(enum.PayMethodAli).
 		WithConfirmed().
-		WithPeriod(time.Now()).
+		WithStartTime(time.Now()).
 		Build()
 	t.Logf("Out of sync order %v", outOfSyncOrder)
 
