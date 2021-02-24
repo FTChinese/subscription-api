@@ -95,15 +95,16 @@ func (o Order) ValidatePayment(result PaymentResult) error {
 
 func (o Order) ToAddOn() addon.AddOn {
 	return addon.AddOn{
-		ID:            db.AddOnID(),
-		Edition:       o.Edition,
-		CycleCount:    1,
-		DaysRemained:  trialDays,
-		PaymentMethod: o.PaymentMethod,
-		CompoundID:    o.CompoundID,
-		OrderID:       null.StringFrom(o.ID),
-		PlanID:        null.StringFrom(o.PlanID),
-		CreatedUTC:    chrono.TimeNow(),
-		ConsumedUTC:   chrono.Time{},
+		ID:              db.AddOnID(),
+		Edition:         o.Edition,
+		CycleCount:      1,
+		DaysRemained:    trialDays,
+		CarryOverSource: "",
+		PaymentMethod:   o.PaymentMethod,
+		CompoundID:      o.CompoundID,
+		OrderID:         null.StringFrom(o.ID),
+		PlanID:          null.StringFrom(o.PlanID),
+		CreatedUTC:      chrono.TimeNow(),
+		ConsumedUTC:     chrono.Time{},
 	}
 }
