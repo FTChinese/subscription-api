@@ -45,7 +45,9 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 
 	sugar.Infof("Existing membership retrieved %v", member)
 
-	if lo.IsConfirmed() {
+	// If order is already confirmed, only stop in case it's
+	// synced to membership.
+	if lo.IsConfirmed() && order.IsSynced(member) {
 		sugar.Infof("Duplicate confirmation of order %s", order.ID)
 		_ = tx.Rollback()
 		order.ConfirmedAt = lo.ConfirmedAt
