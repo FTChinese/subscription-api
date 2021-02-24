@@ -21,7 +21,7 @@ var PriceStdYear = price.FtcPrice{
 		Nickname:   null.String{},
 		ProductID:  "prod_zjWdiTUpDN8l",
 		Source:     price.SourceFTC,
-		UnitAmount: 258,
+		UnitAmount: 298,
 	},
 	PromotionOffer: price.Discount{
 		//DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
