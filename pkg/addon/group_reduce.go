@@ -5,16 +5,7 @@ import (
 	"github.com/FTChinese/subscription-api/lib/collection"
 )
 
-// AddOnSum contains the total years, months, and days of user's add-on belong to the same tier.
-type Sum struct {
-	IDs    collection.StringSet
-	Years  int
-	Months int
-	Days   int
-	Latest AddOn // Use to fill the edition, payment method, and plan id fields of membership.
-}
-
-// GroupAddOns put add-ons into different groups by tier so that we won't mix
+// group put add-ons into different groups by tier so that we won't mix
 // different tiers when sum up reserved days.
 func group(addOns []AddOn) map[enum.Tier][]AddOn {
 	g := make(map[enum.Tier][]AddOn)
@@ -26,6 +17,17 @@ func group(addOns []AddOn) map[enum.Tier][]AddOn {
 	return g
 }
 
+// AddOnSum contains the total years, months, and days of user's add-on belong to the same tier.
+type Sum struct {
+	IDs    collection.StringSet
+	Years  int
+	Months int
+	Days   int
+	Latest AddOn // Use to fill the edition, payment method, and plan id fields of membership.
+}
+
+// reduce sums up all add-ons' years, months and days.
+// All add-ons to be summed should have the same tier.
 func reduce(addOns []AddOn) Sum {
 	if len(addOns) == 0 {
 		return Sum{}
