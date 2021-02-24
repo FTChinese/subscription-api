@@ -1,8 +1,6 @@
 package subs
 
 import (
-	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"testing"
 )
@@ -10,7 +8,7 @@ import (
 func TestNewAliWebhookResult(t *testing.T) {
 	config.MustSetupViper()
 
-	order := MockOrder(faker.PriceStdYear, enum.OrderKindCreate)
+	order := NewMockOrderBuilder("").Build()
 
 	n := MockAliNoti(order)
 	pr, err := NewAliWebhookResult(&n)
