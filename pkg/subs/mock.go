@@ -86,7 +86,10 @@ func (b MockOrderBuilder) WithConfirmed() MockOrderBuilder {
 	return b
 }
 
-func (b MockOrderBuilder) WithPeriod(from time.Time) MockOrderBuilder {
+func (b MockOrderBuilder) WithStartTime(from time.Time) MockOrderBuilder {
+	if !b.confirmed {
+		b.confirmed = true
+	}
 	b.period = dt.NewDateRange(from).WithCycle(b.price.Original.Cycle)
 	return b
 }
@@ -102,22 +105,19 @@ func (b MockOrderBuilder) Build() Order {
 	}
 
 	return Order{
-		ID:         b.id,
-		MemberID:   b.userIDs,
-		PlanID:     item.Price.ID,
-		DiscountID: item.Discount.DiscID,
-		Price:      item.Price.UnitAmount,
-		Edition:    item.Price.Edition,
-		Charge: price.Charge{
-			Amount:   payable.Amount,
-			Currency: payable.Currency,
-		},
+		ID:            b.id,
+		MemberID:      b.userIDs,
+		PlanID:        item.Price.ID,
+		DiscountID:    item.Discount.DiscID,
+		Price:         item.Price.UnitAmount,
+		Edition:       item.Price.Edition,
+		Charge:        payable,
 		Kind:          b.kind,
 		PaymentMethod: b.payMethod,
 		WxAppID:       b.wxAppId,
 		CreatedAt:     chrono.TimeNow(),
 		ConfirmedAt:   chrono.TimeFrom(confirmed),
-		DateRange:     dt.DateRange{},
+		DateRange:     b.period,
 		LiveMode:      true,
 	}
 }
