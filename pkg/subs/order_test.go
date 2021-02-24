@@ -42,7 +42,7 @@ func TestOrder_IsSynced(t *testing.T) {
 			name: "Confirmed and synced",
 			fields: NewMockOrderBuilder("").
 				WithConfirmed().
-				WithPeriod(now).
+				WithStartTime(now).
 				Build(),
 			args: args{
 				m: reader.Membership{
