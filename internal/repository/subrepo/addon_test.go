@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
@@ -27,7 +28,15 @@ func TestEnv_RedeemAddOn(t *testing.T) {
 		})
 
 	m := p.Membership()
-	aos := p.AddOnN(3)
+	aos := []addon.AddOn{
+		p.NewOrder(enum.OrderKindAddOn).
+			ToAddOn(),
+		p.Membership().
+			CarryOver(addon.CarryOverFromUpgrade).
+			WithOrderID(db.MustOrderID()),
+		p.Membership().
+			CarryOver(addon.CarryOverFromSwitchingStripe),
+	}
 
 	repo := test.NewRepo()
 	repo.MustSaveMembership(m)
