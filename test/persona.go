@@ -155,23 +155,3 @@ func (p *Persona) NewOrder(k enum.OrderKind) subs.Order {
 		WithPayMethod(p.payMethod).
 		Build()
 }
-
-func (p *Persona) AddOn() addon.AddOn {
-	return subs.NewMockAddOnBuilder().
-		WithUserIDs(p.AccountID()).
-		WithPlan(p.price).
-		BuildNew()
-}
-
-func (p *Persona) AddOnN(n int) []addon.AddOn {
-	factory := subs.NewMockAddOnBuilder().
-		WithUserIDs(p.AccountID()).
-		WithPlan(p.price)
-
-	var addOns []addon.AddOn
-	for i := 0; i < n; i++ {
-		addOns = append(addOns, factory.BuildNew())
-	}
-
-	return addOns
-}
