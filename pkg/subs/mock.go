@@ -123,59 +123,10 @@ func (b MockOrderBuilder) Build() Order {
 }
 
 type MockAddOnBuilder struct {
-	userIDs   reader.MemberID
-	price     price.FtcPrice
-	payMethod enum.PayMethod
-}
-
-func NewMockAddOnBuilder() MockAddOnBuilder {
-	return MockAddOnBuilder{
-		userIDs: reader.MemberID{
-			FtcID: null.StringFrom(uuid.New().String()),
-		}.MustNormalize(),
-		price:     faker.PriceStdYear,
-		payMethod: enum.PayMethodAli,
-	}
-}
-
-func (b MockAddOnBuilder) WithUserIDs(ids reader.MemberID) MockAddOnBuilder {
-	b.userIDs = ids
-	return b
-}
-
-func (b MockAddOnBuilder) WithPlan(p price.FtcPrice) MockAddOnBuilder {
-	b.price = p
-	return b
-}
-
-func (b MockAddOnBuilder) BuildNew() addon.AddOn {
-	return addon.AddOn{
-		ID:            db.AddOnID(),
-		Edition:       b.price.Original.Edition,
-		CycleCount:    1,
-		DaysRemained:  1,
-		PaymentMethod: b.payMethod,
-		CompoundID:    b.userIDs.CompoundID,
-		OrderID:       null.StringFrom(db.MustOrderID()),
-		PlanID:        null.StringFrom(b.price.Original.ID),
-		CreatedUTC:    chrono.TimeNow(),
-		ConsumedUTC:   chrono.Time{},
-	}
-}
-
-func (b MockAddOnBuilder) BuildUpgrade() addon.AddOn {
-	return addon.AddOn{
-		ID:            db.AddOnID(),
-		Edition:       faker.PriceStdYear.Original.Edition,
-		CycleCount:    0,
-		DaysRemained:  int64(rand.IntRange(1, 367)),
-		PaymentMethod: b.payMethod,
-		CompoundID:    b.userIDs.CompoundID,
-		OrderID:       null.StringFrom(db.MustOrderID()),
-		PlanID:        null.StringFrom(faker.PriceStdYear.Original.ID),
-		CreatedUTC:    chrono.TimeNow(),
-		ConsumedUTC:   chrono.Time{},
-	}
+	userIDs       reader.MemberID
+	price         price.FtcPrice
+	payMethod     enum.PayMethod
+	carryOverFrom addon.CarryOverSource
 }
 
 func MockNewPaymentResult(o Order) PaymentResult {
