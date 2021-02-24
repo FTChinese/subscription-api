@@ -23,6 +23,11 @@ func (m Membership) WithReservedDays(days addon.ReservedDays) Membership {
 	return m
 }
 
+func (m Membership) WithAddOn(addOn addon.AddOn) Membership {
+	m.ReservedDays = m.ReservedDays.Plus(addOn.ToReservedDays())
+	return m
+}
+
 func (m Membership) HasAddOns() bool {
 	return m.Standard > 0 || m.Premium > 0
 }
@@ -59,6 +64,7 @@ func (m Membership) CarryOver(source addon.CarryOverSource) addon.AddOn {
 	}
 }
 
+// WithAddOnSum extends membership's expiration time by adding up all add-ons.
 func (m Membership) WithAddOnSum(sum addon.Sum) Membership {
 	startTime := dt.PickLater(time.Now(), m.ExpireDate.Time)
 
