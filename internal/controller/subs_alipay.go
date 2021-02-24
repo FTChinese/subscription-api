@@ -74,7 +74,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		config := subs.NewPayment(account, price).
+		config := subs.NewCounter(account, price).
 			WithAlipay()
 
 		pi, err := router.SubsRepo.CreateOrder(config)
