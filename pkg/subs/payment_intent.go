@@ -90,8 +90,3 @@ func NewAliAppPayIntent(order Order, param string) AlipayNativeIntent {
 		Param: param,
 	}
 }
-
-type PaymentIntent struct {
-	Checkout
-	Order Order
-}

@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -35,13 +34,13 @@ func TestEnv_CreateOrder(t *testing.T) {
 		logger *zap.Logger
 	}
 	type args struct {
-		config subs.Counter
+		counter subs.Counter
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    subs.PaymentIntent
+		want    subs.Order
 		wantErr bool
 	}{
 		{
@@ -51,39 +50,31 @@ func TestEnv_CreateOrder(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				config: subs.Counter{
+				counter: subs.Counter{
 					Account: p.FtcAccount(),
 					Price:   faker.PriceStdYear,
 					Method:  enum.PayMethodAli,
 					WxAppID: null.String{},
 				},
 			},
-			want: subs.PaymentIntent{
-				Checkout: subs.Checkout{
-					Kind:     enum.OrderKindCreate,
-					Cart:     cart.NewFtcCart(faker.PriceStdYear),
-					Payable:  cart.NewFtcCart(faker.PriceStdYear).Payable(),
-					LiveMode: true,
+			want: subs.Order{
+				ID:         "",
+				MemberID:   p.AccountID(),
+				PlanID:     faker.PriceStdYear.Original.ID,
+				DiscountID: null.String{},
+				Price:      faker.PriceStdYear.Original.UnitAmount,
+				Edition:    faker.PriceStdYear.Original.Edition,
+				Charge: price.Charge{
+					Amount:   faker.PriceStdYear.Original.UnitAmount,
+					Currency: "cny",
 				},
-				Order: subs.Order{
-					ID:         "",
-					MemberID:   p.AccountID(),
-					PlanID:     faker.PriceStdYear.Original.ID,
-					DiscountID: null.String{},
-					Price:      faker.PriceStdYear.Original.UnitAmount,
-					Edition:    faker.PriceStdYear.Original.Edition,
-					Charge: price.Charge{
-						Amount:   faker.PriceStdYear.Original.UnitAmount,
-						Currency: "cny",
-					},
-					Kind:          enum.OrderKindCreate,
-					PaymentMethod: enum.PayMethodAli,
-					WxAppID:       null.String{},
-					CreatedAt:     chrono.Time{},
-					ConfirmedAt:   chrono.Time{},
-					DateRange:     dt.DateRange{},
-					LiveMode:      true,
-				},
+				Kind:          enum.OrderKindCreate,
+				PaymentMethod: enum.PayMethodAli,
+				WxAppID:       null.String{},
+				CreatedAt:     chrono.Time{},
+				ConfirmedAt:   chrono.Time{},
+				DateRange:     dt.DateRange{},
+				LiveMode:      true,
 			},
 			wantErr: false,
 		},
@@ -94,39 +85,31 @@ func TestEnv_CreateOrder(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				config: subs.Counter{
+				counter: subs.Counter{
 					Account: p.FtcAccount(),
 					Price:   faker.PriceStdYear,
 					Method:  enum.PayMethodWx,
 					WxAppID: null.StringFrom(wxID),
 				},
 			},
-			want: subs.PaymentIntent{
-				Checkout: subs.Checkout{
-					Kind:     enum.OrderKindRenew,
-					Cart:     cart.NewFtcCart(faker.PriceStdYear),
-					Payable:  cart.NewFtcCart(faker.PriceStdYear).Payable(),
-					LiveMode: true,
+			want: subs.Order{
+				ID:         "",
+				MemberID:   p.AccountID(),
+				PlanID:     faker.PriceStdYear.Original.ID,
+				DiscountID: null.String{},
+				Price:      faker.PriceStdYear.Original.UnitAmount,
+				Edition:    faker.PriceStdYear.Original.Edition,
+				Charge: price.Charge{
+					Amount:   faker.PriceStdYear.Original.UnitAmount,
+					Currency: "cny",
 				},
-				Order: subs.Order{
-					ID:         "",
-					MemberID:   p.AccountID(),
-					PlanID:     faker.PriceStdYear.Original.ID,
-					DiscountID: null.String{},
-					Price:      faker.PriceStdYear.Original.UnitAmount,
-					Edition:    faker.PriceStdYear.Original.Edition,
-					Charge: price.Charge{
-						Amount:   faker.PriceStdYear.Original.UnitAmount,
-						Currency: "cny",
-					},
-					Kind:          enum.OrderKindRenew,
-					PaymentMethod: enum.PayMethodWx,
-					WxAppID:       null.StringFrom(wxID),
-					CreatedAt:     chrono.Time{},
-					ConfirmedAt:   chrono.Time{},
-					DateRange:     dt.DateRange{},
-					LiveMode:      true,
-				},
+				Kind:          enum.OrderKindRenew,
+				PaymentMethod: enum.PayMethodWx,
+				WxAppID:       null.StringFrom(wxID),
+				CreatedAt:     chrono.Time{},
+				ConfirmedAt:   chrono.Time{},
+				DateRange:     dt.DateRange{},
+				LiveMode:      true,
 			},
 			wantErr: false,
 		},
@@ -137,39 +120,31 @@ func TestEnv_CreateOrder(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				config: subs.Counter{
+				counter: subs.Counter{
 					Account: p.FtcAccount(),
 					Price:   faker.PricePrm,
 					Method:  enum.PayMethodWx,
 					WxAppID: null.StringFrom(wxID),
 				},
 			},
-			want: subs.PaymentIntent{
-				Checkout: subs.Checkout{
-					Kind:     enum.OrderKindUpgrade,
-					Cart:     cart.NewFtcCart(faker.PricePrm),
-					Payable:  cart.NewFtcCart(faker.PricePrm).Payable(),
-					LiveMode: true,
+			want: subs.Order{
+				ID:         "",
+				MemberID:   p.AccountID(),
+				PlanID:     faker.PricePrm.Original.ID,
+				DiscountID: null.String{},
+				Price:      faker.PricePrm.Original.UnitAmount,
+				Edition:    faker.PricePrm.Original.Edition,
+				Charge: price.Charge{
+					Amount:   faker.PricePrm.Original.UnitAmount,
+					Currency: "cny",
 				},
-				Order: subs.Order{
-					ID:         "",
-					MemberID:   p.AccountID(),
-					PlanID:     faker.PricePrm.Original.ID,
-					DiscountID: null.String{},
-					Price:      faker.PricePrm.Original.UnitAmount,
-					Edition:    faker.PricePrm.Original.Edition,
-					Charge: price.Charge{
-						Amount:   faker.PricePrm.Original.UnitAmount,
-						Currency: "cny",
-					},
-					Kind:          enum.OrderKindUpgrade,
-					PaymentMethod: enum.PayMethodWx,
-					WxAppID:       null.StringFrom(wxID),
-					CreatedAt:     chrono.Time{},
-					ConfirmedAt:   chrono.Time{},
-					DateRange:     dt.DateRange{},
-					LiveMode:      true,
-				},
+				Kind:          enum.OrderKindUpgrade,
+				PaymentMethod: enum.PayMethodWx,
+				WxAppID:       null.StringFrom(wxID),
+				CreatedAt:     chrono.Time{},
+				ConfirmedAt:   chrono.Time{},
+				DateRange:     dt.DateRange{},
+				LiveMode:      true,
 			},
 			wantErr: false,
 		},
@@ -180,39 +155,31 @@ func TestEnv_CreateOrder(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				config: subs.Counter{
+				counter: subs.Counter{
 					Account: p2.FtcAccount(),
 					Price:   faker.PriceStdYear,
 					Method:  enum.PayMethodWx,
 					WxAppID: null.StringFrom(wxID),
 				},
 			},
-			want: subs.PaymentIntent{
-				Checkout: subs.Checkout{
-					Kind:     enum.OrderKindAddOn,
-					Cart:     cart.NewFtcCart(faker.PriceStdYear),
-					Payable:  cart.NewFtcCart(faker.PriceStdYear).Payable(),
-					LiveMode: true,
+			want: subs.Order{
+				ID:         "",
+				MemberID:   p2.AccountID(),
+				PlanID:     faker.PriceStdYear.Original.ID,
+				DiscountID: null.String{},
+				Price:      faker.PriceStdYear.Original.UnitAmount,
+				Edition:    faker.PriceStdYear.Original.Edition,
+				Charge: price.Charge{
+					Amount:   faker.PriceStdYear.Original.UnitAmount,
+					Currency: "cny",
 				},
-				Order: subs.Order{
-					ID:         "",
-					MemberID:   p2.AccountID(),
-					PlanID:     faker.PriceStdYear.Original.ID,
-					DiscountID: null.String{},
-					Price:      faker.PriceStdYear.Original.UnitAmount,
-					Edition:    faker.PriceStdYear.Original.Edition,
-					Charge: price.Charge{
-						Amount:   faker.PriceStdYear.Original.UnitAmount,
-						Currency: "cny",
-					},
-					Kind:          enum.OrderKindAddOn,
-					PaymentMethod: enum.PayMethodWx,
-					WxAppID:       null.StringFrom(wxID),
-					CreatedAt:     chrono.Time{},
-					ConfirmedAt:   chrono.Time{},
-					DateRange:     dt.DateRange{},
-					LiveMode:      true,
-				},
+				Kind:          enum.OrderKindAddOn,
+				PaymentMethod: enum.PayMethodWx,
+				WxAppID:       null.StringFrom(wxID),
+				CreatedAt:     chrono.Time{},
+				ConfirmedAt:   chrono.Time{},
+				DateRange:     dt.DateRange{},
+				LiveMode:      true,
 			},
 			wantErr: false,
 		},
@@ -223,10 +190,10 @@ func TestEnv_CreateOrder(t *testing.T) {
 				rwdDB:  tt.fields.rwdDB,
 				logger: tt.fields.logger,
 			}
-			got, err := env.CreateOrder(tt.args.config)
+			got, err := env.CreateOrder(tt.args.counter)
 
-			tt.want.Order.ID = got.Order.ID
-			tt.want.Order.CreatedAt = got.Order.CreatedAt
+			tt.want.ID = got.ID
+			tt.want.CreatedAt = got.CreatedAt
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateOrder() error = %v, wantErr %v", err, tt.wantErr)
