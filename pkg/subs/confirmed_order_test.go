@@ -197,3 +197,143 @@ func TestNewConfirmedOrder(t *testing.T) {
 		})
 	}
 }
+
+func TestConfirmedOrder_newMembership(t *testing.T) {
+	now := time.Now()
+	stdMmb := reader.NewMockMemberBuilder("").
+		Build()
+
+	orderCreate := NewMockOrderBuilder(stdMmb.FtcID.String).
+		WithStartTime(now).
+		Build()
+
+	orderRenewal := NewMockOrderBuilder(stdMmb.FtcID.String).
+		WithKind(enum.OrderKindRenew).
+		WithStartTime(stdMmb.ExpireDate.Time).
+		Build()
+
+	orderUpgrade := NewMockOrderBuilder(stdMmb.FtcID.String).
+		WithKind(enum.OrderKindUpgrade).
+		WithStartTime(now).
+		Build()
+
+	orderAddOn := NewMockOrderBuilder(stdMmb.FtcID.String).
+		WithKind(enum.OrderKindAddOn).
+		WithConfirmed().
+		Build()
+
+	type fields struct {
+		Order Order
+		AddOn addon.AddOn
+	}
+	type args struct {
+		currentMember reader.Membership
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   reader.Membership
+	}{
+		{
+			name: "New membership",
+			fields: fields{
+				Order: orderCreate,
+				AddOn: addon.AddOn{},
+			},
+			args: args{
+				currentMember: reader.Membership{},
+			},
+			want: reader.Membership{
+				MemberID:      orderCreate.MemberID,
+				Edition:       orderCreate.Edition,
+				LegacyTier:    null.Int{},
+				LegacyExpire:  null.Int{},
+				ExpireDate:    orderCreate.EndDate,
+				PaymentMethod: orderCreate.PaymentMethod,
+				FtcPlanID:     null.StringFrom(orderCreate.PlanID),
+				StripeSubsID:  null.String{},
+				StripePlanID:  null.String{},
+				AutoRenewal:   false,
+				Status:        0,
+				AppleSubsID:   null.String{},
+				B2BLicenceID:  null.String{},
+				ReservedDays:  addon.ReservedDays{},
+			}.Sync(),
+		},
+		{
+			name: "Renew membership",
+			fields: fields{
+				Order: orderRenewal,
+				AddOn: addon.AddOn{},
+			},
+			args: args{
+				currentMember: stdMmb,
+			},
+			want: reader.Membership{
+				MemberID:      orderRenewal.MemberID,
+				Edition:       orderRenewal.Edition,
+				LegacyTier:    null.Int{},
+				LegacyExpire:  null.Int{},
+				ExpireDate:    orderRenewal.EndDate,
+				PaymentMethod: orderRenewal.PaymentMethod,
+				FtcPlanID:     null.StringFrom(orderRenewal.PlanID),
+				StripeSubsID:  null.String{},
+				StripePlanID:  null.String{},
+				AutoRenewal:   false,
+				Status:        0,
+				AppleSubsID:   null.String{},
+				B2BLicenceID:  null.String{},
+				ReservedDays:  addon.ReservedDays{},
+			}.Sync(),
+		},
+		{
+			name: "Upgrade membership",
+			fields: fields{
+				Order: orderUpgrade,
+				AddOn: stdMmb.CarryOver(addon.CarryOverFromUpgrade),
+			},
+			args: args{
+				currentMember: stdMmb,
+			},
+			want: reader.Membership{
+				MemberID:      orderUpgrade.MemberID,
+				Edition:       orderUpgrade.Edition,
+				LegacyTier:    null.Int{},
+				LegacyExpire:  null.Int{},
+				ExpireDate:    orderUpgrade.EndDate,
+				PaymentMethod: orderUpgrade.PaymentMethod,
+				FtcPlanID:     null.StringFrom(orderUpgrade.PlanID),
+				StripeSubsID:  null.String{},
+				StripePlanID:  null.String{},
+				AutoRenewal:   false,
+				Status:        0,
+				AppleSubsID:   null.String{},
+				B2BLicenceID:  null.String{},
+				ReservedDays:  stdMmb.CarryOver(addon.CarryOverFromUpgrade).ToReservedDays(),
+			}.Sync(),
+		},
+		{
+			name: "Addon membership",
+			fields: fields{
+				Order: orderAddOn,
+				AddOn: orderAddOn.ToAddOn(),
+			},
+			args: args{
+				currentMember: stdMmb,
+			},
+			want: stdMmb.WithAddOn(orderAddOn.ToAddOn()),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			co := ConfirmedOrder{
+				Order: tt.fields.Order,
+				AddOn: tt.fields.AddOn,
+			}
+			if got := co.newMembership(tt.args.currentMember); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("newMembership() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
