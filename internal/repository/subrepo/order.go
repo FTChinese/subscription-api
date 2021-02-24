@@ -15,49 +15,49 @@ const wxAppNativeApp = "wxacddf1c20516eb69" // Used by native app to pay and log
 // For upgrading to premium with valid standard subscription,
 // the remaining days is converted to add-on.
 // For Stripe and IAP, the purchase is taken as add-on directly.
-func (env Env) CreateOrder(config subs.Counter) (subs.PaymentIntent, error) {
+func (env Env) CreateOrder(counter subs.Counter) (subs.Order, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return subs.PaymentIntent{}, err
+		return subs.Order{}, err
 	}
 
 	// Step 1: Retrieve membership for this user.
 	// The membership might be empty but the value is
 	// valid.
-	sugar.Infof("Start retrieving membership for reader %+v", config.Account.MemberID())
-	member, err := otx.RetrieveMember(config.Account.MemberID())
+	sugar.Infof("Start retrieving membership for reader %+v", counter.Account.MemberID())
+	member, err := otx.RetrieveMember(counter.Account.MemberID())
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.PaymentIntent{}, err
+		return subs.Order{}, err
 	}
 	sugar.Infof("Membership retrieved %+v", member)
 
-	pi, err := config.BuildIntent(member)
+	order, err := counter.BuildOrder(member)
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.PaymentIntent{}, err
+		return subs.Order{}, err
 	}
 
 	// Step 4: Save this order.
-	if err := otx.SaveOrder(pi.Order); err != nil {
+	if err := otx.SaveOrder(order); err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.PaymentIntent{}, err
+		return subs.Order{}, err
 	}
-	sugar.Infof("Order saved %s", pi.Order.ID)
+	sugar.Infof("Order saved %s", order.ID)
 
 	if err := otx.Commit(); err != nil {
 		sugar.Error(err)
-		return subs.PaymentIntent{}, err
+		return subs.Order{}, err
 	}
 
-	return pi, nil
+	return order, nil
 }
 
 func (env Env) LogOrderMeta(m subs.OrderMeta) error {
