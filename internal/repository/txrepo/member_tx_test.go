@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
@@ -280,7 +281,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 		{
 			name: "Confirm order for create",
 			args: args{
-				order: subs.MustConfirmPayment(subs.ConfirmationParams{
+				order: subs.MustNewConfirmationResult(subs.ConfirmationParams{
 					Payment: subs.MockNewPaymentResult(orderCreate),
 					Order:   orderCreate,
 					Member:  reader.Membership{},
@@ -291,7 +292,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 		{
 			name: "Confirm order for renewal",
 			args: args{
-				order: subs.MustConfirmPayment(subs.ConfirmationParams{
+				order: subs.MustNewConfirmationResult(subs.ConfirmationParams{
 					Payment: subs.MockNewPaymentResult(orderRenewal),
 					Order:   orderRenewal,
 					Member:  currentMember,
@@ -302,7 +303,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 		{
 			name: "Confirm order for upgrade",
 			args: args{
-				order: subs.MustConfirmPayment(subs.ConfirmationParams{
+				order: subs.MustNewConfirmationResult(subs.ConfirmationParams{
 					Payment: subs.MockNewPaymentResult(orderUpgrade),
 					Order:   orderUpgrade,
 					Member:  currentMember,
@@ -313,7 +314,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 		{
 			name: "Confirm order for add-on",
 			args: args{
-				order: subs.MustConfirmPayment(subs.ConfirmationParams{
+				order: subs.MustNewConfirmationResult(subs.ConfirmationParams{
 					Payment: subs.MockNewPaymentResult(orderAddOn),
 					Order:   orderAddOn,
 					Member:  currentMember,
@@ -545,6 +546,31 @@ func TestMemberTx_SaveAddOn(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Save upgrade carry over",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				addOn: reader.NewMockMemberBuilder("").
+					Build().
+					CarryOver(addon.CarryOverFromUpgrade).
+					WithOrderID(db.MustOrderID()),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Save carry over due to switching to stripe",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				addOn: reader.NewMockMemberBuilder("").
+					Build().
+					CarryOver(addon.CarryOverFromSwitchingStripe),
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -565,7 +591,15 @@ func TestMemberTx_ListAddOn(t *testing.T) {
 	p := test.NewPersona()
 
 	repo := test.NewRepo()
-	repo.MustSaveAddOnN(p.AddOnN(3))
+	repo.MustSaveAddOnN([]addon.AddOn{
+		p.NewOrder(enum.OrderKindAddOn).
+			ToAddOn(),
+		p.Membership().
+			CarryOver(addon.CarryOverFromUpgrade).
+			WithOrderID(db.MustOrderID()),
+		p.Membership().
+			CarryOver(addon.CarryOverFromSwitchingStripe),
+	})
 
 	type fields struct {
 		Tx *sqlx.Tx
@@ -614,7 +648,15 @@ func TestMemberTx_ListAddOn(t *testing.T) {
 
 func TestMemberTx_AddOnsConsumed(t *testing.T) {
 	p := test.NewPersona()
-	addOns := p.AddOnN(3)
+	addOns := []addon.AddOn{
+		p.NewOrder(enum.OrderKindAddOn).
+			ToAddOn(),
+		p.Membership().
+			CarryOver(addon.CarryOverFromUpgrade).
+			WithOrderID(db.MustOrderID()),
+		p.Membership().
+			CarryOver(addon.CarryOverFromSwitchingStripe),
+	}
 
 	repo := test.NewRepo()
 	repo.MustSaveAddOnN(addOns)
