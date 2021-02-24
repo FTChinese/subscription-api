@@ -52,6 +52,7 @@ type MockMemberBuilder struct {
 	price       price.Price
 	payMethod   enum.PayMethod
 	expiration  time.Time
+	subsStatus  enum.SubsStatus
 	autoRenewal bool
 	reserved    addon.ReservedDays
 }
@@ -86,6 +87,10 @@ func (b MockMemberBuilder) WithPrice(p price.Price) MockMemberBuilder {
 
 func (b MockMemberBuilder) WithPayMethod(m enum.PayMethod) MockMemberBuilder {
 	b.payMethod = m
+	if m == enum.PayMethodStripe || m == enum.PayMethodApple {
+		b.autoRenewal = true
+		b.subsStatus = enum.SubsStatusActive
+	}
 	return b
 }
 
@@ -96,6 +101,11 @@ func (b MockMemberBuilder) WithExpiration(t time.Time) MockMemberBuilder {
 
 func (b MockMemberBuilder) WithAutoRenewal(t bool) MockMemberBuilder {
 	b.autoRenewal = t
+	return b
+}
+
+func (b MockMemberBuilder) WithSubsStatus(s enum.SubsStatus) MockMemberBuilder {
+	b.subsStatus = s
 	return b
 }
 
@@ -116,7 +126,7 @@ func (b MockMemberBuilder) Build() Membership {
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   b.autoRenewal,
-		Status:        0,
+		Status:        b.subsStatus,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
 		ReservedDays:  b.reserved,
@@ -128,11 +138,6 @@ func (b MockMemberBuilder) Build() Membership {
 	case enum.PayMethodStripe:
 		m.StripeSubsID = null.StringFrom(faker.GenStripeSubID())
 		m.StripePlanID = null.StringFrom(faker.GenStripePlanID())
-		if b.autoRenewal {
-			m.Status = enum.SubsStatusActive
-		} else {
-			m.Status = enum.SubsStatusCanceled
-		}
 
 	case enum.PayMethodApple:
 		m.AppleSubsID = null.StringFrom(faker.GenAppleSubID())
