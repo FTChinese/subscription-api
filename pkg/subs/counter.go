@@ -20,9 +20,9 @@ type Counter struct {
 	WxAppID null.String
 }
 
-// NewPayment initializes a new payment session.
+// NewCounter initializes a new payment session.
 // Who and what to purchase are the minimal data required to start payment.
-func NewPayment(account reader.FtcAccount, price price.FtcPrice) Counter {
+func NewCounter(account reader.FtcAccount, price price.FtcPrice) Counter {
 	return Counter{
 		Account: account,
 		Price:   price,
@@ -68,16 +68,13 @@ func (c Counter) order(checkout Checkout) (Order, error) {
 	}
 
 	return Order{
-		ID:         orderID,
-		MemberID:   c.Account.MemberID(),
-		PlanID:     checkout.Cart.Price.ID,
-		DiscountID: checkout.Cart.Discount.DiscID,
-		Price:      checkout.Cart.Price.UnitAmount,
-		Edition:    checkout.Cart.Price.Edition,
-		Charge: price.Charge{
-			Amount:   checkout.Payable.Amount,
-			Currency: checkout.Payable.Currency,
-		},
+		ID:            orderID,
+		MemberID:      c.Account.MemberID(),
+		PlanID:        checkout.Cart.Price.ID,
+		DiscountID:    checkout.Cart.Discount.DiscID,
+		Price:         checkout.Cart.Price.UnitAmount,
+		Edition:       checkout.Cart.Price.Edition,
+		Charge:        checkout.Payable,
 		Kind:          checkout.Kind,
 		PaymentMethod: c.Method,
 		WxAppID:       c.WxAppID,
