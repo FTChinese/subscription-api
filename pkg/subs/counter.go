@@ -60,7 +60,12 @@ func (c Counter) checkout(m reader.Membership) (Checkout, error) {
 }
 
 // BuildOrder creates an Order based on a checkout action.
-func (c Counter) order(checkout Checkout) (Order, error) {
+func (c Counter) BuildOrder(m reader.Membership) (Order, error) {
+
+	checkout, err := c.checkout(m)
+	if err != nil {
+		return Order{}, err
+	}
 
 	orderID, err := db.OrderID()
 	if err != nil {
@@ -82,24 +87,5 @@ func (c Counter) order(checkout Checkout) (Order, error) {
 		CreatedAt:     chrono.TimeNow(),
 		ConfirmedAt:   chrono.Time{},
 		LiveMode:      checkout.LiveMode,
-	}, nil
-}
-
-// BuildIntent builds new a new payment intent based on
-// current membership status.
-func (c Counter) BuildIntent(m reader.Membership) (PaymentIntent, error) {
-	checkout, err := c.checkout(m)
-	if err != nil {
-		return PaymentIntent{}, err
-	}
-
-	order, err := c.order(checkout)
-	if err != nil {
-		return PaymentIntent{}, err
-	}
-
-	return PaymentIntent{
-		Checkout: checkout,
-		Order:    order,
 	}, nil
 }

@@ -74,27 +74,27 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		config := subs.NewCounter(account, price).
+		counter := subs.NewCounter(account, price).
 			WithAlipay()
 
-		pi, err := router.SubsRepo.CreateOrder(config)
+		order, err := router.SubsRepo.CreateOrder(counter)
 		if err != nil {
 			_ = render.New(w).InternalServerError(err.Error())
 			return
 		}
 
-		sugar.Infof("Created order: %+v", pi.Order)
+		sugar.Infof("Created order: %+v", order)
 
-		err = router.postOrderCreation(pi.Order, clientApp)
+		err = router.postOrderCreation(order, clientApp)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 			return
 		}
 
 		or := ali.OrderReq{
-			Title:       subs.PaymentTitle(pi.Kind, pi.Cart.Price.Edition),
-			FtcOrderID:  pi.Order.ID,
-			TotalAmount: pi.Payable.AliPrice(),
+			Title:       subs.PaymentTitle(order.Kind, order.Edition),
+			FtcOrderID:  order.ID,
+			TotalAmount: order.AliPrice(),
 			WebhookURL:  webhookURL,
 			TxKind:      kind,
 			ReturnURL:   input.ReturnURL,
@@ -110,11 +110,11 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 
 		switch kind {
 		case ali.EntryApp:
-			_ = render.New(w).OK(subs.NewAliAppPayIntent(pi.Order, param))
+			_ = render.New(w).OK(subs.NewAliAppPayIntent(order, param))
 			return
 
 		case ali.EntryDesktopWeb, ali.EntryMobileWeb:
-			_ = render.New(w).OK(subs.NewAliPayBrowserIntent(pi.Order, param))
+			_ = render.New(w).OK(subs.NewAliPayBrowserIntent(order, param))
 		}
 	}
 }
