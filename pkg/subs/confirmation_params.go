@@ -13,6 +13,12 @@ type ConfirmationParams struct {
 }
 
 func (params ConfirmationParams) confirmNewOrRenewalOrder() Order {
+
+	// Prevent duplicate confirmation
+	if params.Order.IsConfirmed() {
+		return params.Order
+	}
+
 	params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
 
 	startTime := dt.PickLater(params.Payment.ConfirmedUTC.Time, params.Member.ExpireDate.Time)
@@ -25,6 +31,11 @@ func (params ConfirmationParams) confirmNewOrRenewalOrder() Order {
 }
 
 func (params ConfirmationParams) confirmUpgradeOrder() Order {
+	// Prevent duplicate confirmation.
+	if params.Order.IsConfirmed() {
+		return params.Order
+	}
+
 	params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
 	params.Order.DateRange = dt.NewDateRange(params.Payment.ConfirmedUTC.Time).
 		WithCycle(params.Order.Cycle).
