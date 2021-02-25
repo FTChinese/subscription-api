@@ -59,8 +59,8 @@ func TestOrder_IsSynced(t *testing.T) {
 			t.Logf("End date: %s", o.EndDate)
 			t.Logf("Expire date: %s", tt.args.m.ExpireDate)
 
-			if got := o.IsSynced(tt.args.m); got != tt.want {
-				t.Errorf("IsSynced() = %v, want %v", got, tt.want)
+			if got := o.IsExpireDateSynced(tt.args.m); got != tt.want {
+				t.Errorf("IsExpireDateSynced() = %v, want %v", got, tt.want)
 			}
 		})
 	}
