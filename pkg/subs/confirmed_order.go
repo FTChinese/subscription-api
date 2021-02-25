@@ -26,6 +26,8 @@ func NewConfirmedOrder(params ConfirmationParams) (ConfirmedOrder, error) {
 		}, nil
 
 	case enum.OrderKindUpgrade:
+		// To prevent concurrency error, in which user might
+		// send multiple upgrading request and all payments are received.
 		if params.Member.Tier == enum.TierPremium {
 			params.Order.Kind = enum.OrderKindRenew
 			return ConfirmedOrder{
