@@ -128,7 +128,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Confirm IAP add-on",
+			name: "Confirm add-on",
 			requisite: requisite{
 				currentMember: iapMember,
 			},
