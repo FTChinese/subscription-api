@@ -127,6 +127,16 @@ func (tx MemberTx) SaveAddOn(addOn addon.AddOn) error {
 	return nil
 }
 
+func (tx MemberTx) AddOnExistsForOrder(orderID string) (bool, error) {
+	var ok bool
+	err := tx.Get(&ok, addon.StmtAddOnExistsForOrder, orderID)
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
+}
+
 func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]addon.AddOn, error) {
 	var dest []addon.AddOn
 	err := tx.Select(&dest, addon.StmtListAddOnLock, ids.BuildFindInSet())

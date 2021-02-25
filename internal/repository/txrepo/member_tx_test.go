@@ -587,6 +587,57 @@ func TestMemberTx_SaveAddOn(t *testing.T) {
 	}
 }
 
+func TestMemberTx_AddOnExistsForOrder(t *testing.T) {
+	p := test.NewPersona()
+
+	order := p.NewOrder(enum.OrderKindAddOn)
+
+	repo := test.NewRepo()
+	repo.MustSaveAddOn(order.ToAddOn())
+
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		orderID string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "Addon exists",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args:    args{orderID: order.ID},
+			want:    true,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+			got, err := tx.AddOnExistsForOrder(tt.args.orderID)
+			if (err != nil) != tt.wantErr {
+				_ = tx.Rollback()
+				t.Errorf("AddOnExistsForOrder() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				_ = tx.Rollback()
+				t.Errorf("AddOnExistsForOrder() got = %v, want %v", got, tt.want)
+			}
+			_ = tx.Commit()
+		})
+	}
+}
+
 func TestMemberTx_ListAddOn(t *testing.T) {
 	p := test.NewPersona()
 
