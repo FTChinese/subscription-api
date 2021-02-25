@@ -14,6 +14,13 @@ SET id = :id,
 	plan_id = :plan_id,
 	created_utc = UTC_TIMESTAMP()`
 
+const StmtAddOnExistsForOrder = `
+SELECT EXISTS(
+	SELECT * 
+	FROM premium.ftc_addon
+	WHERE order_id = ?
+)`
+
 const stmtColAddOn = `
 SELECT id,
 	tier,
