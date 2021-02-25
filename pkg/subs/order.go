@@ -14,13 +14,28 @@ import (
 
 const trialDays = 1
 
+// LockedOrder lock a row of order and retrieves the minimal data.
+// This is used to resolve an unknown server problem that
+// when the retrieved data exceed a certain amount, MySQL
+// does not respond.
 type LockedOrder struct {
 	ID          string      `db:"order_id"`
 	ConfirmedAt chrono.Time `db:"confirmed_utc"`
+	dt.DateRange
 }
 
-func (o LockedOrder) IsConfirmed() bool {
-	return !o.ConfirmedAt.IsZero()
+func (lo LockedOrder) IsConfirmed() bool {
+	return !lo.ConfirmedAt.IsZero()
+}
+
+// Merge updates an order retrieved outside a transaction in case
+// the full order is not confirmed but the locked version is changed.
+// This is used to solved concurrency issue.
+func (lo LockedOrder) Merge(o Order) Order {
+	o.ConfirmedAt = lo.ConfirmedAt
+	o.DateRange = lo.DateRange
+
+	return o
 }
 
 // Subscription contains the details of a user's action to place an order.
@@ -61,9 +76,23 @@ func (o Order) IsAliWxPay() bool {
 	return o.PaymentMethod == enum.PayMethodAli || o.PaymentMethod == enum.PayMethodWx
 }
 
-// IsSynced tests whether an order is confirmed and the end date is
+func (o Order) isAddOnSynced(reserved addon.ReservedDays) bool {
+	addOnDays := o.ToAddOn().GetDays()
+
+	switch o.Tier {
+	case enum.TierStandard:
+		return reserved.Standard >= addOnDays
+
+	case enum.TierPremium:
+		return reserved.Premium >= addOnDays
+	}
+
+	return true
+}
+
+// IsExpireDateSynced tests whether a confirmed order and the end date is
 // transferred to membership.
-func (o Order) IsSynced(m reader.Membership) bool {
+func (o Order) IsExpireDateSynced(m reader.Membership) bool {
 	if m.IsZero() {
 		return false
 	}
@@ -78,10 +107,18 @@ func (o Order) IsSynced(m reader.Membership) bool {
 		return true
 	}
 
-	if o.EndDate.IsZero() {
-		return false
+	// Order kinds decides what fields to compare:
+	// For Create, Renew, Upgrade, we change membership's expiration date;
+	// For add-ons, we change the ReservedDays.
+	// Every Upgrade and AddOn order will generate a row in the addon table.
+	// We have no way to know if add-on is created unless we query
+	// db.
+	if o.Kind == enum.OrderKindAddOn {
+		return true
 	}
 
+	// As long as membership's expiration date is equal or after
+	// the order's end time, we think the order is synced.
 	return !m.ExpireDate.Before(o.EndDate.Time)
 }
 

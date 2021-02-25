@@ -47,7 +47,9 @@ LIMIT 1
 
 const StmtLockOrder = `
 SELECT trade_no AS order_id,
-	confirmed_utc
+	confirmed_utc,
+	start_date,
+	end_date
 FROM premium.ftc_trade
 WHERE trade_no = ?
 LIMIT 1
