@@ -79,6 +79,15 @@ func (s stripeEditions) FindByEdition(e Edition, live bool) (StripeEdition, erro
 	return s.editions[i], nil
 }
 
+func (s stripeEditions) MustFindByEdition(e Edition, live bool) StripeEdition {
+	se, err := s.FindByEdition(e, live)
+	if err != nil {
+		panic(err)
+	}
+
+	return se
+}
+
 // FindByID gets StripeEdition by stripe price id.
 func (s stripeEditions) FindByID(priceID string) (StripeEdition, error) {
 	i, ok := s.indexID[priceID]
