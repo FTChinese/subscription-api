@@ -128,7 +128,39 @@ func (p *Persona) AccountID() reader.MemberID {
 }
 
 func (p *Persona) FtcAccount() reader.FtcAccount {
-	return reader.MockNewFtcAccount(p.kind)
+	switch p.kind {
+	case enum.AccountKindFtc:
+		return reader.FtcAccount{
+			FtcID:    p.FtcID,
+			UnionID:  null.String{},
+			StripeID: null.String{},
+			Email:    p.Email,
+			UserName: null.StringFrom(p.UserName),
+			VIP:      false,
+		}
+
+	case enum.AccountKindWx:
+		return reader.FtcAccount{
+			FtcID:    "",
+			UnionID:  null.StringFrom(p.UnionID),
+			StripeID: null.String{},
+			Email:    p.Email,
+			UserName: null.StringFrom(p.UserName),
+			VIP:      false,
+		}
+
+	case enum.AccountKindLinked:
+		return reader.FtcAccount{
+			FtcID:    p.FtcID,
+			UnionID:  null.StringFrom(p.UnionID),
+			StripeID: null.String{},
+			Email:    p.Email,
+			UserName: null.StringFrom(p.UserName),
+			VIP:      false,
+		}
+	}
+
+	return reader.FtcAccount{}
 }
 
 func (p *Persona) Membership() reader.Membership {
