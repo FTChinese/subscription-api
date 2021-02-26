@@ -43,7 +43,7 @@ func TestNewFtcCart(t *testing.T) {
 						DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
 						PriceOff: null.FloatFrom(130),
 						Percent:  null.Int{},
-						DateTimeRange: dt.DateTimeRange{
+						DateTimePeriod: dt.DateTimePeriod{
 							StartUTC: chrono.TimeFrom(now),
 							EndUTC:   chrono.TimeFrom(now.AddDate(0, 0, 2)),
 						},
@@ -70,7 +70,7 @@ func TestNewFtcCart(t *testing.T) {
 					DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
 					PriceOff: null.FloatFrom(130),
 					Percent:  null.Int{},
-					DateTimeRange: dt.DateTimeRange{
+					DateTimePeriod: dt.DateTimePeriod{
 						StartUTC: chrono.TimeFrom(now),
 						EndUTC:   chrono.TimeFrom(now.AddDate(0, 0, 2)),
 					},

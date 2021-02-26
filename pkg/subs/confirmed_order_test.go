@@ -61,7 +61,7 @@ func TestNewConfirmedOrder(t *testing.T) {
 					WxAppID:       orderCreate.WxAppID,
 					CreatedAt:     orderCreate.CreatedAt,
 					ConfirmedAt:   payResultForCreate.ConfirmedUTC,
-					DateRange: dt.DateRange{
+					DatePeriod: dt.DatePeriod{
 						StartDate: chrono.DateFrom(payResultForCreate.ConfirmedUTC.Time),
 						EndDate:   chrono.DateFrom(payResultForCreate.ConfirmedUTC.AddDate(1, 0, 1)),
 					},
@@ -94,7 +94,7 @@ func TestNewConfirmedOrder(t *testing.T) {
 					WxAppID:       orderRenewal.WxAppID,
 					CreatedAt:     orderRenewal.CreatedAt,
 					ConfirmedAt:   payResultForRenewal.ConfirmedUTC,
-					DateRange: dt.DateRange{
+					DatePeriod: dt.DatePeriod{
 						StartDate: chrono.DateFrom(member.ExpireDate.Time),
 						EndDate:   chrono.DateFrom(member.ExpireDate.AddDate(1, 0, 1)),
 					},
@@ -127,7 +127,7 @@ func TestNewConfirmedOrder(t *testing.T) {
 					WxAppID:       orderUpgrade.WxAppID,
 					CreatedAt:     orderUpgrade.CreatedAt,
 					ConfirmedAt:   payResultForUpgrade.ConfirmedUTC,
-					DateRange: dt.DateRange{
+					DatePeriod: dt.DatePeriod{
 						StartDate: chrono.DateFrom(payResultForUpgrade.ConfirmedUTC.Time),
 						EndDate:   chrono.DateFrom(payResultForUpgrade.ConfirmedUTC.AddDate(1, 0, 1)),
 					},
@@ -172,7 +172,7 @@ func TestNewConfirmedOrder(t *testing.T) {
 					WxAppID:       orderAddOn.WxAppID,
 					CreatedAt:     orderAddOn.CreatedAt,
 					ConfirmedAt:   payResultForAddOn.ConfirmedUTC,
-					DateRange:     dt.DateRange{},
+					DatePeriod:    dt.DatePeriod{},
 					LiveMode:      orderAddOn.LiveMode,
 				},
 				AddOn: orderAddOn.ToAddOn(),

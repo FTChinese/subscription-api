@@ -21,7 +21,7 @@ const trialDays = 1
 type LockedOrder struct {
 	ID          string      `db:"order_id"`
 	ConfirmedAt chrono.Time `db:"confirmed_utc"`
-	dt.DateRange
+	dt.DatePeriod
 }
 
 func (lo LockedOrder) IsConfirmed() bool {
@@ -33,7 +33,7 @@ func (lo LockedOrder) IsConfirmed() bool {
 // This is used to solved concurrency issue.
 func (lo LockedOrder) Merge(o Order) Order {
 	o.ConfirmedAt = lo.ConfirmedAt
-	o.DateRange = lo.DateRange
+	o.DatePeriod = lo.DatePeriod
 
 	return o
 }
@@ -60,7 +60,7 @@ type Order struct {
 	WxAppID       null.String    `json:"-" db:"wx_app_id"` // Wechat specific. Used by webhook to verify notification.
 	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
-	dt.DateRange
+	dt.DatePeriod
 	LiveMode bool `json:"live"`
 }
 

@@ -41,7 +41,7 @@ func TestCtxSubs_Render(t *testing.T) {
 						Currency: "",
 					},
 					CreatedAt: chrono.TimeNow(),
-					DateRange: dt.DateRange{
+					DatePeriod: dt.DatePeriod{
 						StartDate: chrono.DateNow(),
 						EndDate:   chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 					},
@@ -65,7 +65,7 @@ func TestCtxSubs_Render(t *testing.T) {
 						Currency: "",
 					},
 					CreatedAt: chrono.TimeNow(),
-					DateRange: dt.DateRange{
+					DatePeriod: dt.DatePeriod{
 						StartDate: chrono.DateNow(),
 						EndDate:   chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 					},
@@ -89,7 +89,7 @@ func TestCtxSubs_Render(t *testing.T) {
 						Currency: "",
 					},
 					CreatedAt: chrono.TimeNow(),
-					DateRange: dt.DateRange{
+					DatePeriod: dt.DatePeriod{
 						StartDate: chrono.DateNow(),
 						EndDate:   chrono.DateFrom(time.Now().AddDate(1, 0, 0)),
 					},
