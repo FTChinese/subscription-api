@@ -229,7 +229,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Use Stripe SDK to retrieve data.
-	ss, err := router.client.RetrieveSubs(subsID)
+	ss, err := router.client.GetSubs(subsID)
 	if err != nil {
 		sugar.Error(err)
 		err = handleErrResp(w, err)
