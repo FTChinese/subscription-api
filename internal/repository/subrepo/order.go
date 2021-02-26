@@ -178,7 +178,7 @@ func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 		WxAppID:       tailRes.order.WxAppID,
 		CreatedAt:     tailRes.order.CreatedAt,
 		ConfirmedAt:   tailRes.order.ConfirmedAt,
-		DateRange:     tailRes.order.DateRange,
+		DatePeriod:    tailRes.order.DatePeriod,
 		LiveMode:      true,
 	}, nil
 }
