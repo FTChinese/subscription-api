@@ -58,9 +58,8 @@ func (env Env) UpgradeSubscription(cfg stripe.SubsParams) (stripe.SubsResult, er
 	}
 	sugar.Infof("Subscription id %s, status %s, payment intent status %s", ss.ID, ss.Status, ss.LatestInvoice.PaymentIntent.Status)
 
-	result, err := stripe.NewSubsResult(stripe.SubsResultParams{
+	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
 		UserIDs:       mmb.MemberID,
-		SS:            ss,
 		Kind:          intent.SubsKind,
 		CurrentMember: mmb,
 		Action:        reader.ActionUpgrade,
