@@ -18,7 +18,7 @@ func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	si, err := router.client.CreateSetupIntent(account.StripeID.String)
+	si, err := router.client.NewSetupCheckout(account.StripeID.String)
 	if err != nil {
 		err := handleErrResp(w, err)
 		if err == nil {
