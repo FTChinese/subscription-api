@@ -83,7 +83,7 @@ func (c Counter) BuildOrder(m reader.Membership) (Order, error) {
 		Kind:          checkout.Kind,
 		PaymentMethod: c.Method,
 		WxAppID:       c.WxAppID,
-		DateRange:     dt.DateRange{},
+		DatePeriod:    dt.DatePeriod{},
 		CreatedAt:     chrono.TimeNow(),
 		ConfirmedAt:   chrono.Time{},
 		LiveMode:      checkout.LiveMode,

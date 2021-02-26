@@ -23,9 +23,10 @@ func (params ConfirmationParams) confirmNewOrRenewalOrder() Order {
 
 	startTime := dt.PickLater(params.Payment.ConfirmedUTC.Time, params.Member.ExpireDate.Time)
 
-	params.Order.DateRange = dt.NewDateRange(startTime).
+	params.Order.DatePeriod = dt.NewTimeRange(startTime).
 		WithCycle(params.Order.Cycle).
-		AddDays(trialDays)
+		AddDays(trialDays).
+		ToDatePeriod()
 
 	return params.Order
 }
@@ -37,9 +38,10 @@ func (params ConfirmationParams) confirmUpgradeOrder() Order {
 	}
 
 	params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
-	params.Order.DateRange = dt.NewDateRange(params.Payment.ConfirmedUTC.Time).
+	params.Order.DatePeriod = dt.NewTimeRange(params.Payment.ConfirmedUTC.Time).
 		WithCycle(params.Order.Cycle).
-		AddDays(trialDays)
+		AddDays(trialDays).
+		ToDatePeriod()
 
 	return params.Order
 }
