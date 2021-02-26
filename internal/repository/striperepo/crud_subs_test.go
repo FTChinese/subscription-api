@@ -112,7 +112,7 @@ func TestEnv_RetrieveSubs(t *testing.T) {
 			}
 			got, err := env.RetrieveSubs(tt.args.id)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("RetrieveSubs() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetSubs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
