@@ -51,7 +51,7 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 		return
 	}
 
-	sess, err := router.client.CreateCheckoutSession(stripe.CheckoutParams{
+	sess, err := router.client.NewCheckoutSession(stripe.CheckoutParams{
 		Account: account,
 		Plan:    sp,
 		Input:   input,
