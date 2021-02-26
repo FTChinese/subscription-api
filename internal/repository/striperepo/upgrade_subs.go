@@ -9,8 +9,8 @@ import (
 	"net/http"
 )
 
-// UpgradeSubscription switches subscription plan.
-func (env Env) UpgradeSubscription(cfg stripe.SubsParams) (stripe.SubsResult, error) {
+// UpdateSubscription switches subscription plan.
+func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
