@@ -80,10 +80,9 @@ func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 	sugar.Infof("Subscription id %s, status %s, payment intent status %s", ss.ID, ss.Status, ss.LatestInvoice.PaymentIntent.Status)
 
 	// Build Membership based on stripe subscription.
-	result, err := stripe.NewSubsResult(stripe.SubsResultParams{
+	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
 		UserIDs:       cfg.Account.MemberID(),
 		CurrentMember: mmb,
-		SS:            ss,
 		Kind:          intent.SubsKind,
 		Action:        reader.ActionCreate,
 	})

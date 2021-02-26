@@ -56,7 +56,6 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 		return stripe.SubsResult{
 			Modified:             false,
 			MissingPaymentIntent: false,
-			Payment:              stripe.PaymentResult{},
 			Subs:                 stripe.Subs{},
 			Member:               mmb,
 			Snapshot:             reader.MemberSnapshot{},
@@ -79,9 +78,8 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 		action = reader.ActionReactivate
 	}
 
-	result, err := stripe.NewSubsResult(stripe.SubsResultParams{
+	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
 		UserIDs:       mmb.MemberID,
-		SS:            ss,
 		CurrentMember: mmb,
 		Action:        action,
 	})

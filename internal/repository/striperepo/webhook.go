@@ -3,14 +3,15 @@ package striperepo
 import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
+	stripeSdk "github.com/stripe/stripe-go/v72"
 )
 
 // OnSubscription save stripe subscription and optionally update membership linked to it.
-func (env Env) OnSubscription(param stripe.SubsResultParams) (stripe.SubsResult, error) {
+func (env Env) OnSubscription(ss *stripeSdk.Subscription, param stripe.SubsResultParams) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar().
 		With("webhook", "stripe-subscription").
-		With("id", param.SS.ID)
+		With("id", ss.ID)
 
 	tx, err := env.beginSubsTx()
 	if err != nil {
@@ -29,7 +30,7 @@ func (env Env) OnSubscription(param stripe.SubsResultParams) (stripe.SubsResult,
 
 	param.CurrentMember = currMmb
 
-	result, err := stripe.NewSubsResult(param)
+	result, err := stripe.NewSubsResult(ss, param)
 
 	if err != nil {
 		sugar.Error(err)
@@ -43,7 +44,6 @@ func (env Env) OnSubscription(param stripe.SubsResultParams) (stripe.SubsResult,
 		return stripe.SubsResult{
 			Modified:             false,
 			MissingPaymentIntent: false,
-			Payment:              stripe.PaymentResult{},
 			Subs:                 result.Subs,
 			Member:               currMmb,
 			Snapshot:             reader.MemberSnapshot{},
@@ -56,7 +56,6 @@ func (env Env) OnSubscription(param stripe.SubsResultParams) (stripe.SubsResult,
 		return stripe.SubsResult{
 			Modified:             false,
 			MissingPaymentIntent: false,
-			Payment:              stripe.PaymentResult{},
 			Subs:                 result.Subs,
 			Member:               result.Member,
 			Snapshot:             reader.MemberSnapshot{},
