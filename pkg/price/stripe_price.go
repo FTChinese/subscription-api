@@ -18,7 +18,7 @@ func NewStripe(p StripeEdition, sp *stripe.Price) Price {
 		Nickname:   null.NewString(sp.Nickname, sp.Nickname != ""),
 		ProductID:  sp.Product.ID,
 		Source:     SourceStripe,
-		UnitAmount: float64(sp.UnitAmount / 100),
+		UnitAmount: float64(sp.UnitAmount) / 100,
 	}
 }
 
