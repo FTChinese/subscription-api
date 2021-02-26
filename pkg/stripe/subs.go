@@ -74,8 +74,9 @@ type Subs struct {
 	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
 	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
 
-	Status    enum.SubsStatus `json:"status" db:"sub_status"`
-	FtcUserID null.String     `json:"ftcUserId" db:"ftc_user_id"`
+	Status        enum.SubsStatus `json:"status" db:"sub_status"`
+	FtcUserID     null.String     `json:"ftcUserId" db:"ftc_user_id"`
+	PaymentIntent PaymentIntent   `json:"paymentIntent"`
 }
 
 // NewSubs converts stripe's subscription. It returns error if there's
@@ -102,6 +103,12 @@ func NewSubs(ss *stripe.Subscription, ids reader.MemberID) (Subs, error) {
 
 	status := getStatus(ss.Status)
 
+	var pi PaymentIntent
+	// LatestInvoice might be empty if it is not expanded.
+	if ss.LatestInvoice != nil {
+		pi = NewPaymentIntent(ss.LatestInvoice.PaymentIntent)
+	}
+
 	return Subs{
 		ID:                   ss.ID,
 		Edition:              plan.Edition,
@@ -121,6 +128,7 @@ func NewSubs(ss *stripe.Subscription, ids reader.MemberID) (Subs, error) {
 		UpdatedUTC:           chrono.TimeNow(),
 		Status:               status,
 		FtcUserID:            ids.FtcID,
+		PaymentIntent:        pi,
 	}, nil
 }
 
