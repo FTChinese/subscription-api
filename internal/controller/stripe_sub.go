@@ -78,9 +78,9 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 
 	// Create stripe subscription.
 	result, err := router.stripeRepo.CreateSubscription(stripe.SubsParams{
-		Account: account,
-		Edition: sp,
-		Params:  input.SharedParams,
+		Account:      account,
+		Edition:      sp,
+		SharedParams: input.SharedParams,
 	})
 
 	if err != nil {
@@ -165,9 +165,9 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	}
 
 	result, err := router.stripeRepo.UpgradeSubscription(stripe.SubsParams{
-		Account: account,
-		Edition: sp,
-		Params:  input.SharedParams,
+		Account:      account,
+		Edition:      sp,
+		SharedParams: input.SharedParams,
 	})
 
 	if err != nil {

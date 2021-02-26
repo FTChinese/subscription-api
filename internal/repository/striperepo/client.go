@@ -160,16 +160,16 @@ func (c Client) CreateSubs(cfg ftcStripe.SubsParams) (*stripe.Subscription, erro
 	// "request_id":"req_O6zILK5QEVpViw",
 	// "type":"idempotency_error"
 	// }
-	if cfg.Params.IdempotencyKey != "" {
-		params.SetIdempotencyKey(cfg.Params.IdempotencyKey)
+	if cfg.IdempotencyKey != "" {
+		params.SetIdempotencyKey(cfg.IdempotencyKey)
 	}
 
-	if cfg.Params.CouponID.Valid {
-		params.Coupon = stripe.String(cfg.Params.DefaultPaymentMethod.String)
+	if cfg.CouponID.Valid {
+		params.Coupon = stripe.String(cfg.DefaultPaymentMethod.String)
 	}
 
-	if cfg.Params.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripe.String(cfg.Params.DefaultPaymentMethod.String)
+	if cfg.DefaultPaymentMethod.Valid {
+		params.DefaultPaymentMethod = stripe.String(cfg.DefaultPaymentMethod.String)
 	}
 
 	return c.sc.Subscriptions.New(params)
@@ -198,16 +198,16 @@ func (c Client) UpdateSubs(subID string, cfg ftcStripe.SubsParams) (*stripe.Subs
 	// Expand latest_invoice.
 	params.AddExpand(expandPI)
 
-	if cfg.Params.IdempotencyKey != "" {
-		params.SetIdempotencyKey(cfg.Params.IdempotencyKey)
+	if cfg.IdempotencyKey != "" {
+		params.SetIdempotencyKey(cfg.IdempotencyKey)
 	}
 
-	if cfg.Params.CouponID.Valid {
-		params.Coupon = stripe.String(cfg.Params.DefaultPaymentMethod.String)
+	if cfg.CouponID.Valid {
+		params.Coupon = stripe.String(cfg.DefaultPaymentMethod.String)
 	}
 
-	if cfg.Params.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripe.String(cfg.Params.DefaultPaymentMethod.String)
+	if cfg.DefaultPaymentMethod.Valid {
+		params.DefaultPaymentMethod = stripe.String(cfg.DefaultPaymentMethod.String)
 	}
 
 	return c.sc.Subscriptions.Update(subID, params)
