@@ -34,7 +34,7 @@ func (i SubsInput) Validate() *render.ValidationError {
 type SubsParams struct {
 	Account reader.FtcAccount
 	Edition price.StripeEdition
-	Params  SharedParams
+	SharedParams
 }
 
 type CancelParams struct {
