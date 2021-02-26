@@ -3,6 +3,7 @@ package striperepo
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
@@ -14,15 +15,15 @@ import (
 )
 
 type paymentAttached struct {
-	cusID           string
+	account         reader.FtcAccount
 	paymentMethodID string
 }
 
-func newCustomerAndPayment(client Client, email string) (paymentAttached, error) {
+func newCustomerAndPayment(client Client, account reader.FtcAccount) (paymentAttached, error) {
 	defer client.logger.Sync()
 	sugar := client.logger.Sugar()
 
-	cus, err := client.CreateCustomer(email)
+	cus, err := client.CreateCustomer(account.Email)
 	if err != nil {
 		sugar.Error(err)
 		return paymentAttached{}, err
@@ -48,8 +49,10 @@ func newCustomerAndPayment(client Client, email string) (paymentAttached, error)
 
 	sugar.Infof("%v", si)
 
+	account.StripeID = null.StringFrom(cus.ID)
+
 	return paymentAttached{
-		cusID:           cus.ID,
+		account:         account,
 		paymentMethodID: pm.ID,
 	}, nil
 }
@@ -66,15 +69,12 @@ func TestEnv_CreateSubscription(t *testing.T) {
 
 	pa, err := newCustomerAndPayment(
 		NewClient(false, zaptest.NewLogger(t)),
-		p.Email,
+		p.FtcAccount(),
 	)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-
-	account := p.FtcAccount()
-	account.StripeID = null.StringFrom(pa.cusID)
 
 	type fields struct {
 		db     *sqlx.DB
@@ -99,7 +99,7 @@ func TestEnv_CreateSubscription(t *testing.T) {
 			},
 			args: args{
 				params: stripe.SubsParams{
-					Account: account,
+					Account: pa.account,
 					Edition: price.StripeEditions.MustFindByEdition(price.StdYearEdition, false),
 					SharedParams: stripe.SharedParams{
 						DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
