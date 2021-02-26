@@ -164,7 +164,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	result, err := router.stripeRepo.UpgradeSubscription(stripe.SubsParams{
+	result, err := router.stripeRepo.UpdateSubscription(stripe.SubsParams{
 		Account:      account,
 		Edition:      sp,
 		SharedParams: input.SharedParams,
