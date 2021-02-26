@@ -20,7 +20,7 @@ type Promo struct {
 	CoverURL   null.String `json:"coverUrl" db:"promo_cover_url"`
 	Content    null.String `json:"content" db:"promo_content"`
 	Terms      null.String `json:"terms" db:"terms_conditions"`
-	dt.DateTimeRange
+	dt.DateTimePeriod
 }
 
 // BannerSchema represents data when retrieving banner by joining promo.

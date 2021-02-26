@@ -28,7 +28,7 @@ func TestConfirmationParams_confirmNewOrRenewalOrder(t *testing.T) {
 		name   string
 		fields fields
 		// Only compare the start and end date.
-		want dt.DateRange
+		want dt.DatePeriod
 	}{
 		{
 			name: "Order for new subscription",
@@ -37,7 +37,7 @@ func TestConfirmationParams_confirmNewOrRenewalOrder(t *testing.T) {
 				Order:   orderCreate,
 				Member:  reader.Membership{},
 			},
-			want: dt.DateRange{
+			want: dt.DatePeriod{
 				StartDate: chrono.DateFrom(payResultForCreate.ConfirmedUTC.Time),
 				EndDate:   chrono.DateFrom(payResultForCreate.ConfirmedUTC.AddDate(1, 0, 1)),
 			},
@@ -51,7 +51,7 @@ func TestConfirmationParams_confirmNewOrRenewalOrder(t *testing.T) {
 					ExpireDate: chrono.DateFrom(now.AddDate(0, 3, 0)),
 				},
 			},
-			want: dt.DateRange{
+			want: dt.DatePeriod{
 				StartDate: chrono.DateFrom(now.AddDate(0, 3, 0)),
 				EndDate:   chrono.DateFrom(now.AddDate(1, 3, 1)),
 			},
@@ -64,7 +64,7 @@ func TestConfirmationParams_confirmNewOrRenewalOrder(t *testing.T) {
 				Order:   tt.fields.Order,
 				Member:  tt.fields.Member,
 			}
-			if got := params.confirmNewOrRenewalOrder(); !reflect.DeepEqual(got.DateRange, tt.want) {
+			if got := params.confirmNewOrRenewalOrder(); !reflect.DeepEqual(got.DatePeriod, tt.want) {
 				t.Errorf("confirmNewOrRenewalOrder() = %v, want %v", got, tt.want)
 			}
 		})
@@ -83,7 +83,7 @@ func TestConfirmationParams_confirmUpgradeOrder(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   dt.DateRange
+		want   dt.DatePeriod
 	}{
 		{
 			name: "Confirm upgrading order",
@@ -94,7 +94,7 @@ func TestConfirmationParams_confirmUpgradeOrder(t *testing.T) {
 					ExpireDate: chrono.DateFrom(time.Now().AddDate(0, 3, 0)),
 				},
 			},
-			want: dt.DateRange{
+			want: dt.DatePeriod{
 				StartDate: chrono.DateFrom(payResult.ConfirmedUTC.Time),
 				EndDate:   chrono.DateFrom(payResult.ConfirmedUTC.AddDate(1, 0, 1)),
 			},
@@ -107,7 +107,7 @@ func TestConfirmationParams_confirmUpgradeOrder(t *testing.T) {
 				Order:   tt.fields.Order,
 				Member:  tt.fields.Member,
 			}
-			if got := params.confirmUpgradeOrder(); !reflect.DeepEqual(got.DateRange, tt.want) {
+			if got := params.confirmUpgradeOrder(); !reflect.DeepEqual(got.DatePeriod, tt.want) {
 				t.Errorf("confirmUpgradeOrder() = %v, want %v", got, tt.want)
 			}
 		})
