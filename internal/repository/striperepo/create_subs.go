@@ -54,6 +54,8 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 		}
 	}
 
+	sugar.Infof("Stripe checkout intent: %v", intent)
+
 	if !intent.IsNewStripe() {
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, &render.ResponseError{
@@ -65,7 +67,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 
 	sugar.Info("Creating stripe subscription")
 	// Contact Stripe API.
-	ss, err := env.client.CreateSubs(params)
+	ss, err := env.client.NewSubs(params)
 
 	// {"status":400,
 	// "message":"Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than '4a857eb3-396c-4c91-a8f1-4014868a8437' if you meant to execute a different request.","request_id":"req_Dv6N7d9lF8uDHJ",
@@ -97,6 +99,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 
 	// Create membership from Stripe subscription.
 	if mmb.IsZero() {
+		sugar.Info("Inserting stripe membership")
 		err := tx.CreateMember(result.Member)
 		if err != nil {
 			sugar.Error(err)
@@ -104,6 +107,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 			return stripe.SubsResult{}, err
 		}
 	} else {
+		sugar.Info("Updating an existing membership to stripe")
 		err := tx.UpdateMember(result.Member)
 		if err != nil {
 			sugar.Error(err)
@@ -113,6 +117,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 	}
 
 	if !result.AddOn.IsZero() {
+		sugar.Infof("Saving add-on for after switching to stripe: %v", result.AddOn)
 		if err := tx.SaveAddOn(result.AddOn); err != nil {
 			// Since stripe subscription is already created, we should not rollback in case of error.
 			sugar.Error(err)
