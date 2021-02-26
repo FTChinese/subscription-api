@@ -51,6 +51,18 @@ func GenStripePlanID() string {
 	return "plan_" + rand.String(14)
 }
 
+func GenStripeItemID() string {
+	return "si_" + rand.String(14)
+}
+
+func GenInvoiceID() string {
+	return "in_" + rand.String(14)
+}
+
+func GenPaymentIntentID() string {
+	return "pi_" + rand.String(14)
+}
+
 func RandNumericString() string {
 	return rand.StringWithCharset(9, "0123456789")
 }
