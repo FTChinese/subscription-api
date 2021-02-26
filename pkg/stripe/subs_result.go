@@ -10,7 +10,6 @@ import (
 // SubsResultParams uses the data of a user's subscription to build the data to be saved to db.
 type SubsResultParams struct {
 	UserIDs reader.MemberID // UserIDs might comes from user account, or from current membership for refreshing.
-	SS      *stripe.Subscription
 	Kind    cart.SubsKind
 	// To build membership, the above three fields are enough.
 
@@ -20,21 +19,25 @@ type SubsResultParams struct {
 
 // SubsResult contains the data to save to db.
 type SubsResult struct {
-	Modified             bool                  `json:"-"`       // Indicate whether membership actually modified.
-	MissingPaymentIntent bool                  `json:"-"`       // Whether we failed to expanded latest_invoice.payment_intent. It is not required to create/upgrade a subscription, so we should not return an error.
-	Payment              PaymentResult         `json:"payment"` // Tells user to take further action if any.
+	Modified             bool                  `json:"-"` // Indicate whether membership actually modified.
+	MissingPaymentIntent bool                  `json:"-"` // Whether we failed to expanded latest_invoice.payment_intent. It is not required to create/upgrade a subscription, so we should not return an error.
 	Subs                 Subs                  `json:"subs"`
 	Member               reader.Membership     `json:"membership"` // New membership.
 	Snapshot             reader.MemberSnapshot `json:"-"`          // If Modified is false, this must exists. If Modified is true, its existence depends -- a newly created membership should not produce a snapshot.
-	AddOn                addon.AddOn           `json:"-"`
+	AddOn                addon.AddOn           `json:"-"`          // Only when user switching from one-time pay to stripe.
 }
 
-func NewSubsResult(params SubsResultParams) (SubsResult, error) {
-	subs, err := NewSubs(params.SS, params.UserIDs)
+func NewSubsResult(ss *stripe.Subscription, params SubsResultParams) (SubsResult, error) {
+	subs, err := NewSubs(ss, params.UserIDs)
 	if err != nil {
 		return SubsResult{}, err
 	}
 
+	return newSubsResult(subs, params), nil
+}
+
+// newSubsResult exists for testing convenience.
+func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
 	var addOn addon.AddOn
 	if params.Kind == cart.SubsKindOneTimeToStripe {
 		addOn = params.CurrentMember.CarryOver(addon.CarryOverFromSwitchingStripe)
@@ -56,15 +59,12 @@ func NewSubsResult(params SubsResultParams) (SubsResult, error) {
 		snapshot = params.CurrentMember.Snapshot(reader.StripeArchiver(params.Action))
 	}
 
-	pr, err := NewPaymentResult(params.SS)
-
 	return SubsResult{
 		Modified:             isModified,
-		MissingPaymentIntent: err != nil,
-		Payment:              pr,
+		MissingPaymentIntent: subs.PaymentIntent.IsZero(),
 		Subs:                 subs,
 		Member:               m,
 		Snapshot:             snapshot,
 		AddOn:                addOn,
-	}, nil
+	}
 }
