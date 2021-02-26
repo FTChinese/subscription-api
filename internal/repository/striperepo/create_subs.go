@@ -21,7 +21,7 @@ import (
 // util.ErrNonStripeValidSub
 // util.ErrStripeDuplicateSub
 // util.ErrUnknownSubState
-func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, error) {
+func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -32,7 +32,7 @@ func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 	}
 
 	// Retrieve member for this user to check whether the operation is allowed.
-	mmb, err := tx.RetrieveMember(cfg.Account.MemberID())
+	mmb, err := tx.RetrieveMember(params.Account.MemberID())
 	sugar.Infof("Current membership before creating stripe subscription: %v", mmb)
 
 	if err != nil {
@@ -42,7 +42,7 @@ func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
-	intent, err := cart.NewCheckoutIntents(mmb, cfg.Edition.Edition).
+	intent, err := cart.NewCheckoutIntents(mmb, params.Edition.Edition).
 		Get(enum.PayMethodStripe)
 	if err != nil {
 		sugar.Error(err)
@@ -58,14 +58,14 @@ func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, &render.ResponseError{
 			StatusCode: http.StatusBadRequest,
-			Message:    "This ",
+			Message:    "Only creating new stripe subscription allowed",
 			Invalid:    nil,
 		}
 	}
 
 	sugar.Info("Creating stripe subscription")
 	// Contact Stripe API.
-	ss, err := env.client.CreateSubs(cfg)
+	ss, err := env.client.CreateSubs(params)
 
 	// {"status":400,
 	// "message":"Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than '4a857eb3-396c-4c91-a8f1-4014868a8437' if you meant to execute a different request.","request_id":"req_Dv6N7d9lF8uDHJ",
@@ -81,7 +81,7 @@ func (env Env) CreateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 
 	// Build Membership based on stripe subscription.
 	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
-		UserIDs:       cfg.Account.MemberID(),
+		UserIDs:       params.Account.MemberID(),
 		CurrentMember: mmb,
 		Kind:          intent.SubsKind,
 		Action:        reader.ActionCreate,
