@@ -2,6 +2,11 @@
 
 package faker
 
+import (
+	"encoding/json"
+	"github.com/stripe/stripe-go/v72"
+)
+
 const StripeSubs = `
 {
     "id": "sub_IX3JAkik1JKDzW",
@@ -33,7 +38,7 @@ const StripeSubs = `
                 "created": 1607407058,
                 "metadata": {},
                 "plan": {
-                    "id": "plan_FOde0uAr0V4WmT",
+                    "id": "price_1IM2nFBzTK0hABgJiIDeDIox",
                     "object": "plan",
                     "active": true,
                     "aggregate_usage": null,
@@ -57,7 +62,7 @@ const StripeSubs = `
                     "usage_type": "licensed"
                 },
                 "price": {
-                    "id": "plan_FOde0uAr0V4WmT",
+                    "id": "price_1IM2nFBzTK0hABgJiIDeDIox",
                     "object": "price",
                     "active": true,
                     "billing_scheme": "per_unit",
@@ -133,3 +138,21 @@ const StripeSubs = `
     "trial_end": null,
     "trial_start": null
 }`
+
+func GenStripeSubs() (*stripe.Subscription, error) {
+	var ss stripe.Subscription
+	if err := json.Unmarshal([]byte(StripeSubs), &ss); err != nil {
+		return nil, err
+	}
+
+	return &ss, nil
+}
+
+func MustGenStripeSubs() *stripe.Subscription {
+	sub, err := GenStripeSubs()
+	if err != nil {
+		panic(err)
+	}
+
+	return sub
+}
