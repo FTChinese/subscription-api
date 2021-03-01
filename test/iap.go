@@ -50,7 +50,7 @@ func (p *Persona) IAPSubs() apple.Subscription {
 		ProductID:         "",
 		PurchaseDateUTC:   chrono.TimeNow(),
 		ExpiresDateUTC:    chrono.TimeFrom(time.Now().AddDate(1, 0, 0)),
-		Edition:           p.price.Original.Edition,
+		Edition:           p.price.Edition,
 		AutoRenewal:       true,
 	}
 
