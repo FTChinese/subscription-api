@@ -177,7 +177,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "Onetime premium buy addon",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PricePrm.Original).
+					WithPrice(faker.PricePrm.Price).
 					Build(),
 				e: price.StdYearEdition,
 			},
@@ -192,7 +192,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "Stripe can purchase standard addon",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PricePrm.Original).
+					WithPrice(faker.PricePrm.Price).
 					WithPayMethod(enum.PayMethodStripe).
 					Build(),
 				e: price.StdYearEdition,
@@ -208,7 +208,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "Stripe can purchase premium addon",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PricePrm.Original).
+					WithPrice(faker.PricePrm.Price).
 					WithPayMethod(enum.PayMethodStripe).
 					Build(),
 				e: price.PremiumEdition,
@@ -224,7 +224,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "Stripe standard can upgrade",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PriceStdYear.Original).
+					WithPrice(faker.PriceStdYear.Price).
 					WithPayMethod(enum.PayMethodStripe).
 					Build(),
 				e: price.PremiumEdition,
@@ -240,7 +240,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "Stripe standard can purchase addon of same tier",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PriceStdYear.Original).
+					WithPrice(faker.PriceStdYear.Price).
 					WithPayMethod(enum.PayMethodStripe).
 					Build(),
 				e: price.StdYearEdition,
@@ -256,7 +256,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "Stripe standard can switch cycle of different cycle or purchase addon of same tier",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PriceStdYear.Original).
+					WithPrice(faker.PriceStdYear.Price).
 					WithPayMethod(enum.PayMethodStripe).
 					Build(),
 				e: price.StdMonthEdition,
@@ -273,7 +273,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "IAP cannot upgrade",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PriceStdYear.Original).
+					WithPrice(faker.PriceStdYear.Price).
 					WithPayMethod(enum.PayMethodApple).
 					Build(),
 				e: price.PremiumEdition,
@@ -287,7 +287,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "IAP standard can purchase standard addon",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PriceStdYear.Original).
+					WithPrice(faker.PriceStdYear.Price).
 					WithPayMethod(enum.PayMethodApple).
 					Build(),
 				e: price.StdYearEdition,
@@ -303,7 +303,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "IAP premium can purchase premium addon",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PricePrm.Original).
+					WithPrice(faker.PricePrm.Price).
 					WithPayMethod(enum.PayMethodApple).
 					Build(),
 				e: price.PremiumEdition,
@@ -319,7 +319,7 @@ func TestNewCheckoutIntents(t *testing.T) {
 			name: "IAP premium can purchase standard addon",
 			args: args{
 				m: reader.NewMockMemberBuilder("").
-					WithPrice(faker.PricePrm.Original).
+					WithPrice(faker.PricePrm.Price).
 					WithPayMethod(enum.PayMethodApple).
 					Build(),
 				e: price.StdYearEdition,

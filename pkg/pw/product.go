@@ -40,7 +40,7 @@ func NewPaywallProducts(prods []ProductBody, prices []price.FtcPrice) []Product 
 
 		// Calculate daily price.
 		for _, pp := range prodPrices {
-			dailyCost := pp.Original.DailyCost()
+			dailyCost := pp.DailyCost()
 			// Replace daily price placeholder in price body.
 			desc := strings.Replace(prod.Description.String, dailyCost.Holder, dailyCost.Replacer, 1)
 			prod.Description = null.NewString(desc, desc != "")
@@ -60,14 +60,14 @@ func groupProductPrices(prices []price.FtcPrice) map[string][]price.FtcPrice {
 	var g = make(map[string][]price.FtcPrice)
 
 	for _, p := range prices {
-		found, ok := g[p.Original.ProductID]
+		found, ok := g[p.ProductID]
 		if ok {
 			found = append(found, p)
 		} else {
 			found = []price.FtcPrice{p}
 		}
 		// Put price of the same price into the same group.
-		g[p.Original.ProductID] = found
+		g[p.ProductID] = found
 	}
 
 	return g

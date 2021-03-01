@@ -24,7 +24,7 @@ func Test_group(t *testing.T) {
 		PaymentMethod:   enum.PayMethodAli,
 		CompoundID:      userID,
 		OrderID:         null.StringFrom(db.MustOrderID()),
-		PlanID:          null.StringFrom(faker.PriceStdMonth.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdMonth.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -38,7 +38,7 @@ func Test_group(t *testing.T) {
 		PaymentMethod:   enum.PayMethodWx,
 		CompoundID:      userID,
 		OrderID:         null.StringFrom(db.MustOrderID()),
-		PlanID:          null.StringFrom(faker.PriceStdYear.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdYear.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -52,7 +52,7 @@ func Test_group(t *testing.T) {
 		PaymentMethod:   enum.PayMethodAli,
 		CompoundID:      userID,
 		OrderID:         null.StringFrom(db.MustOrderID()),
-		PlanID:          null.StringFrom(faker.PricePrm.Original.ID),
+		PlanID:          null.StringFrom(faker.PricePrm.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -66,7 +66,7 @@ func Test_group(t *testing.T) {
 		PaymentMethod:   enum.PayMethodAli,
 		CompoundID:      userID,
 		OrderID:         null.String{},
-		PlanID:          null.StringFrom(faker.PriceStdYear.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdYear.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -80,7 +80,7 @@ func Test_group(t *testing.T) {
 		PaymentMethod:   enum.PayMethodAli,
 		CompoundID:      userID,
 		OrderID:         null.String{},
-		PlanID:          null.StringFrom(faker.PriceStdYear.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdYear.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -137,7 +137,7 @@ func Test_reduce(t *testing.T) {
 		PaymentMethod:   enum.PayMethodAli,
 		CompoundID:      userID,
 		OrderID:         null.StringFrom(db.MustOrderID()),
-		PlanID:          null.StringFrom(faker.PriceStdMonth.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdMonth.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -151,7 +151,7 @@ func Test_reduce(t *testing.T) {
 		PaymentMethod:   enum.PayMethodWx,
 		CompoundID:      userID,
 		OrderID:         null.StringFrom(db.MustOrderID()),
-		PlanID:          null.StringFrom(faker.PriceStdYear.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdYear.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -204,7 +204,7 @@ func TestGroupAndReduce(t *testing.T) {
 		PaymentMethod:   enum.PayMethodAli,
 		CompoundID:      userID,
 		OrderID:         null.StringFrom(db.MustOrderID()),
-		PlanID:          null.StringFrom(faker.PriceStdMonth.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdMonth.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -218,7 +218,7 @@ func TestGroupAndReduce(t *testing.T) {
 		PaymentMethod:   enum.PayMethodWx,
 		CompoundID:      userID,
 		OrderID:         null.StringFrom(db.MustOrderID()),
-		PlanID:          null.StringFrom(faker.PriceStdYear.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdYear.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -232,7 +232,7 @@ func TestGroupAndReduce(t *testing.T) {
 		PaymentMethod:   enum.PayMethodAli,
 		CompoundID:      userID,
 		OrderID:         null.StringFrom(db.MustOrderID()),
-		PlanID:          null.StringFrom(faker.PricePrm.Original.ID),
+		PlanID:          null.StringFrom(faker.PricePrm.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -246,7 +246,7 @@ func TestGroupAndReduce(t *testing.T) {
 		PaymentMethod:   enum.PayMethodAli,
 		CompoundID:      userID,
 		OrderID:         null.String{},
-		PlanID:          null.StringFrom(faker.PriceStdYear.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdYear.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
@@ -260,7 +260,7 @@ func TestGroupAndReduce(t *testing.T) {
 		PaymentMethod:   enum.PayMethodAli,
 		CompoundID:      userID,
 		OrderID:         null.String{},
-		PlanID:          null.StringFrom(faker.PriceStdYear.Original.ID),
+		PlanID:          null.StringFrom(faker.PriceStdYear.ID),
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}

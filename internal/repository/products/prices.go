@@ -96,7 +96,7 @@ func (env Env) ActivePriceOfEdition(e price.Edition) (price.FtcPrice, error) {
 	}
 
 	for _, v := range prices {
-		if v.Original.Edition == e {
+		if v.Edition == e {
 			return v, nil
 		}
 	}

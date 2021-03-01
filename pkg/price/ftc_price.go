@@ -4,6 +4,6 @@ package price
 // The actually price user paid should be the original price minus
 // promotion offer if promotion period is valid.
 type FtcPrice struct {
-	Original       Price    `json:"original"`
+	Price
 	PromotionOffer Discount `json:"promotionOffer"`
 }

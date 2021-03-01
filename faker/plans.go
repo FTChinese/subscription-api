@@ -9,7 +9,7 @@ import (
 )
 
 var PriceStdYear = price.FtcPrice{
-	Original: price.Price{
+	Price: price.Price{
 		ID: "plan_MynUQDQY1TSQ",
 		Edition: price.Edition{
 			Tier:  enum.TierStandard,
@@ -36,7 +36,7 @@ var PriceStdYear = price.FtcPrice{
 }
 
 var PriceStdMonth = price.FtcPrice{
-	Original: price.Price{
+	Price: price.Price{
 		ID: "plan_1Uz4hrLy3Mzy",
 		Edition: price.Edition{
 			Tier:  enum.TierStandard,
@@ -54,7 +54,7 @@ var PriceStdMonth = price.FtcPrice{
 }
 
 var PricePrm = price.FtcPrice{
-	Original: price.Price{
+	Price: price.Price{
 		ID: "plan_vRUzRQ3aglea",
 		Edition: price.Edition{
 			Tier:  enum.TierPremium,

@@ -83,7 +83,7 @@ func (b MockOrderBuilder) WithStartTime(from time.Time) MockOrderBuilder {
 		b.confirmed = true
 	}
 	b.period = dt.NewTimeRange(from).
-		WithCycle(b.price.Original.Cycle).
+		WithCycle(b.price.Cycle).
 		ToDatePeriod()
 	return b
 }
