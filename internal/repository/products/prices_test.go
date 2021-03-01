@@ -84,7 +84,7 @@ func TestEnv_PlanByID(t *testing.T) {
 				return
 			}
 
-			assert.NotEmpty(t, got.Original.ID)
+			assert.NotEmpty(t, got.ID)
 		})
 	}
 }
@@ -130,7 +130,7 @@ func TestEnv_PlanByEdition(t *testing.T) {
 				return
 			}
 
-			assert.NotEmpty(t, got.Original.ID)
+			assert.NotEmpty(t, got.ID)
 		})
 	}
 }

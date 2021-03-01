@@ -44,7 +44,7 @@ func TestCounter_checkout(t *testing.T) {
 			want: Checkout{
 				Kind: enum.OrderKindCreate,
 				Cart: cart.Cart{
-					Price:    faker.PriceStdYear.Original,
+					Price:    faker.PriceStdYear.Price,
 					Discount: faker.PriceStdYear.PromotionOffer,
 				},
 				Payable: price.Charge{
@@ -70,7 +70,7 @@ func TestCounter_checkout(t *testing.T) {
 			want: Checkout{
 				Kind: enum.OrderKindRenew,
 				Cart: cart.Cart{
-					Price:    faker.PriceStdYear.Original,
+					Price:    faker.PriceStdYear.Price,
 					Discount: faker.PriceStdYear.PromotionOffer,
 				},
 				Payable: price.Charge{

@@ -173,7 +173,7 @@ func (p *Persona) Membership() reader.Membership {
 		WithIDs(p.AccountID()).
 		WithExpiration(expiresDate).
 		WithPayMethod(p.payMethod).
-		WithPrice(p.price.Original).
+		WithPrice(p.price.Price).
 		WithReservedDays(p.reserved).
 		WithAutoRenewal(p.autoRenew).
 		Build()

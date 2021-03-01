@@ -13,13 +13,13 @@ type Cart struct {
 func NewFtcCart(ftcPrice price.FtcPrice) Cart {
 	if ftcPrice.PromotionOffer.IsValid() {
 		return Cart{
-			Price:    ftcPrice.Original,
+			Price:    ftcPrice.Price,
 			Discount: ftcPrice.PromotionOffer,
 		}
 	}
 
 	return Cart{
-		Price:    ftcPrice.Original,
+		Price:    ftcPrice.Price,
 		Discount: price.Discount{},
 	}
 }

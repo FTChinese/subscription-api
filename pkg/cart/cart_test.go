@@ -25,7 +25,7 @@ func TestNewFtcCart(t *testing.T) {
 			name: "Price with discount",
 			args: args{
 				ftcPrice: price.FtcPrice{
-					Original: price.Price{
+					Price: price.Price{
 						ID: "plan_MynUQDQY1TSQ",
 						Edition: price.Edition{
 							Tier:  enum.TierStandard,
@@ -82,7 +82,7 @@ func TestNewFtcCart(t *testing.T) {
 			name: "Price without discount",
 			args: args{
 				ftcPrice: price.FtcPrice{
-					Original: price.Price{
+					Price: price.Price{
 						ID: "plan_MynUQDQY1TSQ",
 						Edition: price.Edition{
 							Tier:  enum.TierStandard,
