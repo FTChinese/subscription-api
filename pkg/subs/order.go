@@ -50,7 +50,7 @@ type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
 	reader.MemberID
-	PlanID     string      `json:"planId" db:"plan_id"`
+	PlanID     string      `json:"priceId" db:"plan_id"`
 	DiscountID null.String `json:"discountId" db:"discount_id"`
 	Price      float64     `json:"price" db:"price"` // Price of a plan, prior to discount.
 	price.Edition
