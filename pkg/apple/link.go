@@ -70,7 +70,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		if b.CurrentIAP.IsZero() {
 			return LinkResult{
 				Initial:  true, // Send email
-				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
 				Snapshot: reader.MemberSnapshot{}, // Nothing to archive.
 			}, nil
 		}
@@ -79,7 +79,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		if b.CurrentFtc.ExpireDate.Before(b.IAPSubs.ExpiresDateUTC.Time) {
 			return LinkResult{
 				Initial:  false,
-				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
 		}
@@ -116,7 +116,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		if b.Force {
 			return LinkResult{
 				Initial:  true,
-				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
 		}
@@ -143,7 +143,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		if b.isFtcLegacyFormat() {
 			return LinkResult{
 				Initial:  true,
-				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
 		}
@@ -156,7 +156,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		if b.isFtcLegacyFormat() {
 			return LinkResult{
 				Initial:  true,
-				Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
 		}
@@ -167,7 +167,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	// IAP not expired, use it.
 	return LinkResult{
 		Initial:  true,
-		Member:   b.IAPSubs.NewMembership(b.Account.MemberID()),
+		Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
 		Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 	}, nil
 }

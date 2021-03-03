@@ -3,7 +3,6 @@ package apple
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -112,46 +111,10 @@ func (s Subscription) ShouldUpdate(m reader.Membership) bool {
 	return true
 }
 
-// Membership build ftc's membership based on subscription
-// from apple if this subscription is not linked
-// to an ftc account.
-func (s Subscription) NewMembership(id reader.MemberID) reader.Membership {
-	return reader.Membership{
-		MemberID: id,
-		Edition: price.Edition{
-			Tier:  s.Tier,
-			Cycle: s.Cycle,
-		},
-		ExpireDate:    chrono.DateFrom(s.ExpiresDateUTC.Time),
-		PaymentMethod: enum.PayMethodApple,
-		FtcPlanID:     null.String{},
-		StripeSubsID:  null.String{},
-		StripePlanID:  null.String{},
-		AutoRenewal:   s.AutoRenewal,
-		Status:        enum.SubsStatusNull,
-		AppleSubsID:   null.StringFrom(s.OriginalTransactionID),
-		B2BLicenceID:  null.String{},
-	}.Sync()
-}
-
-// BuildOn updates an existing IAP membership based on this
-// transaction.
-// Used when updating an existing subscription and its optionally
-// linked membership.
-func (s Subscription) BuildOn(m reader.Membership) reader.Membership {
-	m.Tier = s.Tier
-	m.Cycle = s.Cycle
-	m.ExpireDate = chrono.DateFrom(s.ExpiresDateUTC.Time)
-	m.PaymentMethod = enum.PayMethodApple
-	m.FtcPlanID = null.String{}
-	m.StripeSubsID = null.String{}
-	m.StripePlanID = null.String{}
-	m.AutoRenewal = s.AutoRenewal
-	m.Status = enum.SubsStatusNull
-	m.AppleSubsID = null.StringFrom(s.OriginalTransactionID)
-	m.B2BLicenceID = null.String{}
-
-	return m.Sync()
+type SubsResult struct {
+	Subs     Subscription          `json:"subscription"`
+	Member   reader.Membership     `json:"membership"`
+	Snapshot reader.MemberSnapshot `json:"-"`
 }
 
 type SubsList struct {
