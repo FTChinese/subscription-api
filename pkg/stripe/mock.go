@@ -85,7 +85,7 @@ func (b MockSubsBuilder) Build() Subs {
 			CanceledAtUTC:      chrono.Time{},
 			CancellationReason: "",
 			ClientSecret:       null.String{},
-			Created:            chrono.Time{},
+			CreatedUtc:         chrono.Time{},
 			Currency:           "",
 			CustomerID:         "",
 			InvoiceID:          "",
