@@ -76,7 +76,7 @@ type Subs struct {
 
 	Status        enum.SubsStatus `json:"status" db:"sub_status"`
 	FtcUserID     null.String     `json:"ftcUserId" db:"ftc_user_id"`
-	PaymentIntent PaymentIntent   `json:"paymentIntent"`
+	PaymentIntent PaymentIntent   `json:"paymentIntent"` // This does not exists when refreshing current subscription.
 }
 
 // NewSubs converts stripe's subscription. It returns error if there's
