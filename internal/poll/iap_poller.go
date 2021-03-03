@@ -130,20 +130,20 @@ func (p IAPPoller) verify(s apple.BaseSchema) error {
 	p.iapRepo.SaveUnifiedReceipt(resp.UnifiedReceipt)
 
 	sugar.Info("Saving subscription...")
-	sub, err := resp.Subscription()
+	sub, err := apple.NewSubscription(resp.UnifiedReceipt)
 	if err != nil {
 		sugar.Error(err)
 		return err
 	}
 
-	snapshot, err := p.iapRepo.SaveSubs(sub)
+	result, err := p.iapRepo.SaveSubs(sub)
 	if err != nil {
 		sugar.Error(err)
 		return err
 	}
 
-	if !snapshot.IsZero() {
-		err := p.readerRepo.ArchiveMember(snapshot)
+	if !result.Snapshot.IsZero() {
+		err := p.readerRepo.ArchiveMember(result.Snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
