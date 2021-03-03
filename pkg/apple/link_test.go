@@ -63,7 +63,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs:    iapSub,
 			},
 			want: LinkResult{
-				Member:   iapSub.NewMembership(memberID),
+				Member:   NewMembership(memberID, iapSub),
 				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
@@ -75,11 +75,11 @@ func TestLinkBuilder_Build(t *testing.T) {
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{},
-				CurrentIAP: iapSub.NewMembership(reader.MemberID{
+				CurrentIAP: NewMembership(reader.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
-				}.MustNormalize()),
+				}.MustNormalize(), iapSub),
 				IAPSubs: iapSub,
 			},
 			want:    LinkResult{},
@@ -91,7 +91,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 				Account: reader.FtcAccount{
 					FtcID: ftcId,
 				},
-				CurrentFtc: iapSub.NewMembership(memberID),
+				CurrentFtc: NewMembership(memberID, iapSub),
 				CurrentIAP: reader.Membership{},
 				IAPSubs: Subscription{
 					BaseSchema: BaseSchema{
@@ -131,7 +131,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs:    iapSub,
 			},
 			want: LinkResult{
-				Member:   iapSub.NewMembership(memberID),
+				Member:   NewMembership(memberID, iapSub),
 				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
@@ -183,7 +183,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs:    iapSub,
 			},
 			want: LinkResult{
-				Member:   iapSub.NewMembership(memberID),
+				Member:   NewMembership(memberID, iapSub),
 				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,

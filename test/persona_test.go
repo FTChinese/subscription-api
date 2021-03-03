@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -15,7 +16,7 @@ func TestPersona_IAPSubs(t *testing.T) {
 
 	sub := p.IAPSubs()
 
-	m := sub.NewMembership(p.AccountID())
+	m := apple.NewMembership(p.AccountID(), sub)
 
 	m = m.Sync()
 
