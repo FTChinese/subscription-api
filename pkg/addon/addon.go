@@ -21,7 +21,7 @@ type AddOn struct {
 	PaymentMethod   enum.PayMethod  `json:"payMethod" db:"payment_method"`
 	CompoundID      string          `json:"compoundId" db:"compound_id"`
 	OrderID         null.String     `json:"orderId" db:"order_id"` // For upgrade with one-time purchase.
-	PlanID          null.String     `json:"planId" db:"plan_id"`
+	PlanID          null.String     `json:"priceId" db:"plan_id"`
 	CreatedUTC      chrono.Time     `json:"createdUtc" db:"created_utc"`
 	ConsumedUTC     chrono.Time     `json:"consumedUtc" db:"consumed_utc"`
 }
