@@ -13,7 +13,7 @@ type PaymentIntent struct {
 	CanceledAtUTC      chrono.Time                            `json:"canceledAtUtc"`
 	CancellationReason stripe.PaymentIntentCancellationReason `json:"cancellationReason"`
 	ClientSecret       null.String                            `json:"clientSecret"`
-	Created            chrono.Time                            `json:"created"`
+	CreatedUtc         chrono.Time                            `json:"createdUtc"`
 	Currency           string                                 `json:"currency"`
 	CustomerID         string                                 `json:"customerId"`
 	InvoiceID          string                                 `json:"invoiceId"`
@@ -50,7 +50,7 @@ func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 		CanceledAtUTC:      chrono.TimeFrom(dt.FromUnix(pi.CanceledAt)),
 		CancellationReason: pi.CancellationReason,
 		ClientSecret:       null.NewString(pi.ClientSecret, pi.ClientSecret != ""),
-		Created:            chrono.TimeFrom(dt.FromUnix(pi.Created)),
+		CreatedUtc:         chrono.TimeFrom(dt.FromUnix(pi.Created)),
 		Currency:           pi.Currency,
 		CustomerID:         pi.Customer.ID,
 		InvoiceID:          pi.Invoice.ID,
