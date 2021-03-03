@@ -131,13 +131,13 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	if err == nil {
 		go func() {
 
-			snapshot, err := router.iapRepo.SaveSubs(sub)
+			result, err := router.iapRepo.SaveSubs(sub)
 			if err != nil {
 				sugar.Error(err)
 				return
 			}
 
-			router.processSubsResult(snapshot)
+			router.processSubsResult(result.Snapshot)
 		}()
 	}
 
@@ -185,7 +185,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	router.iapRepo.SaveUnifiedReceipt(wh.UnifiedReceipt)
 
 	// Build apple's subscription and save it.
-	sub, err := wh.UnifiedReceipt.Subscription()
+	sub, err := apple.NewSubscription(wh.UnifiedReceipt)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest("")
@@ -197,7 +197,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// if this membership payMethod is null, and expireDate is not after sub.ExpireDateUTC,
 	// then we should update this membership using this subscription.
 	// This approach can be used in webhook notification and verify-receipt.
-	snapshot, err := router.iapRepo.SaveSubs(sub)
+	result, err := router.iapRepo.SaveSubs(sub)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -206,7 +206,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	// Snapshot might be empty is this subscription is linked to ftc account yet.
 	go func() {
-		router.processSubsResult(snapshot)
+		router.processSubsResult(result.Snapshot)
 	}()
 
 	_ = render.New(w).OK(nil)
