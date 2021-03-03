@@ -44,7 +44,7 @@ func TestUnifiedReceipt_findPendingRenewal(t *testing.T) {
 func TestUnifiedReceipt_Subscription(t *testing.T) {
 	resp := mustParsedReceiptResponse()
 
-	sub, err := resp.Subscription()
+	sub, err := NewSubscription(resp.UnifiedReceipt)
 	if err != nil {
 		t.Error(err)
 	}
