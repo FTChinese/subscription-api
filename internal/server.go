@@ -107,7 +107,7 @@ func StartServer(s ServerStatus) {
 	r.Route("/addon", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(controller.RequireFtcOrUnionID)
-		// List a list of add-on belong to a user.
+		// List a list of add-on belonging to a user.
 		//r.Get("/", )
 		// Redeem add-on
 		r.Post("/", payRouter.RedeemAddOn)

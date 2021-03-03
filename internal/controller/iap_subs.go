@@ -56,7 +56,7 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sub, err := resp.Subscription()
+	sub, err := apple.NewSubscription(resp.UnifiedReceipt)
 
 	result, err := router.iapRepo.SaveSubs(sub)
 	if err != nil {
@@ -66,7 +66,7 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		router.processSubsResult(result)
+		router.processSubsResult(result.Snapshot)
 	}()
 
 	_ = render.New(w).OK(sub)
@@ -134,25 +134,24 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If err occurred, it indicates program has bugs.
-	updatedSubs, err := resp.Subscription()
+	updatedSubs, err := apple.NewSubscription(resp.UnifiedReceipt)
 	if err != nil {
 		_ = render.New(w).InternalServerError(err.Error())
 		return
 	}
+	// Use old subscription's creation time.
+	updatedSubs.CreatedUTC = sub.CreatedUTC
 
 	// Update subscription and possible membership
-	result, err := router.iapRepo.SaveSubs(sub)
+	result, err := router.iapRepo.SaveSubs(updatedSubs)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	go func() {
-		router.processSubsResult(result)
+		router.processSubsResult(result.Snapshot)
 	}()
 
-	// Use old subscription's creation time.
-	updatedSubs.CreatedUTC = sub.CreatedUTC
-
-	_ = render.New(w).OK(updatedSubs)
+	_ = render.New(w).OK(result)
 }
