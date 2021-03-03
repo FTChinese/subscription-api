@@ -1,7 +1,6 @@
 package apple
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
 	"sort"
 	"time"
 )
@@ -127,42 +126,4 @@ func (u *UnifiedReceipt) findPendingRenewal() PendingRenewal {
 	}
 
 	return PendingRenewal{}
-}
-
-// Subscription builds a subscription for a user based on
-// the receipt information available.
-// Returns Subscription or error if the corresponding price is not found for this transaction.
-// TODO: What if the Transaction is a cancelled one?
-func (u *UnifiedReceipt) Subscription() (Subscription, error) {
-	pendingRenewal := u.findPendingRenewal()
-
-	autoRenew := pendingRenewal.IsAutoRenew()
-	if u.latestTransaction.IsCancelled() {
-		autoRenew = false
-	}
-
-	prod, err := appleProducts.findByID(u.latestTransaction.ProductID)
-
-	if err != nil {
-		return Subscription{}, err
-	}
-
-	return Subscription{
-		BaseSchema: BaseSchema{
-			Environment:           u.Environment,
-			OriginalTransactionID: u.latestTransaction.OriginalTransactionID,
-		},
-		LastTransactionID: u.latestTransaction.TransactionID,
-		ProductID:         u.latestTransaction.ProductID,
-		PurchaseDateUTC: chrono.TimeFrom(
-			time.Unix(u.latestTransaction.PurchaseDateUnix(), 0),
-		),
-		ExpiresDateUTC: chrono.TimeFrom(
-			time.Unix(u.latestTransaction.ExpiresUnix(), 0),
-		),
-		Edition:     prod.Edition,
-		AutoRenewal: autoRenew,
-		CreatedUTC:  chrono.TimeNow(),
-		UpdatedUTC:  chrono.TimeNow(),
-	}, nil
 }
