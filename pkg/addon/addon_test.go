@@ -18,7 +18,7 @@ func TestAddOn_IsZero(t *testing.T) {
 		Edition         price.Edition
 		CycleCount      int64
 		DaysRemained    int64
-		CarryOverSource CarryOverSource
+		CarryOverSource Source
 		PaymentMethod   enum.PayMethod
 		CompoundID      string
 		OrderID         null.String
@@ -43,7 +43,7 @@ func TestAddOn_IsZero(t *testing.T) {
 				Edition:         price.StdYearEdition,
 				CycleCount:      1,
 				DaysRemained:    1,
-				CarryOverSource: CarryOverFromUpgrade,
+				CarryOverSource: SourceUpgradeCarryOver,
 				PaymentMethod:   enum.PayMethodAli,
 				CompoundID:      uuid.New().String(),
 				OrderID:         null.StringFrom(db.MustOrderID()),
@@ -82,7 +82,7 @@ func TestAddOn_getDays(t *testing.T) {
 		Edition         price.Edition
 		CycleCount      int64
 		DaysRemained    int64
-		CarryOverSource CarryOverSource
+		CarryOverSource Source
 		PaymentMethod   enum.PayMethod
 		CompoundID      string
 		OrderID         null.String
@@ -158,7 +158,7 @@ func TestAddOn_ToReservedDays(t *testing.T) {
 		Edition         price.Edition
 		CycleCount      int64
 		DaysRemained    int64
-		CarryOverSource CarryOverSource
+		CarryOverSource Source
 		PaymentMethod   enum.PayMethod
 		CompoundID      string
 		OrderID         null.String
