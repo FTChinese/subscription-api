@@ -279,7 +279,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Confirm order for create",
+			name: "confirm order for create",
 			args: args{
 				order: subs.MustNewConfirmationResult(subs.ConfirmationParams{
 					Payment: subs.MockNewPaymentResult(orderCreate),
@@ -290,7 +290,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Confirm order for renewal",
+			name: "confirm order for renewal",
 			args: args{
 				order: subs.MustNewConfirmationResult(subs.ConfirmationParams{
 					Payment: subs.MockNewPaymentResult(orderRenewal),
@@ -301,7 +301,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Confirm order for upgrade",
+			name: "confirm order for upgrade",
 			args: args{
 				order: subs.MustNewConfirmationResult(subs.ConfirmationParams{
 					Payment: subs.MockNewPaymentResult(orderUpgrade),
@@ -312,7 +312,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Confirm order for add-on",
+			name: "confirm order for add-on",
 			args: args{
 				order: subs.MustNewConfirmationResult(subs.ConfirmationParams{
 					Payment: subs.MockNewPaymentResult(orderAddOn),
@@ -554,7 +554,7 @@ func TestMemberTx_SaveAddOn(t *testing.T) {
 			args: args{
 				addOn: reader.NewMockMemberBuilder("").
 					Build().
-					CarryOver(addon.CarryOverFromUpgrade).
+					CarryOver(addon.SourceUpgradeCarryOver).
 					WithOrderID(db.MustOrderID()),
 			},
 			wantErr: false,
@@ -567,7 +567,7 @@ func TestMemberTx_SaveAddOn(t *testing.T) {
 			args: args{
 				addOn: reader.NewMockMemberBuilder("").
 					Build().
-					CarryOver(addon.CarryOverFromSwitchingStripe),
+					CarryOver(addon.SourceOneTimeToSubCarryOver),
 			},
 			wantErr: false,
 		},
@@ -646,10 +646,10 @@ func TestMemberTx_ListAddOn(t *testing.T) {
 		p.NewOrder(enum.OrderKindAddOn).
 			ToAddOn(),
 		p.Membership().
-			CarryOver(addon.CarryOverFromUpgrade).
+			CarryOver(addon.SourceUpgradeCarryOver).
 			WithOrderID(db.MustOrderID()),
 		p.Membership().
-			CarryOver(addon.CarryOverFromSwitchingStripe),
+			CarryOver(addon.SourceOneTimeToSubCarryOver),
 	})
 
 	type fields struct {
@@ -703,10 +703,10 @@ func TestMemberTx_AddOnsConsumed(t *testing.T) {
 		p.NewOrder(enum.OrderKindAddOn).
 			ToAddOn(),
 		p.Membership().
-			CarryOver(addon.CarryOverFromUpgrade).
+			CarryOver(addon.SourceUpgradeCarryOver).
 			WithOrderID(db.MustOrderID()),
 		p.Membership().
-			CarryOver(addon.CarryOverFromSwitchingStripe),
+			CarryOver(addon.SourceOneTimeToSubCarryOver),
 	}
 
 	repo := test.NewRepo()
