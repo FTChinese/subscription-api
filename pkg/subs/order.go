@@ -7,6 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -144,4 +145,41 @@ func (o Order) ToAddOn() addon.AddOn {
 		CreatedUTC:      chrono.TimeNow(),
 		ConsumedUTC:     chrono.Time{},
 	}
+}
+
+func (o Order) invoice(confirmedAt chrono.Time, expires chrono.Date) (invoice.Invoice, error) {
+	date := dt.NewYearMonthDay(o.Cycle)
+
+	timeRange, err := dt.PurchasedTimeRangeBuilder{
+		ConfirmedAt:    confirmedAt,
+		ExpirationDate: expires,
+		Date:           date,
+		OrderKind:      o.Kind,
+	}.Build()
+
+	if err != nil {
+		return invoice.Invoice{}, err
+	}
+
+	var addOnSource addon.Source
+	if o.Kind == enum.OrderKindAddOn {
+		addOnSource = addon.SourceUserPurchase
+	}
+
+	return invoice.Invoice{
+		ID:             db.InvoiceID(),
+		CompoundID:     o.CompoundID,
+		Edition:        o.Edition,
+		YearMonthDay:   date,
+		AddOnSource:    addOnSource,
+		OrderID:        null.StringFrom(o.ID),
+		OrderKind:      o.Kind,
+		PaidAmount:     o.Amount,
+		PaymentMethod:  o.PaymentMethod,
+		PriceID:        null.StringFrom(o.PlanID),
+		CreatedUTC:     chrono.TimeNow(),
+		ConsumedUTC:    chrono.TimeNow(),
+		DateTimePeriod: timeRange.ToDateTimePeriod(),
+		CarriedOverUtc: chrono.Time{},
+	}, nil
 }
