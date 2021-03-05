@@ -1,56 +1,60 @@
 package subs
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/guregu/null"
 )
 
-// ConfirmationParams contains data used to confirm an order.
+// ConfirmationParams contains data used to invoice an order.
 type ConfirmationParams struct {
 	Payment PaymentResult
 	Order   Order
 	Member  reader.Membership
 }
 
-func (params ConfirmationParams) confirmNewOrRenewalOrder() Order {
-
-	// Prevent duplicate confirmation
-	if params.Order.IsConfirmed() {
-		return params.Order
-	}
-
-	params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
-
-	startTime := dt.PickLater(params.Payment.ConfirmedUTC.Time, params.Member.ExpireDate.Time)
-
-	params.Order.DatePeriod = dt.NewTimeRange(startTime).
-		WithCycle(params.Order.Cycle).
-		AddDays(trialDays).
-		ToDatePeriod()
-
-	return params.Order
+func (p ConfirmationParams) invoice() (invoice.Invoice, error) {
+	return p.Order.invoice(p.Payment.ConfirmedUTC, p.Member.ExpireDate)
 }
 
-func (params ConfirmationParams) confirmUpgradeOrder() Order {
-	// Prevent duplicate confirmation.
-	if params.Order.IsConfirmed() {
-		return params.Order
-	}
-
-	params.Order.ConfirmedAt = params.Payment.ConfirmedUTC
-	params.Order.DatePeriod = dt.NewTimeRange(params.Payment.ConfirmedUTC.Time).
-		WithCycle(params.Order.Cycle).
-		AddDays(trialDays).
-		ToDatePeriod()
-
-	return params.Order
+func (p ConfirmationParams) membership(inv invoice.Invoice) reader.Membership {
+	return newMembership(p.Order.MemberID, p.Member, inv)
 }
 
-func (params ConfirmationParams) snapshot() reader.MemberSnapshot {
-	if params.Member.IsZero() {
-		return reader.MemberSnapshot{}
+func (p ConfirmationParams) confirmedOrder(period dt.DateTimePeriod) Order {
+	p.Order.ConfirmedAt = p.Payment.ConfirmedUTC
+	p.Order.DatePeriod = period.ToDatePeriod()
+
+	return p.Order
+}
+
+func (p ConfirmationParams) snapshot() reader.MemberSnapshot {
+	return p.Member.Snapshot(reader.FtcArchiver(p.Order.Kind))
+}
+
+func newMembership(userID reader.MemberID, m reader.Membership, inv invoice.Invoice) reader.Membership {
+	if inv.OrderKind == enum.OrderKindAddOn {
+		return m.WithReservedDays(inv.ToReservedDays())
 	}
 
-	return params.Member.Snapshot(
-		reader.FtcArchiver(params.Order.Kind))
+	// If the invoice is not intended for add-on, it must have period set.
+	return reader.Membership{
+		MemberID:      userID, // TODO: user id from order.
+		Edition:       inv.Edition,
+		LegacyTier:    null.Int{},
+		LegacyExpire:  null.Int{},
+		ExpireDate:    chrono.DateFrom(inv.EndUTC.Time),
+		PaymentMethod: inv.PaymentMethod,
+		FtcPlanID:     inv.PriceID,
+		StripeSubsID:  null.String{},
+		StripePlanID:  null.String{},
+		AutoRenewal:   false,
+		Status:        enum.SubsStatusNull,
+		AppleSubsID:   null.String{},
+		B2BLicenceID:  null.String{},
+		ReservedDays:  m.ReservedDays,
+	}.Sync()
 }
