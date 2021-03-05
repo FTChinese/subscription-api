@@ -32,10 +32,10 @@ func TestEnv_RedeemAddOn(t *testing.T) {
 		p.NewOrder(enum.OrderKindAddOn).
 			ToAddOn(),
 		p.Membership().
-			CarryOver(addon.CarryOverFromUpgrade).
+			CarryOver(addon.SourceUpgradeCarryOver).
 			WithOrderID(db.MustOrderID()),
 		p.Membership().
-			CarryOver(addon.CarryOverFromSwitchingStripe),
+			CarryOver(addon.SourceOneTimeToSubCarryOver),
 	}
 
 	repo := test.NewRepo()
