@@ -3,7 +3,6 @@ package subrepo
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
@@ -59,11 +58,8 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 			sugar.Infof("Order %s already synced to membership", order.ID)
 			_ = tx.Rollback()
 			return subs.ConfirmationResult{
-				Payment: pr,
-				ConfirmedOrder: subs.ConfirmedOrder{
-					Order: order,
-					AddOn: addon.AddOn{},
-				},
+				Payment:    pr,
+				Order:      order,
 				Membership: member,
 				Snapshot:   reader.MemberSnapshot{},
 				Notify:     false,
@@ -79,11 +75,8 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 			if ok {
 				_ = tx.Rollback()
 				return subs.ConfirmationResult{
-					Payment: pr,
-					ConfirmedOrder: subs.ConfirmedOrder{
-						Order: order,
-						AddOn: addon.AddOn{},
-					},
+					Payment:    pr,
+					Order:      order,
 					Membership: member,
 					Snapshot:   reader.MemberSnapshot{},
 					Notify:     false,
@@ -93,10 +86,10 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 		// If order is already confirmed but not synced, fallthrough.
 	}
 
-	// STEP 4: Confirm this order
+	// STEP 4: confirm this order
 	// Populate the ConfirmedAt, StartDate and EndDate.
 	// If there are calculation errors, allow retry.
-	sugar.Info("Confirm order")
+	sugar.Info("confirm order")
 	confirmed, err := subs.NewConfirmationResult(subs.ConfirmationParams{
 		Payment: pr,
 		Order:   order,
@@ -123,13 +116,14 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 	}
 
 	// Save add-on if having one.
-	if !confirmed.AddOn.IsZero() {
+	if len(confirmed.Invoices) > 0 {
 		sugar.Info("Creating add-on")
-		if err := tx.SaveAddOn(confirmed.AddOn); err != nil {
-			sugar.Error(err)
-			_ = tx.Rollback()
-			return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
-		}
+		// TODO: change to invoice
+		//if err := tx.SaveAddOn(confirmed.AddOn); err != nil {
+		//	sugar.Error(err)
+		//	_ = tx.Rollback()
+		//	return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+		//}
 	}
 
 	// Insert or update membership.

@@ -74,7 +74,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name: "Confirm new ali order",
+			name: "confirm new ali order",
 			args: args{
 				result: subs.MockNewPaymentResult(aliCreateOrder),
 				order:  aliCreateOrder,
@@ -82,7 +82,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Confirm new wx order",
+			name: "confirm new wx order",
 			args: args{
 				result: subs.MockNewPaymentResult(wxCreateOrder),
 				order:  wxCreateOrder,
@@ -106,7 +106,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Confirm renewal",
+			name: "confirm renewal",
 			requisite: requisite{
 				currentMember: memberPriorRenewal,
 			},
@@ -117,7 +117,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Confirm upgrade",
+			name: "confirm upgrade",
 			requisite: requisite{
 				currentMember: memberPriorUpgrade,
 			},
@@ -128,7 +128,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Confirm add-on",
+			name: "confirm add-on",
 			requisite: requisite{
 				currentMember: iapMember,
 			},
