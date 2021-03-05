@@ -48,7 +48,7 @@ func (m Membership) ShouldUseAddOn() error {
 	return nil
 }
 
-func (m Membership) CarryOver(source addon.CarryOverSource) addon.AddOn {
+func (m Membership) CarryOver(source addon.Source) addon.AddOn {
 	return addon.AddOn{
 		ID:              db.AddOnID(),
 		Edition:         m.Edition,
