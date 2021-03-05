@@ -18,6 +18,12 @@ func NewTimeRange(start time.Time) TimeRange {
 	}
 }
 
+func (r TimeRange) WithDate(d YearMonthDay) TimeRange {
+	r.End = r.End.AddDate(int(d.Years), int(d.Months), int(d.Days))
+
+	return r
+}
+
 func (r TimeRange) WithCycle(cycle enum.Cycle) TimeRange {
 	switch cycle {
 	case enum.CycleYear:
@@ -85,10 +91,29 @@ type DateTimePeriod struct {
 	EndUTC   chrono.Time `json:"endUtc" db:"end_utc"`
 }
 
+func (p DateTimePeriod) ToCurrentPeriod() CurrentPeriod {
+	return CurrentPeriod{
+		PeriodStartUTC: p.StartUTC,
+		PeriodEndUTC:   p.EndUTC,
+	}
+}
+
+func (p DateTimePeriod) ToDatePeriod() DatePeriod {
+	return DatePeriod{
+		StartDate: chrono.DateFrom(p.StartUTC.Time),
+		EndDate:   chrono.DateFrom(p.EndUTC.Time),
+	}
+}
+
 // DatePeriod is used to build the subscription period of a one-time purchase.
 type DatePeriod struct {
 	// Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
 	StartDate chrono.Date `json:"startDate" db:"start_date"`
 	// Membership end date for this order. Depends on start date.
 	EndDate chrono.Date `json:"endDate" db:"end_date"`
+}
+
+type CurrentPeriod struct {
+	PeriodStartUTC chrono.Time `json:"periodStartUtc" db:"period_start_utc"`
+	PeriodEndUTC   chrono.Time `json:"periodEndUtc" db:"period_end_utc"`
 }
