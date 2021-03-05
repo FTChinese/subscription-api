@@ -15,15 +15,15 @@ var cycleDays = map[enum.Cycle]int64{
 type AddOn struct {
 	ID string `json:"id" db:"id"`
 	price.Edition
-	CycleCount      int64           `json:"cycleCount" db:"cycle_count"`
-	DaysRemained    int64           `json:"daysRemained" db:"days_remained"`
-	CarryOverSource CarryOverSource `json:"carryOverSource" db:"carry_over_source"`
-	PaymentMethod   enum.PayMethod  `json:"payMethod" db:"payment_method"`
-	CompoundID      string          `json:"compoundId" db:"compound_id"`
-	OrderID         null.String     `json:"orderId" db:"order_id"` // For upgrade with one-time purchase.
-	PlanID          null.String     `json:"priceId" db:"plan_id"`
-	CreatedUTC      chrono.Time     `json:"createdUtc" db:"created_utc"`
-	ConsumedUTC     chrono.Time     `json:"consumedUtc" db:"consumed_utc"`
+	CycleCount      int64          `json:"cycleCount" db:"cycle_count"`
+	DaysRemained    int64          `json:"daysRemained" db:"days_remained"`
+	CarryOverSource Source         `json:"carryOverSource" db:"carry_over_source"`
+	PaymentMethod   enum.PayMethod `json:"payMethod" db:"payment_method"`
+	CompoundID      string         `json:"compoundId" db:"compound_id"`
+	OrderID         null.String    `json:"orderId" db:"order_id"` // For upgrade with one-time purchase.
+	PlanID          null.String    `json:"priceId" db:"plan_id"`
+	CreatedUTC      chrono.Time    `json:"createdUtc" db:"created_utc"`
+	ConsumedUTC     chrono.Time    `json:"consumedUtc" db:"consumed_utc"`
 }
 
 func (a AddOn) IsZero() bool {
