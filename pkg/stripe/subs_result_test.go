@@ -55,10 +55,10 @@ func Test_newSubsResult(t *testing.T) {
 					Status:        enum.SubsStatusActive,
 					AppleSubsID:   null.String{},
 					B2BLicenceID:  null.String{},
-					ReservedDays:  member.CarryOver(addon.CarryOverFromSwitchingStripe).ToReservedDays(),
+					ReservedDays:  member.CarryOver(addon.SourceOneTimeToSubCarryOver).ToReservedDays(),
 				}.Sync(),
 				Snapshot: member.Snapshot(reader.StripeArchiver(reader.ActionCreate)),
-				AddOn:    member.CarryOver(addon.CarryOverFromSwitchingStripe),
+				AddOn:    member.CarryOver(addon.SourceOneTimeToSubCarryOver),
 			},
 		},
 	}
