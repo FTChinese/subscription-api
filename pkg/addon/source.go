@@ -6,25 +6,27 @@ import (
 	"errors"
 )
 
-type CarryOverSource string
+type Source string
 
 const (
-	CarryOverFromUpgrade         CarryOverSource = "one_time_upgrade"
-	CarryOverFromSwitchingStripe CarryOverSource = "one_time_to_stripe"
+	SourceUpgradeCarryOver      Source = "upgrade_carry_over"
+	SourceOneTimeToSubCarryOver Source = "one_time_to_sub_carry_over"
+	SourceCompensation          Source = "compensation"
+	SourceUserPurchase          Source = "user_purchase"
 )
 
-func (x *CarryOverSource) UnmarshalJSON(b []byte) error {
+func (x *Source) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
 		return err
 	}
 
-	*x = CarryOverSource(s)
+	*x = Source(s)
 
 	return nil
 }
 
-func (x CarryOverSource) MarshalJSON() ([]byte, error) {
+func (x Source) MarshalJSON() ([]byte, error) {
 	if x == "" {
 		return []byte("null"), nil
 	}
@@ -32,7 +34,7 @@ func (x CarryOverSource) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + x + `"`), nil
 }
 
-func (x *CarryOverSource) Scan(src interface{}) error {
+func (x *Source) Scan(src interface{}) error {
 	if src == nil {
 		*x = ""
 		return nil
@@ -40,7 +42,7 @@ func (x *CarryOverSource) Scan(src interface{}) error {
 
 	switch s := src.(type) {
 	case []byte:
-		*x = CarryOverSource(s)
+		*x = Source(s)
 		return nil
 
 	default:
@@ -48,7 +50,7 @@ func (x *CarryOverSource) Scan(src interface{}) error {
 	}
 }
 
-func (x CarryOverSource) Value() (driver.Value, error) {
+func (x Source) Value() (driver.Value, error) {
 	if x == "" {
 		return nil, nil
 	}
