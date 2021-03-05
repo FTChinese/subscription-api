@@ -42,6 +42,10 @@ func AddOnID() string {
 	return "addon_" + rand.String(12)
 }
 
+func InvoiceID() string {
+	return "inv_" + rand.String(12)
+}
+
 func GetFindInSet(s []string) string {
 	return strings.Join(s, ",")
 }
