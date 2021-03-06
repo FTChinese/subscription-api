@@ -1,9 +1,6 @@
 package subs
 
 import (
-	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
@@ -26,9 +23,9 @@ func (c ConfirmError) Error() string {
 // ConfirmationResult contains all the data in the process of confirming an order.
 // This is also used as the http response for manual confirmation.
 type ConfirmationResult struct {
-	Payment    PaymentResult         `json:"payment"`    // Empty if order is already confirmed.
-	Order      Order                 `json:"order"`      // The confirmed order
-	Invoices   []invoice.Invoice     `json:"-"`          // Each order creates an invoice; for upgrading, there's an additional carry-over invoice.
+	Payment    PaymentResult         `json:"payment"` // Empty if order is already confirmed.
+	Order      Order                 `json:"order"`   // The confirmed order
+	Invoices   Invoices              `json:"-"`
 	Membership reader.Membership     `json:"membership"` // The updated membership. Empty if order is already confirmed.
 	Snapshot   reader.MemberSnapshot `json:"-"`
 	Notify     bool                  `json:"-"`
@@ -36,28 +33,16 @@ type ConfirmationResult struct {
 
 func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 
-	cfmInv, err := p.invoice()
+	invoices, err := p.invoices()
 	if err != nil {
 		return ConfirmationResult{}, err
 	}
 
-	invoices := []invoice.Invoice{
-		cfmInv,
-	}
-
-	if p.Order.Kind == enum.OrderKindUpgrade {
-		invoices = append(
-			invoices,
-			invoice.NewFromCarryOver(p.Member, addon.SourceUpgradeCarryOver).
-				WithOrderID(p.Order.ID),
-		)
-	}
-
 	return ConfirmationResult{
 		Payment:    p.Payment,
-		Order:      p.confirmedOrder(cfmInv.DateTimePeriod),
+		Order:      p.confirmedOrder(invoices.Purchased.DateTimePeriod),
 		Invoices:   invoices,
-		Membership: p.membership(cfmInv),
+		Membership: p.membership(invoices),
 		Snapshot:   p.snapshot(),
 		Notify:     true,
 	}, nil
