@@ -6,7 +6,7 @@ FT中文网用户 {{.UserName}},
 
 感谢您订阅FT中文网会员服务。
 
-您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 订阅了FT中文网 {{.Order.Tier.StringCN}}。
+您于 {{.Purchased.CreatedUTC.StringCN}} 通过 {{.Purchased.PaymentMethod.StringCN}} 订阅了FT中文网 {{.Purchased.Tier.StringCN}}。
 
 订单号 {{.Order.ID}}
 支付金额 {{.Order.Amount | currency}}
@@ -22,7 +22,7 @@ FT中文网用户 {{.UserName}},
 
 感谢您续订FT中文网会员服务。
 
-您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 续订了FT中文网 {{.Order.Tier.StringCN}}。
+您于 {{.Purchased.CreatedUTC.StringCN}} 通过 {{.Purchased.PaymentMethod.StringCN}} 续订了FT中文网 {{.Purchased.Tier.StringCN}}。
 
 订单号 {{.Order.ID}}
 支付金额 {{.Order.Amount | currency}}
@@ -38,13 +38,13 @@ FT中文网用户 {{.UserName}},
 
 感谢您升级订阅FT中文网高端会员。
 
-您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 从标准会员升级到 {{.Order.Tier.StringCN}}。
+您于 {{.Purchased.CreatedAt.StringCN}} 通过 {{.Purchased.PaymentMethod.StringCN}} 从标准会员升级到 {{.Purchased.Tier.StringCN}}。
 
 订单号 {{.Order.ID}}
 支付金额 {{.Order.Amount | currency}}
 订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
 
-本次升级前标准版订阅剩余 {{.AddOn.ExtraDays}} 天，将在高端版到期后再次启用
+本次升级前标准版订阅剩余 {{.CarriedOver.GetDays}} 天，将在高端版到期后再次启用
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
@@ -56,13 +56,19 @@ FT中文网用户 {{.UserName}},
 
 感谢您购买FT中文网会员服务。
 
-您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 购买一份 {{.Order.Tier.StringCN}}。
+您于 {{.Purchased.CreatedUTC.StringCN}} 通过 {{.Purchased.PaymentMethod.StringCN}} 购买一份 {{.Purchased.Tier.StringCN}}。
 
 订单号 {{.Order.ID}}
 支付金额 {{.Order.Amount | currency}}
-购买天数: {{.AddOn.GetDays}}
+购买天数: {{.Purchased.GetDays}}
 
-由于您当前会员使用了采取订阅模式的 {{.Snapshot.PaymentMethod.StringCN}}，通过{{.Order.PaymentMethod.StringCN}}进行的一次性购买将在当前订阅到期后启用。
+{{if .IsPremiumAddOn}}
+您当前会员是 {{.Snapshot.Tier.StringCN}}，优先使用，结束后启用本次购买的 {{.Purchased.Tier.StringCN}}。
+{{end}}
+
+{{if .IsSubsAddOn}}
+由于您当前会员使用了采取订阅模式的 {{.Snapshot.PaymentMethod.StringCN}}，通过{{.Purchased.PaymentMethod.StringCN}}进行的一次性购买将在当前订阅到期后启用。
+{{end}}
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
