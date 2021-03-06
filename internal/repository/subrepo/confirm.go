@@ -2,7 +2,6 @@ package subrepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
@@ -60,30 +59,12 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 			return subs.ConfirmationResult{
 				Payment:    pr,
 				Order:      order,
+				Invoices:   subs.Invoices{},
 				Membership: member,
 				Snapshot:   reader.MemberSnapshot{},
 				Notify:     false,
 			}, nil
 		}
-
-		if order.Kind == enum.OrderKindAddOn || order.Kind == enum.OrderKindUpgrade {
-			ok, err := tx.AddOnExistsForOrder(order.ID)
-			if err != nil {
-				_ = tx.Rollback()
-				return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
-			}
-			if ok {
-				_ = tx.Rollback()
-				return subs.ConfirmationResult{
-					Payment:    pr,
-					Order:      order,
-					Membership: member,
-					Snapshot:   reader.MemberSnapshot{},
-					Notify:     false,
-				}, nil
-			}
-		}
-		// If order is already confirmed but not synced, fallthrough.
 	}
 
 	// STEP 4: confirm this order
@@ -116,14 +97,21 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 	}
 
 	// Save add-on if having one.
-	if len(confirmed.Invoices) > 0 {
-		sugar.Info("Creating add-on")
-		// TODO: change to invoice
-		//if err := tx.SaveAddOn(confirmed.AddOn); err != nil {
-		//	sugar.Error(err)
-		//	_ = tx.Rollback()
-		//	return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
-		//}
+	sugar.Infof("Saving purchase invoice %s", confirmed.Invoices.Purchased.ID)
+	err = tx.SaveInvoice(confirmed.Invoices.Purchased)
+	if err != nil {
+		sugar.Error(err)
+		_ = tx.Rollback()
+		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+	}
+	if !confirmed.Invoices.CarriedOver.IsZero() {
+		sugar.Infof("Saving carry-over invoice %s", confirmed.Invoices.CarriedOver.ID)
+		err := tx.SaveInvoice(confirmed.Invoices.CarriedOver)
+		if err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+		}
 	}
 
 	// Insert or update membership.
