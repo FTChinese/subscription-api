@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -118,6 +119,17 @@ func (tx MemberTx) ConfirmOrder(order subs.Order) error {
 	return nil
 }
 
+// SaveInvoice inserts a new invoice to db.
+func (tx MemberTx) SaveInvoice(inv invoice.Invoice) error {
+	_, err := tx.NamedExec(invoice.StmtCreateInvoice, inv)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Deprecated
 func (tx MemberTx) SaveAddOn(addOn addon.AddOn) error {
 	_, err := tx.NamedExec(addon.StmtCreateAddOn, addOn)
 	if err != nil {
@@ -127,9 +139,10 @@ func (tx MemberTx) SaveAddOn(addOn addon.AddOn) error {
 	return nil
 }
 
+// AddOnExistsForOrder checks if the specified order already created an invoice.
 func (tx MemberTx) AddOnExistsForOrder(orderID string) (bool, error) {
 	var ok bool
-	err := tx.Get(&ok, addon.StmtAddOnExistsForOrder, orderID)
+	err := tx.Get(&ok, invoice.StmtAddOnExistsForOrder, orderID)
 	if err != nil {
 		return false, err
 	}
@@ -137,6 +150,7 @@ func (tx MemberTx) AddOnExistsForOrder(orderID string) (bool, error) {
 	return ok, nil
 }
 
+// Deprecated
 func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]addon.AddOn, error) {
 	var dest []addon.AddOn
 	err := tx.Select(&dest, addon.StmtListAddOnLock, ids.BuildFindInSet())
@@ -147,8 +161,28 @@ func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]addon.AddOn, error) {
 	return dest, nil
 }
 
+func (tx MemberTx) AddOnInvoices(ids reader.MemberID) ([]invoice.Invoice, error) {
+	var inv []invoice.Invoice
+	err := tx.Select(&inv, invoice.StmtListAddOnInvoiceLock, ids.BuildFindInSet())
+	if err != nil {
+		return nil, err
+	}
+
+	return inv, nil
+}
+
+// Deprecated
 func (tx MemberTx) AddOnsConsumed(ids []string) error {
 	_, err := tx.Exec(addon.StmtAddOnConsumed, db.GetFindInSet(ids))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx MemberTx) AddOnInvoiceConsumed(inv invoice.Invoice) error {
+	_, err := tx.Exec(invoice.StmtAddOnInvoiceConsumed, inv)
 	if err != nil {
 		return err
 	}
