@@ -1,12 +1,10 @@
 package subs
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/guregu/null"
 )
 
 // ConfirmationParams contains data used to invoice an order.
@@ -16,12 +14,47 @@ type ConfirmationParams struct {
 	Member  reader.Membership
 }
 
-func (p ConfirmationParams) invoice() (invoice.Invoice, error) {
-	return p.Order.invoice(p.Payment.ConfirmedUTC, p.Member.ExpireDate)
+func (p ConfirmationParams) purchasedTimeParams() PurchasedTimeParams {
+	return PurchasedTimeParams{
+		ConfirmedAt:    p.Payment.ConfirmedUTC,
+		ExpirationDate: p.Member.ExpireDate,
+		Date:           dt.NewYearMonthDay(p.Order.Cycle),
+		OrderKind:      p.Order.CalibratedKind(p.Member.Tier),
+	}
 }
 
-func (p ConfirmationParams) membership(inv invoice.Invoice) reader.Membership {
-	return newMembership(p.Order.MemberID, p.Member, inv)
+func (p ConfirmationParams) purchaseInvoice() (invoice.Invoice, error) {
+	return NewOrderInvoice(p.purchasedTimeParams(), p.Order)
+}
+
+func (p ConfirmationParams) carryOverInvoice() invoice.Invoice {
+	if p.Order.Kind == enum.OrderKindUpgrade {
+		// We have to add this invoice's days to current membership's addon part.
+		return invoice.
+			NewFromUpgradeCarryOver(p.Member).
+			WithOrderID(p.Order.ID)
+	}
+
+	return invoice.Invoice{}
+}
+
+// Build Invoice for when confirming an order,
+// and optionally create a carry-over invoice for
+// upgrading.
+func (p ConfirmationParams) invoices() (Invoices, error) {
+	purchased, err := p.purchaseInvoice()
+	if err != nil {
+		return Invoices{}, err
+	}
+
+	return Invoices{
+		Purchased:   purchased,
+		CarriedOver: p.carryOverInvoice(),
+	}, nil
+}
+
+func (p ConfirmationParams) membership(invoices Invoices) reader.Membership {
+	return invoices.membership(p.Order.MemberID, p.Member)
 }
 
 func (p ConfirmationParams) confirmedOrder(period dt.DateTimePeriod) Order {
@@ -33,28 +66,4 @@ func (p ConfirmationParams) confirmedOrder(period dt.DateTimePeriod) Order {
 
 func (p ConfirmationParams) snapshot() reader.MemberSnapshot {
 	return p.Member.Snapshot(reader.FtcArchiver(p.Order.Kind))
-}
-
-func newMembership(userID reader.MemberID, m reader.Membership, inv invoice.Invoice) reader.Membership {
-	if inv.OrderKind == enum.OrderKindAddOn {
-		return m.WithReservedDays(inv.ToReservedDays())
-	}
-
-	// If the invoice is not intended for add-on, it must have period set.
-	return reader.Membership{
-		MemberID:      userID, // TODO: user id from order.
-		Edition:       inv.Edition,
-		LegacyTier:    null.Int{},
-		LegacyExpire:  null.Int{},
-		ExpireDate:    chrono.DateFrom(inv.EndUTC.Time),
-		PaymentMethod: inv.PaymentMethod,
-		FtcPlanID:     inv.PriceID,
-		StripeSubsID:  null.String{},
-		StripePlanID:  null.String{},
-		AutoRenewal:   false,
-		Status:        enum.SubsStatusNull,
-		AppleSubsID:   null.String{},
-		B2BLicenceID:  null.String{},
-		ReservedDays:  m.ReservedDays,
-	}.Sync()
 }
