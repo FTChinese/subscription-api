@@ -1,6 +1,7 @@
 package invoice
 
 import (
+	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
@@ -65,6 +66,30 @@ func NewFromOneTimeToSubCarryOver(m reader.Membership) Invoice {
 	return NewFromCarryOver(m, addon.SourceOneTimeToSubCarryOver)
 }
 
+func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership) (reader.Membership, error) {
+
+	if i.IsConsumed() {
+		return reader.Membership{}, errors.New("invoice not finalized")
+	}
+
+	return reader.Membership{
+		MemberID:      userID,
+		Edition:       i.Edition,
+		LegacyTier:    null.Int{},
+		LegacyExpire:  null.Int{},
+		ExpireDate:    chrono.DateFrom(i.EndUTC.Time),
+		PaymentMethod: i.PaymentMethod,
+		FtcPlanID:     i.PriceID,
+		StripeSubsID:  null.String{},
+		StripePlanID:  null.String{},
+		AutoRenewal:   false,
+		Status:        0,
+		AppleSubsID:   null.String{},
+		B2BLicenceID:  null.String{},
+		ReservedDays:  current.ReservedDays.Clear(i.Tier),
+	}.Sync(), nil
+}
+
 func (i Invoice) SetPeriod(start time.Time) Invoice {
 	period := dt.NewTimeRange(start).
 		WithDate(i.YearMonthDay).
@@ -75,20 +100,12 @@ func (i Invoice) SetPeriod(start time.Time) Invoice {
 	return i
 }
 
+func (i Invoice) IsConsumed() bool {
+	return !i.ConsumedUTC.IsZero()
+}
+
 func (i Invoice) IsZero() bool {
 	return i.ID == ""
-}
-
-func (i Invoice) IsCarryOverAddOn() bool {
-	return i.OrderKind == enum.OrderKindAddOn && (i.AddOnSource == addon.SourceUpgradeCarryOver || i.AddOnSource == addon.SourceOneTimeToSubCarryOver)
-}
-
-func (i Invoice) IsCompensationAddOn() bool {
-	return i.OrderKind == enum.OrderKindAddOn && i.AddOnSource == addon.SourceCompensation
-}
-
-func (i Invoice) IsPurchasedAddOn() bool {
-	return i.OrderKind == enum.OrderKindAddOn && i.AddOnSource == ""
 }
 
 // GetDays calculates roughly the how many days this add-on has.
