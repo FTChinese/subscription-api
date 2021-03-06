@@ -2,20 +2,20 @@ package addon
 
 import "github.com/FTChinese/go-rest/enum"
 
-// ReservedDays contains the subscription period that will become effective once current membership expired.
-type ReservedDays struct {
+// AddOn contains the subscription period that will become effective once current membership expired.
+type AddOn struct {
 	Standard int64 `json:"standardAddOn" db:"standard_addon"`
 	Premium  int64 `json:"premiumAddOn" db:"premium_addon"`
 }
 
-func (d ReservedDays) Plus(other ReservedDays) ReservedDays {
-	return ReservedDays{
+func (d AddOn) Plus(other AddOn) AddOn {
+	return AddOn{
 		Standard: d.Standard + other.Standard,
 		Premium:  d.Premium + other.Premium,
 	}
 }
 
-func (d ReservedDays) Clear(tier enum.Tier) ReservedDays {
+func (d AddOn) Clear(tier enum.Tier) AddOn {
 	switch tier {
 	case enum.TierStandard:
 		d.Standard = 0

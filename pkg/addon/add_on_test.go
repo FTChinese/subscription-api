@@ -12,13 +12,13 @@ func TestReservedDays_Plus(t *testing.T) {
 		Premium  int64
 	}
 	type args struct {
-		other ReservedDays
+		other AddOn
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   ReservedDays
+		want   AddOn
 	}{
 		{
 			name: "Plus",
@@ -27,12 +27,12 @@ func TestReservedDays_Plus(t *testing.T) {
 				Premium:  23,
 			},
 			args: args{
-				other: ReservedDays{
+				other: AddOn{
 					Standard: 366,
 					Premium:  0,
 				},
 			},
-			want: ReservedDays{
+			want: AddOn{
 				Standard: 15 + 366,
 				Premium:  23 + 0,
 			},
@@ -40,7 +40,7 @@ func TestReservedDays_Plus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := ReservedDays{
+			d := AddOn{
 				Standard: tt.fields.Standard,
 				Premium:  tt.fields.Premium,
 			}
@@ -63,7 +63,7 @@ func TestReservedDays_Clear(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   ReservedDays
+		want   AddOn
 	}{
 		{
 			name: "Clean Standard",
@@ -74,7 +74,7 @@ func TestReservedDays_Clear(t *testing.T) {
 			args: args{
 				tier: enum.TierStandard,
 			},
-			want: ReservedDays{
+			want: AddOn{
 				Standard: 0,
 				Premium:  5,
 			},
@@ -88,7 +88,7 @@ func TestReservedDays_Clear(t *testing.T) {
 			args: args{
 				tier: enum.TierPremium,
 			},
-			want: ReservedDays{
+			want: AddOn{
 				Standard: 10,
 				Premium:  0,
 			},
@@ -96,7 +96,7 @@ func TestReservedDays_Clear(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := ReservedDays{
+			d := AddOn{
 				Standard: tt.fields.Standard,
 				Premium:  tt.fields.Premium,
 			}
