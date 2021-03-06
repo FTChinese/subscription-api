@@ -19,6 +19,11 @@ SET id = :id,
 	start_utc = :start_utc,
 	end_utc = :end_utc`
 
+// StmtCarriedOver adds current moment to all invoices whose end time is after
+// so that we know that an invoice's remaining time is carried over to a new
+// add-on invoice.
+// This usually happens when one-time purchase user upgraded from standard to premium,
+// or switched to Stripe subscription.
 const StmtCarriedOver = `
 UPDATE premium.ftc_invoice
 SET carried_over_utc = UTC_TIMESTAMP()
@@ -62,9 +67,10 @@ ORDER BY created_utc ASC
 FOR UPDATE`
 
 // StmtInvoiceConsumed sets a invoice's consumption time and and start end end time this invoice granted to membership access.
-const StmtInvoiceConsumed = `
+const StmtAddOnInvoiceConsumed = `
 UPDATE premium.ftc_invoice
 SET consumed_utc = :consumed_utc,
 	start_utc = :start_utc,
 	end_utc = :end_utc
-WHERE id = :id`
+WHERE id = :id
+LIMIT 1`
