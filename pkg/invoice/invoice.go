@@ -66,14 +66,49 @@ func NewFromOneTimeToSubCarryOver(m reader.Membership) Invoice {
 	return NewFromCarryOver(m, addon.SourceOneTimeToSubCarryOver)
 }
 
-func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership) (reader.Membership, error) {
+func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership) reader.Membership {
+	// An empty invoice returns the current membership immediately without touching it.
+	if i.IsZero() {
+		return current
+	}
+	// For add-on invoice, only update the add-on part
+	// while keep the rest as is since current membership
+	// might comes from Stripe or Apple.
+	// For upgrading's carry over, we also handle it this way.
+	if i.OrderKind == enum.OrderKindAddOn {
+		return current.WithReservedDays(i.ToReservedDays())
+	}
+
+	// If the invoice is not intended for add-on, it must have period set.
+	return reader.Membership{
+		MemberID:      userID,
+		Edition:       i.Edition,
+		LegacyTier:    null.Int{},
+		LegacyExpire:  null.Int{},
+		ExpireDate:    chrono.DateFrom(i.EndUTC.Time),
+		PaymentMethod: i.PaymentMethod,
+		FtcPlanID:     i.PriceID,
+		StripeSubsID:  null.String{},
+		StripePlanID:  null.String{},
+		AutoRenewal:   false,
+		Status:        enum.SubsStatusNull,
+		AppleSubsID:   null.String{},
+		B2BLicenceID:  null.String{},
+		AddOn:         current.AddOn,
+	}.Sync()
+}
+
+func (i Invoice) TransferAddOn(current reader.Membership) (reader.Membership, error) {
+	if !i.IsAddOn() {
+		return reader.Membership{}, errors.New("cannot use non-addon invoice as add-on")
+	}
 
 	if i.IsConsumed() {
 		return reader.Membership{}, errors.New("invoice not finalized")
 	}
 
 	return reader.Membership{
-		MemberID:      userID,
+		MemberID:      current.MemberID,
 		Edition:       i.Edition,
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},
@@ -86,7 +121,7 @@ func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership
 		Status:        0,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
-		ReservedDays:  current.ReservedDays.Clear(i.Tier),
+		AddOn:         current.AddOn.Clear(i.Tier),
 	}.Sync(), nil
 }
 
@@ -104,6 +139,10 @@ func (i Invoice) IsConsumed() bool {
 	return !i.ConsumedUTC.IsZero()
 }
 
+func (i Invoice) IsAddOn() bool {
+	return i.OrderKind == enum.OrderKindAddOn
+}
+
 func (i Invoice) IsZero() bool {
 	return i.ID == ""
 }
@@ -115,22 +154,22 @@ func (i Invoice) GetDays() int64 {
 }
 
 // ToReservedDays calculates how many days this add-on could be converted to reserved part of membership.
-func (i Invoice) ToReservedDays() addon.ReservedDays {
+func (i Invoice) ToReservedDays() addon.AddOn {
 	switch i.Tier {
 	case enum.TierStandard:
-		return addon.ReservedDays{
+		return addon.AddOn{
 			Standard: i.GetDays(),
 			Premium:  0,
 		}
 	case enum.TierPremium:
-		return addon.ReservedDays{
+		return addon.AddOn{
 			Standard: 0,
 			Premium:  i.GetDays(),
 		}
 
 	// Returns zero if current instance is zero.
 	default:
-		return addon.ReservedDays{}
+		return addon.AddOn{}
 	}
 }
 
