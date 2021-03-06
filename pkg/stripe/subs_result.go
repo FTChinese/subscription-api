@@ -1,8 +1,8 @@
 package stripe
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/cart"
+	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/stripe/stripe-go/v72"
 )
@@ -24,7 +24,7 @@ type SubsResult struct {
 	Subs                 Subs                  `json:"subs"`
 	Member               reader.Membership     `json:"membership"` // New membership.
 	Snapshot             reader.MemberSnapshot `json:"-"`          // If Modified is false, this must exists. If Modified is true, its existence depends -- a newly created membership should not produce a snapshot.
-	AddOn                addon.AddOn           `json:"-"`          // Only when user switching from one-time pay to stripe.
+	CarryOverInvoice     invoice.Invoice       `json:"-"`
 }
 
 func NewSubsResult(ss *stripe.Subscription, params SubsResultParams) (SubsResult, error) {
@@ -38,16 +38,17 @@ func NewSubsResult(ss *stripe.Subscription, params SubsResultParams) (SubsResult
 
 // newSubsResult exists for testing convenience.
 func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
-	var addOn addon.AddOn
+
+	var inv invoice.Invoice
 	if params.Kind == cart.SubsKindOneTimeToStripe {
-		addOn = params.CurrentMember.CarryOver(addon.SourceOneTimeToSubCarryOver)
+		inv = invoice.NewFromOneTimeToSubCarryOver(params.CurrentMember)
 	}
 
 	m := NewMembership(MembershipParams{
 		UserIDs: params.UserIDs,
 		Subs:    subs,
-		ReservedDays: params.CurrentMember.ReservedDays.
-			Plus(addOn.ToReservedDays()),
+		ReservedDays: params.CurrentMember.AddOn.
+			Plus(inv.ToReservedDays()),
 	})
 
 	// For refreshing, nothing might be changed.
@@ -65,6 +66,6 @@ func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
 		Subs:                 subs,
 		Member:               m,
 		Snapshot:             snapshot,
-		AddOn:                addOn,
+		CarryOverInvoice:     inv,
 	}
 }

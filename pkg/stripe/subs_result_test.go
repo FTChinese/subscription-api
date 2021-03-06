@@ -3,8 +3,8 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/cart"
+	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -55,10 +55,10 @@ func Test_newSubsResult(t *testing.T) {
 					Status:        enum.SubsStatusActive,
 					AppleSubsID:   null.String{},
 					B2BLicenceID:  null.String{},
-					ReservedDays:  member.CarryOver(addon.SourceOneTimeToSubCarryOver).ToReservedDays(),
+					AddOn:         invoice.NewFromOneTimeToSubCarryOver(member).ToReservedDays(),
 				}.Sync(),
-				Snapshot: member.Snapshot(reader.StripeArchiver(reader.ActionCreate)),
-				AddOn:    member.CarryOver(addon.SourceOneTimeToSubCarryOver),
+				Snapshot:         member.Snapshot(reader.StripeArchiver(reader.ActionCreate)),
+				CarryOverInvoice: invoice.NewFromOneTimeToSubCarryOver(member),
 			},
 		},
 	}
@@ -68,8 +68,8 @@ func Test_newSubsResult(t *testing.T) {
 
 			tt.want.Subs.UpdatedUTC = got.Subs.UpdatedUTC
 			tt.want.Snapshot.CreatedUTC = got.Snapshot.CreatedUTC
-			tt.want.AddOn.ID = got.AddOn.ID
-			tt.want.AddOn.CreatedUTC = got.AddOn.CreatedUTC
+			tt.want.CarryOverInvoice.ID = got.CarryOverInvoice.ID
+			tt.want.CarryOverInvoice.CreatedUTC = got.CarryOverInvoice.CreatedUTC
 			tt.want.Snapshot.SnapshotID = got.Snapshot.SnapshotID
 			tt.want.Snapshot.CreatedUTC = got.Snapshot.CreatedUTC
 
@@ -85,8 +85,8 @@ func Test_newSubsResult(t *testing.T) {
 				t.Errorf("newSubsResult().Snapshot = \n%+v, \nwant \n%+v", got.Snapshot, tt.want.Snapshot)
 			}
 
-			if !reflect.DeepEqual(got.AddOn, tt.want.AddOn) {
-				t.Errorf("newSubsResult().AddOn = \n%+v, \nwant %+v", got.AddOn, tt.want.AddOn)
+			if !reflect.DeepEqual(got.CarryOverInvoice, tt.want.CarryOverInvoice) {
+				t.Errorf("newSubsResult().AddOn = \n%+v, \nwant %+v", got.CarryOverInvoice, tt.want.CarryOverInvoice)
 			}
 		})
 	}
