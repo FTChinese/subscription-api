@@ -8,7 +8,7 @@ import (
 func (router SubsRouter) RedeemAddOn(w http.ResponseWriter, req *http.Request) {
 	readerIDs := getReaderIDs(req.Header)
 
-	result, err := router.SubsRepo.RedeemAddOn(readerIDs)
+	result, err := router.SubsRepo.ClaimAddOn(readerIDs)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

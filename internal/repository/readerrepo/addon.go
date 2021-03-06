@@ -1,4 +1,4 @@
-package subrepo
+package readerrepo
 
 import (
 	"database/sql"
@@ -11,7 +11,7 @@ func (env Env) ClaimAddOn(ids reader.MemberID) (invoice.AddOnClaimed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
-	otx, err := env.BeginOrderTx()
+	otx, err := env.BeginTx()
 	if err != nil {
 		sugar.Error(err)
 		return invoice.AddOnClaimed{}, err

@@ -30,7 +30,7 @@ func New(db *sqlx.DB, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
 
 	return FtcPay{
 		SubsRepo:     subrepo.NewEnv(db, logger),
-		ReaderRepo:   readerrepo.NewEnv(db),
+		ReaderRepo:   readerrepo.NewEnv(db, logger),
 		AliPayClient: subrepo.NewAliPayClient(aliApp, logger),
 		WxPayClients: subrepo.NewWxClientStore(wxApps, logger),
 		Postman:      p,
@@ -99,6 +99,13 @@ func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (sub
 	go func() {
 		if !confirmed.Snapshot.IsZero() {
 			err := pay.ReaderRepo.ArchiveMember(confirmed.Snapshot)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}
+
+		if !confirmed.Invoices.CarriedOver.IsZero() {
+			err := pay.ReaderRepo.InvoicesCarriedOver(confirmed.Membership.MemberID)
 			if err != nil {
 				sugar.Error(err)
 			}

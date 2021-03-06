@@ -2,9 +2,7 @@ package txrepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/redeem"
@@ -129,16 +127,6 @@ func (tx MemberTx) SaveInvoice(inv invoice.Invoice) error {
 	return nil
 }
 
-// Deprecated
-func (tx MemberTx) SaveAddOn(addOn addon.AddOn) error {
-	_, err := tx.NamedExec(addon.StmtCreateAddOn, addOn)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // AddOnExistsForOrder checks if the specified order already created an invoice.
 func (tx MemberTx) AddOnExistsForOrder(orderID string) (bool, error) {
 	var ok bool
@@ -150,17 +138,6 @@ func (tx MemberTx) AddOnExistsForOrder(orderID string) (bool, error) {
 	return ok, nil
 }
 
-// Deprecated
-func (tx MemberTx) ListAddOn(ids reader.MemberID) ([]addon.AddOn, error) {
-	var dest []addon.AddOn
-	err := tx.Select(&dest, addon.StmtListAddOnLock, ids.BuildFindInSet())
-	if err != nil {
-		return nil, err
-	}
-
-	return dest, nil
-}
-
 func (tx MemberTx) AddOnInvoices(ids reader.MemberID) ([]invoice.Invoice, error) {
 	var inv []invoice.Invoice
 	err := tx.Select(&inv, invoice.StmtListAddOnInvoiceLock, ids.BuildFindInSet())
@@ -169,16 +146,6 @@ func (tx MemberTx) AddOnInvoices(ids reader.MemberID) ([]invoice.Invoice, error)
 	}
 
 	return inv, nil
-}
-
-// Deprecated
-func (tx MemberTx) AddOnsConsumed(ids []string) error {
-	_, err := tx.Exec(addon.StmtAddOnConsumed, db.GetFindInSet(ids))
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (tx MemberTx) AddOnInvoiceConsumed(inv invoice.Invoice) error {
