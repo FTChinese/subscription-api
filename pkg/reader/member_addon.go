@@ -23,11 +23,6 @@ func (m Membership) WithReservedDays(days addon.ReservedDays) Membership {
 	return m
 }
 
-func (m Membership) WithAddOn(addOn addon.AddOn) Membership {
-	m.ReservedDays = m.ReservedDays.Plus(addOn.ToReservedDays())
-	return m
-}
-
 func (m Membership) HasAddOns() bool {
 	return m.Standard > 0 || m.Premium > 0
 }
