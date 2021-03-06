@@ -16,12 +16,13 @@ var subjects = map[enum.OrderKind]string{
 	enum.OrderKindAddOn:   "购买FT订阅服务",
 }
 
-// TODO: refactor letter
-func NewSubParcel(a reader.FtcAccount, pc subs.ConfirmationResult) (postoffice.Parcel, error) {
+func NewSubParcel(a reader.FtcAccount, result subs.ConfirmationResult) (postoffice.Parcel, error) {
 
 	ctx := CtxSubs{
 		UserName: a.NormalizeName(),
-		Order:    pc.Order,
+		Order:    result.Order,
+		Invoices: result.Invoices,
+		Snapshot: result.Snapshot,
 	}
 
 	body, err := ctx.Render()
@@ -34,7 +35,7 @@ func NewSubParcel(a reader.FtcAccount, pc subs.ConfirmationResult) (postoffice.P
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   a.Email,
 		ToName:      ctx.UserName,
-		Subject:     subjects[pc.Order.Kind],
+		Subject:     subjects[result.Order.Kind],
 		Body:        body,
 	}, nil
 }
