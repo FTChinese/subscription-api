@@ -11,7 +11,7 @@ import (
 type MembershipParams struct {
 	UserIDs      reader.MemberID
 	Subs         Subs
-	ReservedDays addon.ReservedDays // The total reserved days if user switched from one-time pay to stripe. User minght already have reserved days prior to switching.
+	ReservedDays addon.AddOn // The total reserved days if user switched from one-time pay to stripe. User minght already have reserved days prior to switching.
 }
 
 func NewMembership(params MembershipParams) reader.Membership {
@@ -32,6 +32,6 @@ func NewMembership(params MembershipParams) reader.Membership {
 		Status:        params.Subs.Status,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
-		ReservedDays:  params.ReservedDays,
+		AddOn:         params.ReservedDays,
 	}
 }

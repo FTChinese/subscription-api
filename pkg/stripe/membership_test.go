@@ -32,7 +32,7 @@ func TestNewMembership(t *testing.T) {
 						FtcID:      subs.FtcUserID,
 					},
 					Subs:         subs,
-					ReservedDays: addon.ReservedDays{},
+					ReservedDays: addon.AddOn{},
 				},
 			},
 			want: reader.Membership{
@@ -52,7 +52,7 @@ func TestNewMembership(t *testing.T) {
 				Status:        enum.SubsStatusActive,
 				AppleSubsID:   null.String{},
 				B2BLicenceID:  null.String{},
-				ReservedDays:  addon.ReservedDays{},
+				AddOn:         addon.AddOn{},
 			},
 		},
 	}
