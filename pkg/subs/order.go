@@ -116,10 +116,44 @@ func (o Order) ValidatePayment(result PaymentResult) error {
 // it was created for upgrading while upon confirmation,
 // membership already upgraded to premium.
 // This situation is rare but possible under high concurrency.
-func (o Order) CalibratedKind(currentTier enum.Tier) enum.OrderKind {
-	if o.Kind == enum.OrderKindUpgrade && currentTier == enum.TierPremium {
-		return enum.OrderKindRenew
+func (o Order) CalibratedKind(m reader.Membership) enum.OrderKind {
+
+	kind := calibrateOrderKind(m, o.Edition)
+	if kind == enum.OrderKindNull {
+		return o.Kind
 	}
 
-	return o.Kind
+	return kind
+}
+
+func calibrateOrderKind(m reader.Membership, e price.Edition) enum.OrderKind {
+	if m.IsExpired() {
+		return enum.OrderKindCreate
+	}
+
+	if m.IsInvalidStripe() {
+		return enum.OrderKindCreate
+	}
+
+	switch m.PaymentMethod {
+	case enum.PayMethodAli, enum.PayMethodWx:
+		if m.Tier == e.Tier {
+			return enum.OrderKindRenew
+		}
+
+		switch e.Tier {
+		case enum.TierPremium:
+			return enum.OrderKindUpgrade
+		case enum.TierStandard:
+			return enum.OrderKindAddOn
+		}
+
+	// If current membership comes Stripe or IAP,
+	// it doesn't matter whatever user purchased
+	// since you have to accept it.
+	case enum.PayMethodStripe, enum.PayMethodApple, enum.PayMethodB2B:
+		return enum.OrderKindAddOn
+	}
+
+	return enum.OrderKindNull
 }
