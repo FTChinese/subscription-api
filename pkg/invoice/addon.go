@@ -1,77 +1,99 @@
 package invoice
 
 import (
+	"errors"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/lib/collection"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"time"
 )
 
-func ConsumeAddOns(addOns []Invoice) []Invoice {
-	now := time.Now()
+// AddOnGroup contains a user's invoices grouped by tier.
+type AddOnGroup map[enum.Tier][]Invoice
 
-	startTime := now
-
-	invoices := make([]Invoice, 0)
-	for _, v := range addOns {
-		consumed := v.SetPeriod(startTime)
-		startTime = consumed.EndUTC.Time
-		invoices = append(invoices, consumed)
-	}
-
-	return invoices
-}
-
-// The following are deprecated implementations.
-func groupInvoices(addOns []Invoice) map[enum.Tier][]Invoice {
+// NewAddOnGroup groups and filters a slice of invoices by tier.
+// These invoices must have order kind addon.
+//
+// Usage:
+// claimed, err := NewAddOnGroup(invoices).
+//		Consumable(startTime).
+//		ClaimedBy(currentMembership)
+func NewAddOnGroup(inv []Invoice) AddOnGroup {
 	g := make(map[enum.Tier][]Invoice)
 
-	for _, v := range addOns {
+	for _, v := range inv {
+		if v.OrderKind != enum.OrderKindAddOn {
+			continue
+		}
 		g[v.Tier] = append(g[v.Tier], v)
 	}
 
 	return g
 }
 
-type AddOnSum struct {
-	IDs    collection.StringSet
-	Years  int
-	Months int
-	Days   int
-	Latest Invoice
+// Consumable selects from the grouped invoices whose
+// purchased period is set and can be transferred to
+// membership. Premium invoices will be used if exists,
+// then fallback to standard edition.
+func (g AddOnGroup) Consumable(start time.Time) ConsumedAddOns {
+	prmAddOns, ok := g[enum.TierPremium]
+	if ok {
+		return consumeAddOn(prmAddOns, start)
+	}
+
+	stdAddOns, ok := g[enum.TierStandard]
+	if ok {
+		return consumeAddOn(stdAddOns, start)
+	}
+
+	return []Invoice{}
 }
 
-func NewAddOnSum(addOns []Invoice) AddOnSum {
-	if len(addOns) == 0 {
-		return AddOnSum{}
-	}
+func consumeAddOn(addOns []Invoice, start time.Time) []Invoice {
+	now := chrono.TimeNow()
 
-	sum := AddOnSum{
-		IDs:    make(collection.StringSet),
-		Latest: addOns[len(addOns)-1], // The addon array should already be sorted in descending order by CreatedUTC field.
-	}
-
+	invoices := make([]Invoice, 0)
 	for _, v := range addOns {
-		// Collect IDs so that we could mark those rows in DB as consumed.
-		sum.IDs[v.ID] = nil
-
-		sum.Years += int(v.Years)
-		sum.Months += int(v.Months)
-		sum.Days += int(v.Days)
+		if v.IsConsumed() {
+			continue
+		}
+		consumed := v.SetPeriod(start)
+		consumed.ConsumedUTC = now
+		start = consumed.EndUTC.Time
+		invoices = append(invoices, consumed)
 	}
 
-	return sum
+	return invoices
 }
 
-func GroupAndReduce(addOns []Invoice) map[enum.Tier]AddOnSum {
-	grouped := groupInvoices(addOns)
+// ConsumedAddOns is a slice of add-on invoices that
+// are consumed.
+type ConsumedAddOns []Invoice
 
-	var sums = make(map[enum.Tier]AddOnSum)
-
-	for k, v := range grouped {
-		if len(v) > 0 {
-			sums[k] = NewAddOnSum(v)
-		}
+// ClaimedBy transfers the latest add-on invoice's end time
+// to membership.
+func (c ConsumedAddOns) ClaimedBy(m reader.Membership) (AddOnClaimed, error) {
+	if len(c) == 0 {
+		return AddOnClaimed{}, errors.New("no addon invoice found")
 	}
 
-	return sums
+	latest := c[len(c)-1]
+	newM, err := latest.NewMembership(m.MemberID, m)
+	if err != nil {
+		return AddOnClaimed{}, err
+	}
+
+	return AddOnClaimed{
+		Invoices:   c,
+		Membership: newM,
+		Snapshot:   m.Snapshot(reader.FtcArchiver(enum.OrderKindAddOn)),
+	}, nil
+}
+
+// AddOnClaimed contains the data that should be
+// used to perform add-on transfer.
+type AddOnClaimed struct {
+	Invoices   []Invoice         // The invoices used to extend membership's expiration date. They will not be used next time.
+	Membership reader.Membership // Update membership.
+	Snapshot   reader.MemberSnapshot
 }
