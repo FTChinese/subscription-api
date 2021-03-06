@@ -5,15 +5,10 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
-
-const trialDays = 1
 
 // LockedOrder lock a row of order and retrieves the minimal data.
 // This is used to resolve an unknown server problem that
@@ -77,20 +72,6 @@ func (o Order) IsAliWxPay() bool {
 	return o.PaymentMethod == enum.PayMethodAli || o.PaymentMethod == enum.PayMethodWx
 }
 
-func (o Order) isAddOnSynced(reserved addon.ReservedDays) bool {
-	addOnDays := o.ToAddOn().GetDays()
-
-	switch o.Tier {
-	case enum.TierStandard:
-		return reserved.Standard >= addOnDays
-
-	case enum.TierPremium:
-		return reserved.Premium >= addOnDays
-	}
-
-	return true
-}
-
 // IsExpireDateSynced tests whether a confirmed order and the end date is
 // transferred to membership.
 func (o Order) IsExpireDateSynced(m reader.Membership) bool {
@@ -110,7 +91,7 @@ func (o Order) IsExpireDateSynced(m reader.Membership) bool {
 
 	// Order kinds decides what fields to compare:
 	// For Create, Renew, Upgrade, we change membership's expiration date;
-	// For add-ons, we change the ReservedDays.
+	// For add-ons, we change the AddOn.
 	// Every Upgrade and AddOn order will generate a row in the addon table.
 	// We have no way to know if add-on is created unless we query
 	// db.
@@ -131,55 +112,14 @@ func (o Order) ValidatePayment(result PaymentResult) error {
 	return nil
 }
 
-func (o Order) ToAddOn() addon.AddOn {
-	return addon.AddOn{
-		ID:              db.AddOnID(),
-		Edition:         o.Edition,
-		CycleCount:      1,
-		DaysRemained:    trialDays,
-		CarryOverSource: "",
-		PaymentMethod:   o.PaymentMethod,
-		CompoundID:      o.CompoundID,
-		OrderID:         null.StringFrom(o.ID),
-		PlanID:          null.StringFrom(o.PlanID),
-		CreatedUTC:      chrono.TimeNow(),
-		ConsumedUTC:     chrono.Time{},
-	}
-}
-
-func (o Order) invoice(confirmedAt chrono.Time, expires chrono.Date) (invoice.Invoice, error) {
-	date := dt.NewYearMonthDay(o.Cycle)
-
-	timeRange, err := dt.PurchasedTimeRangeBuilder{
-		ConfirmedAt:    confirmedAt,
-		ExpirationDate: expires,
-		Date:           date,
-		OrderKind:      o.Kind,
-	}.Build()
-
-	if err != nil {
-		return invoice.Invoice{}, err
+// CalibratedKind changes order kind to renew in case
+// it was created for upgrading while upon confirmation,
+// membership already upgraded to premium.
+// This situation is rare but possible under high concurrency.
+func (o Order) CalibratedKind(currentTier enum.Tier) enum.OrderKind {
+	if o.Kind == enum.OrderKindUpgrade && currentTier == enum.TierPremium {
+		return enum.OrderKindRenew
 	}
 
-	var addOnSource addon.Source
-	if o.Kind == enum.OrderKindAddOn {
-		addOnSource = addon.SourceUserPurchase
-	}
-
-	return invoice.Invoice{
-		ID:             db.InvoiceID(),
-		CompoundID:     o.CompoundID,
-		Edition:        o.Edition,
-		YearMonthDay:   date,
-		AddOnSource:    addOnSource,
-		OrderID:        null.StringFrom(o.ID),
-		OrderKind:      o.Kind,
-		PaidAmount:     o.Amount,
-		PaymentMethod:  o.PaymentMethod,
-		PriceID:        null.StringFrom(o.PlanID),
-		CreatedUTC:     chrono.TimeNow(),
-		ConsumedUTC:    chrono.TimeNow(),
-		DateTimePeriod: timeRange.ToDateTimePeriod(),
-		CarriedOverUtc: chrono.Time{},
-	}, nil
+	return o.Kind
 }
