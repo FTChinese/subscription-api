@@ -386,13 +386,13 @@ func TestReservedDays_Plus(t *testing.T) {
 		Premium  int64
 	}
 	type args struct {
-		other addon.ReservedDays
+		other addon.AddOn
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   addon.ReservedDays
+		want   addon.AddOn
 	}{
 		{
 			name: "Plus",
@@ -401,12 +401,12 @@ func TestReservedDays_Plus(t *testing.T) {
 				Premium:  101,
 			},
 			args: args{
-				other: addon.ReservedDays{
+				other: addon.AddOn{
 					Standard: 15,
 					Premium:  19,
 				},
 			},
-			want: addon.ReservedDays{
+			want: addon.AddOn{
 				Standard: 31 + 15,
 				Premium:  101 + 19,
 			},
@@ -414,7 +414,7 @@ func TestReservedDays_Plus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := addon.ReservedDays{
+			d := addon.AddOn{
 				Standard: tt.fields.Standard,
 				Premium:  tt.fields.Premium,
 			}

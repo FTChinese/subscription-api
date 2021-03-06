@@ -54,7 +54,7 @@ type MockMemberBuilder struct {
 	expiration  time.Time
 	subsStatus  enum.SubsStatus
 	autoRenewal bool
-	reserved    addon.ReservedDays
+	reserved    addon.AddOn
 }
 
 func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
@@ -109,7 +109,7 @@ func (b MockMemberBuilder) WithSubsStatus(s enum.SubsStatus) MockMemberBuilder {
 	return b
 }
 
-func (b MockMemberBuilder) WithReservedDays(r addon.ReservedDays) MockMemberBuilder {
+func (b MockMemberBuilder) WithReservedDays(r addon.AddOn) MockMemberBuilder {
 	b.reserved = r
 	return b
 }
@@ -129,7 +129,7 @@ func (b MockMemberBuilder) Build() Membership {
 		Status:        b.subsStatus,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
-		ReservedDays:  b.reserved,
+		AddOn:         b.reserved,
 	}
 	switch b.payMethod {
 	case enum.PayMethodAli, enum.PayMethodWx:
