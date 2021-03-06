@@ -55,7 +55,7 @@ type Membership struct {
 	Status       enum.SubsStatus `json:"status" db:"subs_status"`
 	AppleSubsID  null.String     `json:"appleSubsId" db:"apple_subs_id"`
 	B2BLicenceID null.String     `json:"b2bLicenceId" db:"b2b_licence_id"`
-	addon.ReservedDays
+	addon.AddOn
 }
 
 // IsZero test whether the instance is empty.
