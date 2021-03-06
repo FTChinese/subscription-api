@@ -19,7 +19,7 @@ func (p ConfirmationParams) purchasedTimeParams() PurchasedTimeParams {
 		ConfirmedAt:    p.Payment.ConfirmedUTC,
 		ExpirationDate: p.Member.ExpireDate,
 		Date:           dt.NewYearMonthDay(p.Order.Cycle),
-		OrderKind:      p.Order.CalibratedKind(p.Member.Tier),
+		OrderKind:      p.Order.CalibratedKind(p.Member),
 	}
 }
 
