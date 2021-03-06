@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"time"
 )
@@ -78,7 +79,7 @@ func (c ConsumedAddOns) ClaimedBy(m reader.Membership) (AddOnClaimed, error) {
 	}
 
 	latest := c[len(c)-1]
-	newM, err := latest.NewMembership(m.MemberID, m)
+	newM, err := latest.TransferAddOn(m)
 	if err != nil {
 		return AddOnClaimed{}, err
 	}
@@ -96,4 +97,10 @@ type AddOnClaimed struct {
 	Invoices   []Invoice         // The invoices used to extend membership's expiration date. They will not be used next time.
 	Membership reader.Membership // Update membership.
 	Snapshot   reader.MemberSnapshot
+}
+
+func NewAddOnClaimed(addOns []Invoice, m reader.Membership) (AddOnClaimed, error) {
+	return NewAddOnGroup(addOns).
+		Consumable(dt.PickLater(time.Now(), m.ExpireDate.Time)).
+		ClaimedBy(m)
 }
