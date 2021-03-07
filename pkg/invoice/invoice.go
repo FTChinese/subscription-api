@@ -76,7 +76,7 @@ func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership
 	// might comes from Stripe or Apple.
 	// For upgrading's carry over, we also handle it this way.
 	if i.OrderKind == enum.OrderKindAddOn {
-		return current.WithReservedDays(i.ToReservedDays())
+		return current.WithReservedDays(i.ToAddOn())
 	}
 
 	// If the invoice is not intended for add-on, it must have period set.
@@ -153,8 +153,8 @@ func (i Invoice) GetDays() int64 {
 	return i.Years*daysOfYear + i.Months*daysOfMonth + i.Days
 }
 
-// ToReservedDays calculates how many days this add-on could be converted to reserved part of membership.
-func (i Invoice) ToReservedDays() addon.AddOn {
+// ToAddOn calculates how many days this add-on could be converted to reserved part of membership.
+func (i Invoice) ToAddOn() addon.AddOn {
 	switch i.Tier {
 	case enum.TierStandard:
 		return addon.AddOn{
