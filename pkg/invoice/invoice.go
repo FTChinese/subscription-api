@@ -13,11 +13,6 @@ import (
 	"time"
 )
 
-const (
-	daysOfYear  = 366
-	daysOfMonth = 31
-)
-
 // Invoice is the result of order successfully paid.
 // For one-time purchase upgrading or switching from one-time purchase to Stripe, an invoice of
 type Invoice struct {
@@ -76,7 +71,7 @@ func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership
 	// might comes from Stripe or Apple.
 	// For upgrading's carry over, we also handle it this way.
 	if i.OrderKind == enum.OrderKindAddOn {
-		return current.WithAddOn(i.ToAddOn())
+		return current.WithAddOn(addon.New(i.Tier, i.TotalDays()))
 	}
 
 	// If the invoice is not intended for add-on, it must have period set.
@@ -94,7 +89,7 @@ func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership
 		Status:        enum.SubsStatusNull,
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
-		AddOn:         current.AddOn,
+		AddOn:         current.AddOn, // For upgrade, the carried over part is not added.
 	}.Sync()
 }
 
@@ -151,32 +146,6 @@ func (i Invoice) IsAddOn() bool {
 
 func (i Invoice) IsZero() bool {
 	return i.ID == ""
-}
-
-// GetDays calculates roughly the how many days this add-on has.
-// It is not precise and used only as an indicator that user has add-on.
-func (i Invoice) GetDays() int64 {
-	return i.Years*daysOfYear + i.Months*daysOfMonth + i.Days
-}
-
-// ToAddOn calculates how many days this add-on could be converted to reserved part of membership.
-func (i Invoice) ToAddOn() addon.AddOn {
-	switch i.Tier {
-	case enum.TierStandard:
-		return addon.AddOn{
-			Standard: i.GetDays(),
-			Premium:  0,
-		}
-	case enum.TierPremium:
-		return addon.AddOn{
-			Standard: 0,
-			Premium:  i.GetDays(),
-		}
-
-	// Returns zero if current instance is zero.
-	default:
-		return addon.AddOn{}
-	}
 }
 
 func (i Invoice) WithOrderID(id string) Invoice {
