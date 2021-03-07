@@ -8,6 +8,25 @@ type AddOn struct {
 	Premium  int64 `json:"premiumAddOn" db:"premium_addon"`
 }
 
+func New(tier enum.Tier, days int64) AddOn {
+	switch tier {
+	case enum.TierStandard:
+		return AddOn{
+			Standard: days,
+			Premium:  0,
+		}
+	case enum.TierPremium:
+		return AddOn{
+			Standard: 0,
+			Premium:  days,
+		}
+
+	// Returns zero if current instance is zero.
+	default:
+		return AddOn{}
+	}
+}
+
 func (d AddOn) Plus(other AddOn) AddOn {
 	return AddOn{
 		Standard: d.Standard + other.Standard,
