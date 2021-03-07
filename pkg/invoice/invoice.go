@@ -76,7 +76,7 @@ func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership
 	// might comes from Stripe or Apple.
 	// For upgrading's carry over, we also handle it this way.
 	if i.OrderKind == enum.OrderKindAddOn {
-		return current.WithReservedDays(i.ToAddOn())
+		return current.WithAddOn(i.ToAddOn())
 	}
 
 	// If the invoice is not intended for add-on, it must have period set.
@@ -126,10 +126,16 @@ func (i Invoice) TransferAddOn(current reader.Membership) (reader.Membership, er
 }
 
 func (i Invoice) SetPeriod(start time.Time) Invoice {
+
+	if start.IsZero() {
+		return i
+	}
+
 	period := dt.NewTimeRange(start).
 		WithDate(i.YearMonthDay).
 		ToDateTimePeriod()
 
+	i.ConsumedUTC = chrono.TimeNow()
 	i.DateTimePeriod = period
 
 	return i

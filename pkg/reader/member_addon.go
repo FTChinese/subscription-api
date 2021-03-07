@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 )
 
-func (m Membership) WithReservedDays(days addon.AddOn) Membership {
+func (m Membership) WithAddOn(days addon.AddOn) Membership {
 	m.AddOn = m.AddOn.Plus(days)
 	return m
 }
