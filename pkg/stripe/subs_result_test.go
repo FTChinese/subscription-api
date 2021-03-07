@@ -55,7 +55,7 @@ func Test_newSubsResult(t *testing.T) {
 					Status:        enum.SubsStatusActive,
 					AppleSubsID:   null.String{},
 					B2BLicenceID:  null.String{},
-					AddOn:         invoice.NewFromOneTimeToSubCarryOver(member).ToAddOn(),
+					AddOn:         member.CarriedOver(),
 				}.Sync(),
 				Snapshot:         member.Snapshot(reader.StripeArchiver(reader.ActionCreate)),
 				CarryOverInvoice: invoice.NewFromOneTimeToSubCarryOver(member),
