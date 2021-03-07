@@ -2,6 +2,11 @@ package dt
 
 import "github.com/FTChinese/go-rest/enum"
 
+const (
+	daysOfYear  = 366
+	daysOfMonth = 31
+)
+
 type YearMonthDay struct {
 	Years  int64 `json:"years" db:"years"`
 	Months int64 `json:"months" db:"months"`
@@ -48,4 +53,8 @@ func NewYearMonthDayN(cycle enum.Cycle, n int) YearMonthDay {
 	default:
 		return YearMonthDay{}
 	}
+}
+
+func (y YearMonthDay) TotalDays() int64 {
+	return y.Years*daysOfYear + y.Months*daysOfMonth + y.Days
 }
