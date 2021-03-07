@@ -5,9 +5,13 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 )
 
-func (m Membership) WithAddOn(days addon.AddOn) Membership {
-	m.AddOn = m.AddOn.Plus(days)
+func (m Membership) WithAddOn(addOn addon.AddOn) Membership {
+	m.AddOn = m.AddOn.Plus(addOn)
 	return m
+}
+
+func (m Membership) CarriedOver() addon.AddOn {
+	return addon.New(m.Tier, m.RemainingDays())
 }
 
 func (m Membership) HasAddOns() bool {
