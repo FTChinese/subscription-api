@@ -9,6 +9,7 @@ import (
 type Source string
 
 const (
+	SourceNull                  Source = ""
 	SourceUpgradeCarryOver      Source = "upgrade_carry_over"
 	SourceOneTimeToSubCarryOver Source = "one_time_to_sub_carry_over"
 	SourceCompensation          Source = "compensation"
