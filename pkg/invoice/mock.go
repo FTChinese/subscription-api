@@ -13,6 +13,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
+	"time"
 )
 
 type MockInvoiceBuilder struct {
@@ -23,6 +24,7 @@ type MockInvoiceBuilder struct {
 	orderKind   enum.OrderKind
 	payMethod   enum.PayMethod
 	addOnSource addon.Source
+	startTime   time.Time
 }
 
 func NewMockInvoiceBuilder(userID string) MockInvoiceBuilder {
@@ -69,6 +71,11 @@ func (b MockInvoiceBuilder) WithPayMethod(m enum.PayMethod) MockInvoiceBuilder {
 	return b
 }
 
+func (b MockInvoiceBuilder) SetPeriodStart(t time.Time) MockInvoiceBuilder {
+	b.startTime = t
+	return b
+}
+
 func (b MockInvoiceBuilder) Build() Invoice {
 	item := cart.NewFtcCart(b.price)
 
@@ -87,5 +94,5 @@ func (b MockInvoiceBuilder) Build() Invoice {
 		ConsumedUTC:    chrono.Time{},
 		DateTimePeriod: dt.DateTimePeriod{},
 		CarriedOverUtc: chrono.Time{},
-	}
+	}.SetPeriod(b.startTime)
 }
