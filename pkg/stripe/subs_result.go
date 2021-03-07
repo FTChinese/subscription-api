@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -47,8 +48,9 @@ func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
 	m := NewMembership(MembershipParams{
 		UserIDs: params.UserIDs,
 		Subs:    subs,
-		ReservedDays: params.CurrentMember.AddOn.
-			Plus(inv.ToAddOn()),
+		AddOn: params.CurrentMember.
+			AddOn.
+			Plus(addon.New(inv.Tier, inv.TotalDays())),
 	})
 
 	// For refreshing, nothing might be changed.
