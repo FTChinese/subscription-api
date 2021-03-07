@@ -48,7 +48,7 @@ func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
 		UserIDs: params.UserIDs,
 		Subs:    subs,
 		ReservedDays: params.CurrentMember.AddOn.
-			Plus(inv.ToReservedDays()),
+			Plus(inv.ToAddOn()),
 	})
 
 	// For refreshing, nothing might be changed.
