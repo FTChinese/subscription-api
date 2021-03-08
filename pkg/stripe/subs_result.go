@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
@@ -10,7 +11,7 @@ import (
 
 // SubsResultParams uses the data of a user's subscription to build the data to be saved to db.
 type SubsResultParams struct {
-	UserIDs reader.MemberID // UserIDs might comes from user account, or from current membership for refreshing.
+	UserIDs pkg.MemberID // UserIDs might comes from user account, or from current membership for refreshing.
 	Kind    cart.SubsKind
 	// To build membership, the above three fields are enough.
 

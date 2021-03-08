@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/brianvoe/gofakeit/v5"
@@ -48,7 +49,7 @@ func MockNewFtcAccount(kind enum.AccountKind) FtcAccount {
 }
 
 type MockMemberBuilder struct {
-	ids         MemberID
+	ids         pkg.MemberID
 	price       price.Price
 	payMethod   enum.PayMethod
 	expiration  time.Time
@@ -63,7 +64,7 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 	}
 
 	return MockMemberBuilder{
-		ids: MemberID{
+		ids: pkg.MemberID{
 			CompoundID: ftcID,
 			FtcID:      null.StringFrom(ftcID),
 			UnionID:    null.String{},
@@ -74,7 +75,7 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 	}
 }
 
-func (b MockMemberBuilder) WithIDs(ids MemberID) MockMemberBuilder {
+func (b MockMemberBuilder) WithIDs(ids pkg.MemberID) MockMemberBuilder {
 	b.ids = ids
 	return b
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -17,7 +18,7 @@ import (
 
 func TestMembership_IsZero(t *testing.T) {
 	type fields struct {
-		MemberID      MemberID
+		MemberID      pkg.MemberID
 		Edition       price.Edition
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
@@ -44,7 +45,7 @@ func TestMembership_IsZero(t *testing.T) {
 		{
 			name: "Non-zero membership",
 			fields: fields{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -83,7 +84,7 @@ func TestMembership_IsZero(t *testing.T) {
 
 func TestMembership_IsExpired(t *testing.T) {
 	type fields struct {
-		MemberID      MemberID
+		MemberID      pkg.MemberID
 		Edition       price.Edition
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
@@ -110,7 +111,7 @@ func TestMembership_IsExpired(t *testing.T) {
 		{
 			name: "Expired membership",
 			fields: fields{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -122,7 +123,7 @@ func TestMembership_IsExpired(t *testing.T) {
 		{
 			name: "Stripe expired but auto renew",
 			fields: fields{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -161,7 +162,7 @@ func TestMembership_IsExpired(t *testing.T) {
 
 func TestMembership_Normalize(t *testing.T) {
 	type fields struct {
-		MemberID      MemberID
+		MemberID      pkg.MemberID
 		Edition       price.Edition
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
@@ -183,7 +184,7 @@ func TestMembership_Normalize(t *testing.T) {
 		{
 			name: "Sync from legacy",
 			fields: fields{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -205,7 +206,7 @@ func TestMembership_Normalize(t *testing.T) {
 		{
 			name: "Sync to legacy",
 			fields: fields{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -263,7 +264,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expire 1 one year can renew",
 			fields: Membership{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -280,7 +281,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expire today can renew",
 			fields: Membership{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -297,7 +298,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expire on final date of 3rd year can renew",
 			fields: Membership{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -314,7 +315,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expire 3+ years later cannot renew",
 			fields: Membership{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -331,7 +332,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expired yesterday cannot renew",
 			fields: Membership{
-				MemberID: MemberID{
+				MemberID: pkg.MemberID{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -387,7 +388,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 	current := NewMockMemberBuilder(userID).Build()
 
 	type args struct {
-		userID MemberID
+		userID pkg.MemberID
 		inv    invoice.Invoice
 	}
 	tests := []struct {
@@ -401,11 +402,11 @@ func TestMembership_WithInvoice(t *testing.T) {
 			name:   "Create membership",
 			fields: Membership{},
 			args: args{
-				userID: NewFtcUserID(userID),
+				userID: pkg.NewFtcUserID(userID),
 				inv:    invoice.NewMockInvoiceBuilder(userID).SetPeriodStart(time.Now()).Build(),
 			},
 			want: Membership{
-				MemberID:      NewFtcUserID(userID),
+				MemberID:      pkg.NewFtcUserID(userID),
 				Edition:       faker.PriceStdYear.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -426,14 +427,14 @@ func TestMembership_WithInvoice(t *testing.T) {
 			name:   "Renew membership",
 			fields: current,
 			args: args{
-				userID: NewFtcUserID(userID),
+				userID: pkg.NewFtcUserID(userID),
 				inv: invoice.NewMockInvoiceBuilder(userID).
 					WithOrderKind(enum.OrderKindRenew).
 					SetPeriodStart(current.ExpireDate.Time).
 					Build(),
 			},
 			want: Membership{
-				MemberID:      NewFtcUserID(userID),
+				MemberID:      pkg.NewFtcUserID(userID),
 				Edition:       faker.PriceStdYear.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -454,7 +455,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 			name:   "Upgrade membership",
 			fields: current,
 			args: args{
-				userID: NewFtcUserID(userID),
+				userID: pkg.NewFtcUserID(userID),
 				inv: invoice.NewMockInvoiceBuilder(userID).
 					WithPrice(faker.PricePrm).
 					WithOrderKind(enum.OrderKindUpgrade).
@@ -462,7 +463,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 					Build(),
 			},
 			want: Membership{
-				MemberID:      NewFtcUserID(userID),
+				MemberID:      pkg.NewFtcUserID(userID),
 				Edition:       faker.PricePrm.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -483,7 +484,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 			name:   "Membership addon",
 			fields: current,
 			args: args{
-				userID: NewFtcUserID(userID),
+				userID: pkg.NewFtcUserID(userID),
 				inv: invoice.NewMockInvoiceBuilder(userID).
 					WithOrderKind(enum.OrderKindAddOn).
 					Build(),

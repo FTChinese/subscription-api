@@ -1,7 +1,7 @@
 package apple
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +15,7 @@ func TestSubscription_NewMembership(t *testing.T) {
 		t.Error(err)
 	}
 
-	got := NewMembership(reader.MemberID{
+	got := NewMembership(pkg.MemberID{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},
@@ -36,7 +36,7 @@ func TestSubscription_BuildOn(t *testing.T) {
 		t.Error(err)
 	}
 
-	got := NewMembership(reader.MemberID{
+	got := NewMembership(pkg.MemberID{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},
