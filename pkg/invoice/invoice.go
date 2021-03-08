@@ -20,12 +20,14 @@ type Invoice struct {
 	CompoundID string `json:"compoundId" db:"compound_id"`
 	price.Edition
 	dt.YearMonthDay
-	AddOnSource   addon.Source   `json:"addOnSource" db:"add_on_source"` // Only exists when OrderKind is AddOn.
-	OrderID       null.String    `json:"orderId" db:"order_id"`          // Carry over for stripe does not have order id.
-	OrderKind     enum.OrderKind `json:"orderKind" db:"order_kind"`      // Always non-null
+	AddOnSource   addon.Source   `json:"addOnSource" db:"addon_source"` // Only exists when OrderKind is AddOn.
+	AppleTxID     null.String    `json:"appleTxId" db:"apple_tx_id"`    // For carry-over by switching to Apple, the apple original transaction id.
+	OrderID       null.String    `json:"orderId" db:"order_id"`         // Which order created this invoice. For upgrading carry-over, it indicates which order caused the the carry-over.         // Carry over for stripe does not have order id.
+	OrderKind     enum.OrderKind `json:"orderKind" db:"order_kind"`     // Always non-null
 	PaidAmount    float64        `json:"paidAmount" db:"paid_amount"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
 	PriceID       null.String    `json:"priceId" db:"price_id"`
+	StripeSubsID  null.String    `json:"stripeSubsId" db:"stripe_subs_id"` // For carry-over by switching to Stripe, the stripe subscription id.
 	CreatedUTC    chrono.Time    `json:"createdUtc" db:"created_utc"`
 	ConsumedUTC   chrono.Time    `json:"consumedUtc" db:"consumed_utc"`
 	dt.DateTimePeriod
@@ -35,7 +37,7 @@ type Invoice struct {
 // NewFromCarryOver creates a new invoice based on remainig days of current membership.
 // This should only be used when user is upgrading from standard to premium using one-time purchase,
 // or switch from one-=time purchase to subscription mode.
-func NewFromCarryOver(m reader.Membership, source addon.Source) Invoice {
+func NewFromCarryOver(m reader.Membership) Invoice {
 	return Invoice{
 		ID:         db.InvoiceID(),
 		CompoundID: m.CompoundID,
@@ -43,25 +45,19 @@ func NewFromCarryOver(m reader.Membership, source addon.Source) Invoice {
 		YearMonthDay: dt.YearMonthDay{
 			Days: m.RemainingDays(),
 		},
-		AddOnSource:    source,
+		AddOnSource:    addon.SourceCarryOver,
+		AppleTxID:      null.String{},
 		OrderID:        null.String{},
 		OrderKind:      enum.OrderKindAddOn, // All carry-over invoice are add-ons
 		PaidAmount:     0,
 		PaymentMethod:  m.PaymentMethod,
 		PriceID:        m.FtcPlanID,
+		StripeSubsID:   null.String{},
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    chrono.Time{}, // Will be consumed in the future.
 		DateTimePeriod: dt.DateTimePeriod{},
 		CarriedOverUtc: chrono.Time{},
 	}
-}
-
-func NewFromUpgradeCarryOver(m reader.Membership) Invoice {
-	return NewFromCarryOver(m, addon.SourceUpgradeCarryOver)
-}
-
-func NewFromOneTimeToSubCarryOver(m reader.Membership) Invoice {
-	return NewFromCarryOver(m, addon.SourceOneTimeToSubCarryOver)
 }
 
 func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership) (reader.Membership, error) {
@@ -157,7 +153,18 @@ func (i Invoice) IsZero() bool {
 	return i.ID == ""
 }
 
+// WithOrderID set the order id field for carried-over invoice caused by upgrading.
 func (i Invoice) WithOrderID(id string) Invoice {
 	i.OrderID = null.StringFrom(id)
+	return i
+}
+
+func (i Invoice) WithStripeSubsID(id string) Invoice {
+	i.StripeSubsID = null.StringFrom(id)
+	return i
+}
+
+func (i Invoice) WithAppleTxID(id string) Invoice {
+	i.AppleTxID = null.StringFrom(id)
 	return i
 }
