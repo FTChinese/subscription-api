@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -45,7 +46,7 @@ func (lo LockedOrder) Merge(o Order) Order {
 type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
-	reader.MemberID
+	pkg.MemberID
 	PlanID     string      `json:"priceId" db:"plan_id"`
 	DiscountID null.String `json:"discountId" db:"discount_id"`
 	Price      float64     `json:"price" db:"price"` // Price of a plan, prior to discount.

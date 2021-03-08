@@ -1,6 +1,7 @@
 package readerrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
@@ -136,7 +137,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 	env := NewEnv(test.DB)
 
 	type args struct {
-		id reader.MemberID
+		id pkg.MemberID
 	}
 	tests := []struct {
 		name    string

@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/guregu/null"
 	"strings"
 )
@@ -15,8 +16,8 @@ type FtcAccount struct {
 	VIP      bool        `json:"vip" db:"is_vip"`
 }
 
-func (a FtcAccount) MemberID() MemberID {
-	return MemberID{
+func (a FtcAccount) MemberID() pkg.MemberID {
+	return pkg.MemberID{
 		CompoundID: "",
 		FtcID:      null.NewString(a.FtcID, a.FtcID != ""),
 		UnionID:    a.UnionID,

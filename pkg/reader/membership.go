@@ -38,7 +38,7 @@ func GetTierCode(tier enum.Tier) int64 {
 // * Apple IAP
 // We should keep those sources mutually exclusive.
 type Membership struct {
-	MemberID
+	pkg.MemberID
 	price.Edition
 	LegacyTier    null.Int       `json:"-" db:"vip_type"`
 	LegacyExpire  null.Int       `json:"-" db:"expire_time"`
@@ -238,7 +238,7 @@ func (m Membership) Snapshot(by Archiver) MemberSnapshot {
 	}
 }
 
-func (m Membership) WithInvoice(userID MemberID, inv invoice.Invoice) (Membership, error) {
+func (m Membership) WithInvoice(userID pkg.MemberID, inv invoice.Invoice) (Membership, error) {
 	if inv.IsZero() {
 		return m, nil
 	}

@@ -2,6 +2,7 @@ package readerrepo
 
 import (
 	"errors"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
@@ -31,7 +32,7 @@ func (env Env) AccountByWxID(unionID string) (reader.FtcAccount, error) {
 }
 
 // FindAccount retrieve account by ftc id if exists, then fallback to union id.
-func (env Env) FindAccount(ids reader.MemberID) (reader.FtcAccount, error) {
+func (env Env) FindAccount(ids pkg.MemberID) (reader.FtcAccount, error) {
 	if ids.FtcID.Valid {
 		return env.AccountByFtcID(ids.FtcID.String)
 	}

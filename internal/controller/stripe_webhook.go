@@ -3,6 +3,7 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	stripeSdk "github.com/stripe/stripe-go/v72"
@@ -23,7 +24,7 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 		sugar.Error(err)
 		// If user account is not found, we still want to save this subscription.
 		if err == sql.ErrNoRows {
-			subs, err := stripe.NewSubs(ss, reader.MemberID{})
+			subs, err := stripe.NewSubs(ss, pkg.MemberID{})
 			if err != nil {
 				sugar.Error(err)
 				return err
