@@ -36,18 +36,18 @@ func NewAddOnGroup(inv []Invoice) AddOnGroup {
 func (g AddOnGroup) Consumable(start time.Time) []Invoice {
 	prmAddOns, ok := g[enum.TierPremium]
 	if ok {
-		return consumeAddOn(prmAddOns, start)
+		return ConsumeAddOn(prmAddOns, start)
 	}
 
 	stdAddOns, ok := g[enum.TierStandard]
 	if ok {
-		return consumeAddOn(stdAddOns, start)
+		return ConsumeAddOn(stdAddOns, start)
 	}
 
 	return []Invoice{}
 }
 
-func consumeAddOn(addOns []Invoice, start time.Time) []Invoice {
+func ConsumeAddOn(addOns []Invoice, start time.Time) []Invoice {
 	now := chrono.TimeNow()
 
 	invoices := make([]Invoice, 0)
