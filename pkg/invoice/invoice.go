@@ -32,6 +32,9 @@ type Invoice struct {
 	CarriedOverUtc chrono.Time `json:"carriedOver" db:"carried_over_utc"` // In case user has carry-over for upgrading or switching stripe, add a timestamp to original invoice.
 }
 
+// NewFromCarryOver creates a new invoice based on remainig days of current membership.
+// This should only be used when user is upgrading from standard to premium using one-time purchase,
+// or switch from one-=time purchase to subscription mode.
 func NewFromCarryOver(m reader.Membership, source addon.Source) Invoice {
 	return Invoice{
 		ID:         db.InvoiceID(),
@@ -61,17 +64,23 @@ func NewFromOneTimeToSubCarryOver(m reader.Membership) Invoice {
 	return NewFromCarryOver(m, addon.SourceOneTimeToSubCarryOver)
 }
 
-func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership) reader.Membership {
+func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership) (reader.Membership, error) {
 	// An empty invoice returns the current membership immediately without touching it.
 	if i.IsZero() {
-		return current
+		return current, nil
 	}
+
 	// For add-on invoice, only update the add-on part
 	// while keep the rest as is since current membership
 	// might comes from Stripe or Apple.
 	// For upgrading's carry over, we also handle it this way.
 	if i.OrderKind == enum.OrderKindAddOn {
-		return current.WithAddOn(addon.New(i.Tier, i.TotalDays()))
+		return current.WithAddOn(addon.New(i.Tier, i.TotalDays())), nil
+	}
+
+	// The invoice should have been consumed utc set before updating membership.
+	if !i.IsConsumed() {
+		return reader.Membership{}, errors.New("invoice not finalized")
 	}
 
 	// If the invoice is not intended for add-on, it must have period set.
@@ -90,7 +99,7 @@ func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership
 		AppleSubsID:   null.String{},
 		B2BLicenceID:  null.String{},
 		AddOn:         current.AddOn, // For upgrade, the carried over part is not added.
-	}.Sync()
+	}.Sync(), nil
 }
 
 func (i Invoice) TransferAddOn(current reader.Membership) (reader.Membership, error) {
