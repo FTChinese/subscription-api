@@ -1,4 +1,4 @@
-package redeem
+package giftcard
 
 const StmtGiftCard = `
 SELECT auth_code AS redeemCode,

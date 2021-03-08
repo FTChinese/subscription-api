@@ -1,4 +1,4 @@
-package redeem
+package giftcard
 
 import (
 	"github.com/FTChinese/go-rest"
