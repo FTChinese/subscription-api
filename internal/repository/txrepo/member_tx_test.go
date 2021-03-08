@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -441,6 +442,39 @@ func TestMemberTx_SaveInvoice(t *testing.T) {
 			}
 
 			_ = tx.Commit()
+		})
+	}
+}
+
+func TestMemberTx_AddOnInvoices(t *testing.T) {
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		ids reader.MemberID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []invoice.Invoice
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+			got, err := tx.AddOnInvoices(tt.args.ids)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AddOnInvoices() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AddOnInvoices() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

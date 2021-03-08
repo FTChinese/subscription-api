@@ -35,7 +35,7 @@ type Persona struct {
 	payMethod enum.PayMethod
 	expired   bool
 	autoRenew bool
-	reserved  addon.AddOn
+	addOn     addon.AddOn
 }
 
 func NewPersona() *Persona {
@@ -72,8 +72,8 @@ func (p *Persona) SetPrice(pp price2.FtcPrice) *Persona {
 	return p
 }
 
-func (p *Persona) SetReservedDays(r addon.AddOn) *Persona {
-	p.reserved = r
+func (p *Persona) SetAddOn(r addon.AddOn) *Persona {
+	p.addOn = r
 
 	return p
 }
@@ -174,7 +174,7 @@ func (p *Persona) Membership() reader.Membership {
 		WithExpiration(expiresDate).
 		WithPayMethod(p.payMethod).
 		WithPrice(p.price.Price).
-		WithAddOn(p.reserved).
+		WithAddOn(p.addOn).
 		WithAutoRenewal(p.autoRenew).
 		Build()
 }
