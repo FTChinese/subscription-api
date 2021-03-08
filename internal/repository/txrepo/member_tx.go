@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/giftcard"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/redeem"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/jmoiron/sqlx"
 )
@@ -240,7 +240,7 @@ func (tx MemberTx) UnlinkAppleSubs(link apple.LinkInput) error {
 
 func (tx MemberTx) ActivateGiftCard(code string) error {
 	_, err := tx.Exec(
-		redeem.StmtActivateGiftCard,
+		giftcard.StmtActivateGiftCard,
 		code)
 
 	if err != nil {
