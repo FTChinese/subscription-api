@@ -35,8 +35,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 
 	// Order confirmed but not synced to membership
 	p4 := test.NewPersona()
-	outOfSyncOrder := subs.NewMockOrderBuilder("").
-		WithUserIDs(p4.AccountID()).
+	outOfSyncOrder := subs.NewMockOrderBuilder(p4.FtcID).
 		WithPrice(faker.PriceStdYear).
 		WithKind(enum.OrderKindRenew).
 		WithPayMethod(enum.PayMethodAli).
