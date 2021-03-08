@@ -20,7 +20,7 @@ import (
 
 type MockOrderBuilder struct {
 	id        string
-	userIDs   pkg.MemberID
+	userIDs   pkg.UserIDs
 	ftcID     string
 	unionID   string
 	price     price.FtcPrice
@@ -98,7 +98,7 @@ func (b MockOrderBuilder) Build() Order {
 
 	return Order{
 		ID: b.id,
-		MemberID: pkg.MemberID{
+		UserIDs: pkg.UserIDs{
 			CompoundID: "",
 			FtcID:      null.StringFrom(b.ftcID),
 			UnionID:    null.NewString(b.unionID, b.unionID != ""),

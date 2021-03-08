@@ -105,7 +105,7 @@ func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (sub
 		}
 
 		if !confirmed.Invoices.CarriedOver.IsZero() {
-			err := pay.ReaderRepo.InvoicesCarriedOver(confirmed.Membership.MemberID)
+			err := pay.ReaderRepo.InvoicesCarriedOver(confirmed.Membership.UserIDs)
 			if err != nil {
 				sugar.Error(err)
 			}

@@ -17,7 +17,7 @@ func TestNewSubs(t *testing.T) {
 		return
 	}
 
-	subs, err := NewSubs(&ss, pkg.MemberID{
+	subs, err := NewSubs(&ss, pkg.UserIDs{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},

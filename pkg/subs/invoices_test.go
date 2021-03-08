@@ -103,7 +103,7 @@ func TestInvoices_membership(t *testing.T) {
 		CarriedOver invoice.Invoice
 	}
 	type args struct {
-		userID  pkg.MemberID
+		userID  pkg.UserIDs
 		current reader.Membership
 	}
 	tests := []struct {
@@ -124,7 +124,7 @@ func TestInvoices_membership(t *testing.T) {
 				current: reader.Membership{},
 			},
 			want: reader.Membership{
-				MemberID:      pkg.NewFtcUserID(userID),
+				UserIDs:       pkg.NewFtcUserID(userID),
 				Edition:       price.StdYearEdition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -155,7 +155,7 @@ func TestInvoices_membership(t *testing.T) {
 				current: current,
 			},
 			want: reader.Membership{
-				MemberID:      pkg.NewFtcUserID(userID),
+				UserIDs:       pkg.NewFtcUserID(userID),
 				Edition:       price.StdYearEdition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -186,7 +186,7 @@ func TestInvoices_membership(t *testing.T) {
 				current: current,
 			},
 			want: reader.Membership{
-				MemberID:      pkg.NewFtcUserID(userID),
+				UserIDs:       pkg.NewFtcUserID(userID),
 				Edition:       price.StdYearEdition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},

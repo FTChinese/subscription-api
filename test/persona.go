@@ -98,27 +98,27 @@ func (p *Persona) SetAutoRenew(t bool) *Persona {
 	return p
 }
 
-func (p *Persona) AccountID() pkg.MemberID {
+func (p *Persona) AccountID() pkg.UserIDs {
 
-	var id pkg.MemberID
+	var id pkg.UserIDs
 
 	switch p.kind {
 	case enum.AccountKindFtc:
-		id = pkg.MemberID{
+		id = pkg.UserIDs{
 			CompoundID: p.FtcID,
 			FtcID:      null.StringFrom(p.FtcID),
 			UnionID:    null.String{},
 		}
 
 	case enum.AccountKindWx:
-		id = pkg.MemberID{
+		id = pkg.UserIDs{
 			CompoundID: p.UnionID,
 			FtcID:      null.String{},
 			UnionID:    null.StringFrom(p.UnionID),
 		}
 
 	case enum.AccountKindLinked:
-		id = pkg.MemberID{
+		id = pkg.UserIDs{
 			CompoundID: p.FtcID,
 			FtcID:      null.StringFrom(p.FtcID),
 			UnionID:    null.StringFrom(p.UnionID),

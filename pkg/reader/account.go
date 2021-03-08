@@ -16,8 +16,8 @@ type FtcAccount struct {
 	VIP      bool        `json:"vip" db:"is_vip"`
 }
 
-func (a FtcAccount) MemberID() pkg.MemberID {
-	return pkg.MemberID{
+func (a FtcAccount) MemberID() pkg.UserIDs {
+	return pkg.UserIDs{
 		CompoundID: "",
 		FtcID:      null.NewString(a.FtcID, a.FtcID != ""),
 		UnionID:    a.UnionID,

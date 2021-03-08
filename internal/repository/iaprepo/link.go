@@ -91,7 +91,7 @@ func (env Env) Link(result apple.LinkResult) error {
 	// If membership is take a snapshot, we must delete it.
 	if !result.Snapshot.IsZero() {
 		// Should we lock this row first?
-		err := tx.DeleteMember(result.Snapshot.MemberID)
+		err := tx.DeleteMember(result.Snapshot.UserIDs)
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
@@ -192,7 +192,7 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 	}
 
 	// Delete this membership.
-	if err := tx.DeleteMember(m.MemberID); err != nil {
+	if err := tx.DeleteMember(m.UserIDs); err != nil {
 		_ = tx.Rollback()
 		return apple.UnlinkResult{}, err
 	}

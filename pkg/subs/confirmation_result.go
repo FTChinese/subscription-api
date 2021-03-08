@@ -38,7 +38,7 @@ func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 		return ConfirmationResult{}, err
 	}
 
-	newM, err := invoices.membership(p.Order.MemberID, p.Member)
+	newM, err := invoices.membership(p.Order.UserIDs, p.Member)
 	if err != nil {
 		return ConfirmationResult{}, err
 	}

@@ -16,7 +16,7 @@ import (
 
 func MockNewSubs() Subs {
 
-	subs, err := NewSubs(faker.MustGenStripeSubs(), pkg.MemberID{
+	subs, err := NewSubs(faker.MustGenStripeSubs(), pkg.UserIDs{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},
