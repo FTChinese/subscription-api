@@ -23,10 +23,11 @@ func TestInvoice_NewMembership(t *testing.T) {
 		current reader.Membership
 	}
 	tests := []struct {
-		name   string
-		fields Invoice
-		args   args
-		want   reader.Membership
+		name    string
+		fields  Invoice
+		args    args
+		want    reader.Membership
+		wantErr bool
 	}{
 		{
 			name:   "Create membership",
@@ -51,6 +52,7 @@ func TestInvoice_NewMembership(t *testing.T) {
 				B2BLicenceID:  null.String{},
 				AddOn:         addon.AddOn{},
 			}.Sync(),
+			wantErr: false,
 		},
 		{
 			name: "Renew membership",
@@ -78,6 +80,7 @@ func TestInvoice_NewMembership(t *testing.T) {
 				B2BLicenceID:  null.String{},
 				AddOn:         addon.AddOn{},
 			}.Sync(),
+			wantErr: false,
 		},
 		{
 			name: "Upgrade membership",
@@ -106,6 +109,7 @@ func TestInvoice_NewMembership(t *testing.T) {
 				B2BLicenceID:  null.String{},
 				AddOn:         addon.AddOn{},
 			}.Sync(),
+			wantErr: false,
 		},
 		{
 			name: "Membership addon",
@@ -124,8 +128,14 @@ func TestInvoice_NewMembership(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.fields.NewMembership(tt.args.userID, tt.args.current)
 
-			if got := tt.fields.NewMembership(tt.args.userID, tt.args.current); !reflect.DeepEqual(got, tt.want) {
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewMembership() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewMembership() = \n%v, want \n%v", got, tt.want)
 			}
 		})
