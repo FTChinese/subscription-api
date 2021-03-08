@@ -21,7 +21,7 @@ func TestNewAddOnGroup(t *testing.T) {
 		Build()
 	inv3 := NewMockInvoiceBuilder(userID).
 		WithOrderKind(enum.OrderKindAddOn).
-		WithAddOnSource(addon.SourceUpgradeCarryOver).
+		WithAddOnSource(addon.SourceCarryOver).
 		Build()
 
 	type args struct {
@@ -69,7 +69,7 @@ func Test_consumeAddOn(t *testing.T) {
 
 	inv2 := NewMockInvoiceBuilder(userID).
 		WithOrderKind(enum.OrderKindAddOn).
-		WithAddOnSource(addon.SourceUpgradeCarryOver).
+		WithAddOnSource(addon.SourceCarryOver).
 		Build()
 
 	now := time.Now()
