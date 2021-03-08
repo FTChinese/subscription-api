@@ -7,9 +7,9 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/cart"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -33,9 +33,9 @@ func NewMockInvoiceBuilder(userID string) MockInvoiceBuilder {
 	}
 
 	return MockInvoiceBuilder{
-		id:          db.InvoiceID(),
+		id:          pkg.InvoiceID(),
 		userID:      userID,
-		orderID:     db.MustOrderID(),
+		orderID:     pkg.MustOrderID(),
 		price:       faker.PriceStdYear,
 		orderKind:   enum.OrderKindCreate,
 		payMethod:   enum.PayMethodAli,

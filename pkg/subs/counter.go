@@ -4,8 +4,8 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/cart"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -67,7 +67,7 @@ func (c Counter) BuildOrder(m reader.Membership) (Order, error) {
 		return Order{}, err
 	}
 
-	orderID, err := db.OrderID()
+	orderID, err := pkg.OrderID()
 	if err != nil {
 		return Order{}, err
 	}

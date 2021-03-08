@@ -2,8 +2,8 @@ package reader
 
 import (
 	"errors"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"math"
 	"time"
@@ -231,7 +231,7 @@ func (m Membership) Snapshot(by Archiver) MemberSnapshot {
 	}
 
 	return MemberSnapshot{
-		SnapshotID: db.SnapshotID(),
+		SnapshotID: pkg.SnapshotID(),
 		CreatedBy:  null.StringFrom(by.String()),
 		CreatedUTC: chrono.TimeNow(),
 		Membership: m,

@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
@@ -228,7 +228,7 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 			},
 			args: args{
 				m: subs.OrderMeta{
-					OrderID: db.MustOrderID(),
+					OrderID: pkg.MustOrderID(),
 					Client:  faker.RandomClientApp(),
 				},
 			},

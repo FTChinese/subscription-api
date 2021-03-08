@@ -3,8 +3,8 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -22,7 +22,7 @@ func NewOrderInvoice(timeParams PurchasedTimeParams, o Order) (invoice.Invoice, 
 	}
 
 	return invoice.Invoice{
-		ID:             db.InvoiceID(),
+		ID:             pkg.InvoiceID(),
 		CompoundID:     o.CompoundID,
 		Edition:        o.Edition,
 		YearMonthDay:   timeParams.Date,
