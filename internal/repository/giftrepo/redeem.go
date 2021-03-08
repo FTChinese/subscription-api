@@ -1,11 +1,11 @@
 package giftrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/giftcard"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/redeem"
 )
 
-func (env GiftEnv) RedeemGiftCard(c redeem.GiftCard, m reader.Membership) error {
+func (env GiftEnv) RedeemGiftCard(c giftcard.GiftCard, m reader.Membership) error {
 	tx, err := env.beginOrderTx()
 	if err != nil {
 		return err
