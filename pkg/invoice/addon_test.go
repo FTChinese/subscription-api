@@ -96,7 +96,7 @@ func Test_consumeAddOn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := consumeAddOn(tt.args.addOns, tt.args.start)
+			got := ConsumeAddOn(tt.args.addOns, tt.args.start)
 			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
