@@ -68,7 +68,7 @@ FROM premium.ftc_invoice
 const StmtListAddOnInvoiceLock = stmtColInvoice + `
 WHERE FIND_IN_SET(user_compound_id, ?) > 0
 	AND consumed_utc IS NULL
-	AND order_kind IS NULL
+	AND order_kind = 'add_on'
 ORDER BY created_utc ASC
 FOR UPDATE`
 
