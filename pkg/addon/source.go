@@ -9,11 +9,10 @@ import (
 type Source string
 
 const (
-	SourceNull                  Source = ""
-	SourceUpgradeCarryOver      Source = "upgrade_carry_over"
-	SourceOneTimeToSubCarryOver Source = "one_time_to_sub_carry_over"
-	SourceCompensation          Source = "compensation"
-	SourceUserPurchase          Source = "user_purchase" // If user voluntarily purchased an addon, current membership could either be premium, or in subscription mode.
+	SourceNull         Source = ""
+	SourceCarryOver    Source = "carry_over"
+	SourceCompensation Source = "compensation"
+	SourceUserPurchase Source = "user_purchase" // If user voluntarily purchased an addon, current membership could either be premium, or in subscription mode.
 )
 
 func (x *Source) UnmarshalJSON(b []byte) error {
