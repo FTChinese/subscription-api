@@ -5,8 +5,8 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/guregu/null"
 	"time"
@@ -34,7 +34,7 @@ func (m Membership) CarriedOverAddOn() addon.AddOn {
 // or switch from one-=time purchase to subscription mode.
 func (m Membership) CarryOverInvoice() invoice.Invoice {
 	return invoice.Invoice{
-		ID:         db.InvoiceID(),
+		ID:         pkg.InvoiceID(),
 		CompoundID: m.CompoundID,
 		Edition:    m.Edition,
 		YearMonthDay: dt.YearMonthDay{

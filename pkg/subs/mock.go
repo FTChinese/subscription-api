@@ -8,9 +8,9 @@ import (
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/cart"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 
@@ -36,7 +36,7 @@ type MockOrderBuilder struct {
 func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
 
 	return MockOrderBuilder{
-		id:        db.MustOrderID(),
+		id:        pkg.MustOrderID(),
 		ftcID:     ftcID,
 		unionID:   "",
 		price:     faker.PriceStdYear,
