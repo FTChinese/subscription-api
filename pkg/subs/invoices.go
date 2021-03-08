@@ -44,8 +44,19 @@ type Invoices struct {
 	CarriedOver invoice.Invoice // If carry-over invoice exists, you should add timestamp to old invoices that are not yet completely consumed.
 }
 
-func (i Invoices) membership(userID reader.MemberID, current reader.Membership) reader.Membership {
-	current = i.Purchased.NewMembership(userID, current)
+// Create new membership based on purchased invoice and optional carry over invoice.
+func (i Invoices) membership(userID reader.MemberID, current reader.Membership) (reader.Membership, error) {
+	// This will update expiration date.
+	current, err := i.Purchased.NewMembership(userID, current)
 
+	if err != nil {
+		return reader.Membership{}, err
+	}
+
+	if i.CarriedOver.IsZero() {
+		return current, nil
+	}
+
+	// This will update add-on part if carried over invoice is not empty.
 	return i.CarriedOver.NewMembership(userID, current)
 }
