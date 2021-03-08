@@ -3,8 +3,9 @@ package txrepo
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -12,8 +13,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
+	"time"
 )
 
 func TestOrderTx_RetrieveMember(t *testing.T) {
@@ -26,7 +27,7 @@ func TestOrderTx_RetrieveMember(t *testing.T) {
 	otx := NewMemberTx(test.DB.MustBegin())
 
 	type args struct {
-		id reader.MemberID
+		id pkg.UserIDs
 	}
 	tests := []struct {
 		name    string
@@ -404,7 +405,7 @@ func TestMemberTx_SaveInvoice(t *testing.T) {
 			},
 			args: args{
 				inv: reader.NewMockMemberBuilder(userID).
-					Build().CarryOverInvoice().WithOrderID(db.MustOrderID()),
+					Build().CarryOverInvoice().WithOrderID(pkg.MustOrderID()),
 			},
 		},
 		{
@@ -447,20 +448,46 @@ func TestMemberTx_SaveInvoice(t *testing.T) {
 }
 
 func TestMemberTx_AddOnInvoices(t *testing.T) {
+	userID := uuid.New().String()
+
+	repo := test.NewRepo()
+	repo.MustSaveInvoiceN([]invoice.Invoice{
+		invoice.NewMockInvoiceBuilder(userID).
+			WithOrderKind(enum.OrderKindAddOn).
+			Build(),
+		invoice.NewMockInvoiceBuilder(userID).
+			WithOrderKind(enum.OrderKindAddOn).
+			WithAddOnSource(addon.SourceCarryOver).
+			Build(),
+		invoice.NewMockInvoiceBuilder(userID).
+			WithOrderKind(enum.OrderKindAddOn).
+			WithAddOnSource(addon.SourceCompensation).
+			Build(),
+	})
+
 	type fields struct {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		ids reader.MemberID
+		ids pkg.UserIDs
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    []invoice.Invoice
+		want    int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "List addons",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				ids: pkg.NewFtcUserID(userID),
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -470,11 +497,99 @@ func TestMemberTx_AddOnInvoices(t *testing.T) {
 			got, err := tx.AddOnInvoices(tt.args.ids)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AddOnInvoices() error = %v, wantErr %v", err, tt.wantErr)
+				_ = tx.Rollback()
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("AddOnInvoices() got = %v, want %v", got, tt.want)
+			if len(got) != tt.want {
+				t.Errorf("Got slice len %d, want %d", len(got), tt.want)
+				_ = tx.Rollback()
+				return
 			}
+			_ = tx.Commit()
+		})
+	}
+}
+
+func TestMemberTx_AddOnInvoiceConsumed(t *testing.T) {
+
+	userID := uuid.New().String()
+
+	inv1 := invoice.NewMockInvoiceBuilder(userID).
+		WithOrderKind(enum.OrderKindAddOn).
+		Build()
+	inv2 := invoice.NewMockInvoiceBuilder(userID).
+		WithOrderKind(enum.OrderKindAddOn).
+		WithAddOnSource(addon.SourceCarryOver).
+		Build()
+	inv3 := invoice.NewMockInvoiceBuilder(userID).
+		WithOrderKind(enum.OrderKindAddOn).
+		WithAddOnSource(addon.SourceCompensation).
+		Build()
+
+	repo := test.NewRepo()
+	repo.MustSaveInvoice(inv1)
+	repo.MustSaveInvoice(inv2)
+	repo.MustSaveInvoice(inv3)
+
+	inv1 = inv1.SetPeriod(time.Now())
+	inv2 = inv2.SetPeriod(time.Now())
+	inv3 = inv3.SetPeriod(time.Now())
+
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		inv invoice.Invoice
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Flag addon invoice consumed",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: inv1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Flag addon invoice consumed",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: inv2,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Flag addon invoice consumed",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: inv3,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+			if err := tx.AddOnInvoiceConsumed(tt.args.inv); (err != nil) != tt.wantErr {
+				t.Errorf("AddOnInvoiceConsumed() error = %v, wantErr %v", err, tt.wantErr)
+				_ = tx.Rollback()
+				return
+			}
+
+			_ = tx.Commit()
 		})
 	}
 }

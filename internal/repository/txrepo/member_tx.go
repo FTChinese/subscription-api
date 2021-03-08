@@ -2,6 +2,7 @@ package txrepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -25,7 +26,7 @@ func NewMemberTx(tx *sqlx.Tx) MemberTx {
 // RetrieveMember retrieves a user's membership by a compound id, which might be ftc id or union id.
 // Use SQL FIND_IN_SET(compoundId, vip_id, vip) to verify it against two columns.
 // Returns zero value of membership if not found.
-func (tx MemberTx) RetrieveMember(id reader.MemberID) (reader.Membership, error) {
+func (tx MemberTx) RetrieveMember(id pkg.UserIDs) (reader.Membership, error) {
 	var m reader.Membership
 
 	err := tx.Get(
@@ -138,7 +139,7 @@ func (tx MemberTx) AddOnExistsForOrder(orderID string) (bool, error) {
 	return ok, nil
 }
 
-func (tx MemberTx) AddOnInvoices(ids reader.MemberID) ([]invoice.Invoice, error) {
+func (tx MemberTx) AddOnInvoices(ids pkg.UserIDs) ([]invoice.Invoice, error) {
 	var inv []invoice.Invoice
 	err := tx.Select(&inv, invoice.StmtListAddOnInvoiceLock, ids.BuildFindInSet())
 	if err != nil {
@@ -149,7 +150,7 @@ func (tx MemberTx) AddOnInvoices(ids reader.MemberID) ([]invoice.Invoice, error)
 }
 
 func (tx MemberTx) AddOnInvoiceConsumed(inv invoice.Invoice) error {
-	_, err := tx.Exec(invoice.StmtAddOnInvoiceConsumed, inv)
+	_, err := tx.NamedExec(invoice.StmtAddOnInvoiceConsumed, inv)
 	if err != nil {
 		return err
 	}
@@ -193,7 +194,7 @@ func (tx MemberTx) UpdateMember(m reader.Membership) error {
 // is the correct operation since the membership is granted
 // by IAP. You cannot simply remove the apple_subscription_id
 // column which will keep the membership on FTC account.
-func (tx MemberTx) DeleteMember(id reader.MemberID) error {
+func (tx MemberTx) DeleteMember(id pkg.UserIDs) error {
 	_, err := tx.NamedExec(
 		reader.StmtDeleteMember,
 		id)
