@@ -21,7 +21,7 @@ func MustNewSubs() stripe.Subs {
 		panic(err)
 	}
 
-	subs, err := stripe.NewSubs(&ss, pkg.MemberID{
+	subs, err := stripe.NewSubs(&ss, pkg.UserIDs{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},

@@ -63,7 +63,7 @@ func TestEnv_CreateSubscription(t *testing.T) {
 
 	repo := test.NewRepo()
 	m := p.Membership()
-	t.Logf("%v", m.MemberID)
+	t.Logf("%v", m.UserIDs)
 
 	repo.MustSaveMembership(m)
 

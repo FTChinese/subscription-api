@@ -74,7 +74,7 @@ func (c Counter) BuildOrder(m reader.Membership) (Order, error) {
 
 	return Order{
 		ID:            orderID,
-		MemberID:      c.Account.MemberID(),
+		UserIDs:       c.Account.MemberID(),
 		PlanID:        checkout.Cart.Price.ID,
 		DiscountID:    checkout.Cart.Discount.DiscID,
 		Price:         checkout.Cart.Price.UnitAmount,

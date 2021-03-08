@@ -10,7 +10,7 @@ import (
 )
 
 type MembershipParams struct {
-	UserIDs pkg.MemberID
+	UserIDs pkg.UserIDs
 	Subs    Subs
 	AddOn   addon.AddOn // The total reserved days if user switched from one-time pay to stripe. User minght already have reserved days prior to switching.
 }
@@ -20,7 +20,7 @@ func NewMembership(params MembershipParams) reader.Membership {
 	expires := params.Subs.ExpiresAt()
 
 	return reader.Membership{
-		MemberID:      params.UserIDs,
+		UserIDs:       params.UserIDs,
 		Edition:       params.Subs.Edition,
 		LegacyTier:    null.IntFrom(reader.GetTierCode(params.Subs.Tier)),
 		LegacyExpire:  null.IntFrom(expires.Unix()),

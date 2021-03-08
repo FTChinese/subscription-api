@@ -42,7 +42,7 @@ func TestMembership_claimAddOn(t *testing.T) {
 				i: inv,
 			},
 			want: Membership{
-				MemberID:      current.MemberID,
+				UserIDs:       current.UserIDs,
 				Edition:       inv.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},

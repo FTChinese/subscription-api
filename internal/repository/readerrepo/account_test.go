@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
@@ -134,10 +135,10 @@ func TestEnv_RetrieveMember(t *testing.T) {
 	m := p.Membership()
 	test.NewRepo().MustSaveMembership(m)
 
-	env := NewEnv(test.DB)
+	env := NewEnv(test.DB, zaptest.NewLogger(t))
 
 	type args struct {
-		id pkg.MemberID
+		id pkg.UserIDs
 	}
 	tests := []struct {
 		name    string
@@ -147,7 +148,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 		{
 			name: "Load member",
 			args: args{
-				id: m.MemberID,
+				id: m.UserIDs,
 			},
 		},
 	}

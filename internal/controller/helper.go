@@ -98,11 +98,11 @@ func gatherAliPayInput(req *http.Request) (subs.AliPayInput, error) {
 // getReaderIDs extract ftc uuid or union id from request header.
 // It panic if both ftc id and union id are missing.
 // However it won't happen since middlewares already ensured at least one of them should exist.
-func getReaderIDs(h http.Header) pkg.MemberID {
+func getReaderIDs(h http.Header) pkg.UserIDs {
 	ftcID := h.Get(userIDKey)
 	unionID := h.Get(unionIDKey)
 
-	return pkg.MemberID{
+	return pkg.UserIDs{
 		CompoundID: "",
 		FtcID:      null.NewString(ftcID, ftcID != ""),
 		UnionID:    null.NewString(unionID, unionID != ""),

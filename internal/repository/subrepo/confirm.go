@@ -39,7 +39,7 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 	// STEP 2: query membership
 	// For any errors, allow retry.
 	sugar.Info("Retrieving existing membership")
-	member, err := tx.RetrieveMember(order.MemberID)
+	member, err := tx.RetrieveMember(order.UserIDs)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -126,7 +126,7 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 	// Since FTC uuid have higher priority, it will be used as the value of vip_id to update this row, which is actually the value of union id!
 	if !member.IsZero() {
 		sugar.Infof("Deleting old membership %v", member)
-		err := tx.DeleteMember(member.MemberID)
+		err := tx.DeleteMember(member.UserIDs)
 		if err != nil {
 			_ = tx.Rollback()
 			sugar.Error(err)

@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-func (env Env) RetrieveMember(id pkg.MemberID) (reader.Membership, error) {
+func (env Env) RetrieveMember(id pkg.UserIDs) (reader.Membership, error) {
 	var m reader.Membership
 
 	err := env.db.Get(

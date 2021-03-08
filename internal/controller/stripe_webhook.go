@@ -24,7 +24,7 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 		sugar.Error(err)
 		// If user account is not found, we still want to save this subscription.
 		if err == sql.ErrNoRows {
-			subs, err := stripe.NewSubs(ss, pkg.MemberID{})
+			subs, err := stripe.NewSubs(ss, pkg.UserIDs{})
 			if err != nil {
 				sugar.Error(err)
 				return err

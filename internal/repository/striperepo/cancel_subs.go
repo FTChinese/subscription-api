@@ -23,7 +23,7 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 		return stripe.SubsResult{}, err
 	}
 
-	mmb, err := tx.RetrieveMember(pkg.MemberID{
+	mmb, err := tx.RetrieveMember(pkg.UserIDs{
 		CompoundID: params.FtcID,
 		FtcID:      null.StringFrom(params.FtcID),
 		UnionID:    null.String{},
@@ -80,7 +80,7 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 	}
 
 	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
-		UserIDs:       mmb.MemberID,
+		UserIDs:       mmb.UserIDs,
 		CurrentMember: mmb,
 		Action:        action,
 	})

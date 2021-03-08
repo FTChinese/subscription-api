@@ -46,7 +46,7 @@ func (lo LockedOrder) Merge(o Order) Order {
 type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
-	pkg.MemberID
+	pkg.UserIDs
 	PlanID     string      `json:"priceId" db:"plan_id"`
 	DiscountID null.String `json:"discountId" db:"discount_id"`
 	Price      float64     `json:"price" db:"price"` // Price of a plan, prior to discount.

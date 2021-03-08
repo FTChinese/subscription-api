@@ -71,7 +71,7 @@ func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) 
 
 	result := apple.SubsResult{
 		Subs:     s,
-		Member:   apple.NewMembership(currMember.MemberID, s),
+		Member:   apple.NewMembership(currMember.UserIDs, s),
 		Snapshot: currMember.Snapshot(reader.ArchiverAppleVerify),
 	}
 

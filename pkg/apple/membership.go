@@ -9,9 +9,9 @@ import (
 	"github.com/guregu/null"
 )
 
-func NewMembership(userID pkg.MemberID, s Subscription) reader.Membership {
+func NewMembership(userID pkg.UserIDs, s Subscription) reader.Membership {
 	return reader.Membership{
-		MemberID: userID,
+		UserIDs: userID,
 		Edition: price.Edition{
 			Tier:  s.Tier,
 			Cycle: s.Cycle,
