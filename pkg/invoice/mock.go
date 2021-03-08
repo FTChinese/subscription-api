@@ -79,17 +79,23 @@ func (b MockInvoiceBuilder) SetPeriodStart(t time.Time) MockInvoiceBuilder {
 func (b MockInvoiceBuilder) Build() Invoice {
 	item := cart.NewFtcCart(b.price)
 
+	if b.addOnSource != "" {
+		b.orderKind = enum.OrderKindAddOn
+	}
+
 	return Invoice{
 		ID:             b.id,
 		CompoundID:     b.userID,
 		Edition:        item.Price.Edition,
 		YearMonthDay:   dt.NewYearMonthDay(item.Price.Cycle),
 		AddOnSource:    b.addOnSource,
+		AppleTxID:      null.String{},
 		OrderID:        null.StringFrom(b.orderID),
 		OrderKind:      b.orderKind,
 		PaidAmount:     item.Payable().Amount,
 		PaymentMethod:  b.payMethod,
 		PriceID:        null.StringFrom(item.Price.ID),
+		StripeSubsID:   null.String{},
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    chrono.Time{},
 		DateTimePeriod: dt.DateTimePeriod{},
