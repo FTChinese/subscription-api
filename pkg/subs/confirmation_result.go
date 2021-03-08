@@ -38,11 +38,16 @@ func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 		return ConfirmationResult{}, err
 	}
 
+	newM, err := invoices.membership(p.Order.MemberID, p.Member)
+	if err != nil {
+		return ConfirmationResult{}, err
+	}
+
 	return ConfirmationResult{
 		Payment:    p.Payment,
 		Order:      p.confirmedOrder(invoices.Purchased.DateTimePeriod),
 		Invoices:   invoices,
-		Membership: p.membership(invoices),
+		Membership: newM,
 		Snapshot:   p.snapshot(),
 		Notify:     true,
 	}, nil

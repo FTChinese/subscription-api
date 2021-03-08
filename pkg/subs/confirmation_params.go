@@ -53,10 +53,6 @@ func (p ConfirmationParams) invoices() (Invoices, error) {
 	}, nil
 }
 
-func (p ConfirmationParams) membership(invoices Invoices) reader.Membership {
-	return invoices.membership(p.Order.MemberID, p.Member)
-}
-
 func (p ConfirmationParams) confirmedOrder(period dt.DateTimePeriod) Order {
 	p.Order.ConfirmedAt = p.Payment.ConfirmedUTC
 	p.Order.DatePeriod = period.ToDatePeriod()
