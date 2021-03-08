@@ -18,7 +18,8 @@ func TestMembership_claimAddOn(t *testing.T) {
 
 	inv := invoice.NewMockInvoiceBuilder(userID).
 		WithOrderKind(enum.OrderKindAddOn).
-		Build()
+		Build().
+		SetPeriod(time.Now())
 
 	current := NewMockMemberBuilder(userID).
 		WithExpiration(time.Now().AddDate(0, 0, -1)).

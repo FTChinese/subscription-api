@@ -55,21 +55,13 @@ func (m Membership) CarryOverInvoice() invoice.Invoice {
 	}
 }
 
-func (m Membership) HasAddOns() bool {
-	return m.Standard > 0 || m.Premium > 0
-}
-
 func (m Membership) ShouldUseAddOn() error {
 	if m.IsZero() {
-		return errors.New("subscription backup days only applicable to an existing membership")
+		return errors.New("reserved subscription time only be claimed by an existing membership")
 	}
 
 	if !m.IsExpired() {
-		return errors.New("backup days come into effect only after current subscription expired")
-	}
-
-	if !m.HasAddOns() {
-		return errors.New("current membership does not have backup days")
+		return errors.New("reserved subscription time only comes into effect after current membership expired")
 	}
 
 	return nil
@@ -80,7 +72,7 @@ func (m Membership) claimAddOn(i invoice.Invoice) (Membership, error) {
 		return Membership{}, errors.New("cannot use non-addon invoice as add-on")
 	}
 
-	if i.IsConsumed() {
+	if !i.IsConsumed() {
 		return Membership{}, errors.New("invoice not finalized")
 	}
 
