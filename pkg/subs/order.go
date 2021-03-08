@@ -126,6 +126,8 @@ func (o Order) CalibratedKind(m reader.Membership) enum.OrderKind {
 	return kind
 }
 
+// Adjust order kind upon confirmation since it might be different from
+// the one when creating an order due to concurrency.
 func calibrateOrderKind(m reader.Membership, e price.Edition) enum.OrderKind {
 	if m.IsExpired() {
 		return enum.OrderKindCreate
@@ -137,13 +139,17 @@ func calibrateOrderKind(m reader.Membership, e price.Edition) enum.OrderKind {
 
 	switch m.PaymentMethod {
 	case enum.PayMethodAli, enum.PayMethodWx:
+		// For same tier, it is renewal.
 		if m.Tier == e.Tier {
 			return enum.OrderKindRenew
 		}
 
+		// Purchasing a different tier.
 		switch e.Tier {
+		// Standard to premium
 		case enum.TierPremium:
 			return enum.OrderKindUpgrade
+		// Premium to standard.
 		case enum.TierStandard:
 			return enum.OrderKindAddOn
 		}
