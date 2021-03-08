@@ -57,8 +57,9 @@ func Test_newSubsResult(t *testing.T) {
 					B2BLicenceID:  null.String{},
 					AddOn:         member.CarriedOver(),
 				}.Sync(),
-				Snapshot:         member.Snapshot(reader.StripeArchiver(reader.ActionCreate)),
-				CarryOverInvoice: invoice.NewFromOneTimeToSubCarryOver(member),
+				Snapshot: member.Snapshot(reader.StripeArchiver(reader.ActionCreate)),
+				CarryOverInvoice: invoice.NewFromCarryOver(member).
+					WithStripeSubsID(subs.ID),
 			},
 		},
 	}
