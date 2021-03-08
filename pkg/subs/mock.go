@@ -12,8 +12,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/reader"
-
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
@@ -22,7 +20,7 @@ import (
 
 type MockOrderBuilder struct {
 	id        string
-	userIDs   reader.MemberID
+	userIDs   pkg.MemberID
 	ftcID     string
 	unionID   string
 	price     price.FtcPrice
@@ -100,7 +98,7 @@ func (b MockOrderBuilder) Build() Order {
 
 	return Order{
 		ID: b.id,
-		MemberID: reader.MemberID{
+		MemberID: pkg.MemberID{
 			CompoundID: "",
 			FtcID:      null.StringFrom(b.ftcID),
 			UnionID:    null.NewString(b.unionID, b.unionID != ""),

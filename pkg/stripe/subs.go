@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -82,7 +83,7 @@ type Subs struct {
 // NewSubs converts stripe's subscription. It returns error if there's
 // no subscription item, which should deny membership modification since we have no idea what the user has subscribed to.
 // Such kind of error won't happen as long as stripe works.
-func NewSubs(ss *stripe.Subscription, ids reader.MemberID) (Subs, error) {
+func NewSubs(ss *stripe.Subscription, ids pkg.MemberID) (Subs, error) {
 
 	var dpm null.String
 	if ss.DefaultPaymentMethod != nil {

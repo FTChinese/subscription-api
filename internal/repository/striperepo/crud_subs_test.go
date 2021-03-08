@@ -3,7 +3,7 @@ package striperepo
 import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
@@ -21,7 +21,7 @@ func MustNewSubs() stripe.Subs {
 		panic(err)
 	}
 
-	subs, err := stripe.NewSubs(&ss, reader.MemberID{
+	subs, err := stripe.NewSubs(&ss, pkg.MemberID{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},

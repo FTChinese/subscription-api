@@ -7,8 +7,8 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"time"
@@ -16,7 +16,7 @@ import (
 
 func MockNewSubs() Subs {
 
-	subs, err := NewSubs(faker.MustGenStripeSubs(), reader.MemberID{
+	subs, err := NewSubs(faker.MustGenStripeSubs(), pkg.MemberID{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},

@@ -3,8 +3,8 @@ package controller
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/go-chi/chi"
@@ -98,11 +98,11 @@ func gatherAliPayInput(req *http.Request) (subs.AliPayInput, error) {
 // getReaderIDs extract ftc uuid or union id from request header.
 // It panic if both ftc id and union id are missing.
 // However it won't happen since middlewares already ensured at least one of them should exist.
-func getReaderIDs(h http.Header) reader.MemberID {
+func getReaderIDs(h http.Header) pkg.MemberID {
 	ftcID := h.Get(userIDKey)
 	unionID := h.Get(unionIDKey)
 
-	return reader.MemberID{
+	return pkg.MemberID{
 		CompoundID: "",
 		FtcID:      null.NewString(ftcID, ftcID != ""),
 		UnionID:    null.NewString(unionID, unionID != ""),

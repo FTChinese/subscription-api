@@ -3,15 +3,15 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // Subscription is a reduced version of stripe.Subscription.
 // Used as response when client asks for subscription data.
 // Deprecated
 type Subscription struct {
-	AccountID reader.MemberID `json:"-"`
+	AccountID pkg.MemberID `json:"-"`
 	price.Edition
 	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time `json:"created"`

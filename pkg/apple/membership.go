@@ -3,12 +3,13 @@ package apple
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
 
-func NewMembership(userID reader.MemberID, s Subscription) reader.Membership {
+func NewMembership(userID pkg.MemberID, s Subscription) reader.Membership {
 	return reader.Membership{
 		MemberID: userID,
 		Edition: price.Edition{

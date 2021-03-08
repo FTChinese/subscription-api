@@ -2,6 +2,7 @@ package striperepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
@@ -22,7 +23,7 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 		return stripe.SubsResult{}, err
 	}
 
-	mmb, err := tx.RetrieveMember(reader.MemberID{
+	mmb, err := tx.RetrieveMember(pkg.MemberID{
 		CompoundID: params.FtcID,
 		FtcID:      null.StringFrom(params.FtcID),
 		UnionID:    null.String{},

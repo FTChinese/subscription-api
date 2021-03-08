@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -102,7 +103,7 @@ func TestInvoices_membership(t *testing.T) {
 		CarriedOver invoice.Invoice
 	}
 	type args struct {
-		userID  reader.MemberID
+		userID  pkg.MemberID
 		current reader.Membership
 	}
 	tests := []struct {
@@ -119,11 +120,11 @@ func TestInvoices_membership(t *testing.T) {
 				CarriedOver: invoice.Invoice{},
 			},
 			args: args{
-				userID:  reader.NewFtcUserID(userID),
+				userID:  pkg.NewFtcUserID(userID),
 				current: reader.Membership{},
 			},
 			want: reader.Membership{
-				MemberID:      reader.NewFtcUserID(userID),
+				MemberID:      pkg.NewFtcUserID(userID),
 				Edition:       price.StdYearEdition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -150,11 +151,11 @@ func TestInvoices_membership(t *testing.T) {
 				CarriedOver: invoice.Invoice{},
 			},
 			args: args{
-				userID:  reader.NewFtcUserID(userID),
+				userID:  pkg.NewFtcUserID(userID),
 				current: current,
 			},
 			want: reader.Membership{
-				MemberID:      reader.NewFtcUserID(userID),
+				MemberID:      pkg.NewFtcUserID(userID),
 				Edition:       price.StdYearEdition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -181,11 +182,11 @@ func TestInvoices_membership(t *testing.T) {
 				CarriedOver: current.CarryOverInvoice(),
 			},
 			args: args{
-				userID:  reader.NewFtcUserID(userID),
+				userID:  pkg.NewFtcUserID(userID),
 				current: current,
 			},
 			want: reader.Membership{
-				MemberID:      reader.NewFtcUserID(userID),
+				MemberID:      pkg.NewFtcUserID(userID),
 				Edition:       price.StdYearEdition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -211,7 +212,7 @@ func TestInvoices_membership(t *testing.T) {
 				CarriedOver: invoice.Invoice{},
 			},
 			args: args{
-				userID:  reader.NewFtcUserID(userID),
+				userID:  pkg.NewFtcUserID(userID),
 				current: current,
 			},
 			want:    current.PlusAddOn(addon.New(enum.TierStandard, 367)),

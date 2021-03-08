@@ -3,10 +3,11 @@ package readerrepo
 import (
 	"database/sql"
 	"errors"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-func (env Env) ClaimAddOn(ids reader.MemberID) (reader.AddOnClaimed, error) {
+func (env Env) ClaimAddOn(ids pkg.MemberID) (reader.AddOnClaimed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 

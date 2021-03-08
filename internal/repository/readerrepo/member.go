@@ -2,10 +2,11 @@ package readerrepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-func (env Env) RetrieveMember(id reader.MemberID) (reader.Membership, error) {
+func (env Env) RetrieveMember(id pkg.MemberID) (reader.Membership, error) {
 	var m reader.Membership
 
 	err := env.db.Get(
