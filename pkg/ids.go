@@ -1,4 +1,4 @@
-package db
+package pkg
 
 import (
 	"github.com/FTChinese/go-rest"
