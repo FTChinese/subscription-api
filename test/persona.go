@@ -180,8 +180,7 @@ func (p *Persona) Membership() reader.Membership {
 }
 
 func (p *Persona) NewOrder(k enum.OrderKind) subs.Order {
-	return subs.NewMockOrderBuilder("").
-		WithUserIDs(p.AccountID()).
+	return subs.NewMockOrderBuilder(p.FtcID).
 		WithPrice(p.price).
 		WithKind(k).
 		WithPayMethod(p.payMethod).
