@@ -2,7 +2,10 @@ package txrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
@@ -334,6 +337,115 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 	}
 
 	_ = otx.Commit()
+}
+
+func TestMemberTx_SaveInvoice(t *testing.T) {
+	userID := uuid.New().String()
+
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		inv invoice.Invoice
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Invoice for create",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: invoice.NewMockInvoiceBuilder(userID).Build(),
+			},
+		},
+		{
+			name: "Invoice for renewal",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: invoice.NewMockInvoiceBuilder(userID).
+					WithOrderKind(enum.OrderKindRenew).
+					Build(),
+			},
+		},
+		{
+			name: "Invoice for upgrade",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: invoice.NewMockInvoiceBuilder(userID).
+					WithOrderKind(enum.OrderKindUpgrade).
+					Build(),
+			},
+		},
+		{
+			name: "Invoice for user-purchase addon",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: invoice.NewMockInvoiceBuilder(userID).
+					WithOrderKind(enum.OrderKindAddOn).
+					Build(),
+			},
+		},
+		{
+			name: "Invoice for upgrade carry-over addon",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: invoice.
+					NewFromCarryOver(reader.NewMockMemberBuilder(userID).
+						Build()).WithOrderID(db.MustOrderID()),
+			},
+		},
+		{
+			name: "Invoice for switching to Stripe carry-over addon",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: invoice.
+					NewFromCarryOver(reader.NewMockMemberBuilder(userID).
+						Build()).
+					WithStripeSubsID(faker.GenStripeSubID()),
+			},
+		},
+		{
+			name: "Invoice for switching to Apple carry-over addon",
+			fields: fields{
+				Tx: test.DB.MustBegin(),
+			},
+			args: args{
+				inv: invoice.
+					NewFromCarryOver(reader.NewMockMemberBuilder(userID).
+						Build()).
+					WithAppleTxID(faker.GenAppleSubID()),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+			if err := tx.SaveInvoice(tt.args.inv); (err != nil) != tt.wantErr {
+				t.Errorf("SaveInvoice() error = %v, wantErr %v", err, tt.wantErr)
+				_ = tx.Rollback()
+				return
+			}
+
+			_ = tx.Commit()
+		})
+	}
 }
 
 func TestOrderTx_CreateMember(t *testing.T) {
