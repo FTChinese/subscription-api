@@ -3,7 +3,6 @@ package striperepo
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
@@ -28,7 +27,7 @@ func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 		return stripe.SubsResult{}, nil
 	}
 
-	intent, err := cart.NewCheckoutIntents(mmb, cfg.Edition.Edition).
+	intent, err := reader.NewCheckoutIntents(mmb, cfg.Edition.Edition).
 		Get(enum.PayMethodStripe)
 
 	if err != nil {

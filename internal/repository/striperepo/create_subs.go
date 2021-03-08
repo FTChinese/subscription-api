@@ -3,7 +3,6 @@ package striperepo
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
@@ -42,7 +41,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
-	intent, err := cart.NewCheckoutIntents(mmb, params.Edition.Edition).
+	intent, err := reader.NewCheckoutIntents(mmb, params.Edition.Edition).
 		Get(enum.PayMethodStripe)
 	if err != nil {
 		sugar.Error(err)
