@@ -31,7 +31,7 @@ func (p ConfirmationParams) carryOverInvoice() invoice.Invoice {
 	if p.Order.Kind == enum.OrderKindUpgrade {
 		// We have to add this invoice's days to current membership's addon part.
 		return invoice.
-			NewFromUpgradeCarryOver(p.Member).
+			NewFromCarryOver(p.Member).
 			WithOrderID(p.Order.ID)
 	}
 

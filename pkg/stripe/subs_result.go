@@ -42,7 +42,8 @@ func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
 
 	var inv invoice.Invoice
 	if params.Kind == cart.SubsKindOneTimeToStripe {
-		inv = invoice.NewFromOneTimeToSubCarryOver(params.CurrentMember)
+		inv = invoice.NewFromCarryOver(params.CurrentMember).
+			WithStripeSubsID(subs.ID)
 	}
 
 	m := NewMembership(MembershipParams{

@@ -178,7 +178,7 @@ func TestInvoices_membership(t *testing.T) {
 					SetPeriodStart(now).
 					WithOrderKind(enum.OrderKindUpgrade).
 					Build(),
-				CarriedOver: invoice.NewFromUpgradeCarryOver(current),
+				CarriedOver: invoice.NewFromCarryOver(current),
 			},
 			args: args{
 				userID:  reader.NewFtcUserID(userID),
