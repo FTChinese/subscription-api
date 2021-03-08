@@ -63,6 +63,9 @@ func (b MockInvoiceBuilder) WithOrderKind(k enum.OrderKind) MockInvoiceBuilder {
 
 func (b MockInvoiceBuilder) WithAddOnSource(s addon.Source) MockInvoiceBuilder {
 	b.addOnSource = s
+	if s == addon.SourceCompensation {
+		b.orderID = ""
+	}
 	return b
 }
 
@@ -90,7 +93,7 @@ func (b MockInvoiceBuilder) Build() Invoice {
 		YearMonthDay:   dt.NewYearMonthDay(item.Price.Cycle),
 		AddOnSource:    b.addOnSource,
 		AppleTxID:      null.String{},
-		OrderID:        null.StringFrom(b.orderID),
+		OrderID:        null.NewString(b.orderID, b.orderID != ""),
 		OrderKind:      b.orderKind,
 		PaidAmount:     item.Payable().Amount,
 		PaymentMethod:  b.payMethod,
