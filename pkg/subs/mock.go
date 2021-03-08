@@ -23,6 +23,8 @@ import (
 type MockOrderBuilder struct {
 	id        string
 	userIDs   reader.MemberID
+	ftcID     string
+	unionID   string
 	price     price.FtcPrice
 	kind      enum.OrderKind
 	payMethod enum.PayMethod
@@ -31,18 +33,12 @@ type MockOrderBuilder struct {
 	period    dt.DatePeriod
 }
 
-func NewMockOrderBuilder(id string) MockOrderBuilder {
-	if id == "" {
-		id = db.MustOrderID()
-	}
+func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
 
 	return MockOrderBuilder{
-		id: id,
-		userIDs: reader.MemberID{
-			CompoundID: "",
-			FtcID:      null.StringFrom(uuid.New().String()),
-			UnionID:    null.String{},
-		}.MustNormalize(),
+		id:        db.MustOrderID(),
+		ftcID:     ftcID,
+		unionID:   "",
 		price:     faker.PriceStdYear,
 		kind:      enum.OrderKindCreate,
 		payMethod: enum.PayMethodAli,
@@ -50,8 +46,8 @@ func NewMockOrderBuilder(id string) MockOrderBuilder {
 	}
 }
 
-func (b MockOrderBuilder) WithUserIDs(ids reader.MemberID) MockOrderBuilder {
-	b.userIDs = ids
+func (b MockOrderBuilder) WithUnionID(id string) MockOrderBuilder {
+	b.unionID = id
 	return b
 }
 
@@ -98,9 +94,17 @@ func (b MockOrderBuilder) Build() Order {
 		confirmed = time.Now()
 	}
 
+	if b.ftcID == "" && b.unionID == "" {
+		b.ftcID = uuid.New().String()
+	}
+
 	return Order{
-		ID:            b.id,
-		MemberID:      b.userIDs,
+		ID: b.id,
+		MemberID: reader.MemberID{
+			CompoundID: "",
+			FtcID:      null.StringFrom(b.ftcID),
+			UnionID:    null.NewString(b.unionID, b.unionID != ""),
+		}.MustNormalize(),
 		PlanID:        item.Price.ID,
 		DiscountID:    item.Discount.DiscID,
 		Price:         item.Price.UnitAmount,
