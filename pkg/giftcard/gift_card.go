@@ -1,4 +1,4 @@
-package redeem
+package giftcard
 
 import (
 	"errors"
