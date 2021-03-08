@@ -167,7 +167,7 @@ func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 
 	return subs.Order{
 		ID:            headerRes.order.ID,
-		MemberID:      headerRes.order.MemberID,
+		UserIDs:       headerRes.order.UserIDs,
 		PlanID:        headerRes.order.PlanID,
 		DiscountID:    headerRes.order.DiscountID,
 		Price:         headerRes.order.Price,

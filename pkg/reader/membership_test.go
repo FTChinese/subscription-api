@@ -18,7 +18,7 @@ import (
 
 func TestMembership_IsZero(t *testing.T) {
 	type fields struct {
-		MemberID      pkg.MemberID
+		MemberID      pkg.UserIDs
 		Edition       price.Edition
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
@@ -45,7 +45,7 @@ func TestMembership_IsZero(t *testing.T) {
 		{
 			name: "Non-zero membership",
 			fields: fields{
-				MemberID: pkg.MemberID{
+				MemberID: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -61,7 +61,7 @@ func TestMembership_IsZero(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
-				MemberID:      tt.fields.MemberID,
+				UserIDs:       tt.fields.MemberID,
 				Edition:       tt.fields.Edition,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
@@ -84,7 +84,7 @@ func TestMembership_IsZero(t *testing.T) {
 
 func TestMembership_IsExpired(t *testing.T) {
 	type fields struct {
-		MemberID      pkg.MemberID
+		MemberID      pkg.UserIDs
 		Edition       price.Edition
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
@@ -111,7 +111,7 @@ func TestMembership_IsExpired(t *testing.T) {
 		{
 			name: "Expired membership",
 			fields: fields{
-				MemberID: pkg.MemberID{
+				MemberID: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -123,7 +123,7 @@ func TestMembership_IsExpired(t *testing.T) {
 		{
 			name: "Stripe expired but auto renew",
 			fields: fields{
-				MemberID: pkg.MemberID{
+				MemberID: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -139,7 +139,7 @@ func TestMembership_IsExpired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
-				MemberID:      tt.fields.MemberID,
+				UserIDs:       tt.fields.MemberID,
 				Edition:       tt.fields.Edition,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
@@ -162,7 +162,7 @@ func TestMembership_IsExpired(t *testing.T) {
 
 func TestMembership_Normalize(t *testing.T) {
 	type fields struct {
-		MemberID      pkg.MemberID
+		MemberID      pkg.UserIDs
 		Edition       price.Edition
 		LegacyTier    null.Int
 		LegacyExpire  null.Int
@@ -184,7 +184,7 @@ func TestMembership_Normalize(t *testing.T) {
 		{
 			name: "Sync from legacy",
 			fields: fields{
-				MemberID: pkg.MemberID{
+				MemberID: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -206,7 +206,7 @@ func TestMembership_Normalize(t *testing.T) {
 		{
 			name: "Sync to legacy",
 			fields: fields{
-				MemberID: pkg.MemberID{
+				MemberID: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -232,7 +232,7 @@ func TestMembership_Normalize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := Membership{
-				MemberID:      tt.fields.MemberID,
+				UserIDs:       tt.fields.MemberID,
 				Edition:       tt.fields.Edition,
 				LegacyTier:    tt.fields.LegacyTier,
 				LegacyExpire:  tt.fields.LegacyExpire,
@@ -264,7 +264,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expire 1 one year can renew",
 			fields: Membership{
-				MemberID: pkg.MemberID{
+				UserIDs: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -281,7 +281,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expire today can renew",
 			fields: Membership{
-				MemberID: pkg.MemberID{
+				UserIDs: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -298,7 +298,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expire on final date of 3rd year can renew",
 			fields: Membership{
-				MemberID: pkg.MemberID{
+				UserIDs: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -315,7 +315,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expire 3+ years later cannot renew",
 			fields: Membership{
-				MemberID: pkg.MemberID{
+				UserIDs: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -332,7 +332,7 @@ func TestMembership_WithinMaxRenewalPeriod(t *testing.T) {
 		{
 			name: "Expired yesterday cannot renew",
 			fields: Membership{
-				MemberID: pkg.MemberID{
+				UserIDs: pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -388,7 +388,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 	current := NewMockMemberBuilder(userID).Build()
 
 	type args struct {
-		userID pkg.MemberID
+		userID pkg.UserIDs
 		inv    invoice.Invoice
 	}
 	tests := []struct {
@@ -406,7 +406,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 				inv:    invoice.NewMockInvoiceBuilder(userID).SetPeriodStart(time.Now()).Build(),
 			},
 			want: Membership{
-				MemberID:      pkg.NewFtcUserID(userID),
+				UserIDs:       pkg.NewFtcUserID(userID),
 				Edition:       faker.PriceStdYear.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -434,7 +434,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 					Build(),
 			},
 			want: Membership{
-				MemberID:      pkg.NewFtcUserID(userID),
+				UserIDs:       pkg.NewFtcUserID(userID),
 				Edition:       faker.PriceStdYear.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
@@ -463,7 +463,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 					Build(),
 			},
 			want: Membership{
-				MemberID:      pkg.NewFtcUserID(userID),
+				UserIDs:       pkg.NewFtcUserID(userID),
 				Edition:       faker.PricePrm.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},

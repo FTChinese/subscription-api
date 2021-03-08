@@ -19,7 +19,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 	ftcId := uuid.New().String()
 	origTxId := faker.GenAppleSubID()
 	expire := chrono.TimeFrom(time.Now().AddDate(1, 0, 0))
-	memberID := pkg.MemberID{
+	memberID := pkg.UserIDs{
 		CompoundID: "",
 		FtcID:      null.StringFrom(ftcId),
 		UnionID:    null.String{},
@@ -76,7 +76,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{},
-				CurrentIAP: NewMembership(pkg.MemberID{
+				CurrentIAP: NewMembership(pkg.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(uuid.New().String()),
 					UnionID:    null.String{},
@@ -123,7 +123,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{
-					MemberID:      memberID,
+					UserIDs:       memberID,
 					Edition:       price.StdYearEdition,
 					ExpireDate:    chrono.DateFrom(time.Now()),
 					PaymentMethod: 0,
@@ -144,7 +144,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{
-					MemberID:      memberID,
+					UserIDs:       memberID,
 					Edition:       price.StdYearEdition,
 					ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, 0, -1)),
 					PaymentMethod: 0,
@@ -175,7 +175,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{
-					MemberID:      memberID,
+					UserIDs:       memberID,
 					Edition:       price.StdYearEdition,
 					ExpireDate:    chrono.DateFrom(time.Now().AddDate(0, 0, -1)),
 					PaymentMethod: 0,

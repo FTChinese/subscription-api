@@ -85,7 +85,7 @@ func (m Membership) claimAddOn(i invoice.Invoice) (Membership, error) {
 	}
 
 	return Membership{
-		MemberID:      m.MemberID,
+		UserIDs:       m.UserIDs,
 		Edition:       i.Edition,
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},

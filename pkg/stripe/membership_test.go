@@ -28,7 +28,7 @@ func TestNewMembership(t *testing.T) {
 			name: "New membership",
 			args: args{
 				params: MembershipParams{
-					UserIDs: pkg.MemberID{
+					UserIDs: pkg.UserIDs{
 						CompoundID: subs.FtcUserID.String,
 						FtcID:      subs.FtcUserID,
 					},
@@ -37,7 +37,7 @@ func TestNewMembership(t *testing.T) {
 				},
 			},
 			want: reader.Membership{
-				MemberID: pkg.MemberID{
+				UserIDs: pkg.UserIDs{
 					CompoundID: subs.FtcUserID.String,
 					FtcID:      subs.FtcUserID,
 				},

@@ -15,7 +15,7 @@ func TestSubscription_NewMembership(t *testing.T) {
 		t.Error(err)
 	}
 
-	got := NewMembership(pkg.MemberID{
+	got := NewMembership(pkg.UserIDs{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},
@@ -36,7 +36,7 @@ func TestSubscription_BuildOn(t *testing.T) {
 		t.Error(err)
 	}
 
-	got := NewMembership(pkg.MemberID{
+	got := NewMembership(pkg.UserIDs{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},

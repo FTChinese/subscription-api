@@ -11,7 +11,7 @@ import (
 // Used as response when client asks for subscription data.
 // Deprecated
 type Subscription struct {
-	AccountID pkg.MemberID `json:"-"`
+	AccountID pkg.UserIDs `json:"-"`
 	price.Edition
 	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time `json:"created"`

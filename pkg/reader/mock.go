@@ -49,7 +49,7 @@ func MockNewFtcAccount(kind enum.AccountKind) FtcAccount {
 }
 
 type MockMemberBuilder struct {
-	ids         pkg.MemberID
+	ids         pkg.UserIDs
 	price       price.Price
 	payMethod   enum.PayMethod
 	expiration  time.Time
@@ -64,7 +64,7 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 	}
 
 	return MockMemberBuilder{
-		ids: pkg.MemberID{
+		ids: pkg.UserIDs{
 			CompoundID: ftcID,
 			FtcID:      null.StringFrom(ftcID),
 			UnionID:    null.String{},
@@ -75,7 +75,7 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 	}
 }
 
-func (b MockMemberBuilder) WithIDs(ids pkg.MemberID) MockMemberBuilder {
+func (b MockMemberBuilder) WithIDs(ids pkg.UserIDs) MockMemberBuilder {
 	b.ids = ids
 	return b
 }
@@ -117,7 +117,7 @@ func (b MockMemberBuilder) WithAddOn(r addon.AddOn) MockMemberBuilder {
 
 func (b MockMemberBuilder) Build() Membership {
 	m := Membership{
-		MemberID:      b.ids,
+		UserIDs:       b.ids,
 		Edition:       b.price.Edition,
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},

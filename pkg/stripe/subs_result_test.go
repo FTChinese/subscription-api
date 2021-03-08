@@ -30,7 +30,7 @@ func Test_newSubsResult(t *testing.T) {
 			args: args{
 				subs: subs,
 				params: SubsResultParams{
-					UserIDs:       member.MemberID,
+					UserIDs:       member.UserIDs,
 					Kind:          cart.SubsKindOneTimeToStripe,
 					CurrentMember: member,
 					Action:        reader.ActionCreate,
@@ -41,7 +41,7 @@ func Test_newSubsResult(t *testing.T) {
 				MissingPaymentIntent: false,
 				Subs:                 subs,
 				Member: reader.Membership{
-					MemberID:      member.MemberID,
+					UserIDs:       member.UserIDs,
 					Edition:       subs.Edition,
 					LegacyTier:    null.IntFrom(reader.GetTierCode(subs.Tier)),
 					LegacyExpire:  null.IntFrom(subs.ExpiresAt().Unix()),

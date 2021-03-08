@@ -7,7 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-func (env Env) ClaimAddOn(ids pkg.MemberID) (reader.AddOnClaimed, error) {
+func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -39,7 +39,7 @@ func (env Env) ClaimAddOn(ids pkg.MemberID) (reader.AddOnClaimed, error) {
 		return reader.AddOnClaimed{}, err
 	}
 
-	addOns, err := otx.AddOnInvoices(member.MemberID)
+	addOns, err := otx.AddOnInvoices(member.UserIDs)
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
