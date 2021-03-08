@@ -1,14 +1,11 @@
 package invoice
 
 import (
-	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"time"
 )
@@ -32,97 +29,6 @@ type Invoice struct {
 	ConsumedUTC   chrono.Time    `json:"consumedUtc" db:"consumed_utc"`
 	dt.DateTimePeriod
 	CarriedOverUtc chrono.Time `json:"carriedOver" db:"carried_over_utc"` // In case user has carry-over for upgrading or switching stripe, add a timestamp to original invoice.
-}
-
-// NewFromCarryOver creates a new invoice based on remainig days of current membership.
-// This should only be used when user is upgrading from standard to premium using one-time purchase,
-// or switch from one-=time purchase to subscription mode.
-func NewFromCarryOver(m reader.Membership) Invoice {
-	return Invoice{
-		ID:         db.InvoiceID(),
-		CompoundID: m.CompoundID,
-		Edition:    m.Edition,
-		YearMonthDay: dt.YearMonthDay{
-			Days: m.RemainingDays(),
-		},
-		AddOnSource:    addon.SourceCarryOver,
-		AppleTxID:      null.String{},
-		OrderID:        null.String{},
-		OrderKind:      enum.OrderKindAddOn, // All carry-over invoice are add-ons
-		PaidAmount:     0,
-		PaymentMethod:  m.PaymentMethod,
-		PriceID:        m.FtcPlanID,
-		StripeSubsID:   null.String{},
-		CreatedUTC:     chrono.TimeNow(),
-		ConsumedUTC:    chrono.Time{}, // Will be consumed in the future.
-		DateTimePeriod: dt.DateTimePeriod{},
-		CarriedOverUtc: chrono.Time{},
-	}
-}
-
-func (i Invoice) NewMembership(userID reader.MemberID, current reader.Membership) (reader.Membership, error) {
-	// An empty invoice returns the current membership immediately without touching it.
-	if i.IsZero() {
-		return current, nil
-	}
-
-	// For add-on invoice, only update the add-on part
-	// while keep the rest as is since current membership
-	// might comes from Stripe or Apple.
-	// For upgrading's carry over, we also handle it this way.
-	if i.OrderKind == enum.OrderKindAddOn {
-		return current.WithAddOn(addon.New(i.Tier, i.TotalDays())), nil
-	}
-
-	// The invoice should have been consumed utc set before updating membership.
-	if !i.IsConsumed() {
-		return reader.Membership{}, errors.New("invoice not finalized")
-	}
-
-	// If the invoice is not intended for add-on, it must have period set.
-	return reader.Membership{
-		MemberID:      userID,
-		Edition:       i.Edition,
-		LegacyTier:    null.Int{},
-		LegacyExpire:  null.Int{},
-		ExpireDate:    chrono.DateFrom(i.EndUTC.Time),
-		PaymentMethod: i.PaymentMethod,
-		FtcPlanID:     i.PriceID,
-		StripeSubsID:  null.String{},
-		StripePlanID:  null.String{},
-		AutoRenewal:   false,
-		Status:        enum.SubsStatusNull,
-		AppleSubsID:   null.String{},
-		B2BLicenceID:  null.String{},
-		AddOn:         current.AddOn, // For upgrade, the carried over part is not added.
-	}.Sync(), nil
-}
-
-func (i Invoice) TransferAddOn(current reader.Membership) (reader.Membership, error) {
-	if !i.IsAddOn() {
-		return reader.Membership{}, errors.New("cannot use non-addon invoice as add-on")
-	}
-
-	if i.IsConsumed() {
-		return reader.Membership{}, errors.New("invoice not finalized")
-	}
-
-	return reader.Membership{
-		MemberID:      current.MemberID,
-		Edition:       i.Edition,
-		LegacyTier:    null.Int{},
-		LegacyExpire:  null.Int{},
-		ExpireDate:    chrono.DateFrom(i.EndUTC.Time),
-		PaymentMethod: i.PaymentMethod,
-		FtcPlanID:     i.PriceID,
-		StripeSubsID:  null.String{},
-		StripePlanID:  null.String{},
-		AutoRenewal:   false,
-		Status:        0,
-		AppleSubsID:   null.String{},
-		B2BLicenceID:  null.String{},
-		AddOn:         current.AddOn.Clear(i.Tier),
-	}.Sync(), nil
 }
 
 func (i Invoice) SetPeriod(start time.Time) Invoice {

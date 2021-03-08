@@ -47,7 +47,7 @@ type Invoices struct {
 // Create new membership based on purchased invoice and optional carry over invoice.
 func (i Invoices) membership(userID reader.MemberID, current reader.Membership) (reader.Membership, error) {
 	// This will update expiration date.
-	current, err := i.Purchased.NewMembership(userID, current)
+	current, err := current.WithInvoice(userID, i.Purchased)
 
 	if err != nil {
 		return reader.Membership{}, err
@@ -58,5 +58,5 @@ func (i Invoices) membership(userID reader.MemberID, current reader.Membership) 
 	}
 
 	// This will update add-on part if carried over invoice is not empty.
-	return i.CarriedOver.NewMembership(userID, current)
+	return current.WithInvoice(userID, i.CarriedOver)
 }

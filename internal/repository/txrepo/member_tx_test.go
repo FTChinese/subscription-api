@@ -402,9 +402,8 @@ func TestMemberTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: invoice.
-					NewFromCarryOver(reader.NewMockMemberBuilder(userID).
-						Build()).WithOrderID(db.MustOrderID()),
+				inv: reader.NewMockMemberBuilder(userID).
+					Build().CarryOverInvoice().WithOrderID(db.MustOrderID()),
 			},
 		},
 		{
@@ -413,9 +412,8 @@ func TestMemberTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: invoice.
-					NewFromCarryOver(reader.NewMockMemberBuilder(userID).
-						Build()).
+				inv: reader.NewMockMemberBuilder(userID).
+					Build().CarryOverInvoice().
 					WithStripeSubsID(faker.GenStripeSubID()),
 			},
 		},
@@ -425,9 +423,8 @@ func TestMemberTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: invoice.
-					NewFromCarryOver(reader.NewMockMemberBuilder(userID).
-						Build()).
+				inv: reader.NewMockMemberBuilder(userID).
+					Build().CarryOverInvoice().
 					WithAppleTxID(faker.GenAppleSubID()),
 			},
 		},

@@ -178,7 +178,7 @@ func TestInvoices_membership(t *testing.T) {
 					SetPeriodStart(now).
 					WithOrderKind(enum.OrderKindUpgrade).
 					Build(),
-				CarriedOver: invoice.NewFromCarryOver(current),
+				CarriedOver: current.CarryOverInvoice(),
 			},
 			args: args{
 				userID:  reader.NewFtcUserID(userID),
@@ -198,7 +198,7 @@ func TestInvoices_membership(t *testing.T) {
 				Status:        0,
 				AppleSubsID:   null.String{},
 				B2BLicenceID:  null.String{},
-				AddOn:         current.CarriedOver(),
+				AddOn:         current.CarriedOverAddOn(),
 			}.Sync(),
 			wantErr: false,
 		},
@@ -214,7 +214,7 @@ func TestInvoices_membership(t *testing.T) {
 				userID:  reader.NewFtcUserID(userID),
 				current: current,
 			},
-			want:    current.WithAddOn(addon.New(enum.TierStandard, 367)),
+			want:    current.PlusAddOn(addon.New(enum.TierStandard, 367)),
 			wantErr: false,
 		},
 	}
