@@ -44,7 +44,7 @@ func (c Counter) WithWxpay(app wechat.PayApp) Counter {
 // allows all user to pay via alipay or wxpay, even if current membership is a valid stripe or iap.
 func (c Counter) checkout(m reader.Membership) (Checkout, error) {
 
-	intent, err := cart.NewCheckoutIntents(m, c.Price.Edition).
+	intent, err := reader.NewCheckoutIntents(m, c.Price.Edition).
 		Get(c.Method)
 	if err != nil {
 		return Checkout{}, err
