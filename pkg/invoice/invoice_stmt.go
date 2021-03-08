@@ -3,21 +3,25 @@ package invoice
 const StmtCreateInvoice = `
 INSERT INTO premium.ftc_invoice
 SET id = :id,
+	user_compound_id = :compound_id,
 	tier = :tier,
 	cycle = :cycle,
-	cycle_count = :cycle_count,
-	trial_days = :trial_days,
-	order_kind = :order_kind,
-	addon_days = :addon_days,
+	years = :years,
+	months = :months,
+	extra_days = :days,
 	addon_source = :addon_source,
-	payment_method = :payment_method,
-	user_compound_id = :compound_id,
+	apple_tx_id = :apple_tx_id,
 	order_id = :order_id,
+	order_kind = :order_kind,
+	paid_amount = :paid_amount,
+	payment_method = :payment_method,
 	price_id = :price_id,
-	created_utc = UTC_TIMESTAMP(),
+	stripe_subs_id = :stripe_subs_id,
+	created_utc = :created_utc,
 	consumed_utc = :consumed_utc,
 	start_utc = :start_utc,
-	end_utc = :end_utc`
+	end_utc = :end_utc,
+	carried_over_utc = :carried_over_utc`
 
 // StmtCarriedOver adds current moment to all invoices whose end time is after
 // so that we know that an invoice's remaining time is carried over to a new
@@ -39,21 +43,23 @@ SELECT EXISTS(
 
 const stmtColInvoice = `
 SELECT id,
+	user_compound_id AS compound_id,
 	tier,
 	cycle,
-	cycle_count,
-	trial_days,
-	order_kind,
-	addon_days,
+	years,
+	months,
+	extra_days AS days,
 	addon_source,
-	payment_method,
-	user_compound_id AS compound_id,
 	order_id,
+	order_kind,
+	paid_amount,
+	payment_method,
 	price_id,
 	created_utc,
 	consumed_utc,
 	start_utc,
-	end_utc
+	end_utc,
+	carried_over_utc
 FROM premium.ftc_invoice
 `
 
