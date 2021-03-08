@@ -2,7 +2,6 @@ package readerrepo
 
 import (
 	"database/sql"
-	"errors"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
@@ -28,13 +27,8 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 
 	sugar.Infof("Membership retrieved %v", member)
 
-	if member.IsZero() {
-		_ = otx.Rollback()
-		return reader.AddOnClaimed{}, errors.New("")
-	}
-
 	if err := member.ShouldUseAddOn(); err != nil {
-		sugar.Info("Add on cannot be transferred to membership %v", member)
+		sugar.Infof("Add on cannot be transferred to membership %v", member)
 		_ = otx.Rollback()
 		return reader.AddOnClaimed{}, err
 	}
@@ -60,6 +54,13 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 		return reader.AddOnClaimed{}, err
 	}
 
+	err = otx.UpdateMember(result.Membership)
+	if err != nil {
+		sugar.Error(err)
+		_ = otx.Rollback()
+		return reader.AddOnClaimed{}, err
+	}
+
 	for _, inv := range result.Invoices {
 		err = otx.AddOnInvoiceConsumed(inv)
 		if err != nil {
@@ -67,13 +68,6 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 			_ = otx.Rollback()
 			return reader.AddOnClaimed{}, err
 		}
-	}
-
-	err = otx.UpdateMember(result.Membership)
-	if err != nil {
-		sugar.Error(err)
-		_ = otx.Rollback()
-		return reader.AddOnClaimed{}, err
 	}
 
 	return result, nil
