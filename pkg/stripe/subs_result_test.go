@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/cart"
-	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -55,10 +54,10 @@ func Test_newSubsResult(t *testing.T) {
 					Status:        enum.SubsStatusActive,
 					AppleSubsID:   null.String{},
 					B2BLicenceID:  null.String{},
-					AddOn:         member.CarriedOver(),
+					AddOn:         member.CarriedOverAddOn(),
 				}.Sync(),
 				Snapshot: member.Snapshot(reader.StripeArchiver(reader.ActionCreate)),
-				CarryOverInvoice: invoice.NewFromCarryOver(member).
+				CarryOverInvoice: member.CarryOverInvoice().
 					WithStripeSubsID(subs.ID),
 			},
 		},

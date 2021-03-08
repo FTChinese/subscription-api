@@ -3,18 +3,17 @@ package readerrepo
 import (
 	"database/sql"
 	"errors"
-	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-func (env Env) ClaimAddOn(ids reader.MemberID) (invoice.AddOnClaimed, error) {
+func (env Env) ClaimAddOn(ids reader.MemberID) (reader.AddOnClaimed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	otx, err := env.BeginTx()
 	if err != nil {
 		sugar.Error(err)
-		return invoice.AddOnClaimed{}, err
+		return reader.AddOnClaimed{}, err
 	}
 
 	sugar.Infof("Start retrieving membership for %v", ids)
@@ -23,41 +22,41 @@ func (env Env) ClaimAddOn(ids reader.MemberID) (invoice.AddOnClaimed, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return invoice.AddOnClaimed{}, err
+		return reader.AddOnClaimed{}, err
 	}
 
 	sugar.Infof("Membership retrieved %v", member)
 
 	if member.IsZero() {
 		_ = otx.Rollback()
-		return invoice.AddOnClaimed{}, errors.New("")
+		return reader.AddOnClaimed{}, errors.New("")
 	}
 
 	if err := member.ShouldUseAddOn(); err != nil {
 		sugar.Info("Add on cannot be transferred to membership %v", member)
 		_ = otx.Rollback()
-		return invoice.AddOnClaimed{}, err
+		return reader.AddOnClaimed{}, err
 	}
 
 	addOns, err := otx.AddOnInvoices(member.MemberID)
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return invoice.AddOnClaimed{}, err
+		return reader.AddOnClaimed{}, err
 	}
 
 	if len(addOns) == 0 {
 		sugar.Info("No add-on")
 		_ = otx.Rollback()
-		return invoice.AddOnClaimed{}, sql.ErrNoRows
+		return reader.AddOnClaimed{}, sql.ErrNoRows
 	}
 
 	// otherwise we might override valid data.
-	result, err := invoice.NewAddOnClaimed(addOns, member)
+	result, err := member.ClaimAddOns(addOns)
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return invoice.AddOnClaimed{}, err
+		return reader.AddOnClaimed{}, err
 	}
 
 	for _, inv := range result.Invoices {
@@ -65,7 +64,7 @@ func (env Env) ClaimAddOn(ids reader.MemberID) (invoice.AddOnClaimed, error) {
 		if err != nil {
 			sugar.Error(err)
 			_ = otx.Rollback()
-			return invoice.AddOnClaimed{}, err
+			return reader.AddOnClaimed{}, err
 		}
 	}
 
@@ -73,7 +72,7 @@ func (env Env) ClaimAddOn(ids reader.MemberID) (invoice.AddOnClaimed, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return invoice.AddOnClaimed{}, err
+		return reader.AddOnClaimed{}, err
 	}
 
 	return result, nil
