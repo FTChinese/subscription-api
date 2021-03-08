@@ -1,11 +1,8 @@
 package invoice
 
 import (
-	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"time"
 )
 
@@ -36,7 +33,7 @@ func NewAddOnGroup(inv []Invoice) AddOnGroup {
 // purchased period is set and can be transferred to
 // membership. Premium invoices will be used if exists,
 // then fallback to standard edition.
-func (g AddOnGroup) Consumable(start time.Time) ConsumedAddOns {
+func (g AddOnGroup) Consumable(start time.Time) []Invoice {
 	prmAddOns, ok := g[enum.TierPremium]
 	if ok {
 		return consumeAddOn(prmAddOns, start)
@@ -65,42 +62,4 @@ func consumeAddOn(addOns []Invoice, start time.Time) []Invoice {
 	}
 
 	return invoices
-}
-
-// ConsumedAddOns is a slice of add-on invoices that
-// are consumed.
-type ConsumedAddOns []Invoice
-
-// ClaimedBy transfers the latest add-on invoice's end time
-// to membership.
-func (c ConsumedAddOns) ClaimedBy(m reader.Membership) (AddOnClaimed, error) {
-	if len(c) == 0 {
-		return AddOnClaimed{}, errors.New("no addon invoice found")
-	}
-
-	latest := c[len(c)-1]
-	newM, err := latest.TransferAddOn(m)
-	if err != nil {
-		return AddOnClaimed{}, err
-	}
-
-	return AddOnClaimed{
-		Invoices:   c,
-		Membership: newM,
-		Snapshot:   m.Snapshot(reader.FtcArchiver(enum.OrderKindAddOn)),
-	}, nil
-}
-
-// AddOnClaimed contains the data that should be
-// used to perform add-on transfer.
-type AddOnClaimed struct {
-	Invoices   []Invoice         // The invoices used to extend membership's expiration date. They will not be used next time.
-	Membership reader.Membership // Update membership.
-	Snapshot   reader.MemberSnapshot
-}
-
-func NewAddOnClaimed(addOns []Invoice, m reader.Membership) (AddOnClaimed, error) {
-	return NewAddOnGroup(addOns).
-		Consumable(dt.PickLater(time.Now(), m.ExpireDate.Time)).
-		ClaimedBy(m)
 }

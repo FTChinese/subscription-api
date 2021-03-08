@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -380,46 +381,129 @@ func TestMembership_RemainingDays(t *testing.T) {
 	t.Logf("%d", m2.RemainingDays())
 }
 
-func TestReservedDays_Plus(t *testing.T) {
-	type fields struct {
-		Standard int64
-		Premium  int64
-	}
+func TestMembership_WithInvoice(t *testing.T) {
+	userID := uuid.New().String()
+
+	current := NewMockMemberBuilder(userID).Build()
+
 	type args struct {
-		other addon.AddOn
+		userID MemberID
+		inv    invoice.Invoice
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   addon.AddOn
+		name    string
+		fields  Membership
+		args    args
+		want    Membership
+		wantErr bool
 	}{
 		{
-			name: "Plus",
-			fields: fields{
-				Standard: 31,
-				Premium:  101,
-			},
+			name:   "Create membership",
+			fields: Membership{},
 			args: args{
-				other: addon.AddOn{
-					Standard: 15,
-					Premium:  19,
-				},
+				userID: NewFtcUserID(userID),
+				inv:    invoice.NewMockInvoiceBuilder(userID).SetPeriodStart(time.Now()).Build(),
 			},
-			want: addon.AddOn{
-				Standard: 31 + 15,
-				Premium:  101 + 19,
+			want: Membership{
+				MemberID:      NewFtcUserID(userID),
+				Edition:       faker.PriceStdYear.Edition,
+				LegacyTier:    null.Int{},
+				LegacyExpire:  null.Int{},
+				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
+				PaymentMethod: enum.PayMethodAli,
+				FtcPlanID:     null.StringFrom(faker.PriceStdYear.ID),
+				StripeSubsID:  null.String{},
+				StripePlanID:  null.String{},
+				AutoRenewal:   false,
+				Status:        0,
+				AppleSubsID:   null.String{},
+				B2BLicenceID:  null.String{},
+				AddOn:         addon.AddOn{},
+			}.Sync(),
+			wantErr: false,
+		},
+		{
+			name:   "Renew membership",
+			fields: current,
+			args: args{
+				userID: NewFtcUserID(userID),
+				inv: invoice.NewMockInvoiceBuilder(userID).
+					WithOrderKind(enum.OrderKindRenew).
+					SetPeriodStart(current.ExpireDate.Time).
+					Build(),
 			},
+			want: Membership{
+				MemberID:      NewFtcUserID(userID),
+				Edition:       faker.PriceStdYear.Edition,
+				LegacyTier:    null.Int{},
+				LegacyExpire:  null.Int{},
+				ExpireDate:    chrono.DateFrom(current.ExpireDate.AddDate(1, 0, 1)),
+				PaymentMethod: enum.PayMethodAli,
+				FtcPlanID:     null.StringFrom(faker.PriceStdYear.ID),
+				StripeSubsID:  null.String{},
+				StripePlanID:  null.String{},
+				AutoRenewal:   false,
+				Status:        0,
+				AppleSubsID:   null.String{},
+				B2BLicenceID:  null.String{},
+				AddOn:         addon.AddOn{},
+			}.Sync(),
+			wantErr: false,
+		},
+		{
+			name:   "Upgrade membership",
+			fields: current,
+			args: args{
+				userID: NewFtcUserID(userID),
+				inv: invoice.NewMockInvoiceBuilder(userID).
+					WithPrice(faker.PricePrm).
+					WithOrderKind(enum.OrderKindUpgrade).
+					SetPeriodStart(time.Now()).
+					Build(),
+			},
+			want: Membership{
+				MemberID:      NewFtcUserID(userID),
+				Edition:       faker.PricePrm.Edition,
+				LegacyTier:    null.Int{},
+				LegacyExpire:  null.Int{},
+				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
+				PaymentMethod: enum.PayMethodAli,
+				FtcPlanID:     null.StringFrom(faker.PricePrm.ID),
+				StripeSubsID:  null.String{},
+				StripePlanID:  null.String{},
+				AutoRenewal:   false,
+				Status:        0,
+				AppleSubsID:   null.String{},
+				B2BLicenceID:  null.String{},
+				AddOn:         addon.AddOn{},
+			}.Sync(),
+			wantErr: false,
+		},
+		{
+			name:   "Membership addon",
+			fields: current,
+			args: args{
+				userID: NewFtcUserID(userID),
+				inv: invoice.NewMockInvoiceBuilder(userID).
+					WithOrderKind(enum.OrderKindAddOn).
+					Build(),
+			},
+			want: current.PlusAddOn(addon.AddOn{
+				Standard: 367,
+				Premium:  0,
+			}),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := addon.AddOn{
-				Standard: tt.fields.Standard,
-				Premium:  tt.fields.Premium,
+
+			got, err := tt.fields.WithInvoice(tt.args.userID, tt.args.inv)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("WithInvoice() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-			if got := d.Plus(tt.args.other); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Plus() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("WithInvoice() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -1,8 +1,10 @@
 package reader
 
 import (
+	"errors"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"math"
 	"time"
 
@@ -234,4 +236,41 @@ func (m Membership) Snapshot(by Archiver) MemberSnapshot {
 		CreatedUTC: chrono.TimeNow(),
 		Membership: m,
 	}
+}
+
+func (m Membership) WithInvoice(userID MemberID, inv invoice.Invoice) (Membership, error) {
+	if inv.IsZero() {
+		return m, nil
+	}
+
+	// For add-on invoice, only update the add-on part
+	// while keep the rest as is since current membership
+	// might comes from Stripe or Apple.
+	// For upgrading's carry over, we also handle it this way.
+	if inv.OrderKind == enum.OrderKindAddOn {
+		return m.PlusAddOn(addon.New(inv.Tier, inv.TotalDays())), nil
+	}
+
+	// The invoice should have been consumed utc set before updating membership.
+	if !inv.IsConsumed() {
+		return Membership{}, errors.New("invoice not finalized")
+	}
+
+	// If the invoice is not intended for add-on, it must have period set.
+	return Membership{
+		MemberID:      userID,
+		Edition:       inv.Edition,
+		LegacyTier:    null.Int{},
+		LegacyExpire:  null.Int{},
+		ExpireDate:    chrono.DateFrom(inv.EndUTC.Time),
+		PaymentMethod: inv.PaymentMethod,
+		FtcPlanID:     inv.PriceID,
+		StripeSubsID:  null.String{},
+		StripePlanID:  null.String{},
+		AutoRenewal:   false,
+		Status:        enum.SubsStatusNull,
+		AppleSubsID:   null.String{},
+		B2BLicenceID:  null.String{},
+		AddOn:         m.AddOn, // For upgrade, the carried over part is not added.
+	}.Sync(), nil
 }
