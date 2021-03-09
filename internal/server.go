@@ -110,7 +110,7 @@ func StartServer(s ServerStatus) {
 		// List a list of add-on belonging to a user.
 		//r.Get("/", )
 		// Redeem add-on
-		r.Post("/", payRouter.RedeemAddOn)
+		r.Post("/", payRouter.ClaimAddOn)
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
