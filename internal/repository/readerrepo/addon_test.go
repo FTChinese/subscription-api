@@ -18,6 +18,8 @@ import (
 func TestEnv_ClaimAddOn(t *testing.T) {
 	userID := uuid.New().String()
 
+	t.Logf("User id: %s", userID)
+
 	repo := test.NewRepo()
 	repo.MustSaveMembership(reader.NewMockMemberBuilder(userID).
 		WithExpiration(time.Now().AddDate(0, 0, -1)).
