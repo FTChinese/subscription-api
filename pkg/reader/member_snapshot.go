@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/guregu/null"
 )
 
@@ -40,10 +41,6 @@ type Archiver struct {
 }
 
 var (
-	ArchiverAppleVerify = Archiver{
-		Name:   NameApple,
-		Action: ActionVerify,
-	}
 	ArchiverAppleLink = Archiver{
 		Name:   NameApple,
 		Action: ActionLink,
@@ -136,4 +133,18 @@ func (s MemberSnapshot) WithOrder(id string) MemberSnapshot {
 func (s MemberSnapshot) WithArchiver(by Archiver) MemberSnapshot {
 	s.CreatedBy = null.StringFrom(by.String())
 	return s
+}
+
+// Snapshot takes a snapshot of membership, usually before modifying it.
+func (m Membership) Snapshot(by Archiver) MemberSnapshot {
+	if m.IsZero() {
+		return MemberSnapshot{}
+	}
+
+	return MemberSnapshot{
+		SnapshotID: pkg.SnapshotID(),
+		CreatedBy:  null.StringFrom(by.String()),
+		CreatedUTC: chrono.TimeNow(),
+		Membership: m,
+	}
 }
