@@ -509,3 +509,282 @@ func TestMembership_WithInvoice(t *testing.T) {
 		})
 	}
 }
+
+func TestMembership_OrderKindByOneTime(t *testing.T) {
+
+	userID := uuid.New().String()
+
+	type args struct {
+		e price.Edition
+	}
+	tests := []struct {
+		name    string
+		fields  Membership
+		args    args
+		want    enum.OrderKind
+		wantErr bool
+	}{
+		{
+			name:   "New member",
+			fields: Membership{},
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    enum.OrderKindCreate,
+			wantErr: false,
+		},
+		{
+			name:   "Renewal",
+			fields: NewMockMemberBuilder(userID).Build(),
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    enum.OrderKindRenew,
+			wantErr: false,
+		},
+		{
+			name:   "Exceed renewal",
+			fields: NewMockMemberBuilder(userID).WithExpiration(time.Now().AddDate(3, 0, 1)).Build(),
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    enum.OrderKindNull,
+			wantErr: true,
+		},
+		{
+			name:   "Upgrade",
+			fields: NewMockMemberBuilder(userID).Build(),
+			args: args{
+				e: price.PremiumEdition,
+			},
+			want:    enum.OrderKindUpgrade,
+			wantErr: false,
+		},
+		{
+			name: "Standard add-on for premium",
+			fields: NewMockMemberBuilder(userID).
+				WithPrice(faker.PricePrm.Price).
+				Build(),
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    enum.OrderKindAddOn,
+			wantErr: false,
+		},
+		{
+			name:   "Stripe standard upgrade to premium",
+			fields: NewMockMemberBuilder(userID).WithPayMethod(enum.PayMethodStripe).Build(),
+			args: args{
+				e: price.PremiumEdition,
+			},
+			want:    enum.OrderKindNull,
+			wantErr: true,
+		},
+		{
+			name: "Stripe standard purchase standard add-on",
+			fields: NewMockMemberBuilder(userID).
+				WithPayMethod(enum.PayMethodStripe).
+				Build(),
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    enum.OrderKindAddOn,
+			wantErr: false,
+		},
+		{
+			name: "Stripe premium purchase standard add-on",
+			fields: NewMockMemberBuilder(userID).
+				WithPayMethod(enum.PayMethodStripe).
+				WithPrice(faker.PricePrm.Price).
+				Build(),
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    enum.OrderKindAddOn,
+			wantErr: false,
+		},
+		{
+			name: "Stripe premium purchase premium add-on",
+			fields: NewMockMemberBuilder(userID).
+				WithPayMethod(enum.PayMethodStripe).
+				WithPrice(faker.PricePrm.Price).
+				Build(),
+			args: args{
+				e: price.PremiumEdition,
+			},
+			want:    enum.OrderKindAddOn,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := tt.fields.OrderKindByOneTime(tt.args.e)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("OrderKindByOneTime() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("OrderKindByOneTime() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMembership_SubsKindByStripe(t *testing.T) {
+	userID := uuid.New().String()
+
+	type args struct {
+		e price.Edition
+	}
+	tests := []struct {
+		name    string
+		fields  Membership
+		args    args
+		want    SubsKind
+		wantErr bool
+	}{
+		{
+			name:   "Empty",
+			fields: Membership{},
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    SubsKindNew,
+			wantErr: false,
+		},
+		{
+			name:   "One-time standard switch to Stripe",
+			fields: NewMockMemberBuilder(userID).Build(),
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    SubsKindOneTimeToSub,
+			wantErr: false,
+		},
+		{
+			name:   "Already Stripe Premium",
+			fields: NewMockMemberBuilder(userID).WithPayMethod(enum.PayMethodStripe).WithPrice(faker.PricePrm.Price).Build(),
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    SubsKindZero,
+			wantErr: true,
+		},
+		{
+			name:   "Stripe standard upgrade",
+			fields: NewMockMemberBuilder(userID).WithPayMethod(enum.PayMethodStripe).Build(),
+			args: args{
+				e: price.PremiumEdition,
+			},
+			want:    SubsKindUpgrade,
+			wantErr: false,
+		},
+		{
+			name: "Stripe standard same cycle",
+			fields: NewMockMemberBuilder(userID).
+				WithPayMethod(enum.PayMethodStripe).
+				Build(),
+			args: args{
+				e: price.StdYearEdition,
+			},
+			want:    SubsKindZero,
+			wantErr: true,
+		},
+		{
+			name: "Stripe standard different cycle",
+			fields: NewMockMemberBuilder(userID).
+				WithPayMethod(enum.PayMethodStripe).
+				Build(),
+			args: args{
+				e: price.StdMonthEdition,
+			},
+			want:    SubsKindSwitchCycle,
+			wantErr: false,
+		},
+		{
+			name: "Active Apple cannot user Stripe",
+			fields: NewMockMemberBuilder(userID).
+				WithPayMethod(enum.PayMethodApple).
+				Build(),
+			args: args{
+				e: price.StdMonthEdition,
+			},
+			want:    SubsKindZero,
+			wantErr: true,
+		},
+		{
+			name: "Active B2B cannot user Stripe",
+			fields: NewMockMemberBuilder(userID).
+				WithPayMethod(enum.PayMethodB2B).
+				Build(),
+			args: args{
+				e: price.StdMonthEdition,
+			},
+			want:    SubsKindZero,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := tt.fields.SubsKindByStripe(tt.args.e)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SubsKindByStripe() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("SubsKindByStripe() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMembership_SubsKindByApple(t *testing.T) {
+	userID := uuid.New().String()
+
+	tests := []struct {
+		name    string
+		fields  Membership
+		want    SubsKind
+		wantErr bool
+	}{
+		{
+			name:    "Empty",
+			fields:  Membership{},
+			want:    SubsKindNew,
+			wantErr: false,
+		},
+		{
+			name:    "One-time carried over",
+			fields:  NewMockMemberBuilder(userID).Build(),
+			want:    SubsKindOneTimeToSub,
+			wantErr: false,
+		},
+		{
+			name:    "Active Stripe cannot use Apple",
+			fields:  NewMockMemberBuilder(userID).WithPayMethod(enum.PayMethodStripe).Build(),
+			want:    SubsKindZero,
+			wantErr: true,
+		},
+		{
+			name:    "Active Apple can be refreshed",
+			fields:  NewMockMemberBuilder(userID).WithPayMethod(enum.PayMethodApple).Build(),
+			want:    SubsKindRefresh,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := tt.fields.SubsKindByApple()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SubsKindByApple() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("SubsKindByApple() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
