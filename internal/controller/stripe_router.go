@@ -29,7 +29,7 @@ func NewStripeRouter(db *sqlx.DB, cfg config.BuildConfig, logger *zap.Logger) St
 	return StripeRouter{
 		config:     cfg,
 		signingKey: config.MustLoadStripeSigningKey().Pick(cfg.Live()),
-		readerRepo: readerrepo.NewEnv(db),
+		readerRepo: readerrepo.NewEnv(db, logger),
 		stripeRepo: striperepo.NewEnv(db, client, logger),
 		client:     client,
 		logger:     logger,
