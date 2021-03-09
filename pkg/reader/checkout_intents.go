@@ -4,24 +4,132 @@ import (
 	"errors"
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"strings"
 )
 
+func formatMethods(methods []enum.PayMethod) string {
+	l := len(methods)
+	switch {
+	case l == 0:
+		return ""
+
+	case l == 1:
+		return methods[0].String()
+
+	case l >= 2:
+		var buf strings.Builder
+		for i, v := range methods {
+			if i == 0 {
+				buf.WriteString(v.String())
+				continue
+			}
+			if i == l-1 {
+				buf.WriteString(" or " + v.String())
+				continue
+			}
+
+			buf.WriteString(", " + v.String())
+		}
+		return buf.String()
+	}
+
+	return ""
+}
+
+// CheckoutIntent decides how user want to purchase a product.
+// This is determined by current membership, product and payment method selected.
+// If user chooses Ali/Wx, it is a one-time purchase; for stripe it is a subscription.
+// `OneTimeKind` and `SubsKind` should not exist at the same time.
+type CheckoutIntent struct {
+	// What kind of one-time purchase user is trying to create?
+	OneTimeKind enum.OrderKind
+	// How would user perform a subscription:
+	// creating a new one?
+	// Just updating it to different billing cycle or tier?
+	// Or switching one-time purchase to subscription mode?
+	// In the last case, current remaining days should be transferred to add-on
+	SubsKind   SubsKind
+	PayMethods []enum.PayMethod
+}
+
+func NewOneTimeIntent(kind enum.OrderKind) CheckoutIntent {
+	return CheckoutIntent{
+		OneTimeKind: kind,
+		PayMethods: []enum.PayMethod{
+			enum.PayMethodAli,
+			enum.PayMethodWx,
+		},
+	}
+}
+
+func NewSubsIntent(kind SubsKind) CheckoutIntent {
+	return CheckoutIntent{
+		SubsKind: kind,
+		PayMethods: []enum.PayMethod{
+			enum.PayMethodStripe,
+			enum.PayMethodApple,
+		},
+	}
+}
+
+func NewStripeIntent(kind SubsKind) CheckoutIntent {
+	return CheckoutIntent{
+		SubsKind: kind,
+		PayMethods: []enum.PayMethod{
+			enum.PayMethodStripe,
+		},
+	}
+}
+
+func (i CheckoutIntent) Description() string {
+	if i.OneTimeKind != enum.OrderKindNull {
+		return fmt.Sprintf("%s one-time purchase via %s", i.OneTimeKind, formatMethods(i.PayMethods))
+	}
+
+	if i.SubsKind != SubsKindZero {
+		return fmt.Sprintf("%s via %s", i.SubsKind.Localize(), formatMethods(i.PayMethods))
+	}
+
+	return "only one-time purchase or subscription mode supported"
+}
+
+func (i CheckoutIntent) IsNewStripe() bool {
+	return i.SubsKind == SubsKindNew || i.SubsKind == SubsKindOneTimeToSub
+}
+
+func (i CheckoutIntent) IsUpdatingStripe() bool {
+	return i.SubsKind == SubsKindUpgrade || i.SubsKind == SubsKindSwitchCycle
+}
+
+// Contains checks if the payment method contains the specified one.
+// Deprecated.
+func (i CheckoutIntent) Contains(m enum.PayMethod) bool {
+	for _, v := range i.PayMethods {
+		if v == m {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Deprecated
 type CheckoutIntents struct {
-	intents []cart.CheckoutIntent
+	intents []CheckoutIntent
 	err     error
 }
 
 // Get finds the intent for the specified payment method, or returns error
 // if not found.
-func (coi CheckoutIntents) Get(m enum.PayMethod) (cart.CheckoutIntent, error) {
+// Deprecated
+func (coi CheckoutIntents) Get(m enum.PayMethod) (CheckoutIntent, error) {
 	if coi.err != nil {
-		return cart.CheckoutIntent{}, coi.err
+		return CheckoutIntent{}, coi.err
 	}
 
 	if len(coi.intents) == 0 {
-		return cart.CheckoutIntent{}, fmt.Errorf("illegal checkout via %s", m)
+		return CheckoutIntent{}, fmt.Errorf("illegal checkout via %s", m)
 	}
 
 	for _, intent := range coi.intents {
@@ -30,15 +138,16 @@ func (coi CheckoutIntents) Get(m enum.PayMethod) (cart.CheckoutIntent, error) {
 		}
 	}
 
-	return cart.CheckoutIntent{}, fmt.Errorf("illegal checkout via %s", m)
+	return CheckoutIntent{}, fmt.Errorf("illegal checkout via %s", m)
 }
 
+// Deprecated.
 func NewCheckoutIntents(m Membership, e price.Edition) CheckoutIntents {
 	if m.IsExpired() {
 		return CheckoutIntents{
-			intents: []cart.CheckoutIntent{
-				cart.NewOneTimeIntent(enum.OrderKindCreate),
-				cart.NewSubsIntent(cart.SubsKindNew),
+			intents: []CheckoutIntent{
+				NewOneTimeIntent(enum.OrderKindCreate),
+				NewStripeIntent(SubsKindNew),
 			},
 			err: nil,
 		}
@@ -46,9 +155,9 @@ func NewCheckoutIntents(m Membership, e price.Edition) CheckoutIntents {
 
 	if m.IsInvalidStripe() {
 		return CheckoutIntents{
-			intents: []cart.CheckoutIntent{
-				cart.NewOneTimeIntent(enum.OrderKindCreate),
-				cart.NewSubsIntent(cart.SubsKindNew),
+			intents: []CheckoutIntent{
+				NewOneTimeIntent(enum.OrderKindCreate),
+				NewStripeIntent(SubsKindNew),
 			},
 			err: nil,
 		}
@@ -63,18 +172,19 @@ func NewCheckoutIntents(m Membership, e price.Edition) CheckoutIntents {
 			// For one-time purchase, do not allow purchase beyond 3 years.
 			if !m.WithinMaxRenewalPeriod() {
 				return CheckoutIntents{
-					intents: nil,
-					err:     errors.New("beyond max allowed renewal period"),
+					intents: []CheckoutIntent{
+						NewStripeIntent(SubsKindOneTimeToSub),
+					},
 				}
 			}
 
 			return CheckoutIntents{
-				intents: []cart.CheckoutIntent{
-					cart.NewOneTimeIntent(enum.OrderKindRenew),
+				intents: []CheckoutIntent{
+					NewOneTimeIntent(enum.OrderKindRenew),
 					// However, if user want to use Stripe to subscribe,
 					// it should be treated as a new subscription,
 					// with current remaining subscription time reserved for future use.
-					cart.NewSubsIntent(cart.SubsKindOneTimeToStripe),
+					NewStripeIntent(SubsKindOneTimeToSub),
 				},
 				err: nil,
 			}
@@ -85,19 +195,20 @@ func NewCheckoutIntents(m Membership, e price.Edition) CheckoutIntents {
 		// Upgrading to premium.
 		case enum.TierPremium:
 			return CheckoutIntents{
-				intents: []cart.CheckoutIntent{
-					cart.NewOneTimeIntent(enum.OrderKindUpgrade),
-					cart.NewSubsIntent(cart.SubsKindOneTimeToStripe),
+				intents: []CheckoutIntent{
+					NewOneTimeIntent(enum.OrderKindUpgrade),
+					NewStripeIntent(SubsKindOneTimeToSub),
 				},
 				err: nil,
 			}
 
 		// Current premium want to buy standard.
-		// Only add-on is allowed.
+		// For Ali/Wx, it is add-on; however, user is allowed to switch to stripe.
 		case enum.TierStandard:
 			return CheckoutIntents{
-				intents: []cart.CheckoutIntent{
-					cart.NewOneTimeIntent(enum.OrderKindAddOn),
+				intents: []CheckoutIntent{
+					NewOneTimeIntent(enum.OrderKindAddOn),
+					NewStripeIntent(SubsKindOneTimeToSub),
 				},
 				err: nil,
 			}
@@ -107,8 +218,8 @@ func NewCheckoutIntents(m Membership, e price.Edition) CheckoutIntents {
 		// As long as user is subscribed to premium, only add-on is allowed.
 		if m.Tier == enum.TierPremium {
 			return CheckoutIntents{
-				intents: []cart.CheckoutIntent{
-					cart.NewOneTimeIntent(enum.OrderKindAddOn),
+				intents: []CheckoutIntent{
+					NewOneTimeIntent(enum.OrderKindAddOn),
 				},
 				err: nil,
 			}
@@ -119,8 +230,8 @@ func NewCheckoutIntents(m Membership, e price.Edition) CheckoutIntents {
 		// Upgrade to premium could be done via stripe updating.
 		case enum.TierPremium:
 			return CheckoutIntents{
-				intents: []cart.CheckoutIntent{
-					cart.NewSubsIntent(cart.SubsKindUpgrade),
+				intents: []CheckoutIntent{
+					NewStripeIntent(SubsKindUpgrade),
 				},
 				err: nil,
 			}
@@ -131,17 +242,17 @@ func NewCheckoutIntents(m Membership, e price.Edition) CheckoutIntents {
 			if m.Cycle == e.Cycle {
 				return CheckoutIntents{
 					// Not allowed to use stripe since changing the same subscription is meaningless.
-					intents: []cart.CheckoutIntent{
-						cart.NewOneTimeIntent(enum.OrderKindAddOn),
+					intents: []CheckoutIntent{
+						NewOneTimeIntent(enum.OrderKindAddOn),
 					},
 					err: nil,
 				}
 			}
 			// For same tier, different cycle.
 			return CheckoutIntents{
-				intents: []cart.CheckoutIntent{
-					cart.NewOneTimeIntent(enum.OrderKindAddOn),
-					cart.NewSubsIntent(cart.SubsKindSwitchCycle),
+				intents: []CheckoutIntent{
+					NewOneTimeIntent(enum.OrderKindAddOn),
+					NewStripeIntent(SubsKindSwitchCycle),
 				},
 				err: nil,
 			}
@@ -156,16 +267,16 @@ func NewCheckoutIntents(m Membership, e price.Edition) CheckoutIntents {
 		}
 
 		return CheckoutIntents{
-			intents: []cart.CheckoutIntent{
-				cart.NewOneTimeIntent(enum.OrderKindAddOn),
+			intents: []CheckoutIntent{
+				NewOneTimeIntent(enum.OrderKindAddOn),
 			},
 			err: nil,
 		}
 
 	case enum.PayMethodB2B:
 		return CheckoutIntents{
-			intents: []cart.CheckoutIntent{
-				cart.NewOneTimeIntent(enum.OrderKindAddOn),
+			intents: []CheckoutIntent{
+				NewOneTimeIntent(enum.OrderKindAddOn),
 			},
 			err: nil,
 		}
