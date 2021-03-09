@@ -1,7 +1,6 @@
 package striperepo
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
@@ -27,8 +26,7 @@ func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 		return stripe.SubsResult{}, nil
 	}
 
-	intent, err := reader.NewCheckoutIntents(mmb, cfg.Edition.Edition).
-		Get(enum.PayMethodStripe)
+	subsKind, err := mmb.SubsKindByStripe(cfg.Edition.Edition)
 
 	if err != nil {
 		sugar.Error(err)
@@ -40,11 +38,11 @@ func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 		}
 	}
 
-	if !intent.IsUpdatingStripe() {
+	if !subsKind.IsUpdating() {
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, &render.ResponseError{
 			StatusCode: http.StatusBadGateway,
-			Message:    "This endpoint only support updating an existing valid Stripe subscription while you can only " + intent.Description(),
+			Message:    "This endpoint only support updating an existing valid Stripe subscription",
 			Invalid:    nil,
 		}
 	}
@@ -59,7 +57,7 @@ func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 
 	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
 		UserIDs:       mmb.UserIDs,
-		Kind:          intent.SubsKind,
+		Kind:          subsKind,
 		CurrentMember: mmb,
 		Action:        reader.ActionUpgrade,
 	})
