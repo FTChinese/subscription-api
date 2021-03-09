@@ -7,7 +7,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'make install-go'
-                sh 'make amd64'
+                sh 'make build'
                 archiveArtifacts artifacts: 'build/*', fingerprint: true
             }
         }
