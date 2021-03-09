@@ -49,13 +49,15 @@ func MockNewFtcAccount(kind enum.AccountKind) FtcAccount {
 }
 
 type MockMemberBuilder struct {
-	ids         pkg.UserIDs
-	price       price.Price
-	payMethod   enum.PayMethod
-	expiration  time.Time
-	subsStatus  enum.SubsStatus
-	autoRenewal bool
-	addOn       addon.AddOn
+	ids          pkg.UserIDs
+	price        price.Price
+	payMethod    enum.PayMethod
+	expiration   time.Time
+	subsStatus   enum.SubsStatus
+	autoRenewal  bool
+	addOn        addon.AddOn
+	iapTxID      string
+	stripeSubsID string
 }
 
 func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
@@ -115,6 +117,11 @@ func (b MockMemberBuilder) WithAddOn(r addon.AddOn) MockMemberBuilder {
 	return b
 }
 
+func (b MockMemberBuilder) WithIapID(id string) MockMemberBuilder {
+	b.iapTxID = id
+	return b
+}
+
 func (b MockMemberBuilder) Build() Membership {
 	m := Membership{
 		UserIDs:       b.ids,
@@ -141,7 +148,10 @@ func (b MockMemberBuilder) Build() Membership {
 		m.StripePlanID = null.StringFrom(faker.GenStripePlanID())
 
 	case enum.PayMethodApple:
-		m.AppleSubsID = null.StringFrom(faker.GenAppleSubID())
+		if b.iapTxID == "" {
+			b.iapTxID = faker.GenAppleSubID()
+		}
+		m.AppleSubsID = null.StringFrom(b.iapTxID)
 	}
 
 	return m.Sync()
