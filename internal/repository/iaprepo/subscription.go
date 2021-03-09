@@ -69,10 +69,15 @@ func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) 
 	// We should compare the old and new memberships expiration time.
 	sugar.Infof("Building membership based on %s", s.OriginalTransactionID)
 
-	result := apple.SubsResult{
-		Subs:     s,
-		Member:   apple.NewMembership(currMember.UserIDs, s),
-		Snapshot: currMember.Snapshot(reader.ArchiverAppleVerify),
+	result, err := apple.NewSubsResult(s, apple.SubsResultParams{
+		UserID:        currMember.UserIDs,
+		CurrentMember: currMember,
+		Action:        reader.ActionVerify,
+	})
+	if err != nil {
+		sugar.Error(err)
+		_ = tx.Rollback()
+		return apple.SubsResult{}, err
 	}
 
 	sugar.Infof("Membership %s expiration date updated from %s to %s", result.Member.CompoundID, currMember.ExpireDate, result.Member.ExpireDate)
@@ -80,6 +85,15 @@ func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) 
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return apple.SubsResult{}, err
+	}
+
+	if !result.CarryOverInvoice.IsZero() {
+		err := tx.SaveInvoice(result.CarryOverInvoice)
+		if err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return apple.SubsResult{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

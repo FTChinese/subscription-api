@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
@@ -62,78 +61,6 @@ func TestEnv_GetSubAndSetFtcID(t *testing.T) {
 			}
 
 			t.Logf("%+v", got)
-		})
-	}
-}
-
-func TestEnv_Link(t *testing.T) {
-
-	p1 := test.NewPersona()
-	p2 := test.NewPersona().SetExpired(true)
-	p3 := test.NewPersona().SetPayMethod(enum.PayMethodApple)
-
-	repo := test.NewRepo()
-	repo.MustSaveMembership(p1.Membership())
-	repo.MustSaveMembership(p2.Membership())
-	repo.MustSaveMembership(p3.Membership())
-
-	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
-
-	type args struct {
-		account reader.FtcAccount
-		sub     apple.Subscription
-		force   bool
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Both sides have no existing membership",
-			args: args{
-				account: test.NewPersona().FtcAccount(),
-				sub:     test.NewPersona().IAPSubs(),
-				force:   false,
-			},
-			wantErr: false,
-		},
-		{
-			name: "IAP current empty cannot link to FTC non-expired",
-			args: args{
-				account: p1.FtcAccount(),
-				sub:     p1.IAPSubs(),
-				force:   false,
-			},
-			wantErr: true,
-		},
-		{
-			name: "IAP current empty can link to FTC expired",
-			args: args{
-				account: p2.FtcAccount(),
-				sub:     test.NewPersona().IAPSubs(),
-			},
-			wantErr: false,
-		},
-		{
-			name: "IAP exists and should not link to any new ftc account",
-			args: args{
-				account: test.NewPersona().FtcAccount(),
-				sub:     p3.IAPSubs(),
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			got, err := env.Link(tt.args.account, tt.args.sub, tt.args.force)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Link() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
