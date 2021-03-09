@@ -1,10 +1,9 @@
-package cart
+package price
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"reflect"
 	"testing"
@@ -14,7 +13,7 @@ import (
 func TestNewFtcCart(t *testing.T) {
 	now := time.Now()
 	type args struct {
-		ftcPrice price.FtcPrice
+		ftcPrice FtcPrice
 	}
 	tests := []struct {
 		name string
@@ -24,22 +23,22 @@ func TestNewFtcCart(t *testing.T) {
 		{
 			name: "Price with discount",
 			args: args{
-				ftcPrice: price.FtcPrice{
-					Price: price.Price{
+				ftcPrice: FtcPrice{
+					Price: Price{
 						ID: "plan_MynUQDQY1TSQ",
-						Edition: price.Edition{
+						Edition: Edition{
 							Tier:  enum.TierStandard,
 							Cycle: enum.CycleYear,
 						},
 						Active:     true,
-						Currency:   price.CurrencyCNY,
+						Currency:   CurrencyCNY,
 						LiveMode:   true,
 						Nickname:   null.String{},
 						ProductID:  "prod_zjWdiTUpDN8l",
-						Source:     price.SourceFTC,
+						Source:     SourceFTC,
 						UnitAmount: 298,
 					},
-					PromotionOffer: price.Discount{
+					PromotionOffer: Discount{
 						DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
 						PriceOff: null.FloatFrom(130),
 						Percent:  null.Int{},
@@ -52,21 +51,21 @@ func TestNewFtcCart(t *testing.T) {
 				},
 			},
 			want: Cart{
-				Price: price.Price{
+				Price: Price{
 					ID: "plan_MynUQDQY1TSQ",
-					Edition: price.Edition{
+					Edition: Edition{
 						Tier:  enum.TierStandard,
 						Cycle: enum.CycleYear,
 					},
 					Active:     true,
-					Currency:   price.CurrencyCNY,
+					Currency:   CurrencyCNY,
 					LiveMode:   true,
 					Nickname:   null.String{},
 					ProductID:  "prod_zjWdiTUpDN8l",
-					Source:     price.SourceFTC,
+					Source:     SourceFTC,
 					UnitAmount: 298,
 				},
-				Discount: price.Discount{
+				Discount: Discount{
 					DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
 					PriceOff: null.FloatFrom(130),
 					Percent:  null.Int{},
@@ -81,40 +80,40 @@ func TestNewFtcCart(t *testing.T) {
 		{
 			name: "Price without discount",
 			args: args{
-				ftcPrice: price.FtcPrice{
-					Price: price.Price{
+				ftcPrice: FtcPrice{
+					Price: Price{
 						ID: "plan_MynUQDQY1TSQ",
-						Edition: price.Edition{
+						Edition: Edition{
 							Tier:  enum.TierStandard,
 							Cycle: enum.CycleYear,
 						},
 						Active:     true,
-						Currency:   price.CurrencyCNY,
+						Currency:   CurrencyCNY,
 						LiveMode:   true,
 						Nickname:   null.String{},
 						ProductID:  "prod_zjWdiTUpDN8l",
-						Source:     price.SourceFTC,
+						Source:     SourceFTC,
 						UnitAmount: 298,
 					},
-					PromotionOffer: price.Discount{},
+					PromotionOffer: Discount{},
 				},
 			},
 			want: Cart{
-				Price: price.Price{
+				Price: Price{
 					ID: "plan_MynUQDQY1TSQ",
-					Edition: price.Edition{
+					Edition: Edition{
 						Tier:  enum.TierStandard,
 						Cycle: enum.CycleYear,
 					},
 					Active:     true,
-					Currency:   price.CurrencyCNY,
+					Currency:   CurrencyCNY,
 					LiveMode:   true,
 					Nickname:   null.String{},
 					ProductID:  "prod_zjWdiTUpDN8l",
-					Source:     price.SourceFTC,
+					Source:     SourceFTC,
 					UnitAmount: 298,
 				},
-				Discount: price.Discount{},
+				Discount: Discount{},
 			},
 		},
 	}
