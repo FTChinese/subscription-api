@@ -60,11 +60,10 @@ func newCustomerAndPayment(client Client, account reader.FtcAccount) (paymentAtt
 func TestEnv_CreateSubscription(t *testing.T) {
 
 	p := test.NewPersona()
-
-	repo := test.NewRepo()
-	m := p.Membership()
+	m := reader.NewMockMemberBuilder(p.FtcID).Build()
 	t.Logf("%v", m.UserIDs)
 
+	repo := test.NewRepo()
 	repo.MustSaveMembership(m)
 
 	pa, err := newCustomerAndPayment(

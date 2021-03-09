@@ -53,6 +53,8 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 		}
 	}
 
+	sugar.Infof("Stripe subscripiton kind: %s", subsKind.Localize())
+
 	if !subsKind.IsNewSubs() {
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, &render.ResponseError{
