@@ -3,7 +3,6 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -31,7 +30,7 @@ func Test_newSubsResult(t *testing.T) {
 				subs: subs,
 				params: SubsResultParams{
 					UserIDs:       member.UserIDs,
-					Kind:          cart.SubsKindOneTimeToStripe,
+					Kind:          reader.SubsKindOneTimeToSub,
 					CurrentMember: member,
 					Action:        reader.ActionCreate,
 				},
