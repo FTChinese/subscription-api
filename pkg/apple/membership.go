@@ -4,26 +4,30 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg"
-	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
 
-func NewMembership(userID pkg.UserIDs, s Subscription) reader.Membership {
+type MembershipParams struct {
+	UserID pkg.UserIDs // User id might comes from an existing membership when webhook message comes in, or from account is client is requesting link.
+	Subs   Subscription
+	AddOn  addon.AddOn
+}
+
+func NewMembership(params MembershipParams) reader.Membership {
 	return reader.Membership{
-		UserIDs: userID,
-		Edition: price.Edition{
-			Tier:  s.Tier,
-			Cycle: s.Cycle,
-		},
-		ExpireDate:    chrono.DateFrom(s.ExpiresDateUTC.Time),
+		UserIDs:       params.UserID,
+		Edition:       params.Subs.Edition,
+		ExpireDate:    chrono.DateFrom(params.Subs.ExpiresDateUTC.Time),
 		PaymentMethod: enum.PayMethodApple,
 		FtcPlanID:     null.String{},
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
-		AutoRenewal:   s.AutoRenewal,
+		AutoRenewal:   params.Subs.AutoRenewal,
 		Status:        enum.SubsStatusNull,
-		AppleSubsID:   null.StringFrom(s.OriginalTransactionID),
+		AppleSubsID:   null.StringFrom(params.Subs.OriginalTransactionID),
 		B2BLicenceID:  null.String{},
+		AddOn:         params.AddOn,
 	}.Sync()
 }
