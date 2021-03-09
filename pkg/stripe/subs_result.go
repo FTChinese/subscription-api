@@ -3,7 +3,6 @@ package stripe
 import (
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/stripe/stripe-go/v72"
@@ -12,7 +11,7 @@ import (
 // SubsResultParams uses the data of a user's subscription to build the data to be saved to db.
 type SubsResultParams struct {
 	UserIDs pkg.UserIDs // UserIDs might comes from user account, or from current membership for refreshing.
-	Kind    cart.SubsKind
+	Kind    reader.SubsKind
 	// To build membership, the above three fields are enough.
 
 	CurrentMember reader.Membership    // Used for backup.
@@ -42,7 +41,7 @@ func NewSubsResult(ss *stripe.Subscription, params SubsResultParams) (SubsResult
 func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
 
 	var inv invoice.Invoice
-	if params.Kind == cart.SubsKindOneTimeToStripe {
+	if params.Kind == reader.SubsKindOneTimeToSub {
 		inv = params.CurrentMember.CarryOverInvoice().
 			WithStripeSubsID(subs.ID)
 	}
