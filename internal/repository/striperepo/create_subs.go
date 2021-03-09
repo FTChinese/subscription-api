@@ -1,7 +1,6 @@
 package striperepo
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
@@ -41,8 +40,9 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
-	intent, err := reader.NewCheckoutIntents(mmb, params.Edition.Edition).
-		Get(enum.PayMethodStripe)
+	subsKind, err := mmb.SubsKindByStripe(params.Edition.Edition)
+	//intent, err := reader.NewCheckoutIntents(mmb, params.Edition.Edition).
+	//	Get(enum.PayMethodStripe)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -53,9 +53,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 		}
 	}
 
-	sugar.Infof("Stripe checkout intent: %v", intent)
-
-	if !intent.IsNewStripe() {
+	if !subsKind.IsNewSubs() {
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, &render.ResponseError{
 			StatusCode: http.StatusBadRequest,
@@ -84,7 +82,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
 		UserIDs:       params.Account.MemberID(),
 		CurrentMember: mmb,
-		Kind:          intent.SubsKind,
+		Kind:          subsKind,
 		Action:        reader.ActionCreate,
 	})
 
