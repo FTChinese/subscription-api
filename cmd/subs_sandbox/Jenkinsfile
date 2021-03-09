@@ -7,7 +7,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Build sandbox version'
-                sh 'make build APP=sandbox'
+                sh 'make build ENV=sandbox'
                 archiveArtifacts artifacts: 'build/*', fingerprint: true
             }
         }
@@ -21,8 +21,8 @@ pipeline {
                 echo 'Sync config file'
                 sh 'make config'
                 echo 'Copy binary'
-                sh 'make publish APP=sandbox'
-                sh 'make restart APP=sandbox'
+                sh 'make publish ENV=sandbox'
+                sh 'make restart ENV=sandbox'
             }
         }
     }
