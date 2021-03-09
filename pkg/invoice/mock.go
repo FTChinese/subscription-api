@@ -9,7 +9,6 @@ import (
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -80,7 +79,7 @@ func (b MockInvoiceBuilder) SetPeriodStart(t time.Time) MockInvoiceBuilder {
 }
 
 func (b MockInvoiceBuilder) Build() Invoice {
-	item := cart.NewFtcCart(b.price)
+	item := price.NewFtcCart(b.price)
 
 	if b.addOnSource != "" {
 		b.orderKind = enum.OrderKindAddOn
