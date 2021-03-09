@@ -45,7 +45,7 @@ install-go:
 	gvm use $(go_version)
 
 # For CI/CD
-.PHONY: amd64
+.PHONY: build
 build :
 	@echo "Build production version $(version)"
 	GOOS=linux GOARCH=amd64 $(build_linux)
@@ -54,13 +54,14 @@ build :
 config :
 	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)
 	rsync -v ./$(build_dir)/$(config_file_name) ucloud:/home/node/config
+	rsync -v ./configs/subs-api-v2.conf ucloud:/etc/supervisor/
 
 .PHONY: publish
 publish :
 	ssh ucloud "rm -f /home/node/go/bin/$(app_name).bak"
 	rsync -v $(linux_executable) bj32:/home/node
 	ssh bj32 "rsync -v /home/node/$(app_name) ucloud:/home/node/go/bin/$(app_name).bak"
-	rsync -v ./configs/subs-api-v2.conf ucloud:/etc/supervisor
+
 
 .PHONY: restart
 restart :
