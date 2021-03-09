@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func (router SubsRouter) RedeemAddOn(w http.ResponseWriter, req *http.Request) {
+func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
 	readerIDs := getReaderIDs(req.Header)
 
 	result, err := router.ReaderRepo.ClaimAddOn(readerIDs)

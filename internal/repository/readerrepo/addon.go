@@ -18,6 +18,7 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 
 	sugar.Infof("Start retrieving membership for %v", ids)
 
+	// Retrieve current membership. It must exists.
 	member, err := otx.RetrieveMember(ids)
 	if err != nil {
 		sugar.Error(err)
@@ -33,12 +34,15 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 		return reader.AddOnClaimed{}, err
 	}
 
+	// List all add-on invoices that is not consumed yet.
 	addOns, err := otx.AddOnInvoices(member.UserIDs)
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
 		return reader.AddOnClaimed{}, err
 	}
+
+	sugar.Infof("Add-on invoices: %v", addOns)
 
 	if len(addOns) == 0 {
 		sugar.Info("No add-on")
@@ -68,6 +72,10 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 			_ = otx.Rollback()
 			return reader.AddOnClaimed{}, err
 		}
+	}
+
+	if err := otx.Commit(); err != nil {
+		return reader.AddOnClaimed{}, err
 	}
 
 	return result, nil
