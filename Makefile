@@ -1,6 +1,3 @@
-# One of `api | sandbox | consumer | aliwx`.
-APP := api
-
 config_file_name := api.toml
 local_config_file := $(HOME)/config/$(config_file_name)
 
@@ -10,7 +7,7 @@ commit := `git log --max-count=1 --pretty=format:%aI_%h`
 
 ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
-app_name := subscription-api-v2
+app_name := subs-api-v2
 
 build_dir := build
 
@@ -32,11 +29,7 @@ dev :
 run :
 	$(dev_executable) -sandbox=true
 
-# For CI/CD
-.PHONY: build
-amd64 :
-	@echo "Build production version $(version)"
-	GOOS=linux GOARCH=amd64 $(build_linux)
+
 
 .PHONY: arm
 arm :
@@ -47,6 +40,12 @@ install-go:
 	gvm install $(go_version)
 	gvm use $(go_version)
 
+# For CI/CD
+.PHONY: amd64
+amd64 :
+	@echo "Build production version $(version)"
+	GOOS=linux GOARCH=amd64 $(build_linux)
+
 .PHONY: config
 config :
 	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)
@@ -55,8 +54,9 @@ config :
 .PHONY: publish
 publish :
 	ssh ucloud "rm -f /home/node/go/bin/$(app_name).bak"
-	rsync -v $(dev_executable) bj32:/home/node
+	rsync -v $(linux_executable) bj32:/home/node
 	ssh bj32 "rsync -v /home/node/$(app_name) ucloud:/home/node/go/bin/$(app_name).bak"
+	rsync -v ./configs/subs-api-v2.conf ucloud:/etc/supervisor
 
 .PHONY: restart
 restart :
