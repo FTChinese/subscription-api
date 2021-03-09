@@ -33,7 +33,7 @@ func NewIAPRouter(db *sqlx.DB, rdb *redis.Client, logger *zap.Logger, p postoffi
 
 	return IAPRouter{
 		iapRepo:    iaprepo.NewEnv(db, rdb, logger),
-		readerRepo: readerrepo.NewEnv(db),
+		readerRepo: readerrepo.NewEnv(db, logger),
 		postman:    p,
 		sandbox:    cfg.Sandbox(),
 		iapClient:  iaprepo.NewClient(logger),
