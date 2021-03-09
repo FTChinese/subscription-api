@@ -19,25 +19,22 @@ ifeq ($(ENV), sandbox)
 	src_dir := ./cmd/subs_sandbox/
 endif
 
-dev_executable := $(build_dir)/$(app_name)
-build_dev := go build -o $(dev_executable) $(ldflags) -tags production -v $(src_dir)
-
-linux_executable := $(build_dir)/linux/$(app_name)
-build_linux := go build -o $(linux_executable) $(ldflags) -tags production -v $(src_dir)
+executable := $(build_dir)/$(app_name)
+compile_exec := go build -o $(executable) $(ldflags) -tags production -v $(src_dir)
 
 # Development
 .PHONY: dev
 dev :
 	@echo "Build dev version $(version)"
-	$(build_dev)
+	$(compile_exec)
 
 .PHONY: run
 run :
-	$(dev_executable) -sandbox=true
+	$(executable) -sandbox=true
 
 .PHONY: arm
 arm :
-	GOOS=linux GOARM=7 GOARCH=arm $(build_linux)
+	GOOS=linux GOARM=7 GOARCH=arm $(compile_exec)
 
 .PHONY: install-go
 install-go:
@@ -48,7 +45,7 @@ install-go:
 .PHONY: build
 build :
 	@echo "Build production version $(version)"
-	GOOS=linux GOARCH=amd64 $(build_linux)
+	GOOS=linux GOARCH=amd64 $(compile_exec)
 
 .PHONY: config
 config :
@@ -59,7 +56,7 @@ config :
 .PHONY: publish
 publish :
 	ssh ucloud "rm -f /home/node/go/bin/$(app_name).bak"
-	rsync -v $(linux_executable) bj32:/home/node
+	rsync -v ./$(executable) bj32:/home/node
 	ssh bj32 "rsync -v /home/node/$(app_name) ucloud:/home/node/go/bin/$(app_name).bak"
 
 
