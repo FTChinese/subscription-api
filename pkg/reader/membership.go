@@ -224,18 +224,107 @@ func (m Membership) WithinMaxRenewalPeriod() bool {
 	return !m.ExpireDate.Before(today) && !m.ExpireDate.After(threeYearsLater)
 }
 
-// Snapshot takes a snapshot of membership, usually before modifying it.
-func (m Membership) Snapshot(by Archiver) MemberSnapshot {
-	if m.IsZero() {
-		return MemberSnapshot{}
+// OrderKindByOneTime deduces what kind of order user is trying to create when paying via Ali/Wx.
+func (m Membership) OrderKindByOneTime(e price.Edition) (enum.OrderKind, error) {
+	if m.IsExpired() || m.IsInvalidStripe() {
+		return enum.OrderKindCreate, nil
 	}
 
-	return MemberSnapshot{
-		SnapshotID: pkg.SnapshotID(),
-		CreatedBy:  null.StringFrom(by.String()),
-		CreatedUTC: chrono.TimeNow(),
-		Membership: m,
+	// What can be done depends on current payment method.
+	switch m.PaymentMethod {
+	case enum.PayMethodAli, enum.PayMethodWx:
+		// Renewal if user choosing product of same tier.
+		if m.Tier == e.Tier {
+			// For one-time purchase, do not allow purchase beyond 3 years.
+			if !m.WithinMaxRenewalPeriod() {
+				return enum.OrderKindNull, errors.New("exceeding allowed max renewal period")
+			}
+
+			return enum.OrderKindRenew, nil
+		}
+
+		// The product to purchase differs from current one.
+		switch e.Tier {
+		// Upgrading to premium.
+		case enum.TierPremium:
+			return enum.OrderKindUpgrade, nil
+
+		// Current premium want to buy standard.
+		// For Ali/Wx, it is add-on; however, user is allowed to switch to stripe.
+		case enum.TierStandard:
+			return enum.OrderKindAddOn, nil
+		}
+	case enum.PayMethodStripe, enum.PayMethodApple:
+		if m.Tier == enum.TierStandard && e.Tier == enum.TierPremium {
+			return enum.OrderKindNull, errors.New("subscription mode cannot use one-time purchase to upgrade")
+		}
+		return enum.OrderKindAddOn, nil
+	case enum.PayMethodB2B:
+		return enum.OrderKindAddOn, nil
 	}
+
+	return enum.OrderKindNull, errors.New("unknown membership status")
+}
+
+// SubsKindByStripe deduces what kind of subscription user is trying ot create when paying via Stripe.
+func (m Membership) SubsKindByStripe(e price.Edition) (SubsKind, error) {
+	if m.IsExpired() || m.IsInvalidStripe() {
+		return SubsKindNew, nil
+	}
+
+	switch m.PaymentMethod {
+	case enum.PayMethodAli, enum.PayMethodWx:
+		return SubsKindOneTimeToSub, nil
+
+	case enum.PayMethodStripe:
+		// If already a premium, can do nothing.
+		if m.Tier == enum.TierPremium {
+			return SubsKindZero, errors.New("already subscribed via stripe")
+		}
+		// Not premium, then must be standard.
+		switch e.Tier {
+		// Standard upgrade to premium
+		case enum.TierPremium:
+			return SubsKindUpgrade, nil
+
+		// Standard to standard
+		case enum.TierStandard:
+			if m.Cycle == e.Cycle {
+				return SubsKindZero, errors.New("already subscribed via stripe")
+			}
+
+			// Standard changing billing cycle.
+			return SubsKindSwitchCycle, nil
+		}
+
+	case enum.PayMethodApple:
+		return SubsKindZero, errors.New("already subscribed via stripe")
+
+	case enum.PayMethodB2B:
+		return SubsKindZero, errors.New("already subscribed via stripe")
+	}
+
+	return SubsKindZero, errors.New("unknown payment for current subscription")
+}
+
+// SubsKindByApples deduces how to handle user's current membership if one exists when Apple webhook arrives.
+func (m Membership) SubsKindByApple() (SubsKind, error) {
+	if m.IsExpired() || m.IsInvalidStripe() {
+		return SubsKindNew, nil
+	}
+
+	switch m.PaymentMethod {
+	case enum.PayMethodAli, enum.PayMethodWx:
+		return SubsKindOneTimeToSub, nil
+
+	case enum.PayMethodStripe:
+		return SubsKindZero, errors.New("iap is not allowed to override a valid stripe subscription")
+
+	case enum.PayMethodApple:
+		return SubsKindRefresh, nil
+	}
+
+	return SubsKindOneTimeToSub, nil
 }
 
 func (m Membership) WithInvoice(userID pkg.UserIDs, inv invoice.Invoice) (Membership, error) {
