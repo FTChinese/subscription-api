@@ -111,12 +111,6 @@ func (s Subscription) ShouldUpdate(m reader.Membership) bool {
 	return true
 }
 
-type SubsResult struct {
-	Subs     Subscription          `json:"subscription"`
-	Member   reader.Membership     `json:"membership"`
-	Snapshot reader.MemberSnapshot `json:"-"`
-}
-
 type SubsList struct {
 	Total int64 `json:"total" db:"row_count"`
 	gorest.Pagination
