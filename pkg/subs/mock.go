@@ -10,7 +10,6 @@ import (
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/ali"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -83,7 +82,7 @@ func (b MockOrderBuilder) WithStartTime(from time.Time) MockOrderBuilder {
 }
 
 func (b MockOrderBuilder) Build() Order {
-	item := cart.NewFtcCart(b.price)
+	item := price.NewFtcCart(b.price)
 
 	payable := item.Payable()
 

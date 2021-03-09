@@ -3,7 +3,6 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -43,7 +42,7 @@ func TestCounter_checkout(t *testing.T) {
 			},
 			want: Checkout{
 				Kind: enum.OrderKindCreate,
-				Cart: cart.Cart{
+				Cart: price.Cart{
 					Price:    faker.PriceStdYear.Price,
 					Discount: faker.PriceStdYear.PromotionOffer,
 				},
@@ -69,7 +68,7 @@ func TestCounter_checkout(t *testing.T) {
 			},
 			want: Checkout{
 				Kind: enum.OrderKindRenew,
-				Cart: cart.Cart{
+				Cart: price.Cart{
 					Price:    faker.PriceStdYear.Price,
 					Discount: faker.PriceStdYear.PromotionOffer,
 				},

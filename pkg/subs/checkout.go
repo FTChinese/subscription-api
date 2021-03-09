@@ -3,7 +3,6 @@ package subs
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
@@ -52,7 +51,7 @@ func PaymentTitle(k enum.OrderKind, e price.Edition) string {
 // Checkout contains the calculation result of a purchase transaction.
 type Checkout struct {
 	Kind     enum.OrderKind `json:"kind"`
-	Cart     cart.Cart      `json:"cart"`
+	Cart     price.Cart     `json:"cart"`
 	Payable  price.Charge   `json:"payable"`
 	LiveMode bool           `json:"live"`
 }
