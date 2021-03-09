@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg"
-	"github.com/FTChinese/subscription-api/pkg/cart"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -44,15 +43,15 @@ func (c Counter) WithWxpay(app wechat.PayApp) Counter {
 // allows all user to pay via alipay or wxpay, even if current membership is a valid stripe or iap.
 func (c Counter) checkout(m reader.Membership) (Checkout, error) {
 
-	intent, err := reader.NewCheckoutIntents(m, c.Price.Edition).
-		Get(c.Method)
+	orderKind, err := m.OrderKindByOneTime(c.Price.Edition)
+
 	if err != nil {
 		return Checkout{}, err
 	}
 
-	ftcCart := cart.NewFtcCart(c.Price)
+	ftcCart := price.NewFtcCart(c.Price)
 	return Checkout{
-		Kind:     intent.OneTimeKind,
+		Kind:     orderKind,
 		Cart:     ftcCart,
 		Payable:  ftcCart.Payable(),
 		LiveMode: true,
