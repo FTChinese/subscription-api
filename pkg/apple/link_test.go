@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
@@ -64,7 +65,11 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs:    iapSub,
 			},
 			want: LinkResult{
-				Member:   NewMembership(memberID, iapSub),
+				Member: NewMembership(MembershipParams{
+					UserID: memberID,
+					Subs:   iapSub,
+					AddOn:  addon.AddOn{},
+				}),
 				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
@@ -76,11 +81,15 @@ func TestLinkBuilder_Build(t *testing.T) {
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{},
-				CurrentIAP: NewMembership(pkg.UserIDs{
-					CompoundID: "",
-					FtcID:      null.StringFrom(uuid.New().String()),
-					UnionID:    null.String{},
-				}.MustNormalize(), iapSub),
+				CurrentIAP: NewMembership(MembershipParams{
+					UserID: pkg.UserIDs{
+						CompoundID: "",
+						FtcID:      null.StringFrom(uuid.New().String()),
+						UnionID:    null.String{},
+					}.MustNormalize(),
+					Subs:  iapSub,
+					AddOn: addon.AddOn{},
+				}),
 				IAPSubs: iapSub,
 			},
 			want:    LinkResult{},
@@ -92,7 +101,11 @@ func TestLinkBuilder_Build(t *testing.T) {
 				Account: reader.FtcAccount{
 					FtcID: ftcId,
 				},
-				CurrentFtc: NewMembership(memberID, iapSub),
+				CurrentFtc: NewMembership(MembershipParams{
+					UserID: memberID,
+					Subs:   iapSub,
+					AddOn:  addon.AddOn{},
+				}),
 				CurrentIAP: reader.Membership{},
 				IAPSubs: Subscription{
 					BaseSchema: BaseSchema{
@@ -132,7 +145,11 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs:    iapSub,
 			},
 			want: LinkResult{
-				Member:   NewMembership(memberID, iapSub),
+				Member: NewMembership(MembershipParams{
+					UserID: memberID,
+					Subs:   iapSub,
+					AddOn:  addon.AddOn{},
+				}),
 				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
@@ -184,7 +201,11 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs:    iapSub,
 			},
 			want: LinkResult{
-				Member:   NewMembership(memberID, iapSub),
+				Member: NewMembership(MembershipParams{
+					UserID: memberID,
+					Subs:   iapSub,
+					AddOn:  addon.AddOn{},
+				}),
 				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
