@@ -6,9 +6,12 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"testing"
 	"time"
@@ -58,6 +61,65 @@ func TestEnv_SaveSubs(t *testing.T) {
 			}
 
 			t.Logf("%v", got)
+		})
+	}
+}
+
+func TestEnv_updateMembership(t *testing.T) {
+	userID := uuid.New().String()
+	txID := faker.GenAppleSubID()
+
+	current := reader.NewMockMemberBuilder(userID).
+		WithPayMethod(enum.PayMethodApple).
+		WithIapID(txID).
+		Build()
+	test.NewRepo().MustSaveMembership(current)
+
+	type fields struct {
+		db     *sqlx.DB
+		logger *zap.Logger
+	}
+	type args struct {
+		s apple.Subscription
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    apple.SubsResult
+		wantErr bool
+	}{
+		{
+			name: "Update membership",
+			fields: fields{
+				db:     test.DB,
+				logger: zaptest.NewLogger(t),
+			},
+			args: args{
+				s: apple.NewMockSubsBuilder(userID).
+					WithOriginalTxID(txID).
+					Build(),
+			},
+			want:    apple.SubsResult{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				db:     tt.fields.db,
+				logger: tt.fields.logger,
+			}
+			got, err := env.updateMembership(tt.args.s)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("updateMembership() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("updateMembership() got = %v, want %v", got, tt.want)
+			//}
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
