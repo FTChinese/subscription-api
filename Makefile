@@ -1,3 +1,5 @@
+ENV := production
+
 config_file_name := api.toml
 local_config_file := $(HOME)/config/$(config_file_name)
 
@@ -8,16 +10,20 @@ commit := `git log --max-count=1 --pretty=format:%aI_%h`
 ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
 app_name := subs-api-v2
-
 build_dir := build
-
+src_dir := .
 go_version := go1.15
 
+ifeq ($(ENV), sandbox)
+	app_name := subs_sandbox
+	src_dir := ./cmd/subs_sandbox/
+endif
+
 dev_executable := $(build_dir)/$(app_name)
-build_dev := go build -o $(dev_executable) $(ldflags) -tags production -v .
+build_dev := go build -o $(dev_executable) $(ldflags) -tags production -v $(src_dir)
 
 linux_executable := $(build_dir)/linux/$(app_name)
-build_linux := go build -o $(linux_executable) $(ldflags) -tags production -v .
+build_linux := go build -o $(linux_executable) $(ldflags) -tags production -v $(src_dir)
 
 # Development
 .PHONY: dev
@@ -28,8 +34,6 @@ dev :
 .PHONY: run
 run :
 	$(dev_executable) -sandbox=true
-
-
 
 .PHONY: arm
 arm :
@@ -42,7 +46,7 @@ install-go:
 
 # For CI/CD
 .PHONY: amd64
-amd64 :
+build :
 	@echo "Build production version $(version)"
 	GOOS=linux GOARCH=amd64 $(build_linux)
 
@@ -62,9 +66,6 @@ publish :
 restart :
 	ssh ucloud "cd /home/node/go/bin/ && \mv $(app_name).bak $(app_name)"
 	ssh ucloud supervisorctl restart $(app_name)
-
-test-deploy : build
-	rsync -v $(dev_executable) tk11:/home/node/go/bin
 
 .PHONY: clean
 clean :
