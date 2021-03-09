@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"strings"
 )
@@ -69,8 +70,12 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		// If one does not exist, both do not exist. We are creating a new membership in such case.
 		if b.CurrentIAP.IsZero() {
 			return LinkResult{
-				Initial:  true, // Send email
-				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
+				Initial: true, // Send email
+				Member: NewMembership(MembershipParams{
+					UserID: b.Account.MemberID(),
+					Subs:   b.IAPSubs,
+					AddOn:  addon.AddOn{},
+				}),
 				Snapshot: reader.MemberSnapshot{}, // Nothing to archive.
 			}, nil
 		}
@@ -78,8 +83,12 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		// If current membership is older than IAP, update it.
 		if b.CurrentFtc.ExpireDate.Before(b.IAPSubs.ExpiresDateUTC.Time) {
 			return LinkResult{
-				Initial:  false,
-				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
+				Initial: false,
+				Member: NewMembership(MembershipParams{
+					UserID: b.Account.MemberID(),
+					Subs:   b.IAPSubs,
+					AddOn:  b.CurrentFtc.AddOn,
+				}),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
 		}
@@ -115,8 +124,12 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	if b.CurrentFtc.IsIAP() {
 		if b.Force {
 			return LinkResult{
-				Initial:  true,
-				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
+				Initial: true,
+				Member: NewMembership(MembershipParams{
+					UserID: b.Account.MemberID(),
+					Subs:   b.IAPSubs,
+					AddOn:  b.CurrentFtc.AddOn,
+				}),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
 		}
@@ -142,8 +155,12 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		// side intact.
 		if b.isFtcLegacyFormat() {
 			return LinkResult{
-				Initial:  true,
-				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
+				Initial: true,
+				Member: NewMembership(MembershipParams{
+					UserID: b.Account.MemberID(),
+					Subs:   b.IAPSubs,
+					AddOn:  b.CurrentFtc.AddOn,
+				}),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
 		}
@@ -155,8 +172,12 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	if b.IAPSubs.IsExpired() {
 		if b.isFtcLegacyFormat() {
 			return LinkResult{
-				Initial:  true,
-				Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
+				Initial: true,
+				Member: NewMembership(MembershipParams{
+					UserID: b.Account.MemberID(),
+					Subs:   b.IAPSubs,
+					AddOn:  b.CurrentFtc.AddOn,
+				}),
 				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 			}, nil
 		}
@@ -166,8 +187,12 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 
 	// IAP not expired, use it.
 	return LinkResult{
-		Initial:  true,
-		Member:   NewMembership(b.Account.MemberID(), b.IAPSubs),
+		Initial: true,
+		Member: NewMembership(MembershipParams{
+			UserID: b.Account.MemberID(),
+			Subs:   b.IAPSubs,
+			AddOn:  b.CurrentFtc.AddOn,
+		}),
 		Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
 	}, nil
 }
