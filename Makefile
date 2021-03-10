@@ -51,7 +51,7 @@ build :
 config :
 	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)
 	rsync -v ./$(build_dir)/$(config_file_name) ucloud:/home/node/config
-	rsync -v ./configs/subs-api-v2.conf ucloud:/etc/supervisor/
+	#rsync -v ./configs/subs-api-v2.conf ucloud:/etc/supervisor/
 
 .PHONY: publish
 publish :
@@ -63,8 +63,8 @@ publish :
 .PHONY: restart
 restart :
 	ssh ucloud "cd /home/node/go/bin/ && \mv $(app_name).bak $(app_name)"
-	ssh ucloud supervisorctl update
-	#ssh ucloud supervisorctl restart $(app_name)
+	#ssh ucloud supervisorctl update
+	ssh ucloud supervisorctl restart $(app_name)
 
 .PHONY: clean
 clean :
