@@ -37,7 +37,7 @@ func NewIAPPoller(myDB *sqlx.DB, prod bool, logger *zap.Logger) IAPPoller {
 	return IAPPoller{
 		db:         myDB,
 		iapRepo:    iaprepo.NewEnv(myDB, rdb, logger),
-		readerRepo: readerrepo.NewEnv(myDB),
+		readerRepo: readerrepo.NewEnv(myDB, logger),
 		verifier:   iaprepo.NewClient(logger),
 		apiClient:  NewAPIClient(prod),
 		logger:     logger,
