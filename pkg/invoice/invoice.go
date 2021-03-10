@@ -55,6 +55,18 @@ func (i Invoice) IsAddOn() bool {
 	return i.OrderKind == enum.OrderKindAddOn
 }
 
+func (i Invoice) IsCarriedOverByUpgrade() bool {
+	return i.AddOnSource == addon.SourceCarryOver && i.OrderID.Valid
+}
+
+func (i Invoice) IsCarriedOverByStripe() bool {
+	return i.AddOnSource == addon.SourceCarryOver && i.StripeSubsID.Valid
+}
+
+func (i Invoice) IsCarriedOverByApple() bool {
+	return i.AddOnSource == addon.SourceCarryOver && i.AppleTxID.Valid
+}
+
 func (i Invoice) IsZero() bool {
 	return i.ID == ""
 }
