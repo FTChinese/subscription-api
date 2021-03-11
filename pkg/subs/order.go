@@ -164,3 +164,10 @@ func calibrateOrderKind(m reader.Membership, e price.Edition) enum.OrderKind {
 
 	return enum.OrderKindNull
 }
+
+func (o Order) Confirmed(at chrono.Time, period dt.DateTimePeriod) Order {
+	o.ConfirmedAt = at
+	o.DatePeriod = period.ToDatePeriod()
+
+	return o
+}

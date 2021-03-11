@@ -45,7 +45,7 @@ func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 
 	return ConfirmationResult{
 		Payment:    p.Payment,
-		Order:      p.confirmedOrder(invoices.Purchased.DateTimePeriod),
+		Order:      p.Order.Confirmed(p.Payment.ConfirmedUTC, invoices.Purchased.DateTimePeriod),
 		Invoices:   invoices,
 		Membership: newM,
 		Snapshot:   p.snapshot(),
