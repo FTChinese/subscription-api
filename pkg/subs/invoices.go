@@ -17,8 +17,10 @@ func NewOrderInvoice(timeParams PurchasedTimeParams, o Order) (invoice.Invoice, 
 	}
 
 	var addOnSource addon.Source
+	confirmedAt := timeParams.ConfirmedAt
 	if o.Kind == enum.OrderKindAddOn {
 		addOnSource = addon.SourceUserPurchase
+		confirmedAt = chrono.Time{}
 	}
 
 	return invoice.Invoice{
@@ -33,7 +35,7 @@ func NewOrderInvoice(timeParams PurchasedTimeParams, o Order) (invoice.Invoice, 
 		PaymentMethod:  o.PaymentMethod,
 		PriceID:        null.StringFrom(o.PlanID),
 		CreatedUTC:     chrono.TimeNow(),
-		ConsumedUTC:    timeParams.ConfirmedAt,
+		ConsumedUTC:    confirmedAt,
 		DateTimePeriod: timeRange.ToDateTimePeriod(),
 		CarriedOverUtc: chrono.Time{},
 	}, nil
