@@ -52,13 +52,6 @@ func (p ConfirmationParams) invoices() (Invoices, error) {
 	}, nil
 }
 
-func (p ConfirmationParams) confirmedOrder(period dt.DateTimePeriod) Order {
-	p.Order.ConfirmedAt = p.Payment.ConfirmedUTC
-	p.Order.DatePeriod = period.ToDatePeriod()
-
-	return p.Order
-}
-
 func (p ConfirmationParams) snapshot() reader.MemberSnapshot {
 	return p.Member.Snapshot(reader.FtcArchiver(p.Order.Kind))
 }
