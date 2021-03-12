@@ -102,7 +102,7 @@ func MustLoadStripeAPIKeys() AuthKeys {
 }
 
 func MustLoadStripeSigningKey() AuthKeys {
-	return MustLoadAuthKeys("api_keys.stripe_webhook")
+	return MustLoadAuthKeys("api_keys.stripe_webhook_v2")
 }
 
 func MustLoadPollingKey() AuthKeys {

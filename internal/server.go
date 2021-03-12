@@ -194,15 +194,19 @@ func StartServer(s ServerStatus) {
 		r.Get("/__refresh", paywallRouter.BustCache)
 	})
 
-	// Deprecate. Use /webhook
-	r.Route("/callback", func(r1 chi.Router) {
-		r1.Post("/wxpay", payRouter.WxWebHook)
-		r1.Post("/alipay", payRouter.AliWebHook)
-	})
-
 	r.Route("/webhook", func(r chi.Router) {
 		r.Post("/wxpay", payRouter.WxWebHook)
 		r.Post("/alipay", payRouter.AliWebHook)
+		// Events
+		//invoice.finalized
+		//invoice.payment_succeeded
+		//invoice.payment_failed
+		//invoice.created
+		//customer.subscription.deleted
+		//customer.subscription.updated
+		//customer.subscription.created
+		// http://www.ftacademy.cn/api/v1/webhook/stripe For version 1
+		// http://www.ftacademy.cn/api/v2/webhook/stripe For version 2
 		r.Post("/stripe", stripeRouter.WebHook)
 		r.Post("/apple", iapRouter.WebHook)
 	})
