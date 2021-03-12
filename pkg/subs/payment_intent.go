@@ -1,8 +1,35 @@
 package subs
 
 import (
+	"fmt"
+	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 )
+
+// PaymentTitle is used as the value of `subject` for alipay,
+// and `body` for wechat pay.
+// * 订阅FT中文网标准会员/年
+// * 订阅FT中文网高端会员/年
+// * 购买FT中文网标准会员/年
+// * 购买FT中文网高端会员/年
+func PaymentTitle(k enum.OrderKind, e price.Edition) string {
+	var prefix string
+
+	switch k {
+	case enum.OrderKindCreate:
+	case enum.OrderKindRenew:
+	case enum.OrderKindUpgrade:
+		prefix = "订阅"
+
+	case enum.OrderKindAddOn:
+		prefix = "购买"
+
+	default:
+	}
+
+	return fmt.Sprintf("%sFT中文网%s", prefix, e.StringCN())
+}
 
 // WxPayNativeAppIntent creates an order used by native apps.
 type WxPayNativeAppIntent struct {
