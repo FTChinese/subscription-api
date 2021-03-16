@@ -15,7 +15,8 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 	p := test.NewPersona()
 
 	env := Env{
-		rwdDB: test.DB,
+		dbs:    test.SplitDB,
+		logger: zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -49,7 +50,8 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 	or := test.NewWxOrderUnsigned()
 
 	env := Env{
-		rwdDB: test.DB,
+		dbs:    test.SplitDB,
+		logger: zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -85,7 +87,8 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 	noti := test.NewWxWHUnsigned(p.NewOrder(enum.OrderKindCreate))
 
 	env := Env{
-		rwdDB: test.DB,
+		dbs:    test.SplitDB,
+		logger: zaptest.NewLogger(t),
 	}
 
 	type args struct {
