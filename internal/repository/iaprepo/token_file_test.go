@@ -74,7 +74,11 @@ func TestLoadReceiptFromDisk(t *testing.T) {
 
 func TestEnv_SaveReceiptToDB(t *testing.T) {
 
-	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
+	env := Env{
+		dbs:    test.SplitDB,
+		rdb:    test.Redis,
+		logger: zaptest.NewLogger(t),
+	}
 
 	type args struct {
 		r apple.ReceiptSchema
@@ -106,7 +110,11 @@ func TestEnv_LoadReceiptFromDB(t *testing.T) {
 	rt := p.IAPReceiptSchema()
 	test.NewRepo().MustSaveIAPReceipt(rt)
 
-	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
+	env := Env{
+		dbs:    test.SplitDB,
+		rdb:    test.Redis,
+		logger: zaptest.NewLogger(t),
+	}
 
 	type args struct {
 		s apple.BaseSchema
