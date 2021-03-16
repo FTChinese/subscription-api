@@ -60,9 +60,9 @@ func (env Env) CreateOrder(counter subs.Counter) (subs.Order, error) {
 	return order, nil
 }
 
-func (env Env) LogOrderMeta(m subs.OrderMeta) error {
+func (env Env) SaveOrderMeta(m subs.OrderMeta) error {
 
-	_, err := env.rwdDB.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		subs.StmtInsertOrderMeta,
 		m)
 
@@ -77,7 +77,7 @@ func (env Env) LogOrderMeta(m subs.OrderMeta) error {
 func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 	var order subs.Order
 
-	err := env.rwdDB.Get(
+	err := env.dbs.Read.Get(
 		&order,
 		subs.StmtSelectOrder,
 		orderID)
@@ -97,7 +97,7 @@ func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 func (env Env) orderHeader(orderID string) (subs.Order, error) {
 	var order subs.Order
 
-	err := env.rwdDB.Get(
+	err := env.dbs.Read.Get(
 		&order,
 		subs.StmtOrderHeader,
 		orderID)
@@ -112,7 +112,7 @@ func (env Env) orderHeader(orderID string) (subs.Order, error) {
 func (env Env) orderTail(orderID string) (subs.Order, error) {
 	var order subs.Order
 
-	err := env.rwdDB.Get(
+	err := env.dbs.Read.Get(
 		&order,
 		subs.StmtOrderTail,
 		orderID)
