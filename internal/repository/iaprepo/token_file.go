@@ -101,7 +101,7 @@ func (env Env) LoadReceiptFromRedis(s apple.BaseSchema) (string, error) {
 
 // SaveReceiptToDB saves a receipt file to MySQL.
 func (env Env) SaveReceiptToDB(r apple.ReceiptSchema) error {
-	_, err := env.db.NamedExec(apple.StmtSaveReceiptToken, r)
+	_, err := env.dbs.Write.NamedExec(apple.StmtSaveReceiptToken, r)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (env Env) SaveReceiptToDB(r apple.ReceiptSchema) error {
 // LoadReceiptFromDB retrieves an existing receipt file from MySQL.
 func (env Env) LoadReceiptFromDB(s apple.BaseSchema) (string, error) {
 	var r string
-	err := env.db.Get(&r, apple.StmtRetrieveReceipt, s.OriginalTransactionID, s.Environment)
+	err := env.dbs.Read.Get(&r, apple.StmtRetrieveReceipt, s.OriginalTransactionID, s.Environment)
 	if err != nil {
 		return "", err
 	}
