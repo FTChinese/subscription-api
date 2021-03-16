@@ -26,7 +26,7 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 	}
 
 	env := Env{
-		db: test.DB,
+		dbs: test.SplitDB,
 	}
 
 	type args struct {
