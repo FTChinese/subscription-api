@@ -116,7 +116,7 @@ func (env Env) Link(result apple.LinkResult) error {
 }
 
 func (env Env) ArchiveLinkCheating(link apple.LinkInput) error {
-	_, err := env.db.NamedExec(apple.StmtArchiveLinkCheat, link)
+	_, err := env.dbs.Write.NamedExec(apple.StmtArchiveLinkCheat, link)
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 }
 
 func (env Env) ArchiveUnlink(link apple.LinkInput) error {
-	_, err := env.db.NamedExec(apple.StmtArchiveUnlink, link)
+	_, err := env.dbs.Write.NamedExec(apple.StmtArchiveUnlink, link)
 	if err != nil {
 		return err
 	}

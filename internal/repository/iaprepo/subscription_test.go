@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"testing"
 	"time"
@@ -20,7 +19,11 @@ import (
 func TestEnv_SaveSubs(t *testing.T) {
 	p := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 
-	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
+	env := Env{
+		dbs:    test.SplitDB,
+		rdb:    test.Redis,
+		logger: zaptest.NewLogger(t),
+	}
 
 	p2 := test.NewPersona().
 		SetPayMethod(enum.PayMethodApple)
@@ -40,14 +43,20 @@ func TestEnv_SaveSubs(t *testing.T) {
 		{
 			name: "Save unlinked iap subscription",
 			args: args{
-				s: p.IAPSubs(),
+				s: apple.
+					NewMockSubsBuilder(p.FtcID).
+					WithOriginalTxID(p.AppleSubID).
+					Build(),
 			},
 			wantErr: false,
 		},
 		{
 			name: "Save linked iap subscription",
 			args: args{
-				s: p2.IAPSubs(),
+				s: apple.
+					NewMockSubsBuilder(p2.FtcID).
+					WithOriginalTxID(p2.AppleSubID).
+					Build(),
 			},
 			wantErr: false,
 		},
@@ -75,26 +84,23 @@ func TestEnv_updateMembership(t *testing.T) {
 		Build()
 	test.NewRepo().MustSaveMembership(current)
 
-	type fields struct {
-		db     *sqlx.DB
-		logger *zap.Logger
+	env := Env{
+		dbs:    test.SplitDB,
+		rdb:    test.Redis,
+		logger: zaptest.NewLogger(t),
 	}
+
 	type args struct {
 		s apple.Subscription
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    apple.SubsResult
 		wantErr bool
 	}{
 		{
 			name: "Update membership",
-			fields: fields{
-				db:     test.DB,
-				logger: zaptest.NewLogger(t),
-			},
 			args: args{
 				s: apple.NewMockSubsBuilder(userID).
 					WithOriginalTxID(txID).
@@ -106,10 +112,7 @@ func TestEnv_updateMembership(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db:     tt.fields.db,
-				logger: tt.fields.logger,
-			}
+
 			got, err := env.updateMembership(tt.args.s)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("updateMembership() error = %v, wantErr %v", err, tt.wantErr)
@@ -126,34 +129,33 @@ func TestEnv_updateMembership(t *testing.T) {
 
 func TestEnv_LoadSubs(t *testing.T) {
 	p := test.NewPersona()
-	test.NewRepo().MustSaveIAPSubs(p.IAPSubs())
+	test.NewRepo().MustSaveIAPSubs(apple.
+		NewMockSubsBuilder(p.FtcID).
+		WithOriginalTxID(p.AppleSubID).
+		Build())
 
-	type fields struct {
-		db *sqlx.DB
+	env := Env{
+		dbs:    test.SplitDB,
+		rdb:    test.Redis,
+		logger: zaptest.NewLogger(t),
 	}
 	type args struct {
 		originalID string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
-			name: "Load a subscription",
-			fields: fields{
-				db: test.DB,
-			},
+			name:    "Load a subscription",
 			args:    args{originalID: p.AppleSubID},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db: tt.fields.db,
-			}
+
 			got, err := env.LoadSubs(tt.args.originalID)
 
 			if tt.wantErr {
@@ -171,6 +173,11 @@ func TestEnv_countSubs(t *testing.T) {
 	p := test.NewPersona()
 	test.NewRepo().MustSaveIAPSubs(p.IAPSubsLinked())
 
+	env := Env{
+		dbs:    test.SplitDB,
+		rdb:    test.Redis,
+		logger: zaptest.NewLogger(t),
+	}
 	type fields struct {
 		db *sqlx.DB
 	}
@@ -189,9 +196,7 @@ func TestEnv_countSubs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db: tt.fields.db,
-			}
+
 			got, err := env.countSubs(p.FtcID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("countSubs() error = %v, wantErr %v", err, tt.wantErr)
@@ -213,24 +218,23 @@ func TestEnv_listSubs(t *testing.T) {
 	p := test.NewPersona()
 	test.NewRepo().MustSaveIAPSubs(p.IAPSubsLinked())
 
-	type fields struct {
-		db *sqlx.DB
+	env := Env{
+		dbs:    test.SplitDB,
+		rdb:    test.Redis,
+		logger: zaptest.NewLogger(t),
 	}
+
 	type args struct {
 		ftcID string
 		p     gorest.Pagination
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "List subs",
-			fields: fields{
-				db: test.DB,
-			},
 			args: args{
 				ftcID: p.FtcID,
 				p:     gorest.NewPagination(1, 20),
@@ -240,9 +244,7 @@ func TestEnv_listSubs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db: tt.fields.db,
-			}
+
 			got, err := env.listSubs(tt.args.ftcID, tt.args.p)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("listSubs() error = %v, wantErr %v", err, tt.wantErr)
@@ -264,7 +266,11 @@ func TestEnv_ListSubs(t *testing.T) {
 	p := test.NewPersona()
 	test.NewRepo().MustSaveIAPSubs(p.IAPSubsLinked())
 
-	env := NewEnv(test.DB, test.Redis, zaptest.NewLogger(t))
+	env := Env{
+		dbs:    test.SplitDB,
+		rdb:    test.Redis,
+		logger: zaptest.NewLogger(t),
+	}
 
 	t.Logf("Create IAP %s", p.AppleSubID)
 
