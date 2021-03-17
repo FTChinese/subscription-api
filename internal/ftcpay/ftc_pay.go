@@ -6,10 +6,10 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
-	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
@@ -23,7 +23,7 @@ type FtcPay struct {
 	Logger       *zap.Logger
 }
 
-func New(db *sqlx.DB, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
+func New(db db.ReadWriteSplit, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
 
 	aliApp := ali.MustInitApp()
 	wxApps := wechat.MustGetPayApps()
