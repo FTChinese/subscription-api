@@ -1,18 +1,18 @@
 package products
 
 import (
-	"github.com/jmoiron/sqlx"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/patrickmn/go-cache"
 )
 
 type Env struct {
-	db    *sqlx.DB
+	dbs   db.ReadWriteSplit
 	cache *cache.Cache
 }
 
-func NewEnv(db *sqlx.DB, cache *cache.Cache) Env {
+func NewEnv(dbs db.ReadWriteSplit, cache *cache.Cache) Env {
 	return Env{
-		db:    db,
+		dbs:   dbs,
 		cache: cache,
 	}
 }
