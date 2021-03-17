@@ -3,7 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/wxoauth"
 	client2 "github.com/FTChinese/subscription-api/pkg/client"
-	"github.com/jmoiron/sqlx"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
 	"net/http"
 	"net/url"
@@ -25,10 +25,10 @@ type WxAuthRouter struct {
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
-func NewWxAuth(db *sqlx.DB, logger *zap.Logger) WxAuthRouter {
+func NewWxAuth(dbs db.ReadWriteSplit, logger *zap.Logger) WxAuthRouter {
 	return WxAuthRouter{
 		apps:   wxlogin.MustInitApps(),
-		wxRepo: wxoauth.NewEnv(db),
+		wxRepo: wxoauth.NewEnv(dbs),
 		logger: logger,
 	}
 }

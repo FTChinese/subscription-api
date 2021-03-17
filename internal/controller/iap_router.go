@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
@@ -16,7 +17,6 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/jmoiron/sqlx"
 )
 
 type IAPRouter struct {
@@ -29,11 +29,11 @@ type IAPRouter struct {
 	logger    *zap.Logger
 }
 
-func NewIAPRouter(db *sqlx.DB, rdb *redis.Client, logger *zap.Logger, p postoffice.PostOffice, cfg config.BuildConfig) IAPRouter {
+func NewIAPRouter(dbs db.ReadWriteSplit, rdb *redis.Client, logger *zap.Logger, p postoffice.PostOffice, cfg config.BuildConfig) IAPRouter {
 
 	return IAPRouter{
-		iapRepo:    iaprepo.NewEnv(db, rdb, logger),
-		readerRepo: readerrepo.NewEnv(db, logger),
+		iapRepo:    iaprepo.NewEnv(dbs, rdb, logger),
+		readerRepo: readerrepo.NewEnv(dbs, logger),
 		postman:    p,
 		sandbox:    cfg.Sandbox(),
 		iapClient:  iaprepo.NewClient(logger),
