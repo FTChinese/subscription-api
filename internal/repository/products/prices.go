@@ -12,7 +12,7 @@ func (env Env) retrieveProductPrices() ([]price.FtcPrice, error) {
 	var schema = make([]pw.PriceSchema, 0)
 	var prices = make([]price.FtcPrice, 0)
 
-	err := env.db.Select(&schema, pw.StmtActiveProductPrices)
+	err := env.dbs.Read.Select(&schema, pw.StmtActiveProductPrices)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (env Env) ActivePricesFromCacheOrDB() ([]price.FtcPrice, error) {
 func (env Env) RetrievePrice(id string) (price.FtcPrice, error) {
 	var schema pw.PriceSchema
 
-	err := env.db.Get(&schema, pw.StmtProductPrice, id)
+	err := env.dbs.Read.Get(&schema, pw.StmtProductPrice, id)
 	if err != nil {
 		return price.FtcPrice{}, nil
 	}
