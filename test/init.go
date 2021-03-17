@@ -19,6 +19,7 @@ const (
 var (
 	CFG      = config.NewBuildConfig(false, false)
 	DB       *sqlx.DB
+	SplitDB  db.ReadWriteSplit
 	Redis    *redis.Client
 	Cache    *cache.Cache
 	WxPayApp wechat.PayApp
@@ -29,6 +30,11 @@ func init() {
 	config.MustSetupViper()
 
 	DB = db.MustNewMySQL(CFG.MustGetDBConn(""))
+	SplitDB = db.ReadWriteSplit{
+		Read:   DB,
+		Write:  DB,
+		Delete: DB,
+	}
 	Redis = db.NewRedis(config.MustRedisAddress().Pick(false))
 	Cache = cache.New(cache.DefaultExpiration, 0)
 	WxPayApp = wechat.MustNewPayApp("wxapp.native_app")
