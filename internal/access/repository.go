@@ -12,19 +12,19 @@ Authorization: Bearer <token>
 package access
 
 import (
-	"github.com/jmoiron/sqlx"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/patrickmn/go-cache"
 	"time"
 )
 
 type Repo struct {
-	db    *sqlx.DB
+	dbs   db.ReadWriteSplit
 	cache *cache.Cache
 }
 
-func NewRepo(db *sqlx.DB) Repo {
+func NewRepo(dbs db.ReadWriteSplit) Repo {
 	return Repo{
-		db: db,
+		dbs: dbs,
 		// Default expiration 24 hours, and purges the expired items every hour.
 		cache: cache.New(24*time.Hour, 1*time.Hour),
 	}
@@ -50,7 +50,7 @@ func (env Repo) Load(token string) (OAuthAccess, error) {
 func (env Repo) RetrieveFromDB(token string) (OAuthAccess, error) {
 	var access OAuthAccess
 
-	if err := env.db.Get(&access, stmtOAuth, token); err != nil {
+	if err := env.dbs.Read.Get(&access, stmtOAuth, token); err != nil {
 		return access, err
 	}
 
