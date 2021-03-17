@@ -30,9 +30,11 @@ func StartServer(s ServerStatus) {
 	cfg := config.NewBuildConfig(s.Production, s.Sandbox)
 	logger := config.MustGetLogger(s.Production)
 
-	rwMyDB := db.MustNewMySQL(config.MustMySQLMasterConn(s.Production))
-	// DB connection with delete privilege.
-	rwdMyDB := db.MustNewMySQL(config.MustMySQLAPIConn(s.Production))
+	myDBs := db.ReadWriteSplit{
+		Read:   db.MustNewMySQL(config.MustMySQLReadConn(s.Production)),
+		Write:  db.MustNewMySQL(config.MustMySQLWriteConn(s.Production)),
+		Delete: db.MustNewMySQL(config.MustMySQLWriteConn(s.Production)),
+	}
 
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
@@ -41,16 +43,16 @@ func StartServer(s ServerStatus) {
 
 	post := postoffice.New(config.MustGetHanqiConn())
 
-	guard := access.NewGuard(rwMyDB)
+	guard := access.NewGuard(myDBs)
 
-	payRouter := controller.NewSubsRouter(rwdMyDB, promoCache, cfg, post, logger)
-	iapRouter := controller.NewIAPRouter(rwdMyDB, rdb, logger, post, cfg)
-	stripeRouter := controller.NewStripeRouter(rwMyDB, cfg, logger)
+	payRouter := controller.NewSubsRouter(myDBs, promoCache, cfg, post, logger)
+	iapRouter := controller.NewIAPRouter(myDBs, rdb, logger, post, cfg)
+	stripeRouter := controller.NewStripeRouter(myDBs, cfg, logger)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := controller.NewPaywallRouter(rwMyDB, promoCache, logger)
+	paywallRouter := controller.NewPaywallRouter(myDBs, promoCache, logger)
 
-	wxAuth := controller.NewWxAuth(rwMyDB, logger)
+	wxAuth := controller.NewWxAuth(myDBs, logger)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
