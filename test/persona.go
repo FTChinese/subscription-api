@@ -134,7 +134,7 @@ func (p *Persona) FtcAccount() reader.FtcAccount {
 		return reader.FtcAccount{
 			FtcID:    p.FtcID,
 			UnionID:  null.String{},
-			StripeID: null.String{},
+			StripeID: null.StringFrom(p.StripeID),
 			Email:    p.Email,
 			UserName: null.StringFrom(p.UserName),
 			VIP:      false,
@@ -154,7 +154,7 @@ func (p *Persona) FtcAccount() reader.FtcAccount {
 		return reader.FtcAccount{
 			FtcID:    p.FtcID,
 			UnionID:  null.StringFrom(p.UnionID),
-			StripeID: null.String{},
+			StripeID: null.StringFrom(p.StripeID),
 			Email:    p.Email,
 			UserName: null.StringFrom(p.UserName),
 			VIP:      false,
