@@ -6,8 +6,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
-	"github.com/jmoiron/sqlx"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
@@ -25,7 +23,12 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 		return
 	}
 
-	env := NewEnv(test.DB, client, zaptest.NewLogger(t))
+	env := Env{
+		dbs:    test.SplitDB,
+		client: NewClient(false, zaptest.NewLogger(t)),
+		logger: zaptest.NewLogger(t),
+	}
+
 	_, err = env.CreateSubscription(stripe.SubsParams{
 		Account: pa.account,
 		Edition: price.StripeEditions.MustFindByEdition(price.StdMonthEdition, false),
@@ -38,27 +41,16 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 		return
 	}
 
-	type fields struct {
-		db     *sqlx.DB
-		client Client
-		logger *zap.Logger
-	}
 	type args struct {
 		cfg stripe.SubsParams
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Switch cycle",
-			fields: fields{
-				db:     test.DB,
-				client: client,
-				logger: zaptest.NewLogger(t),
-			},
 			args: args{
 				cfg: stripe.SubsParams{
 					Account: pa.account,
@@ -72,11 +64,6 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 		},
 		{
 			name: "Upgrade",
-			fields: fields{
-				db:     test.DB,
-				client: client,
-				logger: zaptest.NewLogger(t),
-			},
 			args: args{
 				cfg: stripe.SubsParams{
 					Account: pa.account,
@@ -91,11 +78,6 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db:     tt.fields.db,
-				client: tt.fields.client,
-				logger: tt.fields.logger,
-			}
 			got, err := env.UpdateSubscription(tt.args.cfg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateSubscription() error = %v, wantErr %v", err, tt.wantErr)
