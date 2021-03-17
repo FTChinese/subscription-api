@@ -12,7 +12,7 @@ X-Client-Type: "web | ios | android"
 X-Client-Version: "1.2.0"
 ```
 
-For `X-Client-Type` == `web`, those field should also be provied:
+For `X-Client-Type` == `web`, those field should also be provided:
 
 ```
 X-User-Ip: "127.0.0.1"
