@@ -31,3 +31,15 @@ func MustMySQLMasterConn(prod bool) connect.Connect {
 func MustMySQLAPIConn(prod bool) connect.Connect {
 	return mustMySQLConn("mysql.apisuper", prod)
 }
+
+func MustMySQLReadConn(prod bool) connect.Connect {
+	return mustMySQLConn("mysql.read", prod)
+}
+
+func MustMySQLWriteConn(prod bool) connect.Connect {
+	return mustMySQLConn("mysql.write", prod)
+}
+
+func MustMySQLDeleteConn(prod bool) connect.Connect {
+	return mustMySQLConn("mysql.delete", prod)
+}
