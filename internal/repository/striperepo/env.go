@@ -2,6 +2,7 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
@@ -9,22 +10,23 @@ import (
 // Env wraps database connection
 type Env struct {
 	db     *sqlx.DB
+	dbs    db.ReadWriteSplit
 	client Client
 	logger *zap.Logger
 }
 
 // NewSubEnv creates a new instance of SubEnv.
 // `sandbox` is used to determine which table to write subscription data.
-func NewEnv(db *sqlx.DB, client Client, logger *zap.Logger) Env {
+func NewEnv(dbs db.ReadWriteSplit, client Client, logger *zap.Logger) Env {
 	return Env{
-		db:     db,
+		dbs:    dbs,
 		client: client,
 		logger: logger,
 	}
 }
 
 func (env Env) beginAccountTx() (txrepo.AccountTx, error) {
-	tx, err := env.db.Beginx()
+	tx, err := env.dbs.Write.Beginx()
 
 	if err != nil {
 		return txrepo.AccountTx{}, err
@@ -34,7 +36,7 @@ func (env Env) beginAccountTx() (txrepo.AccountTx, error) {
 }
 
 func (env Env) beginSubsTx() (txrepo.MemberTx, error) {
-	tx, err := env.db.Beginx()
+	tx, err := env.dbs.Write.Beginx()
 
 	if err != nil {
 		return txrepo.MemberTx{}, err
