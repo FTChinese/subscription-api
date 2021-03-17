@@ -10,7 +10,7 @@ import (
 func (env Env) retrieveBanner() (pw.BannerSchema, error) {
 	var schema pw.BannerSchema
 
-	err := env.db.Get(&schema, pw.StmtBanner)
+	err := env.dbs.Read.Get(&schema, pw.StmtBanner)
 	if err != nil {
 		return pw.BannerSchema{}, err
 	}

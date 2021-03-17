@@ -8,7 +8,7 @@ import (
 func (env Env) retrieveActiveProducts() ([]pw.ProductBody, error) {
 	var products = make([]pw.ProductBody, 0)
 
-	err := env.db.Select(&products, pw.StmtPaywallProducts)
+	err := env.dbs.Read.Select(&products, pw.StmtPaywallProducts)
 
 	if err != nil {
 		return nil, err
