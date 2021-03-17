@@ -8,7 +8,7 @@ import (
 
 func (env Env) AccountByFtcID(id string) (reader.FtcAccount, error) {
 	var u reader.FtcAccount
-	err := env.db.Get(
+	err := env.dbs.Read.Get(
 		&u,
 		reader.StmtAccountByFtcID,
 		id,
@@ -23,7 +23,7 @@ func (env Env) AccountByFtcID(id string) (reader.FtcAccount, error) {
 
 func (env Env) AccountByWxID(unionID string) (reader.FtcAccount, error) {
 	var a reader.FtcAccount
-	err := env.db.Get(&a, reader.StmtAccountByWx, unionID)
+	err := env.dbs.Read.Get(&a, reader.StmtAccountByWx, unionID)
 	if err != nil {
 		return reader.FtcAccount{}, err
 	}
@@ -46,7 +46,7 @@ func (env Env) FindAccount(ids pkg.UserIDs) (reader.FtcAccount, error) {
 
 func (env Env) FtcAccountByStripeID(cusID string) (reader.FtcAccount, error) {
 	var u reader.FtcAccount
-	err := env.db.Get(&u,
+	err := env.dbs.Read.Get(&u,
 		reader.StmtAccountByStripeID,
 		cusID)
 
