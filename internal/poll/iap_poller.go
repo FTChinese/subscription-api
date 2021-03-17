@@ -30,14 +30,14 @@ type IAPPoller struct {
 	logger     *zap.Logger
 }
 
-func NewIAPPoller(myDB *sqlx.DB, prod bool, logger *zap.Logger) IAPPoller {
+func NewIAPPoller(dbs db.ReadWriteSplit, prod bool, logger *zap.Logger) IAPPoller {
 
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(prod))
 
 	return IAPPoller{
-		db:         myDB,
-		iapRepo:    iaprepo.NewEnv(myDB, rdb, logger),
-		readerRepo: readerrepo.NewEnv(myDB, logger),
+		db:         dbs.Read,
+		iapRepo:    iaprepo.NewEnv(dbs, rdb, logger),
+		readerRepo: readerrepo.NewEnv(dbs, logger),
 		verifier:   iaprepo.NewClient(logger),
 		apiClient:  NewAPIClient(prod),
 		logger:     logger,
