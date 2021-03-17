@@ -9,8 +9,8 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 	"net/http"
@@ -23,11 +23,11 @@ type SubsRouter struct {
 	config   config.BuildConfig
 }
 
-func NewSubsRouter(db *sqlx.DB, c *cache.Cache, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) SubsRouter {
+func NewSubsRouter(dbs db.ReadWriteSplit, c *cache.Cache, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) SubsRouter {
 
 	return SubsRouter{
-		FtcPay:   ftcpay.New(db, p, logger),
-		prodRepo: products.NewEnv(db, c),
+		FtcPay:   ftcpay.New(dbs, p, logger),
+		prodRepo: products.NewEnv(dbs, c),
 		config:   cfg,
 	}
 }
@@ -49,7 +49,7 @@ func (router SubsRouter) postOrderCreation(order subs.Order, client client.Clien
 	sugar := router.Logger.Sugar()
 
 	go func() {
-		err := router.SubsRepo.LogOrderMeta(subs.OrderMeta{
+		err := router.SubsRepo.SaveOrderMeta(subs.OrderMeta{
 			OrderID: order.ID,
 			Client:  client,
 		})

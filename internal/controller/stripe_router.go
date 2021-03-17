@@ -6,8 +6,8 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/jmoiron/sqlx"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 	"go.uber.org/zap"
 	"net/http"
@@ -23,14 +23,14 @@ type StripeRouter struct {
 }
 
 // NewStripeRouter initializes StripeRouter.
-func NewStripeRouter(db *sqlx.DB, cfg config.BuildConfig, logger *zap.Logger) StripeRouter {
+func NewStripeRouter(dbs db.ReadWriteSplit, cfg config.BuildConfig, logger *zap.Logger) StripeRouter {
 	client := striperepo.NewClient(cfg.Live(), logger)
 
 	return StripeRouter{
 		config:     cfg,
 		signingKey: config.MustLoadStripeSigningKey().Pick(cfg.Live()),
-		readerRepo: readerrepo.NewEnv(db, logger),
-		stripeRepo: striperepo.NewEnv(db, client, logger),
+		readerRepo: readerrepo.NewEnv(dbs, logger),
+		stripeRepo: striperepo.NewEnv(dbs, client, logger),
 		client:     client,
 		logger:     logger,
 	}
