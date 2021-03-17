@@ -40,6 +40,7 @@ func MustPendingRenewal() apple.PendingRenewal {
 	return resp.PendingRenewalInfo[rand.IntRange(0, l)]
 }
 
+// Deprecated
 func (p *Persona) IAPSubs() apple.Subscription {
 	s := apple.Subscription{
 		BaseSchema: apple.BaseSchema{
