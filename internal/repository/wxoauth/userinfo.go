@@ -8,7 +8,7 @@ import (
 // Since a user can authorize multiple times, use ON DUPLICATE to handle unique key constraint.
 func (env Env) SaveWxUser(u wxlogin.UserInfoSchema) error {
 
-	_, err := env.db.NamedExec(wxlogin.StmtInsertUserInfo, u)
+	_, err := env.dbs.Write.NamedExec(wxlogin.StmtInsertUserInfo, u)
 
 	if err != nil {
 		return err
@@ -19,7 +19,7 @@ func (env Env) SaveWxUser(u wxlogin.UserInfoSchema) error {
 
 // UpdateWxUser update data of one union id.
 func (env Env) UpdateWxUser(u wxlogin.UserInfo) error {
-	_, err := env.db.Exec(wxlogin.StmtUpdateUserInfo,
+	_, err := env.dbs.Write.Exec(wxlogin.StmtUpdateUserInfo,
 		u.SQLSchema())
 
 	if err != nil {

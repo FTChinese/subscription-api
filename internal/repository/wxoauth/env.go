@@ -1,15 +1,15 @@
 package wxoauth
 
 import (
-	"github.com/jmoiron/sqlx"
+	"github.com/FTChinese/subscription-api/pkg/db"
 )
 
 type Env struct {
-	db *sqlx.DB
+	dbs db.ReadWriteSplit
 }
 
-func NewEnv(db *sqlx.DB) Env {
+func NewEnv(dbs db.ReadWriteSplit) Env {
 	return Env{
-		db: db,
+		dbs: dbs,
 	}
 }
