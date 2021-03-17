@@ -3,7 +3,7 @@ package access
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/view"
-	"github.com/jmoiron/sqlx"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"log"
 	"net/http"
 )
@@ -12,9 +12,9 @@ type Guard struct {
 	env Repo
 }
 
-func NewGuard(db *sqlx.DB) Guard {
+func NewGuard(dbs db.ReadWriteSplit) Guard {
 	return Guard{
-		env: NewRepo(db),
+		env: NewRepo(dbs),
 	}
 }
 
