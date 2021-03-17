@@ -2,25 +2,24 @@ package readerrepo
 
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
-	"github.com/jmoiron/sqlx"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
 )
 
 type Env struct {
-	//config.BuildConfig
-	db     *sqlx.DB
+	dbs    db.ReadWriteSplit
 	logger *zap.Logger
 }
 
-func NewEnv(db *sqlx.DB, logger *zap.Logger) Env {
+func NewEnv(dbs db.ReadWriteSplit, logger *zap.Logger) Env {
 	return Env{
-		db:     db,
+		dbs:    dbs,
 		logger: logger,
 	}
 }
 
 func (env Env) BeginTx() (txrepo.MemberTx, error) {
-	tx, err := env.db.Beginx()
+	tx, err := env.dbs.Write.Beginx()
 
 	if err != nil {
 		return txrepo.MemberTx{}, err

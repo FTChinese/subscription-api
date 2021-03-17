@@ -6,7 +6,7 @@ import (
 )
 
 func (env Env) InvoicesCarriedOver(userID pkg.UserIDs) error {
-	_, err := env.db.Exec(invoice.StmtCarriedOver, userID.BuildFindInSet())
+	_, err := env.dbs.Write.Exec(invoice.StmtCarriedOver, userID.BuildFindInSet())
 	if err != nil {
 		return err
 	}

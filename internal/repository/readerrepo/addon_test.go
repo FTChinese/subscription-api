@@ -4,11 +4,11 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -34,7 +34,7 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 	})
 
 	type fields struct {
-		db     *sqlx.DB
+		dbs    db.ReadWriteSplit
 		logger *zap.Logger
 	}
 	type args struct {
@@ -50,7 +50,7 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 		{
 			name: "Claim addon",
 			fields: fields{
-				db:     test.DB,
+				dbs:    test.SplitDB,
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
@@ -62,7 +62,7 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db:     tt.fields.db,
+				dbs:    tt.fields.dbs,
 				logger: tt.fields.logger,
 			}
 			got, err := env.ClaimAddOn(tt.args.ids)
