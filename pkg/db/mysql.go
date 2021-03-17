@@ -53,3 +53,9 @@ func MustNewMySQL(c connect.Connect) *sqlx.DB {
 
 	return db
 }
+
+type ReadWriteSplit struct {
+	Read   *sqlx.DB
+	Write  *sqlx.DB
+	Delete *sqlx.DB
+}
