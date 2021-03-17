@@ -4,7 +4,7 @@ import "github.com/FTChinese/subscription-api/pkg/stripe"
 
 // SaveSubsError saves any error in stripe response.
 func (env Env) SaveSubsError(e stripe.APIError) error {
-	_, err := env.db.NamedExec(stripe.StmtSaveAPIError, e)
+	_, err := env.dbs.Write.NamedExec(stripe.StmtSaveAPIError, e)
 
 	if err != nil {
 		return err
@@ -14,7 +14,7 @@ func (env Env) SaveSubsError(e stripe.APIError) error {
 }
 
 func (env Env) UpsertSubs(s stripe.Subs) error {
-	_, err := env.db.NamedExec(stripe.StmtInsertSubs, s)
+	_, err := env.dbs.Write.NamedExec(stripe.StmtInsertSubs, s)
 	if err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func (env Env) UpsertSubs(s stripe.Subs) error {
 
 func (env Env) RetrieveSubs(id string) (stripe.Subs, error) {
 	var s stripe.Subs
-	err := env.db.Get(&s, stripe.StmtRetrieveSubs, id)
+	err := env.dbs.Read.Get(&s, stripe.StmtRetrieveSubs, id)
 	if err != nil {
 		return s, err
 	}
@@ -34,7 +34,7 @@ func (env Env) RetrieveSubs(id string) (stripe.Subs, error) {
 
 func (env Env) SubsExists(id string) (bool, error) {
 	var ok bool
-	err := env.db.Get(&ok, stripe.StmtSubsExists, id)
+	err := env.dbs.Read.Get(&ok, stripe.StmtSubsExists, id)
 	if err != nil {
 		return false, err
 	}
