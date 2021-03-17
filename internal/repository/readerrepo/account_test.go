@@ -1,12 +1,10 @@
 package readerrepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
@@ -14,7 +12,7 @@ func TestReaderEnv_AccountByFtcID(t *testing.T) {
 	profile := test.NewPersona()
 	test.NewRepo().MustSaveAccount(profile.FtcAccount())
 
-	env := Env{db: test.DB}
+	env := Env{dbs: test.SplitDB}
 
 	type args struct {
 		id string
@@ -51,7 +49,7 @@ func TestEnv_AccountByWxID(t *testing.T) {
 	repo.MustSaveWxUser(p.WxUser())
 
 	type fields struct {
-		db *sqlx.DB
+		dbs db.ReadWriteSplit
 	}
 	type args struct {
 		unionID string
@@ -66,7 +64,7 @@ func TestEnv_AccountByWxID(t *testing.T) {
 		{
 			name: "Wx account",
 			fields: fields{
-				db: test.DB,
+				dbs: test.SplitDB,
 			},
 			args: args{
 				unionID: p.UnionID,
@@ -77,7 +75,7 @@ func TestEnv_AccountByWxID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				db: tt.fields.db,
+				dbs: tt.fields.dbs,
 			}
 			got, err := env.AccountByWxID(tt.args.unionID)
 			if tt.wantErr {
@@ -97,10 +95,10 @@ func TestEnv_AccountByWxID(t *testing.T) {
 }
 
 func TestReaderEnv_AccountByStripeID(t *testing.T) {
-	profile := test.NewPersona()
-	test.NewRepo().MustSaveAccount(profile.FtcAccount())
+	p := test.NewPersona()
+	test.NewRepo().MustSaveAccount(p.FtcAccount())
 
-	env := Env{db: test.DB}
+	env := Env{dbs: test.SplitDB}
 
 	type args struct {
 		cusID string
@@ -112,7 +110,7 @@ func TestReaderEnv_AccountByStripeID(t *testing.T) {
 	}{
 		{
 			name:    "Account by stripe",
-			args:    args{cusID: profile.StripeID},
+			args:    args{cusID: p.StripeID},
 			wantErr: false,
 		},
 	}
@@ -126,42 +124,6 @@ func TestReaderEnv_AccountByStripeID(t *testing.T) {
 			}
 
 			t.Logf("Acocunt: %+v", got)
-		})
-	}
-}
-
-func TestEnv_RetrieveMember(t *testing.T) {
-	p := test.NewPersona()
-	m := p.Membership()
-	test.NewRepo().MustSaveMembership(m)
-
-	env := NewEnv(test.DB, zaptest.NewLogger(t))
-
-	type args struct {
-		id pkg.UserIDs
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Load member",
-			args: args{
-				id: m.UserIDs,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			got, err := env.RetrieveMember(tt.args.id)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			t.Logf("%v", got)
 		})
 	}
 }

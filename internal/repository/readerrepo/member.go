@@ -9,7 +9,7 @@ import (
 func (env Env) RetrieveMember(id pkg.UserIDs) (reader.Membership, error) {
 	var m reader.Membership
 
-	err := env.db.Get(
+	err := env.dbs.Read.Get(
 		&m,
 		reader.StmtSelectMember,
 		id.BuildFindInSet())
@@ -27,7 +27,7 @@ func (env Env) RetrieveMember(id pkg.UserIDs) (reader.Membership, error) {
 func (env Env) RetrieveAppleMember(txID string) (reader.Membership, error) {
 	var m reader.Membership
 
-	err := env.db.Get(
+	err := env.dbs.Read.Get(
 		&m,
 		reader.StmtAppleMember,
 		txID)
@@ -40,7 +40,7 @@ func (env Env) RetrieveAppleMember(txID string) (reader.Membership, error) {
 }
 
 func (env Env) UpdateMember(m reader.Membership) error {
-	_, err := env.db.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		reader.StmtUpdateMember,
 		m)
 
