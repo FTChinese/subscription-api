@@ -47,21 +47,21 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "New order",
 			args: args{
 				counter: subs.Counter{
-					Account: newPersona.FtcAccount(),
-					Price:   faker.PriceStdYear,
-					Method:  enum.PayMethodAli,
-					WxAppID: null.String{},
+					Account:  newPersona.FtcAccount(),
+					FtcPrice: price.PriceStdYear,
+					Method:   enum.PayMethodAli,
+					WxAppID:  null.String{},
 				},
 			},
 			want: subs.Order{
 				ID:         "",
 				UserIDs:    newPersona.AccountID(),
-				PlanID:     faker.PriceStdYear.ID,
+				PlanID:     price.PriceStdYear.ID,
 				DiscountID: null.String{},
-				Price:      faker.PriceStdYear.UnitAmount,
-				Edition:    faker.PriceStdYear.Edition,
+				Price:      price.PriceStdYear.UnitAmount,
+				Edition:    price.PriceStdYear.Edition,
 				Charge: price.Charge{
-					Amount:   faker.PriceStdYear.UnitAmount,
+					Amount:   price.PriceStdYear.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindCreate,
@@ -78,22 +78,22 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "Renewal order",
 			args: args{
 				counter: subs.Counter{
-					Account: renewalPerson.FtcAccount(),
-					Price:   faker.PriceStdYear,
-					Method:  enum.PayMethodWx,
-					WxAppID: null.StringFrom(wxID),
+					Account:  renewalPerson.FtcAccount(),
+					FtcPrice: price.PriceStdYear,
+					Method:   enum.PayMethodWx,
+					WxAppID:  null.StringFrom(wxID),
 				},
 				p: renewalPerson,
 			},
 			want: subs.Order{
 				ID:         "",
 				UserIDs:    renewalPerson.AccountID(),
-				PlanID:     faker.PriceStdYear.ID,
+				PlanID:     price.PriceStdYear.ID,
 				DiscountID: null.String{},
-				Price:      faker.PriceStdYear.UnitAmount,
-				Edition:    faker.PriceStdYear.Edition,
+				Price:      price.PriceStdYear.UnitAmount,
+				Edition:    price.PriceStdYear.Edition,
 				Charge: price.Charge{
-					Amount:   faker.PriceStdYear.UnitAmount,
+					Amount:   price.PriceStdYear.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindRenew,
@@ -110,22 +110,22 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "Upgrade order",
 			args: args{
 				counter: subs.Counter{
-					Account: upgradePerson.FtcAccount(),
-					Price:   faker.PricePrm,
-					Method:  enum.PayMethodWx,
-					WxAppID: null.StringFrom(wxID),
+					Account:  upgradePerson.FtcAccount(),
+					FtcPrice: price.PricePrm,
+					Method:   enum.PayMethodWx,
+					WxAppID:  null.StringFrom(wxID),
 				},
 				p: upgradePerson,
 			},
 			want: subs.Order{
 				ID:         "",
 				UserIDs:    upgradePerson.AccountID(),
-				PlanID:     faker.PricePrm.ID,
+				PlanID:     price.PricePrm.ID,
 				DiscountID: null.String{},
-				Price:      faker.PricePrm.UnitAmount,
-				Edition:    faker.PricePrm.Edition,
+				Price:      price.PricePrm.UnitAmount,
+				Edition:    price.PricePrm.Edition,
 				Charge: price.Charge{
-					Amount:   faker.PricePrm.UnitAmount,
+					Amount:   price.PricePrm.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindUpgrade,
@@ -142,22 +142,22 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "Add-on order",
 			args: args{
 				counter: subs.Counter{
-					Account: addOnPerson.FtcAccount(),
-					Price:   faker.PriceStdYear,
-					Method:  enum.PayMethodWx,
-					WxAppID: null.StringFrom(wxID),
+					Account:  addOnPerson.FtcAccount(),
+					FtcPrice: price.PriceStdYear,
+					Method:   enum.PayMethodWx,
+					WxAppID:  null.StringFrom(wxID),
 				},
 				p: addOnPerson,
 			},
 			want: subs.Order{
 				ID:         "",
 				UserIDs:    addOnPerson.AccountID(),
-				PlanID:     faker.PriceStdYear.ID,
+				PlanID:     price.PriceStdYear.ID,
 				DiscountID: null.String{},
-				Price:      faker.PriceStdYear.UnitAmount,
-				Edition:    faker.PriceStdYear.Edition,
+				Price:      price.PriceStdYear.UnitAmount,
+				Edition:    price.PriceStdYear.Edition,
 				Charge: price.Charge{
-					Amount:   faker.PriceStdYear.UnitAmount,
+					Amount:   price.PriceStdYear.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindAddOn,
@@ -195,14 +195,14 @@ func TestEnv_CreateOrder(t *testing.T) {
 			}
 			got, err := env.CreateOrder(tt.args.counter)
 
-			tt.want.ID = got.ID
-			tt.want.CreatedAt = got.CreatedAt
+			tt.want.ID = got.Order.ID
+			tt.want.CreatedAt = got.Order.CreatedAt
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(got.Order, tt.want) {
 				t.Errorf("CreateOrder() got = \n%v, want \n%v", got, tt.want)
 			}
 		})

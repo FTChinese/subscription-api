@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
@@ -33,7 +34,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	// Order confirmed but not synced to membership
 	p4 := test.NewPersona()
 	outOfSyncOrder := subs.NewMockOrderBuilder(p4.FtcID).
-		WithPrice(faker.PriceStdYear).
+		WithPrice(price.PriceStdYear).
 		WithKind(enum.OrderKindRenew).
 		WithPayMethod(enum.PayMethodAli).
 		WithConfirmed().
