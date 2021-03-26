@@ -3,7 +3,6 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
@@ -112,7 +111,7 @@ func Test_calibrateOrderKind(t *testing.T) {
 			name: "Standard add-on for premium",
 			args: args{
 				m: reader.NewMockMemberBuilder(userID).
-					WithPrice(faker.PricePrm.Price).
+					WithPrice(price.PricePrm.Price).
 					Build(),
 				e: price.StdYearEdition,
 			},
