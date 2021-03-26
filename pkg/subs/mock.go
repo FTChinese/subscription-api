@@ -18,16 +18,17 @@ import (
 )
 
 type MockOrderBuilder struct {
-	id        string
-	userIDs   pkg.UserIDs
-	ftcID     string
-	unionID   string
-	price     price.FtcPrice
-	kind      enum.OrderKind
-	payMethod enum.PayMethod
-	wxAppId   null.String
-	confirmed bool
-	period    dt.DatePeriod
+	id         string
+	userIDs    pkg.UserIDs
+	ftcID      string
+	unionID    string
+	price      price.FtcPrice
+	kind       enum.OrderKind
+	payMethod  enum.PayMethod
+	wxAppId    null.String
+	confirmed  bool
+	period     dt.DatePeriod
+	offerKinds []price.OfferKind
 }
 
 func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
@@ -36,10 +37,13 @@ func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
 		id:        pkg.MustOrderID(),
 		ftcID:     ftcID,
 		unionID:   "",
-		price:     faker.PriceStdYear,
+		price:     price.PriceStdYear,
 		kind:      enum.OrderKindCreate,
 		payMethod: enum.PayMethodAli,
 		confirmed: false,
+		offerKinds: []price.OfferKind{
+			price.OfferKindPromotion,
+		},
 	}
 }
 
@@ -55,6 +59,11 @@ func (b MockOrderBuilder) WithPrice(p price.FtcPrice) MockOrderBuilder {
 
 func (b MockOrderBuilder) WithKind(k enum.OrderKind) MockOrderBuilder {
 	b.kind = k
+	return b
+}
+
+func (b MockOrderBuilder) WithOfferKinds(k []price.OfferKind) MockOrderBuilder {
+	b.offerKinds = k
 	return b
 }
 
@@ -82,9 +91,9 @@ func (b MockOrderBuilder) WithStartTime(from time.Time) MockOrderBuilder {
 }
 
 func (b MockOrderBuilder) Build() Order {
-	item := price.NewFtcCart(b.price)
 
-	payable := item.Payable()
+	discount := b.price.ApplicableOffer(b.offerKinds)
+	charge := price.NewCharge(b.price.Price, discount)
 
 	var confirmed time.Time
 	if b.confirmed {
@@ -102,11 +111,11 @@ func (b MockOrderBuilder) Build() Order {
 			FtcID:      null.StringFrom(b.ftcID),
 			UnionID:    null.NewString(b.unionID, b.unionID != ""),
 		}.MustNormalize(),
-		PlanID:        item.Price.ID,
-		DiscountID:    item.Discount.DiscID,
-		Price:         item.Price.UnitAmount,
-		Edition:       item.Price.Edition,
-		Charge:        payable,
+		PlanID:        b.price.ID,
+		DiscountID:    discount.DiscID,
+		Price:         b.price.UnitAmount,
+		Edition:       b.price.Edition,
+		Charge:        charge,
 		Kind:          b.kind,
 		PaymentMethod: b.payMethod,
 		WxAppID:       b.wxAppId,

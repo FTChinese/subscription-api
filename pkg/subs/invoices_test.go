@@ -3,7 +3,6 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
@@ -130,7 +129,7 @@ func TestInvoices_membership(t *testing.T) {
 				LegacyExpire:  null.Int{},
 				ExpireDate:    chrono.DateFrom(now.AddDate(1, 0, 1)),
 				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(faker.PriceStdYear.ID),
+				FtcPlanID:     null.StringFrom(price.PriceStdYear.ID),
 				StripeSubsID:  null.String{},
 				StripePlanID:  null.String{},
 				AutoRenewal:   false,
@@ -161,7 +160,7 @@ func TestInvoices_membership(t *testing.T) {
 				LegacyExpire:  null.Int{},
 				ExpireDate:    chrono.DateFrom(current.ExpireDate.AddDate(1, 0, 1)),
 				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(faker.PriceStdYear.ID),
+				FtcPlanID:     null.StringFrom(price.PriceStdYear.ID),
 				StripeSubsID:  null.String{},
 				StripePlanID:  null.String{},
 				AutoRenewal:   false,
@@ -192,7 +191,7 @@ func TestInvoices_membership(t *testing.T) {
 				LegacyExpire:  null.Int{},
 				ExpireDate:    chrono.DateFrom(now.AddDate(1, 0, 1)),
 				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(faker.PriceStdYear.ID),
+				FtcPlanID:     null.StringFrom(price.PriceStdYear.ID),
 				StripeSubsID:  null.String{},
 				StripePlanID:  null.String{},
 				AutoRenewal:   false,
