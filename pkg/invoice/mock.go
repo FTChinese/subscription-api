@@ -5,7 +5,6 @@ package invoice
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
@@ -24,6 +23,7 @@ type MockInvoiceBuilder struct {
 	payMethod   enum.PayMethod
 	addOnSource addon.Source
 	startTime   time.Time
+	offerKinds  []price.OfferKind
 }
 
 func NewMockInvoiceBuilder(userID string) MockInvoiceBuilder {
@@ -35,10 +35,13 @@ func NewMockInvoiceBuilder(userID string) MockInvoiceBuilder {
 		id:          pkg.InvoiceID(),
 		userID:      userID,
 		orderID:     pkg.MustOrderID(),
-		price:       faker.PriceStdYear,
+		price:       price.PriceStdYear,
 		orderKind:   enum.OrderKindCreate,
 		payMethod:   enum.PayMethodAli,
 		addOnSource: "",
+		offerKinds: []price.OfferKind{
+			price.OfferKindPromotion,
+		},
 	}
 }
 
@@ -57,6 +60,11 @@ func (b MockInvoiceBuilder) WithOrderKind(k enum.OrderKind) MockInvoiceBuilder {
 	if k == enum.OrderKindAddOn {
 		b.addOnSource = addon.SourceUserPurchase
 	}
+	return b
+}
+
+func (b MockInvoiceBuilder) WithOfferKinds(k []price.OfferKind) MockInvoiceBuilder {
+	b.offerKinds = k
 	return b
 }
 
@@ -79,7 +87,7 @@ func (b MockInvoiceBuilder) SetPeriodStart(t time.Time) MockInvoiceBuilder {
 }
 
 func (b MockInvoiceBuilder) Build() Invoice {
-	item := price.NewFtcCart(b.price)
+	charge := price.NewCharge(b.price.Price, b.price.ApplicableOffer(b.offerKinds))
 
 	if b.addOnSource != "" {
 		b.orderKind = enum.OrderKindAddOn
@@ -88,15 +96,15 @@ func (b MockInvoiceBuilder) Build() Invoice {
 	return Invoice{
 		ID:             b.id,
 		CompoundID:     b.userID,
-		Edition:        item.Price.Edition,
-		YearMonthDay:   dt.NewYearMonthDay(item.Price.Cycle),
+		Edition:        b.price.Edition,
+		YearMonthDay:   dt.NewYearMonthDay(b.price.Cycle),
 		AddOnSource:    b.addOnSource,
 		AppleTxID:      null.String{},
 		OrderID:        null.NewString(b.orderID, b.orderID != ""),
 		OrderKind:      b.orderKind,
-		PaidAmount:     item.Payable().Amount,
+		PaidAmount:     charge.Amount,
 		PaymentMethod:  b.payMethod,
-		PriceID:        null.StringFrom(item.Price.ID),
+		PriceID:        null.StringFrom(b.price.ID),
 		StripeSubsID:   null.String{},
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    chrono.Time{},
