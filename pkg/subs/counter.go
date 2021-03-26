@@ -13,18 +13,18 @@ import (
 
 // Counter is where user present shopping cart and wallet to check out.
 type Counter struct {
-	Account reader.FtcAccount // Required. Who is paying.
-	Price   price.FtcPrice    // Required. What is purchased.
-	Method  enum.PayMethod    // Optional if no payment is actually involved.
-	WxAppID null.String
+	Account  reader.FtcAccount // Required. Who is paying.
+	FtcPrice price.FtcPrice    // Required. What is purchased.
+	Method   enum.PayMethod    // Optional if no payment is actually involved.
+	WxAppID  null.String
 }
 
 // NewCounter initializes a new payment session.
 // Who and what to purchase are the minimal data required to start payment.
 func NewCounter(account reader.FtcAccount, price price.FtcPrice) Counter {
 	return Counter{
-		Account: account,
-		Price:   price,
+		Account:  account,
+		FtcPrice: price,
 	}
 }
 
@@ -39,33 +39,7 @@ func (c Counter) WithWxpay(app wechat.PayApp) Counter {
 	return c
 }
 
-// Checkout determines how a user should check out. This version
-// allows all user to pay via alipay or wxpay, even if current membership is a valid stripe or iap.
-func (c Counter) checkout(m reader.Membership) (Checkout, error) {
-
-	orderKind, err := m.OrderKindByOneTime(c.Price.Edition)
-
-	if err != nil {
-		return Checkout{}, err
-	}
-
-	ftcCart := price.NewFtcCart(c.Price)
-	return Checkout{
-		Kind:     orderKind,
-		Cart:     ftcCart,
-		Payable:  ftcCart.Payable(),
-		LiveMode: true,
-	}.WithTest(c.Account.IsTest()), nil
-}
-
-// BuildOrder creates an Order based on a checkout action.
-func (c Counter) BuildOrder(m reader.Membership) (Order, error) {
-
-	checkout, err := c.checkout(m)
-	if err != nil {
-		return Order{}, err
-	}
-
+func (c Counter) order(checkout Checkout) (Order, error) {
 	orderID, err := pkg.OrderID()
 	if err != nil {
 		return Order{}, err
@@ -74,11 +48,11 @@ func (c Counter) BuildOrder(m reader.Membership) (Order, error) {
 	return Order{
 		ID:            orderID,
 		UserIDs:       c.Account.MemberID(),
-		PlanID:        checkout.Cart.Price.ID,
-		DiscountID:    checkout.Cart.Discount.DiscID,
-		Price:         checkout.Cart.Price.UnitAmount,
-		Edition:       checkout.Cart.Price.Edition,
-		Charge:        checkout.Payable,
+		PlanID:        checkout.Price.ID,
+		DiscountID:    checkout.Offer.DiscID,
+		Price:         checkout.Price.UnitAmount,
+		Edition:       checkout.Price.Edition,
+		Charge:        checkout.Payable(),
 		Kind:          checkout.Kind,
 		PaymentMethod: c.Method,
 		WxAppID:       c.WxAppID,
@@ -86,5 +60,22 @@ func (c Counter) BuildOrder(m reader.Membership) (Order, error) {
 		CreatedAt:     chrono.TimeNow(),
 		ConfirmedAt:   chrono.Time{},
 		LiveMode:      checkout.LiveMode,
+	}, nil
+}
+
+func (c Counter) PaymentIntent(m reader.Membership) (PaymentIntent, error) {
+	checkout, err := NewCheckout(c.FtcPrice, m)
+	if err != nil {
+		return PaymentIntent{}, err
+	}
+
+	checkout = checkout.WithTest(c.Account.IsTest())
+
+	order, err := c.order(checkout)
+
+	return PaymentIntent{
+		Pricing: checkout.Price,
+		Offer:   checkout.Offer,
+		Order:   order,
 	}, nil
 }
