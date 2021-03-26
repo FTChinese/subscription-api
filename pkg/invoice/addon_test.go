@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"reflect"
 	"testing"
@@ -17,7 +18,7 @@ func TestNewAddOnGroup(t *testing.T) {
 		Build()
 	inv2 := NewMockInvoiceBuilder(userID).
 		WithOrderKind(enum.OrderKindAddOn).
-		WithPrice(faker.PricePrm).
+		WithPrice(price.PricePrm).
 		Build()
 	inv3 := NewMockInvoiceBuilder(userID).
 		WithOrderKind(enum.OrderKindAddOn).
