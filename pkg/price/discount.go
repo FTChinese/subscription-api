@@ -13,11 +13,20 @@ type Discount struct {
 	Percent  null.Int    `json:"percent" db:"percent"`
 	dt.DateTimePeriod
 	Description null.String `json:"description" db:"discount_desc"`
+	Kind        OfferKind   `json:"kind"`
+}
+
+func (d Discount) IsZero() bool {
+	return d.DiscID.IsZero()
 }
 
 func (d Discount) IsValid() bool {
 	if d.PriceOff.IsZero() || d.PriceOff.Float64 <= 0 {
 		return false
+	}
+
+	if d.StartUTC.IsZero() || d.EndUTC.IsZero() {
+		return true
 	}
 
 	now := time.Now()
