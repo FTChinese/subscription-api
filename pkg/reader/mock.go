@@ -71,7 +71,7 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 			FtcID:      null.StringFrom(ftcID),
 			UnionID:    null.String{},
 		},
-		price:      faker.PriceStdYear.Price,
+		price:      price.PriceStdYear.Price,
 		payMethod:  enum.PayMethodAli,
 		expiration: time.Now().AddDate(0, 1, 0),
 	}
