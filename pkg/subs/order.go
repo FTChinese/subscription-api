@@ -58,7 +58,7 @@ type Order struct {
 	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
 	dt.DatePeriod
-	LiveMode bool `json:"live"`
+	LiveMode bool `json:"liveMode"`
 }
 
 func (o Order) IsZero() bool {
