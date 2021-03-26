@@ -407,12 +407,12 @@ func TestMembership_WithInvoice(t *testing.T) {
 			},
 			want: Membership{
 				UserIDs:       pkg.NewFtcUserID(userID),
-				Edition:       faker.PriceStdYear.Edition,
+				Edition:       price.PriceStdYear.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
 				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(faker.PriceStdYear.ID),
+				FtcPlanID:     null.StringFrom(price.PriceStdYear.ID),
 				StripeSubsID:  null.String{},
 				StripePlanID:  null.String{},
 				AutoRenewal:   false,
@@ -435,12 +435,12 @@ func TestMembership_WithInvoice(t *testing.T) {
 			},
 			want: Membership{
 				UserIDs:       pkg.NewFtcUserID(userID),
-				Edition:       faker.PriceStdYear.Edition,
+				Edition:       price.PriceStdYear.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
 				ExpireDate:    chrono.DateFrom(current.ExpireDate.AddDate(1, 0, 1)),
 				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(faker.PriceStdYear.ID),
+				FtcPlanID:     null.StringFrom(price.PriceStdYear.ID),
 				StripeSubsID:  null.String{},
 				StripePlanID:  null.String{},
 				AutoRenewal:   false,
@@ -457,19 +457,19 @@ func TestMembership_WithInvoice(t *testing.T) {
 			args: args{
 				userID: pkg.NewFtcUserID(userID),
 				inv: invoice.NewMockInvoiceBuilder(userID).
-					WithPrice(faker.PricePrm).
+					WithPrice(price.PricePrm).
 					WithOrderKind(enum.OrderKindUpgrade).
 					SetPeriodStart(time.Now()).
 					Build(),
 			},
 			want: Membership{
 				UserIDs:       pkg.NewFtcUserID(userID),
-				Edition:       faker.PricePrm.Edition,
+				Edition:       price.PricePrm.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
 				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(faker.PricePrm.ID),
+				FtcPlanID:     null.StringFrom(price.PricePrm.ID),
 				StripeSubsID:  null.String{},
 				StripePlanID:  null.String{},
 				AutoRenewal:   false,
@@ -563,7 +563,7 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 		{
 			name: "Standard add-on for premium",
 			fields: NewMockMemberBuilder(userID).
-				WithPrice(faker.PricePrm.Price).
+				WithPrice(price.PricePrm.Price).
 				Build(),
 			args: args{
 				e: price.StdYearEdition,
@@ -595,7 +595,7 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 			name: "Stripe premium purchase standard add-on",
 			fields: NewMockMemberBuilder(userID).
 				WithPayMethod(enum.PayMethodStripe).
-				WithPrice(faker.PricePrm.Price).
+				WithPrice(price.PricePrm.Price).
 				Build(),
 			args: args{
 				e: price.StdYearEdition,
@@ -607,7 +607,7 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 			name: "Stripe premium purchase premium add-on",
 			fields: NewMockMemberBuilder(userID).
 				WithPayMethod(enum.PayMethodStripe).
-				WithPrice(faker.PricePrm.Price).
+				WithPrice(price.PricePrm.Price).
 				Build(),
 			args: args{
 				e: price.PremiumEdition,
@@ -663,8 +663,11 @@ func TestMembership_SubsKindByStripe(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:   "Already Stripe Premium",
-			fields: NewMockMemberBuilder(userID).WithPayMethod(enum.PayMethodStripe).WithPrice(faker.PricePrm.Price).Build(),
+			name: "Already Stripe Premium",
+			fields: NewMockMemberBuilder(userID).
+				WithPayMethod(enum.PayMethodStripe).
+				WithPrice(price.PricePrm.Price).
+				Build(),
 			args: args{
 				e: price.StdYearEdition,
 			},
@@ -784,6 +787,47 @@ func TestMembership_SubsKindByApple(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("SubsKindByApple() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMembership_OfferKindsEnjoyed(t *testing.T) {
+
+	tests := []struct {
+		name   string
+		fields Membership
+		want   []price.OfferKind
+	}{
+		{
+			name:   "New member enjoys only promotion offer",
+			fields: Membership{},
+			want:   []price.OfferKind{price.OfferKindPromotion},
+		},
+		{
+			name:   "Existing member enjoys promotion and retention",
+			fields: NewMockMemberBuilder("").Build(),
+			want: []price.OfferKind{
+				price.OfferKindPromotion,
+				price.OfferKindRetention,
+			},
+		},
+		{
+			name: "Expired member enjoys promotion and win-back",
+			fields: NewMockMemberBuilder("").
+				WithExpiration(time.Now().AddDate(0, -1, 0)).
+				Build(),
+			want: []price.OfferKind{
+				price.OfferKindPromotion,
+				price.OfferKindWinBack,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got := tt.fields.OfferKindsEnjoyed(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("OfferKindsEnjoyed() = %v, want %v", got, tt.want)
 			}
 		})
 	}
