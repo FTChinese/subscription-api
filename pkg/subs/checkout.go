@@ -3,22 +3,45 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // Checkout contains the calculation result of a purchase transaction.
 type Checkout struct {
-	Kind     enum.OrderKind `json:"kind"`
-	Cart     price.Cart     `json:"cart"`
-	Payable  price.Charge   `json:"payable"`
-	LiveMode bool           `json:"live"`
+	Kind     enum.OrderKind
+	Price    price.Price
+	Offer    price.Discount
+	LiveMode bool
+}
+
+func NewCheckout(ftcPrice price.FtcPrice, m reader.Membership) (Checkout, error) {
+	orderKind, err := m.OrderKindByOneTime(ftcPrice.Edition)
+
+	if err != nil {
+		return Checkout{}, err
+	}
+
+	discount := ftcPrice.ApplicableOffer(m.OfferKindsEnjoyed())
+
+	return Checkout{
+		Kind:     orderKind,
+		Price:    ftcPrice.Price,
+		Offer:    discount,
+		LiveMode: true,
+	}, nil
 }
 
 func (c Checkout) WithTest(t bool) Checkout {
 	c.LiveMode = !t
 
-	if t {
-		c.Payable.Amount = 0.01
+	return c
+}
+
+func (c Checkout) Payable() price.Charge {
+	charge := price.NewCharge(c.Price, c.Offer)
+	if c.LiveMode {
+		return charge
 	}
 
-	return c
+	return charge.WithTest()
 }
