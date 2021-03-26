@@ -16,8 +16,22 @@ type PriceSchema struct {
 	price.Discount
 }
 
-// NewFtcPrice turns the raw data from DB into FtcPrice.
-func NewFtcPrice(s PriceSchema) price.FtcPrice {
+// FtcPrice turns data retrieved from db into output format.
+func (s PriceSchema) FtcPrice() price.FtcPrice {
+
+	var discounts = make([]price.Discount, 0)
+
+	if !s.Discount.IsZero() {
+		s.Discount.Kind = price.OfferKindPromotion
+		s.Description = null.StringFrom("限时促销")
+		discounts = append(discounts, s.Discount)
+	}
+
+	offers, ok := price.FtcOffers[s.Edition]
+	if ok {
+		discounts = append(discounts, offers...)
+	}
+
 	return price.FtcPrice{
 		Price: price.Price{
 			ID:         s.PlanID,
@@ -31,5 +45,6 @@ func NewFtcPrice(s PriceSchema) price.FtcPrice {
 			UnitAmount: s.PlanPrice,
 		},
 		PromotionOffer: s.Discount,
+		Offers:         discounts,
 	}
 }
