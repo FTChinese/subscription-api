@@ -75,16 +75,16 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		counter := subs.NewCounter(account, plan).
 			WithWxpay(payClient.GetApp())
 
-		order, err := router.SubsRepo.CreateOrder(counter)
+		pi, err := router.SubsRepo.CreateOrder(counter)
 		if err != nil {
 			sugar.Error(err)
 			router.handleOrderErr(w, err)
 			return
 		}
 
-		sugar.Infof("Created order: %+v", order)
+		sugar.Infof("Created order: %+v", pi.Order)
 
-		err = router.postOrderCreation(order, clientApp)
+		err = router.postOrderCreation(pi.Order, clientApp)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 			return
@@ -95,11 +95,11 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		// validate the signature
 		// You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
 		wxOrder, err := payClient.CreateOrder(wechat.OrderReq{
-			Body:          subs.PaymentTitle(order.Kind, order.Edition),
-			SellerOrderID: order.ID,
-			TotalAmount:   order.AmountInCent(),
+			Body:          subs.PaymentTitle(pi.Order.Kind, pi.Order.Edition),
+			SellerOrderID: pi.Order.ID,
+			TotalAmount:   pi.Order.AmountInCent(),
 			WebhookURL:    webhookURL,
-			ProductID:     order.PlanID,
+			ProductID:     pi.Order.PlanID,
 			TxKind:        tradeType,
 			UserIP:        clientApp.UserIP.String,
 			OpenID:        input.OpenID,
@@ -130,17 +130,17 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		switch tradeType {
 		// Desktop returns a url that can be turned to QR code
 		case wechat.TradeTypeDesktop:
-			_ = render.New(w).OK(subs.NewWxPayDesktopIntent(order, wxOrder))
+			_ = render.New(w).OK(subs.NewWxPayDesktopIntent(pi, wxOrder))
 
 		// Mobile returns a url which is redirect in browser
 		case wechat.TradeTypeMobile:
-			_ = render.New(w).OK(subs.NewWxPayMobileIntent(order, wxOrder))
+			_ = render.New(w).OK(subs.NewWxPayMobileIntent(pi, wxOrder))
 
 		// Create the json data used by js api
 		case wechat.TradeTypeJSAPI:
 			_ = render.New(w).OK(
 				subs.NewWxPayJSApiIntent(
-					order,
+					pi,
 					payClient.SignJSApiParams(wxOrder),
 				),
 			)
@@ -149,7 +149,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		case wechat.TradeTypeApp:
 			_ = render.New(w).OK(
 				subs.NewWxNativeAppIntent(
-					order,
+					pi,
 					payClient.SignAppParams(wxOrder),
 				),
 			)
