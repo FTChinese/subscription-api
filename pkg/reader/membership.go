@@ -266,6 +266,25 @@ func (m Membership) OrderKindByOneTime(e price.Edition) (enum.OrderKind, error) 
 	return enum.OrderKindNull, errors.New("unknown membership status")
 }
 
+// OfferKindsEnjoyed guesses what kind of discount a user could enjoy.
+func (m Membership) OfferKindsEnjoyed() []price.OfferKind {
+	if m.IsZero() {
+		return []price.OfferKind{price.OfferKindPromotion}
+	}
+
+	if m.IsExpired() {
+		return []price.OfferKind{
+			price.OfferKindPromotion,
+			price.OfferKindWinBack,
+		}
+	}
+
+	return []price.OfferKind{
+		price.OfferKindPromotion,
+		price.OfferKindRetention,
+	}
+}
+
 // SubsKindByStripe deduces what kind of subscription user is trying ot create when paying via Stripe.
 func (m Membership) SubsKindByStripe(e price.Edition) (SubsKind, error) {
 	if m.IsExpired() || m.IsInvalidStripe() {
