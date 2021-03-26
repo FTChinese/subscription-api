@@ -18,7 +18,7 @@ func (env Env) retrieveProductPrices() ([]price.FtcPrice, error) {
 	}
 
 	for _, v := range schema {
-		prices = append(prices, pw.NewFtcPrice(v))
+		prices = append(prices, v.FtcPrice())
 	}
 
 	return prices, nil
@@ -85,7 +85,7 @@ func (env Env) RetrievePrice(id string) (price.FtcPrice, error) {
 		return price.FtcPrice{}, nil
 	}
 
-	return pw.NewFtcPrice(schema), nil
+	return schema.FtcPrice(), nil
 }
 
 // ActivePriceOfEdition retrieves an active plan by Edition.
