@@ -11,6 +11,18 @@ type Charge struct {
 	Currency string  `json:"currency" db:"currency"`     // in which currency.
 }
 
+func NewCharge(price Price, offer Discount) Charge {
+	return Charge{
+		Amount:   price.UnitAmount - offer.PriceOff.Float64,
+		Currency: string(price.Currency),
+	}
+}
+
+func (c Charge) WithTest() Charge {
+	c.Amount = 0.01
+	return c
+}
+
 // AliPrice converts Charged price to ailpay format
 func (c Charge) AliPrice() string {
 	return strconv.FormatFloat(c.Amount, 'f', 2, 32)
