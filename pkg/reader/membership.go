@@ -224,8 +224,8 @@ func (m Membership) WithinMaxRenewalPeriod() bool {
 	return !m.ExpireDate.Before(today) && !m.ExpireDate.After(threeYearsLater)
 }
 
-// OrderKindByOneTime deduces what kind of order user is trying to create when paying via Ali/Wx.
-func (m Membership) OrderKindByOneTime(e price.Edition) (enum.OrderKind, error) {
+// OrderKindOfOneTime deduces what kind of order user is trying to create when paying via Ali/Wx.
+func (m Membership) OrderKindOfOneTime(e price.Edition) (enum.OrderKind, error) {
 	if m.IsExpired() || m.IsInvalidStripe() {
 		return enum.OrderKindCreate, nil
 	}
