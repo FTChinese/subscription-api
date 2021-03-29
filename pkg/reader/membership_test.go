@@ -619,13 +619,13 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := tt.fields.OrderKindByOneTime(tt.args.e)
+			got, err := tt.fields.OrderKindOfOneTime(tt.args.e)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("OrderKindByOneTime() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("OrderKindOfOneTime() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("OrderKindByOneTime() got = %v, want %v", got, tt.want)
+				t.Errorf("OrderKindOfOneTime() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

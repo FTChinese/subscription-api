@@ -15,7 +15,7 @@ type Checkout struct {
 }
 
 func NewCheckout(ftcPrice price.FtcPrice, m reader.Membership) (Checkout, error) {
-	orderKind, err := m.OrderKindByOneTime(ftcPrice.Edition)
+	orderKind, err := m.OrderKindOfOneTime(ftcPrice.Edition)
 
 	if err != nil {
 		return Checkout{}, err
