@@ -285,8 +285,8 @@ func (m Membership) OfferKindsEnjoyed() []price.OfferKind {
 	}
 }
 
-// SubsKindByStripe deduces what kind of subscription user is trying ot create when paying via Stripe.
-func (m Membership) SubsKindByStripe(e price.Edition) (SubsKind, error) {
+// SubsKindOfStripe deduces what kind of subscription user is trying ot create when paying via Stripe.
+func (m Membership) SubsKindOfStripe(e price.Edition) (SubsKind, error) {
 	if m.IsExpired() || m.IsInvalidStripe() {
 		return SubsKindNew, nil
 	}

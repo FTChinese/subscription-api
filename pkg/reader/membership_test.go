@@ -731,13 +731,13 @@ func TestMembership_SubsKindByStripe(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := tt.fields.SubsKindByStripe(tt.args.e)
+			got, err := tt.fields.SubsKindOfStripe(tt.args.e)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("SubsKindByStripe() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SubsKindOfStripe() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("SubsKindByStripe() got = %v, want %v", got, tt.want)
+				t.Errorf("SubsKindOfStripe() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
