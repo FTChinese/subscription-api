@@ -26,7 +26,7 @@ func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 		return stripe.SubsResult{}, nil
 	}
 
-	subsKind, err := mmb.SubsKindByStripe(cfg.Edition.Edition)
+	subsKind, err := mmb.SubsKindOfStripe(cfg.Edition.Edition)
 
 	if err != nil {
 		sugar.Error(err)
