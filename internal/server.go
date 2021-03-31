@@ -33,7 +33,7 @@ func StartServer(s ServerStatus) {
 	myDBs := db.ReadWriteSplit{
 		Read:   db.MustNewMySQL(config.MustMySQLReadConn(s.Production)),
 		Write:  db.MustNewMySQL(config.MustMySQLWriteConn(s.Production)),
-		Delete: db.MustNewMySQL(config.MustMySQLWriteConn(s.Production)),
+		Delete: db.MustNewMySQL(config.MustMySQLDeleteConn(s.Production)),
 	}
 
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
