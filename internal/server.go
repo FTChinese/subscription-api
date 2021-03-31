@@ -30,11 +30,7 @@ func StartServer(s ServerStatus) {
 	cfg := config.NewBuildConfig(s.Production, s.Sandbox)
 	logger := config.MustGetLogger(s.Production)
 
-	myDBs := db.ReadWriteSplit{
-		Read:   db.MustNewMySQL(config.MustMySQLReadConn(s.Production)),
-		Write:  db.MustNewMySQL(config.MustMySQLWriteConn(s.Production)),
-		Delete: db.MustNewMySQL(config.MustMySQLDeleteConn(s.Production)),
-	}
+	myDBs := db.NewMyDB(s.Production)
 
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 

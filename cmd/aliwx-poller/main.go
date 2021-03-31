@@ -40,9 +40,9 @@ func task() {
 	log.Printf("Starting aliwx polling job at %s", time.Now().Format(time.RFC3339))
 
 	logger := config.MustGetLogger(production)
-	rwdMyDB := db.MustNewMySQL(config.MustMySQLAPIConn(production))
+	myDB := db.NewMyDB(production)
 
-	poller := poll.NewOrderPoller(rwdMyDB, logger)
+	poller := poll.NewOrderPoller(myDB, logger)
 
 	err := poller.Start(false)
 	if err != nil {
@@ -54,7 +54,7 @@ func task() {
 
 func main() {
 	logger := config.MustGetLogger(production)
-	rwdMyDB := db.MustNewMySQL(config.MustMySQLAPIConn(production))
+	rwdMyDB := db.NewMyDB(production)
 
 	log.Println("Launching ali-wx poller...")
 

@@ -12,12 +12,7 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-const (
-	MyEmail = "neefrankie@gmail.com"
-)
-
 var (
-	CFG      = config.NewBuildConfig(false, false)
 	DB       *sqlx.DB
 	SplitDB  db.ReadWriteSplit
 	Redis    *redis.Client
@@ -29,12 +24,8 @@ var (
 func init() {
 	config.MustSetupViper()
 
-	DB = db.MustNewMySQL(CFG.MustGetDBConn(""))
-	SplitDB = db.ReadWriteSplit{
-		Read:   DB,
-		Write:  DB,
-		Delete: DB,
-	}
+	SplitDB = db.NewMyDB(false)
+	DB = SplitDB.Write
 	Redis = db.NewRedis(config.MustRedisAddress().Pick(false))
 	Cache = cache.New(cache.DefaultExpiration, 0)
 	WxPayApp = wechat.MustNewPayApp("wxapp.native_app")
