@@ -44,7 +44,7 @@ install-go:
 
 # For CI/CD
 .PHONY: build
-build :
+build : install-go
 	@echo "Build production version $(version)"
 	GOOS=linux GOARCH=amd64 $(compile_exec)
 
