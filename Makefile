@@ -3,7 +3,8 @@ ENV := production
 config_file_name := api.toml
 local_config_file := $(HOME)/config/$(config_file_name)
 
-version := `git tag -l --sort=-v:refname | head -n 1`
+#version := `git tag -l --sort=-v:refname | head -n 1`
+version := v2.2.2
 build_time := `date +%FT%T%z`
 commit := `git log --max-count=1 --pretty=format:%aI_%h`
 
