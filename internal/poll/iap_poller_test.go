@@ -7,7 +7,7 @@ import (
 )
 
 func TestIAPPoller_retrieveSubs(t *testing.T) {
-	p := NewIAPPoller(test.DB, false, zaptest.NewLogger(t))
+	p := NewIAPPoller(test.SplitDB, false, zaptest.NewLogger(t))
 
 	subCh := p.retrieveSubs()
 
@@ -17,7 +17,7 @@ func TestIAPPoller_retrieveSubs(t *testing.T) {
 }
 
 func TestIAPPoller_Start(t *testing.T) {
-	p := NewIAPPoller(test.DB, false, zaptest.NewLogger(t))
+	p := NewIAPPoller(test.SplitDB, false, zaptest.NewLogger(t))
 
 	err := p.Start(true)
 

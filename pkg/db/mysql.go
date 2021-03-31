@@ -59,3 +59,11 @@ type ReadWriteSplit struct {
 	Write  *sqlx.DB
 	Delete *sqlx.DB
 }
+
+func NewMyDB(prod bool) ReadWriteSplit {
+	return ReadWriteSplit{
+		Read:   MustNewMySQL(MustMySQLReadConn(prod)),
+		Write:  MustNewMySQL(MustMySQLWriteConn(prod)),
+		Delete: MustNewMySQL(MustMySQLDeleteConn(prod)),
+	}
+}

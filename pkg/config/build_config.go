@@ -6,16 +6,6 @@ import (
 	"log"
 )
 
-func GetConn(key string) (connect.Connect, error) {
-	var conn connect.Connect
-	err := viper.UnmarshalKey(key, &conn)
-	if err != nil {
-		return connect.Connect{}, err
-	}
-
-	return conn, nil
-}
-
 // BuildConfig set up deploy environment.
 // When production is true, always connect to online db; otherwise connect to localhost.
 // When sandbox is true, use stripe sandbox key; otherwise use test key.
@@ -89,25 +79,6 @@ func (c BuildConfig) MustStripeAPIKey() string {
 	}
 
 	return key
-}
-
-func (c BuildConfig) MustGetDBConn(key string) connect.Connect {
-	var conn connect.Connect
-	var err error
-
-	if c.production {
-		conn, err = GetConn(key)
-	} else {
-		conn, err = GetConn("mysql.dev")
-	}
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("Using mysql server %s. Production: %t", conn.Host, c.production)
-
-	return conn
 }
 
 func MustGetHanqiConn() connect.Connect {

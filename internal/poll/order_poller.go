@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/poller"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/jmoiron/sqlx"
@@ -35,10 +36,10 @@ type OrderPoller struct {
 	ftcpay.FtcPay
 }
 
-func NewOrderPoller(db *sqlx.DB, logger *zap.Logger) OrderPoller {
+func NewOrderPoller(myDBs db.ReadWriteSplit, logger *zap.Logger) OrderPoller {
 	return OrderPoller{
-		db:     db,
-		FtcPay: ftcpay.New(db, postoffice.New(config.MustGetHanqiConn()), logger),
+		db:     myDBs.Write,
+		FtcPay: ftcpay.New(myDBs, postoffice.New(config.MustGetHanqiConn()), logger),
 	}
 }
 
