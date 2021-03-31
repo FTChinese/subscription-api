@@ -24,10 +24,12 @@ func mustMySQLConn(key string, prod bool) connect.Connect {
 	return conn
 }
 
+// Deprecated
 func MustMySQLMasterConn(prod bool) connect.Connect {
 	return mustMySQLConn("mysql.master", prod)
 }
 
+// Deprecated
 func MustMySQLAPIConn(prod bool) connect.Connect {
 	return mustMySQLConn("mysql.apisuper", prod)
 }
