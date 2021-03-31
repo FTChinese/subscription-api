@@ -39,7 +39,7 @@ func task() {
 	log.Printf("Starting iap polling job at %s", time.Now().Format(time.RFC3339))
 
 	logger := config.MustGetLogger(production)
-	myDB := db.MustNewMySQL(config.MustMySQLMasterConn(production))
+	myDB := db.NewMyDB(production)
 
 	poller := poll.NewIAPPoller(myDB, production, logger)
 

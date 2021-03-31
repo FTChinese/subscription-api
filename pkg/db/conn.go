@@ -1,7 +1,8 @@
-package config
+package db
 
 import (
 	"github.com/FTChinese/go-rest/connect"
+	"github.com/FTChinese/subscription-api/pkg/config"
 	"log"
 )
 
@@ -10,9 +11,9 @@ func mustMySQLConn(key string, prod bool) connect.Connect {
 	var err error
 
 	if prod {
-		conn, err = GetConn(key)
+		conn, err = config.GetConn(key)
 	} else {
-		conn, err = GetConn("mysql.dev")
+		conn, err = config.GetConn("mysql.dev")
 	}
 
 	if err != nil {
@@ -22,16 +23,6 @@ func mustMySQLConn(key string, prod bool) connect.Connect {
 	log.Printf("Using mysql server %s. Production: %t", conn.Host, prod)
 
 	return conn
-}
-
-// Deprecated
-func MustMySQLMasterConn(prod bool) connect.Connect {
-	return mustMySQLConn("mysql.master", prod)
-}
-
-// Deprecated
-func MustMySQLAPIConn(prod bool) connect.Connect {
-	return mustMySQLConn("mysql.apisuper", prod)
 }
 
 func MustMySQLReadConn(prod bool) connect.Connect {
