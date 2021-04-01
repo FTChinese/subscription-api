@@ -41,6 +41,7 @@ func StartServer(s ServerStatus) {
 
 	guard := access.NewGuard(myDBs)
 
+	authRouter := controller.NewAuthRouter(myDBs, post, logger)
 	payRouter := controller.NewSubsRouter(myDBs, promoCache, cfg, post, logger)
 	iapRouter := controller.NewIAPRouter(myDBs, rdb, logger, post, cfg)
 	stripeRouter := controller.NewStripeRouter(myDBs, cfg, logger)
@@ -55,6 +56,11 @@ func StartServer(s ServerStatus) {
 	r.Use(middleware.Recoverer)
 	r.Use(controller.LogRequest)
 	r.Use(controller.NoCache)
+
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/mobile/request-verification", authRouter.RequestPhoneCode)
+		r.Post("/mobile/verify", authRouter.VerifyPhoneCode)
+	})
 
 	// Requires user id.
 	r.Route("/wxpay", func(r chi.Router) {
