@@ -3,6 +3,7 @@ package pkg
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/rand"
+	"strconv"
 	"strings"
 )
 
@@ -40,4 +41,8 @@ func SnapshotID() string {
 
 func InvoiceID() string {
 	return "inv_" + rand.String(12)
+}
+
+func SMSCode() string {
+	return strconv.Itoa(rand.IntRange(100000, 999999))
 }
