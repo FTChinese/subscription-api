@@ -18,7 +18,7 @@ type AuthRouter struct {
 func NewAuthRouter(myDBs db.ReadWriteSplit, postman postoffice.PostOffice, l *zap.Logger) AuthRouter {
 	return AuthRouter{
 		repo:    accounts.New(myDBs, l),
-		client:  ztsms.NewClient(),
+		client:  ztsms.NewClient(l),
 		postman: postman,
 		logger:  l,
 	}

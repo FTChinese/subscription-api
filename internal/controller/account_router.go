@@ -18,7 +18,7 @@ type AccountRouter struct {
 func NewAccountRouter(myDBs db.ReadWriteSplit, l *zap.Logger) AccountRouter {
 	return AccountRouter{
 		repo:      accounts.New(myDBs, l),
-		smsClient: ztsms.NewClient(),
+		smsClient: ztsms.NewClient(l),
 		logger:    l,
 	}
 }
