@@ -44,7 +44,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		With("ftcId", input.FtcID)
 
 	// Check if the user actually exists.
-	ftcAccount, err := router.readerRepo.AccountByFtcID(input.FtcID)
+	baseAccount, err := router.accountRepo.BaseAccountByUUID(input.FtcID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -75,7 +75,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 	// Do not retrieve memberships for both ftc and iap in a transaction.
 	// If they are already linked, retrieving a single row multiple times will result in deadlock.
-	ftcMember, err := router.readerRepo.RetrieveMember(ftcAccount.MemberID())
+	ftcMember, err := router.readerRepo.RetrieveMember(baseAccount.CompoundIDs())
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -92,7 +92,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	sugar.Infof("IAP side membership %v", iapMember)
 
 	builder := apple.LinkBuilder{
-		Account:    ftcAccount,
+		Account:    baseAccount,
 		CurrentFtc: ftcMember,
 		CurrentIAP: iapMember,
 		IAPSubs:    sub,
@@ -138,7 +138,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 		sugar.Info("Sending iap link email")
 		if result.Initial {
-			parcel, err := letter.NewIAPLinkParcel(ftcAccount, result.Member)
+			parcel, err := letter.NewIAPLinkParcel(baseAccount, result.Member)
 			if err != nil {
 				return
 			}
@@ -201,7 +201,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 			sugar.Error(err)
 		}
 
-		account, err := router.readerRepo.AccountByFtcID(result.Snapshot.FtcID.String)
+		account, err := router.accountRepo.BaseAccountByUUID(result.Snapshot.FtcID.String)
 		if err != nil {
 			return
 		}
