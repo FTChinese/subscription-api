@@ -1,4 +1,4 @@
-package authrepo
+package accounts
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/account"
@@ -34,17 +34,7 @@ func (env Env) SMSVerifierUsed(v ztsms.Verifier) error {
 	return nil
 }
 
-func (env Env) UserIDByPhone(phone string) (string, error) {
-	var id string
-	err := env.dbs.Read.Get(&id, ztsms.StmtUserIDByPhone, phone)
-	if err != nil {
-		return "", err
-	}
-
-	return id, nil
-}
-
-func (env Env) SetPhone(a account.Ftc) error {
+func (env Env) SetPhone(a account.BaseAccount) error {
 	_, err := env.dbs.Write.NamedExec(ztsms.StmtSetPhone, a)
 	if err != nil {
 		return err
