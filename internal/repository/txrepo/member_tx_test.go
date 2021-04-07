@@ -12,122 +12,147 @@ import (
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
-func TestOrderTx_RetrieveMember(t *testing.T) {
+func TestMemberTx_RetrieveMember(t *testing.T) {
 
-	p := test.NewPersona()
+	m := reader.NewMockMemberBuilder("").Build()
 
-	repo := test.NewRepo()
-	repo.MustSaveMembership(p.Membership())
+	test.NewRepo().MustSaveMembership(m)
 
-	otx := NewMemberTx(test.DB.MustBegin())
-
+	type fields struct {
+		Tx *sqlx.Tx
+	}
 	type args struct {
 		id pkg.UserIDs
 	}
 	tests := []struct {
 		name    string
+		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
-			name: "Retrieve Empty member",
-			args: args{
-				id: test.NewPersona().AccountID(),
+			name: "Retrieve membership",
+			fields: fields{
+				Tx: test.SplitDB.Read.MustBegin(),
 			},
-		},
-		{
-			name: "Retrieve existing member",
 			args: args{
-				id: p.AccountID(),
+				id: m.UserIDs,
 			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			got, err := otx.RetrieveMember(tt.args.id)
-			if (err != nil) != tt.wantErr {
-				_ = otx.Rollback()
-				t.Errorf("RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			t.Logf("Got: %+v", got.CompoundID)
-		})
-	}
-
-	_ = otx.Commit()
-}
-
-func TestMemberTx_RetrieveAppleMember(t *testing.T) {
-	p := test.NewPersona()
-	m := p.SetPayMethod(enum.PayMethodApple).Membership()
-
-	repo := test.NewRepo()
-	repo.MustSaveMembership(m)
-
-	tx := NewMemberTx(test.DB.MustBegin())
-
-	type args struct {
-		transactionID string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
-	}{
-		{
-			name: "Retrieve an IAP member",
-			args: args{
-				transactionID: m.AppleSubsID.String,
-			},
-			want:    p.FtcID,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+			got, err := tx.RetrieveMember(tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
+				_ = tx.Rollback()
+				return
+			}
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
+			_ = tx.Commit()
+		})
+	}
+}
+
+func TestMemberTx_RetrieveAppleMember(t *testing.T) {
+
+	m := reader.NewMockMemberBuilder("").
+		WithPayMethod(enum.PayMethodApple).
+		WithIapID(faker.GenAppleSubID()).
+		Build()
+
+	repo := test.NewRepo()
+	repo.MustSaveMembership(m)
+
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		transactionID string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Retrieve an IAP member",
+			fields: fields{
+				Tx: test.SplitDB.Read.MustBegin(),
+			},
+			args: args{
+				transactionID: m.AppleSubsID.String,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
 
 			got, err := tx.RetrieveAppleMember(tt.args.transactionID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrieveAppleMember() error = %v, wantErr %v", err, tt.wantErr)
+				_ = tx.Rollback()
 				return
 			}
 
-			assert.Equal(t, got.CompoundID, tt.want)
+			t.Logf("%s", faker.MustMarshalIndent(got))
+			_ = tx.Commit()
 		})
 	}
-
-	_ = tx.Commit()
 }
 
 func TestMemberTx_RetrieveStripeMember(t *testing.T) {
-	tx := NewMemberTx(test.DB.MustBegin())
+
+	m := reader.NewMockMemberBuilder("").
+		WithPayMethod(enum.PayMethodStripe).
+		Build()
+
+	test.NewRepo().MustSaveMembership(m)
+
+	type fields struct {
+		Tx *sqlx.Tx
+	}
 
 	type args struct {
 		subID string
 	}
 	tests := []struct {
 		name    string
+		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Retrieve stripe member",
+			fields: fields{
+				Tx: test.SplitDB.Read.MustBegin(),
+			},
 			args: args{
-				subID: "sub_IY75arTimVigIr",
+				subID: m.StripeSubsID.String,
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+
 			got, err := tx.RetrieveStripeMember(tt.args.subID)
 			if (err != nil) != tt.wantErr {
 				_ = tx.Rollback()
@@ -136,32 +161,32 @@ func TestMemberTx_RetrieveStripeMember(t *testing.T) {
 			}
 			_ = tx.Commit()
 
-			if got.IsZero() {
-				t.Error("Stripe membership not retrieved!")
-				return
-			}
-
-			t.Logf("%v", got)
+			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
 
-func TestOrderTx_SaveOrder(t *testing.T) {
+func TestMemberTx_SaveOrder(t *testing.T) {
 
 	p := test.NewPersona()
 
-	otx := NewMemberTx(test.DB.MustBegin())
-
+	type fields struct {
+		Tx *sqlx.Tx
+	}
 	type args struct {
 		order subs.Order
 	}
 	tests := []struct {
 		name    string
+		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "New order via ali",
+			fields: fields{
+				Tx: test.SplitDB.Read.MustBegin(),
+			},
 			args: args{
 				order: p.NewOrder(enum.OrderKindCreate),
 			},
@@ -169,6 +194,9 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 		},
 		{
 			name: "New order via wx",
+			fields: fields{
+				Tx: test.SplitDB.Read.MustBegin(),
+			},
 			args: args{
 				order: p.SetPayMethod(enum.PayMethodWx).
 					NewOrder(enum.OrderKindRenew),
@@ -176,12 +204,18 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 		},
 		{
 			name: "Renewal order via ali",
+			fields: fields{
+				Tx: test.SplitDB.Read.MustBegin(),
+			},
 			args: args{
 				order: p.NewOrder(enum.OrderKindRenew),
 			},
 		},
 		{
 			name: "Turn IAP renewal to add-on",
+			fields: fields{
+				Tx: test.SplitDB.Read.MustBegin(),
+			},
 			args: args{
 				order: p.NewOrder(enum.OrderKindAddOn),
 			},
@@ -190,16 +224,20 @@ func TestOrderTx_SaveOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if err := otx.SaveOrder(tt.args.order); (err != nil) != tt.wantErr {
-				_ = otx.Rollback()
+			tx := MemberTx{
+				Tx: tt.fields.Tx,
+			}
+
+			if err := tx.SaveOrder(tt.args.order); (err != nil) != tt.wantErr {
+				_ = tx.Rollback()
 				t.Errorf("SaveOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			t.Logf("Saved order %s", tt.args.order.ID)
+
+			_ = tx.Commit()
 		})
 	}
-
-	_ = otx.Commit()
 }
 
 func TestMemberTx_LockOrder(t *testing.T) {
