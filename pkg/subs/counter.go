@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -13,18 +14,18 @@ import (
 
 // Counter is where user present shopping cart and wallet to check out.
 type Counter struct {
-	Account  reader.FtcAccount // Required. Who is paying.
-	FtcPrice price.FtcPrice    // Required. What is purchased.
-	Method   enum.PayMethod    // Optional if no payment is actually involved.
-	WxAppID  null.String
+	BaseAccount account.BaseAccount // Required. Who is paying
+	FtcPrice    price.FtcPrice      // Required. What is purchased.
+	Method      enum.PayMethod      // Optional if no payment is actually involved.
+	WxAppID     null.String
 }
 
 // NewCounter initializes a new payment session.
 // Who and what to purchase are the minimal data required to start payment.
-func NewCounter(account reader.FtcAccount, price price.FtcPrice) Counter {
+func NewCounter(a account.BaseAccount, price price.FtcPrice) Counter {
 	return Counter{
-		Account:  account,
-		FtcPrice: price,
+		BaseAccount: a,
+		FtcPrice:    price,
 	}
 }
 
@@ -47,7 +48,7 @@ func (c Counter) order(checkout Checkout) (Order, error) {
 
 	return Order{
 		ID:            orderID,
-		UserIDs:       c.Account.MemberID(),
+		UserIDs:       c.BaseAccount.CompoundIDs(),
 		PlanID:        checkout.Price.ID,
 		DiscountID:    checkout.Offer.DiscID,
 		Price:         checkout.Price.UnitAmount,
@@ -69,7 +70,7 @@ func (c Counter) PaymentIntent(m reader.Membership) (PaymentIntent, error) {
 		return PaymentIntent{}, err
 	}
 
-	checkout = checkout.WithTest(c.Account.IsTest())
+	checkout = checkout.WithTest(c.BaseAccount.IsTest())
 
 	order, err := c.order(checkout)
 
