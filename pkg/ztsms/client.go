@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/FTChinese/subscription-api/lib/fetch"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"go.uber.org/zap"
 	"strconv"
 	"time"
 )
@@ -19,7 +20,7 @@ type SMSSharedParams struct {
 type TemplateMessage struct {
 	SMSSharedParams
 	Signature  string            `json:"signature"`
-	TemplateID int64             `json:"tpId"`
+	TemplateID string            `json:"tpId"`
 	Records    []TemplateContent `json:"records"`
 }
 
@@ -32,6 +33,15 @@ type TemplateReplacer struct {
 	Code string `json:"valid_code"`
 }
 
+// MessageResponse is the response from SMS provider's API.
+// Example:
+// {
+// 200
+// success
+// 161778635408604440321
+// 33337
+// []
+// }
 type MessageResponse struct {
 	Code        int               `json:"code"`
 	Message     string            `json:"msg"`
@@ -46,11 +56,13 @@ func (r MessageResponse) Valid() bool {
 
 type Client struct {
 	credentials config.Credentials
+	logger      *zap.Logger
 }
 
-func NewClient() Client {
+func NewClient(l *zap.Logger) Client {
 	return Client{
 		credentials: config.MustSMSCredentials(),
+		logger:      l,
 	}
 }
 
@@ -76,8 +88,8 @@ func (c Client) sharedParams() SMSSharedParams {
 func (c Client) templateMessage(v Verifier) TemplateMessage {
 	return TemplateMessage{
 		SMSSharedParams: c.sharedParams(),
-		Signature:       "",
-		TemplateID:      0,
+		Signature:       "【FT中文网】",
+		TemplateID:      "33337",
 		Records: []TemplateContent{
 			{
 				Mobile: v.Mobile,
@@ -90,6 +102,9 @@ func (c Client) templateMessage(v Verifier) TemplateMessage {
 }
 
 func (c Client) SendVerifier(v Verifier) (MessageResponse, error) {
+	defer c.logger.Sync()
+	sugar := c.logger.Sugar()
+
 	var result MessageResponse
 
 	errs := fetch.New().
@@ -98,8 +113,11 @@ func (c Client) SendVerifier(v Verifier) (MessageResponse, error) {
 		EndJSON(&result)
 
 	if errs != nil {
+		sugar.Error(errs)
 		return MessageResponse{}, errs[0]
 	}
+
+	sugar.Errorf("SMS response: %s", result.Message)
 
 	if result.Valid() {
 		return result, nil
