@@ -42,7 +42,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		readerIDs := getReaderIDs(req.Header)
 
 		// Find user account.
-		account, err := router.ReaderRepo.FindAccount(readerIDs)
+		acnt, err := router.AccountRepo.FindBaseAccount(readerIDs)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).DBError(err)
@@ -72,7 +72,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 		sugar.Infof("Selected plan: %+v", plan)
 
-		counter := subs.NewCounter(account, plan).
+		counter := subs.NewCounter(acnt, plan).
 			WithWxpay(payClient.GetApp())
 
 		pi, err := router.SubsRepo.CreateOrder(counter)
