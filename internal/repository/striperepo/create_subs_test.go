@@ -2,6 +2,7 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
@@ -15,15 +16,15 @@ import (
 )
 
 type paymentAttached struct {
-	account         reader.FtcAccount
+	account         account.BaseAccount
 	paymentMethodID string
 }
 
-func newCustomerAndPayment(client Client, account reader.FtcAccount) (paymentAttached, error) {
+func newCustomerAndPayment(client Client, acnt account.BaseAccount) (paymentAttached, error) {
 	defer client.logger.Sync()
 	sugar := client.logger.Sugar()
 
-	cus, err := client.CreateCustomer(account.Email)
+	cus, err := client.CreateCustomer(acnt.Email)
 	if err != nil {
 		sugar.Error(err)
 		return paymentAttached{}, err
@@ -49,10 +50,10 @@ func newCustomerAndPayment(client Client, account reader.FtcAccount) (paymentAtt
 
 	sugar.Infof("%v", si)
 
-	account.StripeID = null.StringFrom(cus.ID)
+	acnt.StripeID = null.StringFrom(cus.ID)
 
 	return paymentAttached{
-		account:         account,
+		account:         acnt,
 		paymentMethodID: pm.ID,
 	}, nil
 }
@@ -68,7 +69,7 @@ func TestEnv_CreateSubscription(t *testing.T) {
 
 	pa, err := newCustomerAndPayment(
 		NewClient(false, zaptest.NewLogger(t)),
-		p.FtcAccount(),
+		p.BaseAccount(),
 	)
 	if err != nil {
 		t.Error(err)

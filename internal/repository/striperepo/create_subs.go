@@ -30,7 +30,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 	}
 
 	// Retrieve member for this user to check whether the operation is allowed.
-	mmb, err := tx.RetrieveMember(params.Account.MemberID())
+	mmb, err := tx.RetrieveMember(params.Account.CompoundIDs())
 	sugar.Infof("Current membership before creating stripe subscription: %v", mmb)
 
 	if err != nil {
@@ -82,7 +82,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 
 	// Build Membership based on stripe subscription.
 	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
-		UserIDs:       params.Account.MemberID(),
+		UserIDs:       params.Account.CompoundIDs(),
 		CurrentMember: mmb,
 		Kind:          subsKind,
 		Action:        reader.ActionCreate,
