@@ -31,7 +31,7 @@ func (tx MemberTx) RetrieveMember(id pkg.UserIDs) (reader.Membership, error) {
 
 	err := tx.Get(
 		&m,
-		reader.StmtGetLockMember,
+		reader.StmtLockMember,
 		id.BuildFindInSet(),
 	)
 
@@ -51,7 +51,7 @@ func (tx MemberTx) RetrieveAppleMember(transactionID string) (reader.Membership,
 
 	err := tx.Get(
 		&m,
-		reader.StmtGetLockAppleMember,
+		reader.StmtLockAppleMember,
 		transactionID)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -66,7 +66,7 @@ func (tx MemberTx) RetrieveStripeMember(subID string) (reader.Membership, error)
 
 	err := tx.Get(
 		&m,
-		reader.StmtGetLockStripeMember,
+		reader.StmtLockStripeMember,
 		subID)
 
 	if err != nil && err != sql.ErrNoRows {
