@@ -53,18 +53,18 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	account, err := router.readerRepo.AccountByFtcID(ftcID)
+	acnt, err := router.accountRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 	// If this user is not a stripe customer yet.
-	if account.StripeID.IsZero() {
+	if acnt.StripeID.IsZero() {
 		_ = render.New(w).NotFound("Stripe customer not found")
 		return
 	}
 
-	if denied := account.ValidateEnv(router.config.Live()); denied != "" {
+	if denied := acnt.ValidateEnv(router.config.Live()); denied != "" {
 		_ = render.New(w).Forbidden(denied)
 		return
 	}
@@ -78,7 +78,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 
 	// Create stripe subscription.
 	result, err := router.stripeRepo.CreateSubscription(stripe.SubsParams{
-		Account:      account,
+		Account:      acnt,
 		Edition:      sp,
 		SharedParams: input.SharedParams,
 	})
@@ -141,7 +141,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	account, err := router.readerRepo.AccountByFtcID(ftcID)
+	account, err := router.accountRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -242,7 +242,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Use Stripe customer id to find user account.
-	account, err := router.readerRepo.FtcAccountByStripeID(ss.Customer.ID)
+	account, err := router.accountRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound("Stripe customer not found")
@@ -250,7 +250,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	result, err := router.stripeRepo.OnSubscription(ss, stripe.SubsResultParams{
-		UserIDs: account.MemberID(),
+		UserIDs: account.CompoundIDs(),
 		Action:  reader.ActionRefresh,
 	})
 
