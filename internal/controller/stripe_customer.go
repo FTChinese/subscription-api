@@ -36,7 +36,7 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	account, err := router.readerRepo.AccountByFtcID(ftcID)
+	account, err := router.accountRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -83,16 +83,16 @@ func (router StripeRouter) ChangeDefaultPaymentMethod(w http.ResponseWriter, req
 		return
 	}
 
-	account, err := router.readerRepo.AccountByFtcID(ftcID)
+	acnt, err := router.accountRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
-	if account.StripeID.IsZero() {
+	if acnt.StripeID.IsZero() {
 		_ = render.New(w).NotFound("Not a stripe customer")
 		return
 	}
-	if account.StripeID.String != cusID {
+	if acnt.StripeID.String != cusID {
 		_ = render.New(w).NotFound("")
 	}
 
@@ -105,5 +105,5 @@ func (router StripeRouter) ChangeDefaultPaymentMethod(w http.ResponseWriter, req
 		return
 	}
 
-	_ = render.New(w).OK(stripe.NewCustomer(account, cus))
+	_ = render.New(w).OK(stripe.NewCustomer(acnt, cus))
 }
