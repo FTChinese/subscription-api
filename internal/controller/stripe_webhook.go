@@ -19,7 +19,7 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 	sugar := router.logger.Sugar()
 
 	// Find user account by stripe customer id.
-	account, err := router.readerRepo.FtcAccountByStripeID(ss.Customer.ID)
+	account, err := router.accountRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
 		// If user account is not found, we still want to save this subscription.
@@ -39,7 +39,7 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 	}
 
 	result, err := router.stripeRepo.OnSubscription(ss, stripe.SubsResultParams{
-		UserIDs: account.MemberID(),
+		UserIDs: account.CompoundIDs(),
 		Action:  reader.ActionWebhook,
 	})
 	if err != nil {
