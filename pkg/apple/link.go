@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"strings"
@@ -40,7 +41,7 @@ type UnlinkResult struct {
 }
 
 type LinkBuilder struct {
-	Account    reader.FtcAccount
+	Account    account.BaseAccount
 	CurrentFtc reader.Membership
 	CurrentIAP reader.Membership
 	IAPSubs    Subscription
@@ -72,7 +73,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			return LinkResult{
 				Initial: true, // Send email
 				Member: NewMembership(MembershipParams{
-					UserID: b.Account.MemberID(),
+					UserID: b.Account.CompoundIDs(),
 					Subs:   b.IAPSubs,
 					AddOn:  addon.AddOn{},
 				}),
@@ -85,7 +86,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			return LinkResult{
 				Initial: false,
 				Member: NewMembership(MembershipParams{
-					UserID: b.Account.MemberID(),
+					UserID: b.Account.CompoundIDs(),
 					Subs:   b.IAPSubs,
 					AddOn:  b.CurrentFtc.AddOn,
 				}),
@@ -126,7 +127,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			return LinkResult{
 				Initial: true,
 				Member: NewMembership(MembershipParams{
-					UserID: b.Account.MemberID(),
+					UserID: b.Account.CompoundIDs(),
 					Subs:   b.IAPSubs,
 					AddOn:  b.CurrentFtc.AddOn,
 				}),
@@ -157,7 +158,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			return LinkResult{
 				Initial: true,
 				Member: NewMembership(MembershipParams{
-					UserID: b.Account.MemberID(),
+					UserID: b.Account.CompoundIDs(),
 					Subs:   b.IAPSubs,
 					AddOn:  b.CurrentFtc.AddOn,
 				}),
@@ -174,7 +175,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			return LinkResult{
 				Initial: true,
 				Member: NewMembership(MembershipParams{
-					UserID: b.Account.MemberID(),
+					UserID: b.Account.CompoundIDs(),
 					Subs:   b.IAPSubs,
 					AddOn:  b.CurrentFtc.AddOn,
 				}),
@@ -189,7 +190,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	return LinkResult{
 		Initial: true,
 		Member: NewMembership(MembershipParams{
-			UserID: b.Account.MemberID(),
+			UserID: b.Account.CompoundIDs(),
 			Subs:   b.IAPSubs,
 			AddOn:  b.CurrentFtc.AddOn,
 		}),

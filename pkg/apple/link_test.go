@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -43,7 +44,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 	}
 
 	type fields struct {
-		Account    reader.FtcAccount
+		Account    account.BaseAccount
 		CurrentFtc reader.Membership
 		CurrentIAP reader.Membership
 		IAPSubs    Subscription
@@ -57,7 +58,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 		{
 			name: "Both sides have no membership",
 			fields: fields{
-				Account: reader.FtcAccount{
+				Account: account.BaseAccount{
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{},
@@ -77,7 +78,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 		{
 			name: "IAP linked to other ftc account",
 			fields: fields{
-				Account: reader.FtcAccount{
+				Account: account.BaseAccount{
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{},
@@ -98,7 +99,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 		{
 			name: "Ftc linked to other IAP",
 			fields: fields{
-				Account: reader.FtcAccount{
+				Account: account.BaseAccount{
 					FtcID: ftcId,
 				},
 				CurrentFtc: NewMembership(MembershipParams{
@@ -132,7 +133,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 		{
 			name: "Ftc manually copied from IAP",
 			fields: fields{
-				Account: reader.FtcAccount{
+				Account: account.BaseAccount{
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{
@@ -157,7 +158,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 		{
 			name: "Both expired iap not auto renew",
 			fields: fields{
-				Account: reader.FtcAccount{
+				Account: account.BaseAccount{
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{
@@ -188,7 +189,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 		{
 			name: "FTC expired but iap auto renew",
 			fields: fields{
-				Account: reader.FtcAccount{
+				Account: account.BaseAccount{
 					FtcID: ftcId,
 				},
 				CurrentFtc: reader.Membership{
