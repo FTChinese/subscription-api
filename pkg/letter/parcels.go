@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -16,7 +17,7 @@ var subjects = map[enum.OrderKind]string{
 	enum.OrderKindAddOn:   "购买FT订阅服务",
 }
 
-func NewSubParcel(a reader.FtcAccount, result subs.ConfirmationResult) (postoffice.Parcel, error) {
+func NewSubParcel(a account.BaseAccount, result subs.ConfirmationResult) (postoffice.Parcel, error) {
 
 	ctx := CtxSubs{
 		UserName: a.NormalizeName(),
@@ -40,10 +41,10 @@ func NewSubParcel(a reader.FtcAccount, result subs.ConfirmationResult) (postoffi
 	}, nil
 }
 
-func NewIAPLinkParcel(account reader.FtcAccount, m reader.Membership) (postoffice.Parcel, error) {
+func NewIAPLinkParcel(acnt account.BaseAccount, m reader.Membership) (postoffice.Parcel, error) {
 	ctx := CtxIAPLinked{
-		UserName:   account.NormalizeName(),
-		Email:      account.Email,
+		UserName:   acnt.NormalizeName(),
+		Email:      acnt.Email,
 		Tier:       m.Tier,
 		ExpireDate: m.ExpireDate,
 	}
@@ -56,17 +57,17 @@ func NewIAPLinkParcel(account reader.FtcAccount, m reader.Membership) (postoffic
 	return postoffice.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
-		ToAddress:   account.Email,
+		ToAddress:   acnt.Email,
 		ToName:      ctx.UserName,
 		Subject:     "关联iOS订阅",
 		Body:        body,
 	}, nil
 }
 
-func NewIAPUnlinkParcel(account reader.FtcAccount, m apple.Subscription) (postoffice.Parcel, error) {
+func NewIAPUnlinkParcel(a account.BaseAccount, m apple.Subscription) (postoffice.Parcel, error) {
 	ctx := CtxIAPLinked{
-		UserName:   account.NormalizeName(),
-		Email:      account.Email,
+		UserName:   a.NormalizeName(),
+		Email:      a.Email,
 		Tier:       m.Tier,
 		ExpireDate: chrono.DateFrom(m.ExpiresDateUTC.Time),
 	}
@@ -79,7 +80,7 @@ func NewIAPUnlinkParcel(account reader.FtcAccount, m apple.Subscription) (postof
 	return postoffice.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网会员订阅",
-		ToAddress:   account.Email,
+		ToAddress:   a.Email,
 		ToName:      ctx.UserName,
 		Subject:     "移除关联iOS订阅",
 		Body:        body,
