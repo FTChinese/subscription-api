@@ -10,9 +10,9 @@ import (
 )
 
 type VerifierParams struct {
-	Mobile      string      `json:"mobile"`
-	Code        null.String `json:"code"`
-	DeviceToken null.String `json:"deviceToken"`
+	Mobile      string `json:"mobile"`
+	Code        string `json:"code"`
+	DeviceToken string `json:"deviceToken"`
 }
 
 func (p VerifierParams) ValidateMobile() *render.ValidationError {
@@ -38,7 +38,7 @@ func (p VerifierParams) Validate() *render.ValidationError {
 		MinLen(6).
 		MaxLen(6).
 		Required().
-		Validate(p.Code.String)
+		Validate(p.Code)
 }
 
 type Verifier struct {
@@ -47,16 +47,18 @@ type Verifier struct {
 	ExpiresIn  int         `db:"expires_in"`
 	CreatedUTC chrono.Time `db:"created_utc"`
 	UsedUTC    chrono.Time `db:"used_utc"`
+	FtcID      null.String `db:"ftc_id"`
 }
 
 // NewPhoneVerifier generates a new verification code for a mobile phone.
-func NewVerifier(mobile string) Verifier {
+func NewVerifier(mobile string, ftcID null.String) Verifier {
 	return Verifier{
 		Mobile:     mobile,
 		Code:       pkg.SMSCode(),
 		ExpiresIn:  5 * 60,
 		CreatedUTC: chrono.TimeNow(),
 		UsedUTC:    chrono.Time{},
+		FtcID:      ftcID,
 	}
 }
 
