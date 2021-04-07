@@ -33,7 +33,7 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 		return
 	}
 
-	account, err := router.readerRepo.AccountByFtcID(ftcID)
+	account, err := router.accountRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
