@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
 	"github.com/FTChinese/subscription-api/pkg/config"
@@ -14,12 +15,13 @@ import (
 )
 
 type StripeRouter struct {
-	config     config.BuildConfig
-	signingKey string
-	readerRepo readerrepo.Env
-	stripeRepo striperepo.Env
-	client     striperepo.Client
-	logger     *zap.Logger
+	config      config.BuildConfig
+	signingKey  string
+	readerRepo  readerrepo.Env
+	accountRepo accounts.Env
+	stripeRepo  striperepo.Env
+	client      striperepo.Client
+	logger      *zap.Logger
 }
 
 // NewStripeRouter initializes StripeRouter.
@@ -27,16 +29,17 @@ func NewStripeRouter(dbs db.ReadWriteSplit, cfg config.BuildConfig, logger *zap.
 	client := striperepo.NewClient(cfg.Live(), logger)
 
 	return StripeRouter{
-		config:     cfg,
-		signingKey: config.MustLoadStripeSigningKey().Pick(cfg.Live()),
-		readerRepo: readerrepo.NewEnv(dbs, logger),
-		stripeRepo: striperepo.NewEnv(dbs, client, logger),
-		client:     client,
-		logger:     logger,
+		config:      cfg,
+		signingKey:  config.MustLoadStripeSigningKey().Pick(cfg.Live()),
+		readerRepo:  readerrepo.NewEnv(dbs, logger),
+		accountRepo: accounts.New(dbs, logger),
+		stripeRepo:  striperepo.NewEnv(dbs, client, logger),
+		client:      client,
+		logger:      logger,
 	}
 }
 
-// Forward stripe error to client, and give the error back to caller to handle if it is not stripe error.
+// Forward stripe error to smsClient, and give the error back to caller to handle if it is not stripe error.
 func handleErrResp(w http.ResponseWriter, err error) error {
 
 	var se *stripeSdk.Error
