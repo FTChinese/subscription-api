@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/go-redis/redis/v8"
@@ -20,9 +21,10 @@ import (
 )
 
 type IAPRouter struct {
-	iapRepo    iaprepo.Env
-	readerRepo readerrepo.Env
-	postman    postoffice.PostOffice
+	iapRepo     iaprepo.Env
+	readerRepo  readerrepo.Env
+	accountRepo accounts.Env
+	postman     postoffice.PostOffice
 
 	sandbox   bool
 	iapClient iaprepo.Client
@@ -32,12 +34,13 @@ type IAPRouter struct {
 func NewIAPRouter(dbs db.ReadWriteSplit, rdb *redis.Client, logger *zap.Logger, p postoffice.PostOffice, cfg config.BuildConfig) IAPRouter {
 
 	return IAPRouter{
-		iapRepo:    iaprepo.NewEnv(dbs, rdb, logger),
-		readerRepo: readerrepo.NewEnv(dbs, logger),
-		postman:    p,
-		sandbox:    cfg.Sandbox(),
-		iapClient:  iaprepo.NewClient(logger),
-		logger:     logger,
+		iapRepo:     iaprepo.NewEnv(dbs, rdb, logger),
+		readerRepo:  readerrepo.NewEnv(dbs, logger),
+		accountRepo: accounts.New(dbs, logger),
+		postman:     p,
+		sandbox:     cfg.Sandbox(),
+		iapClient:   iaprepo.NewClient(logger),
+		logger:      logger,
 	}
 }
 
@@ -88,7 +91,7 @@ func (router IAPRouter) processSubsResult(snapshot reader.MemberSnapshot) {
 	}
 }
 
-// VerifyReceipt verifies if the receipt data send by client is valid. After app store responded,
+// VerifyReceipt verifies if the receipt data send by smsClient is valid. After app store responded,
 // its latest_receipt, latest_receipt_info, pending_renewal_info are saved in DB in background thread.
 // An apple.Subscription is created from the response, which is saved or updated if already exists,
 // and then user's membership is updated if it exists.
