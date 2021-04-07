@@ -4,6 +4,7 @@ package test
 
 import (
 	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"time"
@@ -128,40 +129,12 @@ func (p *Persona) AccountID() pkg.UserIDs {
 	return id
 }
 
-func (p *Persona) FtcAccount() reader.FtcAccount {
-	switch p.kind {
-	case enum.AccountKindFtc:
-		return reader.FtcAccount{
-			FtcID:    p.FtcID,
-			UnionID:  null.String{},
-			StripeID: null.StringFrom(p.StripeID),
-			Email:    p.Email,
-			UserName: null.StringFrom(p.UserName),
-			VIP:      false,
-		}
-
-	case enum.AccountKindWx:
-		return reader.FtcAccount{
-			FtcID:    "",
-			UnionID:  null.StringFrom(p.UnionID),
-			StripeID: null.String{},
-			Email:    p.Email,
-			UserName: null.StringFrom(p.UserName),
-			VIP:      false,
-		}
-
-	case enum.AccountKindLinked:
-		return reader.FtcAccount{
-			FtcID:    p.FtcID,
-			UnionID:  null.StringFrom(p.UnionID),
-			StripeID: null.StringFrom(p.StripeID),
-			Email:    p.Email,
-			UserName: null.StringFrom(p.UserName),
-			VIP:      false,
-		}
-	}
-
-	return reader.FtcAccount{}
+func (p *Persona) BaseAccount() account.BaseAccount {
+	return account.NewMockFtcAccountBuilder(p.kind).
+		WithFtcID(p.FtcID).
+		WithWxID(p.UnionID).
+		WithStripeID(p.StripeID).
+		Build()
 }
 
 func (p *Persona) Membership() reader.Membership {
