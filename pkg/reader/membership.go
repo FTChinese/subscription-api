@@ -2,9 +2,11 @@ package reader
 
 import (
 	"errors"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
+	"log"
 	"math"
 	"time"
 
@@ -58,6 +60,7 @@ type Membership struct {
 	AppleSubsID  null.String     `json:"appleSubsId" db:"apple_subs_id"`
 	B2BLicenceID null.String     `json:"b2bLicenceId" db:"b2b_licence_id"`
 	addon.AddOn
+	VIP bool `json:"vip" db:"is_vip"`
 }
 
 // IsZero test whether the instance is empty.
@@ -79,6 +82,23 @@ func (m Membership) IsExpired() bool {
 	// If ExpireDate is passed, but auto renew is true, we still
 	// treat this one as not expired.
 	return m.ExpireDate.Before(time.Now().Truncate(24*time.Hour)) && !m.AutoRenewal
+}
+
+// IsLinked checks whether this membership has both FTC id
+// and wechat id.
+// Do not call this on a merged result since the merging does not link ids.
+func (m Membership) IsLinked() bool {
+	return m.FtcID.Valid && m.UnionID.Valid && m.FtcID.String != m.UnionID.String
+}
+
+// IsFtcOnly checks whether the membership is purchased via
+// FTC account only.
+// Stripe, Apple and B2B memberships are only allowed to be
+// purchased via FTC account.
+// When performing unlinking, you should never give such
+// kind of membership to the wechat side.
+func (m Membership) IsFtcOnly() bool {
+	return m.PaymentMethod == enum.PayMethodStripe || m.PaymentMethod == enum.PayMethodB2B || m.PaymentMethod == enum.PayMethodApple
 }
 
 // RemainingDays calculates how many day left up until now.
@@ -381,4 +401,59 @@ func (m Membership) WithInvoice(userID pkg.UserIDs, inv invoice.Invoice) (Member
 		B2BLicenceID:  null.String{},
 		AddOn:         m.AddOn, // For upgrade, the carried over part is not added.
 	}.Sync(), nil
+}
+
+// Merge merges two memberships.
+// The returned data is incomplete since if one membership
+// is zero, we cannot know user's ftc id or union id.
+// Only the merged Account knows all ids.
+// Case matrix:
+// --------------------------------------------
+// FTC\WX      | None  | Not-Expired  | Expired
+// --------------------------------------------
+// None        |  Y    |    Y         |  Y
+// Not-Expired |  Y    |    N         |  Y
+// Expired     |  Y    |    Y         |  Y
+// --------------------------------------------
+// From the above figure we can see the focus is whether
+// an account has membership and whether it is expired or
+// not.
+// A Stripe or Apple membership always falls into the
+// Not-Expired group.
+func (m Membership) Merge(other Membership) (Membership, error) {
+	// This includes both zero values.
+	// If the two memberships are the same one, noop.
+	if m.IsEqual(other) {
+		return m, nil
+	}
+
+	// At least one of the membership is not zero value.
+	if m.IsLinked() || other.IsLinked() {
+		return Membership{}, &render.ValidationError{
+			Message: "at least one of the account's membership is linked to a 3rd account",
+			Field:   "membership",
+			Code:    "link_already_taken",
+		}
+	}
+
+	// Now both members are not linked.
+	// If both are not expired, deny merging.
+	if !m.IsExpired() && !other.IsExpired() {
+		log.Print("Error: Both not expired")
+
+		return Membership{}, &render.ValidationError{
+			Message: "accounts with valid memberships cannot be link",
+			Field:   "membership",
+			Code:    "both_valid",
+		}
+	}
+
+	// Now both members are not linked.
+	// Then cannot be both empty.
+	// At least one exists and not expired.
+	if m.ExpireDate.Before(other.ExpireDate.Time) {
+		return other.PlusAddOn(m.AddOn), nil
+	} else {
+		return m.PlusAddOn(other.AddOn), nil
+	}
 }
