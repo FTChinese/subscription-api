@@ -17,7 +17,7 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 
 	pa, err := newCustomerAndPayment(
 		client,
-		p.FtcAccount())
+		p.BaseAccount())
 	if err != nil {
 		t.Error(err)
 		return

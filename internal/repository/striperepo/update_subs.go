@@ -19,7 +19,7 @@ func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 	}
 
 	// Retrieve current membership.
-	mmb, err := tx.RetrieveMember(cfg.Account.MemberID())
+	mmb, err := tx.RetrieveMember(cfg.Account.CompoundIDs())
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()

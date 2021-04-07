@@ -1,7 +1,7 @@
 package striperepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
@@ -19,7 +19,7 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 	}
 
 	// Account might not be found, though it is rare.
-	account, err := tx.RetrieveAccount(ftcID)
+	baseAccount, err := tx.BaseAccountForStripe(ftcID)
 	if err != nil {
 		_ = tx.Rollback()
 		sugar.Error(err)
@@ -27,30 +27,30 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 	}
 
 	// If stripe customer id already exists, abort.
-	if account.StripeID.Valid {
+	if baseAccount.StripeID.Valid {
 		_ = tx.Rollback()
-		cus, err := env.client.RetrieveCustomer(account.StripeID.String)
+		cus, err := env.client.RetrieveCustomer(baseAccount.StripeID.String)
 		if err != nil {
 			return stripe.CustomerAccount{}, err
 		}
 
-		return stripe.NewCustomerAccount(account, cus), nil
+		return stripe.NewCustomerAccount(baseAccount, cus), nil
 	}
 
 	// Request stripe api to create customer.
 	// Return *stripe.Error if occurred.
-	cus, err := env.client.CreateCustomer(account.Email)
+	cus, err := env.client.CreateCustomer(baseAccount.Email)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return stripe.CustomerAccount{}, err
 	}
 
-	ca := stripe.NewCustomerAccount(account, cus)
+	ca := stripe.NewCustomerAccount(baseAccount, cus)
 
 	// Save customer id in our db.
 	// There might be SQL errors.
-	if err := tx.SavedStripeID(ca.FtcAccount); err != nil {
+	if err := tx.SavedStripeID(ca.BaseAccount); err != nil {
 		_ = tx.Rollback()
 		sugar.Error(err)
 		return stripe.CustomerAccount{}, err
@@ -64,9 +64,9 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 	return ca, nil
 }
 
-func (env Env) SetCustomer(a reader.FtcAccount) error {
+func (env Env) SetCustomer(a account.BaseAccount) error {
 	_, err := env.db.NamedExec(
-		reader.StmtSetStripeID,
+		account.StmtSetStripeID,
 		a)
 
 	if err != nil {
