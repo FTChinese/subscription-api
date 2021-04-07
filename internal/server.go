@@ -42,6 +42,7 @@ func StartServer(s ServerStatus) {
 	guard := access.NewGuard(myDBs)
 
 	authRouter := controller.NewAuthRouter(myDBs, post, logger)
+	accountRouter := controller.NewAccountRouter(myDBs, logger)
 	payRouter := controller.NewSubsRouter(myDBs, promoCache, cfg, post, logger)
 	iapRouter := controller.NewIAPRouter(myDBs, rdb, logger, post, cfg)
 	stripeRouter := controller.NewStripeRouter(myDBs, cfg, logger)
@@ -58,8 +59,26 @@ func StartServer(s ServerStatus) {
 	r.Use(controller.NoCache)
 
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/mobile/request-verification", authRouter.RequestPhoneCode)
-		r.Post("/mobile/verify", authRouter.VerifyPhoneCode)
+		r.Put("/mobile/verification", authRouter.RequestSMSVerification)
+		r.Post("/mobile/verification", authRouter.VerifySMSCode)
+	})
+
+	r.Route("/account", func(r chi.Router) {
+		// Get account by uuid.
+		r.With(controller.RequireFtcID).Get("/", accountRouter.LoadAccountByEmail)
+
+		r.Route("/wx", func(r chi.Router) {
+			r.Use(controller.RequireUnionID)
+			r.Get("/", accountRouter.LoadAccountByWx)
+		})
+
+		r.Route("/mobile", func(r chi.Router) {
+			r.Use(controller.RequireFtcID)
+			// Set/Update mobile number by verifying SMS code.
+			r.Patch("/", accountRouter.UpdateMobile)
+			// Create a verification code
+			r.Put("/verification", accountRouter.RequestSMSVerification)
+		})
 	})
 
 	// Requires user id.
