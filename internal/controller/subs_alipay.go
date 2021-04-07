@@ -46,7 +46,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		readerIDs := getReaderIDs(req.Header)
 
 		// Find user account.
-		account, err := router.ReaderRepo.FindAccount(readerIDs)
+		acnt, err := router.AccountRepo.FindBaseAccount(readerIDs)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).DBError(err)
@@ -74,7 +74,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		counter := subs.NewCounter(account, price).
+		counter := subs.NewCounter(acnt, price).
 			WithAlipay()
 
 		pi, err := router.SubsRepo.CreateOrder(counter)
