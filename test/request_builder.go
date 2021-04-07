@@ -38,7 +38,7 @@ func AppleLinkReq() *http.Request {
 
 	repo := NewRepo()
 
-	repo.MustSaveAccount(p.FtcAccount())
+	repo.MustCreateFtcAccount(p.BaseAccount())
 	repo.MustSaveIAPSubs(p.IAPSubs())
 
 	input := p.IAPLinkInput()
@@ -59,7 +59,7 @@ func AppleUnlinkReq() *http.Request {
 
 	repo := NewRepo()
 
-	repo.MustSaveAccount(p.FtcAccount())
+	repo.MustCreateFtcAccount(p.BaseAccount())
 	repo.MustSaveIAPSubs(p.IAPSubs())
 	repo.MustSaveMembership(p.Membership())
 

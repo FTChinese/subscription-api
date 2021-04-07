@@ -5,16 +5,6 @@ import (
 	"testing"
 )
 
-func TestRepo_SaveAccount(t *testing.T) {
-	p := NewPersona()
-
-	err := NewRepo().SaveAccount(p.FtcAccount())
-
-	if err != nil {
-		t.Error(err)
-	}
-}
-
 func TestRepo_SaveMembership(t *testing.T) {
 	p := NewPersona()
 
