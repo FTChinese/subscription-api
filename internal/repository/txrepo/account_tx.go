@@ -1,7 +1,7 @@
 package txrepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -15,24 +15,24 @@ func NewAccountTx(tx *sqlx.Tx) AccountTx {
 	}
 }
 
-// RetrieveAccount loads an ftc account by uuid
-func (tx AccountTx) RetrieveAccount(ftcID string) (reader.FtcAccount, error) {
-	var account reader.FtcAccount
+// BaseAccountForStripe loads an ftc account by uuid
+func (tx AccountTx) BaseAccountForStripe(ftcID string) (account.BaseAccount, error) {
+	var a account.BaseAccount
 	err := tx.Get(
-		&account,
-		reader.StmtAccountByFtcID+" FOR UPDATE",
+		&a,
+		account.StmtLockBaseAccount,
 		ftcID)
 	if err != nil {
-		return reader.FtcAccount{}, err
+		return account.BaseAccount{}, err
 	}
 
-	return account, nil
+	return a, nil
 }
 
-func (tx AccountTx) SavedStripeID(account reader.FtcAccount) error {
+func (tx AccountTx) SavedStripeID(a account.BaseAccount) error {
 	_, err := tx.NamedExec(
-		reader.StmtSetStripeID,
-		account,
+		account.StmtSetStripeID,
+		a,
 	)
 	if err != nil {
 		return err
