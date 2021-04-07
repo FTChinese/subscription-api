@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/lib/validator"
-	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 	"strings"
@@ -40,7 +40,7 @@ type Customer struct {
 	CreatedUTC           chrono.Time `json:"createdUtc"`
 }
 
-func NewCustomer(a reader.FtcAccount, c *stripe.Customer) Customer {
+func NewCustomer(a account.BaseAccount, c *stripe.Customer) Customer {
 	var srcID string
 	if c.DefaultSource != nil {
 		srcID = c.DefaultSource.ID
@@ -63,15 +63,15 @@ func NewCustomer(a reader.FtcAccount, c *stripe.Customer) Customer {
 }
 
 type CustomerAccount struct {
-	FtcAccount reader.FtcAccount
-	Customer   Customer
+	BaseAccount account.BaseAccount
+	Customer    Customer
 }
 
-func NewCustomerAccount(a reader.FtcAccount, c *stripe.Customer) CustomerAccount {
+func NewCustomerAccount(a account.BaseAccount, c *stripe.Customer) CustomerAccount {
 	a.StripeID = null.StringFrom(c.ID)
 
 	return CustomerAccount{
-		FtcAccount: a,
-		Customer:   NewCustomer(a, c),
+		BaseAccount: a,
+		Customer:    NewCustomer(a, c),
 	}
 }
