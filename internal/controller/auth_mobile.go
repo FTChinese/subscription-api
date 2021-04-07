@@ -2,36 +2,17 @@ package controller
 
 import (
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/repository/authrepo"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
-	"go.uber.org/zap"
+	"github.com/guregu/null"
 	"net/http"
 )
 
-type AuthRouter struct {
-	repo    authrepo.Env
-	client  ztsms.Client
-	postman postoffice.PostOffice
-	logger  *zap.Logger
-}
-
-func NewAuthRouter(myDBs db.ReadWriteSplit, postman postoffice.PostOffice, l *zap.Logger) AuthRouter {
-	return AuthRouter{
-		repo:    authrepo.New(myDBs, l),
-		client:  ztsms.NewClient(),
-		postman: postman,
-		logger:  l,
-	}
-}
-
-// RequestPhoneCode sends a SMS to user.
+// RequestSMSVerification sends a SMS to user.
 // Input:
 // mobile: string
-func (router AuthRouter) RequestPhoneCode(w http.ResponseWriter, req *http.Request) {
+func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -49,9 +30,16 @@ func (router AuthRouter) RequestPhoneCode(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	vrf := ztsms.NewVerifier(params.Mobile)
+	// Retrieve account by mobile number.
+	// If not found, it indicates the mobile is used for the first time.
+	ftcAccount, err := router.repo.BaseAccountByMobile(params.Mobile)
+	if err != nil {
+		sugar.Error(err)
+	}
 
-	err := router.repo.SaveSMSVerifier(vrf)
+	vrf := ztsms.NewVerifier(params.Mobile, null.NewString(ftcAccount.FtcID, ftcAccount.FtcID != ""))
+
+	err = router.repo.SaveSMSVerifier(vrf)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -67,12 +55,12 @@ func (router AuthRouter) RequestPhoneCode(w http.ResponseWriter, req *http.Reque
 	_ = render.New(w).NoContent()
 }
 
-// VerifyPhoneCode verifies a code sent to user mobile devices.
+// VerifySMSCode verifies a code sent to user mobile devices.
 // Input:
 // mobile: string
 // code: string
 // deviceToken: string - only required for Android devices.
-func (router AuthRouter) VerifyPhoneCode(w http.ResponseWriter, req *http.Request) {
+func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -105,11 +93,6 @@ func (router AuthRouter) VerifyPhoneCode(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	userID, err := router.repo.UserIDByPhone(vrf.Mobile)
-	if err != nil {
-		sugar.Error(err)
-	}
-
 	go func() {
 		err := router.repo.SMSVerifierUsed(vrf.WithUsed())
 		if err != nil {
@@ -117,5 +100,5 @@ func (router AuthRouter) VerifyPhoneCode(w http.ResponseWriter, req *http.Reques
 		}
 	}()
 
-	_ = render.New(w).OK(account.NewSearchResult(userID))
+	_ = render.New(w).OK(account.NewSearchResult(vrf.FtcID.String))
 }
