@@ -3,8 +3,8 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"strings"
 )
@@ -32,7 +32,7 @@ func (i SubsInput) Validate() *render.ValidationError {
 
 // SubsParams contains the data used to create/upgrade a subscription.
 type SubsParams struct {
-	Account reader.FtcAccount
+	Account account.BaseAccount
 	Edition price.StripeEdition
 	SharedParams
 }
@@ -71,7 +71,7 @@ func (i *CheckoutInput) Validate() *render.ValidationError {
 }
 
 type CheckoutParams struct {
-	Account reader.FtcAccount
+	Account account.BaseAccount
 	Plan    price.StripeEdition
 	Input   CheckoutInput
 }
