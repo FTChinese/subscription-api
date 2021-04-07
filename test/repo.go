@@ -3,6 +3,7 @@
 package test
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -30,8 +31,18 @@ func NewRepo() *Repo {
 	}
 }
 
-func (r *Repo) SaveAccount(a reader.FtcAccount) error {
-	_, err := r.db.NamedExec(stmtInsertAccount, a)
+func (r Repo) CreateFtcAccount(a account.BaseAccount) error {
+	_, err := r.db.NamedExec(
+		account.StmtCreateFtc,
+		a)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.NamedExec(
+		account.StmtCreateProfile,
+		a)
 
 	if err != nil {
 		return err
@@ -40,8 +51,10 @@ func (r *Repo) SaveAccount(a reader.FtcAccount) error {
 	return nil
 }
 
-func (r *Repo) MustSaveAccount(a reader.FtcAccount) {
-	if err := r.SaveAccount(a); err != nil {
+func (r Repo) MustCreateFtcAccount(a account.BaseAccount) {
+	err := r.CreateFtcAccount(a)
+
+	if err != nil {
 		panic(err)
 	}
 }
