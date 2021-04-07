@@ -3,6 +3,7 @@ package ftcpay
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
@@ -17,20 +18,22 @@ import (
 type FtcPay struct {
 	SubsRepo     subrepo.Env
 	ReaderRepo   readerrepo.Env
+	AccountRepo  accounts.Env
 	AliPayClient subrepo.AliPayClient
 	WxPayClients subrepo.WxPayClientStore
 	Postman      postoffice.PostOffice
 	Logger       *zap.Logger
 }
 
-func New(db db.ReadWriteSplit, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
+func New(dbs db.ReadWriteSplit, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
 
 	aliApp := ali.MustInitApp()
 	wxApps := wechat.MustGetPayApps()
 
 	return FtcPay{
-		SubsRepo:     subrepo.NewEnv(db, logger),
-		ReaderRepo:   readerrepo.NewEnv(db, logger),
+		SubsRepo:     subrepo.NewEnv(dbs, logger),
+		ReaderRepo:   readerrepo.NewEnv(dbs, logger),
+		AccountRepo:  accounts.New(dbs, logger),
 		AliPayClient: subrepo.NewAliPayClient(aliApp, logger),
 		WxPayClients: subrepo.NewWxClientStore(wxApps, logger),
 		Postman:      p,
@@ -50,7 +53,7 @@ func (pay FtcPay) SendConfirmEmail(pc subs.ConfirmationResult) error {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := pay.ReaderRepo.AccountByFtcID(pc.Order.FtcID.String)
+	account, err := pay.AccountRepo.BaseAccountByUUID(pc.Order.FtcID.String)
 
 	if err != nil {
 		return err
