@@ -28,8 +28,8 @@ func (env Env) CreateOrder(counter subs.Counter) (subs.PaymentIntent, error) {
 	// Step 1: Retrieve membership for this user.
 	// The membership might be empty but the value is
 	// valid.
-	sugar.Infof("Start retrieving membership for reader %+v", counter.Account.MemberID())
-	member, err := otx.RetrieveMember(counter.Account.MemberID())
+	sugar.Infof("Start retrieving membership for reader %+v", counter.BaseAccount.CompoundIDs())
+	member, err := otx.RetrieveMember(counter.BaseAccount.CompoundIDs())
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
