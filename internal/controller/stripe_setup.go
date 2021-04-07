@@ -8,17 +8,17 @@ import (
 func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(userIDKey)
 
-	account, err := router.readerRepo.AccountByFtcID(ftcID)
+	acnt, err := router.accountRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
-	if account.StripeID.IsZero() {
+	if acnt.StripeID.IsZero() {
 		_ = render.New(w).BadRequest("Not a Stripe customer yet")
 		return
 	}
 
-	si, err := router.client.NewSetupCheckout(account.StripeID.String)
+	si, err := router.client.NewSetupCheckout(acnt.StripeID.String)
 	if err != nil {
 		err := handleErrResp(w, err)
 		if err == nil {
