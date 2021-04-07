@@ -12,10 +12,10 @@ func TestWxPayClient_MockWebhookPayload(t *testing.T) {
 	p := test.NewPersona().
 		SetPayMethod(enum.PayMethodWx)
 	order := p.NewOrder(enum.OrderKindCreate)
-	account := p.FtcAccount()
+	account := p.BaseAccount()
 
 	repo := test.NewRepo()
-	repo.MustSaveAccount(account)
+	repo.MustCreateFtcAccount(account)
 	repo.MustSaveOrder(order)
 	t.Logf("Created order %s for user %s", order.ID, account.FtcID)
 

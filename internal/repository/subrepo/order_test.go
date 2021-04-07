@@ -47,10 +47,10 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "New order",
 			args: args{
 				counter: subs.Counter{
-					Account:  newPersona.FtcAccount(),
-					FtcPrice: price.PriceStdYear,
-					Method:   enum.PayMethodAli,
-					WxAppID:  null.String{},
+					BaseAccount: newPersona.BaseAccount(),
+					FtcPrice:    price.PriceStdYear,
+					Method:      enum.PayMethodAli,
+					WxAppID:     null.String{},
 				},
 			},
 			want: subs.Order{
@@ -78,10 +78,10 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "Renewal order",
 			args: args{
 				counter: subs.Counter{
-					Account:  renewalPerson.FtcAccount(),
-					FtcPrice: price.PriceStdYear,
-					Method:   enum.PayMethodWx,
-					WxAppID:  null.StringFrom(wxID),
+					BaseAccount: newPersona.BaseAccount(),
+					FtcPrice:    price.PriceStdYear,
+					Method:      enum.PayMethodWx,
+					WxAppID:     null.StringFrom(wxID),
 				},
 				p: renewalPerson,
 			},
@@ -110,10 +110,10 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "Upgrade order",
 			args: args{
 				counter: subs.Counter{
-					Account:  upgradePerson.FtcAccount(),
-					FtcPrice: price.PricePrm,
-					Method:   enum.PayMethodWx,
-					WxAppID:  null.StringFrom(wxID),
+					BaseAccount: newPersona.BaseAccount(),
+					FtcPrice:    price.PricePrm,
+					Method:      enum.PayMethodWx,
+					WxAppID:     null.StringFrom(wxID),
 				},
 				p: upgradePerson,
 			},
@@ -142,10 +142,10 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "Add-on order",
 			args: args{
 				counter: subs.Counter{
-					Account:  addOnPerson.FtcAccount(),
-					FtcPrice: price.PriceStdYear,
-					Method:   enum.PayMethodWx,
-					WxAppID:  null.StringFrom(wxID),
+					BaseAccount: newPersona.BaseAccount(),
+					FtcPrice:    price.PriceStdYear,
+					Method:      enum.PayMethodWx,
+					WxAppID:     null.StringFrom(wxID),
 				},
 				p: addOnPerson,
 			},
