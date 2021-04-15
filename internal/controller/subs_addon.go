@@ -8,14 +8,14 @@ import (
 func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
 	readerIDs := getReaderIDs(req.Header)
 
-	result, err := router.ReaderRepo.ClaimAddOn(readerIDs)
+	result, err := router.AddOnRepo.ClaimAddOn(readerIDs)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	go func() {
-		_ = router.ReaderRepo.ArchiveMember(result.Snapshot)
+		_ = router.SubsRepo.ArchiveMember(result.Snapshot)
 	}()
 
 	_ = render.New(w).OK(result.Membership)
