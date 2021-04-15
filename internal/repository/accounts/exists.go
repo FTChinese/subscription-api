@@ -4,7 +4,7 @@ import "github.com/FTChinese/subscription-api/pkg/account"
 
 func (env Env) IDExists(id string) (bool, error) {
 	var ok bool
-	err := env.dbs.Read.Get(&ok, account.StmtIDExists, id)
+	err := env.DBs.Read.Get(&ok, account.StmtIDExists, id)
 	if err != nil {
 		return false, err
 	}
@@ -16,7 +16,7 @@ func (env Env) IDExists(id string) (bool, error) {
 // Possible columns: query.ColumnEmail, query.ColumnFtcID
 func (env Env) EmailExists(email string) (bool, error) {
 	var ok bool
-	err := env.dbs.Read.Get(&ok, account.StmtEmailExists, email)
+	err := env.DBs.Read.Get(&ok, account.StmtEmailExists, email)
 	if err != nil {
 		return false, err
 	}
@@ -26,7 +26,7 @@ func (env Env) EmailExists(email string) (bool, error) {
 
 func (env Env) NameExists(name string) (bool, error) {
 	var ok bool
-	err := env.dbs.Read.Get(&ok, account.StmtNameExists, name)
+	err := env.DBs.Read.Get(&ok, account.StmtNameExists, name)
 	if err != nil {
 		return false, err
 	}
