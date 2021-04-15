@@ -1,4 +1,4 @@
-package readerrepo
+package addons
 
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
@@ -18,12 +18,12 @@ func NewEnv(dbs db.ReadWriteSplit, logger *zap.Logger) Env {
 	}
 }
 
-func (env Env) BeginTx() (txrepo.MemberTx, error) {
+func (env Env) beginAddOnTx() (txrepo.AddOnTx, error) {
 	tx, err := env.dbs.Write.Beginx()
 
 	if err != nil {
-		return txrepo.MemberTx{}, err
+		return txrepo.AddOnTx{}, err
 	}
 
-	return txrepo.NewMemberTx(tx), nil
+	return txrepo.NewAddOnTx(tx), nil
 }
