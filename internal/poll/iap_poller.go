@@ -3,8 +3,8 @@ package poll
 import (
 	"context"
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
-	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -22,12 +22,12 @@ WHERE DATEDIFF(expires_date_utc, UTC_DATE()) < 3
 ORDER BY expires_date_utc`
 
 type IAPPoller struct {
-	db         *sqlx.DB
-	iapRepo    iaprepo.Env
-	readerRepo readerrepo.Env
-	verifier   iaprepo.Client
-	apiClient  APIClient
-	logger     *zap.Logger
+	db        *sqlx.DB
+	iapRepo   iaprepo.Env
+	addOnRepo addons.Env
+	verifier  iaprepo.Client
+	apiClient APIClient
+	logger    *zap.Logger
 }
 
 func NewIAPPoller(dbs db.ReadWriteSplit, prod bool, logger *zap.Logger) IAPPoller {
@@ -35,12 +35,12 @@ func NewIAPPoller(dbs db.ReadWriteSplit, prod bool, logger *zap.Logger) IAPPolle
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(prod))
 
 	return IAPPoller{
-		db:         dbs.Read,
-		iapRepo:    iaprepo.NewEnv(dbs, rdb, logger),
-		readerRepo: readerrepo.NewEnv(dbs, logger),
-		verifier:   iaprepo.NewClient(logger),
-		apiClient:  NewAPIClient(prod),
-		logger:     logger,
+		db:        dbs.Read,
+		iapRepo:   iaprepo.NewEnv(dbs, rdb, logger),
+		addOnRepo: addons.NewEnv(dbs, logger),
+		verifier:  iaprepo.NewClient(logger),
+		apiClient: NewAPIClient(prod),
+		logger:    logger,
 	}
 }
 
@@ -143,7 +143,7 @@ func (p IAPPoller) verify(s apple.BaseSchema) error {
 	}
 
 	if !result.Snapshot.IsZero() {
-		err := p.readerRepo.ArchiveMember(result.Snapshot)
+		err := p.iapRepo.ArchiveMember(result.Snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
