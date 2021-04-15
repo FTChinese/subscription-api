@@ -18,7 +18,7 @@ func (env Env) GetSubAndSetFtcID(input apple.LinkInput) (apple.Subscription, err
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
-	tx, err := env.BeginTx()
+	tx, err := env.beginIAPTx()
 	if err != nil {
 		sugar.Error(err)
 		return apple.Subscription{}, err
@@ -81,7 +81,7 @@ func (env Env) Link(result apple.LinkResult) error {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
-	tx, err := env.BeginTx()
+	tx, err := env.beginIAPTx()
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -116,7 +116,7 @@ func (env Env) Link(result apple.LinkResult) error {
 }
 
 func (env Env) ArchiveLinkCheating(link apple.LinkInput) error {
-	_, err := env.dbs.Write.NamedExec(apple.StmtArchiveLinkCheat, link)
+	_, err := env.DBs.Write.NamedExec(apple.StmtArchiveLinkCheat, link)
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
-	tx, err := env.BeginTx()
+	tx, err := env.beginIAPTx()
 
 	if err != nil {
 		return apple.UnlinkResult{}, err
@@ -209,7 +209,7 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 }
 
 func (env Env) ArchiveUnlink(link apple.LinkInput) error {
-	_, err := env.dbs.Write.NamedExec(apple.StmtArchiveUnlink, link)
+	_, err := env.DBs.Write.NamedExec(apple.StmtArchiveUnlink, link)
 	if err != nil {
 		return err
 	}

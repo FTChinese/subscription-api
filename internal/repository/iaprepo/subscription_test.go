@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
@@ -20,7 +21,7 @@ func TestEnv_SaveSubs(t *testing.T) {
 	p := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}
@@ -85,7 +86,7 @@ func TestEnv_updateMembership(t *testing.T) {
 	test.NewRepo().MustSaveMembership(current)
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}
@@ -135,7 +136,7 @@ func TestEnv_LoadSubs(t *testing.T) {
 		Build())
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}
@@ -174,7 +175,7 @@ func TestEnv_countSubs(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(p.IAPSubsLinked())
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}
@@ -219,7 +220,7 @@ func TestEnv_listSubs(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(p.IAPSubsLinked())
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}
@@ -267,7 +268,7 @@ func TestEnv_ListSubs(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(p.IAPSubsLinked())
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}

@@ -23,7 +23,7 @@ func (env Env) SaveSubs(s apple.Subscription) (apple.SubsResult, error) {
 // built from the latest transaction, or update it if exists.
 // Note the ftc_user_id field won't be touched here.
 func (env Env) upsertSubscription(s apple.Subscription) error {
-	_, err := env.dbs.Write.NamedExec(apple.StmtUpsertSubs, s)
+	_, err := env.DBs.Write.NamedExec(apple.StmtUpsertSubs, s)
 
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) 
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
-	tx, err := env.BeginTx()
+	tx, err := env.beginIAPTx()
 	if err != nil {
 		sugar.Error(err)
 		return apple.SubsResult{}, err
@@ -107,7 +107,7 @@ func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) 
 // LoadSubs retrieves a single row of iap subscription.
 func (env Env) LoadSubs(originalID string) (apple.Subscription, error) {
 	var s apple.Subscription
-	err := env.dbs.Read.Get(&s, apple.StmtLoadSubs, originalID)
+	err := env.DBs.Read.Get(&s, apple.StmtLoadSubs, originalID)
 
 	if err != nil {
 		return apple.Subscription{}, err
@@ -119,7 +119,7 @@ func (env Env) LoadSubs(originalID string) (apple.Subscription, error) {
 // countSubs get the number of rows of a user's subscription.
 func (env Env) countSubs(ftcID string) (int64, error) {
 	var count int64
-	err := env.dbs.Read.Get(&count, apple.StmtCountSubs, ftcID)
+	err := env.DBs.Read.Get(&count, apple.StmtCountSubs, ftcID)
 	if err != nil {
 		return 0, err
 	}
@@ -130,7 +130,7 @@ func (env Env) countSubs(ftcID string) (int64, error) {
 // listSubs get a list of a user's iap subscription.
 func (env Env) listSubs(ftcID string, p gorest.Pagination) ([]apple.Subscription, error) {
 	var s = make([]apple.Subscription, 0)
-	err := env.dbs.Read.Select(&s, apple.StmtListSubs, ftcID, p.Limit, p.Offset())
+	err := env.DBs.Read.Select(&s, apple.StmtListSubs, ftcID, p.Limit, p.Offset())
 	if err != nil {
 		return nil, err
 	}
