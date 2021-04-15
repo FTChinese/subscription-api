@@ -2,11 +2,12 @@ package account
 
 import (
 	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"strings"
 )
 
-// Ftc contains the minimal information to identify a user.
+// BaseAccount contains the minimal information to identify a user.
 type BaseAccount struct {
 	FtcID      string      `json:"id" db:"ftc_id"`           // FTC's uuid
 	UnionID    null.String `json:"unionId" db:"wx_union_id"` // Wechat's union id
@@ -19,8 +20,47 @@ type BaseAccount struct {
 	IsVerified bool        `json:"isVerified" db:"is_verified"`
 }
 
+func NewEmailBaseAccount(params pkg.EmailSignUpParams) BaseAccount {
+	return BaseAccount{
+		FtcID:      uuid.New().String(),
+		UnionID:    null.String{},
+		StripeID:   null.String{},
+		Email:      params.Email,
+		Password:   params.Password,
+		Mobile:     null.String{},
+		UserName:   null.StringFrom(params.Email),
+		AvatarURL:  null.String{},
+		IsVerified: false,
+	}
+}
+
+func NewMobileBaseAccount(params pkg.MobileSignUpParams) BaseAccount {
+	return BaseAccount{
+		FtcID:      uuid.New().String(),
+		UnionID:    null.String{},
+		StripeID:   null.String{},
+		Email:      params.Email,
+		Password:   params.Password,
+		Mobile:     null.StringFrom(params.Mobile),
+		UserName:   null.StringFrom(params.Email),
+		AvatarURL:  null.String{},
+		IsVerified: false,
+	}
+}
+
 func (a BaseAccount) WithMobile(m string) BaseAccount {
 	a.Mobile = null.StringFrom(m)
+	return a
+}
+
+func (a BaseAccount) WithUserName(name string) BaseAccount {
+	a.UserName = null.StringFrom(name)
+
+	return a
+}
+
+func (a BaseAccount) WithEmail(email string) BaseAccount {
+	a.Email = email
 	return a
 }
 
