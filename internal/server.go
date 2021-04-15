@@ -42,7 +42,7 @@ func StartServer(s ServerStatus) {
 	guard := access.NewGuard(myDBs)
 
 	authRouter := controller.NewAuthRouter(myDBs, post, logger)
-	accountRouter := controller.NewAccountRouter(myDBs, logger)
+	accountRouter := controller.NewAccountRouter(myDBs, post, logger)
 	payRouter := controller.NewSubsRouter(myDBs, promoCache, cfg, post, logger)
 	iapRouter := controller.NewIAPRouter(myDBs, rdb, logger, post, cfg)
 	stripeRouter := controller.NewStripeRouter(myDBs, cfg, logger)
@@ -59,18 +59,61 @@ func StartServer(s ServerStatus) {
 	r.Use(controller.NoCache)
 
 	r.Route("/auth", func(r chi.Router) {
-		r.Put("/mobile/verification", authRouter.RequestSMSVerification)
-		r.Post("/mobile/verification", authRouter.VerifySMSCode)
+		r.Use(guard.CheckToken)
+		r.Route("/email", func(r chi.Router) {
+			// ?v=<email>
+			r.Get("/exists", authRouter.EmailExists)
+			r.Post("/login", authRouter.EmailLogin)
+			r.Post("/signup", authRouter.EmailSignUp)
+			r.Post("/verification/{token}", authRouter.VerifyEmail)
+		})
+
+		r.Route("/mobile", func(r chi.Router) {
+			r.Put("/verification", authRouter.RequestSMSVerification)
+			r.Post("/verification", authRouter.VerifySMSCode)
+			r.Post("/link", authRouter.LinkMobile)
+		})
+
+		r.Route("/password-reset", func(r chi.Router) {
+			r.Post("/", authRouter.ResetPassword)
+			r.Post("/letter", authRouter.ForgotPassword)
+			r.Get("/tokens/{token}", authRouter.VerifyResetToken)
+			r.Get("/codes", authRouter.VerifyResetCode)
+		})
+
+		r.Route("/wx", func(r chi.Router) {
+			r.Use(controller.RequireAppID)
+			r.Post("/login", wxAuth.Login)
+			r.Put("/refresh", wxAuth.Refresh)
+		})
+	})
+
+	r.Route("/oauth", func(r chi.Router) {
+		// Callback for web to get oauth code.
+		// Do not check access token here since it is used by wx.
+		r.Route("/wx/callback", func(r chi.Router) {
+			r.Get("/next-reader", wxAuth.WebCallback)
+		})
 	})
 
 	r.Route("/account", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+
 		// Get account by uuid.
 		r.With(controller.RequireFtcID).Get("/", accountRouter.LoadAccountByEmail)
 
-		r.Route("/wx", func(r chi.Router) {
-			r.Use(controller.RequireUnionID)
-			r.Get("/", accountRouter.LoadAccountByWx)
+		r.Route("/email", func(r chi.Router) {
+			r.Use(controller.RequireFtcID)
+
+			r.Patch("/", accountRouter.UpdateEmail)
+			r.Post("/request-verification", accountRouter.RequestVerification)
 		})
+
+		r.With(controller.RequireFtcID).
+			Patch("/name", accountRouter.UpdateName)
+
+		r.With(controller.RequireFtcID).
+			Patch("/password", accountRouter.UpdatePassword)
 
 		r.Route("/mobile", func(r chi.Router) {
 			r.Use(controller.RequireFtcID)
@@ -78,6 +121,41 @@ func StartServer(s ServerStatus) {
 			r.Patch("/", accountRouter.UpdateMobile)
 			// Create a verification code
 			r.Put("/verification", accountRouter.RequestSMSVerification)
+		})
+
+		r.Route("/address", func(r chi.Router) {
+			r.Use(controller.RequireFtcID)
+			r.Get("/", accountRouter.LoadAddress)
+			r.Patch("/", accountRouter.UpdateAddress)
+		})
+
+		r.Route("/profile", func(r chi.Router) {
+			r.Use(controller.RequireFtcID)
+			r.Get("/", accountRouter.LoadProfile)
+			r.Patch("/", accountRouter.UpdateProfile)
+		})
+
+		r.Route("/wx", func(r chi.Router) {
+			r.Use(controller.RequireUnionID)
+			r.Get("/", accountRouter.LoadAccountByWx)
+			r.Post("/signup", accountRouter.WxSignUp)
+			r.Post("/link", accountRouter.LinkWechat)
+			r.Post("/unlink", accountRouter.UnlinkWx)
+		})
+	})
+
+	// Handle wechat oauth.
+	// Deprecated.
+	r.Route("/wx", func(r chi.Router) {
+
+		r.Route("/oauth", func(r chi.Router) {
+
+			r.With(controller.RequireAppID).Post("/login", wxAuth.Login)
+
+			r.With(controller.RequireAppID).Put("/refresh", wxAuth.Refresh)
+
+			// Do not check access token here since it is used by wx.
+			r.Get("/callback", wxAuth.WebCallback)
 		})
 	})
 
@@ -232,20 +310,6 @@ func StartServer(s ServerStatus) {
 		// http://www.ftacademy.cn/api/v2/webhook/stripe For version 2
 		r.Post("/stripe", stripeRouter.WebHook)
 		r.Post("/apple", iapRouter.WebHook)
-	})
-
-	// Handle wechat oauth.
-	r.Route("/wx", func(r chi.Router) {
-
-		r.Route("/oauth", func(r chi.Router) {
-
-			r.With(controller.RequireAppID).Post("/login", wxAuth.Login)
-
-			r.With(controller.RequireAppID).Put("/refresh", wxAuth.Refresh)
-
-			// Do not check access token here since it is used by wx.
-			r.Get("/callback", wxAuth.WebCallback)
-		})
 	})
 
 	r.Get("/__version", func(w http.ResponseWriter, req *http.Request) {
