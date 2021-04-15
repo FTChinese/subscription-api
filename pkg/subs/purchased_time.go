@@ -7,10 +7,11 @@ import (
 	"github.com/FTChinese/subscription-api/lib/dt"
 )
 
+// PurchasedTimeParams is used to deduce an order's purchase period.
 type PurchasedTimeParams struct {
-	ConfirmedAt    chrono.Time
-	ExpirationDate chrono.Date
-	Date           dt.YearMonthDay
+	ConfirmedAt    chrono.Time     // When the order is confirmed
+	ExpirationDate chrono.Date     // When the current membership will expire.
+	Date           dt.YearMonthDay // Purchased period.
 	OrderKind      enum.OrderKind
 }
 
