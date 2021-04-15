@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-// CreateCheckout creates the checkout session for payment via web.
+// CreateCheckoutSession creates the checkout session for payment via web.
 // See https://stripe.com/docs/api/checkout/sessions/create and
 // https://stripe.com/docs/billing/subscriptions/checkout#create-session
 // Request body:
@@ -33,7 +33,7 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 		return
 	}
 
-	account, err := router.accountRepo.BaseAccountByUUID(ftcID)
+	account, err := router.stripeRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

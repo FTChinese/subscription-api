@@ -19,7 +19,7 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 	sugar := router.logger.Sugar()
 
 	// Find user account by stripe customer id.
-	account, err := router.accountRepo.BaseAccountByStripeID(ss.Customer.ID)
+	account, err := router.stripeRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
 		// If user account is not found, we still want to save this subscription.

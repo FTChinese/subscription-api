@@ -36,7 +36,7 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	account, err := router.accountRepo.BaseAccountByUUID(ftcID)
+	account, err := router.stripeRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -83,7 +83,7 @@ func (router StripeRouter) ChangeDefaultPaymentMethod(w http.ResponseWriter, req
 		return
 	}
 
-	acnt, err := router.accountRepo.BaseAccountByUUID(ftcID)
+	acnt, err := router.stripeRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
