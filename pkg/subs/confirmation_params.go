@@ -10,10 +10,12 @@ import (
 // ConfirmationParams contains data used to invoice an order.
 type ConfirmationParams struct {
 	Payment PaymentResult
-	Order   Order
+	Order   Order // The order not confirmed yet.
 	Member  reader.Membership
 }
 
+// purchasedTimeParams collects the essential parameters used to
+// determine the start and end date of an order.
 func (p ConfirmationParams) purchasedTimeParams() PurchasedTimeParams {
 	return PurchasedTimeParams{
 		ConfirmedAt:    p.Payment.ConfirmedUTC,
@@ -23,6 +25,7 @@ func (p ConfirmationParams) purchasedTimeParams() PurchasedTimeParams {
 	}
 }
 
+// purchaseInvoice creates an invoice from an order.
 func (p ConfirmationParams) purchaseInvoice() (invoice.Invoice, error) {
 	return NewOrderInvoice(p.purchasedTimeParams(), p.Order)
 }
