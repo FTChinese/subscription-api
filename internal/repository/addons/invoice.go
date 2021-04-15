@@ -1,4 +1,4 @@
-package readerrepo
+package addons
 
 import (
 	"github.com/FTChinese/subscription-api/pkg"

@@ -1,4 +1,4 @@
-package readerrepo
+package addons
 
 import (
 	"database/sql"
@@ -10,7 +10,7 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
-	otx, err := env.BeginTx()
+	otx, err := env.beginAddOnTx()
 	if err != nil {
 		sugar.Error(err)
 		return reader.AddOnClaimed{}, err

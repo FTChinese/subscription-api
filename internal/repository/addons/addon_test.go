@@ -1,4 +1,4 @@
-package readerrepo
+package addons
 
 import (
 	"github.com/FTChinese/go-rest/enum"
