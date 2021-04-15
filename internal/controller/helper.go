@@ -8,13 +8,16 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/go-chi/chi"
+	"github.com/gorilla/schema"
 	"github.com/guregu/null"
 	"net/http"
 )
 
 const (
-	wxOAuthCallback = "http://users.ftchinese.com/login/wechat/callback?"
+	wxOAuthCallback = "https://users.ftchinese.com/login/wechat/callback?"
 )
+
+var decoder = schema.NewDecoder()
 
 // getURLParam gets a url parameter.
 func getURLParam(req *http.Request, key string) gorest.Param {
