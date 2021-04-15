@@ -53,7 +53,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	acnt, err := router.accountRepo.BaseAccountByUUID(ftcID)
+	acnt, err := router.stripeRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -141,7 +141,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	account, err := router.accountRepo.BaseAccountByUUID(ftcID)
+	account, err := router.stripeRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -242,7 +242,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Use Stripe customer id to find user account.
-	account, err := router.accountRepo.BaseAccountByStripeID(ss.Customer.ID)
+	account, err := router.stripeRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound("Stripe customer not found")
