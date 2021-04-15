@@ -7,12 +7,12 @@ import (
 )
 
 type GiftCardRouter struct {
-	env giftrepo.GiftEnv
+	env giftrepo.Env
 }
 
 // NewGiftCardRouter create a new instance of GiftCardRouter.
 func NewGiftCardRouter(db *sqlx.DB, config config.BuildConfig) GiftCardRouter {
 	return GiftCardRouter{
-		env: giftrepo.NewGiftEnv(db, config),
+		env: giftrepo.New(db, config),
 	}
 }
