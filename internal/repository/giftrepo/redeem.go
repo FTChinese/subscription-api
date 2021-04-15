@@ -5,8 +5,8 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-func (env GiftEnv) RedeemGiftCard(c giftcard.GiftCard, m reader.Membership) error {
-	tx, err := env.beginOrderTx()
+func (env Env) RedeemGiftCard(c giftcard.GiftCard, m reader.Membership) error {
+	tx, err := env.beginGiftCardTx()
 	if err != nil {
 		return err
 	}

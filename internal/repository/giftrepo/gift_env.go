@@ -6,24 +6,24 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type GiftEnv struct {
+type Env struct {
 	config.BuildConfig
 	db *sqlx.DB
 }
 
-func NewGiftEnv(db *sqlx.DB, config config.BuildConfig) GiftEnv {
-	return GiftEnv{
+func New(db *sqlx.DB, config config.BuildConfig) Env {
+	return Env{
 		BuildConfig: config,
 		db:          db,
 	}
 }
 
-func (env GiftEnv) beginOrderTx() (txrepo.MemberTx, error) {
+func (env Env) beginGiftCardTx() (txrepo.GiftCardTx, error) {
 	tx, err := env.db.Beginx()
 
 	if err != nil {
-		return txrepo.MemberTx{}, err
+		return txrepo.GiftCardTx{}, err
 	}
 
-	return txrepo.NewMemberTx(tx), nil
+	return txrepo.NewGiftCardTx(tx), nil
 }
