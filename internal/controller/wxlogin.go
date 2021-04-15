@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/wxoauth"
-	client2 "github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
 	"net/http"
@@ -42,7 +42,7 @@ func NewWxAuth(dbs db.ReadWriteSplit, logger *zap.Logger) WxAuthRouter {
 //
 // For native app, it gets the code by calling Wechat SDK;
 // For web app, it sends a GET request to Wechat API,
-// wechat redirect this this API's callback endpoint,
+// wechat redirect to this API's callback endpoint,
 // and this api redirect back to the web app's callback url.
 //
 // After getting the code, client app send the code here.
@@ -114,7 +114,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client := client2.NewClientApp(req)
+	client := client.NewClientApp(req)
 
 	// Step 2:
 	// Use access token to get userinfo from wechat
