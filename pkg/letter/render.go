@@ -16,6 +16,13 @@ import (
 var tmplCache = map[string]*template.Template{}
 
 const (
+	keyVrf      = "verification"
+	keyVerified = "emailVerified"
+	keyWxSignUp = "wxSignUp"
+	keyPwReset  = "passwordReset"
+	keyLinked   = "accountLinked"
+	keyUnlinkWx = "unlinkWechat"
+
 	keyNewSubs     = "newSubs"
 	keyRenewalSubs = "renewalSubs"
 	keyUpgradeSubs = "upgradeSubs"
@@ -110,4 +117,72 @@ func RenderIAPLinked(ctx CtxIAPLinked) (string, error) {
 
 func RenderIAPUnlinked(ctx CtxIAPLinked) (string, error) {
 	return Render(keyIAPUnlinked, ctx)
+}
+
+type CtxVerification struct {
+	UserName string
+	Email    string
+	Link     string
+	IsSignUp bool
+}
+
+func (ctx CtxVerification) Render() (string, error) {
+	return Render(keyVrf, ctx)
+}
+
+type CtxVerified struct {
+	UserName string
+}
+
+func (ctx CtxVerified) Render() (string, error) {
+	return Render(keyVerified, ctx)
+}
+
+type CtxPwReset struct {
+	UserName string
+	URL      string
+	AppCode  string
+}
+
+func (ctx CtxPwReset) Render() (string, error) {
+	return Render(keyPwReset, ctx)
+}
+
+type CtxLinkBase struct {
+	UserName   string
+	Email      string
+	WxNickname string
+}
+
+// CtxWxSignUp is used to render letter after a Wechat user
+// create a new FTC account.
+type CtxWxSignUp struct {
+	CtxLinkBase
+	URL string
+}
+
+func (ctx CtxWxSignUp) Render() (string, error) {
+	return Render(keyWxSignUp, ctx)
+}
+
+// CtxAccountLink is used to render letter when linking/unlinking existing FTC account to wechat account.
+type CtxAccountLink struct {
+	CtxLinkBase
+	Membership reader.Membership // The merged memebership
+	FtcMember  reader.Membership // Membership prior to merging under FTC
+	WxMember   reader.Membership // Membership prior to merging under wechat.
+}
+
+func (ctx CtxAccountLink) Render() (string, error) {
+	return Render(keyLinked, ctx)
+}
+
+type CtxAccountUnlink struct {
+	CtxLinkBase
+	Membership reader.Membership
+	Anchor     string
+}
+
+func (ctx CtxAccountUnlink) Render() (string, error) {
+	return Render(keyUnlinkWx, ctx)
 }
