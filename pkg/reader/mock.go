@@ -15,7 +15,9 @@ import (
 )
 
 type MockMemberBuilder struct {
-	ids          pkg.UserIDs
+	accountKind  enum.AccountKind
+	ftcID        string
+	unionID      string
 	price        price.Price
 	payMethod    enum.PayMethod
 	expiration   time.Time
@@ -32,19 +34,39 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 	}
 
 	return MockMemberBuilder{
-		ids: pkg.UserIDs{
-			CompoundID: ftcID,
-			FtcID:      null.StringFrom(ftcID),
-			UnionID:    null.String{},
-		},
-		price:      price.PriceStdYear.Price,
-		payMethod:  enum.PayMethodAli,
-		expiration: time.Now().AddDate(0, 1, 0),
+		accountKind: enum.AccountKindFtc,
+		ftcID:       ftcID,
+		unionID:     faker.GenWxID(),
+		price:       price.PriceStdYear.Price,
+		payMethod:   enum.PayMethodAli,
+		expiration:  time.Now().AddDate(0, 1, 0),
 	}
 }
 
+func NewMockMemberBuilderV2(k enum.AccountKind) MockMemberBuilder {
+	return MockMemberBuilder{
+		accountKind:  k,
+		ftcID:        uuid.New().String(),
+		unionID:      faker.GenWxID(),
+		price:        price.PriceStdYear.Price,
+		payMethod:    enum.PayMethodAli,
+		expiration:   time.Now().AddDate(0, 1, 0),
+		subsStatus:   0,
+		autoRenewal:  false,
+		addOn:        addon.AddOn{},
+		iapTxID:      "",
+		stripeSubsID: "",
+	}
+}
+
+func (b MockMemberBuilder) WithAccountKind(k enum.AccountKind) MockMemberBuilder {
+	b.accountKind = k
+	return b
+}
+
 func (b MockMemberBuilder) WithIDs(ids pkg.UserIDs) MockMemberBuilder {
-	b.ids = ids
+	b.ftcID = ids.FtcID.String
+	b.unionID = ids.UnionID.String
 	return b
 }
 
@@ -89,8 +111,30 @@ func (b MockMemberBuilder) WithIapID(id string) MockMemberBuilder {
 }
 
 func (b MockMemberBuilder) Build() Membership {
+	var ids pkg.UserIDs
+	switch b.accountKind {
+	case enum.AccountKindFtc:
+		ids = pkg.UserIDs{
+			CompoundID: b.ftcID,
+			FtcID:      null.StringFrom(b.ftcID),
+			UnionID:    null.String{},
+		}
+	case enum.AccountKindWx:
+		ids = pkg.UserIDs{
+			CompoundID: b.unionID,
+			FtcID:      null.String{},
+			UnionID:    null.StringFrom(b.unionID),
+		}
+	case enum.AccountKindLinked:
+		ids = pkg.UserIDs{
+			CompoundID: b.ftcID,
+			FtcID:      null.StringFrom(b.ftcID),
+			UnionID:    null.StringFrom(b.unionID),
+		}
+	}
+
 	m := Membership{
-		UserIDs:       b.ids,
+		UserIDs:       ids,
 		Edition:       b.price.Edition,
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},
@@ -105,6 +149,7 @@ func (b MockMemberBuilder) Build() Membership {
 		B2BLicenceID:  null.String{},
 		AddOn:         b.addOn,
 	}
+
 	switch b.payMethod {
 	case enum.PayMethodAli, enum.PayMethodWx:
 		m.FtcPlanID = null.StringFrom(b.price.ID)
