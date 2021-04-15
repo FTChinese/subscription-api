@@ -4,7 +4,7 @@ import "github.com/FTChinese/subscription-api/pkg/account"
 
 func (env Env) JoinedByFtcID(ftcID string) (account.JoinedSchema, error) {
 	var s account.JoinedSchema
-	err := env.dbs.Read.Get(&s, account.StmtJoinedAccountByFtc, ftcID)
+	err := env.DBs.Read.Get(&s, account.StmtJoinedAccountByFtc, ftcID)
 	if err != nil {
 		return account.JoinedSchema{}, err
 	}
@@ -14,7 +14,7 @@ func (env Env) JoinedByFtcID(ftcID string) (account.JoinedSchema, error) {
 
 func (env Env) JoinedByWxID(unionID string) (account.JoinedSchema, error) {
 	var s account.JoinedSchema
-	err := env.dbs.Read.Get(&s, account.StmtJoinedAccountByWx, unionID)
+	err := env.DBs.Read.Get(&s, account.StmtJoinedAccountByWx, unionID)
 
 	if err != nil {
 		return account.JoinedSchema{}, err
