@@ -44,7 +44,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		With("ftcId", input.FtcID)
 
 	// Check if the user actually exists.
-	baseAccount, err := router.accountRepo.BaseAccountByUUID(input.FtcID)
+	baseAccount, err := router.iapRepo.BaseAccountByUUID(input.FtcID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -75,7 +75,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 	// Do not retrieve memberships for both ftc and iap in a transaction.
 	// If they are already linked, retrieving a single row multiple times will result in deadlock.
-	ftcMember, err := router.readerRepo.RetrieveMember(baseAccount.CompoundIDs())
+	ftcMember, err := router.iapRepo.RetrieveMember(baseAccount.CompoundIDs())
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -83,7 +83,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	}
 	sugar.Infof("FTC side membership %v", ftcMember)
 
-	iapMember, err := router.readerRepo.RetrieveAppleMember(sub.OriginalTransactionID)
+	iapMember, err := router.iapRepo.RetrieveAppleMember(sub.OriginalTransactionID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -130,7 +130,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	go func() {
 		// Backup previous membership
 		if !result.Snapshot.IsZero() {
-			err := router.readerRepo.ArchiveMember(result.Snapshot)
+			err := router.iapRepo.ArchiveMember(result.Snapshot)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -190,7 +190,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 
 	go func() {
 		if !result.Snapshot.IsZero() {
-			err := router.readerRepo.ArchiveMember(result.Snapshot)
+			err := router.iapRepo.ArchiveMember(result.Snapshot)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -201,7 +201,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 			sugar.Error(err)
 		}
 
-		account, err := router.accountRepo.BaseAccountByUUID(result.Snapshot.FtcID.String)
+		account, err := router.iapRepo.BaseAccountByUUID(result.Snapshot.FtcID.String)
 		if err != nil {
 			return
 		}
