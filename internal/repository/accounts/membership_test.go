@@ -44,10 +44,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				dbs:    tt.fields.dbs,
-				logger: tt.fields.logger,
-			}
+			env := New(tt.fields.dbs, tt.fields.logger)
 			got, err := env.RetrieveMember(tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)

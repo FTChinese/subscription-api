@@ -6,7 +6,7 @@ import (
 )
 
 func (env Env) SaveSMSVerifier(v ztsms.Verifier) error {
-	_, err := env.dbs.Write.NamedExec(ztsms.StmtSaveVerifier, v)
+	_, err := env.DBs.Write.NamedExec(ztsms.StmtSaveVerifier, v)
 	if err != nil {
 		return err
 	}
@@ -16,7 +16,7 @@ func (env Env) SaveSMSVerifier(v ztsms.Verifier) error {
 
 func (env Env) RetrieveSMSVerifier(params ztsms.VerifierParams) (ztsms.Verifier, error) {
 	var v ztsms.Verifier
-	err := env.dbs.Read.Get(&v, ztsms.StmtRetrieveVerifier, params.Mobile, params.Code)
+	err := env.DBs.Read.Get(&v, ztsms.StmtRetrieveVerifier, params.Mobile, params.Code)
 	if err != nil {
 		return ztsms.Verifier{}, err
 	}
@@ -25,7 +25,7 @@ func (env Env) RetrieveSMSVerifier(params ztsms.VerifierParams) (ztsms.Verifier,
 }
 
 func (env Env) SMSVerifierUsed(v ztsms.Verifier) error {
-	_, err := env.dbs.Write.NamedExec(ztsms.StmtVerifierUsed, v)
+	_, err := env.DBs.Write.NamedExec(ztsms.StmtVerifierUsed, v)
 
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func (env Env) SMSVerifierUsed(v ztsms.Verifier) error {
 }
 
 func (env Env) SetPhone(a account.BaseAccount) error {
-	_, err := env.dbs.Write.NamedExec(ztsms.StmtSetPhone, a)
+	_, err := env.DBs.Write.NamedExec(ztsms.StmtSetPhone, a)
 	if err != nil {
 		return err
 	}
