@@ -8,7 +8,7 @@ import (
 func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(userIDKey)
 
-	acnt, err := router.accountRepo.BaseAccountByUUID(ftcID)
+	acnt, err := router.stripeRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
