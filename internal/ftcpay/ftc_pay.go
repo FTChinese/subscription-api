@@ -3,8 +3,7 @@ package ftcpay
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
-	"github.com/FTChinese/subscription-api/internal/repository/accounts"
-	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
+	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -17,8 +16,7 @@ import (
 // FtcPay wraps functionalities for user data, subscription and email.
 type FtcPay struct {
 	SubsRepo     subrepo.Env
-	ReaderRepo   readerrepo.Env
-	AccountRepo  accounts.Env
+	AddOnRepo    addons.Env
 	AliPayClient subrepo.AliPayClient
 	WxPayClients subrepo.WxPayClientStore
 	Postman      postoffice.PostOffice
@@ -32,8 +30,7 @@ func New(dbs db.ReadWriteSplit, p postoffice.PostOffice, logger *zap.Logger) Ftc
 
 	return FtcPay{
 		SubsRepo:     subrepo.NewEnv(dbs, logger),
-		ReaderRepo:   readerrepo.NewEnv(dbs, logger),
-		AccountRepo:  accounts.New(dbs, logger),
+		AddOnRepo:    addons.NewEnv(dbs, logger),
 		AliPayClient: subrepo.NewAliPayClient(aliApp, logger),
 		WxPayClients: subrepo.NewWxClientStore(wxApps, logger),
 		Postman:      p,
@@ -53,7 +50,7 @@ func (pay FtcPay) SendConfirmEmail(pc subs.ConfirmationResult) error {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := pay.AccountRepo.BaseAccountByUUID(pc.Order.FtcID.String)
+	account, err := pay.SubsRepo.BaseAccountByUUID(pc.Order.FtcID.String)
 
 	if err != nil {
 		return err
@@ -101,14 +98,14 @@ func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (sub
 
 	go func() {
 		if !confirmed.Snapshot.IsZero() {
-			err := pay.ReaderRepo.ArchiveMember(confirmed.Snapshot)
+			err := pay.SubsRepo.ArchiveMember(confirmed.Snapshot)
 			if err != nil {
 				sugar.Error(err)
 			}
 		}
 
 		if !confirmed.Invoices.CarriedOver.IsZero() {
-			err := pay.ReaderRepo.InvoicesCarriedOver(confirmed.Membership.UserIDs)
+			err := pay.AddOnRepo.InvoicesCarriedOver(confirmed.Membership.UserIDs)
 			if err != nil {
 				sugar.Error(err)
 			}
