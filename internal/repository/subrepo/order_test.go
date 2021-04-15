@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -29,7 +30,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 	addOnPerson := test.NewPersona()
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -240,7 +241,7 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := Env{
-				dbs:    test.SplitDB,
+				Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 				logger: tt.fields.logger,
 			}
 			if err := env.SaveOrderMeta(tt.args.m); (err != nil) != tt.wantErr {
@@ -258,7 +259,7 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 	repo.MustSaveOrder(order)
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -301,7 +302,7 @@ func TestEnv_LoadFullOrder(t *testing.T) {
 	test.NewRepo().MustSaveOrder(order)
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 

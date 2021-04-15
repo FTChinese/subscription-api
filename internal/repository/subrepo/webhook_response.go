@@ -8,7 +8,7 @@ import (
 // SaveAliNotification logs everything Alipay sends.
 func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
 
-	_, err := env.dbs.Write.Exec(InsertAliPayLoad,
+	_, err := env.DBs.Write.Exec(InsertAliPayLoad,
 		n.NotifyTime,
 		n.NotifyType,
 		n.NotifyId,
@@ -50,7 +50,7 @@ func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
 // SavePrepayResp saves Wechat prepay response for future analysis.
 func (env Env) SavePrepayResp(resp wechat.OrderResp) error {
 
-	_, err := env.dbs.Write.NamedExec(
+	_, err := env.DBs.Write.NamedExec(
 		InsertWxPrepay,
 		resp,
 	)
@@ -65,7 +65,7 @@ func (env Env) SavePrepayResp(resp wechat.OrderResp) error {
 // SaveWxNotification saves a wechat notification for logging purpose.
 func (env Env) SaveWxNotification(n wechat.Notification) error {
 
-	_, err := env.dbs.Write.NamedExec(
+	_, err := env.DBs.Write.NamedExec(
 		InsertWxPayLoad,
 		n,
 	)
@@ -80,7 +80,7 @@ func (env Env) SaveWxNotification(n wechat.Notification) error {
 // SaveWxQueryResp stores wechat pay query result to DB.
 func (env Env) SaveWxQueryResp(resp wechat.OrderQueryResp) error {
 
-	_, err := env.dbs.Write.NamedExec(
+	_, err := env.DBs.Write.NamedExec(
 		InsertWxQueryPayLoad,
 		resp,
 	)

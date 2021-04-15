@@ -2,6 +2,7 @@ package subrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/test"
@@ -15,7 +16,7 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 	p := test.NewPersona()
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -50,7 +51,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 	or := test.NewWxOrderUnsigned()
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -87,7 +88,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 	noti := test.NewWxWHUnsigned(p.NewOrder(enum.OrderKindCreate))
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
