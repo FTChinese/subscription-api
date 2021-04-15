@@ -1,25 +1,21 @@
 package controller
 
 import (
+	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"go.uber.org/zap"
 	"net/http"
 )
 
 type AccountRouter struct {
-	repo      accounts.Env
-	smsClient ztsms.Client
-	logger    *zap.Logger
+	UserShared
 }
 
-func NewAccountRouter(myDBs db.ReadWriteSplit, l *zap.Logger) AccountRouter {
+func NewAccountRouter(myDBs db.ReadWriteSplit, postman postoffice.PostOffice, l *zap.Logger) AccountRouter {
+
 	return AccountRouter{
-		repo:      accounts.New(myDBs, l),
-		smsClient: ztsms.NewClient(l),
-		logger:    l,
+		UserShared: NewUserShared(myDBs, postman, l),
 	}
 }
 
