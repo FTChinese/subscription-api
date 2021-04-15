@@ -10,6 +10,7 @@ import (
 	"github.com/guregu/null"
 )
 
+// NewOrderInvoice creates a new invoice from a unconfirmed order.
 func NewOrderInvoice(timeParams PurchasedTimeParams, o Order) (invoice.Invoice, error) {
 	timeRange, err := timeParams.Build()
 	if err != nil {
