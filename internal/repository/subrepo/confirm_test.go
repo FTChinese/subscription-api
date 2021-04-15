@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -56,7 +57,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	addOnOrder := p7.NewOrder(enum.OrderKindAddOn)
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -161,7 +162,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 func TestEnv_SaveConfirmationErr(t *testing.T) {
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -197,7 +198,7 @@ func TestEnv_SaveConfirmationErr(t *testing.T) {
 func TestEnv_SavePayResult(t *testing.T) {
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
