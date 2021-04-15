@@ -3,6 +3,7 @@ package striperepo
 import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
@@ -35,7 +36,7 @@ func MustNewSubs() stripe.Subs {
 func TestEnv_UpsertSubs(t *testing.T) {
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		client: Client{},
 		logger: zaptest.NewLogger(t),
 	}
@@ -68,7 +69,7 @@ func TestEnv_UpsertSubs(t *testing.T) {
 
 func TestEnv_RetrieveSubs(t *testing.T) {
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		client: Client{},
 		logger: zaptest.NewLogger(t),
 	}
@@ -105,7 +106,7 @@ func TestEnv_RetrieveSubs(t *testing.T) {
 
 func TestEnv_SubsExists(t *testing.T) {
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		client: Client{},
 		logger: zaptest.NewLogger(t),
 	}
