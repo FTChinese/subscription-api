@@ -3,8 +3,7 @@ package controller
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/repository/accounts"
-	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
+	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -15,13 +14,12 @@ import (
 )
 
 type StripeRouter struct {
-	config      config.BuildConfig
-	signingKey  string
-	readerRepo  readerrepo.Env
-	accountRepo accounts.Env
-	stripeRepo  striperepo.Env
-	client      striperepo.Client
-	logger      *zap.Logger
+	config     config.BuildConfig
+	signingKey string
+	addOnRepo  addons.Env
+	stripeRepo striperepo.Env
+	client     striperepo.Client
+	logger     *zap.Logger
 }
 
 // NewStripeRouter initializes StripeRouter.
@@ -29,13 +27,12 @@ func NewStripeRouter(dbs db.ReadWriteSplit, cfg config.BuildConfig, logger *zap.
 	client := striperepo.NewClient(cfg.Live(), logger)
 
 	return StripeRouter{
-		config:      cfg,
-		signingKey:  config.MustLoadStripeSigningKey().Pick(cfg.Live()),
-		readerRepo:  readerrepo.NewEnv(dbs, logger),
-		accountRepo: accounts.New(dbs, logger),
-		stripeRepo:  striperepo.NewEnv(dbs, client, logger),
-		client:      client,
-		logger:      logger,
+		config:     cfg,
+		signingKey: config.MustLoadStripeSigningKey().Pick(cfg.Live()),
+		addOnRepo:  addons.NewEnv(dbs, logger),
+		stripeRepo: striperepo.New(dbs, client, logger),
+		client:     client,
+		logger:     logger,
 	}
 }
 
@@ -70,7 +67,7 @@ func (router StripeRouter) handleSubsResult(result stripe.SubsResult) {
 	}
 
 	if !result.Snapshot.IsZero() {
-		err := router.readerRepo.ArchiveMember(result.Snapshot)
+		err := router.stripeRepo.ArchiveMember(result.Snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
