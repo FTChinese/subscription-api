@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/go-redis/redis/v8"
@@ -15,16 +14,13 @@ import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
-	"github.com/FTChinese/subscription-api/internal/repository/readerrepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
 )
 
 type IAPRouter struct {
-	iapRepo     iaprepo.Env
-	readerRepo  readerrepo.Env
-	accountRepo accounts.Env
-	postman     postoffice.PostOffice
+	iapRepo iaprepo.Env
+	postman postoffice.PostOffice
 
 	sandbox   bool
 	iapClient iaprepo.Client
@@ -34,13 +30,11 @@ type IAPRouter struct {
 func NewIAPRouter(dbs db.ReadWriteSplit, rdb *redis.Client, logger *zap.Logger, p postoffice.PostOffice, cfg config.BuildConfig) IAPRouter {
 
 	return IAPRouter{
-		iapRepo:     iaprepo.NewEnv(dbs, rdb, logger),
-		readerRepo:  readerrepo.NewEnv(dbs, logger),
-		accountRepo: accounts.New(dbs, logger),
-		postman:     p,
-		sandbox:     cfg.Sandbox(),
-		iapClient:   iaprepo.NewClient(logger),
-		logger:      logger,
+		iapRepo:   iaprepo.NewEnv(dbs, rdb, logger),
+		postman:   p,
+		sandbox:   cfg.Sandbox(),
+		iapClient: iaprepo.NewClient(logger),
+		logger:    logger,
 	}
 }
 
@@ -84,7 +78,7 @@ func (router IAPRouter) processSubsResult(snapshot reader.MemberSnapshot) {
 
 	// Backup previous membership
 	if !snapshot.IsZero() {
-		err := router.readerRepo.ArchiveMember(snapshot)
+		err := router.iapRepo.ArchiveMember(snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
