@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// GenerateOrderID creates an order memberID.
+// OrderID creates an order memberID.
 // The memberID has a total length of 18 chars.
 // If we use this generator:
 // `FT` takes 2, followed by year-month-date-hour-minute
@@ -44,5 +44,9 @@ func InvoiceID() string {
 }
 
 func SMSCode() string {
+	return strconv.Itoa(rand.IntRange(100000, 999999))
+}
+
+func PwResetCode() string {
 	return strconv.Itoa(rand.IntRange(100000, 999999))
 }
