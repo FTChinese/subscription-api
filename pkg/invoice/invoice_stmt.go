@@ -72,7 +72,7 @@ WHERE FIND_IN_SET(user_compound_id, ?) > 0
 ORDER BY created_utc ASC
 FOR UPDATE`
 
-// StmtInvoiceConsumed sets a invoice's consumption time and and start end end time this invoice granted to membership access.
+// StmtAddOnInvoiceConsumed sets a invoice's consumption time and and start end end time this invoice granted to membership access.
 const StmtAddOnInvoiceConsumed = `
 UPDATE premium.ftc_invoice
 SET consumed_utc = :consumed_utc,
