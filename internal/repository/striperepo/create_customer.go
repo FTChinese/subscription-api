@@ -12,7 +12,7 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
-	tx, err := env.beginAccountTx()
+	tx, err := env.beginStripeTx()
 	if err != nil {
 		sugar.Error(err)
 		return stripe.CustomerAccount{}, err
@@ -50,7 +50,7 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 
 	// Save customer id in our db.
 	// There might be SQL errors.
-	if err := tx.SavedStripeID(ca.BaseAccount); err != nil {
+	if err := tx.SaveCustomerID(ca.BaseAccount); err != nil {
 		_ = tx.Rollback()
 		sugar.Error(err)
 		return stripe.CustomerAccount{}, err
@@ -64,9 +64,11 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 	return ca, nil
 }
 
+// SetCustomer set stripe customer id.
+// Used when creating checkout session.
 func (env Env) SetCustomer(a account.BaseAccount) error {
-	_, err := env.db.NamedExec(
-		account.StmtSetStripeID,
+	_, err := env.DBs.Write.NamedExec(
+		stripe.StmtSetCustomerID,
 		a)
 
 	if err != nil {
