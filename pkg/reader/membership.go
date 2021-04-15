@@ -346,7 +346,7 @@ func (m Membership) SubsKindOfStripe(e price.Edition) (SubsKind, error) {
 	return SubsKindZero, errors.New("unknown payment for current subscription")
 }
 
-// SubsKindByApples deduces how to handle user's current membership if one exists when Apple webhook arrives.
+// SubsKindByApple deduces how to handle user's current membership if one exists when Apple webhook arrives.
 func (m Membership) SubsKindByApple() (SubsKind, error) {
 	if m.IsExpired() || m.IsInvalidStripe() {
 		return SubsKindNew, nil
