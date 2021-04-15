@@ -11,7 +11,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
 	"time"
@@ -19,7 +18,6 @@ import (
 
 type MockOrderBuilder struct {
 	id         string
-	userIDs    pkg.UserIDs
 	ftcID      string
 	unionID    string
 	price      price.FtcPrice
@@ -45,6 +43,11 @@ func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
 			price.OfferKindPromotion,
 		},
 	}
+}
+
+func (b MockOrderBuilder) WithFtcID(id string) MockOrderBuilder {
+	b.ftcID = id
+	return b
 }
 
 func (b MockOrderBuilder) WithUnionID(id string) MockOrderBuilder {
@@ -98,10 +101,6 @@ func (b MockOrderBuilder) Build() Order {
 	var confirmed time.Time
 	if b.confirmed {
 		confirmed = time.Now()
-	}
-
-	if b.ftcID == "" && b.unionID == "" {
-		b.ftcID = uuid.New().String()
 	}
 
 	return Order{
