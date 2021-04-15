@@ -91,8 +91,26 @@ SET ` + mUpsertCols + `
 WHERE vip_id = :compound_id
 LIMIT 1`
 
-// Delete old membership when linking to IAP.
+// StmtDeleteMember old membership when linking to IAP.
 const StmtDeleteMember = `
 DELETE FROM premium.ftc_vip
 WHERE vip_id = :compound_id
+LIMIT 1`
+
+// StmtDropMemberUnionID keeps membership to ftc account
+const StmtDropMemberUnionID = `
+UPDATE premium.ftc_vip
+SET vip_id_alias = NULL,
+	wx_union_id = NULL
+WHERE vip_id = :compound_id
+	AND vip_id_alias = :union_id
+LIMIT 1`
+
+// StmtDropMemberFtcID keeps membership to wechat.
+const StmtDropMemberFtcID = `
+UPDATE premium.ftc_vip
+SET vip_id = vip_id_alias,
+	ftc_user_id = NULL
+WHERE vip_id = :compound_id
+	AND vip_id_alias = :union_id
 LIMIT 1`
