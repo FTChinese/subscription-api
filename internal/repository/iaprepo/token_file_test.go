@@ -1,6 +1,7 @@
 package iaprepo
 
 import (
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/stretchr/testify/assert"
@@ -75,7 +76,7 @@ func TestLoadReceiptFromDisk(t *testing.T) {
 func TestEnv_SaveReceiptToDB(t *testing.T) {
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}
@@ -111,7 +112,7 @@ func TestEnv_LoadReceiptFromDB(t *testing.T) {
 	test.NewRepo().MustSaveIAPReceipt(rt)
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}

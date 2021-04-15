@@ -3,6 +3,7 @@ package iaprepo
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
@@ -19,7 +20,7 @@ func TestEnv_GetSubAndSetFtcID(t *testing.T) {
 		Build())
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    nil,
 		logger: zaptest.NewLogger(t),
 	}
@@ -61,7 +62,7 @@ func TestEnv_ArchiveLinkCheating(t *testing.T) {
 	p := test.NewPersona()
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    nil,
 		logger: zaptest.NewLogger(t),
 	}
@@ -105,7 +106,7 @@ func TestEnv_Unlink(t *testing.T) {
 		Build())
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}
@@ -150,7 +151,7 @@ func TestEnv_ArchiveUnlink(t *testing.T) {
 	p := test.NewPersona()
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}

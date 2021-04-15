@@ -2,8 +2,10 @@ package iaprepo
 
 import (
 	"encoding/json"
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/test"
+	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
@@ -26,7 +28,8 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 	}
 
 	env := Env{
-		dbs: test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		logger: zaptest.NewLogger(t),
 	}
 
 	type args struct {
