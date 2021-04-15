@@ -17,6 +17,9 @@ type MockSubsBuilder struct {
 	userID  string
 }
 
+// NewMockSubsBuilder creates a new instance.
+// If `userID` is not empty, the subscription is linked to this id;
+// otherwise the subscription is not linked to any ftc account.
 func NewMockSubsBuilder(userID string) MockSubsBuilder {
 	return MockSubsBuilder{
 		orgTxID: faker.GenAppleSubID(),
