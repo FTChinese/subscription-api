@@ -23,7 +23,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
-	tx, err := env.beginSubsTx()
+	tx, err := env.beginStripeTx()
 	if err != nil {
 		sugar.Error(err)
 		return stripe.SubsResult{}, err

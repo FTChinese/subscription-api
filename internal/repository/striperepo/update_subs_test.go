@@ -2,6 +2,7 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
@@ -24,7 +25,7 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 	}
 
 	env := Env{
-		dbs:    test.SplitDB,
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		client: NewClient(false, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
