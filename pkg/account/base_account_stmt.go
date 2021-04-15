@@ -4,6 +4,7 @@ const StmtCreateFtc = `
 INSERT INTO cmstmp01.userinfo
 SET user_id = :ftc_id,
 	wx_union_id = :wx_union_id,
+	stripe_customer_id = :stripe_id,
 	email = :email,
 	password = MD5(:password),
 	user_name = :user_name,
@@ -13,7 +14,8 @@ SET user_id = :ftc_id,
 // StmtCreateProfile is used when user account is created.
 const StmtCreateProfile = `
 INSERT INTO user_db.profile
-SET user_id = :ftc_id`
+SET user_id = :ftc_id,
+	mobile_phone = :mobile_phone`
 
 const colsBaseAccount = `
 SELECT 
@@ -51,6 +53,10 @@ const StmtBaseAccountByUUID = stmtBaseAccount + `
 WHERE u.user_id = ?
 LIMIT 1`
 
+const StmtBaseAccountByEmail = stmtBaseAccount + `
+WHERE u.email = ?
+LIMIT 1`
+
 const StmtBaseAccountByMobile = stmtBaseAccount + `
 WHERE p.mobile_phone = ?
 LIMIT 1`
@@ -63,8 +69,22 @@ const StmtBaseAccountOfStripe = stmtBaseAccount + `
 WHERE u.stripe_customer_id = ?
 LIMIT 1`
 
-const StmtSetStripeID = `
+// StmtLinkAccount set wechat union to ftc account row.
+// This is used when both ftc and wechat accounts exists
+// and user is trying to link them.
+// If a Wechat user is trying to sign up a new FTC account,
+// use the wechat signup workflow instead.
+const StmtLinkAccount = `
 UPDATE cmstmp01.userinfo
-SET stripe_customer_id = :stripe_id
+SET wx_union_id = :wx_union_id,
+	updated_utc = UTC_TIMESTAMP()
 WHERE user_id = :ftc_id
+LIMIT 1`
+
+// StmtUnlinkAccount sets wx_union_id to null.
+const StmtUnlinkAccount = `
+UPDATE cmstmp01.userinfo
+SET wx_union_id = NULL
+WHERE user_id = :ftc_id
+	AND wx_union_id = :wx_union_id
 LIMIT 1`
