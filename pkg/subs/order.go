@@ -35,7 +35,7 @@ func (lo LockedOrder) Merge(o Order) Order {
 	return o
 }
 
-// Subscription contains the details of a user's action to place an order.
+// Order contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 // An order could represents 12 status of user:
 // A user is allowed to to at max 2 ids - ftc or wechat, or both. This is 3 possible choices.
