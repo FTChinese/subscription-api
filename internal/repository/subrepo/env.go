@@ -1,6 +1,7 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
@@ -8,7 +9,7 @@ import (
 
 // Env wraps database connection
 type Env struct {
-	dbs    db.ReadWriteSplit
+	readers.Env
 	logger *zap.Logger
 }
 
@@ -16,17 +17,17 @@ type Env struct {
 // `sandbox` is used to determine which table to write subscription data.
 func NewEnv(dbs db.ReadWriteSplit, logger *zap.Logger) Env {
 	return Env{
-		dbs:    dbs,
+		Env:    readers.New(dbs, logger),
 		logger: logger,
 	}
 }
 
-func (env Env) BeginOrderTx() (txrepo.MemberTx, error) {
-	tx, err := env.dbs.Delete.Beginx()
+func (env Env) BeginOrderTx() (txrepo.OrderTx, error) {
+	tx, err := env.DBs.Delete.Beginx()
 
 	if err != nil {
-		return txrepo.MemberTx{}, err
+		return txrepo.OrderTx{}, err
 	}
 
-	return txrepo.NewMemberTx(tx), nil
+	return txrepo.NewOrderTx(tx), nil
 }
