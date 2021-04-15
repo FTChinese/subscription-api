@@ -3,7 +3,6 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
-	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
@@ -12,17 +11,15 @@ import (
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	subRepo subrepo.Env
-	repo    products.Env
-	logger  *zap.Logger
+	repo   products.Env
+	logger *zap.Logger
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
 func NewPaywallRouter(dbs db.ReadWriteSplit, c *cache.Cache, logger *zap.Logger) PaywallRouter {
 	return PaywallRouter{
-		subRepo: subrepo.NewEnv(dbs, logger),
-		repo:    products.NewEnv(dbs, c),
-		logger:  logger,
+		repo:   products.NewEnv(dbs, c),
+		logger: logger,
 	}
 }
 
