@@ -91,13 +91,6 @@ type DateTimePeriod struct {
 	EndUTC   chrono.Time `json:"endUtc" db:"end_utc"`
 }
 
-func (p DateTimePeriod) ToCurrentPeriod() CurrentPeriod {
-	return CurrentPeriod{
-		PeriodStartUTC: p.StartUTC,
-		PeriodEndUTC:   p.EndUTC,
-	}
-}
-
 func (p DateTimePeriod) ToDatePeriod() DatePeriod {
 	return DatePeriod{
 		StartDate: chrono.DateFrom(p.StartUTC.Time),
@@ -111,9 +104,4 @@ type DatePeriod struct {
 	StartDate chrono.Date `json:"startDate" db:"start_date"`
 	// Membership end date for this order. Depends on start date.
 	EndDate chrono.Date `json:"endDate" db:"end_date"`
-}
-
-type CurrentPeriod struct {
-	PeriodStartUTC chrono.Time `json:"periodStartUtc" db:"period_start_utc"`
-	PeriodEndUTC   chrono.Time `json:"periodEndUtc" db:"period_end_utc"`
 }
