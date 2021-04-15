@@ -17,7 +17,7 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
-	tx, err := env.beginSubsTx()
+	tx, err := env.beginStripeTx()
 	if err != nil {
 		sugar.Error(err)
 		return stripe.SubsResult{}, err

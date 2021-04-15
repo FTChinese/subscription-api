@@ -13,7 +13,7 @@ func (env Env) OnSubscription(ss *stripeSdk.Subscription, param stripe.SubsResul
 		With("webhook", "stripe-subscription").
 		With("id", ss.ID)
 
-	tx, err := env.beginSubsTx()
+	tx, err := env.beginStripeTx()
 	if err != nil {
 		sugar.Error(err)
 		return stripe.SubsResult{}, err
