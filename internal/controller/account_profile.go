@@ -49,7 +49,7 @@ func (router AccountRouter) UpdateProfile(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	input.FtcID = ftcID
+	input.ID = ftcID
 
 	err := router.repo.UpdateProfile(input)
 
