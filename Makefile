@@ -10,42 +10,50 @@ commit := `git log --max-count=1 --pretty=format:%aI_%h`
 ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
 app_name := subs-api-v2
+go_version := go1.15
+
+sys := $(shell uname -s)
+hardware := $(shell uname -m)
 build_dir := build
 src_dir := .
-go_version := go1.15
 
 ifeq ($(ENV), sandbox)
 	app_name := subs_sandbox
 	src_dir := ./cmd/subs_sandbox/
 endif
 
-executable := $(build_dir)/$(app_name)
-compile_exec := go build -o $(executable) $(ldflags) -tags production -v $(src_dir)
+default_exec := $(build_dir)/$(sys)/$(hardware)/$(app_name)
+compile_default_exec := go build -o $(default_exec) $(ldflags) -tags production -v $(src_dir)
 
-# Development
-.PHONY: dev
-dev :
+linux_x86_exec := $(build_dir)/linux/x86/$(app_name)
+compile_linux_x86 := GOOS=linux GOARCH=amd64 go build -o $(linux_x86_exec) $(ldflags) -tags production -v $(src_dir)
+
+linux_arm_exec := $(build_dir)/linux/arm/$(app_name)
+compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec) $(ldflags) -tags production -v $(src_dir)
+
+.PHONY: build
+build :
 	@echo "Build dev version $(version)"
-	$(compile_exec)
+	$(compile_default_exec)
 
 .PHONY: run
 run :
-	$(executable) -sandbox=true
+	$(default_exec) -sandbox=true
+
+.PHONY: amd64
+amd64 :
+	@echo "Build production linux version $(version)"
+	$(compile_linux_x86)
 
 .PHONY: arm
 arm :
-	GOOS=linux GOARM=7 GOARCH=arm $(compile_exec)
+	@echo "Build production arm version $(version)"
+	$(compile_linux_arm)
 
 .PHONY: install-go
 install-go:
 	gvm install $(go_version)
 	gvm use $(go_version)
-
-# For CI/CD
-.PHONY: build
-build : install-go
-	@echo "Build production version $(version)"
-	GOOS=linux GOARCH=amd64 $(compile_exec)
 
 .PHONY: config
 config :
@@ -56,7 +64,7 @@ config :
 .PHONY: publish
 publish :
 	ssh ucloud "rm -f /home/node/go/bin/$(app_name).bak"
-	rsync -v ./$(executable) bj32:/home/node
+	rsync -v ./$(default_exec) bj32:/home/node
 	ssh bj32 "rsync -v /home/node/$(app_name) ucloud:/home/node/go/bin/$(app_name).bak"
 
 
