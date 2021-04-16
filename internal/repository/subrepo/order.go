@@ -2,6 +2,7 @@ package subrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
 )
@@ -60,11 +61,11 @@ func (env Env) CreateOrder(counter subs.Counter) (subs.PaymentIntent, error) {
 	return pi, nil
 }
 
-func (env Env) SaveOrderMeta(m subs.OrderMeta) error {
+func (env Env) SaveOrderMeta(c footprint.OrderClient) error {
 
 	_, err := env.DBs.Write.NamedExec(
-		subs.StmtInsertOrderMeta,
-		m)
+		footprint.StmtInsertOrderClient,
+		c)
 
 	if err != nil {
 		return err

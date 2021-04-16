@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -216,7 +217,7 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 		logger *zap.Logger
 	}
 	type args struct {
-		m subs.OrderMeta
+		c footprint.OrderClient
 	}
 	tests := []struct {
 		name    string
@@ -230,9 +231,9 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 				dbs: test.SplitDB,
 			},
 			args: args{
-				m: subs.OrderMeta{
+				c: footprint.OrderClient{
 					OrderID: pkg.MustOrderID(),
-					Client:  faker.RandomClientApp(),
+					Client:  footprint.MockClient(""),
 				},
 			},
 			wantErr: false,
@@ -244,7 +245,7 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 				Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 				logger: tt.fields.logger,
 			}
-			if err := env.SaveOrderMeta(tt.args.m); (err != nil) != tt.wantErr {
+			if err := env.SaveOrderMeta(tt.args.c); (err != nil) != tt.wantErr {
 				t.Errorf("SaveOrderMeta() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
