@@ -10,7 +10,7 @@ import (
 )
 
 type BaseProfile struct {
-	FtcID      string      `json:"id" db:"ftc_id"`
+	ID         string      `json:"id" db:"user_id"`
 	Gender     enum.Gender `json:"gender" db:"gender"`          // Optional
 	FamilyName null.String `json:"familyName" db:"family_name"` // Optional. Max 50 chars.
 	GivenName  null.String `json:"givenName" db:"given_name"`   // Optional. Max 50 chars
