@@ -19,7 +19,7 @@ SELECT email,
 	created_utc
 FROM user_db.password_reset
 WHERE is_used = 0
-LIMIT 1`
+`
 
 // StmtPwResetSessionByToken retrieves a password reset session
 // by token for web app.
