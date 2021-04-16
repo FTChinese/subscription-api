@@ -1,12 +1,16 @@
-package client
+package footprint
 
-const StmtInsertClient = `
+const colsClient = `
+client_version 	= :client_version,
+user_ip 		= INET6_ATON(:user_ip),
+user_agent 		= :user_agent
+`
+
+const StmtInsertFootprint = `
 INSERT INTO user_db.client_footprint
 SET ftc_id 			= :ftc_id,
     platform 		= :platform,
-    client_version 	= :client_version,
-    user_ip 		= INET6_ATON(:user_ip),
-    user_agent 		= :user_agent,
+` + colsClient + `,
     created_utc 	= UTC_TIMESTAMP(),
     source 			= :source,
 	auth_method 	= :auth_method,
@@ -15,7 +19,5 @@ SET ftc_id 			= :ftc_id,
 const StmtInsertOrderClient = `
 INSERT INTO premium.client
 SET order_id = :order_id,
-	client_type = :client_type,
-	client_version = :client_version,
-	user_ip = INET6_ATON(:user_ip),
-	user_agent = :user_agent`
+	client_type = :platform,
+` + colsClient
