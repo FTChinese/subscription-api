@@ -2,17 +2,15 @@ package controller
 
 import (
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/guregu/null"
 	"net/http"
 )
 
@@ -88,17 +86,12 @@ func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 		_ = render.New(w).DBError(err)
 	}
 
-	footprint := account.ClientFootprint{
-		FtcID:       acnt.FtcID,
-		Client:      client.NewClientApp(req),
-		CreatedUTC:  chrono.TimeNow(),
-		Source:      account.FootprintSourceLogin,
-		AuthMethod:  enum.LoginMethodEmail,
-		DeviceToken: params.DeviceToken,
-	}
+	fp := footprint.New(acnt.FtcID, footprint.NewClient(req)).
+		FromLogin().
+		WithAuth(enum.LoginMethodEmail, params.DeviceToken)
 
 	go func() {
-		err := router.repo.SaveClient(footprint)
+		err := router.repo.SaveFootprint(fp)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -122,7 +115,7 @@ func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	clientApp := client.NewClientApp(req)
+	clientApp := footprint.NewClient(req)
 
 	if !clientApp.UserIP.IsZero() {
 		// SingupCount error should be omitted.
@@ -162,17 +155,12 @@ func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	footprint := account.ClientFootprint{
-		FtcID:       baseAccount.FtcID,
-		Client:      clientApp,
-		CreatedUTC:  chrono.TimeNow(),
-		Source:      account.FootprintSourceSignUp,
-		AuthMethod:  enum.LoginMethodEmail,
-		DeviceToken: params.DeviceToken,
-	}
+	fp := footprint.New(baseAccount.FtcID, clientApp).
+		FromSignUp().
+		WithAuth(enum.LoginMethodEmail, params.DeviceToken)
 
 	go func() {
-		err := router.repo.SaveClient(footprint)
+		err := router.repo.SaveFootprint(fp)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -233,17 +221,12 @@ func (router AuthRouter) VerifyEmail(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	footprint := account.ClientFootprint{
-		FtcID:       baseAccount.FtcID,
-		Client:      client.NewClientApp(req),
-		CreatedUTC:  chrono.TimeNow(),
-		Source:      account.FootprintSourceVerification,
-		AuthMethod:  0,
-		DeviceToken: null.String{},
-	}
+	fp := footprint.
+		New(baseAccount.FtcID, footprint.NewClient(req)).
+		FromVerification()
 
 	go func() {
-		_ = router.repo.SaveClient(footprint)
+		_ = router.repo.SaveFootprint(fp)
 	}()
 
 	// Send a greeting letter.

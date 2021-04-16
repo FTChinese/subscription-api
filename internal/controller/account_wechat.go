@@ -3,11 +3,10 @@ package controller
 import (
 	"errors"
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"io"
@@ -63,15 +62,10 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 		}()
 	}
 
-	footprint := account.ClientFootprint{
-		FtcID:      result.Account.FtcID,
-		Client:     client.NewClientApp(req),
-		CreatedUTC: chrono.TimeNow(),
-		Source:     account.FootprintSourceSignUp,
-	}
+	fp := footprint.New(result.Account.FtcID, footprint.NewClient(req)).FromSignUp()
 
 	go func() {
-		_ = router.repo.SaveClient(footprint)
+		_ = router.repo.SaveFootprint(fp)
 	}()
 
 	// Send an email telling user that a new account is created with this email, wechat is bound to it, and in the future the email account is equal to wechat account.
