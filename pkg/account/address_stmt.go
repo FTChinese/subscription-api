@@ -1,6 +1,7 @@
 package account
 
 const colsGetAddress = `
+p.user_id AS p_user_id,
 p.country AS country,
 p.province AS province,
 p.city AS city,
@@ -27,5 +28,5 @@ updated_utc = CURRENT_TIMESTAMP
 
 const StmtUpdateAddress = `
 INSERT INTO user_db.profile
-SET user_id = :ftc_id,` + colsSetAddress + `
+SET user_id = :p_user_id,` + colsSetAddress + `
 ON DUPLICATE KEY UPDATE` + colsSetAddress
