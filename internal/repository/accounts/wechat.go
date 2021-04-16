@@ -6,7 +6,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"go.uber.org/zap"
 )
 
 // WxSignUp helps a Wechat-logged-in user to sign up on FTC.
@@ -205,9 +204,8 @@ func (env Env) LinkWechat(input pkg.LinkWxParams) (reader.LinkWxResult, error) {
 // First unlink membership if exists, then unlink account.
 func (env Env) UnlinkWx(acnt reader.Account, anchor enum.AccountKind) error {
 
-	Logger, _ := zap.NewProduction()
-	defer Logger.Sync()
-	sugar := Logger.Sugar()
+	defer env.Logger.Sync()
+	sugar := env.Logger.Sugar()
 
 	ltx, err := env.beginUnlinkTx()
 	if err != nil {
