@@ -85,6 +85,14 @@ func (r Repo) MustSaveFootprintN(fs []footprint.Footprint) {
 	}
 }
 
+func (r Repo) MustSaveEmailVerifier(v account.EmailVerifier) {
+	_, err := r.db.NamedExec(account.StmtInsertEmailVerifier, v)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (r *Repo) SaveWxUser(u wxlogin.UserInfoSchema) error {
 	_, err := r.db.NamedExec(wxlogin.StmtInsertUserInfo, u)
 	if err != nil {
