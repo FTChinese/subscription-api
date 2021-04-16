@@ -5,21 +5,13 @@ package test
 import (
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/jmoiron/sqlx"
 )
-
-const stmtInsertAccount = `
-INSERT INTO cmstmp01.userinfo
-SET user_id = :ftc_id,
-	wx_union_id = :union_id,
-	stripe_customer_id = :stripe_id,
-	user_name = :user_name,
-	email = :email,
-	password = '12345678'`
 
 type Repo struct {
 	db *sqlx.DB
@@ -54,6 +46,40 @@ func (r Repo) CreateFtcAccount(a account.BaseAccount) error {
 func (r Repo) MustCreateFtcAccount(a account.BaseAccount) {
 	err := r.CreateFtcAccount(a)
 
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (r Repo) SaveFootprint(f footprint.Footprint) error {
+	_, err := r.db.NamedExec(footprint.StmtInsertFootprint, f)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r Repo) MustSaveFootprint(f footprint.Footprint) {
+	err := r.SaveFootprint(f)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (r Repo) SaveFootprintN(fs []footprint.Footprint) error {
+	for _, v := range fs {
+		err := r.SaveFootprint(v)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r Repo) MustSaveFootprintN(fs []footprint.Footprint) {
+	err := r.SaveFootprintN(fs)
 	if err != nil {
 		panic(err)
 	}
