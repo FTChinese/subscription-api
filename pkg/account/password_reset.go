@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// PwResetSession hold the to allow resetting password.
+// PwResetSession hold the token to allow resetting password.
 // When user is requesting password reset,
 // email is sent to server to create the data; an optional
 // sourceUrl should be provided by client is user is on
