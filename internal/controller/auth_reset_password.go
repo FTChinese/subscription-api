@@ -2,13 +2,11 @@ package controller
 
 import (
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/letter"
-	"github.com/guregu/null"
 	"net/http"
 )
 
@@ -55,9 +53,9 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	c := client.NewClientApp(req)
+	c := footprint.NewClient(req)
 
-	session = session.WithPlatform(c.ClientType)
+	session = session.WithPlatform(c.Platform)
 
 	// Save password reset  token.
 	if err := router.repo.SavePwResetSession(session); err != nil {
@@ -65,17 +63,10 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	footprint := account.ClientFootprint{
-		FtcID:       baseAccount.FtcID,
-		Client:      c,
-		CreatedUTC:  chrono.TimeNow(),
-		Source:      account.FootprintSourcePasswordReset,
-		AuthMethod:  0,
-		DeviceToken: null.String{},
-	}
+	fp := footprint.New(baseAccount.FtcID, c).FromPwReset()
 
 	go func() {
-		_ = router.repo.SaveClient(footprint)
+		_ = router.repo.SaveFootprint(fp)
 	}()
 
 	// Compose email
