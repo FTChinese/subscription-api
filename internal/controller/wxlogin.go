@@ -2,8 +2,8 @@ package controller
 
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/wxoauth"
-	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"go.uber.org/zap"
 	"net/http"
 	"net/url"
@@ -114,7 +114,7 @@ func (router WxAuthRouter) Login(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client := client.NewClientApp(req)
+	client := footprint.NewClient(req)
 
 	// Step 2:
 	// Use access token to get userinfo from wechat

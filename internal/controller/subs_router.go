@@ -7,9 +7,9 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
-	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
@@ -44,12 +44,12 @@ func (router SubsRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	_ = render.New(w).DBError(err)
 }
 
-func (router SubsRouter) postOrderCreation(order subs.Order, client client.Client) error {
+func (router SubsRouter) postOrderCreation(order subs.Order, client footprint.Client) error {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
 	go func() {
-		err := router.SubsRepo.SaveOrderMeta(subs.OrderMeta{
+		err := router.SubsRepo.SaveOrderMeta(footprint.OrderClient{
 			OrderID: order.ID,
 			Client:  client,
 		})

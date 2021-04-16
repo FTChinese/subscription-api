@@ -4,14 +4,14 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/objcoding/wxpay"
 	"net/http"
 )
 
-// PlaceWxOrder creates order for wechat pay.
+// WxPay creates order for wechat pay.
 // POST /wxpay/desktop/<tier>/<cycle>?test=true
 // 		/wxpay/mobile/<tier>/<cycle>?test=true
 //		/wxpay/jsapi/<tier>/<cycle>?test=true
@@ -38,7 +38,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 		sugar.Info("Start creating a wechat order")
 
-		clientApp := client.NewClientApp(req)
+		clientApp := footprint.NewClient(req)
 		readerIDs := getReaderIDs(req.Header)
 
 		// Find user account.
