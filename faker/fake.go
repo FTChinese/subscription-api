@@ -8,9 +8,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
-	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/brianvoe/gofakeit/v5"
-	"github.com/guregu/null"
 	"time"
 )
 
@@ -24,17 +22,6 @@ func GenVersion() string {
 		rand.IntRange(1, 10),
 		rand.IntRange(1, 10),
 		rand.IntRange(1, 10))
-}
-
-func RandomClientApp() client.Client {
-	SeedGoFake()
-
-	return client.Client{
-		ClientType: enum.Platform(rand.IntRange(1, 10)),
-		Version:    null.StringFrom(GenVersion()),
-		UserIP:     null.StringFrom(gofakeit.IPv4Address()),
-		UserAgent:  null.StringFrom(gofakeit.UserAgent()),
-	}
 }
 
 func GenCustomerID() string {
