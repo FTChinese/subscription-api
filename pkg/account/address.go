@@ -8,7 +8,7 @@ import (
 
 // Address is a user's physical address
 type Address struct {
-	FtcID    string      `json:"-" db:"ftc_id"`
+	FtcID    string      `json:"-" db:"p_user_id"`
 	Country  null.String `json:"country" db:"country"`
 	Province null.String `json:"province" db:"province"`
 	City     null.String `json:"city" db:"city"`

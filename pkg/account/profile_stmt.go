@@ -1,7 +1,7 @@
 package account
 
 const StmtProfile = `
-SELECT u.user_id AS ftc_id,
+SELECT u.user_id AS user_id,
 	u.gender AS gender,
 	u.last_name AS family_name,
 	u.first_name AS given_name,
@@ -22,5 +22,5 @@ SET gender = :gender,
 	first_name = :given_name,
 	birthday = :birthday,
 	updated_utc = UTC_TIMESTAMP()
-WHERE user_id = :ftc_id
+WHERE user_id = :user_id
 LIMIT 1`
