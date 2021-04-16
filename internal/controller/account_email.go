@@ -2,13 +2,10 @@ package controller
 
 import (
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg"
-	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/guregu/null"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"net/http"
 )
 
@@ -126,17 +123,10 @@ func (router AccountRouter) RequestVerification(w http.ResponseWriter, req *http
 		return
 	}
 
-	footprint := account.ClientFootprint{
-		FtcID:       baseAccount.FtcID,
-		Client:      client.NewClientApp(req),
-		CreatedUTC:  chrono.TimeNow(),
-		Source:      account.FootprintSourceVerification,
-		AuthMethod:  0,
-		DeviceToken: null.String{},
-	}
+	fp := footprint.New(baseAccount.FtcID, footprint.NewClient(req)).FromVerification()
 
 	go func() {
-		err = router.repo.SaveClient(footprint)
+		err = router.repo.SaveFootprint(fp)
 		if err != nil {
 			sugar.Error(err)
 		}

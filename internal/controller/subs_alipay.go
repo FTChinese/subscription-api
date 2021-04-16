@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/FTChinese/subscription-api/pkg/ali"
-	"github.com/FTChinese/subscription-api/pkg/client"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"net/http"
 )
@@ -15,7 +15,7 @@ const (
 	fail    = "fail"
 )
 
-// PlaceOrder creates an http handler function depending
+// AliPay creates an http handler function depending
 // on the device platform.
 //
 // 	POST /<desktop|mobile|app>/{tier}/{cycle}?<test=true>&<return_url=xxx>
@@ -42,7 +42,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		clientApp := client.NewClientApp(req)
+		clientApp := footprint.NewClient(req)
 		readerIDs := getReaderIDs(req.Header)
 
 		// Find user account.

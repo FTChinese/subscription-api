@@ -6,8 +6,8 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/client"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/guregu/null"
@@ -202,13 +202,13 @@ func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Tracking.
-	clientApp := client.NewClientApp(req)
-	footprint := account.NewFootprint(baseAccount.FtcID, clientApp).
+	clientApp := footprint.NewClient(req)
+	fp := footprint.New(baseAccount.FtcID, clientApp).
 		FromSignUp().
 		WithAuth(enum.LoginMethodMobile, params.DeviceToken)
 
 	go func() {
-		err := router.repo.SaveClient(footprint)
+		err := router.repo.SaveFootprint(fp)
 		if err != nil {
 			sugar.Error()
 		}
