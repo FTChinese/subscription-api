@@ -22,8 +22,8 @@ linux_arm_exec := $(build_dir)/linux/arm/$(app_name)
 compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec) $(ldflags) -tags production -v $(src_dir)
 
 # Development
-.PHONY: dev
-dev :
+.PHONY: build
+build :
 	@echo "Build dev version $(version)"
 	$(compile_default_exec)
 
