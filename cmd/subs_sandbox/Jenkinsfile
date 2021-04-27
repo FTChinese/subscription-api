@@ -6,7 +6,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'make install-go'
+//                 sh 'make install-go'
                 echo 'Build sandbox version'
                 sh 'make build ENV=sandbox'
                 archiveArtifacts artifacts: 'build/*', fingerprint: true
