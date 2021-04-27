@@ -9,7 +9,7 @@ pipeline {
                 echo 'Build subscription api production'
 //                 sh 'make install-go'
                 sh 'make build'
-                archiveArtifacts artifacts: 'build/*', fingerprint: true
+                archiveArtifacts artifacts: 'build/**/*', fingerprint: true
             }
         }
         stage('Deploy') {
