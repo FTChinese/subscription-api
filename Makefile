@@ -52,6 +52,7 @@ arm :
 
 .PHONY: install-go
 install-go:
+	@echo "Install go version $(go_version)"
 	gvm install $(go_version)
 	gvm use $(go_version)
 
@@ -59,7 +60,6 @@ install-go:
 config :
 	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)
 	rsync -v ./$(build_dir)/$(config_file_name) ucloud:/home/node/config
-	#rsync -v ./configs/subs-api-v2.conf ucloud:/etc/supervisor/
 
 .PHONY: publish
 publish :
