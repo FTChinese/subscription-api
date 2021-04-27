@@ -7,7 +7,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Build subscription api production'
-                sh 'make install-go'
+//                 sh 'make install-go'
                 sh 'make build'
                 archiveArtifacts artifacts: 'build/*', fingerprint: true
             }
