@@ -15,9 +15,10 @@ import (
 //
 //	POST /users/password-reset/letter
 //
-// Input
-// email: string
-// sourceUrl?: string
+// Input:
+// * email: string;
+// * useCode: boolean; - A short number string used on native apps to facilitate input.
+// * sourceUrl?: string; - Only applicable to web app.
 func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -53,17 +54,14 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	c := footprint.NewClient(req)
-
-	session = session.WithPlatform(c.Platform)
-
 	// Save password reset  token.
 	if err := router.repo.SavePwResetSession(session); err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	fp := footprint.New(baseAccount.FtcID, c).FromPwReset()
+	fp := footprint.New(baseAccount.FtcID, footprint.NewClient(req)).
+		FromPwReset()
 
 	go func() {
 		_ = router.repo.SaveFootprint(fp)
