@@ -101,7 +101,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 //
 // Input: user.LinkInput
 // ```ts
-// userId: string;
+// ftcId: string;
 // ```
 func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
@@ -168,28 +168,7 @@ func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request)
 		}
 	}()
 
-	_ = render.New(w).NoContent()
-}
-
-func getUnlinkInput(req *http.Request) (pkg.UnlinkWxParams, error) {
-	// TODO: Will be removed by the end of 2020.
-	ftcID := req.Header.Get(userIDKey)
-	// Only for backward compatibility. It is moved to request body.
-	unionID := req.Header.Get(unionIDKey)
-
-	var input pkg.UnlinkWxParams
-	if err := gorest.ParseJSON(req.Body, &input); err != nil && err != io.EOF {
-		return input, err
-	}
-	// Union id is always acquired from header.
-	input.UnionID = unionID
-	// Backward compatibility.
-	// Previously ftc id is set on header. It is moved to request body later to avoid setting too much data in header.
-	if input.FtcID == "" && ftcID != "" {
-		input.FtcID = ftcID
-	}
-
-	return input, nil
+	_ = render.New(w).OK(result.Account)
 }
 
 // UnlinkWx revert linking accounts.
@@ -199,7 +178,7 @@ func getUnlinkInput(req *http.Request) (pkg.UnlinkWxParams, error) {
 // Header `X-Union-Id`
 //
 // Request body:
-// unionId: string;
+// ftcId: string;
 // anchor?: ftc | wechat;
 //
 // If user is a member and
@@ -209,18 +188,17 @@ func (router AccountRouter) UnlinkWx(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	input, err := getUnlinkInput(req)
-	if err != nil {
-		sugar.Error(err)
+	var params pkg.UnlinkWxParams
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	if ve := input.Validate(); ve != nil {
-		sugar.Error(err)
+	if ve := params.Validate(); ve != nil {
+		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 	}
-	account, err := router.repo.AccountByFtcID(input.FtcID)
+	acnt, err := router.repo.AccountByFtcID(params.FtcID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -231,30 +209,30 @@ func (router AccountRouter) UnlinkWx(w http.ResponseWriter, req *http.Request) {
 	// as if it is not found since in SQL if you use
 	// WHERE user_id = ? AND wx_union_id = ?, the result is
 	// ErrNoRow
-	if !account.IsLinked() {
+	if !acnt.IsLinked() {
 		sugar.Infof("Account not linked")
 		_ = render.New(w).NotFound("")
 		return
 	}
-	if account.UnionID.String != input.UnionID {
-		sugar.Infof("Union id does not match. Expected %, got %s", input.UnionID, account.UnionID.String)
+	if acnt.UnionID.String != params.UnionID {
+		sugar.Infof("Union id does not match. Expected %, got %s", params.UnionID, acnt.UnionID.String)
 		_ = render.New(w).NotFound("")
 		return
 	}
 
-	if ve := account.ValidateUnlink(input.Anchor); ve != nil {
+	if ve := acnt.ValidateUnlink(params.Anchor); ve != nil {
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
-	err = router.repo.UnlinkWx(account, input.Anchor)
+	err = router.repo.UnlinkWx(acnt, params.Anchor)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	go func() {
-		parcel, err := letter.UnlinkParcel(account, input.Anchor)
+		parcel, err := letter.UnlinkParcel(acnt, params.Anchor)
 		if err != nil {
 			sugar.Error(err)
 		}
