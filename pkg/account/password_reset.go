@@ -49,7 +49,7 @@ func NewPwResetSession(params pkg.ForgotPasswordParams) (PwResetSession, error) 
 		params.SourceURL = null.StringFrom("https://users.ftchinese.com/password-reset")
 	}
 
-	return PwResetSession{
+	sess := PwResetSession{
 		Email:      params.Email,
 		SourceURL:  params.SourceURL,
 		URLToken:   token,         // URLToken always exists.
@@ -57,7 +57,17 @@ func NewPwResetSession(params pkg.ForgotPasswordParams) (PwResetSession, error) 
 		IsUsed:     false,
 		ExpiresIn:  10800,
 		CreatedUTC: chrono.TimeNow(),
-	}, nil
+	}
+
+	if params.UseCode {
+		// For mobile apps we removed the SourceURL
+		sess.SourceURL = null.String{}
+		// Add add an easy-to-type 6-digit code
+		sess.AppCode = null.StringFrom(pkg.PwResetCode())
+		sess.ExpiresIn = 300
+	}
+
+	return sess, nil
 }
 
 // MustNewPwResetSession panic on error.
@@ -70,18 +80,9 @@ func MustNewPwResetSession(params pkg.ForgotPasswordParams) PwResetSession {
 	return s
 }
 
-func (s PwResetSession) WithSourceURL(url string) PwResetSession {
-	if url == "" {
-		return s
-	}
-
-	s.SourceURL = null.StringFrom(url)
-
-	return s
-}
-
 // WithPlatform determines whether the AppCode should be generated.
 // For mobile apps, a 6 character string will be generated.
+// Deprecated
 func (s PwResetSession) WithPlatform(p enum.Platform) PwResetSession {
 
 	if p == enum.PlatformIOS || p == enum.PlatformAndroid {
