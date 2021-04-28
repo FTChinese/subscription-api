@@ -95,7 +95,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 
 // LinkWechat links FTC account with a Wechat account.
 //
-//	PUT /wx/link
+//	POST /account/wx/link
 //
 // Header `X-Union-Id: <wechat union id>`
 //
