@@ -8,7 +8,12 @@ import (
 	"strings"
 )
 
-// Client records the header information of a request.
+// Client records the header information of a request:
+// * `X-Client-Type: web | ios | android`
+// * `X-Client-Version: 1.2.1`
+// * `X-User-Ip: 1.2.3.4`
+// * `X-User-Agent: chrome`, only applicable to web app which forwards user agent here.
+// * `User-Agent: okhttp` only applicable to mobile devices.
 type Client struct {
 	Platform  enum.Platform `db:"platform"`
 	Version   null.String   `db:"client_version"`
