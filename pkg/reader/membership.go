@@ -442,7 +442,7 @@ func (m Membership) Merge(other Membership) (Membership, error) {
 		log.Print("Error: Both not expired")
 
 		return Membership{}, &render.ValidationError{
-			Message: "accounts with valid memberships cannot be link",
+			Message: "accounts with valid memberships cannot be linked",
 			Field:   "membership",
 			Code:    "both_valid",
 		}
