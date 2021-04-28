@@ -88,6 +88,21 @@ func StartServer(s ServerStatus) {
 		})
 	})
 
+	// Handle wechat oauth.
+	// Deprecated.
+	r.Route("/wx", func(r chi.Router) {
+
+		r.Route("/oauth", func(r chi.Router) {
+
+			r.With(controller.RequireAppID).Post("/login", wxAuth.Login)
+
+			r.With(controller.RequireAppID).Put("/refresh", wxAuth.Refresh)
+
+			// Do not check access token here since it is used by wx.
+			r.Get("/callback", wxAuth.WebCallback)
+		})
+	})
+
 	r.Route("/oauth", func(r chi.Router) {
 		// Callback for web to get oauth code.
 		// Do not check access token here since it is used by wx.
@@ -141,21 +156,6 @@ func StartServer(s ServerStatus) {
 			r.Post("/signup", accountRouter.WxSignUp)
 			r.Post("/link", accountRouter.LinkWechat)
 			r.Post("/unlink", accountRouter.UnlinkWx)
-		})
-	})
-
-	// Handle wechat oauth.
-	// Deprecated.
-	r.Route("/wx", func(r chi.Router) {
-
-		r.Route("/oauth", func(r chi.Router) {
-
-			r.With(controller.RequireAppID).Post("/login", wxAuth.Login)
-
-			r.With(controller.RequireAppID).Put("/refresh", wxAuth.Refresh)
-
-			// Do not check access token here since it is used by wx.
-			r.Get("/callback", wxAuth.WebCallback)
 		})
 	})
 
