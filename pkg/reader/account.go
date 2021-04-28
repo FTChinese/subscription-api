@@ -61,7 +61,7 @@ func (a Account) ValidateUnlink(anchor enum.AccountKind) *render.ValidationError
 
 	if a.Membership.IsFtcOnly() && anchor != enum.AccountKindFtc {
 		return &render.ValidationError{
-			Message: "valid stripe subscription cannot transfer membership to wechat account upon unlinking",
+			Message: "valid stripe or iap subscription cannot transfer membership to wechat account upon unlinking",
 			Field:   "anchor",
 			Code:    render.CodeInvalid,
 		}
