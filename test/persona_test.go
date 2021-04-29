@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -14,9 +15,13 @@ func TestNewProfile(t *testing.T) {
 func TestPersona_IAPSubs(t *testing.T) {
 	p := NewPersona()
 
-	sub := p.IAPSubs()
+	sub := apple.NewMockSubsBuilder(p.FtcID).Build()
 
-	m := apple.NewMembership(p.AccountID(), sub)
+	m := apple.NewMembership(apple.MembershipParams{
+		UserID: p.AccountID(),
+		Subs:   sub,
+		AddOn:  addon.AddOn{},
+	})
 
 	m = m.Sync()
 
