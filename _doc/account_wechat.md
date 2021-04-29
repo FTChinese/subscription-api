@@ -1,6 +1,6 @@
 # 关联微信和邮箱账号
 
-## Endpoint
+## Endpoints
 
 发送到此处的URL请求均需带有Header `X-Union-Id: <wechat union id>`，否则请求会被拒绝。
 
@@ -10,6 +10,8 @@
 * POST `/account/wx/unlink` 断开已经关联的账号
 
 ## 获取微信登录用户账号数据
+
+微信用户登录后，账号信息有更新，可以从这里获取最新账号数据。
 
 ```
 GET /account/wx
@@ -57,6 +59,8 @@ GET /account/wx
 ```
 
 ## 微信用户注册新邮箱账号
+
+微信用户登录后，选择关联邮箱，邮箱账号尚不存在，进入此步骤，创建新账号，新建账号会关联微信ID。
 
 ```
 POST /account/wx/signup
@@ -124,6 +128,8 @@ POST /account/wx/signup
 ```
 
 ### 关联现有账号
+
+微信登录用户选择关联邮箱，邮箱已经存在，要求用户输入密码[登录](./account_auth.md)，通过后，进入此步骤。
 
 ```
 POST /account/wx/link
@@ -230,5 +236,5 @@ POST /account/wx/unlink
 7. 验证是否可以断开关联：如果没有会员，则允许；如果有会员，则检查请求中提供的 `anchor` 字段，决定会员保留在断开关联后的哪一方。如果会员来自Stripe、IAP或者B2B，或者账号是测试账号，只能保留在邮箱账号上。
 8. 移除useinfo和vip表中对应的字段
 9. 发送邮件，告诉用户本次操作细节
-10. 返回 204。这里没有返回取消关联后的Account，因为我们不知道用户最初登录采取的哪种方式，因此无法确定到底返回取消关联后的FTC方还是微信方账号。客户端应根据用户取消关联前 Account 中 `loginMethod` 的值刷新 Account。
+10. 返回 204。这里没有返回取消关联后的Account，因为API端不知道用户最初登录采取的哪种方式，因此无法确定到底返回取消关联后的FTC方还是微信方账号。客户端应根据用户取消关联前 Account 中 `loginMethod` 的值刷新 Account。如果 `loginMethod` 是 `wechat`，则从上述 `GET /account/wx` 处更新账号，否则从 `GET /account`  处获取。
 
