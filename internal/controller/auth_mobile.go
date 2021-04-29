@@ -169,6 +169,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(acnt)
 }
 
+// MobileSignUp creates a new email account.
 func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
