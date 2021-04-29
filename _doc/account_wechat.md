@@ -68,17 +68,16 @@ GET /account/wx
 POST /account/wx/signup
 ```
 
-### Request
+### Request Body
 
-```json
-{
-  "email": "string",
-  "password": "string",
-  "sourceUrl": "url used to verify email, optional."
+```typescript
+interface EmailSignUpParams {
+    email: string;
+    password: string;
+    deviceToken?: string; // Required only for Android app.
+    sourceUrl?: string; // Used to compose the verification if the verification site is not running on official domain.
 }
 ```
-
-`sourceUrl`用以确定邮箱注册时发送的验证邮件中的验证地址，默认为`next-user`运行的地址。如果`next-user`运行在多个域名下，该字段可以提供更多灵活性。
 
 ### Workflow
 
@@ -139,11 +138,12 @@ POST /account/wx/link
 
 ### Request Body
 
-```json
-{
-  "ftcId": "uuid of email account"
+```typescript
+interface LinkWxParams {
+    ftcId: string;
 }
 ```
+
 ### Link Policy
 
 两个账号是否可以关联，主要却决于两个账号下的会员状态。
@@ -220,10 +220,10 @@ POST /account/wx/unlink
 
 ### Request Body
 
-```json
-{
-  "ftcId": "string",
-  "anchor": "optional enum: ftc | wechat"
+```typescript
+interface UnlinkWxParams {
+    ftcId: string;
+    anchor: 'ftc' | 'wechat'; // On which side membership should be kept if present.
 }
 ```
 
