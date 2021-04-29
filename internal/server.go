@@ -72,6 +72,7 @@ func StartServer(s ServerStatus) {
 			r.Put("/verification", authRouter.RequestSMSVerification)
 			r.Post("/verification", authRouter.VerifySMSCode)
 			r.Post("/link", authRouter.LinkMobile)
+			r.Post("/signup", authRouter.MobileSignUp)
 		})
 
 		r.Route("/password-reset", func(r chi.Router) {
@@ -89,7 +90,7 @@ func StartServer(s ServerStatus) {
 	})
 
 	// Handle wechat oauth.
-	// Deprecated.
+	// Deprecated. Use /auth/wx.
 	r.Route("/wx", func(r chi.Router) {
 
 		r.Route("/oauth", func(r chi.Router) {
