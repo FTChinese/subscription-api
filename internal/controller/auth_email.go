@@ -48,9 +48,12 @@ func (router AuthRouter) EmailExists(w http.ResponseWriter, req *http.Request) {
 //
 // 	POST /users/login
 //
+// Input: pkg.EmailLoginParams.
 // * email: string,
 // * password: string
 // * deviceToken?: string. Required only for Android app.
+//
+// The footprint.Client headers are required.
 func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -107,10 +110,9 @@ func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 // Input:
 // email: string
 // password: string
-// sourceUrl?: string From which site the request is sent.
+// sourceUrl?: string From which site the request is sent. Not required for mobile apps.
 //
-// `sourceUrl` is used to build verification URL. Only required for desktop browsers.
-// Mobile apps does not need to provide this field.
+// The footprint.Client headers are required.
 func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()

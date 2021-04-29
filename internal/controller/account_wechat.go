@@ -22,6 +22,8 @@ import (
 // email: string;
 // password: string;
 // sourceUrl?: string;
+//
+// The footprint.Client headers are required.
 func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 
 	defer router.logger.Sync()
@@ -62,7 +64,8 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 		}()
 	}
 
-	fp := footprint.New(result.Account.FtcID, footprint.NewClient(req)).FromSignUp()
+	fp := footprint.New(result.Account.FtcID, footprint.NewClient(req)).
+		FromSignUp()
 
 	go func() {
 		_ = router.repo.SaveFootprint(fp)
