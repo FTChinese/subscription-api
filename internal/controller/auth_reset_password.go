@@ -19,6 +19,8 @@ import (
 // * email: string;
 // * useCode: boolean; - A short number string used on native apps to facilitate input.
 // * sourceUrl?: string; - Only applicable to web app.
+//
+// The footprint.Client headers are required.
 func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
