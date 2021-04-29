@@ -48,9 +48,9 @@ func (router AuthRouter) EmailExists(w http.ResponseWriter, req *http.Request) {
 //
 // 	POST /users/login
 //
-// email: string,
-// password: string
-// deviceToken?: string. Required only for Android app.
+// * email: string,
+// * password: string
+// * deviceToken?: string. Required only for Android app.
 func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
