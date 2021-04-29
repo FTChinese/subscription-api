@@ -74,6 +74,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 	// Send an email telling user that a new account is created with this email, wechat is bound to it, and in the future the email account is equal to wechat account.
 	// Add customer service information so that user could contact us for any other issues.
 	go func() {
+		sugar.Info("Sending wechat signup email...")
 		verifier, err := account.NewEmailVerifier(in.Email, in.SourceURL)
 		if err != nil {
 			return
@@ -165,6 +166,7 @@ func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request)
 			sugar.Error(err)
 		}
 
+		sugar.Info("Sending wechat link email...")
 		err = router.postman.Deliver(parcel)
 		if err != nil {
 			sugar.Error(err)
@@ -191,11 +193,15 @@ func (router AccountRouter) UnlinkWx(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
+	// Get union id from request header.
+	unionID := req.Header.Get(unionIDKey)
+
 	var params pkg.UnlinkWxParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
+	params.UnionID = unionID
 
 	if ve := params.Validate(); ve != nil {
 		sugar.Error(ve)
@@ -218,7 +224,7 @@ func (router AccountRouter) UnlinkWx(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if acnt.UnionID.String != params.UnionID {
-		sugar.Infof("Union id does not match. Expected %, got %s", params.UnionID, acnt.UnionID.String)
+		sugar.Infof("Union id does not match. Expected %s, got %s", params.UnionID, acnt.UnionID.String)
 		_ = render.New(w).NotFound("")
 		return
 	}
