@@ -70,9 +70,17 @@ func (i *LinkWxParams) Validate() *render.ValidationError {
 	i.FtcID = strings.TrimSpace(i.FtcID)
 	i.UnionID = strings.TrimSpace(i.UnionID)
 
-	return validator.New("ftcId").
+	ve := validator.New("ftcId").
 		Required().
 		Validate(i.FtcID)
+
+	if ve != nil {
+		return ve
+	}
+
+	return validator.New("unionId").
+		Required().
+		Validate(i.UnionID)
 }
 
 type UnlinkWxParams struct {
