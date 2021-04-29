@@ -9,6 +9,23 @@
 * POST `/account/wx/link` 微信登录用户关联已有邮箱账号，或者邮箱登录用户关联微信
 * POST `/account/wx/unlink` 断开已经关联的账号
 
+## 客户端流程
+
+微信用户登录后，关联邮箱，要求用户输入邮箱地址，检测邮箱是否存在。
+            
+            | email exists?                         |
+            | /auth/email/exists?v=<email to check> |
+            |_______________________________________|
+                    /           \
+                 N /             \ Y
+                  /               \
+        /account/wx/signup       /auth/email/login
+                 ｜                获取 Account
+                 ｜                  |
+              Finish                 |
+                                  /account/wx/link
+                                    关联两个ID
+
 ## 获取微信登录用户账号数据
 
 微信用户登录后，账号信息有更新，可以从这里获取最新账号数据。
