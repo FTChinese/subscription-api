@@ -10,7 +10,7 @@ import (
 
 // RequestSMSVerification sends a SMS to the specified mobile number.
 // Input:
-// mobile: string
+// mobile: string;
 func (router AccountRouter) RequestSMSVerification(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
