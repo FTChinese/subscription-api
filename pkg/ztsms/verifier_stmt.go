@@ -8,6 +8,9 @@ SET mobile_phone = :mobile_phone,
 	created_utc = :created_utc,
 	ftc_id = :ftc_id`
 
+// StmtRetrieveVerifier is used to retrieve a SMS verifier.
+// Do not removed the time comparison condition.
+// It could reduce the chance of collision for app_code.
 const StmtRetrieveVerifier = `
 SELECT mobile_phone,
 	sms_code,
@@ -19,6 +22,7 @@ FROM user_db.mobile_verifier
 WHERE mobile_phone = ?
 	AND sms_code = ?
 	AND used_utc IS NULL
+	AND DATE_ADD(created_utc, INTERVAL expires_in SECOND) > UTC_TIMESTAMP()
 LIMIT 1`
 
 const StmtVerifierUsed = `
@@ -35,6 +39,7 @@ FROM user_db.profile
 WHERE mobile_phone = ?
 LIMIT 1`
 
+// StmtSetPhone set a mobile phone to user account.
 const StmtSetPhone = `
 UPDATE user_db.profile
 SET mobile_phone = :mobile_phone,
