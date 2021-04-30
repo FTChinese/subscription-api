@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"database/sql"
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
@@ -14,7 +15,7 @@ import (
 	"net/http"
 )
 
-// RequestSMSVerification sends a SMS to user.
+// RequestSMSVerification sends a SMS to user for login.
 // Input:
 // mobile: string
 func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http.Request) {
@@ -40,8 +41,15 @@ func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http
 	ftcAccount, err := router.repo.BaseAccountByMobile(params.Mobile)
 	if err != nil {
 		sugar.Error(err)
+		if err != sql.ErrNoRows {
+			_ = render.New(w).DBError(err)
+			return
+		}
+		// Fallthrough for not found error.
 	}
 
+	// Create the verifier. If user id does not exist, it indicates
+	// user is using mobile to login for the first t ime.
 	vrf := ztsms.NewVerifier(params.Mobile, null.NewString(ftcAccount.FtcID, ftcAccount.FtcID != ""))
 
 	err = router.repo.SaveSMSVerifier(vrf)
@@ -51,6 +59,7 @@ func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http
 		return
 	}
 
+	// Send the code to user device.
 	_, err = router.smsClient.SendVerifier(vrf)
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
@@ -61,10 +70,17 @@ func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http
 }
 
 // VerifySMSCode verifies a code sent to user mobile devices.
+// Client must send mobile number and the SMS code together as
+// the code is short and collision chances are high.
+// When retrieving data, only find those rows whose used_ftc is null,
+// expiration time is not past yet.
+// The SMS code has only 6 digits, which means the collision rate is
+// 1/1000000.
+//
 // Input:
-// mobile: string
-// code: string
-// deviceToken: string - only required for Android devices.
+// * mobile: string;
+// * code: string;
+// * deviceToken?: string; - only required for Android devices.
 func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -133,6 +149,8 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Find the user id and password matching state by email.
+	// If not found, it indicates the account does not exists.
 	authResult, err := router.repo.Authenticate(params.EmailLoginParams)
 	if err != nil {
 		sugar.Error(err)
@@ -140,17 +158,33 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Use existing account
+	// Account is found, but password does not match.
 	if !authResult.PasswordMatched {
 		_ = render.New(w).Forbidden("Incorrect credentials")
 		return
 	}
 
+	// Retrieve account by user id.
 	acnt, err := router.repo.AccountByFtcID(authResult.UserID)
 	if err != nil {
 		// There shouldn't be ErrNoRow error here.
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
+		return
+	}
+
+	// We must ensure the retrieve account does not have mobile set yet.
+	if acnt.Mobile.Valid {
+		// If already set to this mobile number.
+		if acnt.Mobile.String == params.Mobile {
+			_ = render.New(w).OK(acnt)
+		} else {
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: "The account already has a mobile number set",
+				Field:   "mobile",
+				Code:    render.CodeAlreadyExists,
+			})
+		}
 		return
 	}
 
@@ -164,12 +198,19 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			sugar.Error(err)
 		}
+		// TODO: send email?
 	}()
 
 	_ = render.New(w).OK(acnt)
 }
 
 // MobileSignUp creates a new email account.
+// Input:
+// * email: string;
+// * password: string;
+// * mobile: string;
+// * deviceToken?: string; - Required for Android app.
+// * sourceUrl?: string; - Used to compose email verification link.
 func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
