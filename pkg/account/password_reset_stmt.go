@@ -9,6 +9,8 @@ SET email = :email,
 	expires_in = :expires_in,
 	created_utc = UTC_TIMESTAMP()`
 
+// Do not removed the time comparison condition.
+// It could reduce the chance of collision for app_code.
 const selectPwResetSession = `
 SELECT email, 
 	source_url,
@@ -19,6 +21,7 @@ SELECT email,
 	created_utc
 FROM user_db.password_reset
 WHERE is_used = 0
+	AND DATE_ADD(created_utc, INTERVAL expires_in SECOND) > UTC_TIMESTAMP()
 `
 
 // StmtPwResetSessionByToken retrieves a password reset session
