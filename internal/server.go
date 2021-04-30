@@ -69,9 +69,38 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/mobile", func(r chi.Router) {
+			// Create a SMS code and send it to user for login.
+			// This differ from /account/mobile/verification in that
+			// there is not user id set in header; therefore the record
+			// in DB does not have user id field save alongside the
+			// code.
+			// After getting mobile number, we first tries to retrieve
+			// the minimal account data. If found, we will save the
+			// code and user id together; otherwise we user id field
+			// won't exist along with the code, which indicates the
+			// user is logging in using mobile for the first  time.
 			r.Put("/verification", authRouter.RequestSMSVerification)
+			// Verifies a SMS code. If the code is found, a nullable
+			// user id associated with the code is returned.
+			// If the user id is null, it indicates the user is
+			// logging in with mobile for the first time.
+			// Client should then ask user to link to an existing
+			// account, or create a new account accordingly.
+			// If user id is not null, client should use the user to
+			// retrieve account data from /account, providing the
+			// user id in header.
 			r.Post("/verification", authRouter.VerifySMSCode)
+			// Verifies an existing email account credentials.
+			// If passed, retrieve user's full account and check if
+			// the mobile is set to another one. If it is taken
+			// by another one, returns 422; otherwise update the
+			// the account's mobile field and returns it.
+			// In background thread we persist phone number to db.
 			r.Post("/link", authRouter.LinkMobile)
+			// When user login with mobile for the first time,
+			// and has not account previously created, create a
+			// new email account with mobile number set to the
+			// specified one.
 			r.Post("/signup", authRouter.MobileSignUp)
 		})
 
@@ -135,7 +164,12 @@ func StartServer(s ServerStatus) {
 			r.Use(controller.RequireFtcID)
 			// Set/Update mobile number by verifying SMS code.
 			r.Patch("/", accountRouter.UpdateMobile)
-			// Create a verification code
+			// Create a verification code for a logged-in user.
+			// It differs from /auth/mobile/verification in that
+			// this one requires user id being set in header.
+			// When creating a record in DB, user id is save alongside
+			// the SMS code so that later when performing verification,
+			// we could verify this code is indeed target at this user.
 			r.Put("/verification", accountRouter.RequestSMSVerification)
 		})
 
