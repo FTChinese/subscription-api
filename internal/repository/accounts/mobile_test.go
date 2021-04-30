@@ -55,7 +55,7 @@ func TestEnv_RetrieveSMSVerifier(t *testing.T) {
 
 	v := ztsms.NewVerifier(gofakeit.Phone(), null.StringFrom(uuid.New().String()))
 
-	v.CreatedUTC = chrono.TimeFrom(time.Now().In(time.UTC).Truncate(24 * time.Hour))
+	v.CreatedUTC = chrono.TimeFrom(time.Now().In(time.UTC).Truncate(time.Second))
 
 	_ = env.SaveSMSVerifier(v)
 
