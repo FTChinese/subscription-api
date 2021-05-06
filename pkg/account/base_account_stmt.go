@@ -28,7 +28,7 @@ SELECT
 `
 
 // When retrieving ftc account only, use wx_union_id column.
-const stmtBaseAccount = colsBaseAccount + `,
+const stmtFtcBaseAccount = colsBaseAccount + `,
 u.wx_union_id					AS wx_union_id
 FROM cmstmp01.userinfo AS u
 LEFT JOIN user_db.profile AS p
@@ -49,23 +49,29 @@ WHERE user_id = ?
 LIMIT 1
 FOR UPDATE`
 
-const StmtBaseAccountByUUID = stmtBaseAccount + `
+const StmtBaseAccountByUUID = stmtFtcBaseAccount + `
 WHERE u.user_id = ?
 LIMIT 1`
 
-const StmtBaseAccountByEmail = stmtBaseAccount + `
+const StmtBaseAccountByEmail = stmtFtcBaseAccount + `
 WHERE u.email = ?
 LIMIT 1`
 
-const StmtBaseAccountByMobile = stmtBaseAccount + `
+const StmtBaseAccountByMobile = stmtFtcBaseAccount + `
 WHERE p.mobile_phone = ?
 LIMIT 1`
 
-const StmtBaseAccountByWx = stmtBaseAccount + `
+const StmtBaseAccountByWx = colsBaseAccount + `,
+w.union_id 						AS wx_union_id
+FROM user_db.wechat_userinfo AS w
+LEFT JOIN cmstmp01.userinfo AS u
+	ON w.union_id = u.wx_union_id
+LEFT JOIN user_db.profile AS p
+	ON u.user_id = p.user_id
 WHERE u.wx_union_id = ?
 LIMIT 1`
 
-const StmtBaseAccountOfStripe = stmtBaseAccount + `
+const StmtBaseAccountOfStripe = stmtFtcBaseAccount + `
 WHERE u.stripe_customer_id = ?
 LIMIT 1`
 
