@@ -70,6 +70,16 @@ func (b MockMemberBuilder) WithIDs(ids pkg.UserIDs) MockMemberBuilder {
 	return b
 }
 
+func (b MockMemberBuilder) WithFtcID(id string) MockMemberBuilder {
+	b.ftcID = id
+	return b
+}
+
+func (b MockMemberBuilder) WithWxID(id string) MockMemberBuilder {
+	b.unionID = id
+	return b
+}
+
 func (b MockMemberBuilder) WithPrice(p price.Price) MockMemberBuilder {
 	b.price = p
 
