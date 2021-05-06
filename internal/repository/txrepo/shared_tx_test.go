@@ -56,9 +56,15 @@ func TestSharedTx_CreateMember(t *testing.T) {
 
 func TestSharedTx_RetrieveMember(t *testing.T) {
 
-	m := reader.NewMockMemberBuilder("").Build()
+	repo := test.NewRepo()
 
-	test.NewRepo().MustSaveMembership(m)
+	m := reader.NewMockMemberBuilder("").Build()
+	t.Logf("%v", m.UserIDs)
+	repo.MustSaveMembership(m)
+
+	wxMmb := reader.NewMockMemberBuilderV2(enum.AccountKindWx).Build()
+	t.Logf("%v", wxMmb.UserIDs)
+	repo.MustSaveMembership(wxMmb)
 
 	type fields struct {
 		Tx *sqlx.Tx
@@ -73,12 +79,22 @@ func TestSharedTx_RetrieveMember(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Retrieve membership",
+			name: "Retrieve ftc membership",
 			fields: fields{
 				Tx: test.SplitDB.Read.MustBegin(),
 			},
 			args: args{
 				id: m.UserIDs,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Retrieve wx membership",
+			fields: fields{
+				Tx: test.SplitDB.Read.MustBegin(),
+			},
+			args: args{
+				id: wxMmb.UserIDs,
 			},
 			wantErr: false,
 		},
