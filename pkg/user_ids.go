@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// FtcID is used to identify an FTC user.
+// UserIDs is used to identify an FTC user.
 // A user might have an ftc uuid, or a wechat union id,
 // or both.
 // This type structure is used to ensure unique constraint
@@ -29,22 +29,22 @@ func NewFtcUserID(id string) UserIDs {
 	}
 }
 
-func (m UserIDs) Normalize() (UserIDs, error) {
-	if m.FtcID.IsZero() && m.UnionID.IsZero() {
-		return m, errors.New("ftcID and unionID should not both be null")
+func (u UserIDs) Normalize() (UserIDs, error) {
+	if u.FtcID.IsZero() && u.UnionID.IsZero() {
+		return u, errors.New("ftcID and unionID should not both be null")
 	}
 
-	if m.FtcID.Valid {
-		m.CompoundID = m.FtcID.String
-		return m, nil
+	if u.FtcID.Valid {
+		u.CompoundID = u.FtcID.String
+		return u, nil
 	}
 
-	m.CompoundID = m.UnionID.String
-	return m, nil
+	u.CompoundID = u.UnionID.String
+	return u, nil
 }
 
-func (m UserIDs) MustNormalize() UserIDs {
-	ids, err := m.Normalize()
+func (u UserIDs) MustNormalize() UserIDs {
+	ids, err := u.Normalize()
 	if err != nil {
 		panic(err)
 	}
@@ -55,29 +55,29 @@ func (m UserIDs) MustNormalize() UserIDs {
 // BuildFindInSet builds a value to be used in MySQL
 // function FIND_IN_SET(str, strlist) so that find
 // a user's data by both ftc id and union id.
-func (m UserIDs) BuildFindInSet() string {
+func (u UserIDs) BuildFindInSet() string {
 	strList := make([]string, 0)
 
-	if m.FtcID.Valid {
-		strList = append(strList, m.FtcID.String)
+	if u.FtcID.Valid {
+		strList = append(strList, u.FtcID.String)
 	}
 
-	if m.UnionID.Valid {
-		strList = append(strList, m.UnionID.String)
+	if u.UnionID.Valid {
+		strList = append(strList, u.UnionID.String)
 	}
 
 	return strings.Join(strList, ",")
 }
 
-func (m UserIDs) IDSlice() []string {
+func (u UserIDs) IDSlice() []string {
 	strList := make([]string, 0)
 
-	if m.FtcID.Valid {
-		strList = append(strList, m.FtcID.String)
+	if u.FtcID.Valid {
+		strList = append(strList, u.FtcID.String)
 	}
 
-	if m.UnionID.Valid {
-		strList = append(strList, m.UnionID.String)
+	if u.UnionID.Valid {
+		strList = append(strList, u.UnionID.String)
 	}
 
 	return strList
