@@ -78,9 +78,16 @@ func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http
 // 1/1000000.
 //
 // Input:
-// * mobile: string;
-// * code: string;
+// * mobile: string - the mobile number used for login
+// * code: string - the SMS cod of this session
 // * deviceToken?: string; - only required for Android devices.
+//
+// Required header: footprint.Client
+//
+// Returns account.SearchResult containing nullable user id.
+// If user id is null, it indicates this mobile phone is used for the first time.
+// Client should ask user to enter email so that we could link this mobile to an email account;
+// otherwise client should use the user id to retrieve reader.Account.
 func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -121,17 +128,39 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 		}
 	}()
 
+	// If FtcID exists, it indicates this mobile is already
+	// linked to an email account. We treat it as a login
+	// session and record client metadata;
+	// otherwise the metadata should be recorded by link mobile
+	// or signup process.
+	if vrf.FtcID.Valid {
+		fp := footprint.
+			New(vrf.FtcID.String, footprint.NewClient(req)).
+			FromLogin().
+			WithAuth(enum.LoginMethodMobile, params.DeviceToken)
+
+		go func() {
+			err := router.repo.SaveFootprint(fp)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+	}
+
 	_ = render.New(w).OK(account.NewSearchResult(vrf.FtcID.String))
 }
 
 // LinkMobile authenticates an existing email account, and link to
 // the mobile phone which is used to login for the first time.
+//
 // Input:
 // email: string;
 // password: string;
 // mobile: string;
 // deviceToken?: string;
 // sourceUrl?: string; // Used to compose email verification link.
+//
+// Returns reader.Account.
 func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -198,6 +227,19 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			sugar.Error(err)
 		}
+	}()
+
+	// Tracking.
+	clientApp := footprint.NewClient(req)
+	fp := footprint.New(baseAccount.FtcID, clientApp).
+		FromSignUp().
+		WithAuth(enum.LoginMethodMobile, params.DeviceToken)
+
+	go func() {
+		err := router.repo.SaveFootprint(fp)
+		if err != nil {
+			sugar.Error()
+		}
 		// TODO: send email?
 	}()
 
@@ -211,6 +253,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 // * mobile: string;
 // * deviceToken?: string; - Required for Android app.
 // * sourceUrl?: string; - Used to compose email verification link.
+
 func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
