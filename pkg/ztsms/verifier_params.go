@@ -3,12 +3,13 @@ package ztsms
 import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
+	"github.com/guregu/null"
 )
 
 type VerifierParams struct {
-	Mobile      string `json:"mobile"`
-	Code        string `json:"code"`
-	DeviceToken string `json:"deviceToken"`
+	Mobile      string      `json:"mobile"`
+	Code        string      `json:"code"`
+	DeviceToken null.String `json:"deviceToken"`
 }
 
 func (p VerifierParams) ValidateMobile() *render.ValidationError {
