@@ -68,7 +68,7 @@ LEFT JOIN cmstmp01.userinfo AS u
 	ON w.union_id = u.wx_union_id
 LEFT JOIN user_db.profile AS p
 	ON u.user_id = p.user_id
-WHERE w.wx_union_id = ?
+WHERE w.union_id = ?
 LIMIT 1`
 
 const StmtBaseAccountOfStripe = stmtFtcBaseAccount + `
