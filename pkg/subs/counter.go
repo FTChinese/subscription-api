@@ -65,18 +65,23 @@ func (c Counter) order(checkout Checkout) (Order, error) {
 }
 
 func (c Counter) PaymentIntent(m reader.Membership) (PaymentIntent, error) {
+
+	// Collects all requirements to create an order
 	checkout, err := NewCheckout(c.FtcPrice, m)
 	if err != nil {
 		return PaymentIntent{}, err
 	}
 
+	// In test environment, change price to 0.01.
 	checkout = checkout.WithTest(c.BaseAccount.IsTest())
 
+	// Build order.
 	order, err := c.order(checkout)
 
 	return PaymentIntent{
-		Pricing: checkout.Price,
-		Offer:   checkout.Offer,
-		Order:   order,
+		Pricing:    checkout.Price,
+		Offer:      checkout.Offer,
+		Order:      order,
+		Membership: m,
 	}, nil
 }

@@ -14,13 +14,18 @@ type Checkout struct {
 	LiveMode bool
 }
 
+// NewCheckout creates a new CheckoutInstance.
+// ftcPrice - the current pricing policy and all available discounts.
+// m - current membership used to deduce which offer is applicable for the next order.
 func NewCheckout(ftcPrice price.FtcPrice, m reader.Membership) (Checkout, error) {
-	orderKind, err := m.OrderKindOfOneTime(ftcPrice.Edition)
 
+	// Find out which kind of order user is creating.
+	orderKind, err := m.OrderKindOfOneTime(ftcPrice.Edition)
 	if err != nil {
 		return Checkout{}, err
 	}
 
+	// Find out applicable discount offer.
 	discount := ftcPrice.ApplicableOffer(m.OfferKindsEnjoyed())
 
 	return Checkout{
