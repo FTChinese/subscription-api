@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 )
 
@@ -32,9 +33,10 @@ func PaymentTitle(k enum.OrderKind, e price.Edition) string {
 }
 
 type PaymentIntent struct {
-	Pricing price.Price    `json:"pricing"`
-	Offer   price.Discount `json:"offer"`
-	Order   Order          `json:"order"`
+	Pricing    price.Price       `json:"pricing"`
+	Offer      price.Discount    `json:"offer"`
+	Order      Order             `json:"order"`
+	Membership reader.Membership `json:"membership"`
 }
 
 // WxPayNativeAppIntent creates an order used by native apps.
