@@ -57,4 +57,4 @@ deploy : amd64 publish restart
 .PHONY: clean
 clean :
 	go clean -x
-	rm build/*
+	rm ../..build/**
