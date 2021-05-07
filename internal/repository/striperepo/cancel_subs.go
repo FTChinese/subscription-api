@@ -2,10 +2,8 @@ package striperepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/guregu/null"
 )
 
 // CancelSubscription cancels a subscription at period end if `CancelParams.Cancel` is true, else reactivate it.
@@ -23,11 +21,7 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 		return stripe.SubsResult{}, err
 	}
 
-	mmb, err := tx.RetrieveMember(pkg.UserIDs{
-		CompoundID: params.FtcID,
-		FtcID:      null.StringFrom(params.FtcID),
-		UnionID:    null.String{},
-	})
+	mmb, err := tx.RetrieveMember(params.FtcID)
 	sugar.Infof("Current membership cancel/reactivate stripe subscription %v", mmb)
 
 	if err != nil {

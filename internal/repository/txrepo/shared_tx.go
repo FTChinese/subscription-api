@@ -35,13 +35,13 @@ func (tx SharedTx) CreateMember(m reader.Membership) error {
 // RetrieveMember retrieves a user's membership by a compound id, which might be ftc id or union id.
 // Use SQL FIND_IN_SET(compoundId, vip_id, vip) to verify it against two columns.
 // Returns zero value of membership if not found.
-func (tx SharedTx) RetrieveMember(id pkg.UserIDs) (reader.Membership, error) {
+func (tx SharedTx) RetrieveMember(compoundID string) (reader.Membership, error) {
 	var m reader.Membership
 
 	err := tx.Get(
 		&m,
 		reader.StmtLockMember,
-		id.BuildFindInSet(),
+		compoundID,
 	)
 
 	if err != nil && err != sql.ErrNoRows {

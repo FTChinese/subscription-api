@@ -64,6 +64,18 @@ func (a BaseAccount) WithEmail(email string) BaseAccount {
 	return a
 }
 
+func (a BaseAccount) CompoundID() string {
+	if a.FtcID != "" {
+		return a.FtcID
+	}
+
+	if a.UnionID.Valid {
+		return a.UnionID.String
+	}
+
+	return ""
+}
+
 func (a BaseAccount) CompoundIDs() pkg.UserIDs {
 	return pkg.UserIDs{
 		CompoundID: "",

@@ -2,17 +2,11 @@ package accounts
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/guregu/null"
 )
 
 func (env Env) AccountByFtcID(ftcID string) (reader.Account, error) {
-	aChan, mChan := env.AsyncJoinedByFtcID(ftcID), env.AsyncMembership(pkg.UserIDs{
-		CompoundID: "",
-		FtcID:      null.StringFrom(ftcID),
-		UnionID:    null.String{},
-	}.MustNormalize())
+	aChan, mChan := env.AsyncJoinedByFtcID(ftcID), env.AsyncMembership(ftcID)
 
 	aResult, mResult := <-aChan, <-mChan
 
@@ -31,11 +25,7 @@ func (env Env) AccountByFtcID(ftcID string) (reader.Account, error) {
 }
 
 func (env Env) AccountByWxID(unionID string) (reader.Account, error) {
-	aChan, mChan := env.AsyncJoinedByWx(unionID), env.AsyncMembership(pkg.UserIDs{
-		CompoundID: "",
-		FtcID:      null.String{},
-		UnionID:    null.StringFrom(unionID),
-	}.MustNormalize())
+	aChan, mChan := env.AsyncJoinedByWx(unionID), env.AsyncMembership(unionID)
 
 	aResult, mResult := <-aChan, <-mChan
 

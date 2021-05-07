@@ -3,7 +3,6 @@ package readers
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
@@ -15,17 +14,19 @@ import (
 func TestEnv_RetrieveMember(t *testing.T) {
 	m1 := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).Build()
 	m2 := reader.NewMockMemberBuilderV2(enum.AccountKindWx).Build()
+	m3 := reader.NewMockMemberBuilderV2(enum.AccountKindLinked).Build()
 
 	repo := test.NewRepo()
 	repo.MustSaveMembership(m1)
 	repo.MustSaveMembership(m2)
+	repo.MustSaveMembership(m3)
 
 	type fields struct {
 		DBs    db.ReadWriteSplit
 		Logger *zap.Logger
 	}
 	type args struct {
-		id pkg.UserIDs
+		compoundID string
 	}
 	tests := []struct {
 		name    string
@@ -41,7 +42,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 				Logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				id: m1.UserIDs,
+				compoundID: m1.CompoundID,
 			},
 			wantErr: false,
 		},
@@ -52,7 +53,18 @@ func TestEnv_RetrieveMember(t *testing.T) {
 				Logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				id: m2.UserIDs,
+				compoundID: m2.CompoundID,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Retrieve linked by any of the ids",
+			fields: fields{
+				DBs:    test.SplitDB,
+				Logger: zaptest.NewLogger(t),
+			},
+			args: args{
+				compoundID: m3.FtcID.String,
 			},
 			wantErr: false,
 		},
@@ -63,7 +75,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 				DBs:    tt.fields.DBs,
 				Logger: tt.fields.Logger,
 			}
-			got, err := env.RetrieveMember(tt.args.id)
+			got, err := env.RetrieveMember(tt.args.compoundID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
 				return

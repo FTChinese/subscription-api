@@ -39,7 +39,7 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 	// STEP 2: query membership
 	// For any errors, allow retry.
 	sugar.Info("Retrieving existing membership")
-	member, err := tx.RetrieveMember(order.UserIDs)
+	member, err := tx.RetrieveMember(order.CompoundID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
