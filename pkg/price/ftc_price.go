@@ -11,6 +11,10 @@ type FtcPrice struct {
 	Offers         []Discount `json:"offers"`
 }
 
+// ApplicableOffer select an offer from all Offers that a user eligible for.
+// filters - all possible offers a membership currently enjoys, used to narrow down
+// offers provided.
+// If more than one offer is applicable, use the one with the largest price off.
 func (f FtcPrice) ApplicableOffer(filters []OfferKind) Discount {
 	// Filter all valid discount offers.
 
