@@ -22,7 +22,7 @@ SELECT vip_id AS compound_id,
 FROM premium.ftc_vip`
 
 const StmtSelectMember = colMembership + `
-WHERE FIND_IN_SET(vip_id, ?) > 0
+WHERE ? IN (vip_id, vip_id_alias)
 LIMIT 1
 `
 

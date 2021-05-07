@@ -75,7 +75,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 	// Do not retrieve memberships for both ftc and iap in a transaction.
 	// If they are already linked, retrieving a single row multiple times will result in deadlock.
-	ftcMember, err := router.iapRepo.RetrieveMember(baseAccount.CompoundIDs())
+	ftcMember, err := router.iapRepo.RetrieveMember(baseAccount.CompoundID())
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)

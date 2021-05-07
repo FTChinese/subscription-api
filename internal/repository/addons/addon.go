@@ -19,7 +19,7 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 	sugar.Infof("Start retrieving membership for %v", ids)
 
 	// Retrieve current membership. It must exists.
-	member, err := otx.RetrieveMember(ids)
+	member, err := otx.RetrieveMember(ids.CompoundID)
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()

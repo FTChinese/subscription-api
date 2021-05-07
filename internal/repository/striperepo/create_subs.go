@@ -30,7 +30,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 	}
 
 	// Retrieve member for this user to check whether the operation is allowed.
-	mmb, err := tx.RetrieveMember(params.Account.CompoundIDs())
+	mmb, err := tx.RetrieveMember(params.Account.CompoundID())
 	sugar.Infof("Current membership before creating stripe subscription: %v", mmb)
 
 	if err != nil {
