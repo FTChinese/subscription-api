@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
@@ -10,11 +9,11 @@ type memberAsyncResult struct {
 	err   error
 }
 
-func (env Env) AsyncMembership(ids pkg.UserIDs) <-chan memberAsyncResult {
+func (env Env) AsyncMembership(compoundID string) <-chan memberAsyncResult {
 	c := make(chan memberAsyncResult)
 
 	go func() {
-		m, err := env.RetrieveMember(ids)
+		m, err := env.RetrieveMember(compoundID)
 
 		c <- memberAsyncResult{
 			value: m,

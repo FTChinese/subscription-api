@@ -70,7 +70,7 @@ func TestSharedTx_RetrieveMember(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		id pkg.UserIDs
+		compoundID string
 	}
 	tests := []struct {
 		name    string
@@ -84,7 +84,7 @@ func TestSharedTx_RetrieveMember(t *testing.T) {
 				Tx: test.SplitDB.Read.MustBegin(),
 			},
 			args: args{
-				id: m.UserIDs,
+				compoundID: m.CompoundID,
 			},
 			wantErr: false,
 		},
@@ -94,7 +94,7 @@ func TestSharedTx_RetrieveMember(t *testing.T) {
 				Tx: test.SplitDB.Read.MustBegin(),
 			},
 			args: args{
-				id: wxMmb.UserIDs,
+				compoundID: wxMmb.CompoundID,
 			},
 			wantErr: false,
 		},
@@ -102,7 +102,7 @@ func TestSharedTx_RetrieveMember(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tx := NewSharedTx(tt.fields.Tx)
-			got, err := tx.RetrieveMember(tt.args.id)
+			got, err := tx.RetrieveMember(tt.args.compoundID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrieveMember() error = %v, wantErr %v", err, tt.wantErr)
 				_ = tx.Rollback()

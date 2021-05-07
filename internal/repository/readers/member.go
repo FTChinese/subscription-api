@@ -2,17 +2,18 @@ package readers
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-func (env Env) RetrieveMember(id pkg.UserIDs) (reader.Membership, error) {
+// RetrieveMember loads reader.Membership of the specified id.
+// compoundID - Might be ftc uuid or chat union id.
+func (env Env) RetrieveMember(compoundID string) (reader.Membership, error) {
 	var m reader.Membership
 
 	err := env.DBs.Read.Get(
 		&m,
 		reader.StmtSelectMember,
-		id.BuildFindInSet())
+		compoundID)
 
 	if err != nil && err != sql.ErrNoRows {
 		return reader.Membership{}, err

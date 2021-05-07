@@ -21,7 +21,7 @@ func (env Env) OnSubscription(ss *stripeSdk.Subscription, param stripe.SubsResul
 
 	// Retrieve current membership by ftc id.
 	// If current membership is empty, we should create it.
-	currMmb, err := tx.RetrieveMember(param.UserIDs)
+	currMmb, err := tx.RetrieveMember(param.UserIDs.CompoundID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
