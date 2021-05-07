@@ -286,12 +286,15 @@ func (m Membership) OrderKindOfOneTime(e price.Edition) (enum.OrderKind, error) 
 	return enum.OrderKindNull, errors.New("unknown membership status")
 }
 
-// OfferKindsEnjoyed guesses what kind of discount a user could enjoy.
+// OfferKindsEnjoyed guesses all candidate discounts a user could enjoy.
+// This is used as a filter to select an applicable offer.
 func (m Membership) OfferKindsEnjoyed() []price.OfferKind {
 	if m.IsZero() {
 		return []price.OfferKind{price.OfferKindPromotion}
 	}
 
+	// If current membership is expired, user could enjoy
+	// promotion offer (which might not exist), and win back offer
 	if m.IsExpired() {
 		return []price.OfferKind{
 			price.OfferKindPromotion,
@@ -299,6 +302,8 @@ func (m Membership) OfferKindsEnjoyed() []price.OfferKind {
 		}
 	}
 
+	// If current membership is not expired, user could enjoy
+	// promotion offer (which might not exist), and retention offer
 	return []price.OfferKind{
 		price.OfferKindPromotion,
 		price.OfferKindRetention,
