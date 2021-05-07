@@ -4,6 +4,9 @@ commit := `git log --max-count=1 --pretty=format:%aI_%h`
 
 ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
+app_name := iap-poller
+src_dir := .
+
 sys := $(shell uname -s)
 hardware := $(shell uname -m)
 
@@ -54,4 +57,4 @@ deploy : amd64 publish restart
 .PHONY: clean
 clean :
 	go clean -x
-	rm build/*
+	rm -rf ../../build/**
