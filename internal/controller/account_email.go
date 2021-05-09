@@ -81,7 +81,7 @@ func (router AccountRouter) UpdateEmail(w http.ResponseWriter, req *http.Request
 	}()
 
 	// `204 No Content` if updated successfully.
-	_ = render.New(w).NoContent()
+	_ = render.New(w).OK(newAcnt)
 }
 
 // RequestVerification sends user a verification letter when he explicitly ask so.
