@@ -55,7 +55,7 @@ func NewPwResetSession(params pkg.ForgotPasswordParams) (PwResetSession, error) 
 		URLToken:   token,         // URLToken always exists.
 		AppCode:    null.String{}, // Only exists if the request comes from mobile devices.
 		IsUsed:     false,
-		ExpiresIn:  10800,
+		ExpiresIn:  3 * 60 * 60, // Valid for 3 hours
 		CreatedUTC: chrono.TimeNow(),
 	}
 
@@ -64,7 +64,7 @@ func NewPwResetSession(params pkg.ForgotPasswordParams) (PwResetSession, error) 
 		sess.SourceURL = null.String{}
 		// Add add an easy-to-type 6-digit code
 		sess.AppCode = null.StringFrom(pkg.PwResetCode())
-		sess.ExpiresIn = 300
+		sess.ExpiresIn = 30 * 60 // Valid for 30 minutes.
 	}
 
 	return sess, nil
@@ -109,4 +109,22 @@ func (s PwResetSession) BuildURL() string {
 // IsExpired tests whether an existing PwResetSession is expired.
 func (s PwResetSession) IsExpired() bool {
 	return s.CreatedUTC.Add(time.Second * time.Duration(s.ExpiresIn)).Before(time.Now())
+}
+
+func (s PwResetSession) DurHours() int64 {
+	h := (time.Duration(s.ExpiresIn) * time.Second).Hours()
+	return int64(h)
+}
+
+func (s PwResetSession) DurMinutes() int64 {
+	m := (time.Duration(s.ExpiresIn) * time.Second).Minutes()
+	return int64(m)
+}
+
+func (s PwResetSession) FormatDuration() string {
+	if s.ExpiresIn >= 60*60 {
+		return fmt.Sprintf("%d小时", s.DurHours())
+	}
+
+	return fmt.Sprintf("%d分钟", s.DurMinutes())
 }
