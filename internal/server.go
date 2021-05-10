@@ -150,6 +150,11 @@ func StartServer(s ServerStatus) {
 		r.Route("/email", func(r chi.Router) {
 			r.Use(controller.RequireFtcID)
 
+			// Update email.
+			// Possible issues when user is also a Stripe customer:
+			// the email we have at hand will be inconsistent with Stripe customer's email.
+			// However this is a not a big problem since customer id is not affected.
+			// We can still find this customer.
 			r.Patch("/", accountRouter.UpdateEmail)
 			r.Post("/request-verification", accountRouter.RequestVerification)
 		})
