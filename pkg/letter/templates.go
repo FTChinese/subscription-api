@@ -36,13 +36,13 @@ FT中文网用户 {{.UserName}}，你好！
 
 如果上述链接无法点击，可以复制粘贴到浏览器地址栏。
 
-本链接3小时内有效。
+本链接{{.Duration}}内有效。
 {{else if .AppCode}}
 获悉您遗失了FT中文网的登录密码，请在App中输入以下验证码重置密码：
 
 {{.AppCode}}
 
-验证码5分钟内有效。
+验证码{{.Duration}}内有效。
 {{end}}
 FT中文网`,
 	keyWxSignUp: `

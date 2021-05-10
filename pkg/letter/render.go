@@ -142,6 +142,7 @@ type CtxPwReset struct {
 	UserName string
 	URL      string
 	AppCode  string
+	Duration string
 }
 
 func (ctx CtxPwReset) Render() (string, error) {

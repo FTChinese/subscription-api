@@ -69,6 +69,7 @@ func PasswordResetParcel(a account.BaseAccount, session account.PwResetSession) 
 		UserName: a.NormalizeName(),
 		URL:      session.BuildURL(),
 		AppCode:  session.AppCode.String,
+		Duration: session.FormatDuration(),
 	}.Render()
 
 	if err != nil {

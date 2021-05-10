@@ -66,41 +66,35 @@ func TestCtxVerification_Render(t *testing.T) {
 }
 
 func TestCtxPwReset_Render(t *testing.T) {
-	type fields struct {
-		UserName string
-		URL      string
-		AppCode  string
-	}
+
 	tests := []struct {
 		name    string
-		fields  fields
+		fields  CtxPwReset
 		want    string
 		wantErr bool
 	}{
 		{
 			name: "Password reset in app",
-			fields: fields{
+			fields: CtxPwReset{
 				UserName: gofakeit.Username(),
 				URL:      "",
 				AppCode:  "12345678",
+				Duration: "3小时",
 			},
 		},
 		{
 			name: "Password reset in browser",
-			fields: fields{
+			fields: CtxPwReset{
 				UserName: gofakeit.Username(),
 				URL:      gofakeit.URL(),
 				AppCode:  "",
+				Duration: "30分钟",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := CtxPwReset{
-				UserName: tt.fields.UserName,
-				URL:      tt.fields.URL,
-				AppCode:  tt.fields.AppCode,
-			}
+			ctx := tt.fields
 			got, err := ctx.Render()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Render() error = %v, wantErr %v", err, tt.wantErr)
