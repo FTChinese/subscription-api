@@ -436,8 +436,8 @@ func (m Membership) Merge(other Membership) (Membership, error) {
 	if m.IsLinked() || other.IsLinked() {
 		return Membership{}, &render.ValidationError{
 			Message: "at least one of the account's membership is linked to a 3rd account",
-			Field:   "membership",
-			Code:    "link_already_taken",
+			Field:   "membership_link",
+			Code:    render.CodeAlreadyExists,
 		}
 	}
 
@@ -448,8 +448,8 @@ func (m Membership) Merge(other Membership) (Membership, error) {
 
 		return Membership{}, &render.ValidationError{
 			Message: "accounts with valid memberships cannot be linked",
-			Field:   "membership",
-			Code:    "both_valid",
+			Field:   "membership_both_valid",
+			Code:    render.CodeAlreadyExists,
 		}
 	}
 
