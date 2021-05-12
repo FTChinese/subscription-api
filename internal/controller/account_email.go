@@ -33,7 +33,7 @@ func (router AccountRouter) UpdateEmail(w http.ResponseWriter, req *http.Request
 	}
 
 	// Find current user by id.
-	currAcnt, err := router.repo.BaseAccountByUUID(ftcID)
+	currAcnt, err := router.userRepo.BaseAccountByUUID(ftcID)
 	// AccountBase might not be found.
 	if err != nil {
 		sugar.Error(err)
@@ -54,7 +54,7 @@ func (router AccountRouter) UpdateEmail(w http.ResponseWriter, req *http.Request
 
 	newAcnt := currAcnt.WithEmail(params.Email)
 	// Update email and record email change history.
-	err = router.repo.UpdateEmail(newAcnt)
+	err = router.userRepo.UpdateEmail(newAcnt)
 
 	// `422 Unprocessable Entity`
 	if err != nil {
@@ -71,7 +71,7 @@ func (router AccountRouter) UpdateEmail(w http.ResponseWriter, req *http.Request
 
 	// Save user's current email address.
 	go func() {
-		if err := router.repo.SaveEmailHistory(currAcnt); err != nil {
+		if err := router.userRepo.SaveEmailHistory(currAcnt); err != nil {
 			sugar.Error(err)
 		}
 	}()
@@ -104,7 +104,7 @@ func (router AccountRouter) RequestVerification(w http.ResponseWriter, req *http
 	}
 
 	// Retrieve this user info by user id.
-	baseAccount, err := router.repo.BaseAccountByUUID(ftcID)
+	baseAccount, err := router.userRepo.BaseAccountByUUID(ftcID)
 	// 404 if user is not found.
 	if err != nil {
 		sugar.Error(err)
@@ -126,7 +126,7 @@ func (router AccountRouter) RequestVerification(w http.ResponseWriter, req *http
 	fp := footprint.New(baseAccount.FtcID, footprint.NewClient(req)).FromVerification()
 
 	go func() {
-		err = router.repo.SaveFootprint(fp)
+		err = router.userRepo.SaveFootprint(fp)
 		if err != nil {
 			sugar.Error(err)
 		}

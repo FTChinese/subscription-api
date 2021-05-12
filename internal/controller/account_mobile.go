@@ -16,7 +16,7 @@ func (router AccountRouter) RequestSMSVerification(w http.ResponseWriter, req *h
 	sugar := router.logger.Sugar()
 
 	ftcID := req.Header.Get(userIDKey)
-	ok, err := router.repo.IDExists(ftcID)
+	ok, err := router.userRepo.IDExists(ftcID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -44,7 +44,7 @@ func (router AccountRouter) RequestSMSVerification(w http.ResponseWriter, req *h
 
 	vrf := ztsms.NewVerifier(params.Mobile, null.StringFrom(ftcID))
 
-	err = router.repo.SaveSMSVerifier(vrf)
+	err = router.userRepo.SaveSMSVerifier(vrf)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -85,7 +85,7 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	vrf, err := router.repo.RetrieveSMSVerifier(params)
+	vrf, err := router.userRepo.RetrieveSMSVerifier(params)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -99,11 +99,11 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 
 	vrf = vrf.WithUsed()
 	go func() {
-		err = router.repo.SMSVerifierUsed(vrf)
+		err = router.userRepo.SMSVerifierUsed(vrf)
 		sugar.Error(err)
 	}()
 
-	acnt, err := router.repo.BaseAccountByUUID(ftcID)
+	acnt, err := router.userRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -112,7 +112,7 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 
 	acnt = acnt.WithMobile(vrf.Mobile)
 
-	err = router.repo.SetPhone(acnt)
+	err = router.userRepo.SetPhone(acnt)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
