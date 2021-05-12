@@ -194,6 +194,8 @@ func StartServer(s ServerStatus) {
 			r.Use(controller.RequireUnionID)
 			r.Get("/", accountRouter.LoadAccountByWx)
 			r.Post("/signup", accountRouter.WxSignUp)
+			// Wechat logged-in user links to an existing email account,
+			// or email logged-in user links to wechat after authorization.
 			r.Post("/link", accountRouter.LinkWechat)
 			r.Post("/unlink", accountRouter.UnlinkWx)
 		})
