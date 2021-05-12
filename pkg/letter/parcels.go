@@ -113,7 +113,7 @@ func WxSignUpParcel(a reader.Account, verifier account.EmailVerifier) (postoffic
 }
 
 // LinkedParcel generates a email parcel after accounts are linked.
-func LinkedParcel(linkResult reader.LinkWxResult) (postoffice.Parcel, error) {
+func LinkedParcel(linkResult reader.WxEmailLinkResult) (postoffice.Parcel, error) {
 
 	body, err := CtxAccountLink{
 		CtxLinkBase: CtxLinkBase{
