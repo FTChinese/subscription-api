@@ -38,7 +38,7 @@ func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http
 
 	// Retrieve account by mobile number.
 	// If not found, it indicates the mobile is used for the first time.
-	ftcAccount, err := router.repo.BaseAccountByMobile(params.Mobile)
+	ftcAccount, err := router.userRepo.BaseAccountByMobile(params.Mobile)
 	if err != nil {
 		sugar.Error(err)
 		if err != sql.ErrNoRows {
@@ -52,7 +52,7 @@ func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http
 	// user is using mobile to login for the first t ime.
 	vrf := ztsms.NewVerifier(params.Mobile, null.NewString(ftcAccount.FtcID, ftcAccount.FtcID != ""))
 
-	err = router.repo.SaveSMSVerifier(vrf)
+	err = router.userRepo.SaveSMSVerifier(vrf)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -105,7 +105,7 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	vrf, err := router.repo.RetrieveSMSVerifier(params)
+	vrf, err := router.userRepo.RetrieveSMSVerifier(params)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -122,7 +122,7 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 	}
 
 	go func() {
-		err := router.repo.SMSVerifierUsed(vrf.WithUsed())
+		err := router.userRepo.SMSVerifierUsed(vrf.WithUsed())
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -140,7 +140,7 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 			WithAuth(enum.LoginMethodMobile, params.DeviceToken)
 
 		go func() {
-			err := router.repo.SaveFootprint(fp)
+			err := router.userRepo.SaveFootprint(fp)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -180,7 +180,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 
 	// Find the user id and password matching state by email.
 	// If not found, it indicates the account does not exists.
-	authResult, err := router.repo.Authenticate(params.EmailLoginParams)
+	authResult, err := router.userRepo.Authenticate(params.EmailLoginParams)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -194,7 +194,8 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Retrieve account by user id.
-	acnt, err := router.repo.AccountByFtcID(authResult.UserID)
+	// There shouldn't be any 404 error here.
+	acnt, err := router.userRepo.AccountByFtcID(authResult.UserID)
 	if err != nil {
 		// There shouldn't be ErrNoRow error here.
 		sugar.Error(err)
@@ -209,7 +210,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 			_ = render.New(w).OK(acnt)
 		} else {
 			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: "The account already has a mobile number set",
+				Message: "This email account is already linked to another mobile",
 				Field:   "mobile",
 				Code:    render.CodeAlreadyExists,
 			})
@@ -223,7 +224,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 
 	// Save mobile number
 	go func() {
-		err := router.repo.SetPhone(baseAccount)
+		err := router.userRepo.SetPhone(baseAccount)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -236,7 +237,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		WithAuth(enum.LoginMethodMobile, params.DeviceToken)
 
 	go func() {
-		err := router.repo.SaveFootprint(fp)
+		err := router.userRepo.SaveFootprint(fp)
 		if err != nil {
 			sugar.Error()
 		}
@@ -274,7 +275,7 @@ func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) 
 	// Create account from input data.
 	baseAccount := account.NewMobileBaseAccount(params)
 	// Save it.
-	err := router.repo.CreateAccount(baseAccount)
+	err := router.userRepo.CreateAccount(baseAccount)
 	if err != nil {
 		sugar.Error(err)
 		// Check for duplicate.
@@ -293,7 +294,7 @@ func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) 
 		WithAuth(enum.LoginMethodMobile, params.DeviceToken)
 
 	go func() {
-		err := router.repo.SaveFootprint(fp)
+		err := router.userRepo.SaveFootprint(fp)
 		if err != nil {
 			sugar.Error()
 		}

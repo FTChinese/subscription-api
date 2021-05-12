@@ -22,7 +22,7 @@ func NewAccountRouter(myDBs db.ReadWriteSplit, postman postoffice.PostOffice, l 
 func (router AccountRouter) LoadAccountByEmail(w http.ResponseWriter, req *http.Request) {
 	userID := req.Header.Get(userIDKey)
 
-	acnt, err := router.repo.AccountByFtcID(userID)
+	acnt, err := router.userRepo.AccountByFtcID(userID)
 
 	if err != nil {
 		_ = render.New(w).DBError(err)
@@ -39,7 +39,7 @@ func (router AccountRouter) LoadAccountByEmail(w http.ResponseWriter, req *http.
 func (router AccountRouter) LoadAccountByWx(w http.ResponseWriter, req *http.Request) {
 	unionID := req.Header.Get(unionIDKey)
 
-	acnt, err := router.repo.AccountByWxID(unionID)
+	acnt, err := router.userRepo.AccountByWxID(unionID)
 
 	if err != nil {
 		_ = render.New(w).DBError(err)

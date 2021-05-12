@@ -13,7 +13,7 @@ import (
 func (router AccountRouter) LoadAddress(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(userIDKey)
 
-	addr, err := router.repo.LoadAddress(ftcID)
+	addr, err := router.userRepo.LoadAddress(ftcID)
 
 	if err != nil {
 		_ = render.New(w).DBError(err)
@@ -51,7 +51,7 @@ func (router AccountRouter) UpdateAddress(w http.ResponseWriter, req *http.Reque
 	}
 	addr.FtcID = ftcID
 
-	if err := router.repo.UpdateAddress(addr); err != nil {
+	if err := router.userRepo.UpdateAddress(addr); err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}

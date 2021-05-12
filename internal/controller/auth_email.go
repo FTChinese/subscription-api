@@ -29,7 +29,7 @@ func (router AuthRouter) EmailExists(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ok, err := router.repo.EmailExists(email)
+	ok, err := router.userRepo.EmailExists(email)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -71,19 +71,22 @@ func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	authResult, err := router.repo.Authenticate(params)
+	// Not found if email does not exists
+	authResult, err := router.userRepo.Authenticate(params)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
+	// Forbidden if password incorrect.
 	if !authResult.PasswordMatched {
 		_ = render.New(w).Forbidden("Incorrect credentials")
 		return
 	}
 
-	acnt, err := router.repo.AccountByFtcID(authResult.UserID)
+	// There shouldn't be any not found error.
+	acnt, err := router.userRepo.AccountByFtcID(authResult.UserID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -94,7 +97,7 @@ func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 		WithAuth(enum.LoginMethodEmail, params.DeviceToken)
 
 	go func() {
-		err := router.repo.SaveFootprint(fp)
+		err := router.userRepo.SaveFootprint(fp)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -122,7 +125,7 @@ func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
 	if !clientApp.UserIP.IsZero() {
 		// SingupCount error should be omitted.
 		// This should not be a barrier for signup process.
-		limit, _ := router.repo.SignUpCount(account.NewSignUpRateParams(clientApp.UserIP.String, 1))
+		limit, _ := router.userRepo.SignUpCount(account.NewSignUpRateParams(clientApp.UserIP.String, 1))
 
 		if limit.Exceeds() {
 			_ = render.New(w).TooManyRequests("Too many accounts were created at the same IP within the past 1 hour.")
@@ -145,7 +148,7 @@ func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
 	}
 
 	baseAccount := account.NewEmailBaseAccount(params)
-	err := router.repo.CreateAccount(baseAccount)
+	err := router.userRepo.CreateAccount(baseAccount)
 	if err != nil {
 		sugar.Error(err)
 		if db.IsAlreadyExists(err) {
@@ -162,7 +165,7 @@ func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
 		WithAuth(enum.LoginMethodEmail, params.DeviceToken)
 
 	go func() {
-		err := router.repo.SaveFootprint(fp)
+		err := router.userRepo.SaveFootprint(fp)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -198,14 +201,14 @@ func (router AuthRouter) VerifyEmail(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	vrf, err := router.repo.RetrieveEmailVerifier(token)
+	vrf, err := router.userRepo.RetrieveEmailVerifier(token)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	baseAccount, err := router.repo.BaseAccountByEmail(vrf.Email)
+	baseAccount, err := router.userRepo.BaseAccountByEmail(vrf.Email)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -217,7 +220,7 @@ func (router AuthRouter) VerifyEmail(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := router.repo.EmailVerified(baseAccount.FtcID); err != nil {
+	if err := router.userRepo.EmailVerified(baseAccount.FtcID); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
@@ -228,7 +231,7 @@ func (router AuthRouter) VerifyEmail(w http.ResponseWriter, req *http.Request) {
 		FromVerification()
 
 	go func() {
-		_ = router.repo.SaveFootprint(fp)
+		_ = router.userRepo.SaveFootprint(fp)
 	}()
 
 	// Send a greeting letter.

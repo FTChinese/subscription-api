@@ -28,7 +28,7 @@ func (router AccountRouter) UpdateName(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	baseAccount, err := router.repo.BaseAccountByUUID(ftcID)
+	baseAccount, err := router.userRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).NotFound("")
 		return
@@ -40,7 +40,7 @@ func (router AccountRouter) UpdateName(w http.ResponseWriter, req *http.Request)
 	}
 
 	baseAccount = baseAccount.WithUserName(params.UserName)
-	err = router.repo.UpdateUserName(baseAccount)
+	err = router.userRepo.UpdateUserName(baseAccount)
 
 	// `422 Unprocessable Entity` if this `userName` already exists
 	if err != nil {
