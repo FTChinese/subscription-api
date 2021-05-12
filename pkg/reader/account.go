@@ -89,8 +89,8 @@ func (a Account) Link(other Account) (Account, error) {
 	if a.IsLinked() || other.IsLinked() {
 		return Account{}, &render.ValidationError{
 			Message: "one of the accounts or both of them are linked to a 3rd account",
-			Field:   "account",
-			Code:    "link_already_taken",
+			Field:   "account_link",
+			Code:    render.CodeAlreadyExists,
 		}
 	}
 
