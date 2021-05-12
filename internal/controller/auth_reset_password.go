@@ -40,7 +40,7 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 	}
 
 	// Load account for this email
-	baseAccount, err := router.repo.BaseAccountByEmail(params.Email)
+	baseAccount, err := router.userRepo.BaseAccountByEmail(params.Email)
 	// Not Found.
 	if err != nil {
 		sugar.Error(err)
@@ -57,7 +57,7 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 	}
 
 	// Save password reset  token.
-	if err := router.repo.SavePwResetSession(session); err != nil {
+	if err := router.userRepo.SavePwResetSession(session); err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
@@ -66,7 +66,7 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 		FromPwReset()
 
 	go func() {
-		_ = router.repo.SaveFootprint(fp)
+		_ = router.userRepo.SaveFootprint(fp)
 	}()
 
 	// Compose email
@@ -104,7 +104,7 @@ func (router AuthRouter) VerifyResetToken(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	session, err := router.repo.PwResetSessionByToken(token)
+	session, err := router.userRepo.PwResetSessionByToken(token)
 	// `404 Not Found`
 	if err != nil {
 		sugar.Error(err)
@@ -149,7 +149,7 @@ func (router AuthRouter) VerifyResetCode(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	session, err := router.repo.PwResetSessionByCode(params)
+	session, err := router.userRepo.PwResetSessionByCode(params)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -193,7 +193,9 @@ func (router AuthRouter) ResetPassword(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	session, err := router.repo.PwResetSessionByToken(params.Token)
+	// Should we checking expiration time now?
+	session, err := router.userRepo.PwResetSessionByToken(params.Token)
+	// Not found error.
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -202,14 +204,15 @@ func (router AuthRouter) ResetPassword(w http.ResponseWriter, req *http.Request)
 
 	// Find reader's account by token in case the token
 	// is no longer valid upon changing password.
-	baseAccount, err := router.repo.BaseAccountByEmail(session.Email)
+	baseAccount, err := router.userRepo.BaseAccountByEmail(session.Email)
+	// Might not found.
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	// Change password.
-	if err := router.repo.UpdatePassword(pkg.PasswordUpdateParams{
+	if err := router.userRepo.UpdatePassword(pkg.PasswordUpdateParams{
 		FtcID: baseAccount.FtcID,
 		New:   params.Password,
 	}); err != nil {
@@ -219,7 +222,7 @@ func (router AuthRouter) ResetPassword(w http.ResponseWriter, req *http.Request)
 
 	// Invalidate token.
 	go func() {
-		_ = router.repo.DisablePasswordReset(params.Token)
+		_ = router.userRepo.DisablePasswordReset(params.Token)
 	}()
 
 	// `204 No Content`

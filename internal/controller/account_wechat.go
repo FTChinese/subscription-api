@@ -9,7 +9,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"io"
 	"net/http"
 )
 
@@ -45,7 +44,13 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := router.repo.WxSignUp(unionID, in)
+	// Possible 422 error that could only happen for login.
+	// For signup the email account is always clean so link
+	// is always possible.
+	// field: account_link, code: already_exists;
+	// field: membership_link, code: already_exists;
+	// field: membership_both_valid, code: already_exists;
+	result, err := router.userRepo.WxSignUp(unionID, in)
 
 	if err != nil {
 		var ve *render.ValidationError
@@ -60,7 +65,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 
 	if !result.WxMemberSnapshot.IsZero() {
 		go func() {
-			_ = router.repo.ArchiveMember(result.WxMemberSnapshot)
+			_ = router.userRepo.ArchiveMember(result.WxMemberSnapshot)
 		}()
 	}
 
@@ -68,7 +73,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 		FromSignUp()
 
 	go func() {
-		_ = router.repo.SaveFootprint(fp)
+		_ = router.userRepo.SaveFootprint(fp)
 	}()
 
 	// Send an email telling user that a new account is created with this email, wechat is bound to it, and in the future the email account is equal to wechat account.
@@ -80,7 +85,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err = router.repo.SaveEmailVerifier(verifier)
+		err = router.userRepo.SaveEmailVerifier(verifier)
 		if err != nil {
 			return
 		}
@@ -115,7 +120,7 @@ func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request)
 	unionID := req.Header.Get(unionIDKey)
 
 	var input pkg.LinkWxParams
-	if err := gorest.ParseJSON(req.Body, &input); err != nil && err != io.EOF {
+	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -128,20 +133,33 @@ func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	result, err := router.repo.LinkWechat(input)
+	// Retrieve accounts for ftc side and wx side respectively.
+	ftcAcnt, err := router.userRepo.AccountByFtcID(input.FtcID)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+	}
+
+	wxAcnt, err := router.userRepo.AccountByWxID(input.UnionID)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+	}
+
+	// Possible 422 error that could only happen:
+	// field: account_link, code: already_exists;
+	// field: membership_link, code: already_exists;
+	// field: membership_both_valid, code: already_exists;
+	result, err := reader.WxEmailLinkBuilder{
+		FTC:    ftcAcnt,
+		Wechat: wxAcnt,
+	}.Build()
 
 	if err != nil {
 		var ve *render.ValidationError
-		if errors.As(err, &ve) {
-			_ = render.New(w).Unprocessable(ve)
-			return
-		}
 		switch {
 		case errors.As(err, &ve):
 			_ = render.New(w).Unprocessable(ve)
-
-		case err == reader.ErrAccountsAlreadyLinked:
-			_ = render.New(w).NoContent()
 
 		default:
 			_ = render.New(w).DBError(err)
@@ -149,13 +167,26 @@ func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	if result.IsDuplicateLink {
+		sugar.Info("Duplicate wechat-email link")
+		_ = render.New(w).NoContent()
+		return
+	}
+
+	err = router.userRepo.LinkWechat(result)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
 	go func() {
 		if !result.FtcMemberSnapshot.IsZero() {
-			_ = router.repo.ArchiveMember(result.FtcMemberSnapshot)
+			_ = router.userRepo.ArchiveMember(result.FtcMemberSnapshot)
 		}
 
 		if !result.WxMemberSnapshot.IsZero() {
-			_ = router.repo.ArchiveMember(result.WxMemberSnapshot)
+			_ = router.userRepo.ArchiveMember(result.WxMemberSnapshot)
 		}
 	}()
 
@@ -173,7 +204,7 @@ func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request)
 		}
 	}()
 
-	_ = render.New(w).OK(result.Account)
+	_ = render.New(w).NoContent()
 }
 
 // UnlinkWx revert linking accounts.
@@ -207,7 +238,7 @@ func (router AccountRouter) UnlinkWx(w http.ResponseWriter, req *http.Request) {
 		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 	}
-	acnt, err := router.repo.AccountByFtcID(params.FtcID)
+	acnt, err := router.userRepo.AccountByFtcID(params.FtcID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -234,7 +265,7 @@ func (router AccountRouter) UnlinkWx(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = router.repo.UnlinkWx(acnt, params.Anchor)
+	err = router.userRepo.UnlinkWx(acnt, params.Anchor)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

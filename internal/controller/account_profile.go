@@ -14,7 +14,7 @@ import (
 func (router AccountRouter) LoadProfile(w http.ResponseWriter, req *http.Request) {
 	userID := req.Header.Get(userIDKey)
 
-	p, err := router.repo.LoadProfile(userID)
+	p, err := router.userRepo.LoadProfile(userID)
 
 	// `404 Not Found` if this user does not exist.
 	if err != nil {
@@ -51,7 +51,7 @@ func (router AccountRouter) UpdateProfile(w http.ResponseWriter, req *http.Reque
 
 	input.ID = ftcID
 
-	err := router.repo.UpdateProfile(input)
+	err := router.userRepo.UpdateProfile(input)
 
 	if err != nil {
 		_ = render.New(w).DBError(err)

@@ -30,12 +30,14 @@ func (router AccountRouter) UpdatePassword(w http.ResponseWriter, req *http.Requ
 
 	input.FtcID = userID
 
-	authResult, err := router.repo.VerifyPassword(input)
+	// 404 Not Found might occur.
+	authResult, err := router.userRepo.VerifyPassword(input)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
+	// 403 Forbidden if password incorrect.
 	if !authResult.PasswordMatched {
 		_ = render.New(w).Forbidden("Current password incorrect")
 		return
@@ -43,7 +45,7 @@ func (router AccountRouter) UpdatePassword(w http.ResponseWriter, req *http.Requ
 
 	// ErrWrongPassword if current password does not match -- 403 Forbidden.
 	// 404 Not Found is user id does not exist.
-	if err := router.repo.UpdatePassword(input); err != nil {
+	if err := router.userRepo.UpdatePassword(input); err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}

@@ -12,7 +12,7 @@ import (
 
 // UserShared wraps functionalities common to AuthRouter and AccountRouter.
 type UserShared struct {
-	repo      accounts.Env
+	userRepo  accounts.Env
 	smsClient ztsms.Client
 	logger    *zap.Logger
 	postman   postoffice.PostOffice
@@ -20,7 +20,7 @@ type UserShared struct {
 
 func NewUserShared(dbs db.ReadWriteSplit, pm postoffice.PostOffice, l *zap.Logger) UserShared {
 	return UserShared{
-		repo:      accounts.New(dbs, l),
+		userRepo:  accounts.New(dbs, l),
 		smsClient: ztsms.NewClient(l),
 		logger:    l,
 		postman:   pm,
@@ -38,7 +38,7 @@ func (us UserShared) SendEmailVerification(baseAccount account.BaseAccount, sour
 		return err
 	}
 
-	err = us.repo.SaveEmailVerifier(verifier)
+	err = us.userRepo.SaveEmailVerifier(verifier)
 	if err != nil {
 		sugar.Error(err)
 		return err
