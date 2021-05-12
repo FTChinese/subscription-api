@@ -11,7 +11,7 @@ import (
 // WxSignUp helps a Wechat-logged-in user to sign up on FTC.
 // If user already purchased membership with Wechat account, the membership will be bound to this signup email.
 // Returns the new account's UUID.
-func (env Env) WxSignUp(unionID string, input pkg.EmailSignUpParams) (reader.LinkWxResult, error) {
+func (env Env) WxSignUp(unionID string, input pkg.EmailSignUpParams) (reader.WxEmailLinkResult, error) {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
 
@@ -28,53 +28,53 @@ func (env Env) WxSignUp(unionID string, input pkg.EmailSignUpParams) (reader.Lin
 	ok, err := env.EmailExists(input.Email)
 	if err != nil {
 		sugar.Error(err)
-		return reader.LinkWxResult{}, err
+		return reader.WxEmailLinkResult{}, err
 	}
 
 	// Email already exists.
 	if ok {
-		return reader.LinkWxResult{}, render.NewVEAlreadyExists("email")
+		return reader.WxEmailLinkResult{}, render.NewVEAlreadyExists("email")
 	}
 
 	// Retrieve account by wx union id.
 	wxAccount, err := env.AccountByWxID(unionID)
 	if err != nil {
 		sugar.Error(err)
-		return reader.LinkWxResult{}, err
+		return reader.WxEmailLinkResult{}, err
 	}
 
 	merged, err := ftcAccount.Link(wxAccount)
 	if err != nil {
 		sugar.Error(err)
-		return reader.LinkWxResult{}, err
+		return reader.WxEmailLinkResult{}, err
 	}
 
 	// Start persisting data.
 	tx, err := env.beginAccountTx()
 	if err != nil {
 		sugar.Error(err)
-		return reader.LinkWxResult{}, err
+		return reader.WxEmailLinkResult{}, err
 	}
 
 	//
 	if err = tx.CreateAccount(merged.BaseAccount); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.LinkWxResult{}, err
+		return reader.WxEmailLinkResult{}, err
 	}
 
 	if err = tx.CreateProfile(merged.BaseAccount); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.LinkWxResult{}, err
+		return reader.WxEmailLinkResult{}, err
 	}
 
 	if merged.Membership.IsZero() {
 		if err := tx.Commit(); err != nil {
 			sugar.Error(err)
-			return reader.LinkWxResult{}, err
+			return reader.WxEmailLinkResult{}, err
 		}
-		return reader.LinkWxResult{
+		return reader.WxEmailLinkResult{
 			Account: merged,
 		}, nil
 	}
@@ -83,24 +83,24 @@ func (env Env) WxSignUp(unionID string, input pkg.EmailSignUpParams) (reader.Lin
 	if err := tx.DeleteMember(wxAccount.Membership.UserIDs); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.LinkWxResult{}, err
+		return reader.WxEmailLinkResult{}, err
 	}
 
 	sugar.Infof("Inserting merged member...")
 	if err := tx.CreateMember(merged.Membership); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.LinkWxResult{}, err
+		return reader.WxEmailLinkResult{}, err
 	}
 
 	sugar.Infof("Wechat user %s has membership and is linked to new account %s", wxAccount.UnionID.String, ftcAccount.FtcID)
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error()
-		return reader.LinkWxResult{}, err
+		return reader.WxEmailLinkResult{}, err
 	}
 
-	return reader.LinkWxResult{
+	return reader.WxEmailLinkResult{
 		Account:           merged,
 		FtcMemberSnapshot: reader.MemberSnapshot{},
 		WxMemberSnapshot: wxAccount.Membership.Snapshot(reader.Archiver{
@@ -123,81 +123,65 @@ func (env Env) WxSignUp(unionID string, input pkg.EmailSignUpParams) (reader.Lin
 // Somehow (some might manually touched DB) the same reader's
 // membership is linked while the accounts are not. We need to
 // allow linking for such accounts.
-func (env Env) LinkWechat(input pkg.LinkWxParams) (reader.LinkWxResult, error) {
+func (env Env) LinkWechat(result reader.WxEmailLinkResult) error {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
-
-	// Retrieve accounts for ftc side and wx side respectively.
-	ftcAcnt, err := env.AccountByFtcID(input.FtcID)
-	if err != nil {
-		return reader.LinkWxResult{}, err
-	}
-
-	wxAcnt, err := env.AccountByWxID(input.UnionID)
-	if err != nil {
-		return reader.LinkWxResult{}, err
-	}
-
-	merged, err := ftcAcnt.Link(wxAcnt)
-	if err != nil {
-		sugar.Error(err)
-		return reader.LinkWxResult{}, err
-	}
 
 	tx, err := env.beginAccountTx()
 	if err != nil {
 		sugar.Error(err)
-		return reader.LinkWxResult{}, err
+		return err
 	}
 
-	if err := tx.AddUnionIDToFtc(merged.BaseAccount); err != nil {
+	if err := tx.AddUnionIDToFtc(result.Account.BaseAccount); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.LinkWxResult{}, err
+		return err
 	}
 
 	// If both accounts do not have memberships, stop.
-	if merged.Membership.IsZero() {
+	if result.Account.Membership.IsZero() {
 		sugar.Infof("Merged account have zero membership")
 		if err := tx.Commit(); err != nil {
-			return reader.LinkWxResult{}, err
+			return err
 		}
 
-		return reader.LinkWxResult{
-			Account: merged,
-		}, nil
+		return nil
 	}
 
-	sugar.Infof("Removing merged members...")
-	if err := tx.DeleteMember(merged.Membership.UserIDs); err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return reader.LinkWxResult{}, err
+	if !result.FtcMemberSnapshot.IsZero() {
+		sugar.Infof("Removing ftc side members...")
+		err := tx.DeleteMember(result.FtcMemberSnapshot.UserIDs)
+		if err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	if !result.WxMemberSnapshot.IsZero() {
+		sugar.Infof("Removing wechat side members...")
+		err := tx.DeleteMember(result.WxMemberSnapshot.UserIDs)
+		if err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return err
+		}
 	}
 
 	sugar.Infof("Inserting merged member...")
-	if err := tx.CreateMember(merged.Membership); err != nil {
+	if err := tx.CreateMember(result.Account.Membership); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.LinkWxResult{}, err
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return reader.LinkWxResult{}, err
+		return err
 	}
 
-	return reader.LinkWxResult{
-		Account: merged,
-		FtcMemberSnapshot: ftcAcnt.Membership.Snapshot(reader.Archiver{
-			Name:   reader.NameWechat,
-			Action: reader.ActionLink,
-		}),
-		WxMemberSnapshot: wxAcnt.Membership.Snapshot(reader.Archiver{
-			Name:   reader.NameWechat,
-			Action: reader.ActionLink,
-		}),
-	}, nil
+	return nil
 }
 
 // UnlinkWx reverts linking ftc account to wechat account.
