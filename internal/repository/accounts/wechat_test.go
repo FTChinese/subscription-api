@@ -34,7 +34,7 @@ func TestEnv_WxSignUp(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    reader.LinkWxResult
+		want    reader.WxEmailLinkResult
 		wantErr bool
 	}{
 		{
@@ -95,7 +95,7 @@ func TestEnv_LinkWechat(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    reader.LinkWxResult
+		want    reader.WxEmailLinkResult
 		wantErr bool
 	}{
 		{
