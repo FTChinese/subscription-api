@@ -79,7 +79,7 @@ FT中文网账号 {{.Email}}: {{.FtcMember.Tier.StringCN}} 到期日{{.FtcMember
 
 合并后可以任一方式登录，会员信息相同。{{end}}
 
-您最近在FT中文网进行了账号绑定，因此收到本邮件。如果您没有进行此操作，请联系客服：subscriber.service@ftchinese.com。
+您最近在FT中文网进行了账号绑定，因此收到本邮件。如果您没有进行此操作，请联系客服：customer.service@ftchinese.com。
 
 感谢您对FT中文网的支持。
 
