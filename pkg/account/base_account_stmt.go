@@ -24,7 +24,8 @@ SELECT
 	IFNULL(u.email, '') 			AS email,
 	p.mobile_phone					AS mobile_phone,
 	u.user_name 					AS user_name,
-	IFNULL(u.email_verified, FALSE) AS is_verified
+	IFNULL(u.email_verified, FALSE) AS is_verified,
+	u.campaign_code					AS campaign_code
 `
 
 // When retrieving ftc account only, use wx_union_id column.
