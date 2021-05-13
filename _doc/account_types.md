@@ -18,6 +18,7 @@ interface BaseAccount {
     userName?: string;
     avatarUrl?: string;
     isVerified: boolean; // Is email everified?
+    campaignCode?: string;
 }
 
 interface Wechat {
