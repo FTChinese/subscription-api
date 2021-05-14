@@ -6,8 +6,8 @@
 * POST `/auth/email/login` Login with email + password
 * POST `/auth/email/signup` Create a new email account
 * POST `/auth/email/verification/{token}` Verify email inside browser
-* PUT `/auth/mobile/verification` Create an SMS code and send to user mobile phone.
-* POST `/auth/mobile/verification` Verify SMS code
+* PUT `/auth/mobile/verification` Create an SMS code and send to user mobile phone to perform login using phone number.
+* POST `/auth/mobile/verification` Verify SMS code sent in last step.
 * POST `/auth/mobile/link` Link mobile to an existing email account.
 * POST `/auth/mobile/signup` When the mobile is used for login for the first time, user should be asked to link to an email account, and if the email has not signed-up, create one here.
 * POST `/auth/password-reset` Reset password
@@ -31,7 +31,7 @@ GET /auth/email/exists?v=<email address>
 4. Respond 404 if not found.
 5. Respond 204 if found.
 
-## Login
+## Email Login
 
 ```
 POST /auth/email/login
@@ -55,4 +55,18 @@ interface EmailLoginParams {
 4. Record client metadata;
 5. Respond `Account`.
 
+## Email Signup
 
+```
+POST /auth/email/signup
+```
+
+### Request Body
+
+```typescript
+interface EmailLoginParams {
+    email: string;
+    password: string;
+    deviceToken?: string;
+}
+```
