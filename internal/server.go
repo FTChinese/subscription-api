@@ -61,10 +61,18 @@ func StartServer(s ServerStatus) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Route("/email", func(r chi.Router) {
-			// ?v=<email>
+			// Checks if an email exists.
+			// The email parameter should be sent as a query parameter `?v=<email>`
+			// Returns HTTP status code 204 if the email exists,
+			// or 404 if not found.
 			r.Get("/exists", authRouter.EmailExists)
+			// Authenticate user's email + password combination.
 			r.Post("/login", authRouter.EmailLogin)
+			// Create a new account using the provided email + password
 			r.Post("/signup", authRouter.EmailSignUp)
+			// Verify user's email by checking the validity of
+			// a token send to user's email.
+			// This is used only in desktop browsers.
 			r.Post("/verification/{token}", authRouter.VerifyEmail)
 		})
 
