@@ -48,6 +48,19 @@ interface Account extends BaseAccount {
 }
 ```
 
+## Address
+
+```typescript
+interface Address {
+    country?: string;
+    province?: string;
+    city?: string;
+    district?: string;
+    street?: string;
+    postcode?: string;
+}
+```
+
 
 ## Client Metadata
 
