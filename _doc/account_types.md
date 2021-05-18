@@ -48,6 +48,8 @@ interface Account extends BaseAccount {
 }
 ```
 
+When injected into WebView in Android, it is defined as a global variable `androidUserInfo`.
+
 ## Address
 
 ```typescript
@@ -60,6 +62,8 @@ interface Address {
     postcode?: string;
 }
 ```
+
+When injected into WebView in Android, it is defined as a global variable `androidUserAddress`.
 
 
 ## Client Metadata
