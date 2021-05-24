@@ -209,6 +209,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		if acnt.Mobile.String == params.Mobile {
 			_ = render.New(w).OK(acnt)
 		} else {
+			// If already set to to other mobile
 			_ = render.New(w).Unprocessable(&render.ValidationError{
 				Message: "This email account is already linked to another mobile",
 				Field:   "mobile",
