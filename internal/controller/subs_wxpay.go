@@ -12,16 +12,12 @@ import (
 )
 
 // WxPay creates order for wechat pay.
-// POST /wxpay/desktop/<tier>/<cycle>?test=true
-// 		/wxpay/mobile/<tier>/<cycle>?test=true
-//		/wxpay/jsapi/<tier>/<cycle>?test=true
-// 		/wxpay/app/<tier>/<cycle>?test=true
 // Header: X-User-Id: <uuid>, or X-Union-Id: <wechat union id>, or both.
 // Input:
 // openID?: string; Required only for payment inside wechat in-house browser.
-// TODO: put all those fields in request body
 // tier: string; Currently acquired from URL param
 // cycle: string; Currently acquired from URL param
+// planId: string;
 func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 	webhookURL := subs.WebhookURL(router.config.Sandbox(), enum.PayMethodWx)

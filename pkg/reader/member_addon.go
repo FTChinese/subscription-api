@@ -29,9 +29,9 @@ func (m Membership) CarriedOverAddOn() addon.AddOn {
 	return addon.New(m.Tier, m.RemainingDays())
 }
 
-// CarryOverInvoice creates a new invoice based on remainig days of current membership.
+// CarryOverInvoice creates a new invoice based on remaining days of current membership.
 // This should only be used when user is upgrading from standard to premium using one-time purchase,
-// or switch from one-=time purchase to subscription mode.
+// or switch from one-time purchase to subscription mode.
 func (m Membership) CarryOverInvoice() invoice.Invoice {
 	return invoice.Invoice{
 		ID:         pkg.InvoiceID(),
@@ -96,6 +96,7 @@ func (m Membership) claimAddOn(i invoice.Invoice) (Membership, error) {
 
 func (m Membership) ClaimAddOns(inv []invoice.Invoice) (AddOnClaimed, error) {
 
+	// Find out which group of addon could be consumed.
 	addOns := invoice.NewAddOnGroup(inv).
 		Consumable(dt.PickLater(time.Now(), m.ExpireDate.Time))
 
