@@ -18,7 +18,7 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 	}{
 		{
 			name:   "New member no offer",
-			fields: PriceStdYear,
+			fields: MockPriceStdYear,
 			args: args{
 				enjoys: []OfferKind{
 					OfferKindPromotion,
@@ -28,7 +28,7 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 		},
 		{
 			name:   "Existing member enjoys retention offer",
-			fields: PriceStdYear,
+			fields: MockPriceStdYear,
 			args: args{
 				enjoys: []OfferKind{
 					OfferKindPromotion,
@@ -39,7 +39,7 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 		},
 		{
 			name:   "Expired member enjoys win-back offer",
-			fields: PriceStdYear,
+			fields: MockPriceStdYear,
 			args: args{
 				enjoys: []OfferKind{
 					OfferKindPromotion,

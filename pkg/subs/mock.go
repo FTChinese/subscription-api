@@ -35,7 +35,7 @@ func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
 		id:        pkg.MustOrderID(),
 		ftcID:     ftcID,
 		unionID:   "",
-		price:     price.PriceStdYear,
+		price:     price.MockPriceStdYear,
 		kind:      enum.OrderKindCreate,
 		payMethod: enum.PayMethodAli,
 		confirmed: false,

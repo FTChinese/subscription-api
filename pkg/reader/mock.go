@@ -37,7 +37,7 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 		accountKind: enum.AccountKindFtc,
 		ftcID:       ftcID,
 		unionID:     faker.GenWxID(),
-		price:       price.PriceStdYear.Price,
+		price:       price.MockPriceStdYear.Price,
 		payMethod:   enum.PayMethodAli,
 		expiration:  time.Now().AddDate(0, 1, 0),
 	}
@@ -48,7 +48,7 @@ func NewMockMemberBuilderV2(k enum.AccountKind) MockMemberBuilder {
 		accountKind:  k,
 		ftcID:        uuid.New().String(),
 		unionID:      faker.GenWxID(),
-		price:        price.PriceStdYear.Price,
+		price:        price.MockPriceStdYear.Price,
 		payMethod:    enum.PayMethodAli,
 		expiration:   time.Now().AddDate(0, 1, 0),
 		subsStatus:   0,

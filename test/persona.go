@@ -57,7 +57,7 @@ func NewPersona() *Persona {
 		AppleSubID: faker.GenAppleSubID(),
 
 		kind:      enum.AccountKindFtc,
-		price:     price.PriceStdYear,
+		price:     price.MockPriceStdYear,
 		payMethod: enum.PayMethodAli,
 		expired:   false,
 		autoRenew: false,

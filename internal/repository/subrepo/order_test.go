@@ -50,7 +50,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				counter: subs.Counter{
 					BaseAccount: newPersona.BaseAccount(),
-					FtcPrice:    price.PriceStdYear,
+					FtcPrice:    price.MockPriceStdYear,
 					Method:      enum.PayMethodAli,
 					WxAppID:     null.String{},
 				},
@@ -58,12 +58,12 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.Order{
 				ID:         "",
 				UserIDs:    newPersona.AccountID(),
-				PlanID:     price.PriceStdYear.ID,
+				PlanID:     price.MockPriceStdYear.ID,
 				DiscountID: null.String{},
-				Price:      price.PriceStdYear.UnitAmount,
-				Edition:    price.PriceStdYear.Edition,
+				Price:      price.MockPriceStdYear.UnitAmount,
+				Edition:    price.MockPriceStdYear.Edition,
 				Charge: price.Charge{
-					Amount:   price.PriceStdYear.UnitAmount,
+					Amount:   price.MockPriceStdYear.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindCreate,
@@ -81,7 +81,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				counter: subs.Counter{
 					BaseAccount: newPersona.BaseAccount(),
-					FtcPrice:    price.PriceStdYear,
+					FtcPrice:    price.MockPriceStdYear,
 					Method:      enum.PayMethodWx,
 					WxAppID:     null.StringFrom(wxID),
 				},
@@ -90,12 +90,12 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.Order{
 				ID:         "",
 				UserIDs:    renewalPerson.AccountID(),
-				PlanID:     price.PriceStdYear.ID,
+				PlanID:     price.MockPriceStdYear.ID,
 				DiscountID: null.String{},
-				Price:      price.PriceStdYear.UnitAmount,
-				Edition:    price.PriceStdYear.Edition,
+				Price:      price.MockPriceStdYear.UnitAmount,
+				Edition:    price.MockPriceStdYear.Edition,
 				Charge: price.Charge{
-					Amount:   price.PriceStdYear.UnitAmount,
+					Amount:   price.MockPriceStdYear.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindRenew,
@@ -113,7 +113,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				counter: subs.Counter{
 					BaseAccount: newPersona.BaseAccount(),
-					FtcPrice:    price.PricePrm,
+					FtcPrice:    price.MockPricePrm,
 					Method:      enum.PayMethodWx,
 					WxAppID:     null.StringFrom(wxID),
 				},
@@ -122,12 +122,12 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.Order{
 				ID:         "",
 				UserIDs:    upgradePerson.AccountID(),
-				PlanID:     price.PricePrm.ID,
+				PlanID:     price.MockPricePrm.ID,
 				DiscountID: null.String{},
-				Price:      price.PricePrm.UnitAmount,
-				Edition:    price.PricePrm.Edition,
+				Price:      price.MockPricePrm.UnitAmount,
+				Edition:    price.MockPricePrm.Edition,
 				Charge: price.Charge{
-					Amount:   price.PricePrm.UnitAmount,
+					Amount:   price.MockPricePrm.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindUpgrade,
@@ -145,7 +145,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				counter: subs.Counter{
 					BaseAccount: newPersona.BaseAccount(),
-					FtcPrice:    price.PriceStdYear,
+					FtcPrice:    price.MockPriceStdYear,
 					Method:      enum.PayMethodWx,
 					WxAppID:     null.StringFrom(wxID),
 				},
@@ -154,12 +154,12 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.Order{
 				ID:         "",
 				UserIDs:    addOnPerson.AccountID(),
-				PlanID:     price.PriceStdYear.ID,
+				PlanID:     price.MockPriceStdYear.ID,
 				DiscountID: null.String{},
-				Price:      price.PriceStdYear.UnitAmount,
-				Edition:    price.PriceStdYear.Edition,
+				Price:      price.MockPriceStdYear.UnitAmount,
+				Edition:    price.MockPriceStdYear.Edition,
 				Charge: price.Charge{
-					Amount:   price.PriceStdYear.UnitAmount,
+					Amount:   price.MockPriceStdYear.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindAddOn,
