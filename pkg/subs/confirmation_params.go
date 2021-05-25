@@ -32,7 +32,7 @@ func (p ConfirmationParams) purchaseInvoice() (invoice.Invoice, error) {
 
 func (p ConfirmationParams) carryOverInvoice() invoice.Invoice {
 	if p.Order.Kind == enum.OrderKindUpgrade {
-		// We have to add this invoice's days to current membership's addon part.
+		// Add order id to this carry over invoice so that later we could know which order caused carry-over.
 		return p.Member.CarryOverInvoice().
 			WithOrderID(p.Order.ID)
 	}
