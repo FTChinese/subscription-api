@@ -17,6 +17,42 @@ import (
 	"time"
 )
 
+func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
+	repo := test.NewRepo()
+
+	stdMmb := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
+		WithPrice(price.MockPriceStdYear.Price).
+		Build()
+	repo.MustSaveMembership(stdMmb)
+
+	order := subs.NewMockOrderBuilder("").
+		WithFtcID(stdMmb.FtcID.String).
+		WithKind(enum.OrderKindUpgrade).
+		Build()
+
+	repo.MustSaveOrder(order)
+
+	env := Env{
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		logger: zaptest.NewLogger(t),
+	}
+
+	paymentResult := subs.MockNewPaymentResult(order)
+
+	result, err := env.ConfirmOrder(paymentResult, order)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if result.Invoices.CarriedOver.IsZero() {
+		t.Error("Upgrade order should generate a carry-over invoice")
+		return
+	}
+
+	t.Logf("%+v", result.Invoices)
+}
+
 func TestEnv_ConfirmOrder(t *testing.T) {
 	repo := test.NewRepo()
 
@@ -35,7 +71,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	// Order confirmed but not synced to membership
 	p4 := test.NewPersona()
 	outOfSyncOrder := subs.NewMockOrderBuilder(p4.FtcID).
-		WithPrice(price.PriceStdYear).
+		WithPrice(price.MockPriceStdYear).
 		WithKind(enum.OrderKindRenew).
 		WithPayMethod(enum.PayMethodAli).
 		WithConfirmed().
@@ -46,10 +82,6 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	p5 := test.NewPersona()
 	memberPriorRenewal := p5.Membership()
 	renewalOrder := p5.NewOrder(enum.OrderKindRenew)
-
-	p6 := test.NewPersona()
-	memberPriorUpgrade := p6.Membership()
-	upgradeOrder := p6.NewOrder(enum.OrderKindUpgrade)
 
 	p7 := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 	iapMember := p7.Membership()
@@ -114,17 +146,6 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			args: args{
 				result: subs.MockNewPaymentResult(renewalOrder),
 				order:  renewalOrder,
-			},
-			wantErr: false,
-		},
-		{
-			name: "confirm upgrade",
-			requisite: requisite{
-				currentMember: memberPriorUpgrade,
-			},
-			args: args{
-				result: subs.MockNewPaymentResult(upgradeOrder),
-				order:  upgradeOrder,
 			},
 			wantErr: false,
 		},
