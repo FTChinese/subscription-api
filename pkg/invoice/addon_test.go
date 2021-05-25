@@ -18,7 +18,7 @@ func TestNewAddOnGroup(t *testing.T) {
 		Build()
 	inv2 := NewMockInvoiceBuilder(userID).
 		WithOrderKind(enum.OrderKindAddOn).
-		WithPrice(price.PricePrm).
+		WithPrice(price.MockPricePrm).
 		Build()
 	inv3 := NewMockInvoiceBuilder(userID).
 		WithOrderKind(enum.OrderKindAddOn).

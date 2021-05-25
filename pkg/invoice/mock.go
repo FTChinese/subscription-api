@@ -35,7 +35,7 @@ func NewMockInvoiceBuilder(userID string) MockInvoiceBuilder {
 		id:          pkg.InvoiceID(),
 		userID:      userID,
 		orderID:     pkg.MustOrderID(),
-		price:       price.PriceStdYear,
+		price:       price.MockPriceStdYear,
 		orderKind:   enum.OrderKindCreate,
 		payMethod:   enum.PayMethodAli,
 		addOnSource: "",
