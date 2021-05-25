@@ -20,7 +20,7 @@ func TestNewCharge(t *testing.T) {
 		{
 			name: "Price with discount",
 			args: args{
-				price: PriceStdYear.Price,
+				price: MockPriceStdYear.Price,
 				offer: Discount{
 					DiscID:         null.StringFrom("id"),
 					PriceOff:       null.FloatFrom(40),
@@ -38,7 +38,7 @@ func TestNewCharge(t *testing.T) {
 		{
 			name: "Price without discount",
 			args: args{
-				price: PriceStdYear.Price,
+				price: MockPriceStdYear.Price,
 				offer: Discount{},
 			},
 			want: Charge{

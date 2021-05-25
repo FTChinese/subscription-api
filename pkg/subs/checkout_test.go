@@ -23,12 +23,12 @@ func TestNewCheckout(t *testing.T) {
 		{
 			name: "Create",
 			args: args{
-				ftcPrice: price.PriceStdYear,
+				ftcPrice: price.MockPriceStdYear,
 				m:        reader.Membership{},
 			},
 			want: Checkout{
 				Kind:     enum.OrderKindCreate,
-				Price:    price.PriceStdYear.Price,
+				Price:    price.MockPriceStdYear.Price,
 				Offer:    price.Discount{},
 				LiveMode: true,
 			},
@@ -36,12 +36,12 @@ func TestNewCheckout(t *testing.T) {
 		{
 			name: "Renew",
 			args: args{
-				ftcPrice: price.PriceStdYear,
+				ftcPrice: price.MockPriceStdYear,
 				m:        reader.NewMockMemberBuilder("").Build(),
 			},
 			want: Checkout{
 				Kind:     enum.OrderKindRenew,
-				Price:    price.PriceStdYear.Price,
+				Price:    price.MockPriceStdYear.Price,
 				Offer:    price.FtcOffers[price.StdYearEdition][0],
 				LiveMode: true,
 			},
@@ -49,14 +49,14 @@ func TestNewCheckout(t *testing.T) {
 		{
 			name: "Win-back",
 			args: args{
-				ftcPrice: price.PriceStdYear,
+				ftcPrice: price.MockPriceStdYear,
 				m: reader.NewMockMemberBuilder("").
 					WithExpiration(time.Now().AddDate(0, -1, 0)).
 					Build(),
 			},
 			want: Checkout{
 				Kind:     enum.OrderKindCreate,
-				Price:    price.PriceStdYear.Price,
+				Price:    price.MockPriceStdYear.Price,
 				Offer:    price.FtcOffers[price.StdYearEdition][1],
 				LiveMode: true,
 			},
@@ -64,12 +64,12 @@ func TestNewCheckout(t *testing.T) {
 		{
 			name: "Upgrade using retention offer",
 			args: args{
-				ftcPrice: price.PricePrm,
+				ftcPrice: price.MockPricePrm,
 				m:        reader.NewMockMemberBuilder("").Build(),
 			},
 			want: Checkout{
 				Kind:     enum.OrderKindUpgrade,
-				Price:    price.PricePrm.Price,
+				Price:    price.MockPricePrm.Price,
 				Offer:    price.FtcOffers[price.PremiumEdition][0],
 				LiveMode: true,
 			},
@@ -77,14 +77,14 @@ func TestNewCheckout(t *testing.T) {
 		{
 			name: "Upgrade using win-back offer",
 			args: args{
-				ftcPrice: price.PricePrm,
+				ftcPrice: price.MockPricePrm,
 				m: reader.NewMockMemberBuilder("").
 					WithExpiration(time.Now().AddDate(0, -1, 0)).
 					Build(),
 			},
 			want: Checkout{
 				Kind:     enum.OrderKindCreate,
-				Price:    price.PricePrm.Price,
+				Price:    price.MockPricePrm.Price,
 				Offer:    price.FtcOffers[price.PremiumEdition][1],
 				LiveMode: true,
 			},

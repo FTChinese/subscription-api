@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var PriceStdYear = FtcPrice{
+var MockPriceStdYear = FtcPrice{
 	Price: Price{
 		ID: "plan_MynUQDQY1TSQ",
 		Edition: Edition{
@@ -41,7 +41,7 @@ var PriceStdYear = FtcPrice{
 	},
 }
 
-var PriceStdMonth = FtcPrice{
+var MockPriceStdMonth = FtcPrice{
 	Price: Price{
 		ID: "plan_1Uz4hrLy3Mzy",
 		Edition: Edition{
@@ -58,7 +58,7 @@ var PriceStdMonth = FtcPrice{
 	},
 }
 
-var PricePrm = FtcPrice{
+var MockPricePrm = FtcPrice{
 	Price: Price{
 		ID: "plan_vRUzRQ3aglea",
 		Edition: Edition{
