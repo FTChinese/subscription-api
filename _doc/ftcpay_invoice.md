@@ -13,7 +13,7 @@ For upgrading from one-time-purchase standard edition to premium edition, two in
 
 ## Concepts
 
-Before proceeding to the details of Invoice type, we should understand related  concepts.
+Before proceeding to the details of Invoice type, we should understand related concepts.
 
 ### One-time-purchase vs subscription
 
