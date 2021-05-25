@@ -8,6 +8,7 @@ import (
 
 // ConfirmOrder updates the order received from webhook,
 // create or update membership, and optionally flag prorated orders as consumed.
+// @param order - the order loaded outside a transaction. You have to retrieve and lock it again here.
 func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
 
 	defer env.logger.Sync()
@@ -20,7 +21,7 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
 	}
 
-	// Step 1: Find the order by order id and lock it.
+	// Lock  this order and only retrieves the purchase period.
 	sugar.Info("Start locking order")
 	lo, err := tx.LockOrder(pr.OrderID)
 	// If the order is not found, or is already confirmed,
@@ -96,6 +97,7 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 		}
 	}
 
+	sugar.Infof("Invoices generated after confirmation %+v", confirmed.Invoices)
 	// Save add-on if having one.
 	sugar.Infof("Saving purchase invoice %s", confirmed.Invoices.Purchased.ID)
 	err = tx.SaveInvoice(confirmed.Invoices.Purchased)
