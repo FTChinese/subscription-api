@@ -47,6 +47,9 @@ func (g AddOnGroup) Consumable(start time.Time) []Invoice {
 	return []Invoice{}
 }
 
+// ConsumeAddOn add the start and end time to a list of invoices,
+// with each one's start time following the previous one's end time.
+// The last invoice's end time should the the membership's expiration date.
 func ConsumeAddOn(addOns []Invoice, start time.Time) []Invoice {
 	now := chrono.TimeNow()
 
