@@ -6,7 +6,9 @@ Here we use TypeScript interface to denote data types.
 
 ## Account
 
-A user's full account consists of 3 parts: email account data, wechat user info, and membership.
+A user's full account consists of 3 parts: base account data, wechat user info, and membership.
+
+### Base Account
 
 ```typescript
 interface BaseAccount {
@@ -20,12 +22,20 @@ interface BaseAccount {
     isVerified: boolean; // Is email everified?
     campaignCode?: string;
 }
+```
 
+### Wechat
+
+```typescript
 interface Wechat {
     nickname?: string;
     avatarUrl?: string;
 }
+```
 
+### Membership
+
+```typescript
 interface Membership {
     tier?: 'standard' | 'premium';
     cycle?: 'month' | 'year';
@@ -39,8 +49,11 @@ interface Membership {
     premiumAddOn: number;
     vip: boolean;
 }
+```
 
-// The complete account data.
+### Full Account
+
+```typescript
 interface Account extends BaseAccount {
     loginMethod: 'email' | 'wechat' | 'mobile';
     wechat: Wechat;
