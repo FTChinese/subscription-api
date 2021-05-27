@@ -6,7 +6,7 @@ vars:
   BUILD_DIR: build
   SRC_DIR: .
   BINARY: subscription-api
-  LDFLAGS: -ldflags "-w -s -X main.version={{.VERSION}} -X main.build={{now | date "2006-01-02T15:04:05Z07:00"}} main.port={{.PORT}}"
+  LDFLAGS: -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
 tasks:
   build:
