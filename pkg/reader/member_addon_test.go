@@ -16,7 +16,8 @@ func TestMembership_claimAddOn(t *testing.T) {
 
 	userID := uuid.New().String()
 
-	inv := invoice.NewMockInvoiceBuilder(userID).
+	inv := invoice.NewMockInvoiceBuilder().
+		WithFtcID(userID).
 		WithOrderKind(enum.OrderKindAddOn).
 		Build().
 		SetPeriod(time.Now())

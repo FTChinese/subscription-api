@@ -26,14 +26,11 @@ type MockInvoiceBuilder struct {
 	offerKinds  []price.OfferKind
 }
 
-func NewMockInvoiceBuilder(userID string) MockInvoiceBuilder {
-	if userID == "" {
-		userID = uuid.New().String()
-	}
+func NewMockInvoiceBuilder() MockInvoiceBuilder {
 
 	return MockInvoiceBuilder{
 		id:          pkg.InvoiceID(),
-		userID:      userID,
+		userID:      uuid.New().String(),
 		orderID:     pkg.MustOrderID(),
 		price:       price.MockPriceStdYear,
 		orderKind:   enum.OrderKindCreate,
@@ -43,6 +40,16 @@ func NewMockInvoiceBuilder(userID string) MockInvoiceBuilder {
 			price.OfferKindPromotion,
 		},
 	}
+}
+
+func (b MockInvoiceBuilder) WithFtcID(ftcID string) MockInvoiceBuilder {
+	b.userID = ftcID
+	return b
+}
+
+func (b MockInvoiceBuilder) WithUnionID(unionID string) MockInvoiceBuilder {
+	b.userID = unionID
+	return b
 }
 
 func (b MockInvoiceBuilder) WithOrderID(id string) MockInvoiceBuilder {

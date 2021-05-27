@@ -115,7 +115,10 @@ func TestInvoices_membership(t *testing.T) {
 		{
 			name: "Create new membership",
 			fields: fields{
-				Purchased:   invoice.NewMockInvoiceBuilder(userID).SetPeriodStart(now).Build(),
+				Purchased: invoice.NewMockInvoiceBuilder().
+					WithFtcID(userID).
+					SetPeriodStart(now).
+					Build(),
 				CarriedOver: invoice.Invoice{},
 			},
 			args: args{
@@ -143,7 +146,8 @@ func TestInvoices_membership(t *testing.T) {
 		{
 			name: "Renew membership",
 			fields: fields{
-				Purchased: invoice.NewMockInvoiceBuilder(userID).
+				Purchased: invoice.NewMockInvoiceBuilder().
+					WithFtcID(userID).
 					SetPeriodStart(current.ExpireDate.Time).
 					WithOrderKind(enum.OrderKindRenew).
 					Build(),
@@ -174,7 +178,8 @@ func TestInvoices_membership(t *testing.T) {
 		{
 			name: "Upgrade membership",
 			fields: fields{
-				Purchased: invoice.NewMockInvoiceBuilder(userID).
+				Purchased: invoice.NewMockInvoiceBuilder().
+					WithFtcID(userID).
 					SetPeriodStart(now).
 					WithOrderKind(enum.OrderKindUpgrade).
 					Build(),
@@ -205,7 +210,8 @@ func TestInvoices_membership(t *testing.T) {
 		{
 			name: "Add on",
 			fields: fields{
-				Purchased: invoice.NewMockInvoiceBuilder(userID).
+				Purchased: invoice.NewMockInvoiceBuilder().
+					WithFtcID(userID).
 					WithOrderKind(enum.OrderKindAddOn).
 					Build(),
 				CarriedOver: invoice.Invoice{},

@@ -265,7 +265,7 @@ func TestCtxSubs_Render(t *testing.T) {
 					WithStartTime(time.Now()).
 					Build(),
 				Invoices: subs.Invoices{
-					Purchased: invoice.NewMockInvoiceBuilder("").
+					Purchased: invoice.NewMockInvoiceBuilder().
 						Build().
 						SetPeriod(time.Now()),
 					CarriedOver: invoice.Invoice{},
@@ -284,7 +284,7 @@ func TestCtxSubs_Render(t *testing.T) {
 					WithStartTime(time.Now()).
 					Build(),
 				Invoices: subs.Invoices{
-					Purchased: invoice.NewMockInvoiceBuilder("").
+					Purchased: invoice.NewMockInvoiceBuilder().
 						WithOrderKind(enum.OrderKindRenew).
 						Build().
 						SetPeriod(time.Now()),
@@ -304,7 +304,7 @@ func TestCtxSubs_Render(t *testing.T) {
 					WithStartTime(time.Now()).
 					Build(),
 				Invoices: subs.Invoices{
-					Purchased: invoice.NewMockInvoiceBuilder("").
+					Purchased: invoice.NewMockInvoiceBuilder().
 						WithOrderKind(enum.OrderKindUpgrade).
 						Build().
 						SetPeriod(time.Now()),
@@ -325,7 +325,7 @@ func TestCtxSubs_Render(t *testing.T) {
 					WithConfirmed().
 					Build(),
 				Invoices: subs.Invoices{
-					Purchased: invoice.NewMockInvoiceBuilder("").
+					Purchased: invoice.NewMockInvoiceBuilder().
 						WithOrderKind(enum.OrderKindAddOn).
 						Build(),
 					CarriedOver: invoice.Invoice{},
