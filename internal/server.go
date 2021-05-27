@@ -242,6 +242,20 @@ func StartServer(s ServerStatus) {
 		r.Post("/app", payRouter.AliPay(ali.EntryApp))
 	})
 
+	r.Route("/membership", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+		r.Use(controller.RequireFtcOrUnionID)
+		// Get the membership of a user
+		r.Get("/", payRouter.LoadMembership)
+		// Update the membership of a user
+		r.Patch("/", payRouter.UpdateMembership)
+		// Create a membership of a user
+		r.Put("/", payRouter.CreateMembership)
+		// List the modification history of a user's membership
+		r.Get("/snapshots", payRouter.ListMemberSnapshots)
+		r.Post("/addons", payRouter.ClaimAddOn)
+	})
+
 	r.Route("/orders", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
