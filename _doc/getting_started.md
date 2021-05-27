@@ -1,4 +1,4 @@
-# Introduction
+# Getting Started
 
 ## Base URL
 
@@ -19,5 +19,4 @@ The only exceptions are endpoints under `/webhook` which are used by other parti
 ## Internal Status
 
 * `/__version` See current program's build info
-* `/__refresh` Notify server to retrieve a promotion schedule
 

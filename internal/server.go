@@ -295,7 +295,9 @@ func StartServer(s ServerStatus) {
 		// ?refresh=true|false
 		r.Get("/prices", stripeRouter.ListPrices)
 
-		r.With(controller.RequireFtcID).Route("/customers", func(r chi.Router) {
+		r.Route("/customers", func(r chi.Router) {
+
+			r.Use(controller.RequireFtcID)
 
 			// Create a stripe customer if not exists yet, or
 			// just return the customer id if already exists.
@@ -309,15 +311,20 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/ephemeral-keys", stripeRouter.IssueKey)
 		})
 
-		r.With(controller.RequireFtcID).Route("/setup-intents", func(r chi.Router) {
+		r.Route("/setup-intents", func(r chi.Router) {
+			r.Use(controller.RequireFtcID)
 			r.Post("/", stripeRouter.CreateSetupIntent)
 		})
 
-		r.With(controller.RequireFtcID).Route("/checkout", func(r chi.Router) {
+		r.Route("/checkout", func(r chi.Router) {
+			r.Use(controller.RequireFtcID)
+
 			r.Post("/", stripeRouter.CreateCheckoutSession)
 		})
 
-		r.With(controller.RequireFtcID).Route("/subs", func(r chi.Router) {
+		r.Route("/subs", func(r chi.Router) {
+			r.Use(controller.RequireFtcID)
+
 			// Create a subscription
 			r.Post("/", stripeRouter.CreateSubs)
 			// List all subscriptions of a user
