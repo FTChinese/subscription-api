@@ -6,7 +6,7 @@ import (
 )
 
 func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	acnt, err := router.stripeRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
