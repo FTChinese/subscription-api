@@ -270,11 +270,21 @@ func StartServer(s ServerStatus) {
 		r.Post("/{id}/verify-payment", payRouter.VerifyPayment)
 	})
 
+	r.Route("/invoices", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+		r.Use(controller.RequireFtcOrUnionID)
+		// List a user's invoices. Use query parameter `kind=create|renew|upgrade|addon` to filter.
+		r.Get("/", payRouter.ListInvoices)
+		r.Put("/", payRouter.CreateInvoice)
+		// Show a single invoice.
+		r.Get("/{id}", payRouter.LoadInvoice)
+	})
+
+	// Deprecated. Use /membership/addons
 	r.Route("/addon", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(controller.RequireFtcOrUnionID)
-		// List a list of add-on belonging to a user.
-		//r.Get("/", )
+
 		// Redeem add-on
 		r.Post("/", payRouter.ClaimAddOn)
 	})
