@@ -39,7 +39,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	sugar := router.logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 	var input stripe.SubsInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		sugar.Error(err)
@@ -128,7 +128,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	sugar := router.logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 	var input stripe.SubsInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
@@ -274,7 +274,7 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	subsID, err := getURLParam(req, "id").ToString()
 	if err != nil {
@@ -314,7 +314,7 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	subsID, err := getURLParam(req, "id").ToString()
 	if err != nil {

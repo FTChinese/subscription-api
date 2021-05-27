@@ -19,7 +19,7 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	var input stripe.CheckoutInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
