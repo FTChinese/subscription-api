@@ -150,11 +150,13 @@ func (r *Repo) SaveOrder(order subs.Order) error {
 	return nil
 }
 
-func (r *Repo) MustSaveOrder(order subs.Order) {
+func (r *Repo) MustSaveOrder(order subs.Order) subs.Order {
 
 	if err := r.SaveOrder(order); err != nil {
 		panic(err)
 	}
+
+	return order
 }
 
 func (r *Repo) MustSaveRenewalOrders(orders []subs.Order) {
