@@ -12,7 +12,7 @@ import (
 //
 //	 GET `/user/profile`
 func (router AccountRouter) LoadProfile(w http.ResponseWriter, req *http.Request) {
-	userID := req.Header.Get(userIDKey)
+	userID := req.Header.Get(ftcIDKey)
 
 	p, err := router.userRepo.LoadProfile(userID)
 
@@ -36,7 +36,7 @@ func (router AccountRouter) LoadProfile(w http.ResponseWriter, req *http.Request
 // birthday?: string;
 // gender?: M | F;
 func (router AccountRouter) UpdateProfile(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	var input account.BaseProfile
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {

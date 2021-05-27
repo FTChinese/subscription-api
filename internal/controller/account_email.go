@@ -18,7 +18,7 @@ func (router AccountRouter) UpdateEmail(w http.ResponseWriter, req *http.Request
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	var params pkg.EmailUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -93,7 +93,7 @@ func (router AccountRouter) RequestVerification(w http.ResponseWriter, req *http
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	var params pkg.ReqEmailVrfParams
 

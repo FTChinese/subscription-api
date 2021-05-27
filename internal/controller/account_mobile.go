@@ -16,7 +16,7 @@ func (router AccountRouter) RequestSMSVerification(w http.ResponseWriter, req *h
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 	ok, err := router.userRepo.IDExists(ftcID)
 	if err != nil {
 		sugar.Error(err)
@@ -91,7 +91,7 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	var params ztsms.VerifierParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
