@@ -18,9 +18,9 @@ import (
 
 // SubsRouter is the base type used to handle shared payment operations.
 type SubsRouter struct {
-	ftcpay.FtcPay
-	prodRepo products.Env
-	config   config.BuildConfig
+	ftcpay.FtcPay // This contains readers.Env to access account data.
+	prodRepo      products.Env
+	config        config.BuildConfig
 }
 
 func NewSubsRouter(dbs db.ReadWriteSplit, c *cache.Cache, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) SubsRouter {
