@@ -403,7 +403,10 @@ func TestMembership_WithInvoice(t *testing.T) {
 			fields: Membership{},
 			args: args{
 				userID: pkg.NewFtcUserID(userID),
-				inv:    invoice.NewMockInvoiceBuilder(userID).SetPeriodStart(time.Now()).Build(),
+				inv: invoice.NewMockInvoiceBuilder().
+					WithFtcID(userID).
+					SetPeriodStart(time.Now()).
+					Build(),
 			},
 			want: Membership{
 				UserIDs:       pkg.NewFtcUserID(userID),
@@ -428,7 +431,8 @@ func TestMembership_WithInvoice(t *testing.T) {
 			fields: current,
 			args: args{
 				userID: pkg.NewFtcUserID(userID),
-				inv: invoice.NewMockInvoiceBuilder(userID).
+				inv: invoice.NewMockInvoiceBuilder().
+					WithFtcID(userID).
 					WithOrderKind(enum.OrderKindRenew).
 					SetPeriodStart(current.ExpireDate.Time).
 					Build(),
@@ -456,7 +460,8 @@ func TestMembership_WithInvoice(t *testing.T) {
 			fields: current,
 			args: args{
 				userID: pkg.NewFtcUserID(userID),
-				inv: invoice.NewMockInvoiceBuilder(userID).
+				inv: invoice.NewMockInvoiceBuilder().
+					WithFtcID(userID).
 					WithPrice(price.MockPricePrm).
 					WithOrderKind(enum.OrderKindUpgrade).
 					SetPeriodStart(time.Now()).
@@ -485,7 +490,8 @@ func TestMembership_WithInvoice(t *testing.T) {
 			fields: current,
 			args: args{
 				userID: pkg.NewFtcUserID(userID),
-				inv: invoice.NewMockInvoiceBuilder(userID).
+				inv: invoice.NewMockInvoiceBuilder().
+					WithFtcID(userID).
 					WithOrderKind(enum.OrderKindAddOn).
 					Build(),
 			},
