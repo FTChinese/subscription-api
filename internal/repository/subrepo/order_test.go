@@ -1,6 +1,7 @@
 package subrepo
 
 import (
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
@@ -13,6 +14,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
+	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -253,11 +255,14 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 }
 
 func TestEnv_RetrieveOrder(t *testing.T) {
-	p := test.NewPersona()
-	order := p.NewOrder(enum.OrderKindCreate)
+
+	ftcID := uuid.New().String()
 
 	repo := test.NewRepo()
-	repo.MustSaveOrder(order)
+	order := repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+		WithFtcID(ftcID).
+		WithKind(enum.OrderKindCreate).
+		Build())
 
 	env := Env{
 		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
@@ -335,6 +340,70 @@ func TestEnv_LoadFullOrder(t *testing.T) {
 			t.Logf("%v", got)
 
 			assert.NotZero(t, got.ID, order.ID)
+		})
+	}
+}
+
+func TestEnv_ListOrders(t *testing.T) {
+	ftcID := uuid.New().String()
+
+	repo := test.NewRepo()
+	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+		WithFtcID(ftcID).
+		WithKind(enum.OrderKindCreate).
+		Build())
+	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+		WithFtcID(ftcID).
+		WithKind(enum.OrderKindCreate).
+		Build())
+	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+		WithFtcID(ftcID).
+		WithKind(enum.OrderKindCreate).
+		Build())
+
+	type fields struct {
+		Env    readers.Env
+		logger *zap.Logger
+	}
+	type args struct {
+		ids pkg.UserIDs
+		p   gorest.Pagination
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "List orders",
+			fields: fields{
+				Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+				logger: zaptest.NewLogger(t),
+			},
+			args: args{
+				ids: pkg.UserIDs{
+					CompoundID: "",
+					FtcID:      null.StringFrom(ftcID),
+					UnionID:    null.String{},
+				}.MustNormalize(),
+				p: gorest.NewPagination(1, 10),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := Env{
+				Env:    tt.fields.Env,
+				logger: tt.fields.logger,
+			}
+			got, err := env.ListOrders(tt.args.ids, tt.args.p)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListOrders() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }

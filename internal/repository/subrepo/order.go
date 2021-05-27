@@ -1,7 +1,9 @@
 package subrepo
 
 import (
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
@@ -93,6 +95,81 @@ func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 	}
 
 	return order, nil
+}
+
+func (env Env) countOrders(ids pkg.UserIDs) (int64, error) {
+	var count int64
+	err := env.DBs.Read.Get(
+		&count,
+		subs.StmtCountOrders,
+		ids.BuildFindInSet(),
+	)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (env Env) listOrders(ids pkg.UserIDs, p gorest.Pagination) ([]subs.Order, error) {
+	var orders = make([]subs.Order, 0)
+	err := env.DBs.Read.Select(
+		&orders,
+		subs.StmtListOrders,
+		ids.BuildFindInSet(),
+		p.Limit,
+		p.Offset(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+func (env Env) ListOrders(ids pkg.UserIDs, p gorest.Pagination) (subs.OrderList, error) {
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
+
+	countCh := make(chan int64)
+	listCh := make(chan subs.OrderList)
+
+	go func() {
+		defer close(countCh)
+		n, err := env.countOrders(ids)
+		if err != nil {
+			sugar.Error(err)
+		}
+
+		countCh <- n
+	}()
+
+	go func() {
+		defer close(listCh)
+		o, err := env.listOrders(ids, p)
+		if err != nil {
+			sugar.Error(err)
+		}
+		listCh <- subs.OrderList{
+			Total:      0,
+			Pagination: gorest.Pagination{},
+			Data:       o,
+			Err:        err,
+		}
+	}()
+
+	count, listResult := <-countCh, <-listCh
+
+	if listResult.Err != nil {
+		return subs.OrderList{}, listResult.Err
+	}
+
+	return subs.OrderList{
+		Total:      count,
+		Pagination: p,
+		Data:       listResult.Data,
+	}, nil
 }
 
 func (env Env) orderHeader(orderID string) (subs.Order, error) {
