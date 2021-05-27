@@ -37,19 +37,31 @@ interface Wechat {
 
 ```typescript
 interface Membership {
+    ftcId?: string;
+    unionId: string,
     tier?: 'standard' | 'premium';
     cycle?: 'month' | 'year';
     expireDate?: string;
     payMethod?: 'alipay' | 'wechat' | 'stripe' | 'apple' | 'b2b';
+    ftcPlanId?: string;
     stripeSubsId?: string;
     autoRenew: boolean;
     status?: 'active' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'trialing' | 'unpaid'; // Stripe subscription status
+    appleSubsId?: string;
     b2bLicenceId?: string;
     standardAddOn: number; // Default 0
     premiumAddOn: number;
     vip: boolean;
 }
 ```
+
+The combination of some fields are always mutually exclusive:
+
+* When `payMethod` is either `alipay` or `wechat`, `ftcPlanId` must not be null and `autoRenew` must be `false`;
+* When `payMethod` is `apple`, `appleSubsId` must not be null, and `autoRenew` exists;
+* When `payMethod` is `stripe`, `stripeSubsId`, `status` must not be null, and `autoRenew` exists
+
+When using any one of the above three groups, other payment methods' associated fields must be null.
 
 ### Full Account
 
