@@ -8,7 +8,17 @@ import (
 
 // SaveSubs saves an apple.Subscription instance and
 // optionally update membership if it is linked to a ftc membership.
-// This is used by verify receipt, refresh subscription, webhook, and polling.
+// This is used by
+// * verify receipt
+// * refresh subscription
+// * webhook
+// * polling
+// Only webhook sent by Apple for the first time does not need to
+// update membership. Other cases might all have email linked
+// and membership will be updated.
+// In case the linked membership is already valid and comes from
+// once-time-purchase, it will be turned into addon and IAP
+// overrides. A carried-over invoice.Invoice will be generated.
 // The returned membership is empty if the subscription is not linked to an FTC account.
 func (env Env) SaveSubs(s apple.Subscription) (apple.SubsResult, error) {
 	err := env.upsertSubscription(s)
