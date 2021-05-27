@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
@@ -46,8 +47,8 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		}
 
 		// Parse request body.
-		input, err := gatherWxPayInput(tradeType, req)
-		if err != nil {
+		input := subs.NewWxPayInput(tradeType)
+		if err := gorest.ParseJSON(req.Body, &input); err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
 			return
