@@ -17,7 +17,7 @@ func (router IAPRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 	p := gorest.GetPagination(req)
 
 	list, err := router.iapRepo.ListSubs(ftcID, p)
