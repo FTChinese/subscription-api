@@ -28,7 +28,8 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 		reader.NewMockMemberBuilder(userID).
 			Build().
 			CarryOverInvoice(),
-		invoice.NewMockInvoiceBuilder(userID).
+		invoice.NewMockInvoiceBuilder().
+			WithFtcID(userID).
 			WithOrderKind(enum.OrderKindAddOn).
 			Build(),
 	})
