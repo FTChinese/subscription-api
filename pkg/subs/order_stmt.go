@@ -1,6 +1,6 @@
 package subs
 
-// Saves a new order. The newly created order does not have
+// StmtInsertOrder a new order. The newly created order does not have
 // ConfirmedAt, StartDate and EndDate set.
 const StmtInsertOrder = `
 INSERT INTO premium.ftc_trade
@@ -45,6 +45,21 @@ WHERE trade_no = ?
 LIMIT 1
 `
 
+const StmtListOrders = StmtOrderCols + `
+FROM premium.ftc_trade AS o
+WHERE FIND_IN_SET(o.user_id, ?) > 0
+ORDER BY o.created_utc DESC
+LIMIT ? OFFSET ?`
+
+const StmtCountOrders = `
+SELECT COUNT(*) AS row_count
+FROM premium.ftc_trade
+WHERE FIND_IN_SET(user_id, ?) > 0`
+
+// StmtLockOrder locks a row to retrieve onl the minimal fields
+// used to determine whether the order is confirmed.
+// This is a hack when we cannot load all fields in one shot
+// caused by a mysterious MySQL error.
 const StmtLockOrder = `
 SELECT trade_no AS order_id,
 	confirmed_utc,

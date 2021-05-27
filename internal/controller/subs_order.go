@@ -1,12 +1,57 @@
 package controller
 
 import (
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"net/http"
 )
+
+// ListOrders loads a list of membership change history.
+// Pagination support by adding query parameter:
+// page=<int>&per_page=<int>
+func (router SubsRouter) ListOrders(w http.ResponseWriter, req *http.Request) {
+	if err := req.ParseForm(); err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	p := gorest.GetPagination(req)
+	userIDs := getReaderIDs(req.Header)
+
+	list, err := router.SubsRepo.ListOrders(userIDs, p)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(list)
+}
+
+func (router SubsRouter) LoadOrder(w http.ResponseWriter, req *http.Request) {
+	userIDs := getReaderIDs(req.Header)
+
+	orderID, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	order, err := router.SubsRepo.RetrieveOrder(orderID)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	if order.CompoundID != userIDs.CompoundID {
+		_ = render.New(w).NotFound("")
+		return
+	}
+
+	_ = render.New(w).OK(order)
+}
 
 // RawPaymentResult fetch data from wxpay or alipay order query endpoints and transfer the data as is.
 // The response data formats are not always the same one.
