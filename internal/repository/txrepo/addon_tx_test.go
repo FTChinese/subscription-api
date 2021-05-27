@@ -17,14 +17,17 @@ func TestAddOnTx_AddOnInvoices(t *testing.T) {
 
 	repo := test.NewRepo()
 	repo.MustSaveInvoiceN([]invoice.Invoice{
-		invoice.NewMockInvoiceBuilder(userID).
+		invoice.NewMockInvoiceBuilder().
+			WithFtcID(userID).
 			WithOrderKind(enum.OrderKindAddOn).
 			Build(),
-		invoice.NewMockInvoiceBuilder(userID).
+		invoice.NewMockInvoiceBuilder().
+			WithFtcID(userID).
 			WithOrderKind(enum.OrderKindAddOn).
 			WithAddOnSource(addon.SourceCarryOver).
 			Build(),
-		invoice.NewMockInvoiceBuilder(userID).
+		invoice.NewMockInvoiceBuilder().
+			WithFtcID(userID).
 			WithOrderKind(enum.OrderKindAddOn).
 			WithAddOnSource(addon.SourceCompensation).
 			Build(),
@@ -78,14 +81,17 @@ func TestAddOnTx_AddOnInvoiceConsumed(t *testing.T) {
 
 	userID := uuid.New().String()
 
-	inv1 := invoice.NewMockInvoiceBuilder(userID).
+	inv1 := invoice.NewMockInvoiceBuilder().
+		WithFtcID(userID).
 		WithOrderKind(enum.OrderKindAddOn).
 		Build()
-	inv2 := invoice.NewMockInvoiceBuilder(userID).
+	inv2 := invoice.NewMockInvoiceBuilder().
+		WithFtcID(userID).
 		WithOrderKind(enum.OrderKindAddOn).
 		WithAddOnSource(addon.SourceCarryOver).
 		Build()
-	inv3 := invoice.NewMockInvoiceBuilder(userID).
+	inv3 := invoice.NewMockInvoiceBuilder().
+		WithFtcID(userID).
 		WithOrderKind(enum.OrderKindAddOn).
 		WithAddOnSource(addon.SourceCompensation).
 		Build()
