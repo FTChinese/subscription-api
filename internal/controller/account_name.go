@@ -15,7 +15,7 @@ import (
 // Input
 // userName: string
 func (router AccountRouter) UpdateName(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	var params pkg.NameUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {

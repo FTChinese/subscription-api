@@ -20,7 +20,7 @@ func NewAccountRouter(myDBs db.ReadWriteSplit, postman postoffice.PostOffice, l 
 }
 
 func (router AccountRouter) LoadAccountByEmail(w http.ResponseWriter, req *http.Request) {
-	userID := req.Header.Get(userIDKey)
+	userID := req.Header.Get(ftcIDKey)
 
 	acnt, err := router.userRepo.AccountByFtcID(userID)
 

@@ -15,7 +15,7 @@ import (
 // oldPassword: string; current password.
 // password: string; the new password.
 func (router AccountRouter) UpdatePassword(w http.ResponseWriter, req *http.Request) {
-	userID := req.Header.Get(userIDKey)
+	userID := req.Header.Get(ftcIDKey)
 
 	var input pkg.PasswordUpdateParams
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
