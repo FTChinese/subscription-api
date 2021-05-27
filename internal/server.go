@@ -258,10 +258,11 @@ func StartServer(s ServerStatus) {
 
 	r.Route("/orders", func(r chi.Router) {
 		r.Use(guard.CheckToken)
+		r.Use(controller.RequireFtcOrUnionID)
 
-		// List a user's orders
-		//r.Get("/", payRouter.ListOrders)
-		//r.Get("/{id}", payRouter.LoadOrder)
+		// Pagination: page=<int>&per_page=<int>
+		r.Get("/", payRouter.ListOrders)
+		r.Get("/{id}", payRouter.LoadOrder)
 
 		// Transfer order query data from ali or wx api as is.
 		r.Get("/{id}/payment-result", payRouter.RawPaymentResult)
