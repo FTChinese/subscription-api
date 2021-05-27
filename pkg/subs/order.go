@@ -2,6 +2,7 @@ package subs
 
 import (
 	"fmt"
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
@@ -170,4 +171,11 @@ func (o Order) Confirmed(at chrono.Time, period dt.DateTimePeriod) Order {
 	o.DatePeriod = period.ToDatePeriod()
 
 	return o
+}
+
+type OrderList struct {
+	Total int64 `json:"total" db:"row_count"`
+	gorest.Pagination
+	Data []Order `json:"data"`
+	Err  error   `json:"-"`
 }
