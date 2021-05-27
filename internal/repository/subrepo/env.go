@@ -7,7 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// Env wraps database connection
+// Env wraps database connection and embed
+// readers.Env to access user account data.
 type Env struct {
 	readers.Env
 	logger *zap.Logger
