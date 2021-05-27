@@ -11,82 +11,44 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
+	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"go.uber.org/zap/zaptest"
 	"testing"
 	"time"
 )
 
-func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
-	repo := test.NewRepo()
-
-	stdMmb := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithPrice(price.MockPriceStdYear.Price).
-		Build()
-	repo.MustSaveMembership(stdMmb)
-
-	order := subs.NewMockOrderBuilder("").
-		WithFtcID(stdMmb.FtcID.String).
-		WithKind(enum.OrderKindUpgrade).
-		Build()
-
-	repo.MustSaveOrder(order)
-
-	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
-	}
-
-	paymentResult := subs.MockNewPaymentResult(order)
-
-	result, err := env.ConfirmOrder(paymentResult, order)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	if result.Invoices.CarriedOver.IsZero() {
-		t.Error("Upgrade order should generate a carry-over invoice")
-		return
-	}
-
-	t.Logf("%+v", result.Invoices)
-}
-
 func TestEnv_ConfirmOrder(t *testing.T) {
 	repo := test.NewRepo()
 
-	p1 := test.NewPersona()
-	aliCreateOrder := p1.NewOrder(enum.OrderKindCreate)
-	t.Logf("Ali Order id %s", aliCreateOrder.ID)
+	aliCreateOrder := subs.NewMockOrderBuilder("").
+		WithFtcID(uuid.New().String()).
+		WithKind(enum.OrderKindCreate).
+		WithPayMethod(enum.PayMethodAli).
+		Build()
 
-	p2 := test.NewPersona().SetPayMethod(enum.PayMethodWx)
-	wxCreateOrder := p2.NewOrder(enum.OrderKindCreate)
-	t.Logf("Wx Order id %s", wxCreateOrder.ID)
+	wxCreateOrder := subs.NewMockOrderBuilder("").
+		WithFtcID(uuid.New().String()).
+		WithKind(enum.OrderKindCreate).
+		WithPayMethod(enum.PayMethodWx).
+		Build()
 
-	p3 := test.NewPersona().SetAccountKind(enum.AccountKindLinked)
-	linkedAccountOrder := p3.NewOrder(enum.OrderKindCreate)
-	t.Logf("Order for linked account %s", linkedAccountOrder.ID)
+	linkedAccountOrder := subs.NewMockOrderBuilder("").
+		WithFtcID(uuid.New().String()).
+		WithUnionID(faker.GenWxID()).
+		WithKind(enum.OrderKindCreate).
+		WithPayMethod(enum.PayMethodWx).
+		Build()
 
 	// Order confirmed but not synced to membership
-	p4 := test.NewPersona()
-	outOfSyncOrder := subs.NewMockOrderBuilder(p4.FtcID).
+	outOfSyncOrder := subs.NewMockOrderBuilder("").
+		WithFtcID(uuid.New().String()).
 		WithPrice(price.MockPriceStdYear).
 		WithKind(enum.OrderKindRenew).
 		WithPayMethod(enum.PayMethodAli).
 		WithConfirmed().
 		WithStartTime(time.Now()).
 		Build()
-	t.Logf("Out of sync order %v", outOfSyncOrder)
-
-	p5 := test.NewPersona()
-	memberPriorRenewal := p5.Membership()
-	renewalOrder := p5.NewOrder(enum.OrderKindRenew)
-
-	p7 := test.NewPersona().SetPayMethod(enum.PayMethodApple)
-	iapMember := p7.Membership()
-	p7.SetPayMethod(enum.PayMethodAli)
-	addOnOrder := p7.NewOrder(enum.OrderKindAddOn)
 
 	env := Env{
 		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
@@ -97,14 +59,10 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		result subs.PaymentResult
 		order  subs.Order
 	}
-	type requisite struct {
-		currentMember reader.Membership
-	}
 	tests := []struct {
-		name      string
-		requisite requisite
-		args      args
-		wantErr   bool
+		name    string
+		args    args
+		wantErr bool
 	}{
 		{
 			name: "confirm new ali order",
@@ -138,35 +96,10 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "confirm renewal",
-			requisite: requisite{
-				currentMember: memberPriorRenewal,
-			},
-			args: args{
-				result: subs.MockNewPaymentResult(renewalOrder),
-				order:  renewalOrder,
-			},
-			wantErr: false,
-		},
-		{
-			name: "confirm add-on",
-			requisite: requisite{
-				currentMember: iapMember,
-			},
-			args: args{
-				result: subs.MockNewPaymentResult(addOnOrder),
-				order:  addOnOrder,
-			},
-			wantErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Prerequisite.
-			if !tt.requisite.currentMember.IsZero() {
-				repo.MustSaveMembership(tt.requisite.currentMember)
-			}
+			t.Logf("Pre-requisite: saving order %s", tt.args.order.ID)
 			repo.MustSaveOrder(tt.args.order)
 
 			got, err := env.ConfirmOrder(tt.args.result, tt.args.order)
@@ -178,6 +111,113 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
+}
+
+func TestEnv_ConfirmOrder_Renewal(t *testing.T) {
+	repo := test.NewRepo()
+
+	memberPriorRenewal := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
+		WithPrice(price.MockPriceStdYear.Price).
+		Build()
+
+	repo.MustSaveMembership(memberPriorRenewal)
+
+	order := subs.NewMockOrderBuilder("").
+		WithFtcID(memberPriorRenewal.FtcID.String).
+		WithKind(enum.OrderKindRenew).
+		Build()
+
+	repo.MustSaveOrder(order)
+
+	env := Env{
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		logger: zaptest.NewLogger(t),
+	}
+
+	paymentResult := subs.MockNewPaymentResult(order)
+
+	result, err := env.ConfirmOrder(paymentResult, order)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("%+v", result.Invoices)
+}
+
+// Test an existing standard user tries to buy premium
+func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
+	repo := test.NewRepo()
+
+	// Existing membership is standard
+	stdMmb := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
+		WithPrice(price.MockPriceStdYear.Price).
+		Build()
+	repo.MustSaveMembership(stdMmb)
+
+	// New order is u
+	order := subs.NewMockOrderBuilder("").
+		WithFtcID(stdMmb.FtcID.String).
+		WithKind(enum.OrderKindUpgrade).
+		WithPrice(price.MockPricePrm).
+		Build()
+
+	repo.MustSaveOrder(order)
+
+	env := Env{
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		logger: zaptest.NewLogger(t),
+	}
+
+	paymentResult := subs.MockNewPaymentResult(order)
+
+	result, err := env.ConfirmOrder(paymentResult, order)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if result.Invoices.CarriedOver.IsZero() {
+		t.Error("Upgrade order should generate a carry-over invoice")
+		return
+	}
+
+	t.Logf("%+v", result.Invoices)
+}
+
+// Test an existing iap user tries to buy an add-on
+func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
+	repo := test.NewRepo()
+
+	// Current membership comes from IAP.
+	iapMmb := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
+		WithPrice(price.MockPriceStdYear.Price).
+		WithPayMethod(enum.PayMethodApple).
+		Build()
+	repo.MustSaveMembership(iapMmb)
+
+	order := subs.NewMockOrderBuilder("").
+		WithFtcID(iapMmb.FtcID.String).
+		WithKind(enum.OrderKindAddOn).
+		WithPayMethod(enum.PayMethodAli).
+		Build()
+
+	repo.MustSaveOrder(order)
+
+	env := Env{
+		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		logger: zaptest.NewLogger(t),
+	}
+
+	paymentResult := subs.MockNewPaymentResult(order)
+
+	result, err := env.ConfirmOrder(paymentResult, order)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("%+v", result.Invoices)
 }
 
 func TestEnv_SaveConfirmationErr(t *testing.T) {
