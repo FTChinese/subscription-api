@@ -1,5 +1,36 @@
 package reader
 
+// The common columns when inserting or updating membership.
+// Not the b2b_licence_id column is ignored since it is not
+// generated here. Treat it as read-only across the whole app.
+const mUpsertSharedCols = `
+expire_date = :expire_date,
+payment_method = :payment_method,
+ftc_plan_id = :ftc_plan_id,
+stripe_subscription_id = :stripe_subs_id,
+stripe_plan_id = :stripe_plan_id,
+auto_renewal = :auto_renewal,
+sub_status = :subs_status,
+apple_subscription_id = :apple_subs_id,
+b2b_licence_id = :b2b_licence_id,
+standard_addon = :standard_addon,
+premium_addon = :premium_addon
+`
+
+const mRetrievalSharedCols = `
+expire_date,
+payment_method,
+ftc_plan_id,
+stripe_subscription_id AS stripe_subs_id,
+stripe_plan_id,
+IFNULL(auto_renewal, FALSE) AS auto_renewal,
+sub_status AS subs_status,
+apple_subscription_id AS apple_subs_id,
+b2b_licence_id,
+standard_addon,
+premium_addon
+`
+
 const colMembership = `
 SELECT vip_id AS compound_id,
 	NULLIF(vip_id, vip_id_alias) AS ftc_id,
@@ -8,17 +39,7 @@ SELECT vip_id AS compound_id,
 	expire_time,
 	member_tier AS tier,
 	billing_cycle AS cycle,
-	expire_date,
-	payment_method,
-	ftc_plan_id,
-	stripe_subscription_id AS stripe_subs_id,
-	stripe_plan_id,
-	IFNULL(auto_renewal, FALSE) AS auto_renewal,
-	sub_status AS subs_status,
-	apple_subscription_id AS apple_subs_id,
-	b2b_licence_id,
-	standard_addon,
-	premium_addon
+` + mRetrievalSharedCols + `	
 FROM premium.ftc_vip`
 
 const StmtSelectMember = colMembership + `
@@ -52,23 +73,6 @@ const StmtLockStripeMember = colMembership + `
 WHERE stripe_subscription_id = ?
 LIMIT 1
 FOR UPDATE`
-
-// The common columns when inserting or updating membership.
-// Not the b2b_licence_id column is ignored since it is not
-// generated here. Treat it as read-only across the whole app.
-const mUpsertSharedCols = `
-expire_date = :expire_date,
-payment_method = :payment_method,
-ftc_plan_id = :ftc_plan_id,
-stripe_subscription_id = :stripe_subs_id,
-stripe_plan_id = :stripe_plan_id,
-auto_renewal = :auto_renewal,
-sub_status = :subs_status,
-apple_subscription_id = :apple_subs_id,
-b2b_licence_id = :b2b_licence_id,
-standard_addon = :standard_addon,
-premium_addon = :premium_addon
-`
 
 const mUpsertCols = `
 vip_type = :vip_type,
