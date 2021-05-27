@@ -75,7 +75,7 @@ LIMIT ? OFFSET ?`
 const StmtCountInvoices = `
 SELECT COUNT(*) AS row_count
 FROM premium.ftc_invoice
-WHERE FIND_IN_SET(compound_id, ?) > 0`
+WHERE FIND_IN_SET(user_compound_id, ?) > 0`
 
 // StmtListAddOnInvoiceLock retrieves all invoices that is not consumed yet
 // and order kind is add_on.
