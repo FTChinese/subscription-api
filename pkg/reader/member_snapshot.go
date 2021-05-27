@@ -2,6 +2,7 @@ package reader
 
 import (
 	"fmt"
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg"
@@ -102,7 +103,7 @@ func (a Archiver) String() string {
 	return fmt.Sprintf("%s.%s", a.Name, a.Action)
 }
 
-const StmtSnapshotMember = `
+const StmtSaveSnapshot = `
 INSERT INTO premium.member_snapshot
 SET id = :snapshot_id,
 	created_by = :created_by,
@@ -115,13 +116,37 @@ SET id = :snapshot_id,
 	cycle = :cycle,
 ` + mUpsertSharedCols
 
+// StmtListSnapshots retrieves all membership change history.
+// User might have ftc id, or union id, or both. We should
+// retrieve all of them using the FIND_IN_SET function.
+const StmtListSnapshots = `
+SELECT id AS snapshot_id,
+	created_by,
+	created_utc,
+	order_id,
+	compound_id,
+	ftc_user_id AS ftc_id,
+	wx_union_id AS union_id,
+	tier,
+	cycle,
+` + mRetrievalSharedCols + `
+FROM premium.member_snapshot
+WHERE FIND_IN_SET(compound_id, ?) > 0
+ORDER BY created_utc DESC
+LIMIT ? OFFSET ?`
+
+const StmtCountSnapshot = `
+SELECT COUNT(*) AS row_count
+FROM premium.member_snapshot
+WHERE FIND_IN_SET(compound_id, ?) > 0`
+
 // MemberSnapshot saves a membership's status prior to
 // placing an order.
 type MemberSnapshot struct {
-	SnapshotID string      `db:"snapshot_id"`
-	CreatedBy  null.String `db:"created_by"`
-	CreatedUTC chrono.Time `db:"created_utc"`
-	OrderID    null.String `db:"order_id"` // Only exists when user is performing renewal or upgrading.
+	SnapshotID string      `json:"id" db:"snapshot_id"`
+	CreatedBy  null.String `json:"createdBy" db:"created_by"`
+	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
+	OrderID    null.String `json:"orderId" db:"order_id"` // Only exists when user is performing renewal or upgrading.
 	Membership
 }
 
@@ -147,4 +172,11 @@ func (m Membership) Snapshot(by Archiver) MemberSnapshot {
 		CreatedUTC: chrono.TimeNow(),
 		Membership: m,
 	}
+}
+
+type SnapshotList struct {
+	Total int64 `json:"total" db:"row_count"`
+	gorest.Pagination
+	Data []MemberSnapshot `json:"data"`
+	Err  error            `json:"-"`
 }
