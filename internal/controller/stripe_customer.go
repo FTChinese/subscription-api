@@ -11,7 +11,7 @@ import (
 // POST /stripe/customers
 // Response: reader.FtcAccount
 func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	cusAccount, err := router.stripeRepo.CreateCustomer(ftcID)
 
@@ -29,7 +29,7 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 }
 
 func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 	cusID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
@@ -64,7 +64,7 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 }
 
 func (router StripeRouter) ChangeDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 	cusID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
