@@ -1,6 +1,7 @@
 package invoice
 
 import (
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
@@ -98,4 +99,11 @@ func (i Invoice) WithStripeSubsID(id string) Invoice {
 func (i Invoice) WithAppleTxID(id string) Invoice {
 	i.AppleTxID = null.StringFrom(id)
 	return i
+}
+
+type List struct {
+	Total int64 `json:"total" db:"row_count"`
+	gorest.Pagination
+	Data []Invoice `json:"data"`
+	Err  error     `json:"-"`
 }
