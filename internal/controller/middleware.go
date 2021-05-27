@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	userIDKey  = "X-User-Id"
+	ftcIDKey   = "X-User-Id"
 	unionIDKey = "X-Union-Id"
 	appIDKey   = "X-App-Id"
 )
@@ -29,13 +29,13 @@ func NoCache(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// CheckUserID middleware makes sure all request header contains `X-User-Id` field.
+// RequireFtcOrUnionID middleware makes sure all request header contains `X-User-Id` field.
 //
 // - 401 Unauthorized if request header does not have `X-User-Name`,
 // or the value is empty.
 func RequireFtcOrUnionID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
-		userID := req.Header.Get(userIDKey)
+		userID := req.Header.Get(ftcIDKey)
 		unionID := req.Header.Get(unionIDKey)
 
 		userID = strings.TrimSpace(userID)
@@ -48,7 +48,7 @@ func RequireFtcOrUnionID(next http.Handler) http.Handler {
 			return
 		}
 
-		req.Header.Set(userIDKey, userID)
+		req.Header.Set(ftcIDKey, userID)
 
 		next.ServeHTTP(w, req)
 	}
@@ -62,7 +62,7 @@ func RequireFtcOrUnionID(next http.Handler) http.Handler {
 // or the value is empty.
 func RequireFtcID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
-		userID := req.Header.Get(userIDKey)
+		userID := req.Header.Get(ftcIDKey)
 
 		userID = strings.TrimSpace(userID)
 
@@ -74,7 +74,7 @@ func RequireFtcID(next http.Handler) http.Handler {
 			return
 		}
 
-		req.Header.Set(userIDKey, userID)
+		req.Header.Set(ftcIDKey, userID)
 
 		next.ServeHTTP(w, req)
 	}
@@ -82,7 +82,7 @@ func RequireFtcID(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// CheckUnionID middleware makes sure all request header contains `X-Union-Id` field.
+// RequireUnionID middleware makes sure all request header contains `X-Union-Id` field.
 //
 // - 401 Unauthorized if request header does not have `X-User-Name`,
 // or the value is empty.

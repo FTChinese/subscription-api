@@ -11,7 +11,7 @@ import (
 //
 //	GET /user/address
 func (router AccountRouter) LoadAddress(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	addr, err := router.userRepo.LoadAddress(ftcID)
 
@@ -35,7 +35,7 @@ func (router AccountRouter) LoadAddress(w http.ResponseWriter, req *http.Request
 // street?: string;
 // postcode?: string
 func (router AccountRouter) UpdateAddress(w http.ResponseWriter, req *http.Request) {
-	ftcID := req.Header.Get(userIDKey)
+	ftcID := req.Header.Get(ftcIDKey)
 
 	var addr account.Address
 
