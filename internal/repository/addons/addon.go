@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
+// ClaimAddOn uses the user's addon invoices to
 func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
