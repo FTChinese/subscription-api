@@ -13,14 +13,17 @@ import (
 
 func TestNewAddOnGroup(t *testing.T) {
 	userID := uuid.New().String()
-	inv1 := NewMockInvoiceBuilder(userID).
+	inv1 := NewMockInvoiceBuilder().
+		WithFtcID(userID).
 		WithOrderKind(enum.OrderKindAddOn).
 		Build()
-	inv2 := NewMockInvoiceBuilder(userID).
+	inv2 := NewMockInvoiceBuilder().
+		WithFtcID(userID).
 		WithOrderKind(enum.OrderKindAddOn).
 		WithPrice(price.MockPricePrm).
 		Build()
-	inv3 := NewMockInvoiceBuilder(userID).
+	inv3 := NewMockInvoiceBuilder().
+		WithFtcID(userID).
 		WithOrderKind(enum.OrderKindAddOn).
 		WithAddOnSource(addon.SourceCarryOver).
 		Build()
@@ -64,11 +67,13 @@ func TestNewAddOnGroup(t *testing.T) {
 
 func Test_consumeAddOn(t *testing.T) {
 	userID := uuid.New().String()
-	inv1 := NewMockInvoiceBuilder(userID).
+	inv1 := NewMockInvoiceBuilder().
+		WithFtcID(userID).
 		WithOrderKind(enum.OrderKindAddOn).
 		Build()
 
-	inv2 := NewMockInvoiceBuilder(userID).
+	inv2 := NewMockInvoiceBuilder().
+		WithFtcID(userID).
 		WithOrderKind(enum.OrderKindAddOn).
 		WithAddOnSource(addon.SourceCarryOver).
 		Build()
