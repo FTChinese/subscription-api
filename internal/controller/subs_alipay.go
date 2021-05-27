@@ -1,6 +1,7 @@
 package controller
 
 import (
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/go-rest/view"
@@ -8,11 +9,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"net/http"
-)
-
-const (
-	success = "success"
-	fail    = "fail"
 )
 
 // AliPay creates an http handler function depending
@@ -53,12 +49,13 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		input, err := gatherAliPayInput(req)
-		if err != nil {
+		var input subs.AliPayInput
+		if err := gorest.ParseJSON(req.Body, &input); err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
+
 		// TODO: ensure return url is set.
 		if ve := input.Validate(); ve != nil {
 			sugar.Error(err)
