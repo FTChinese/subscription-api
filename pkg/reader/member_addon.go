@@ -94,6 +94,85 @@ func (m Membership) claimAddOn(i invoice.Invoice) (Membership, error) {
 	}.Sync(), nil
 }
 
+// addonToInvoice uses a virtual invoice to collect and generate the data used by
+// withAddOnInvoice when using AddOn field as a fallback.
+func (m Membership) addonToInvoice() invoice.Invoice {
+	var days int64
+	var payMethod enum.PayMethod
+	var tier enum.Tier
+	startTime := dt.PickLater(time.Now(), m.ExpireDate.Time)
+	var endTime time.Time
+
+	if m.AddOn.Premium != 0 {
+		days = m.AddOn.Premium
+		endTime = startTime.AddDate(0, 0, int(m.AddOn.Premium))
+		tier = enum.TierPremium
+	} else if m.AddOn.Standard != 0 {
+		days = m.AddOn.Standard
+		endTime = startTime.AddDate(0, 0, int(m.AddOn.Standard))
+		tier = enum.TierStandard
+	}
+
+	if (m.PaymentMethod != enum.PayMethodAli) && (m.PaymentMethod != enum.PayMethodWx) {
+		payMethod = enum.PayMethodAli
+	} else {
+		payMethod = m.PaymentMethod
+	}
+
+	return invoice.Invoice{
+		ID:         pkg.InvoiceID(),
+		CompoundID: m.CompoundID,
+		Edition: price.Edition{
+			Tier:  tier,
+			Cycle: enum.CycleYear,
+		},
+		YearMonthDay: dt.YearMonthDay{
+			Days: days,
+		},
+		AddOnSource:   addon.SourceCarryOver,
+		OrderID:       null.String{},
+		OrderKind:     enum.OrderKindAddOn,
+		PaidAmount:    0,
+		PaymentMethod: payMethod,
+		PriceID:       null.String{},
+		CreatedUTC:    chrono.TimeNow(),
+		ConsumedUTC:   chrono.TimeNow(),
+		DateTimePeriod: dt.DateTimePeriod{
+			StartUTC: chrono.TimeFrom(startTime),
+			EndUTC:   chrono.TimeFrom(endTime),
+		},
+	}
+}
+
+// pickConsumableAddOn checks if Membership.AddOn is out of sync with invoices.
+// In case there are invoices failed to ba saved but membershi's addon field changed,
+// use the addon days directly; otherwise we calculate expiration date from invoices.
+func (m Membership) pickConsumableAddOn(groupedInv invoice.AddOnGroup) []invoice.Invoice {
+	realAddOn := groupedInv.ToAddOn()
+
+	// Use premium first.
+	if m.AddOn.Premium != 0 || realAddOn.Premium != 0 {
+		if m.AddOn.Premium > realAddOn.Premium {
+			return []invoice.Invoice{m.addonToInvoice()}
+		}
+
+		return groupedInv.Consumable(dt.PickLater(time.Now(), m.ExpireDate.Time))
+	}
+
+	if m.AddOn.Standard != 0 || realAddOn.Standard != 0 {
+		if m.AddOn.Standard > realAddOn.Standard {
+			return []invoice.Invoice{m.addonToInvoice()}
+		}
+
+		return groupedInv.Consumable(dt.PickLater(time.Now(), m.ExpireDate.Time))
+	}
+
+	return nil
+}
+
+// ClaimAddOns extends expiration date from existing addon invoices, or
+// from the AddOn fields if invoices are empty, or the latest invoice's end date
+// is less than AddOn.
 func (m Membership) ClaimAddOns(inv []invoice.Invoice) (AddOnClaimed, error) {
 
 	// Find out which group of addon could be consumed.
