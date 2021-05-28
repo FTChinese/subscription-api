@@ -67,7 +67,8 @@ func (m Membership) ShouldUseAddOn() error {
 	return nil
 }
 
-func (m Membership) claimAddOn(i invoice.Invoice) (Membership, error) {
+// withAddOnInvoice transfers invoice to expiration date.
+func (m Membership) withAddOnInvoice(i invoice.Invoice) (Membership, error) {
 	if !i.IsAddOn() {
 		return Membership{}, errors.New("cannot use non-addon invoice as add-on")
 	}
