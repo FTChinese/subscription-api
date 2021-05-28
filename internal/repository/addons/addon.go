@@ -1,12 +1,11 @@
 package addons
 
 import (
-	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-// ClaimAddOn uses the user's addon invoices to
+// ClaimAddOn uses the user's addon invoices to extend expiration date.
 func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
@@ -29,6 +28,8 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 
 	sugar.Infof("Membership retrieved %v", member)
 
+	// Check if addon should be used;
+	// otherwise we might override valid data.
 	if err := member.ShouldUseAddOn(); err != nil {
 		sugar.Infof("Add on cannot be transferred to membership %v", member)
 		_ = otx.Rollback()
@@ -45,13 +46,7 @@ func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
 
 	sugar.Infof("Add-on invoices: %v", addOns)
 
-	if len(addOns) == 0 {
-		sugar.Info("No add-on")
-		_ = otx.Rollback()
-		return reader.AddOnClaimed{}, sql.ErrNoRows
-	}
-
-	// otherwise we might override valid data.
+	// Perform the transfer from addon to expiration date.
 	result, err := member.ClaimAddOns(addOns)
 	if err != nil {
 		sugar.Error(err)
