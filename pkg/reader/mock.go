@@ -28,6 +28,8 @@ type MockMemberBuilder struct {
 	stripeSubsID string
 }
 
+// NewMockMemberBuilder creates a new membership builder.
+// Deprecated
 func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 	if ftcID == "" {
 		ftcID = uuid.New().String()
