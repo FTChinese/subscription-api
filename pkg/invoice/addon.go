@@ -29,6 +29,13 @@ func NewAddOnGroup(inv []Invoice) AddOnGroup {
 	return g
 }
 
+func (g AddOnGroup) ToAddOn() addon.AddOn {
+	return addon.AddOn{
+		Standard: reduceInvoices(g[enum.TierStandard]),
+		Premium:  reduceInvoices(g[enum.TierPremium]),
+	}
+}
+
 // Consumable selects from the grouped invoices whose
 // purchased period is set and can be transferred to
 // membership. Premium invoices will be used if exists,
