@@ -91,11 +91,15 @@ func (i Invoice) WithOrderID(id string) Invoice {
 	return i
 }
 
+// WithStripeSubsID adds Stripe subscription id when a carried-over invoice
+// is caused by switching to Stripe.
 func (i Invoice) WithStripeSubsID(id string) Invoice {
 	i.StripeSubsID = null.StringFrom(id)
 	return i
 }
 
+// WithAppleTxID adds IAP original transaction id when a carried-over invoice
+// is caused by switching to IAP.
 func (i Invoice) WithAppleTxID(id string) Invoice {
 	i.AppleTxID = null.StringFrom(id)
 	return i
