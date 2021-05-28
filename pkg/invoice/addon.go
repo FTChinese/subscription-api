@@ -42,13 +42,17 @@ func (g AddOnGroup) ToAddOn() addon.AddOn {
 // then fallback to standard edition.
 func (g AddOnGroup) Consumable(start time.Time) []Invoice {
 	prmAddOns, ok := g[enum.TierPremium]
-	if ok {
-		return ConsumeAddOn(prmAddOns, start)
+
+	// NOTE we must test the array's length.
+	// `ok` only indicates the the key exists.
+	// We also require the array is not empty.
+	if ok && len(prmAddOns) > 0 {
+		return consumeAddOn(prmAddOns, start)
 	}
 
 	stdAddOns, ok := g[enum.TierStandard]
-	if ok {
-		return ConsumeAddOn(stdAddOns, start)
+	if ok && len(stdAddOns) > 0 {
+		return consumeAddOn(stdAddOns, start)
 	}
 
 	return []Invoice{}
