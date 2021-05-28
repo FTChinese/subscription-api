@@ -102,8 +102,105 @@ func Test_consumeAddOn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ConsumeAddOn(tt.args.addOns, tt.args.start)
+			got := consumeAddOn(tt.args.addOns, tt.args.start)
 			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
+
+func Test_reduceInvoices(t *testing.T) {
+
+	ftcID := uuid.New().String()
+
+	type args struct {
+		invs []Invoice
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{
+			name: "Reduce invoices days",
+			args: args{
+				invs: []Invoice{
+					NewMockInvoiceBuilder().
+						WithFtcID(ftcID).
+						WithOrderKind(enum.OrderKindAddOn).
+						WithAddOnSource(addon.SourceUserPurchase).
+						Build(),
+					NewMockInvoiceBuilder().
+						WithFtcID(ftcID).
+						WithOrderKind(enum.OrderKindAddOn).
+						WithAddOnSource(addon.SourceCarryOver).
+						Build(),
+					NewMockInvoiceBuilder().
+						WithFtcID(ftcID).
+						WithOrderKind(enum.OrderKindAddOn).
+						WithAddOnSource(addon.SourceCompensation).
+						Build(),
+				},
+			},
+			want: 366*3 + 3,
+		},
+		{
+			name: "Reduce nil",
+			args: args{invs: nil},
+			want: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := reduceInvoices(tt.args.invs); got != tt.want {
+				t.Errorf("reduceInvoices() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAddOnGroup_ToAddOn(t *testing.T) {
+	ftcID := uuid.New().String()
+
+	tests := []struct {
+		name string
+		g    AddOnGroup
+		want addon.AddOn
+	}{
+		{
+			name: "Sum addon days",
+			g: AddOnGroup{
+				enum.TierStandard: {
+					NewMockInvoiceBuilder().
+						WithFtcID(ftcID).
+						WithOrderKind(enum.OrderKindAddOn).
+						WithAddOnSource(addon.SourceUserPurchase).
+						Build(),
+
+					NewMockInvoiceBuilder().
+						WithFtcID(ftcID).
+						WithOrderKind(enum.OrderKindAddOn).
+						WithAddOnSource(addon.SourceCompensation).
+						Build(),
+				},
+				enum.TierPremium: {
+					NewMockInvoiceBuilder().
+						WithFtcID(ftcID).
+						WithOrderKind(enum.OrderKindAddOn).
+						WithAddOnSource(addon.SourceCarryOver).
+						Build(),
+				},
+			},
+			want: addon.AddOn{
+				Standard: 367 * 2,
+				Premium:  367,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.g.ToAddOn(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToAddOn() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
