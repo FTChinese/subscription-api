@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"time"
 )
@@ -55,6 +56,10 @@ func (m Membership) CarryOverInvoice() invoice.Invoice {
 	}
 }
 
+// ShouldUseAddOn checks if current membership is eligible to
+// start using addon.
+// If the membership is a zero value, stop.
+// If the membership is not expired yet, stop.
 func (m Membership) ShouldUseAddOn() error {
 	if m.IsZero() {
 		return errors.New("reserved subscription time only be claimed by an existing membership")
@@ -177,15 +182,14 @@ func (m Membership) pickConsumableAddOn(groupedInv invoice.AddOnGroup) []invoice
 func (m Membership) ClaimAddOns(inv []invoice.Invoice) (AddOnClaimed, error) {
 
 	// Find out which group of addon could be consumed.
-	addOns := invoice.NewAddOnGroup(inv).
-		Consumable(dt.PickLater(time.Now(), m.ExpireDate.Time))
+	addOns := m.pickConsumableAddOn(invoice.NewAddOnGroup(inv))
 
-	if len(addOns) == 0 {
+	if addOns == nil || len(addOns) == 0 {
 		return AddOnClaimed{}, errors.New("no addon invoice found")
 	}
 
 	latest := addOns[len(addOns)-1]
-	newM, err := m.claimAddOn(latest)
+	newM, err := m.withAddOnInvoice(latest)
 	if err != nil {
 		return AddOnClaimed{}, err
 	}
