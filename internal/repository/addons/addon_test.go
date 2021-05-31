@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -16,23 +17,20 @@ import (
 )
 
 func TestEnv_ClaimAddOn(t *testing.T) {
-	userID := uuid.New().String()
+	// User A has valid and complete invoices.
+	userA := uuid.New().String()
+	t.Logf("User A: %s", userA)
 
-	t.Logf("User id: %s", userID)
+	// User B only has addon days under membership.
+	userB := uuid.New().String()
+	t.Logf("User B: %s", userB)
 
 	repo := test.NewRepo()
-	repo.MustSaveMembership(reader.NewMockMemberBuilder(userID).
-		WithExpiration(time.Now().AddDate(0, 0, -1)).
-		Build())
-	repo.MustSaveInvoiceN([]invoice.Invoice{
-		reader.NewMockMemberBuilder(userID).
-			Build().
-			CarryOverInvoice(),
-		invoice.NewMockInvoiceBuilder().
-			WithFtcID(userID).
-			WithOrderKind(enum.OrderKindAddOn).
-			Build(),
-	})
+
+	type requisite struct {
+		membership reader.Membership
+		invoices   []invoice.Invoice
+	}
 
 	type fields struct {
 		dbs    db.ReadWriteSplit
@@ -42,26 +40,70 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 		ids pkg.UserIDs
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    reader.AddOnClaimed
-		wantErr bool
+		name      string
+		fields    fields
+		requisite requisite
+		args      args
+		want      reader.AddOnClaimed
+		wantErr   bool
 	}{
 		{
-			name: "Claim addon",
+			name: "Claim addon from invoices",
 			fields: fields{
 				dbs:    test.SplitDB,
 				logger: zaptest.NewLogger(t),
 			},
+			requisite: requisite{
+				membership: reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
+					WithFtcID(userA).
+					WithExpiration(time.Now().AddDate(0, 0, -1)).
+					Build(),
+				invoices: []invoice.Invoice{
+					reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
+						WithFtcID(userA).
+						Build().
+						CarryOverInvoice(),
+					invoice.NewMockInvoiceBuilder().
+						WithFtcID(userA).
+						WithOrderKind(enum.OrderKindAddOn).
+						Build(),
+				},
+			},
 			args: args{
-				ids: pkg.NewFtcUserID(userID),
+				ids: pkg.NewFtcUserID(userA),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Claim addon from membership days",
+			fields: fields{
+				dbs:    test.SplitDB,
+				logger: zaptest.NewLogger(t),
+			},
+			requisite: requisite{
+				membership: reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
+					WithFtcID(userB).
+					WithExpiration(time.Now().AddDate(0, 0, -1)).
+					WithAddOn(addon.AddOn{
+						Standard: 367,
+						Premium:  0,
+					}).
+					Build(),
+				invoices: nil,
+			},
+			args: args{
+				ids: pkg.NewFtcUserID(userB),
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("Save membership %v", tt.requisite.membership)
+			repo.MustSaveMembership(tt.requisite.membership)
+			t.Logf("Save invoices %v", tt.requisite.invoices)
+			repo.MustSaveInvoiceN(tt.requisite.invoices)
+
 			env := Env{
 				dbs:    tt.fields.dbs,
 				logger: tt.fields.logger,
