@@ -62,7 +62,7 @@ func (m Membership) CarryOverInvoice() invoice.Invoice {
 // If the membership is not expired yet, stop.
 func (m Membership) ShouldUseAddOn() error {
 	if m.IsZero() {
-		return errors.New("reserved subscription time only be claimed by an existing membership")
+		return errors.New("stored subscription time can only be claimed by an existing membership")
 	}
 
 	if !m.IsExpired() {
@@ -158,19 +158,24 @@ func (m Membership) pickConsumableAddOn(groupedInv invoice.AddOnGroup) []invoice
 
 	// Use premium first.
 	if m.AddOn.Premium != 0 || realAddOn.Premium != 0 {
+		consumed := groupedInv.Consume(enum.TierPremium, dt.PickLater(time.Now(), m.ExpireDate.Time))
+		// The days saved in membership is larger than those calculated from invoices.
+		// Turn the addon days into a virtual invoice and append it to the end of consumed,
+		// which will be used to extend membership expiration date.
 		if m.AddOn.Premium > realAddOn.Premium {
-			return []invoice.Invoice{m.addonToInvoice()}
+			consumed = append(consumed, m.addonToInvoice())
 		}
 
-		return groupedInv.Consumable(dt.PickLater(time.Now(), m.ExpireDate.Time))
+		return consumed
 	}
 
 	if m.AddOn.Standard != 0 || realAddOn.Standard != 0 {
+		consumed := groupedInv.Consume(enum.TierStandard, dt.PickLater(time.Now(), m.ExpireDate.Time))
 		if m.AddOn.Standard > realAddOn.Standard {
-			return []invoice.Invoice{m.addonToInvoice()}
+			consumed = append(consumed, m.addonToInvoice())
 		}
 
-		return groupedInv.Consumable(dt.PickLater(time.Now(), m.ExpireDate.Time))
+		return consumed
 	}
 
 	return nil
