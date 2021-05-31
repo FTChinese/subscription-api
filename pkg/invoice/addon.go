@@ -38,28 +38,14 @@ func (g AddOnGroup) ToAddOn() addon.AddOn {
 	}
 }
 
-// Consumable selects from the grouped invoices whose
-// purchased period is set and can be transferred to
-// membership. Premium invoices will be used if exists,
-// then fallback to standard edition.
-func (g AddOnGroup) Consumable(start time.Time) []Invoice {
-	prmAddOns, ok := g[enum.TierPremium]
-
-	// NOTE we must test the array's length.
-	// `ok` only indicates the the key exists.
-	// We also require the array is not empty.
-	if ok && len(prmAddOns) > 0 {
-		return consumeAddOn(prmAddOns, start)
-	}
-
-	stdAddOns, ok := g[enum.TierStandard]
-	if ok && len(stdAddOns) > 0 {
-		return consumeAddOn(stdAddOns, start)
-	}
-
-	return []Invoice{}
+// Consume addon invoices of the specified tier.
+// The last item in the result slice should be used to update
+// membership.
+func (g AddOnGroup) Consume(tier enum.Tier, start time.Time) []Invoice {
+	return consumeAddOn(g[tier], start)
 }
 
+// reduceInvoices calculate the total days of invoices of the same tier.
 func reduceInvoices(invs []Invoice) int64 {
 	var sum dt.YearMonthDay
 
