@@ -105,8 +105,6 @@ func (router SubsRouter) RawPaymentResult(w http.ResponseWriter, req *http.Reque
 
 // VerifyPayment checks against payment provider's api to get
 // the payment result of an order.
-// GET /wxpay/query/{orderId}
-// GET /alipay/query/{orderId}
 // POST /orders/{id}/verify-payment
 func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
