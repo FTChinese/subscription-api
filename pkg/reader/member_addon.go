@@ -21,6 +21,12 @@ type AddOnClaimed struct {
 	Snapshot   MemberSnapshot
 }
 
+type AddOnInvoiceCreated struct {
+	Invoice    invoice.Invoice `json:"invoice"`
+	Membership Membership      `json:"membership"`
+	Snapshot   MemberSnapshot  `json:"snapshot"`
+}
+
 func (m Membership) PlusAddOn(addOn addon.AddOn) Membership {
 	m.AddOn = m.AddOn.Plus(addOn)
 	return m
