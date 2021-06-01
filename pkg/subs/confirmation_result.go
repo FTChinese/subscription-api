@@ -31,6 +31,9 @@ type ConfirmationResult struct {
 	Notify     bool                  `json:"-"`
 }
 
+// NewConfirmationResult confirms an order based on the payment result and
+// current membership. The order will be updated, invoices will be created,
+// membership will be updated and a snapshot will be taken.
 func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 
 	invoices, err := p.invoices()
