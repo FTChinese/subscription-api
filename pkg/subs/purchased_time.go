@@ -15,6 +15,10 @@ type PurchasedTimeParams struct {
 	OrderKind      enum.OrderKind
 }
 
+// Build determines an order's purchased time range.
+// For order kid of create or renew, always pick the latest time from confirmation time
+// and current membership's expiration time.
+// For addon, time range if unknown until a future moment.
 func (b PurchasedTimeParams) Build() (dt.TimeRange, error) {
 	switch b.OrderKind {
 
@@ -23,6 +27,7 @@ func (b PurchasedTimeParams) Build() (dt.TimeRange, error) {
 		return dt.NewTimeRange(startTime).
 			WithDate(b.Date), nil
 
+	// Why use confirmation time here?
 	case enum.OrderKindUpgrade:
 		return dt.NewTimeRange(b.ConfirmedAt.Time).
 			WithDate(b.Date), nil
