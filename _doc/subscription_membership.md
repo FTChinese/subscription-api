@@ -26,6 +26,10 @@ interface MemberSnashot extends Membership {
 ```
 ## Get current membership
 
+```
+GET /membership
+```
+
 ## List membership change history
 
 ```
