@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
@@ -43,6 +44,29 @@ type Invoice struct {
 	ConsumedUTC   chrono.Time    `json:"consumedUtc" db:"consumed_utc"` // For order kind create, renew or upgrade, an invoice is consumed immediately; for addon, it is usually consumed at a future time.
 	dt.DateTimePeriod
 	CarriedOverUtc chrono.Time `json:"carriedOver" db:"carried_over_utc"` // In case user has carry-over for upgrading or switching stripe, add a timestamp to original invoice.
+}
+
+// NewAddonInvoice creates a new addon invoice based on
+// the parameters provided in a request.
+func NewAddonInvoice(params pkg.AddOnParams) Invoice {
+	return Invoice{
+		ID:             pkg.InvoiceID(),
+		CompoundID:     params.CompoundID,
+		Edition:        params.Edition,
+		YearMonthDay:   params.YearMonthDay,
+		AddOnSource:    params.AddOnSource,
+		AppleTxID:      null.String{},
+		OrderID:        params.OrderID,
+		OrderKind:      enum.OrderKindAddOn,
+		PaidAmount:     params.PaidAmount,
+		PaymentMethod:  params.PaymentMethod,
+		PriceID:        params.PriceID,
+		StripeSubsID:   null.String{},
+		CreatedUTC:     chrono.TimeNow(),
+		ConsumedUTC:    chrono.Time{},
+		DateTimePeriod: dt.DateTimePeriod{},
+		CarriedOverUtc: chrono.Time{},
+	}
 }
 
 func (i Invoice) SetPeriod(start time.Time) Invoice {
