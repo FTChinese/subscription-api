@@ -254,6 +254,7 @@ func StartServer(s ServerStatus) {
 		// List the modification history of a user's membership
 		r.Get("/snapshots", payRouter.ListMemberSnapshots)
 		r.Post("/addons", payRouter.ClaimAddOn)
+		r.Patch("/addons", payRouter.CreateAddOn)
 	})
 
 	r.Route("/orders", func(r chi.Router) {
