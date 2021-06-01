@@ -111,3 +111,26 @@ interface Invoice {
 * `stripeSubsId` the subscription id of stripe which caused this invoiced generated when a valid one-time-purchase user selected to switch to Stripe. An invoice of type `orderKind: add_on` and `addOnSource: carry_over` is created for current membership's remaining period.
 * `consumedUtc` the moment when this invoice's `year`, `months` and `days` are transferred to membership's expiration time. For `orderKind: create | renew | upgrade`, an invoice is consumed immediately upon creation; for `orderKind: add_on`, it is consumed at a future time, usually upon current membership expires.
 * `carriedOver` a time timstamp added to old invoices when current membership is carried over. When performing a carry-over to current membership, how do we know the existing invoices used to generate current membership are carried over? This field exists only for reference.
+
+## Get a list of invoice
+
+```
+GET /invoices?page=<int>&per_page=<int>
+```
+
+### Response
+
+```typescript
+interface InvoiceList {
+    total: number;
+    page: number;
+    limit: number;
+    data: Invoice[];
+}
+```
+
+## Get a single invoice
+
+```
+GET /invoices/{id}
+```

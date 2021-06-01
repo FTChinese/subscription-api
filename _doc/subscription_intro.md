@@ -23,6 +23,7 @@ Required headers: `X-User-Id` or `X-Union-Id`, or both for linked account.
 * PUT `/membership` Create a new membership. NOT implemented.
 * GET `/membership/snapshots` Get a list of membership change history.
 * POST `/membership/addons` Transfer addon to expiration time.
+* PATCH `/membership/addons` Add addon to existing one.
 
 ### Orders
 
