@@ -64,9 +64,9 @@ config :
 .PHONY: publish
 publish :
 	ssh ucloud "rm -f /home/node/go/bin/$(app_name).bak"
-	rsync -v ./$(default_exec) bj32:/home/node
-	ssh bj32 "rsync -v /home/node/$(app_name) ucloud:/home/node/go/bin/$(app_name).bak"
-
+	#rsync -v ./$(default_exec) bj32:/home/node
+	#ssh bj32 "rsync -v /home/node/$(app_name) ucloud:/home/node/go/bin/$(app_name).bak"
+	rsync -v ./$(default_exec) ucloud:/home/node/go/bin/$(app_name).bak
 
 .PHONY: restart
 restart :
