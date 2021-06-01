@@ -76,9 +76,9 @@ func TestNewOrderInvoice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewOrderInvoice(tt.args.timeParams, tt.args.o)
+			got, err := newOrderInvoice(tt.args.timeParams, tt.args.o)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewOrderInvoice() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newOrderInvoice() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			tt.want.CreatedUTC = got.CreatedUTC
@@ -86,7 +86,7 @@ func TestNewOrderInvoice(t *testing.T) {
 			tt.want.ID = got.ID
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewOrderInvoice() got = \n%v, want \n%v", got, tt.want)
+				t.Errorf("newOrderInvoice() got = \n%v, want \n%v", got, tt.want)
 			}
 		})
 	}
