@@ -2,6 +2,7 @@ package txrepo
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -48,6 +49,29 @@ func (tx AccountTx) AddUnionIDToFtc(a account.BaseAccount) error {
 	_, err := tx.NamedExec(
 		account.StmtLinkAccount,
 		a)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx AccountTx) RetrieveMobile(ftcID string) (ztsms.MobileUpdater, error) {
+	var p ztsms.MobileUpdater
+	err := tx.Get(&p, ztsms.StmtLockMobileByID, ftcID)
+
+	if err != nil {
+		return ztsms.MobileUpdater{}, err
+	}
+
+	return p, nil
+}
+
+func (tx AccountTx) SetMobile(params ztsms.MobileUpdater) error {
+	_, err := tx.NamedExec(
+		ztsms.StmtSetPhone,
+		params)
 
 	if err != nil {
 		return err
