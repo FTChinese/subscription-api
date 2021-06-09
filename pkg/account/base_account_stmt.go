@@ -15,6 +15,7 @@ SET user_id = :ftc_id,
 const StmtCreateProfile = `
 INSERT INTO user_db.profile
 SET user_id = :ftc_id,
+	updated_utc = UTC_TIMESTAMP(),
 	mobile_phone = :mobile_phone`
 
 const colsBaseAccount = `
