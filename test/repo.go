@@ -5,36 +5,74 @@ package test
 import (
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
+	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 type Repo struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	logger *zap.Logger
 }
 
-func NewRepo() *Repo {
-	return &Repo{
-		db: DB,
+func NewRepo() Repo {
+	return Repo{
+		db:     DB,
+		logger: config.MustGetLogger(false),
+	}
+}
+
+func NewRepoV2(logger *zap.Logger) Repo {
+	return Repo{
+		db:     SplitDB.Write,
+		logger: logger,
+	}
+}
+
+func (r Repo) CreateUserInfo(a account.BaseAccount) error {
+	_, err := r.db.NamedExec(
+		account.StmtCreateFtc,
+		a)
+
+	return err
+}
+
+func (r Repo) MustCreateUserInfo(a account.BaseAccount) {
+	err := r.CreateUserInfo(a)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (r Repo) CreateProfile(a account.BaseAccount) error {
+	_, err := r.db.NamedExec(
+		account.StmtCreateProfile,
+		a)
+
+	return err
+}
+
+func (r Repo) MustCreateProfile(a account.BaseAccount) {
+	err := r.CreateProfile(a)
+	if err != nil {
+		panic(err)
 	}
 }
 
 func (r Repo) CreateFtcAccount(a account.BaseAccount) error {
-	_, err := r.db.NamedExec(
-		account.StmtCreateFtc,
-		a)
+	err := r.CreateUserInfo(a)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = r.db.NamedExec(
-		account.StmtCreateProfile,
-		a)
+	err = r.CreateProfile(a)
 
 	if err != nil {
 		return err
@@ -93,7 +131,25 @@ func (r Repo) MustSaveEmailVerifier(v account.EmailVerifier) {
 	}
 }
 
-func (r *Repo) SaveWxUser(u wxlogin.UserInfoSchema) error {
+func (r Repo) SaveMobileVerifier(v ztsms.Verifier) error {
+	_, err := r.db.NamedExec(ztsms.StmtSaveVerifier, v)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r Repo) MustSaveMobileVerifier(v ztsms.Verifier) ztsms.Verifier {
+	err := r.SaveMobileVerifier(v)
+	if err != nil {
+		panic(err)
+	}
+
+	return v
+}
+
+func (r Repo) SaveWxUser(u wxlogin.UserInfoSchema) error {
 	_, err := r.db.NamedExec(wxlogin.StmtInsertUserInfo, u)
 	if err != nil {
 		return err
@@ -102,14 +158,14 @@ func (r *Repo) SaveWxUser(u wxlogin.UserInfoSchema) error {
 	return nil
 }
 
-func (r *Repo) MustSaveWxUser(u wxlogin.UserInfoSchema) {
+func (r Repo) MustSaveWxUser(u wxlogin.UserInfoSchema) {
 	err := r.SaveWxUser(u)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (r *Repo) SaveMembership(m reader.Membership) error {
+func (r Repo) SaveMembership(m reader.Membership) error {
 	m = m.Sync()
 
 	_, err := r.db.NamedExec(
@@ -123,7 +179,7 @@ func (r *Repo) SaveMembership(m reader.Membership) error {
 	return nil
 }
 
-func (r *Repo) MustSaveMembership(m reader.Membership) {
+func (r Repo) MustSaveMembership(m reader.Membership) {
 
 	err := r.SaveMembership(m)
 
@@ -132,7 +188,7 @@ func (r *Repo) MustSaveMembership(m reader.Membership) {
 	}
 }
 
-func (r *Repo) SaveOrder(order subs.Order) error {
+func (r Repo) SaveOrder(order subs.Order) error {
 
 	var stmt = subs.StmtInsertOrder + `,
 		confirmed_utc = :confirmed_utc,
@@ -150,7 +206,7 @@ func (r *Repo) SaveOrder(order subs.Order) error {
 	return nil
 }
 
-func (r *Repo) MustSaveOrder(order subs.Order) subs.Order {
+func (r Repo) MustSaveOrder(order subs.Order) subs.Order {
 
 	if err := r.SaveOrder(order); err != nil {
 		panic(err)
@@ -159,13 +215,13 @@ func (r *Repo) MustSaveOrder(order subs.Order) subs.Order {
 	return order
 }
 
-func (r *Repo) MustSaveRenewalOrders(orders []subs.Order) {
+func (r Repo) MustSaveRenewalOrders(orders []subs.Order) {
 	for _, v := range orders {
 		r.MustSaveOrder(v)
 	}
 }
 
-func (r *Repo) SaveInvoice(inv invoice.Invoice) error {
+func (r Repo) SaveInvoice(inv invoice.Invoice) error {
 	_, err := r.db.NamedExec(invoice.StmtCreateInvoice, inv)
 	if err != nil {
 		return err
@@ -174,13 +230,13 @@ func (r *Repo) SaveInvoice(inv invoice.Invoice) error {
 	return nil
 }
 
-func (r *Repo) MustSaveInvoice(inv invoice.Invoice) {
+func (r Repo) MustSaveInvoice(inv invoice.Invoice) {
 	if err := r.SaveInvoice(inv); err != nil {
 		panic(err)
 	}
 }
 
-func (r *Repo) SaveInvoiceN(addOns []invoice.Invoice) error {
+func (r Repo) SaveInvoiceN(addOns []invoice.Invoice) error {
 	for _, v := range addOns {
 		err := r.SaveInvoice(v)
 		if err != nil {
@@ -191,14 +247,14 @@ func (r *Repo) SaveInvoiceN(addOns []invoice.Invoice) error {
 	return nil
 }
 
-func (r *Repo) MustSaveInvoiceN(addOns []invoice.Invoice) {
+func (r Repo) MustSaveInvoiceN(addOns []invoice.Invoice) {
 	err := r.SaveInvoiceN(addOns)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (r *Repo) SaveIAPSubs(s apple.Subscription) error {
+func (r Repo) SaveIAPSubs(s apple.Subscription) error {
 	_, err := r.db.NamedExec(apple.StmtCreateSubs, s)
 	if err != nil {
 		return err
@@ -207,13 +263,13 @@ func (r *Repo) SaveIAPSubs(s apple.Subscription) error {
 	return nil
 }
 
-func (r *Repo) MustSaveIAPSubs(s apple.Subscription) {
+func (r Repo) MustSaveIAPSubs(s apple.Subscription) {
 	if err := r.SaveIAPSubs(s); err != nil {
 		panic(err)
 	}
 }
 
-func (r *Repo) SaveIAPReceipt(schema apple.ReceiptSchema) error {
+func (r Repo) SaveIAPReceipt(schema apple.ReceiptSchema) error {
 	_, err := r.db.NamedExec(apple.StmtSaveReceiptToken, schema)
 	if err != nil {
 		return err
@@ -222,7 +278,7 @@ func (r *Repo) SaveIAPReceipt(schema apple.ReceiptSchema) error {
 	return nil
 }
 
-func (r *Repo) MustSaveIAPReceipt(schema apple.ReceiptSchema) {
+func (r Repo) MustSaveIAPReceipt(schema apple.ReceiptSchema) {
 	err := r.SaveIAPReceipt(schema)
 	if err != nil {
 		panic(err)
