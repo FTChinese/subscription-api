@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"errors"
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
@@ -122,33 +123,29 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	// Ensure the mobile is not set to any other account.
-	// What we want is that this mobile does not exist.
-	mobileAccount, err := router.userRepo.BaseAccountByMobile(vrf.Mobile)
-	// An account exist under this mobile
-	if err == nil {
-		// Let's see if the mobile account is this user.
-		if mobileAccount.FtcID == ftcID {
-			sugar.Info("Mobile already set on this user")
-			// User already have mobile set.
-			_ = render.New(w).OK(mobileAccount)
+	err = router.userRepo.SetMobile(ztsms.MobileUpdater{
+		FtcID:  ftcID,
+		Mobile: null.StringFrom(vrf.Mobile),
+	})
+	if err != nil {
+		if errors.Is(err, ztsms.ErrMobileAlreadySet) {
+			baseAccount, err := router.userRepo.BaseAccountByUUID(ftcID)
+			if err != nil {
+				sugar.Error(err)
+				_ = render.New(w).DBError(err)
+				return
+			}
+			_ = render.New(w).OK(baseAccount)
 			return
 		}
-
-		// Mobile is set on another account
-		sugar.Info("Mobile is used by another account")
-		// 422
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: "This mobile is already used by another accmount",
-			Field:   "mobile",
-			Code:    render.CodeAlreadyExists,
-		})
-		return
-	}
-
-	// ErrNoRows is what we want.
-	if err != sql.ErrNoRows {
-		sugar.Error(err)
+		if errors.Is(err, ztsms.ErrMobileAlreadyExists) {
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: "This mobile is already used by another account",
+				Field:   "mobile",
+				Code:    render.CodeAlreadyExists,
+			})
+			return
+		}
 		_ = render.New(w).DBError(err)
 		return
 	}
@@ -162,26 +159,6 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 
 	// Retrieve account for current id.
 	baseAccount, err := router.userRepo.BaseAccountByUUID(ftcID)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	// If this account have mobile set.
-	if baseAccount.Mobile.Valid {
-		// The current mobile matches verifier's mobile.
-		// Return immediately so that we won't wast resources.
-		if baseAccount.Mobile.String == vrf.Mobile {
-			_ = render.New(w).OK(baseAccount)
-			return
-		}
-		// Otherwise use is changing mobile.
-	}
-
-	baseAccount = baseAccount.WithMobile(vrf.Mobile)
-
-	err = router.userRepo.SetPhone(baseAccount)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
