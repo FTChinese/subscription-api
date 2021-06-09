@@ -7,6 +7,16 @@ import (
 	"time"
 )
 
+// Verifier represents a row in the mobile_verifier
+// table.
+// Verification creation process:
+// 1. Send mobile to API;
+// 2. API user the mobile to create a verifier;
+// 3. User should receive the verification code
+// on device;
+// 4. User input the code to client, and client
+// submit the mobile and code together to API;
+// 5. API verify the mobile and code.
 type Verifier struct {
 	Mobile     string      `db:"mobile_phone"`
 	Code       string      `db:"sms_code"`
