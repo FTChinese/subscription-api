@@ -89,3 +89,12 @@ func (env Env) SetMobile(params ztsms.MobileUpdater) error {
 
 	return nil
 }
+
+func (env Env) DeleteMobile(params ztsms.MobileUpdater) error {
+	_, err := env.DBs.Write.Exec(ztsms.StmtUnsetMobile, params.FtcID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
