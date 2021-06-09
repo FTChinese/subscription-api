@@ -5,6 +5,7 @@ import (
 	"errors"
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/guregu/null"
 	"net/http"
@@ -165,5 +166,51 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
+	_ = render.New(w).OK(baseAccount)
+}
+
+// DeleteMobile sets mobile phone to NULL.
+//
+// Input:
+// mobile: string;
+func (router AccountRouter) DeleteMobile(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	ftcID := req.Header.Get(ftcIDKey)
+
+	var params ztsms.VerifierParams
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	// 422
+	if ve := validator.New("mobile").Required().Validate(params.Mobile); ve != nil {
+		sugar.Error(ve)
+		_ = render.New(w).Unprocessable(ve)
+		return
+	}
+
+	// Retrieve account for current id.
+	baseAccount, err := router.userRepo.BaseAccountByUUID(ftcID)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	if baseAccount.Mobile.String != params.Mobile {
+		_ = render.New(w).NotFound("")
+		return
+	}
+
+	err = router.userRepo.DeleteMobile(ztsms.MobileUpdater{
+		FtcID:  ftcID,
+		Mobile: null.String{},
+	})
+
+	baseAccount.Mobile = null.String{}
 	_ = render.New(w).OK(baseAccount)
 }

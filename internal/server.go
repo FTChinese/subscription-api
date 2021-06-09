@@ -175,6 +175,7 @@ func StartServer(s ServerStatus) {
 
 		r.Route("/mobile", func(r chi.Router) {
 			r.Use(controller.RequireFtcID)
+			r.Post("/", accountRouter.DeleteMobile)
 			// Set/Update mobile number by verifying SMS code.
 			r.Patch("/", accountRouter.UpdateMobile)
 			// Create a verification code for a logged-in user.

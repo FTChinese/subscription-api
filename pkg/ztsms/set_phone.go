@@ -35,3 +35,9 @@ SET user_id = :ftc_id,
 ` + colsSetPhone + `
 ON DUPLICATE KEY UPDATE
 ` + colsSetPhone
+
+const StmtUnsetMobile = `
+UPDATE user_db.profile
+SET mobile_phone = NULL
+WHERE user_id = ?
+LIMIT 1`
