@@ -2,9 +2,7 @@ package accounts
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
@@ -72,9 +70,8 @@ func TestEnv_RetrieveSMSVerifier(t *testing.T) {
 			name: "Retrieve sms verifier",
 			args: args{
 				params: ztsms.VerifierParams{
-					Mobile:      v.Mobile,
-					Code:        v.Code,
-					DeviceToken: "",
+					Mobile: v.Mobile,
+					Code:   v.Code,
 				},
 			},
 			want:    v,
@@ -130,35 +127,61 @@ func TestEnv_SMSVerifierUsed(t *testing.T) {
 	}
 }
 
-func TestEnv_SetPhone(t *testing.T) {
+func TestEnv_SetMobile(t *testing.T) {
 
 	env := New(test.SplitDB, zaptest.NewLogger(t))
+	repo := test.NewRepo()
 
-	acnt := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).Build()
-
-	test.NewRepo().MustCreateFtcAccount(acnt)
-
+	type requisite struct {
+		kind test.MobileLinkAccountKind
+	}
 	type args struct {
-		a account.BaseAccount
+		params ztsms.MobileUpdater
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name      string
+		requisite requisite
+		wantErr   bool
 	}{
 		{
-			name: "Set mobile phone",
-			args: args{
-				a: acnt,
+			name: "Row does not exist",
+			requisite: requisite{
+				kind: test.MobileLinkNoProfile,
 			},
 			wantErr: false,
+		},
+		{
+			name: "Profile exists with empty mobile",
+			requisite: requisite{
+				kind: test.MobileLinkHasProfileNoPhone,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Profile exists with mobile taken",
+			requisite: requisite{
+				kind: test.MobileLinkHasProfilePhoneSet,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Profile exists with mobile set",
+			requisite: requisite{
+				kind: test.MobileLinkHasProfilePhoneTaken,
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ftcID, linkParams := repo.GenerateMobileLinkParams(tt.requisite.kind)
+			arg := ztsms.MobileUpdater{
+				FtcID:  ftcID,
+				Mobile: null.StringFrom(linkParams.Mobile),
+			}
 
-			if err := env.SetPhone(tt.args.a); (err != nil) != tt.wantErr {
-				t.Errorf("SetPhone() error = %v, wantErr %v", err, tt.wantErr)
+			if err := env.SetMobile(arg); (err != nil) != tt.wantErr {
+				t.Errorf("SetMobile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
