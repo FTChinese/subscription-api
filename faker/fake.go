@@ -97,6 +97,16 @@ func GenLicenceID() string {
 	return "lic_" + rand.String(12)
 }
 
+func GenPhone() string {
+	SeedGoFake()
+	return gofakeit.Phone()
+}
+
+func GenEmail() string {
+	SeedGoFake()
+	return gofakeit.Email()
+}
+
 func SimplePassword() string {
 	return gofakeit.Password(true, false, true, false, false, 8)
 }
