@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"errors"
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
@@ -193,6 +194,37 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	err = router.userRepo.SetMobile(ztsms.MobileUpdater{
+		FtcID:  authResult.UserID,
+		Mobile: null.StringFrom(params.Mobile),
+	})
+
+	if err != nil {
+		if errors.Is(err, ztsms.ErrMobileAlreadyExists) {
+			// If already set to to other mobile
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: "This email account is already linked to another mobile",
+				Field:   "mobile",
+				Code:    render.CodeAlreadyExists,
+			})
+			return
+		}
+		if errors.Is(err, ztsms.ErrMobileAlreadySet) {
+			acnt, err := router.userRepo.AccountByFtcID(authResult.UserID)
+			if err != nil {
+				// There shouldn't be ErrNoRow error here.
+				sugar.Error(err)
+				_ = render.New(w).DBError(err)
+				return
+			}
+			_ = render.New(w).OK(acnt)
+			return
+		}
+
+		_ = render.New(w).DBError(err)
+		return
+	}
+
 	// Retrieve account by user id.
 	// There shouldn't be any 404 error here.
 	acnt, err := router.userRepo.AccountByFtcID(authResult.UserID)
@@ -203,37 +235,9 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// We must ensure the retrieve account does not have mobile set yet.
-	if acnt.Mobile.Valid {
-		// If already set to this mobile number.
-		if acnt.Mobile.String == params.Mobile {
-			_ = render.New(w).OK(acnt)
-		} else {
-			// If already set to to other mobile
-			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: "This email account is already linked to another mobile",
-				Field:   "mobile",
-				Code:    render.CodeAlreadyExists,
-			})
-		}
-		return
-	}
-
-	// Update account field in application.
-	baseAccount := acnt.WithMobile(params.Mobile)
-	acnt.BaseAccount = baseAccount
-
-	// Save mobile number
-	go func() {
-		err := router.userRepo.SetPhone(baseAccount)
-		if err != nil {
-			sugar.Error(err)
-		}
-	}()
-
 	// Tracking.
 	clientApp := footprint.NewClient(req)
-	fp := footprint.New(baseAccount.FtcID, clientApp).
+	fp := footprint.New(acnt.FtcID, clientApp).
 		FromSignUp().
 		WithAuth(enum.LoginMethodMobile, params.DeviceToken)
 
