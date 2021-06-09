@@ -99,7 +99,7 @@ func GenLicenceID() string {
 
 func GenPhone() string {
 	SeedGoFake()
-	return gofakeit.Phone()
+	return "1" + gofakeit.Phone()
 }
 
 func GenEmail() string {
