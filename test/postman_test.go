@@ -16,3 +16,11 @@ func TestMockBaseAccount(t *testing.T) {
 
 	t.Logf("%s", faker.MustMarshalIndent(a))
 }
+
+func TestUnsetMobile(t *testing.T) {
+	a := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).Build()
+
+	NewRepo().MustCreateFtcAccount(a)
+
+	t.Logf("%s", faker.MustMarshalIndent(a))
+}
