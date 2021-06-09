@@ -32,17 +32,3 @@ WHERE mobile_phone = :mobile_phone
 	AND sms_code = :sms_code
 	AND used_utc IS NULL
 LIMIT 1`
-
-const StmtUserIDByPhone = `
-SELECT user_id
-FROM user_db.profile
-WHERE mobile_phone = ?
-LIMIT 1`
-
-// StmtSetPhone set a mobile phone to user account.
-const StmtSetPhone = `
-UPDATE user_db.profile
-SET mobile_phone = :mobile_phone,
-	updated_utc = UTC_TIMESTAMP()
-WHERE user_id = :ftc_id
-LIMIT 1`
