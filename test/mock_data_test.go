@@ -1,3 +1,5 @@
+// +build !production
+
 package test
 
 import (
@@ -8,7 +10,9 @@ import (
 )
 
 func TestMockBaseAccount(t *testing.T) {
-	a := account.NewMockFtcAccountBuilder(enum.AccountKindLinked).Build()
+	a := account.
+		NewMockFtcAccountBuilder(enum.AccountKindLinked).
+		Build()
 
 	t.Logf("%s", faker.MustMarshalIndent(a))
 }
