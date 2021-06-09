@@ -6,6 +6,8 @@ import (
 	"github.com/guregu/null"
 )
 
+// VerifierParams is the request body sent by client
+// to verify if a verification code is correct.
 type VerifierParams struct {
 	Mobile      string      `json:"mobile"`
 	Code        string      `json:"code"`
