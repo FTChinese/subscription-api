@@ -2,6 +2,20 @@ package accounts
 
 import "github.com/FTChinese/subscription-api/pkg/account"
 
+// CreateProfile ensures user exists under
+// user_db.profile table.
+// This is usually used after user performed login.
+func (env Env) CreateProfile(a account.BaseAccount) error {
+	_, err := env.DBs.Write.NamedExec(
+		account.StmtCreateProfile,
+		a)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // LoadProfile shows all of a user's data.
 // LoadProfile does not include membership data, which might complicate the query a lot.
 func (env Env) LoadProfile(ftcID string) (account.Profile, error) {
