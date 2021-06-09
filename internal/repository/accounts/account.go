@@ -5,6 +5,9 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
+// AccountByFtcID retrieves reader account by ftc id.
+// For compatibility you should check where this user exists
+// in profile table after account retrieved.
 func (env Env) AccountByFtcID(ftcID string) (reader.Account, error) {
 	aChan, mChan := env.AsyncJoinedByFtcID(ftcID), env.AsyncMembership(ftcID)
 
