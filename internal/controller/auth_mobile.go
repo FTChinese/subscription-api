@@ -106,19 +106,12 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	// Retrieve verifier using mobile + code.
+	// Not found could be produced if the code does not exist or is expired.
 	vrf, err := router.userRepo.RetrieveSMSVerifier(params)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
-		return
-	}
-
-	if !vrf.Valid() {
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: "Verification code expired",
-			Field:   "code",
-			Code:    render.CodeInvalid,
-		})
 		return
 	}
 
