@@ -3,6 +3,7 @@
 package test
 
 import (
+	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -15,6 +16,7 @@ import (
 var (
 	DB       *sqlx.DB
 	SplitDB  db.ReadWriteSplit
+	Postman  postoffice.PostOffice
 	Redis    *redis.Client
 	Cache    *cache.Cache
 	WxPayApp wechat.PayApp
@@ -26,6 +28,7 @@ func init() {
 
 	SplitDB = db.NewMyDB(false)
 	DB = SplitDB.Write
+	Postman = postoffice.New(config.MustGetHanqiConn())
 	Redis = db.NewRedis(config.MustRedisAddress().Pick(false))
 	Cache = cache.New(cache.DefaultExpiration, 0)
 	WxPayApp = wechat.MustNewPayApp("wxapp.native_app")
