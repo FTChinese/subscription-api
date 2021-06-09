@@ -78,18 +78,45 @@ func TestEnv_WxSignUp(t *testing.T) {
 func TestEnv_LinkWechat(t *testing.T) {
 	faker.SeedGoFake()
 
-	a := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).Build()
-	w := wxlogin.MockUserInfo(faker.GenWxID())
+	ftcA := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).
+		Build()
+	wxA := account.NewMockFtcAccountBuilder(enum.AccountKindWx).
+		Build()
+
+	w := wxlogin.MockUserInfo(wxA.UnionID.String)
 
 	repo := test.NewRepo()
 	repo.MustSaveWxUser(w)
-	repo.MustCreateFtcAccount(a)
+	repo.MustCreateFtcAccount(ftcA)
+
+	linked, err := reader.WxEmailLinkBuilder{
+		FTC: reader.Account{
+			BaseAccount: ftcA,
+			LoginMethod: enum.LoginMethodEmail,
+			Wechat:      account.Wechat{},
+			Membership:  reader.Membership{},
+		},
+		Wechat: reader.Account{
+			BaseAccount: wxA,
+			LoginMethod: enum.LoginMethodWx,
+			Wechat: account.Wechat{
+				WxNickname:  w.NickName,
+				WxAvatarURL: w.AvatarURL,
+			},
+			Membership: reader.Membership{},
+		},
+	}.Build()
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
 	type fields struct {
 		Env readers.Env
 	}
 	type args struct {
-		input pkg.LinkWxParams
+		result reader.WxEmailLinkResult
 	}
 	tests := []struct {
 		name    string
@@ -104,10 +131,7 @@ func TestEnv_LinkWechat(t *testing.T) {
 				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
-				input: pkg.LinkWxParams{
-					FtcID:   a.FtcID,
-					UnionID: w.UnionID,
-				},
+				result: linked,
 			},
 			wantErr: false,
 		},
@@ -117,7 +141,7 @@ func TestEnv_LinkWechat(t *testing.T) {
 			env := Env{
 				Env: tt.fields.Env,
 			}
-			got, err := env.LinkWechat(tt.args.input)
+			err := env.LinkWechat(tt.args.result)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LinkWechat() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -125,8 +149,6 @@ func TestEnv_LinkWechat(t *testing.T) {
 			//if !reflect.DeepEqual(got, tt.want) {
 			//	t.Errorf("LinkWechat() got = %v, want %v", got, tt.want)
 			//}
-
-			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
