@@ -19,6 +19,8 @@ import (
 // ftcId: string;
 // originalTxId: string;
 // force: boolean;
+// carryOverAnchor?: string; If ftc side is a valid one-time purchase, allow overriding it by specifying the starting
+// time to carry over.
 //
 // Response: the linked Membership.
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
