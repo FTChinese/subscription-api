@@ -100,11 +100,7 @@ func (s Subscription) ShouldUpdate(m reader.Membership) bool {
 		return false
 	}
 
-	if s.ExpiresDateUTC.Before(m.ExpireDate.Time) {
-		return false
-	}
-
-	if s.ExpiresDateUTC.Equal(m.ExpireDate.Time) {
+	if !s.ExpiresDateUTC.After(m.ExpireDate.Time) {
 		return false
 	}
 
