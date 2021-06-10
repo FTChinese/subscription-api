@@ -81,7 +81,9 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			}, nil
 		}
 
-		// If current membership is older than IAP, update it.
+		// Both sides not zero and they are equal, so this is
+		// an existing iap membership.
+		// If ftc side is older than IAP, update it.
 		if b.CurrentFtc.ExpireDate.Before(b.IAPSubs.ExpiresDateUTC.Time) {
 			return LinkResult{
 				Initial: false,
