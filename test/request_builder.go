@@ -10,7 +10,11 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
+	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"io"
 	"io/ioutil"
@@ -108,22 +112,48 @@ func (r Repo) BuildMobileLinkReq(kind MobileLinkAccountKind) *http.Request {
 		MustBuildReqBody(params))
 }
 
-func AppleLinkReq() *http.Request {
-	p := NewPersona()
+func (r Repo) GenerateIAPUnlinkParams(hasAddOn bool) apple.LinkInput {
+	defer r.logger.Sync()
+	sugar := r.logger.Sugar()
+
+	ftcID := uuid.New().String()
+	iapID := faker.GenAppleSubID()
+
+	builder := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
+		WithFtcID(ftcID).
+		WithPayMethod(enum.PayMethodApple).
+		WithIapID(iapID)
+	if hasAddOn {
+		builder = builder.WithAddOn(addon.AddOn{
+			Standard: 61,
+			Premium:  0,
+		})
+	}
+
+	m := builder.Build()
+	sugar.Infof("%s", faker.MustMarshalIndent(m))
+
+	iapSub := apple.NewMockSubsBuilder(ftcID).
+		WithOriginalTxID(iapID).
+		Build()
+	sugar.Infof("%s", faker.MustMarshalIndent(iapSub))
 
 	repo := NewRepo()
+	repo.SaveMembership(m)
+	repo.SaveIAPSubs(iapSub)
 
-	repo.MustCreateFtcAccount(p.BaseAccount())
-	repo.MustSaveIAPSubs(p.IAPSubs())
+	return apple.LinkInput{
+		FtcID:        ftcID,
+		OriginalTxID: iapID,
+		Force:        false,
+	}
+}
 
-	input := p.IAPLinkInput()
-
-	log.Printf("%s", faker.MustMarshalIndent(input))
-
+func AppleLinkReq(params apple.LinkInput) *http.Request {
 	req := httptest.NewRequest(
 		"POST",
 		baseUrl+"/apple/link",
-		MustBuildReqBody(input))
+		MustBuildReqBody(params))
 
 	return req
 }
