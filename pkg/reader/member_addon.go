@@ -33,6 +33,23 @@ func (m Membership) PlusAddOn(addOn addon.AddOn) Membership {
 	return m
 }
 
+// ClearIAPWithAddOn generates a expired membership after user want to unlink
+// IAP since the existence of addon prevents a simple deletion.
+func (m Membership) ClearIAPWithAddOn() Membership {
+	m.LegacyExpire = null.IntFrom(0)
+	m.ExpireDate = chrono.Date{}
+	m.PaymentMethod = enum.PayMethodAli
+	m.FtcPlanID = null.String{}
+	m.StripeSubsID = null.String{}
+	m.StripePlanID = null.String{}
+	m.AutoRenewal = false
+	m.Status = enum.SubsStatusNull
+	m.AppleSubsID = null.String{}
+	m.B2BLicenceID = null.String{}
+
+	return m
+}
+
 func (m Membership) CarriedOverAddOn() addon.AddOn {
 	return addon.New(m.Tier, m.RemainingDays())
 }
