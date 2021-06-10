@@ -125,6 +125,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	// Apple Account B <-|-> Ftc Account A.
 	// In such case we should deny it unless user is manually changing it and the `force` parameter should be provided.
 	if b.CurrentFtc.IsIAP() {
+		// TODO: this seems useless.
 		if b.Force {
 			return LinkResult{
 				Initial: true,
@@ -168,6 +169,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 
 	// FTC side is expired. If IAP subscription is also expired,
 	// there's no need to touch data unless FTC side is in legacy format.
+	// TODO: if IAP side is expired, why should we update it at all?
 	if b.IAPSubs.IsExpired() {
 		if b.isFtcLegacyFormat() {
 			return LinkResult{
