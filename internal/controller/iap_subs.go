@@ -32,7 +32,8 @@ func (router IAPRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
 // UpsertSubs performs exactly the same step as VerifyReceipt.
 // The two only differs in the data they send back.
 //
-// POST /apple/subs
+// Input:
+// receiptData: string;
 func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()

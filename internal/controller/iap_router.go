@@ -85,7 +85,7 @@ func (router IAPRouter) processSubsResult(snapshot reader.MemberSnapshot) {
 	}
 }
 
-// VerifyReceipt verifies if the receipt data send by smsClient is valid. After app store responded,
+// VerifyReceipt verifies if the receipt data send by client is valid. After app store responded,
 // its latest_receipt, latest_receipt_info, pending_renewal_info are saved in DB in background thread.
 // An apple.Subscription is created from the response, which is saved or updated if already exists,
 // and then user's membership is updated if it exists.
@@ -119,6 +119,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Create apple.Subscription.
+	// TODO: this subscription does not know if it is linked to an email.
 	sub, err := apple.NewSubscription(resp.UnifiedReceipt)
 	if err != nil {
 		sugar.Error(err)
