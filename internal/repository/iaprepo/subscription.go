@@ -42,8 +42,9 @@ func (env Env) upsertSubscription(s apple.Subscription) error {
 	return nil
 }
 
-// updateMembership update subs.Membership if it is linked to an apple subscription,
-// and returns a snapshot of membership if it is actually touched.
+// updateMembership update ftc_vip table if it is linked to an apple subscription
+// using the apple original transaction id, and returns a snapshot of membership if it is actually touched.
+// If the apple original transaction id does not exist in ftc_vip table, the update won't happen.
 func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
@@ -79,6 +80,7 @@ func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) 
 	// We should compare the old and new memberships expiration time.
 	sugar.Infof("Building membership based on %s", s.OriginalTransactionID)
 
+	// Here addon caused by switching won't happen since current membership is always apple.
 	result, err := apple.NewSubsResult(s, apple.SubsResultParams{
 		UserID:        currMember.UserIDs,
 		CurrentMember: currMember,
