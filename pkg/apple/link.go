@@ -142,15 +142,9 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 
 	// Now we can be sure that FTC side has membership and it does not come from IAP,
 	// or `payMethod` field might be null due to data being changed manually.
-	// We need to consider this matrix:
-	//
-	// | FTC Member\IAP Subs | Expired | Not-Expired |
-	// | ------------------- | ------- | ----------- |
-	// | Not-Expired         |   N     |  N          |
-	// | Expired             |   N     |  Y          |
 	if !b.CurrentFtc.IsExpired() {
 		// An edge case here: if the data is in legacy format and payMethod is null, which might be created by wxpay or
-		// or alipay, or might be manually created by customer service, we could not determine whether the linked should
+		// or alipay, or might be manually created by customer service, we could not determine whether the link should
 		// be allowed or not.
 		// In such case, we will compare the expiration date.
 		// If apple's expiration date comes later, allow the FTC
@@ -168,10 +162,12 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			}, nil
 		}
 
+		// Carry-over invoice could be created here.
 		return LinkResult{}, ErrFtcMemberValid
 	}
 
-	// Both sides expired, there's no need to touch data unless FTC side is in legacy format.
+	// FTC side is expired. If IAP subscription is also expired,
+	// there's no need to touch data unless FTC side is in legacy format.
 	if b.IAPSubs.IsExpired() {
 		if b.isFtcLegacyFormat() {
 			return LinkResult{
@@ -188,7 +184,8 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		return LinkResult{}, ErrIAPAlreadyExpired
 	}
 
-	// IAP not expired, use it.
+	// FTC side us expired while IAP subscription is not expired.
+	// We can safely override the FTC side.
 	return LinkResult{
 		Initial: true,
 		Member: NewMembership(MembershipParams{
