@@ -191,10 +191,18 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 		}
 	}
 
-	// Delete this membership.
-	if err := tx.DeleteMember(m.UserIDs); err != nil {
-		_ = tx.Rollback()
-		return apple.UnlinkResult{}, err
+	// With addon, turn the membership into an invalid version.
+	if m.HasAddOn() {
+		if err := tx.UpdateMember(m.ClearIAPWithAddOn()); err != nil {
+			_ = tx.Rollback()
+			return apple.UnlinkResult{}, err
+		}
+	} else {
+		// Delete this membership.
+		if err := tx.DeleteMember(m.UserIDs); err != nil {
+			_ = tx.Rollback()
+			return apple.UnlinkResult{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
