@@ -21,6 +21,7 @@ type AddOnClaimed struct {
 	Snapshot   MemberSnapshot
 }
 
+// AddOnInvoiceCreated is the result of manually adding an invoice.
 type AddOnInvoiceCreated struct {
 	Invoice    invoice.Invoice `json:"invoice"`
 	Membership Membership      `json:"membership"`
