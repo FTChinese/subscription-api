@@ -15,7 +15,7 @@ func (s BaseSchema) ReceiptFileName() string {
 	return s.OriginalTransactionID + "_" + s.Environment.String() + ".txt"
 }
 
-// Create key used in redis: `iap:receipt:1000000922681985-Sandbox`
+// ReceiptKeyName creates key used in redis: `iap:receipt:1000000922681985-Sandbox`
 func (s BaseSchema) ReceiptKeyName() string {
 	return "iap:receipt:" + s.OriginalTransactionID + "-" + s.Environment.String()
 }
