@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -93,22 +92,14 @@ func TestEnv_ArchiveLinkCheating(t *testing.T) {
 }
 
 func TestEnv_Unlink(t *testing.T) {
-	p := test.NewPersona().SetPayMethod(enum.PayMethodApple)
+	logger := zaptest.NewLogger(t)
 
-	repo := test.NewRepo()
-	repo.MustSaveMembership(reader.
-		NewMockMemberBuilder(p.FtcID).
-		WithPayMethod(enum.PayMethodApple).
-		WithIapID(p.AppleSubID).Build())
-	repo.MustSaveIAPSubs(apple.
-		NewMockSubsBuilder(p.FtcID).
-		WithOriginalTxID(p.AppleSubID).
-		Build())
+	repo := test.NewRepoV2(logger)
 
 	env := Env{
 		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
+		logger: logger,
 	}
 
 	type args struct {
@@ -120,13 +111,15 @@ func TestEnv_Unlink(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Unlink",
+			name: "Unlink without addon",
 			args: args{
-				input: apple.LinkInput{
-					FtcID:        p.FtcID,
-					OriginalTxID: p.AppleSubID,
-					Force:        false,
-				},
+				input: repo.GenerateIAPUnlinkParams(false),
+			},
+		},
+		{
+			name: "Unlink with addon",
+			args: args{
+				input: repo.GenerateIAPUnlinkParams(true),
 			},
 		},
 	}
