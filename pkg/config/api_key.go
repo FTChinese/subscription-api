@@ -2,49 +2,10 @@ package config
 
 import (
 	"errors"
-	"github.com/spf13/viper"
 	"log"
+
+	"github.com/spf13/viper"
 )
-
-// API holds api related access keys or urls.
-// Deprecated.
-type API struct {
-	Dev  string `mapstructure:"api_key_dev"`
-	Prod string `mapstructure:"api_key_prod"`
-	name string
-}
-
-func MustAPIKey() API {
-	var key API
-
-	err := viper.UnmarshalKey("service.iap_polling", &key)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	key.name = "API key"
-	return key
-}
-
-func MustAPIBaseURL() API {
-	prodURL := viper.GetString("api_url.subscription_v1")
-
-	return API{
-		Dev:  "http://localhost:8200",
-		Prod: prodURL,
-		name: "API base url",
-	}
-}
-
-func (k API) Pick(prod bool) string {
-	if prod {
-		log.Printf("Using production %s %s", k.name, k.Prod)
-		return k.Prod
-	}
-
-	log.Printf("Using development %s %s", k.name, k.Dev)
-	return k.Dev
-}
 
 // AuthKeys is used to contain api access token set authorization header.
 // Those keys are always comes in pair, one for development and one for production.
@@ -107,4 +68,8 @@ func MustLoadStripeSigningKey() AuthKeys {
 
 func MustLoadPollingKey() AuthKeys {
 	return MustLoadAuthKeys("api_keys.ftc_polling")
+}
+
+func MustSubsAPIv1BaseURL() AuthKeys {
+	return MustLoadAuthKeys("api_urls.subs_v1")
 }
