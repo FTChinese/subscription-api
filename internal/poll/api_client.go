@@ -3,6 +3,7 @@ package poll
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/fetch"
 	"github.com/FTChinese/subscription-api/pkg/config"
@@ -16,8 +17,8 @@ type APIClient struct {
 
 func NewAPIClient(prod bool) APIClient {
 	return APIClient{
-		key:     config.MustAPIKey().Pick(prod),
-		baseURL: config.MustAPIBaseURL().Pick(prod),
+		key:     config.MustLoadPollingKey().Pick(prod),
+		baseURL: config.MustSubsAPIv1BaseURL().Pick(prod),
 	}
 }
 
