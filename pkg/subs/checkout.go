@@ -14,7 +14,7 @@ type Checkout struct {
 	LiveMode bool
 }
 
-// NewCheckout creates a new CheckoutInstance.
+// NewCheckout creates a new Checkout instance.
 // ftcPrice - the current pricing policy and all available discounts.
 // m - current membership used to deduce which offer is applicable for the next order.
 func NewCheckout(ftcPrice price.FtcPrice, m reader.Membership) (Checkout, error) {
