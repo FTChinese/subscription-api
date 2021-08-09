@@ -12,6 +12,10 @@ type FtcPrice struct {
 }
 
 // ApplicableOffer select an offer from all Offers that a user eligible for.
+// Filter criteria:
+// * The offer validity period is in effect
+// * User is qualified to enjoy
+// * Lowest price/Highest discount rate.
 // filters - all possible offers a membership currently enjoys, used to narrow down
 // offers provided.
 // If more than one offer is applicable, use the one with the largest price off.
