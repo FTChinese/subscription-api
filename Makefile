@@ -34,6 +34,7 @@ compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec)
 .PHONY: build
 build :
 	whoami
+	source "/data/opt/server/jenkins/jenkins/.gvm/scripts/gvm"
 	which go
 	go version
 	@echo "GOROOT=$(GOROOT)"
