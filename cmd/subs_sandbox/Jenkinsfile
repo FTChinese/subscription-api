@@ -9,7 +9,7 @@ pipeline {
 //                 sh 'make install-go'
                 echo 'Build sandbox version'
                 sh 'make build ENV=sandbox'
-                archiveArtifacts artifacts: 'build/*', fingerprint: true
+                archiveArtifacts artifacts: 'build/**/*', fingerprint: true
             }
         }
         stage('Deploy') {
