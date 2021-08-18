@@ -17,6 +17,8 @@ type PriceSchema struct {
 }
 
 // FtcPrice turns data retrieved from db into output format.
+// The result FtcPrice's offers retrieve from db
+// will be merged with price.FtcOffers.
 func (s PriceSchema) FtcPrice() price.FtcPrice {
 
 	var discounts = make([]price.Discount, 0)
@@ -27,6 +29,7 @@ func (s PriceSchema) FtcPrice() price.FtcPrice {
 		discounts = append(discounts, s.Discount)
 	}
 
+	// Merge permanent offers.
 	offers, ok := price.FtcOffers[s.Edition]
 	if ok {
 		discounts = append(discounts, offers...)
