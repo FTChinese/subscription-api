@@ -38,6 +38,7 @@ var MockPriceStdYear = FtcPrice{
 		},
 		FtcOffers[StdYearEdition][0],
 		FtcOffers[StdYearEdition][1],
+		FtcOffers[StdYearEdition][2],
 	},
 }
 

@@ -9,10 +9,11 @@ import (
 type OfferKind string
 
 const (
-	OfferKindNull      OfferKind = ""
-	OfferKindPromotion OfferKind = "promotion"
-	OfferKindRetention OfferKind = "retention"
-	OfferKindWinBack   OfferKind = "win_back"
+	OfferKindNull         OfferKind = ""
+	OfferKindPromotion    OfferKind = "promotion"    // Apply to all uses
+	OfferKindRetention    OfferKind = "retention"    // Apply only to valid user
+	OfferKindWinBack      OfferKind = "win_back"     // Apply only to expired user
+	OfferKindIntroductory OfferKind = "introductory" // Apply only to a new user who has not enjoyed an introductory offer
 )
 
 func (x *OfferKind) UnmarshalJSON(b []byte) error {
@@ -46,7 +47,7 @@ func (x *OfferKind) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan")
+		return errors.New("incompatible type to scan to OfferKind")
 	}
 }
 
@@ -58,6 +59,8 @@ func (x OfferKind) Value() (driver.Value, error) {
 	return string(x), nil
 }
 
+// ContainedBy checks if this OfferKind is contained by an
+// array of OfferKind.
 func (x OfferKind) ContainedBy(kinds []OfferKind) bool {
 	for _, v := range kinds {
 		if v == x {
