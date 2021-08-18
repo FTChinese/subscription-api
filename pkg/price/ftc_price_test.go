@@ -1,6 +1,7 @@
 package price
 
 import (
+	"github.com/FTChinese/subscription-api/faker"
 	"reflect"
 	"testing"
 )
@@ -55,9 +56,14 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 				Price:  tt.fields.Price,
 				Offers: tt.fields.Offers,
 			}
-			if got := f.ApplicableOffer(tt.args.enjoys); !reflect.DeepEqual(got, tt.want) {
+
+			got := f.ApplicableOffer(tt.args.enjoys)
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ApplicableOffer() = \n%v, want \n%v", got, tt.want)
+				return
 			}
+
+			t.Logf("Offer %s", faker.MustMarshalIndent(got))
 		})
 	}
 }
