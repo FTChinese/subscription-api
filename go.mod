@@ -27,8 +27,7 @@ require (
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
 	github.com/stripe/stripe-go/v72 v72.28.0
-	github.com/tidwall/gjson v1.6.0
-	github.com/tidwall/pretty v1.0.1 // indirect
+	github.com/tidwall/gjson v1.6.5
 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
