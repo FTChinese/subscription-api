@@ -14,6 +14,7 @@ type Discount struct {
 	dt.DateTimePeriod
 	Description null.String `json:"description" db:"discount_desc"`
 	Kind        OfferKind   `json:"kind"`
+	// TODO: add Recurring field.
 }
 
 func (d Discount) IsZero() bool {
