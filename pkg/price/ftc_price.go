@@ -21,8 +21,6 @@ type FtcPrice struct {
 // If more than one offer is applicable, use the one with the largest price off.
 func (f FtcPrice) ApplicableOffer(filters []OfferKind) Discount {
 	// Filter all valid discount offers.
-
-	// TODO:
 	var filtered = make([]Discount, 0)
 	for _, v := range f.Offers {
 		if v.IsValid() && v.Kind.ContainedBy(filters) {
