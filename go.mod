@@ -38,4 +38,4 @@ require (
 	gopkg.in/ini.v1 v1.58.0 // indirect
 )
 
-go 1.15
+go 1.16

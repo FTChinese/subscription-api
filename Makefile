@@ -35,6 +35,7 @@ compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec)
 build :
 	whoami
 	source "/data/opt/server/jenkins/jenkins/.gvm/scripts/gvm"
+	gvm use $(go_version)
 	which go
 	go version
 	@echo "GOROOT=$(GOROOT)"
@@ -62,7 +63,6 @@ arm :
 install-go:
 	@echo "Install go version $(go_version)"
 	gvm install $(go_version)
-	gvm use $(go_version)
 
 .PHONY: config
 config :
