@@ -33,6 +33,12 @@ compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec)
 
 .PHONY: build
 build :
+	which go
+	go version
+	@echo "GOROOT=$(GOROOT)"
+	@echo "GOPATH=$(GOPATH)"
+	@echo "GOBIN=$(GOBIN)"
+	@echo "GO111MODULEON=$(GO111MODULEON)"
 	@echo "Build version $(version)"
 	$(compile_default_exec)
 
