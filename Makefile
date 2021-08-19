@@ -36,6 +36,7 @@ server_dir := /data/node/go/bin
 .PHONY: build
 build :
 	whoami
+	pwd
 	#source "/data/opt/server/jenkins/jenkins/.gvm/scripts/gvm"
 	@echo "PATH=$(PATH)"
 	which go
@@ -68,7 +69,9 @@ install-go:
 
 .PHONY: config
 config :
+	# Download configuration file
 	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)
+	# Update configuration file
 	rsync -v ./$(build_dir)/$(config_file_name) ucloud:/data/node/config
 
 .PHONY: publish
