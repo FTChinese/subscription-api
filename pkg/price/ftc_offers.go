@@ -19,7 +19,7 @@ var FtcOffers = map[Edition][]Discount{
 	StdYearEdition: {
 		// Discount for 2021-08.
 		{
-			DiscID:   null.StringFrom("2021.8.31-retention-offer-standard-year"),
+			DiscID:   null.StringFrom("21.8.31-retention-standard-year"),
 			PriceOff: null.FloatFrom(148),
 			Percent:  null.IntFrom(50),
 			DateTimePeriod: dt.DateTimePeriod{
@@ -53,7 +53,7 @@ var FtcOffers = map[Edition][]Discount{
 	PremiumEdition: {
 		// Discount for 2021-08.
 		{
-			DiscID:   null.StringFrom("2021.8.31-retention-offer-premium-year"),
+			DiscID:   null.StringFrom("21.8.31-retention-premium-year"),
 			PriceOff: null.FloatFrom(998),
 			Percent:  null.IntFrom(50),
 			DateTimePeriod: dt.DateTimePeriod{
