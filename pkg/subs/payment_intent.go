@@ -113,7 +113,7 @@ func NewAliPayBrowserIntent(pi PaymentIntent, redirectURL string) AlipayBrowserI
 	}
 }
 
-// AliPayNative is an order created inside a native app.
+// AlipayNativeIntent is an order created inside a native app.
 type AlipayNativeIntent struct {
 	PaymentIntent
 	Param string `json:"param"`
