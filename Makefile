@@ -31,6 +31,8 @@ compile_linux_x86 := GOOS=linux GOARCH=amd64 go build -o $(linux_x86_exec) $(ldf
 linux_arm_exec := $(build_dir)/linux/arm/$(app_name)
 compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec) $(ldflags) -tags production -v $(src_dir)
 
+server_dir := /data/node/go/bin
+
 .PHONY: build
 build :
 	whoami
@@ -71,15 +73,16 @@ config :
 
 .PHONY: publish
 publish :
-	ssh ucloud "rm -f /home/node/go/bin/$(app_name).bak"
-	#rsync -v ./$(default_exec) bj32:/home/node
-	#ssh bj32 "rsync -v /home/node/$(app_name) ucloud:/home/node/go/bin/$(app_name).bak"
-	rsync -v ./$(default_exec) ucloud:/data/node/go/bin/$(app_name).bak
+	# Remove the .bak file
+	ssh ucloud "rm -f $(server_dir)/$(app_name).bak"
+	# Sync binary to the xxx.bak file
+	rsync -v ./$(default_exec) ucloud:$(server_dir)/$(app_name).bak
 
 .PHONY: restart
 restart :
-	ssh ucloud "cd /home/node/go/bin/ && \mv $(app_name).bak $(app_name)"
-	#ssh ucloud supervisorctl update
+	# Rename xxx.bak to app name
+	ssh ucloud "cd $(server_dir)/ && \mv $(app_name).bak $(app_name)"
+	# Update supervistor
 	ssh ucloud supervisorctl restart $(app_name)
 
 .PHONY: clean
