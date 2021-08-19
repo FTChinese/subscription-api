@@ -67,14 +67,14 @@ install-go:
 .PHONY: config
 config :
 	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)
-	rsync -v ./$(build_dir)/$(config_file_name) ucloud:/home/node/config
+	rsync -v ./$(build_dir)/$(config_file_name) ucloud:/data/node/config
 
 .PHONY: publish
 publish :
 	ssh ucloud "rm -f /home/node/go/bin/$(app_name).bak"
 	#rsync -v ./$(default_exec) bj32:/home/node
 	#ssh bj32 "rsync -v /home/node/$(app_name) ucloud:/home/node/go/bin/$(app_name).bak"
-	rsync -v ./$(default_exec) ucloud:/home/node/go/bin/$(app_name).bak
+	rsync -v ./$(default_exec) ucloud:/data/node/go/bin/$(app_name).bak
 
 .PHONY: restart
 restart :
