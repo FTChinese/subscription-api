@@ -40,6 +40,13 @@ func (env Env) CreateOrder(counter subs.Counter) (subs.PaymentIntent, error) {
 	}
 	sugar.Infof("Membership retrieved %+v", member)
 
+	// TODO: avoid using a discount multiple times
+	// First calculate a Checkout instance.
+	// Then see if the Offer field has Recurring.
+	// If not recurring, retrieve from db the usage history
+	// by user id and offer id.
+	// If not found, continue to calculate payment intent;
+	// if found,
 	pi, err := counter.PaymentIntent(member)
 	if err != nil {
 		sugar.Error(err)
