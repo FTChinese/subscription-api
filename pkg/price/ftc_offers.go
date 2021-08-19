@@ -25,7 +25,7 @@ var FtcOffers = map[Edition][]Discount{
 			DateTimePeriod: dt.DateTimePeriod{
 				// 2021-08-22T16:00:00Z
 				// 2021-09-02T16:00:00Z
-				StartUTC: chrono.TimeFrom(retentionHalfStart),
+				StartUTC: chrono.TimeFrom(time.Now()),
 				EndUTC:   chrono.TimeFrom(retentionHalfEnd),
 			},
 			Description: null.StringFrom("限时特惠 续订享5折"),
@@ -57,7 +57,7 @@ var FtcOffers = map[Edition][]Discount{
 			PriceOff: null.FloatFrom(998),
 			Percent:  null.IntFrom(50),
 			DateTimePeriod: dt.DateTimePeriod{
-				StartUTC: chrono.TimeFrom(retentionHalfStart),
+				StartUTC: chrono.TimeFrom(time.Now()),
 				EndUTC:   chrono.TimeFrom(retentionHalfEnd),
 			},
 			Description: null.StringFrom("限时特惠 续订享5折"),
