@@ -10,7 +10,7 @@ import (
 // 2021-08-22T16:00:00Z
 var (
 	//2021-08-22T16:00:00Z
-	retentionHalfStart = time.Date(2021, 8, 22, 16, 0, 0, 0, time.UTC)
+	retentionHalfStart = time.Date(2021, 8, 19, 16, 0, 0, 0, time.UTC)
 	// 2021-09-02T16:00:00Z
 	retentionHalfEnd = time.Date(2021, 9, 2, 16, 0, 0, 0, time.UTC)
 )
@@ -25,7 +25,7 @@ var FtcOffers = map[Edition][]Discount{
 			DateTimePeriod: dt.DateTimePeriod{
 				// 2021-08-22T16:00:00Z
 				// 2021-09-02T16:00:00Z
-				StartUTC: chrono.TimeFrom(time.Now().AddDate(0, 0, -1)),
+				StartUTC: chrono.TimeFrom(retentionHalfStart),
 				EndUTC:   chrono.TimeFrom(retentionHalfEnd),
 			},
 			Description: null.StringFrom("限时特惠 续订享5折"),
@@ -57,7 +57,7 @@ var FtcOffers = map[Edition][]Discount{
 			PriceOff: null.FloatFrom(998),
 			Percent:  null.IntFrom(50),
 			DateTimePeriod: dt.DateTimePeriod{
-				StartUTC: chrono.TimeFrom(time.Now().AddDate(0, 0, -1)),
+				StartUTC: chrono.TimeFrom(retentionHalfStart),
 				EndUTC:   chrono.TimeFrom(retentionHalfEnd),
 			},
 			Description: null.StringFrom("限时特惠 续订享5折"),
