@@ -10,7 +10,7 @@ import (
 // 2021-08-22T16:00:00Z
 var (
 	//2021-08-22T16:00:00Z
-	retentionHalfStart = time.Date(2021, 8, 19, 16, 0, 0, 0, time.UTC)
+	retentionHalfStart = time.Date(2021, 8, 22, 16, 0, 0, 0, time.UTC)
 	// 2021-09-02T16:00:00Z
 	retentionHalfEnd = time.Date(2021, 9, 2, 16, 0, 0, 0, time.UTC)
 )
@@ -20,7 +20,7 @@ var FtcOffers = map[Edition][]Discount{
 		// Discount for 2021-08.
 		{
 			DiscID:   null.StringFrom("21.8.31-retention-standard-year"),
-			PriceOff: null.FloatFrom(148),
+			PriceOff: null.FloatFrom(148), // 298 - 150 = 148
 			Percent:  null.IntFrom(50),
 			DateTimePeriod: dt.DateTimePeriod{
 				// 2021-08-22T16:00:00Z
@@ -54,7 +54,7 @@ var FtcOffers = map[Edition][]Discount{
 		// Discount for 2021-08.
 		{
 			DiscID:   null.StringFrom("21.8.31-retention-premium-year"),
-			PriceOff: null.FloatFrom(998),
+			PriceOff: null.FloatFrom(1000), // 1998 - 1000 = 998
 			Percent:  null.IntFrom(50),
 			DateTimePeriod: dt.DateTimePeriod{
 				StartUTC: chrono.TimeFrom(retentionHalfStart),
