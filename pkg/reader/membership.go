@@ -283,7 +283,7 @@ func (m Membership) OrderKindOfOneTime(e price.Edition) (enum.OrderKind, error) 
 		return enum.OrderKindAddOn, nil
 	}
 
-	return enum.OrderKindNull, errors.New("unknown membership status")
+	return enum.OrderKindNull, errors.New("unknown current membership status")
 }
 
 // OfferKindsEnjoyed guesses all candidate discounts a user could enjoy.
