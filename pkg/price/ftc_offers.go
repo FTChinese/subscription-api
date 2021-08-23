@@ -20,7 +20,7 @@ var FtcOffers = map[Edition][]Discount{
 		// Discount for 2021-08.
 		{
 			DiscID:   null.StringFrom("21.8.31-retention-standard-year"),
-			PriceOff: null.FloatFrom(148), // 298 - 150 = 148
+			PriceOff: null.FloatFrom(150), // 298 - 150 = 148
 			Percent:  null.IntFrom(50),
 			DateTimePeriod: dt.DateTimePeriod{
 				// 2021-08-22T16:00:00Z
