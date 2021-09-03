@@ -342,7 +342,7 @@ func (m Membership) SubsKindOfStripe(e price.Edition) (SubsKind, error) {
 		}
 
 	case enum.PayMethodApple:
-		return SubsKindZero, errors.New("already subscribed via stripe")
+		return SubsKindZero, errors.New("already subscribed via apple")
 
 	case enum.PayMethodB2B:
 		return SubsKindZero, errors.New("already subscribed via stripe")
