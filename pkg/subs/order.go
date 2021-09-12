@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -47,15 +47,15 @@ func (lo LockedOrder) Merge(o Order) Order {
 type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
-	pkg.UserIDs
-	PlanID     string      `json:"priceId" db:"plan_id"`
-	DiscountID null.String `json:"discountId" db:"discount_id"`
-	Price      float64     `json:"price" db:"price"` // Price of a plan, prior to discount.
+	ids.UserIDs
+	PlanID     string      `json:"priceId" db:"plan_id"`        // Deprecated
+	DiscountID null.String `json:"discountId" db:"discount_id"` // Deprecated
+	Price      float64     `json:"price" db:"price"`            // Price of a plan, prior to discount.
 	price.Edition
 	price.Charge
 	Kind          enum.OrderKind `json:"kind" db:"kind"` // The usage of this order: creat new, renew, or upgrade?
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
-	WxAppID       null.String    `json:"-" db:"wx_app_id"` // Wechat specific. Used by webhook to verify notification.
+	WxAppID       null.String    `json:"-" db:"wx_app_id"` // Deprecated. Wechat specific. Used by webhook to verify notification.
 	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
 	dt.DatePeriod
