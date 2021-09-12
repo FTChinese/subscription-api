@@ -3,8 +3,8 @@ package accounts
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
@@ -34,7 +34,7 @@ func TestEnv_SavePwResetSession(t *testing.T) {
 				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
-				s: account.MustNewPwResetSession(pkg.ForgotPasswordParams{
+				s: account.MustNewPwResetSession(input.ForgotPasswordParams{
 					Email:     gofakeit.Email(),
 					SourceURL: null.String{},
 				}),
@@ -57,7 +57,7 @@ func TestEnv_SavePwResetSession(t *testing.T) {
 func TestEnv_PwResetSessionByToken(t *testing.T) {
 	faker.SeedGoFake()
 
-	sess := account.MustNewPwResetSession(pkg.ForgotPasswordParams{
+	sess := account.MustNewPwResetSession(input.ForgotPasswordParams{
 		Email:     gofakeit.Email(),
 		SourceURL: null.String{},
 	})
@@ -110,7 +110,7 @@ func TestEnv_PwResetSessionByToken(t *testing.T) {
 func TestEnv_PwResetSessionByCode(t *testing.T) {
 	faker.SeedGoFake()
 
-	sess := account.MustNewPwResetSession(pkg.ForgotPasswordParams{
+	sess := account.MustNewPwResetSession(input.ForgotPasswordParams{
 		Email:     gofakeit.Email(),
 		SourceURL: null.String{},
 	}).WithPlatform(enum.PlatformAndroid)
@@ -121,7 +121,7 @@ func TestEnv_PwResetSessionByCode(t *testing.T) {
 		Env readers.Env
 	}
 	type args struct {
-		params pkg.AppResetPwSessionParams
+		params input.AppResetPwSessionParams
 	}
 	tests := []struct {
 		name    string
@@ -136,7 +136,7 @@ func TestEnv_PwResetSessionByCode(t *testing.T) {
 				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
-				params: pkg.AppResetPwSessionParams{
+				params: input.AppResetPwSessionParams{
 					Email:   sess.Email,
 					AppCode: sess.AppCode.String,
 				},
@@ -166,7 +166,7 @@ func TestEnv_PwResetSessionByCode(t *testing.T) {
 func TestEnv_DisablePasswordReset(t *testing.T) {
 	faker.SeedGoFake()
 
-	sess := account.MustNewPwResetSession(pkg.ForgotPasswordParams{
+	sess := account.MustNewPwResetSession(input.ForgotPasswordParams{
 		Email:     gofakeit.Email(),
 		SourceURL: null.String{},
 	})

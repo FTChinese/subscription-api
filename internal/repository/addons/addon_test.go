@@ -3,9 +3,9 @@ package addons
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
@@ -33,11 +33,11 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 	}
 
 	type fields struct {
-		dbs    db.ReadWriteSplit
+		dbs    db.ReadWriteMyDBs
 		logger *zap.Logger
 	}
 	type args struct {
-		ids pkg.UserIDs
+		ids ids.UserIDs
 	}
 	tests := []struct {
 		name      string
@@ -70,7 +70,7 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 				},
 			},
 			args: args{
-				ids: pkg.NewFtcUserID(userA),
+				ids: ids.NewFtcUserID(userA),
 			},
 			wantErr: false,
 		},
@@ -92,7 +92,7 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 				invoices: nil,
 			},
 			args: args{
-				ids: pkg.NewFtcUserID(userB),
+				ids: ids.NewFtcUserID(userB),
 			},
 			wantErr: false,
 		},
@@ -131,7 +131,7 @@ func TestEnv_CreateAddOn(t *testing.T) {
 		membership reader.Membership
 	}
 	type fields struct {
-		dbs    db.ReadWriteSplit
+		dbs    db.ReadWriteMyDBs
 		logger *zap.Logger
 	}
 	type args struct {

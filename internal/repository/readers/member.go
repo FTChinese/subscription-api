@@ -3,7 +3,7 @@ package readers
 import (
 	"database/sql"
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
@@ -55,7 +55,7 @@ func (env Env) ArchiveMember(snapshot reader.MemberSnapshot) error {
 	return nil
 }
 
-func (env Env) countMemberSnapshot(ids pkg.UserIDs) (int64, error) {
+func (env Env) countMemberSnapshot(ids ids.UserIDs) (int64, error) {
 	var count int64
 	err := env.DBs.Read.Get(
 		&count,
@@ -70,7 +70,7 @@ func (env Env) countMemberSnapshot(ids pkg.UserIDs) (int64, error) {
 	return count, nil
 }
 
-func (env Env) listMemberSnapshot(ids pkg.UserIDs, p gorest.Pagination) ([]reader.MemberSnapshot, error) {
+func (env Env) listMemberSnapshot(ids ids.UserIDs, p gorest.Pagination) ([]reader.MemberSnapshot, error) {
 	var s = make([]reader.MemberSnapshot, 0)
 	err := env.DBs.Read.Select(
 		&s,
@@ -86,7 +86,7 @@ func (env Env) listMemberSnapshot(ids pkg.UserIDs, p gorest.Pagination) ([]reade
 	return s, nil
 }
 
-func (env Env) ListSnapshot(ids pkg.UserIDs, p gorest.Pagination) (reader.SnapshotList, error) {
+func (env Env) ListSnapshot(ids ids.UserIDs, p gorest.Pagination) (reader.SnapshotList, error) {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
 

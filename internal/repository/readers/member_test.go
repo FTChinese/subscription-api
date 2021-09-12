@@ -4,8 +4,8 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
@@ -26,7 +26,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 	repo.MustSaveMembership(m3)
 
 	type fields struct {
-		DBs    db.ReadWriteSplit
+		DBs    db.ReadWriteMyDBs
 		Logger *zap.Logger
 	}
 	type args struct {
@@ -99,7 +99,7 @@ func TestEnv_RetrieveAppleMember(t *testing.T) {
 	test.NewRepo().MustSaveMembership(m)
 
 	type fields struct {
-		DBs    db.ReadWriteSplit
+		DBs    db.ReadWriteMyDBs
 		Logger *zap.Logger
 	}
 	type args struct {
@@ -148,7 +148,7 @@ func TestEnv_ArchiveMember(t *testing.T) {
 	m := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).Build()
 
 	type fields struct {
-		DBs    db.ReadWriteSplit
+		DBs    db.ReadWriteMyDBs
 		Logger *zap.Logger
 	}
 	type args struct {
@@ -209,11 +209,11 @@ func TestEnv_ListSnapshot(t *testing.T) {
 		Snapshot(reader.FtcArchiver(enum.OrderKindUpgrade)))
 
 	type fields struct {
-		DBs    db.ReadWriteSplit
+		DBs    db.ReadWriteMyDBs
 		Logger *zap.Logger
 	}
 	type args struct {
-		ids pkg.UserIDs
+		ids ids.UserIDs
 		p   gorest.Pagination
 	}
 	tests := []struct {
@@ -229,7 +229,7 @@ func TestEnv_ListSnapshot(t *testing.T) {
 				Logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				ids: pkg.UserIDs{
+				ids: ids.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(ftcID),
 				}.MustNormalize(),

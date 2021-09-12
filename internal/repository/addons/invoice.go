@@ -2,14 +2,14 @@ package addons
 
 import (
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 )
 
 // InvoicesCarriedOver flags a user's consumed
 // but not ended invoices as being carried over
 // into a new invoice.
-func (env Env) InvoicesCarriedOver(userID pkg.UserIDs) error {
+func (env Env) InvoicesCarriedOver(userID ids.UserIDs) error {
 	_, err := env.dbs.Write.Exec(
 		invoice.StmtCarriedOver,
 		userID.BuildFindInSet(),
@@ -21,7 +21,7 @@ func (env Env) InvoicesCarriedOver(userID pkg.UserIDs) error {
 	return nil
 }
 
-func (env Env) countInvoices(ids pkg.UserIDs) (int64, error) {
+func (env Env) countInvoices(ids ids.UserIDs) (int64, error) {
 	var count int64
 	err := env.dbs.Read.Get(
 		&count,
@@ -35,7 +35,7 @@ func (env Env) countInvoices(ids pkg.UserIDs) (int64, error) {
 	return count, nil
 }
 
-func (env Env) listInvoices(ids pkg.UserIDs, p gorest.Pagination) ([]invoice.Invoice, error) {
+func (env Env) listInvoices(ids ids.UserIDs, p gorest.Pagination) ([]invoice.Invoice, error) {
 	var inv = make([]invoice.Invoice, 0)
 	err := env.dbs.Read.Select(
 		&inv,
@@ -51,7 +51,7 @@ func (env Env) listInvoices(ids pkg.UserIDs, p gorest.Pagination) ([]invoice.Inv
 	return inv, nil
 }
 
-func (env Env) ListInvoices(ids pkg.UserIDs, p gorest.Pagination) (invoice.List, error) {
+func (env Env) ListInvoices(ids ids.UserIDs, p gorest.Pagination) (invoice.List, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
