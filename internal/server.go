@@ -384,8 +384,8 @@ func StartServer(s ServerStatus) {
 
 		// List all active pricing plans.
 		// Deprecated
-		r.With(controller.FormParsed).
-			Get("/plans", paywallRouter.LoadPricing)
+		//r.With(controller.FormParsed).
+		//	Get("/plans", paywallRouter.LoadPricing)
 
 		// The following are used by CMS to create/update prices and discounts.
 		// Get a list of prices under a product. This does not distinguish is_active or live_mode
