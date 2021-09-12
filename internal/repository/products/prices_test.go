@@ -2,43 +2,78 @@ package products
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/test"
-	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestEnv_retrieveProductPrices(t *testing.T) {
-	env := Env{
-		dbs:   test.SplitDB,
-		cache: test.Cache,
-	}
+func TestEnv_CreatePrice(t *testing.T) {
+	env := NewEnv(db.MockMySQL(), nil)
 
+	type args struct {
+		p price.FtcPrice
+	}
 	tests := []struct {
 		name    string
+		args    args
 		wantErr bool
 	}{
 		{
-			name:    "List paywall plans",
+			name: "Create ftc price live mode",
+			args: args{
+				p: price.FtcPrice{
+					Price: test.
+						NewStdProdBuilder().
+						NewYearPriceBuilder().
+						Build(),
+					Offers: nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Create ftc price test mode",
+			args: args{
+				p: price.FtcPrice{
+					Price: test.
+						NewStdProdBuilder().
+						NewYearPriceBuilder().
+						WithTest().
+						Build(),
+					Offers: nil,
+				},
+			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := env.retrieveProductPrices()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("retrieveProductPrices() error = %v, wantErr %v", err, tt.wantErr)
-				return
+
+			if err := env.CreatePrice(tt.args.p); (err != nil) != tt.wantErr {
+				t.Errorf("CreatePrice() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
-			t.Logf("%+v", got)
-
-			assert.Len(t, got, 3)
 		})
 	}
 }
 
-func TestEnv_RetrievePrice(t *testing.T) {
+func TestEnv_ActivatePrice(t *testing.T) {
+
+	prodBuilder := test.NewProductBuilder(enum.TierStandard)
+
+	p1 := prodBuilder.NewYearPriceBuilder().
+		Build()
+	p2 := prodBuilder.NewYearPriceBuilder().
+		Build()
+	p3 := prodBuilder.NewYearPriceBuilder().
+		WithTest().
+		WithActive().
+		Build()
+
+	test.NewRepo().CreatePrice(p1)
+	test.NewRepo().CreatePrice(p2)
+	test.NewRepo().CreatePrice(p3)
 
 	env := Env{
 		dbs:   test.SplitDB,
@@ -54,32 +89,88 @@ func TestEnv_RetrievePrice(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Load a single plan",
-			args:    args{id: "plan_ICMPPM0UXcpZ"},
+			name: "Activate price",
+			args: args{
+				id: p1.ID,
+			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := env.RetrievePrice(tt.args.id)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("retrievePlanByID() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if err := env.ActivatePrice(tt.args.id); (err != nil) != tt.wantErr {
+				t.Errorf("ActivatePrice() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
-			assert.NotEmpty(t, got.ID)
 		})
 	}
 }
 
-func TestEnv_PlanByEdition(t *testing.T) {
-	env := Env{
-		dbs:   test.SplitDB,
-		cache: test.Cache,
-	}
+func TestEnv_RetrieveFtcPrice(t *testing.T) {
+	repo := test.NewRepo()
+	p := test.NewStdProdBuilder().NewYearPriceBuilder().Build()
+	repo.CreatePrice(p)
+
+	env := NewEnv(db.MockMySQL(), nil)
 
 	type args struct {
-		e price.Edition
+		id string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    price.FtcPrice
+		wantErr bool
+	}{
+		{
+			name: "Retrieve ftc price",
+			args: args{
+				id: p.ID,
+			},
+			want:    price.FtcPrice{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := env.RetrieveFtcPrice(tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RetrieveFtcPrice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("RetrieveFtcPrice() got = %v, want %v", got, tt.want)
+			//}
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
+
+func TestEnv_UpdateFtcPriceOffers(t *testing.T) {
+
+	priceBuilder := test.NewStdProdBuilder().
+		NewYearPriceBuilder()
+
+	stdYearPrice := priceBuilder.Build()
+
+	offers := []price.Discount{
+		priceBuilder.NewDiscountBuilder().BuildPromo(),
+		priceBuilder.NewDiscountBuilder().BuildRetention(),
+		priceBuilder.NewDiscountBuilder().BuildWinBack(),
+	}
+
+	test.NewRepo().CreatePrice(stdYearPrice)
+
+	ftcPrice := price.FtcPrice{
+		Price:  stdYearPrice,
+		Offers: offers,
+	}
+
+	env := NewEnv(db.MockMySQL(), nil)
+
+	type args struct {
+		f price.FtcPrice
 	}
 	tests := []struct {
 		name    string
@@ -87,12 +178,9 @@ func TestEnv_PlanByEdition(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Load a plan by tier and cycle",
+			name: "Set offers to price",
 			args: args{
-				e: price.Edition{
-					Tier:  enum.TierStandard,
-					Cycle: enum.CycleYear,
-				},
+				f: ftcPrice,
 			},
 			wantErr: false,
 		},
@@ -100,13 +188,107 @@ func TestEnv_PlanByEdition(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := env.ActivePriceOfEdition(tt.args.e)
+			if err := env.UpdateFtcPriceOffers(tt.args.f); (err != nil) != tt.wantErr {
+				t.Errorf("UpdateFtcPriceOffers() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnv_RefreshFtcPriceOffers(t *testing.T) {
+	priceBuilder := test.NewStdProdBuilder().
+		NewYearPriceBuilder()
+
+	stdYearPrice := priceBuilder.Build()
+
+	repo := test.NewRepo()
+	repo.CreatePrice(stdYearPrice)
+	repo.CreateDiscount(priceBuilder.NewDiscountBuilder().BuildPromo())
+	repo.CreateDiscount(priceBuilder.NewDiscountBuilder().BuildRetention())
+	repo.CreateDiscount(priceBuilder.NewDiscountBuilder().BuildWinBack())
+
+	env := NewEnv(db.MockMySQL(), nil)
+
+	type args struct {
+		f price.FtcPrice
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    price.FtcPrice
+		wantErr bool
+	}{
+		{
+			name: "Refresh ftc price offers",
+			args: args{
+				f: price.FtcPrice{
+					Price:  stdYearPrice,
+					Offers: nil,
+				},
+			},
+			want:    price.FtcPrice{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := env.RefreshFtcPriceOffers(tt.args.f)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ActivePriceOfEdition() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("RefreshFtcPriceOffers() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("RefreshFtcPriceOffers() got = %v, want %v", got, tt.want)
+			//}
 
-			assert.NotEmpty(t, got.ID)
+			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
+
+func TestEnv_ListPrices(t *testing.T) {
+	repo := test.NewRepo()
+	pb := test.NewStdProdBuilder()
+	prod := pb.Build()
+
+	repo.CreatePrice(pb.NewYearPriceBuilder().Build())
+	repo.CreatePrice(pb.NewMonthPriceBuilder().Build())
+	repo.CreatePrice(pb.NewYearPriceBuilder().WithActive().Build())
+
+	env := NewEnv(db.MockMySQL(), nil)
+
+	type args struct {
+		prodID string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []price.FtcPrice
+		wantErr bool
+	}{
+		{
+			name: "List prices",
+			args: args{
+				prodID: prod.ID,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := env.ListPrices(tt.args.prodID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListPrices() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("ListPrices() got = %v, want %v", got, tt.want)
+			//}
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
