@@ -2,7 +2,7 @@ package ztsms
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
 	"time"
 )
@@ -30,7 +30,7 @@ type Verifier struct {
 func NewVerifier(mobile string, ftcID null.String) Verifier {
 	return Verifier{
 		Mobile:     mobile,
-		Code:       pkg.SMSCode(),
+		Code:       ids.SMSCode(),
 		ExpiresIn:  5 * 60,
 		CreatedUTC: chrono.TimeNow(),
 		UsedUTC:    chrono.Time{},

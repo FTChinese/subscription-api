@@ -5,7 +5,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
 )
 
@@ -167,7 +167,7 @@ func (m Membership) Snapshot(by Archiver) MemberSnapshot {
 	}
 
 	return MemberSnapshot{
-		SnapshotID: pkg.SnapshotID(),
+		SnapshotID: ids.SnapshotID(),
 		CreatedBy:  null.StringFrom(by.String()),
 		CreatedUTC: chrono.TimeNow(),
 		Membership: m,

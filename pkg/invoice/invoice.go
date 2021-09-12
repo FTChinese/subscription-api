@@ -5,8 +5,8 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"time"
@@ -48,9 +48,9 @@ type Invoice struct {
 
 // NewAddonInvoice creates a new addon invoice based on
 // the parameters provided in a request.
-func NewAddonInvoice(params pkg.AddOnParams) Invoice {
+func NewAddonInvoice(params AddOnParams) Invoice {
 	return Invoice{
-		ID:             pkg.InvoiceID(),
+		ID:             ids.InvoiceID(),
 		CompoundID:     params.CompoundID,
 		Edition:        params.Edition,
 		YearMonthDay:   params.YearMonthDay,

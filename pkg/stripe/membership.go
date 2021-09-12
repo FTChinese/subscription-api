@@ -3,14 +3,14 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
 
 type MembershipParams struct {
-	UserIDs pkg.UserIDs
+	UserIDs ids.UserIDs
 	Subs    Subs
 	AddOn   addon.AddOn // The total reserved days if user switched from one-time pay to stripe. User minght already have reserved days prior to switching.
 }

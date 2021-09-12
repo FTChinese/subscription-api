@@ -3,14 +3,14 @@ package apple
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
 
 type MembershipParams struct {
-	UserID pkg.UserIDs // User id might comes from an existing membership when webhook message comes in, or from account is client is requesting link.
+	UserID ids.UserIDs // User id might comes from an existing membership when webhook message comes in, or from account is client is requesting link.
 	Subs   Subscription
 	AddOn  addon.AddOn
 }

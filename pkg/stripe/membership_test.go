@@ -3,8 +3,8 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -28,7 +28,7 @@ func TestNewMembership(t *testing.T) {
 			name: "New membership",
 			args: args{
 				params: MembershipParams{
-					UserIDs: pkg.UserIDs{
+					UserIDs: ids.UserIDs{
 						CompoundID: subs.FtcUserID.String,
 						FtcID:      subs.FtcUserID,
 					},
@@ -37,7 +37,7 @@ func TestNewMembership(t *testing.T) {
 				},
 			},
 			want: reader.Membership{
-				UserIDs: pkg.UserIDs{
+				UserIDs: ids.UserIDs{
 					CompoundID: subs.FtcUserID.String,
 					FtcID:      subs.FtcUserID,
 				},

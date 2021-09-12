@@ -6,8 +6,8 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -29,9 +29,9 @@ type MockInvoiceBuilder struct {
 func NewMockInvoiceBuilder() MockInvoiceBuilder {
 
 	return MockInvoiceBuilder{
-		id:          pkg.InvoiceID(),
+		id:          ids.InvoiceID(),
 		userID:      uuid.New().String(),
-		orderID:     pkg.MustOrderID(),
+		orderID:     ids.MustOrderID(),
 		price:       price.MockPriceStdYear,
 		orderKind:   enum.OrderKindCreate,
 		payMethod:   enum.PayMethodAli,
@@ -94,7 +94,7 @@ func (b MockInvoiceBuilder) SetPeriodStart(t time.Time) MockInvoiceBuilder {
 }
 
 func (b MockInvoiceBuilder) Build() Invoice {
-	charge := price.NewCharge(b.price.Price, b.price.ApplicableOffer(b.offerKinds))
+	charge := price.NewCharge(b.price.Price, b.price.Offers.FindApplicable(b.offerKinds))
 
 	if b.addOnSource != "" {
 		b.orderKind = enum.OrderKindAddOn
