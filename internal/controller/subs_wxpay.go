@@ -5,9 +5,11 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"net/http"
 )
@@ -47,7 +49,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		}
 
 		// Parse request body.
-		input := subs.NewWxPayInput(tradeType)
+		input := ftcpay.NewWxPayReq(tradeType)
 		if err := gorest.ParseJSON(req.Body, &input); err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
@@ -59,18 +61,27 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 			return
 		}
 
+		paywall, err := router.prodRepo.LoadPaywall(!acnt.IsTest())
 		// Retrieve the plan from DB by edition.
-		plan, err := router.prodRepo.ActivePriceOfEdition(input.Edition)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).DBError(err)
 			return
 		}
 
-		sugar.Infof("Selected plan: %+v", plan)
+		item, err := paywall.FindCheckoutItem(input.Price.ID, input.Offer.ID)
+		if err != nil {
+			sugar.Error(err)
+			_ = render.New(w).BadRequest(err.Error())
+			return
+		}
 
-		counter := subs.NewCounter(acnt, plan).
-			WithWxpay(payClient.GetApp())
+		counter := ftcpay.Counter{
+			BaseAccount:  acnt,
+			CheckoutItem: item,
+			PayMethod:    enum.PayMethodWx,
+			WxAppID:      null.StringFrom(payClient.GetApp().AppID),
+		}
 
 		pi, err := router.SubsRepo.CreateOrder(counter)
 		if err != nil {
