@@ -1,7 +1,8 @@
 package account
 
 import (
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"strings"
@@ -21,7 +22,7 @@ type BaseAccount struct {
 	CampaignCode null.String `json:"campaignCode" db:"campaign_code"`
 }
 
-func NewEmailBaseAccount(params pkg.EmailSignUpParams) BaseAccount {
+func NewEmailBaseAccount(params input.EmailSignUpParams) BaseAccount {
 	return BaseAccount{
 		FtcID:      uuid.New().String(),
 		UnionID:    null.String{},
@@ -35,7 +36,7 @@ func NewEmailBaseAccount(params pkg.EmailSignUpParams) BaseAccount {
 	}
 }
 
-func NewMobileBaseAccount(params pkg.MobileSignUpParams) BaseAccount {
+func NewMobileBaseAccount(params input.MobileSignUpParams) BaseAccount {
 	return BaseAccount{
 		FtcID:      uuid.New().String(),
 		UnionID:    null.String{},
@@ -77,8 +78,8 @@ func (a BaseAccount) CompoundID() string {
 	return ""
 }
 
-func (a BaseAccount) CompoundIDs() pkg.UserIDs {
-	return pkg.UserIDs{
+func (a BaseAccount) CompoundIDs() ids.UserIDs {
+	return ids.UserIDs{
 		CompoundID: "",
 		FtcID:      null.NewString(a.FtcID, a.FtcID != ""),
 		UnionID:    a.UnionID,
