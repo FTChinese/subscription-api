@@ -5,7 +5,8 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
 	"time"
 )
@@ -39,7 +40,7 @@ type PwResetSession struct {
 // NewPwResetSession creates a new PwResetSession instance
 // based on request body which contains a required `email`
 // field, and an optionally `sourceUrl` field.
-func NewPwResetSession(params pkg.ForgotPasswordParams) (PwResetSession, error) {
+func NewPwResetSession(params input.ForgotPasswordParams) (PwResetSession, error) {
 	token, err := gorest.RandomHex(32)
 	if err != nil {
 		return PwResetSession{}, err
@@ -63,7 +64,7 @@ func NewPwResetSession(params pkg.ForgotPasswordParams) (PwResetSession, error) 
 		// For mobile apps we removed the SourceURL
 		sess.SourceURL = null.String{}
 		// Add add an easy-to-type 6-digit code
-		sess.AppCode = null.StringFrom(pkg.PwResetCode())
+		sess.AppCode = null.StringFrom(ids.PwResetCode())
 		sess.ExpiresIn = 30 * 60 // Valid for 30 minutes.
 	}
 
@@ -71,7 +72,7 @@ func NewPwResetSession(params pkg.ForgotPasswordParams) (PwResetSession, error) 
 }
 
 // MustNewPwResetSession panic on error.
-func MustNewPwResetSession(params pkg.ForgotPasswordParams) PwResetSession {
+func MustNewPwResetSession(params input.ForgotPasswordParams) PwResetSession {
 	s, err := NewPwResetSession(params)
 	if err != nil {
 		panic(err)
@@ -87,7 +88,7 @@ func (s PwResetSession) WithPlatform(p enum.Platform) PwResetSession {
 
 	if p == enum.PlatformIOS || p == enum.PlatformAndroid {
 		s.ExpiresIn = 300
-		s.AppCode = null.StringFrom(pkg.PwResetCode())
+		s.AppCode = null.StringFrom(ids.PwResetCode())
 		// For mobile apps we removed the SourceURL
 		s.SourceURL = null.String{}
 	}

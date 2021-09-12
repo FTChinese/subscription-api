@@ -1,4 +1,4 @@
-package pkg
+package input
 
 import (
 	"github.com/FTChinese/go-rest/enum"
