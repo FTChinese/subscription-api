@@ -72,7 +72,7 @@ func NewFtcPrice(p FtcPriceParams) FtcPrice {
 			CreatedUTC:  chrono.TimeNow(),
 			CreatedBy:   p.CreatedBy,
 		},
-		Offers: nil,
+		Offers: make([]Discount, 0),
 	}
 }
 
