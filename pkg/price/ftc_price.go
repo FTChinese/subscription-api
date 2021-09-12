@@ -85,6 +85,11 @@ type FtcPrice struct {
 	Offers         DiscountListJSON `json:"offers" db:"discount_list"`
 }
 
+func (f FtcPrice) Activate() FtcPrice {
+	f.Active = true
+	return f
+}
+
 func (f FtcPrice) SetOffers(o []Discount) FtcPrice {
 	f.Offers = o
 	return f
