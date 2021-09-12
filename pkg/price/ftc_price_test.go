@@ -36,7 +36,7 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 					OfferKindRetention,
 				},
 			},
-			want: FtcOffers[StdYearEdition][0],
+			want: MockPriceStdYear.Offers[1],
 		},
 		{
 			name:   "Expired member enjoys win-back offer",
@@ -47,7 +47,7 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 					OfferKindWinBack,
 				},
 			},
-			want: FtcOffers[StdYearEdition][1],
+			want: MockPriceStdYear.Offers[2],
 		},
 	}
 	for _, tt := range tests {
@@ -57,7 +57,7 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 				Offers: tt.fields.Offers,
 			}
 
-			got := f.ApplicableOffer(tt.args.enjoys)
+			got := f.Offers.FindApplicable(tt.args.enjoys)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ApplicableOffer() = \n%v, want \n%v", got, tt.want)
 				return
