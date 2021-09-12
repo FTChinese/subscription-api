@@ -15,7 +15,7 @@ import (
 
 var (
 	DB       *sqlx.DB
-	SplitDB  db.ReadWriteSplit
+	SplitDB  db.ReadWriteMyDBs
 	Postman  postoffice.PostOffice
 	Redis    *redis.Client
 	Cache    *cache.Cache
@@ -26,7 +26,7 @@ var (
 func init() {
 	config.MustSetupViper()
 
-	SplitDB = db.NewMyDB(false)
+	SplitDB = db.MustNewMyDBs(false)
 	DB = SplitDB.Write
 	Postman = postoffice.New(config.MustGetHanqiConn())
 	Redis = db.NewRedis(config.MustRedisAddress().Pick(false))

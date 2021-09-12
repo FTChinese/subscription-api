@@ -6,24 +6,30 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
+	"log"
 )
 
 type Repo struct {
 	db     *sqlx.DB
+	dbs    db.ReadWriteMyDBs
 	logger *zap.Logger
 }
 
 func NewRepo() Repo {
+	dbs := db.MockMySQL()
 	return Repo{
-		db:     DB,
+		db:     dbs.Write,
+		dbs:    dbs,
 		logger: config.MustGetLogger(false),
 	}
 }
@@ -282,5 +288,19 @@ func (r Repo) MustSaveIAPReceipt(schema apple.ReceiptSchema) {
 	err := r.SaveIAPReceipt(schema)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func (r Repo) CreatePrice(p price.Price) {
+	_, err := r.dbs.Write.NamedExec(price.StmtCreatePrice, p)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func (r Repo) CreateDiscount(d price.Discount) {
+	_, err := r.dbs.Write.NamedExec(price.StmtCreateDiscount, d)
+	if err != nil {
+		log.Fatalln(err)
 	}
 }
