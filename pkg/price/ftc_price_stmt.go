@@ -4,6 +4,7 @@ const colFtcPrice = `
 SELECT p.id AS price_id,
 	p.tier,
 	p.cycle,
+	p.currency AS currency,
 	p.is_active AS is_active,
 	p.description AS description,
 	p.live_mode AS live_mode,
