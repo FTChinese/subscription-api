@@ -61,18 +61,10 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 			return
 		}
 
-		paywall, err := router.prodRepo.LoadPaywall(!acnt.IsTest())
-		// Retrieve the plan from DB by edition.
-		if err != nil {
-			sugar.Error(err)
-			_ = render.New(w).DBError(err)
-			return
-		}
-
-		item, err := paywall.FindCheckoutItem(input.Price.ID, input.Offer.ID)
-		if err != nil {
-			sugar.Error(err)
-			_ = render.New(w).BadRequest(err.Error())
+		item, re := router.loadCheckoutItem(input.Price.ID, input.Offer.ID, !acnt.IsTest())
+		if re != nil {
+			sugar.Error(re)
+			_ = render.New(w).JSON(re.StatusCode, re)
 			return
 		}
 
