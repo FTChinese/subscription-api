@@ -18,13 +18,6 @@ func NewCharge(price Price, offer Discount) Charge {
 	}
 }
 
-// WithTest set paying amount to a fixed number.
-// Deprecated.
-func (c Charge) WithTest() Charge {
-	c.Amount = 0.01
-	return c
-}
-
 // AliPrice converts Charged price to ailpay format
 func (c Charge) AliPrice() string {
 	return strconv.FormatFloat(c.Amount, 'f', 2, 32)
