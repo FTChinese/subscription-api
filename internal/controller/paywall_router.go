@@ -62,7 +62,7 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 
 func (router PaywallRouter) LoadPricing(w http.ResponseWriter, req *http.Request) {
 	live := getParamLiveMode(req)
-	p, err := router.repo.ActivePricesFromCacheOrDB(live)
+	p, err := router.repo.ListActivePrices(live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

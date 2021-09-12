@@ -142,8 +142,8 @@ type activePricesResult struct {
 	error error
 }
 
-// listActivePrices lists active product prices on paywall, directly from DB.
-func (env Env) listActivePrices(live bool) ([]price.FtcPrice, error) {
+// ListActivePrices lists active product prices on paywall, directly from DB.
+func (env Env) ListActivePrices(live bool) ([]price.FtcPrice, error) {
 	var prices = make([]price.FtcPrice, 0)
 
 	err := env.dbs.Read.Select(
@@ -165,7 +165,7 @@ func (env Env) asyncListActivePrices(live bool) <-chan activePricesResult {
 	go func() {
 		defer close(ch)
 
-		plans, err := env.listActivePrices(live)
+		plans, err := env.ListActivePrices(live)
 
 		ch <- activePricesResult{
 			value: plans,
@@ -174,37 +174,6 @@ func (env Env) asyncListActivePrices(live bool) <-chan activePricesResult {
 	}()
 
 	return ch
-}
-
-// cacheActivePrices caching all currently active prices as an array.
-func (env Env) cacheActivePrices(p []price.FtcPrice) {
-	if len(p) == 0 {
-		return
-	}
-	env.cache.Set(getActivePricesCacheKey(p[0].LiveMode), p, cache.DefaultExpiration)
-}
-
-// ActivePricesFromCacheOrDB tries to load all active pricing plans from cache,
-// then fallback to db if not found. If retrieved from DB,
-// the data will be cached.
-// Deprecated.
-func (env Env) ActivePricesFromCacheOrDB(live bool) ([]price.FtcPrice, error) {
-	x, found := env.cache.Get(getActivePricesCacheKey(live))
-
-	if found {
-		if p, ok := x.([]price.FtcPrice); ok {
-			return p, nil
-		}
-	}
-
-	prices, err := env.listActivePrices(live)
-	if err != nil {
-		return nil, err
-	}
-
-	env.cacheActivePrices(prices)
-
-	return prices, nil
 }
 
 func (env Env) ClearCache() {
