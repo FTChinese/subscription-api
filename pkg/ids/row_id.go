@@ -1,4 +1,4 @@
-package pkg
+package ids
 
 import (
 	gorest "github.com/FTChinese/go-rest"
@@ -49,4 +49,16 @@ func SMSCode() string {
 
 func PwResetCode() string {
 	return strconv.Itoa(rand.IntRange(100000, 999999))
+}
+
+func ProductID() string {
+	return "prod_" + rand.String(12)
+}
+
+func PriceID() string {
+	return "price_" + rand.String(12)
+}
+
+func DiscountID() string {
+	return "dsc_" + rand.String(12)
 }

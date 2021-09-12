@@ -1,8 +1,8 @@
 package stripe
 
 import (
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/stripe/stripe-go/v72"
@@ -10,7 +10,7 @@ import (
 
 // SubsResultParams uses the data of a user's subscription to build the data to be saved to db.
 type SubsResultParams struct {
-	UserIDs pkg.UserIDs // UserIDs might comes from user account, or from current membership for refreshing.
+	UserIDs ids.UserIDs // UserIDs might comes from user account, or from current membership for refreshing.
 	Kind    reader.SubsKind
 	// To build membership, the above three fields are enough.
 
