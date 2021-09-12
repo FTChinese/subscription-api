@@ -85,6 +85,10 @@ func (d Discount) IsZero() bool {
 }
 
 func (d Discount) IsValid() bool {
+	if d.Status != DiscountStatusActive {
+		return false
+	}
+
 	if d.PriceOff.IsZero() || d.PriceOff.Float64 <= 0 {
 		return false
 	}
