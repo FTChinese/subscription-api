@@ -18,11 +18,11 @@ import (
 )
 
 type Repo struct {
-	dbs   db.ReadWriteSplit
+	dbs   db.ReadWriteMyDBs
 	cache *cache.Cache
 }
 
-func NewRepo(dbs db.ReadWriteSplit) Repo {
+func NewRepo(dbs db.ReadWriteMyDBs) Repo {
 	return Repo{
 		dbs: dbs,
 		// Default expiration 24 hours, and purges the expired items every hour.
