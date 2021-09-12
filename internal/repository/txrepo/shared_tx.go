@@ -2,7 +2,7 @@ package txrepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/jmoiron/sqlx"
@@ -74,7 +74,7 @@ func (tx SharedTx) UpdateMember(m reader.Membership) error {
 // is the correct operation since the membership is granted
 // by IAP. You cannot simply remove the apple_subscription_id
 // column which will keep the membership on FTC account.
-func (tx SharedTx) DeleteMember(id pkg.UserIDs) error {
+func (tx SharedTx) DeleteMember(id ids.UserIDs) error {
 	_, err := tx.NamedExec(reader.StmtDeleteMember, id)
 
 	if err != nil {

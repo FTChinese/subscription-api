@@ -3,14 +3,14 @@ package addons
 import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // ClaimAddOn uses the user's addon invoices to extend expiration date.
-func (env Env) ClaimAddOn(ids pkg.UserIDs) (reader.AddOnClaimed, error) {
+func (env Env) ClaimAddOn(ids ids.UserIDs) (reader.AddOnClaimed, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 

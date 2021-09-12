@@ -2,8 +2,8 @@ package txrepo
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
@@ -37,7 +37,7 @@ func TestAddOnTx_AddOnInvoices(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		ids pkg.UserIDs
+		ids ids.UserIDs
 	}
 	tests := []struct {
 		name    string
@@ -52,7 +52,7 @@ func TestAddOnTx_AddOnInvoices(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				ids: pkg.NewFtcUserID(userID),
+				ids: ids.NewFtcUserID(userID),
 			},
 			want:    3,
 			wantErr: false,

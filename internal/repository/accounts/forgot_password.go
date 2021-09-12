@@ -1,7 +1,7 @@
 package accounts
 
 import (
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 )
 
@@ -35,7 +35,7 @@ func (env Env) PwResetSessionByToken(token string) (account.PwResetSession, erro
 // PwResetSessionByCode retrieves PwResetSession by app code and email.
 // Since the code only has 10^6 combinations, chances of duplicate are very high.
 // Use email + code to uniquely identify a row.
-func (env Env) PwResetSessionByCode(params pkg.AppResetPwSessionParams) (account.PwResetSession, error) {
+func (env Env) PwResetSessionByCode(params input.AppResetPwSessionParams) (account.PwResetSession, error) {
 	var session account.PwResetSession
 	err := env.DBs.Read.Get(&session, account.StmtPwResetSessionByCode, params.AppCode, params.Email)
 	if err != nil {

@@ -3,8 +3,8 @@ package accounts
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/test"
@@ -25,7 +25,7 @@ func TestEnv_Authenticate(t *testing.T) {
 		Env readers.Env
 	}
 	type args struct {
-		params pkg.EmailLoginParams
+		params input.EmailLoginParams
 	}
 	tests := []struct {
 		name    string
@@ -40,7 +40,7 @@ func TestEnv_Authenticate(t *testing.T) {
 				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
-				params: pkg.EmailLoginParams{
+				params: input.EmailLoginParams{
 					Email:       a.Email,
 					Password:    a.Password,
 					DeviceToken: null.StringFrom(uuid.New().String()),
@@ -135,7 +135,7 @@ func TestEnv_VerifyPassword(t *testing.T) {
 		Env readers.Env
 	}
 	type args struct {
-		params pkg.PasswordUpdateParams
+		params input.PasswordUpdateParams
 	}
 	tests := []struct {
 		name    string
@@ -150,7 +150,7 @@ func TestEnv_VerifyPassword(t *testing.T) {
 				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
-				params: pkg.PasswordUpdateParams{
+				params: input.PasswordUpdateParams{
 					FtcID: a.FtcID,
 					Old:   a.Password,
 					New:   "",
@@ -189,7 +189,7 @@ func TestEnv_UpdatePassword(t *testing.T) {
 		Env readers.Env
 	}
 	type args struct {
-		p pkg.PasswordUpdateParams
+		p input.PasswordUpdateParams
 	}
 	tests := []struct {
 		name    string
@@ -203,7 +203,7 @@ func TestEnv_UpdatePassword(t *testing.T) {
 				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
-				p: pkg.PasswordUpdateParams{
+				p: input.PasswordUpdateParams{
 					FtcID: a.FtcID,
 					Old:   "",
 					New:   "23456789",

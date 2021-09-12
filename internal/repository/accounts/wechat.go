@@ -3,7 +3,7 @@ package accounts
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
@@ -11,7 +11,7 @@ import (
 // WxSignUp helps a Wechat-logged-in user to sign up on FTC.
 // If user already purchased membership with Wechat account, the membership will be bound to this signup email.
 // Returns the new account's UUID.
-func (env Env) WxSignUp(unionID string, input pkg.EmailSignUpParams) (reader.WxEmailLinkResult, error) {
+func (env Env) WxSignUp(unionID string, input input.EmailSignUpParams) (reader.WxEmailLinkResult, error) {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
@@ -20,7 +20,7 @@ func MustNewSubs() stripe.Subs {
 		panic(err)
 	}
 
-	subs, err := stripe.NewSubs(&ss, pkg.UserIDs{
+	subs, err := stripe.NewSubs(&ss, ids.UserIDs{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},
