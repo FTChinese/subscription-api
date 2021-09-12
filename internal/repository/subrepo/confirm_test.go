@@ -5,8 +5,8 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -239,7 +239,7 @@ func TestEnv_SaveConfirmationErr(t *testing.T) {
 			name: "Confirmation error",
 			args: args{
 				e: &subs.ConfirmError{
-					OrderID: pkg.MustOrderID(),
+					OrderID: ids.MustOrderID(),
 					Message: "Test error",
 					Retry:   false,
 				},
@@ -279,7 +279,7 @@ func TestEnv_SavePayResult(t *testing.T) {
 					PaymentStateDesc: "",
 					Amount:           null.IntFrom(28000),
 					TransactionID:    faker.GenTxID(),
-					OrderID:          pkg.MustOrderID(),
+					OrderID:          ids.MustOrderID(),
 					PaidAt:           chrono.TimeNow(),
 					PayMethod:        enum.PayMethodAli,
 				},

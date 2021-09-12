@@ -3,8 +3,9 @@ package subrepo
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
 )
@@ -18,7 +19,7 @@ const wxAppNativeApp = "wxacddf1c20516eb69" // Used by native app to pay and log
 // For upgrading to premium with valid standard subscription,
 // the remaining days is converted to add-on.
 // For Stripe and IAP, the purchase is taken as add-on directly.
-func (env Env) CreateOrder(counter subs.Counter) (subs.PaymentIntent, error) {
+func (env Env) CreateOrder(counter ftcpay.Counter) (subs.PaymentIntent, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -104,7 +105,7 @@ func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 	return order, nil
 }
 
-func (env Env) countOrders(ids pkg.UserIDs) (int64, error) {
+func (env Env) countOrders(ids ids.UserIDs) (int64, error) {
 	var count int64
 	err := env.DBs.Read.Get(
 		&count,
@@ -119,7 +120,7 @@ func (env Env) countOrders(ids pkg.UserIDs) (int64, error) {
 	return count, nil
 }
 
-func (env Env) listOrders(ids pkg.UserIDs, p gorest.Pagination) ([]subs.Order, error) {
+func (env Env) listOrders(ids ids.UserIDs, p gorest.Pagination) ([]subs.Order, error) {
 	var orders = make([]subs.Order, 0)
 	err := env.DBs.Read.Select(
 		&orders,
@@ -135,7 +136,7 @@ func (env Env) listOrders(ids pkg.UserIDs, p gorest.Pagination) ([]subs.Order, e
 	return orders, nil
 }
 
-func (env Env) ListOrders(ids pkg.UserIDs, p gorest.Pagination) (subs.OrderList, error) {
+func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs.OrderList, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
