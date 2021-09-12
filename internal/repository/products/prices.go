@@ -17,10 +17,10 @@ func (env Env) CreatePrice(p price.FtcPrice) error {
 // ActivatePrice flags a price as active while all other
 // prices of the same edition and same live mode under the same product id
 // is turned to inactive.
-func (env Env) ActivatePrice(id string) error {
+func (env Env) ActivatePrice(id string) (price.FtcPrice, error) {
 	tx, err := env.dbs.Write.Beginx()
 	if err != nil {
-		return err
+		return price.FtcPrice{}, err
 	}
 
 	// Retrieve the price to activate.
@@ -28,28 +28,29 @@ func (env Env) ActivatePrice(id string) error {
 	err = tx.Get(&ftcPrice, price.StmtLockFtcPrice, id)
 	if err != nil {
 		_ = tx.Rollback()
-		return err
+		return price.FtcPrice{}, err
 	}
 
 	// Deactivate all other prices.
 	_, err = tx.NamedExec(price.StmtDeactivatePricesOfSameEdition, ftcPrice)
 	if err != nil {
 		_ = tx.Rollback()
-		return err
+		return price.FtcPrice{}, err
 	}
 
+	ftcPrice = ftcPrice.Activate()
 	// Activate the price
 	_, err = tx.NamedExec(price.StmtActivatePrice, ftcPrice)
 	if err != nil {
 		_ = tx.Rollback()
-		return err
+		return price.FtcPrice{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return price.FtcPrice{}, err
 	}
 
-	return nil
+	return ftcPrice, nil
 }
 
 // RetrieveFtcPrice retrieves a single row by plan id.
