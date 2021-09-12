@@ -3,9 +3,9 @@
 package test
 
 import (
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"time"
 
@@ -99,27 +99,27 @@ func (p *Persona) SetAutoRenew(t bool) *Persona {
 	return p
 }
 
-func (p *Persona) AccountID() pkg.UserIDs {
+func (p *Persona) AccountID() ids.UserIDs {
 
-	var id pkg.UserIDs
+	var id ids.UserIDs
 
 	switch p.kind {
 	case enum.AccountKindFtc:
-		id = pkg.UserIDs{
+		id = ids.UserIDs{
 			CompoundID: p.FtcID,
 			FtcID:      null.StringFrom(p.FtcID),
 			UnionID:    null.String{},
 		}
 
 	case enum.AccountKindWx:
-		id = pkg.UserIDs{
+		id = ids.UserIDs{
 			CompoundID: p.UnionID,
 			FtcID:      null.String{},
 			UnionID:    null.StringFrom(p.UnionID),
 		}
 
 	case enum.AccountKindLinked:
-		id = pkg.UserIDs{
+		id = ids.UserIDs{
 			CompoundID: p.FtcID,
 			FtcID:      null.StringFrom(p.FtcID),
 			UnionID:    null.StringFrom(p.UnionID),
