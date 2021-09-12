@@ -47,28 +47,6 @@ func NewPaywall(b BannerSchema, p []Product, live bool) Paywall {
 	}
 }
 
-func (w Paywall) CollectPrices() []price.FtcPrice {
-	var list = make([]price.FtcPrice, 0)
-	for _, product := range w.Products {
-		for _, p := range product.Prices {
-			list = append(list, p)
-		}
-	}
-	return list
-}
-
-func (w Paywall) FindPrice(p price.Price) (price.FtcPrice, error) {
-	for _, prod := range w.Products {
-		for _, v := range prod.Prices {
-			if v.ID == p.ID {
-				return v, nil
-			}
-		}
-	}
-
-	return price.FtcPrice{}, errors.New("the requested price is not found")
-}
-
 func (w Paywall) findFtcPrice(id string) (price.FtcPrice, error) {
 	for _, prod := range w.Products {
 		for _, v := range prod.Prices {
