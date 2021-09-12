@@ -2,12 +2,8 @@ package price
 
 import (
 	"fmt"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 )
-
-var editionKeySuffix = map[bool]string{
-	true:  "live",
-	false: "test",
-}
 
 // StripeEdition contains ftc associates ftc price edition with Stripe
 // plan/price id.
@@ -62,7 +58,7 @@ func newStripeEditions() *stripeEditions {
 	}
 
 	for i, v := range s.editions {
-		key := v.NamedKey() + "_" + editionKeySuffix[v.Live]
+		key := v.NamedKey() + "_" + ids.GetBoolKey(v.Live)
 		s.indexEdition[key] = i
 		s.indexID[v.PriceID] = i
 	}
@@ -71,7 +67,7 @@ func newStripeEditions() *stripeEditions {
 }
 
 func (s stripeEditions) FindByEdition(e Edition, live bool) (StripeEdition, error) {
-	i, ok := s.indexEdition[e.NamedKey()+"_"+editionKeySuffix[live]]
+	i, ok := s.indexEdition[e.NamedKey()+"_"+ids.GetBoolKey(live)]
 	if !ok {
 		return StripeEdition{}, fmt.Errorf("stripe plan for %s is not found", e)
 	}
