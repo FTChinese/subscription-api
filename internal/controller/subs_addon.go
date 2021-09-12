@@ -3,7 +3,6 @@ package controller
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"net/http"
 )
@@ -30,7 +29,7 @@ func (router SubsRouter) CreateAddOn(w http.ResponseWriter, req *http.Request) {
 
 	readerIDs := getReaderIDs(req.Header)
 
-	var params pkg.AddOnParams
+	var params invoice.AddOnParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
