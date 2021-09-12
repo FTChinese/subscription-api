@@ -143,3 +143,15 @@ func LogRequest(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(fn)
 }
+
+func FormParsed(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		err := request.ParseForm()
+		if err != nil {
+			_ = render.New(writer).InternalServerError(err.Error())
+			return
+		}
+
+		next.ServeHTTP(writer, request)
+	})
+}
