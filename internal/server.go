@@ -30,7 +30,7 @@ func StartServer(s ServerStatus) {
 	cfg := config.NewBuildConfig(s.Production, s.Sandbox)
 	logger := config.MustGetLogger(s.Production)
 
-	myDBs := db.NewMyDB(s.Production)
+	myDBs := db.MustNewMyDBs(s.Production)
 
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
@@ -232,6 +232,7 @@ func StartServer(s ServerStatus) {
 	r.Route("/alipay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(controller.RequireFtcOrUnionID)
+		r.Use(controller.FormParsed)
 
 		// Create an order for desktop browser
 		r.Post("/desktop", payRouter.AliPay(ali.EntryDesktopWeb))
@@ -372,9 +373,39 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		// Data used to build a paywall.
-		r.Get("/", paywallRouter.LoadPaywall)
+		// ?live=<true|false> to get prices for different mode.
+		r.With(controller.FormParsed).
+			Get("/", paywallRouter.LoadPaywall)
+
+		// List active prices used on paywall.
+		// ?live=<true|false>
+		r.With(controller.FormParsed).
+			Get("/active/prices", paywallRouter.LoadPricing)
+
 		// List all active pricing plans.
-		r.Get("/plans", paywallRouter.LoadPricing)
+		// Deprecated
+		r.With(controller.FormParsed).
+			Get("/plans", paywallRouter.LoadPricing)
+
+		// The following are used by CMS to create/update prices and discounts.
+		// Get a list of prices under a product. This does not distinguish is_active or live_mode
+		// ?product_id=<string>
+		r.With(controller.FormParsed).
+			Get("/prices", paywallRouter.ListPrices)
+		// Create a price for a product. The price's live mode is determined by client.
+		r.Post("/prices", paywallRouter.CreatePrice)
+		// Retrieve all discounts of a price and save in under price row as JSON.
+		// A price should only retrieve discount of the same live mode.
+		r.Patch("/prices/{id}", paywallRouter.RefreshPrice)
+
+		// List discounts of a price.
+		// ?price_id=<string>
+		r.Get("/discounts", paywallRouter.ListDiscounts)
+		// Creates a new discounts for a price.
+		r.Post("/discounts", paywallRouter.CreateDiscount)
+		// Delete discount and refresh the related price.
+		r.Delete("/discounts/{id}", paywallRouter.RemoveDiscount)
+
 		// Bust cache.
 		r.Get("/__refresh", paywallRouter.BustCache)
 	})
