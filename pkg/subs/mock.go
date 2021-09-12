@@ -8,8 +8,8 @@ import (
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
@@ -32,7 +32,7 @@ type MockOrderBuilder struct {
 func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
 
 	return MockOrderBuilder{
-		id:        pkg.MustOrderID(),
+		id:        ids.MustOrderID(),
 		ftcID:     ftcID,
 		unionID:   "",
 		price:     price.MockPriceStdYear,
@@ -95,7 +95,7 @@ func (b MockOrderBuilder) WithStartTime(from time.Time) MockOrderBuilder {
 
 func (b MockOrderBuilder) Build() Order {
 
-	discount := b.price.ApplicableOffer(b.offerKinds)
+	discount := b.price.Offers.FindApplicable(b.offerKinds)
 	charge := price.NewCharge(b.price.Price, discount)
 
 	var confirmed time.Time
@@ -105,13 +105,13 @@ func (b MockOrderBuilder) Build() Order {
 
 	return Order{
 		ID: b.id,
-		UserIDs: pkg.UserIDs{
+		UserIDs: ids.UserIDs{
 			CompoundID: "",
 			FtcID:      null.StringFrom(b.ftcID),
 			UnionID:    null.NewString(b.unionID, b.unionID != ""),
 		}.MustNormalize(),
 		PlanID:        b.price.ID,
-		DiscountID:    discount.DiscID,
+		DiscountID:    null.NewString(discount.ID, discount.ID != ""),
 		Price:         b.price.UnitAmount,
 		Edition:       b.price.Edition,
 		Charge:        charge,
