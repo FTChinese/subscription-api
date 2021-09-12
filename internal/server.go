@@ -394,6 +394,7 @@ func StartServer(s ServerStatus) {
 			Get("/prices", paywallRouter.ListPrices)
 		// Create a price for a product. The price's live mode is determined by client.
 		r.Post("/prices", paywallRouter.CreatePrice)
+		r.Post("/prices/{id}", paywallRouter.ActivatePrice)
 		// Retrieve all discounts of a price and save in under price row as JSON.
 		// A price should only retrieve discount of the same live mode.
 		r.Patch("/prices/{id}", paywallRouter.RefreshPrice)
