@@ -17,14 +17,14 @@ import (
 // DiscountParams contains fields submitted by client
 // when creating a discount.
 type DiscountParams struct {
-	CreatedBy   string      `json:"-" db:"created_by"`
-	Description null.String `json:"description" db:"discount_desc"`
-	Kind        OfferKind   `json:"kind" db:"kind"`
-	Percent     null.Int    `json:"percent" db:"percent"`
-	dt.DateTimePeriod
-	PriceOff  null.Float `json:"priceOff" db:"price_off"`
-	PriceID   string     `json:"priceId" db:"price_id"`
-	Recurring bool       `json:"recurring" db:"recurring"`
+	CreatedBy         string      `json:"createdBy" db:"created_by"`
+	Description       null.String `json:"description" db:"discount_desc"`
+	Kind              OfferKind   `json:"kind" db:"kind"`
+	Percent           null.Int    `json:"percent" db:"percent"`
+	dt.DateTimePeriod             // Optional. Zero value indicates permanent discount.
+	PriceOff          null.Float  `json:"priceOff" db:"price_off"`
+	PriceID           string      `json:"priceId" db:"price_id"`
+	Recurring         bool        `json:"recurring" db:"recurring"`
 }
 
 func (p DiscountParams) Validate() *render.ValidationError {
@@ -36,27 +36,13 @@ func (p DiscountParams) Validate() *render.ValidationError {
 		}
 	}
 
-	if p.StartUTC.IsZero() {
-		return &render.ValidationError{
-			Message: "startUtc is required",
-			Field:   "startUtc",
-			Code:    render.CodeMissingField,
-		}
-	}
-
-	if p.EndUTC.IsZero() {
-		return &render.ValidationError{
-			Message: "endUtc is required",
-			Field:   "endUtc",
-			Code:    render.CodeMissingField,
-		}
-	}
-
-	if p.StartUTC.After(p.EndUTC.Time) {
-		return &render.ValidationError{
-			Message: "start time must be earlier than end time",
-			Field:   "startUtc",
-			Code:    render.CodeInvalid,
+	if !p.StartUTC.IsZero() && !p.EndUTC.IsZero() {
+		if p.StartUTC.After(p.EndUTC.Time) {
+			return &render.ValidationError{
+				Message: "start time must be earlier than end time",
+				Field:   "startUtc",
+				Code:    render.CodeInvalid,
+			}
 		}
 	}
 
