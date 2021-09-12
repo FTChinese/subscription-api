@@ -12,7 +12,7 @@ type Guard struct {
 	env Repo
 }
 
-func NewGuard(dbs db.ReadWriteSplit) Guard {
+func NewGuard(dbs db.ReadWriteMyDBs) Guard {
 	return Guard{
 		env: NewRepo(dbs),
 	}
