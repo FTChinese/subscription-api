@@ -3,8 +3,8 @@ package reader
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"log"
 	"math"
@@ -40,7 +40,7 @@ func GetTierCode(tier enum.Tier) int64 {
 // * Apple IAP
 // We should keep those sources mutually exclusive.
 type Membership struct {
-	pkg.UserIDs
+	ids.UserIDs
 	price.Edition
 	LegacyTier    null.Int       `json:"-" db:"vip_type"`
 	LegacyExpire  null.Int       `json:"-" db:"expire_time"`
@@ -290,7 +290,10 @@ func (m Membership) OrderKindOfOneTime(e price.Edition) (enum.OrderKind, error) 
 // This is used as a filter to select an applicable offer.
 func (m Membership) OfferKindsEnjoyed() []price.OfferKind {
 	if m.IsZero() {
-		return []price.OfferKind{price.OfferKindPromotion}
+		return []price.OfferKind{
+			price.OfferKindPromotion,
+			price.OfferKindIntroductory,
+		}
 	}
 
 	// If current membership is expired, user could enjoy
@@ -308,6 +311,21 @@ func (m Membership) OfferKindsEnjoyed() []price.OfferKind {
 		price.OfferKindPromotion,
 		price.OfferKindRetention,
 	}
+}
+
+func (m Membership) EnjoyOffer(o price.Discount) bool {
+	// Empty offer is valid.
+	if o.IsZero() {
+		return true
+	}
+
+	for _, v := range m.OfferKindsEnjoyed() {
+		if v == o.Kind {
+			return true
+		}
+	}
+
+	return false
 }
 
 // SubsKindOfStripe deduces what kind of subscription user is trying ot create when paying via Stripe.
@@ -371,7 +389,7 @@ func (m Membership) SubsKindByApple() (SubsKind, error) {
 	return SubsKindOneTimeToSub, nil
 }
 
-func (m Membership) WithInvoice(userID pkg.UserIDs, inv invoice.Invoice) (Membership, error) {
+func (m Membership) WithInvoice(userID ids.UserIDs, inv invoice.Invoice) (Membership, error) {
 	if inv.IsZero() {
 		return m, nil
 	}
