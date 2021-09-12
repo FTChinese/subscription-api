@@ -10,6 +10,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
@@ -90,4 +91,27 @@ func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.C
 	}
 
 	return router.ConfirmOrder(result, order)
+}
+
+func (router SubsRouter) loadCheckoutItem(priceID, discountID string, live bool) (price.CheckoutItem, *render.ResponseError) {
+	paywall, err := router.prodRepo.LoadPaywall(live)
+	// If price and discount could be found in paywall.
+	if err == nil {
+		item, err := paywall.FindCheckoutItem(priceID, discountID)
+		if err == nil {
+			return item, nil
+		}
+	}
+
+	// Otherwise, retrieve from db.
+	ci, err := router.prodRepo.LoadCheckoutItem(priceID, discountID)
+	if err != nil {
+		return price.CheckoutItem{}, render.NewDBError(err)
+	}
+
+	if err := ci.Verify(live); err != nil {
+		return price.CheckoutItem{}, render.NewBadRequest(err.Error())
+	}
+
+	return ci, nil
 }
