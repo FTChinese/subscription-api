@@ -10,7 +10,7 @@ type AuthRouter struct {
 	UserShared
 }
 
-func NewAuthRouter(myDBs db.ReadWriteSplit, postman postoffice.PostOffice, l *zap.Logger) AuthRouter {
+func NewAuthRouter(myDBs db.ReadWriteMyDBs, postman postoffice.PostOffice, l *zap.Logger) AuthRouter {
 	return AuthRouter{
 		UserShared: NewUserShared(myDBs, postman, l),
 	}
