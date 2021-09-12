@@ -16,7 +16,7 @@ type Env struct {
 
 // NewEnv creates a new instance of Env.
 // `sandbox` is used to determine which table to write subscription data.
-func NewEnv(dbs db.ReadWriteSplit, logger *zap.Logger) Env {
+func NewEnv(dbs db.ReadWriteMyDBs, logger *zap.Logger) Env {
 	return Env{
 		Env:    readers.New(dbs, logger),
 		logger: logger,

@@ -36,7 +36,7 @@ type OrderPoller struct {
 	ftcpay.FtcPay
 }
 
-func NewOrderPoller(myDBs db.ReadWriteSplit, logger *zap.Logger) OrderPoller {
+func NewOrderPoller(myDBs db.ReadWriteMyDBs, logger *zap.Logger) OrderPoller {
 	return OrderPoller{
 		db:     myDBs.Write,
 		FtcPay: ftcpay.New(myDBs, postoffice.New(config.MustGetHanqiConn()), logger),

@@ -11,11 +11,11 @@ import (
 // It also contains methods to retrieve membership
 // using various ids.
 type Env struct {
-	DBs    db.ReadWriteSplit
+	DBs    db.ReadWriteMyDBs
 	Logger *zap.Logger
 }
 
-func New(dbs db.ReadWriteSplit, logger *zap.Logger) Env {
+func New(dbs db.ReadWriteMyDBs, logger *zap.Logger) Env {
 	return Env{
 		DBs:    dbs,
 		Logger: logger,

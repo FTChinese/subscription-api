@@ -2,22 +2,26 @@ package products
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/patrickmn/go-cache"
 )
 
 type Env struct {
-	dbs   db.ReadWriteSplit
+	dbs   db.ReadWriteMyDBs
 	cache *cache.Cache
 }
 
-func NewEnv(dbs db.ReadWriteSplit, cache *cache.Cache) Env {
+func NewEnv(dbs db.ReadWriteMyDBs, cache *cache.Cache) Env {
 	return Env{
 		dbs:   dbs,
 		cache: cache,
 	}
 }
 
-const (
-	keyPaywall = "paywall"
-	keyPricing = "pricing_plans"
-)
+func getPaywallCacheKey(live bool) string {
+	return "paywall_" + ids.GetBoolKey(live)
+}
+
+func getActivePricesCacheKey(live bool) string {
+	return "active_prices_" + ids.GetBoolKey(live)
+}

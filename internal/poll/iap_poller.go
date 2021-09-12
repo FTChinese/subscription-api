@@ -30,7 +30,7 @@ type IAPPoller struct {
 	logger    *zap.Logger
 }
 
-func NewIAPPoller(dbs db.ReadWriteSplit, prod bool, logger *zap.Logger) IAPPoller {
+func NewIAPPoller(dbs db.ReadWriteMyDBs, prod bool, logger *zap.Logger) IAPPoller {
 
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(prod))
 
