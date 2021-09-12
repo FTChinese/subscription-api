@@ -1,4 +1,4 @@
-package pkg
+package invoice
 
 import (
 	"github.com/FTChinese/go-rest/enum"
@@ -10,9 +10,9 @@ import (
 )
 
 // AddOnParams contains parameters used to create an addon invoice.
-// When AddOnSource is addon.SourceUserPurchase, order id should exists;
+// When AddOnSource is addon.SourceUserPurchase, order id should exist;
 // WHen AddOnSource is addon.SourceCarryOver or addon.SourceCompensation,
-// order id must not exists,
+// order id must not exist,
 // and Edition, YearMonthDay should be provided.
 type AddOnParams struct {
 	CompoundID  string       `json:"-"`
