@@ -75,7 +75,7 @@ const StripeInvoice = `
                         "tier": "standard",
                         "cycle": "year"
                     },
-                    "nickname": "Standard Yearly Price",
+                    "nickname": "Standard Yearly Build",
                     "price": "prod_FOde1wE4ZTRMcD",
                     "tiers_mode": null,
                     "transform_usage": null,
@@ -95,7 +95,7 @@ const StripeInvoice = `
                         "tier": "standard",
                         "cycle": "year"
                     },
-                    "nickname": "Standard Yearly Price",
+                    "nickname": "Standard Yearly Build",
                     "price": "prod_FOde1wE4ZTRMcD",
                     "recurring": {
                         "aggregate_usage": null,
