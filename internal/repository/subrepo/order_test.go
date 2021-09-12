@@ -5,11 +5,12 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -38,7 +39,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 	}
 
 	type args struct {
-		counter subs.Counter
+		counter ftcpay.Counter
 		p       *test.Persona
 	}
 	tests := []struct {
@@ -50,11 +51,14 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "New order",
 			args: args{
-				counter: subs.Counter{
+				counter: ftcpay.Counter{
 					BaseAccount: newPersona.BaseAccount(),
-					FtcPrice:    price.MockPriceStdYear,
-					Method:      enum.PayMethodAli,
-					WxAppID:     null.String{},
+					CheckoutItem: price.CheckoutItem{
+						Price: price.MockPriceStdYear.Price,
+						Offer: price.Discount{},
+					},
+					PayMethod: enum.PayMethodAli,
+					WxAppID:   null.String{},
 				},
 			},
 			want: subs.Order{
@@ -81,11 +85,14 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "Renewal order",
 			args: args{
-				counter: subs.Counter{
+				counter: ftcpay.Counter{
 					BaseAccount: newPersona.BaseAccount(),
-					FtcPrice:    price.MockPriceStdYear,
-					Method:      enum.PayMethodWx,
-					WxAppID:     null.StringFrom(wxID),
+					CheckoutItem: price.CheckoutItem{
+						Price: price.MockPriceStdYear.Price,
+						Offer: price.Discount{},
+					},
+					PayMethod: enum.PayMethodWx,
+					WxAppID:   null.StringFrom(wxID),
 				},
 				p: renewalPerson,
 			},
@@ -113,11 +120,14 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "Upgrade order",
 			args: args{
-				counter: subs.Counter{
+				counter: ftcpay.Counter{
 					BaseAccount: newPersona.BaseAccount(),
-					FtcPrice:    price.MockPricePrm,
-					Method:      enum.PayMethodWx,
-					WxAppID:     null.StringFrom(wxID),
+					CheckoutItem: price.CheckoutItem{
+						Price: price.MockPricePrm.Price,
+						Offer: price.Discount{},
+					},
+					PayMethod: enum.PayMethodWx,
+					WxAppID:   null.StringFrom(wxID),
 				},
 				p: upgradePerson,
 			},
@@ -145,11 +155,14 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "Add-on order",
 			args: args{
-				counter: subs.Counter{
+				counter: ftcpay.Counter{
 					BaseAccount: newPersona.BaseAccount(),
-					FtcPrice:    price.MockPriceStdYear,
-					Method:      enum.PayMethodWx,
-					WxAppID:     null.StringFrom(wxID),
+					CheckoutItem: price.CheckoutItem{
+						Price: price.MockPriceStdYear.Price,
+						Offer: price.Discount{},
+					},
+					PayMethod: enum.PayMethodWx,
+					WxAppID:   null.StringFrom(wxID),
 				},
 				p: addOnPerson,
 			},
@@ -215,7 +228,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 
 func TestEnv_LogOrderMeta(t *testing.T) {
 	type fields struct {
-		dbs    db.ReadWriteSplit
+		dbs    db.ReadWriteMyDBs
 		logger *zap.Logger
 	}
 	type args struct {
@@ -234,7 +247,7 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 			},
 			args: args{
 				c: footprint.OrderClient{
-					OrderID: pkg.MustOrderID(),
+					OrderID: ids.MustOrderID(),
 					Client:  footprint.MockClient(""),
 				},
 			},
@@ -366,7 +379,7 @@ func TestEnv_ListOrders(t *testing.T) {
 		logger *zap.Logger
 	}
 	type args struct {
-		ids pkg.UserIDs
+		ids ids.UserIDs
 		p   gorest.Pagination
 	}
 	tests := []struct {
@@ -382,7 +395,7 @@ func TestEnv_ListOrders(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				ids: pkg.UserIDs{
+				ids: ids.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(ftcID),
 					UnionID:    null.String{},
