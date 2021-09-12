@@ -1,6 +1,7 @@
 package controller
 
 import (
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -16,16 +17,29 @@ type PaywallRouter struct {
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(dbs db.ReadWriteSplit, c *cache.Cache, logger *zap.Logger) PaywallRouter {
+func NewPaywallRouter(dbs db.ReadWriteMyDBs, c *cache.Cache, logger *zap.Logger) PaywallRouter {
 	return PaywallRouter{
 		repo:   products.NewEnv(dbs, c),
 		logger: logger,
 	}
 }
 
+func getParamLiveMode(req *http.Request) bool {
+	liveMode, err := gorest.GetQueryParam(req, "live").ToBool()
+	// For backward compatibility. Query parameter
+	// `live` does not exist prior to v2.6.x
+	if err != nil {
+		return true
+	}
+
+	return liveMode
+}
+
 // LoadPaywall loads paywall data from db or cache.
 func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request) {
-	pw, err := router.repo.LoadPaywall()
+	liveMode := getParamLiveMode(req)
+
+	pw, err := router.repo.LoadPaywall(liveMode)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -37,7 +51,7 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) {
 	router.repo.ClearCache()
 
-	pw, err := router.repo.LoadPaywall()
+	pw, err := router.repo.LoadPaywall(true)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -47,7 +61,8 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 }
 
 func (router PaywallRouter) LoadPricing(w http.ResponseWriter, req *http.Request) {
-	p, err := router.repo.ActivePricesFromCacheOrDB()
+	live := getParamLiveMode(req)
+	p, err := router.repo.ActivePricesFromCacheOrDB(live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
