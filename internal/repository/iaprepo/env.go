@@ -17,7 +17,7 @@ type Env struct {
 	logger *zap.Logger
 }
 
-func NewEnv(dbs db.ReadWriteSplit, rdb *redis.Client, logger *zap.Logger) Env {
+func NewEnv(dbs db.ReadWriteMyDBs, rdb *redis.Client, logger *zap.Logger) Env {
 	return Env{
 		Env:    readers.New(dbs, logger),
 		rdb:    rdb,
