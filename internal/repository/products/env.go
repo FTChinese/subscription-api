@@ -21,7 +21,3 @@ func NewEnv(dbs db.ReadWriteMyDBs, cache *cache.Cache) Env {
 func getPaywallCacheKey(live bool) string {
 	return "paywall_" + ids.GetBoolKey(live)
 }
-
-func getActivePricesCacheKey(live bool) string {
-	return "active_prices_" + ids.GetBoolKey(live)
-}

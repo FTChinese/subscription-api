@@ -136,13 +136,13 @@ func TestEnv_listActivePrices(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := env.listActivePrices(tt.args.live)
+			got, err := env.ListActivePrices(tt.args.live)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("listActivePrices() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListActivePrices() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("listActivePrices() got = %v, want %v", got, tt.want)
+			//	t.Errorf("ListActivePrices() got = %v, want %v", got, tt.want)
 			//}
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
