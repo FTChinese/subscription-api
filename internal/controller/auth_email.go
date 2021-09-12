@@ -4,8 +4,8 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/lib/validator"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
@@ -58,7 +58,7 @@ func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	var params pkg.EmailLoginParams
+	var params input.EmailLoginParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -133,7 +133,7 @@ func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	var params pkg.EmailSignUpParams
+	var params input.EmailSignUpParams
 
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		sugar.Error(err)
