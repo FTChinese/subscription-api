@@ -27,18 +27,42 @@ var MockPriceStdYear = FtcPrice{
 	},
 	Offers: []Discount{
 		{
-			DiscID:   null.StringFrom("dsc_F7gEwjaF3OsR"),
-			PriceOff: null.FloatFrom(130),
-			Percent:  null.Int{},
-			DateTimePeriod: dt.DateTimePeriod{
-				StartUTC: chrono.TimeFrom(time.Date(2021, 2, 1, 4, 0, 0, 0, time.UTC)),
-				EndUTC:   chrono.TimeFrom(time.Date(2021, 2, 7, 16, 0, 0, 0, time.UTC)),
+			ID: "dsc_F7gEwjaF3OsR",
+			DiscountParams: DiscountParams{
+				PriceOff: null.FloatFrom(130),
+				Percent:  null.Int{},
+				DateTimePeriod: dt.DateTimePeriod{
+					StartUTC: chrono.TimeFrom(time.Date(2021, 2, 1, 4, 0, 0, 0, time.UTC)),
+					EndUTC:   chrono.TimeFrom(time.Date(2021, 2, 7, 16, 0, 0, 0, time.UTC)),
+				},
+				Description: null.String{},
 			},
-			Description: null.String{},
 		},
-		FtcOffers[StdYearEdition][0],
-		FtcOffers[StdYearEdition][1],
-		FtcOffers[StdYearEdition][2],
+		{
+			ID: "retention-offer-standard-year",
+			DiscountParams: DiscountParams{
+				PriceOff:       null.FloatFrom(80),
+				Percent:        null.IntFrom(75),
+				DateTimePeriod: dt.DateTimePeriod{},
+				Description:    null.StringFrom("现在续订享75折优惠"),
+				Kind:           OfferKindRetention,
+			},
+			Status:     "DiscountStatusActive",
+			CreatedUTC: chrono.Time{},
+		},
+		// Winback that is in effect forever.
+		{
+			ID: "win-back-offer-standard-year",
+			DiscountParams: DiscountParams{
+				PriceOff:       null.FloatFrom(40),
+				Percent:        null.IntFrom(85),
+				DateTimePeriod: dt.DateTimePeriod{},
+				Description:    null.StringFrom("现在购买享85折优惠"),
+				Kind:           OfferKindWinBack,
+			},
+			Status:     DiscountStatusActive,
+			CreatedUTC: chrono.Time{},
+		},
 	},
 }
 
@@ -56,6 +80,23 @@ var MockPriceStdMonth = FtcPrice{
 		ProductID:  "prod_zjWdiTUpDN8l",
 		Source:     SourceFTC,
 		UnitAmount: 28,
+	},
+	Offers: []Discount{
+		{
+			ID: "intro-offer-std-month",
+			DiscountParams: DiscountParams{
+				PriceOff: null.FloatFrom(34),
+				Percent:  null.Int{},
+				DateTimePeriod: dt.DateTimePeriod{
+					StartUTC: chrono.TimeNow(),
+					EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 7)),
+				},
+				Description: null.StringFrom("新会员订阅仅需1元"),
+				Kind:        OfferKindIntroductory,
+			},
+			Status:     DiscountStatusActive,
+			CreatedUTC: chrono.TimeNow(),
+		},
 	},
 }
 
@@ -76,17 +117,41 @@ var MockPricePrm = FtcPrice{
 	},
 	Offers: []Discount{
 		{
-			DiscID:   null.StringFrom("dsc_7VQy0Zvifacq"),
-			PriceOff: null.FloatFrom(300),
-			Percent:  null.Int{},
-			DateTimePeriod: dt.DateTimePeriod{
-				StartUTC: chrono.TimeFrom(time.Date(2021, 2, 1, 4, 0, 0, 0, time.UTC)),
-				EndUTC:   chrono.TimeFrom(time.Date(2021, 2, 7, 16, 0, 0, 0, time.UTC)),
+			ID: "dsc_7VQy0Zvifacq",
+			DiscountParams: DiscountParams{
+				PriceOff: null.FloatFrom(300),
+				Percent:  null.Int{},
+				DateTimePeriod: dt.DateTimePeriod{
+					StartUTC: chrono.TimeFrom(time.Date(2021, 2, 1, 4, 0, 0, 0, time.UTC)),
+					EndUTC:   chrono.TimeFrom(time.Date(2021, 2, 7, 16, 0, 0, 0, time.UTC)),
+				},
+				Description: null.StringFrom("限时促销"),
+				Kind:        OfferKindPromotion,
 			},
-			Description: null.StringFrom("限时促销"),
-			Kind:        OfferKindPromotion,
 		},
-		FtcOffers[PremiumEdition][0],
-		FtcOffers[PremiumEdition][1],
+		{
+			ID: "retention-offer-premium-year",
+			DiscountParams: DiscountParams{
+				PriceOff:       null.FloatFrom(500),
+				Percent:        null.IntFrom(75),
+				DateTimePeriod: dt.DateTimePeriod{},
+				Description:    null.StringFrom("现在续订享75折优惠"),
+				Kind:           OfferKindRetention,
+			},
+			Status:     DiscountStatusActive,
+			CreatedUTC: chrono.Time{},
+		},
+		{
+			ID: "win-back-offer-premium-year",
+			DiscountParams: DiscountParams{
+				PriceOff:       null.FloatFrom(300),
+				Percent:        null.IntFrom(85),
+				DateTimePeriod: dt.DateTimePeriod{},
+				Description:    null.StringFrom("现在购买享85折优惠"),
+				Kind:           OfferKindWinBack,
+			},
+			Status:     DiscountStatusActive,
+			CreatedUTC: chrono.Time{},
+		},
 	},
 }
