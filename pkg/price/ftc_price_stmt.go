@@ -57,6 +57,7 @@ INSERT INTO subs_product.plan
 SET id = :price_id,
 	cycle = :cycle,
 	tier = :tier,
+	currency = :currency,
 	is_active = :is_active,
 	description = :description,
 	live_mode = :live_mode,
