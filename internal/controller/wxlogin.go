@@ -25,7 +25,7 @@ type WxAuthRouter struct {
 }
 
 // NewWxAuth creates a new WxLoginRouter instance.
-func NewWxAuth(dbs db.ReadWriteSplit, logger *zap.Logger) WxAuthRouter {
+func NewWxAuth(dbs db.ReadWriteMyDBs, logger *zap.Logger) WxAuthRouter {
 	return WxAuthRouter{
 		apps:   wxlogin.MustInitApps(),
 		wxRepo: wxoauth.NewEnv(dbs),
