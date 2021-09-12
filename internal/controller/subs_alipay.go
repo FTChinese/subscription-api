@@ -4,10 +4,11 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/go-rest/view"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/guregu/null"
 	"net/http"
 )
 
@@ -31,13 +32,6 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		defer router.Logger.Sync()
 		sugar := router.Logger.Sugar()
 
-		err := req.ParseForm()
-		if err != nil {
-			sugar.Error(err)
-			_ = view.Render(w, view.NewBadRequest(err.Error()))
-			return
-		}
-
 		clientApp := footprint.NewClient(req)
 		readerIDs := getReaderIDs(req.Header)
 
@@ -49,7 +43,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		var input subs.AliPayInput
+		var input ftcpay.AliPayReq
 		if err := gorest.ParseJSON(req.Body, &input); err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
@@ -63,16 +57,29 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		// Find pricing plan.
-		price, err := router.prodRepo.ActivePriceOfEdition(input.Edition)
+		paywall, err := router.prodRepo.LoadPaywall(!acnt.IsTest())
+		if err != nil {
+			sugar.Error(err)
+			_ = render.New(w).DBError(err)
+			return
+		}
+
+		item, err := paywall.FindCheckoutItem(input.Price.ID, input.Offer.ID)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
 
-		counter := subs.NewCounter(acnt, price).
-			WithAlipay()
+		counter := ftcpay.Counter{
+			BaseAccount:  acnt,
+			CheckoutItem: item,
+			PayMethod:    enum.PayMethodAli,
+			WxAppID:      null.String{},
+		}
+
+		//counter := subs.NewCounter(acnt, price).
+		//	WithAlipay()
 
 		pi, err := router.SubsRepo.CreateOrder(counter)
 		if err != nil {
