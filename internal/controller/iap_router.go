@@ -27,7 +27,7 @@ type IAPRouter struct {
 	logger    *zap.Logger
 }
 
-func NewIAPRouter(dbs db.ReadWriteSplit, rdb *redis.Client, logger *zap.Logger, p postoffice.PostOffice, cfg config.BuildConfig) IAPRouter {
+func NewIAPRouter(dbs db.ReadWriteMyDBs, rdb *redis.Client, logger *zap.Logger, p postoffice.PostOffice, cfg config.BuildConfig) IAPRouter {
 
 	return IAPRouter{
 		iapRepo:   iaprepo.NewEnv(dbs, rdb, logger),
