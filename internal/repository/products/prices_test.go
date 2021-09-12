@@ -98,9 +98,13 @@ func TestEnv_ActivatePrice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := env.ActivatePrice(tt.args.id); (err != nil) != tt.wantErr {
+			got, err := env.ActivatePrice(tt.args.id)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("ActivatePrice() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
