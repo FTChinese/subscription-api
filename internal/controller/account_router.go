@@ -12,7 +12,7 @@ type AccountRouter struct {
 	UserShared
 }
 
-func NewAccountRouter(myDBs db.ReadWriteSplit, postman postoffice.PostOffice, l *zap.Logger) AccountRouter {
+func NewAccountRouter(myDBs db.ReadWriteMyDBs, postman postoffice.PostOffice, l *zap.Logger) AccountRouter {
 
 	return AccountRouter{
 		UserShared: NewUserShared(myDBs, postman, l),
