@@ -27,7 +27,7 @@ type stripePriceCache struct {
 	len     int
 	prices  []Price        // Use an array to store the prices.
 	idIndex map[string]int // price id to its position in the array.
-	mux     sync.Mutex     // The data is global. Lock it for currency.
+	mux     sync.Mutex     // The data is global. Lock it for concurrency.
 }
 
 func newStripePriceStore() *stripePriceCache {
