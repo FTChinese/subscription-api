@@ -1,11 +1,8 @@
 package ftcpay
 
 import (
-	"fmt"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/guregu/null"
 	"strings"
@@ -25,24 +22,6 @@ func (s *ShoppingCart) Validate() *render.ValidationError {
 			Field:   "price.id",
 			Code:    render.CodeMissingField,
 		}
-	}
-
-	return nil
-}
-
-func (s *ShoppingCart) Verify(w pw.Paywall) error {
-	ftcPrice, err := w.FindPrice(s.Price)
-	if err != nil {
-		return err
-	}
-
-	if s.Price.LiveMode != ftcPrice.LiveMode {
-		return fmt.Errorf("price from %s environment cannot be used in %s environment", ids.GetBoolKey(s.Price.LiveMode), ids.GetBoolKey(ftcPrice.LiveMode))
-	}
-
-	err = ftcPrice.VerifyOffer(s.Offer)
-	if err != nil {
-		return err
 	}
 
 	return nil
