@@ -4,7 +4,7 @@ import (
 	"errors"
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/letter"
@@ -30,7 +30,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 
 	unionID := req.Header.Get(unionIDKey)
 
-	var in pkg.EmailSignUpParams
+	var in input.EmailSignUpParams
 	// 400 Bad Request.
 	if err := gorest.ParseJSON(req.Body, &in); err != nil {
 		sugar.Error(err)
@@ -119,7 +119,7 @@ func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request)
 	// Get union id from request header.
 	unionID := req.Header.Get(unionIDKey)
 
-	var input pkg.LinkWxParams
+	var input input.LinkWxParams
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -227,7 +227,7 @@ func (router AccountRouter) UnlinkWx(w http.ResponseWriter, req *http.Request) {
 	// Get union id from request header.
 	unionID := req.Header.Get(unionIDKey)
 
-	var params pkg.UnlinkWxParams
+	var params input.UnlinkWxParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return

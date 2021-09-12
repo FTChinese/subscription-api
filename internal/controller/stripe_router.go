@@ -23,7 +23,7 @@ type StripeRouter struct {
 }
 
 // NewStripeRouter initializes StripeRouter.
-func NewStripeRouter(dbs db.ReadWriteSplit, cfg config.BuildConfig, logger *zap.Logger) StripeRouter {
+func NewStripeRouter(dbs db.ReadWriteMyDBs, cfg config.BuildConfig, logger *zap.Logger) StripeRouter {
 	client := striperepo.NewClient(cfg.Live(), logger)
 
 	return StripeRouter{
