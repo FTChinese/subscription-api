@@ -48,6 +48,11 @@ build :
 	@echo "Build version $(version)"
 	$(compile_default_exec)
 
+.PHONY: devconfig
+devconfig :
+	rsync $(local_config_file) $(build_dir)/$(config_file_name)
+
+
 .PHONY: run
 run :
 	$(default_exec) -sandbox=true
