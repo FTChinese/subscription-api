@@ -29,14 +29,21 @@ var MockPriceStdYear = FtcPrice{
 		{
 			ID: "dsc_F7gEwjaF3OsR",
 			DiscountParams: DiscountParams{
-				PriceOff: null.FloatFrom(130),
-				Percent:  null.Int{},
+				CreatedBy:   "anonymous",
+				Description: null.String{},
+				Kind:        "",
+				Percent:     null.Int{},
 				DateTimePeriod: dt.DateTimePeriod{
 					StartUTC: chrono.TimeFrom(time.Date(2021, 2, 1, 4, 0, 0, 0, time.UTC)),
 					EndUTC:   chrono.TimeFrom(time.Date(2021, 2, 7, 16, 0, 0, 0, time.UTC)),
 				},
-				Description: null.String{},
+				PriceOff:  null.FloatFrom(130),
+				PriceID:   "plan_MynUQDQY1TSQ",
+				Recurring: false,
 			},
+			LiveMode:   false,
+			Status:     "",
+			CreatedUTC: chrono.Time{},
 		},
 		{
 			ID: "retention-offer-standard-year",
