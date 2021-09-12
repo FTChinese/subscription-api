@@ -2,7 +2,7 @@ package account
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
 	"reflect"
@@ -11,7 +11,7 @@ import (
 
 func TestNewPwResetSession(t *testing.T) {
 	type args struct {
-		params pkg.ForgotPasswordParams
+		params input.ForgotPasswordParams
 	}
 	tests := []struct {
 		name    string
@@ -22,7 +22,7 @@ func TestNewPwResetSession(t *testing.T) {
 		{
 			name: "Password reset in web",
 			args: args{
-				params: pkg.ForgotPasswordParams{
+				params: input.ForgotPasswordParams{
 					Email:     "abc@example.org",
 					UseCode:   false,
 					SourceURL: null.String{},
@@ -33,7 +33,7 @@ func TestNewPwResetSession(t *testing.T) {
 		{
 			name: "Password reset in app",
 			args: args{
-				params: pkg.ForgotPasswordParams{
+				params: input.ForgotPasswordParams{
 					Email:     "abc@example.org",
 					UseCode:   true,
 					SourceURL: null.String{},
@@ -135,7 +135,7 @@ func TestPwResetSession_DurHours(t *testing.T) {
 	}{
 		{
 			name: "Web session",
-			fields: MustNewPwResetSession(pkg.ForgotPasswordParams{
+			fields: MustNewPwResetSession(input.ForgotPasswordParams{
 				Email:     gofakeit.Email(),
 				UseCode:   false,
 				SourceURL: null.StringFrom(gofakeit.URL()),
@@ -165,7 +165,7 @@ func TestPwResetSession_DurMinutes(t *testing.T) {
 	}{
 		{
 			name: "App session",
-			fields: MustNewPwResetSession(pkg.ForgotPasswordParams{
+			fields: MustNewPwResetSession(input.ForgotPasswordParams{
 				Email:     gofakeit.Email(),
 				UseCode:   true,
 				SourceURL: null.String{},
