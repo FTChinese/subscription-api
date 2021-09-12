@@ -18,7 +18,7 @@ type UserShared struct {
 	postman   postoffice.PostOffice
 }
 
-func NewUserShared(dbs db.ReadWriteSplit, pm postoffice.PostOffice, l *zap.Logger) UserShared {
+func NewUserShared(dbs db.ReadWriteMyDBs, pm postoffice.PostOffice, l *zap.Logger) UserShared {
 	return UserShared{
 		userRepo:  accounts.New(dbs, l),
 		smsClient: ztsms.NewClient(l),
