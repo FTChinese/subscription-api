@@ -2,8 +2,8 @@ package readers
 
 import (
 	"errors"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 )
 
 func (env Env) BaseAccountByUUID(id string) (account.BaseAccount, error) {
@@ -38,7 +38,7 @@ func (env Env) BaseAccountByWxID(unionID string) (account.BaseAccount, error) {
 }
 
 // FindBaseAccount retrieve account by ftc id if exists, then fallback to union id.
-func (env Env) FindBaseAccount(ids pkg.UserIDs) (account.BaseAccount, error) {
+func (env Env) FindBaseAccount(ids ids.UserIDs) (account.BaseAccount, error) {
 	if ids.FtcID.Valid {
 		return env.BaseAccountByUUID(ids.FtcID.String)
 	}

@@ -1,7 +1,7 @@
 package txrepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/jmoiron/sqlx"
 )
@@ -29,7 +29,7 @@ func (tx AddOnTx) AddOnExistsForOrder(orderID string) (bool, error) {
 
 // AddOnInvoices retrieves all invoices of type add_on that are not consumed yet.
 // This is used to migrate addons to current membership.
-func (tx AddOnTx) AddOnInvoices(ids pkg.UserIDs) ([]invoice.Invoice, error) {
+func (tx AddOnTx) AddOnInvoices(ids ids.UserIDs) ([]invoice.Invoice, error) {
 	var inv []invoice.Invoice
 	err := tx.Select(&inv, invoice.StmtListAddOnInvoiceLock, ids.BuildFindInSet())
 	if err != nil {

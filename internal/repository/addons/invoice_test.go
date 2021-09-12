@@ -4,8 +4,8 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
@@ -37,7 +37,7 @@ func TestEnv_InvoicesCarriedOver(t *testing.T) {
 	}
 
 	type args struct {
-		userID pkg.UserIDs
+		userID ids.UserIDs
 	}
 	tests := []struct {
 		name    string
@@ -47,7 +47,7 @@ func TestEnv_InvoicesCarriedOver(t *testing.T) {
 		{
 			name: "Flag invoices as carried over",
 			args: args{
-				userID: pkg.NewFtcUserID(userID),
+				userID: ids.NewFtcUserID(userID),
 			},
 			wantErr: false,
 		},
@@ -72,11 +72,11 @@ func TestEnv_ListInvoices(t *testing.T) {
 	repo.MustSaveInvoice(invoice.NewMockInvoiceBuilder().WithFtcID(ftcID).Build())
 
 	type fields struct {
-		dbs    db.ReadWriteSplit
+		dbs    db.ReadWriteMyDBs
 		logger *zap.Logger
 	}
 	type args struct {
-		ids pkg.UserIDs
+		ids ids.UserIDs
 		p   gorest.Pagination
 	}
 	tests := []struct {
@@ -92,7 +92,7 @@ func TestEnv_ListInvoices(t *testing.T) {
 				logger: zaptest.NewLogger(t),
 			},
 			args: args{
-				ids: pkg.UserIDs{
+				ids: ids.UserIDs{
 					CompoundID: "",
 					FtcID:      null.StringFrom(ftcID),
 					UnionID:    null.StringFrom(wxID),

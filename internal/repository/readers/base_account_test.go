@@ -18,7 +18,7 @@ func TestEnv_BaseAccountByUUID(t *testing.T) {
 	repo.MustCreateFtcAccount(a)
 
 	type fields struct {
-		DBs    db.ReadWriteSplit
+		DBs    db.ReadWriteMyDBs
 		Logger *zap.Logger
 	}
 	type args struct {
@@ -69,7 +69,7 @@ func TestEnv_BaseAccountByStripeID(t *testing.T) {
 	test.NewRepo().MustCreateFtcAccount(a)
 
 	type fields struct {
-		DBs    db.ReadWriteSplit
+		DBs    db.ReadWriteMyDBs
 		Logger *zap.Logger
 	}
 	type args struct {
@@ -119,7 +119,7 @@ func TestEnv_BaseAccountByWxID(t *testing.T) {
 	test.NewRepo().MustCreateFtcAccount(a)
 
 	type fields struct {
-		DBs    db.ReadWriteSplit
+		DBs    db.ReadWriteMyDBs
 		Logger *zap.Logger
 	}
 	type args struct {

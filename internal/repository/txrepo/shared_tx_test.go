@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
@@ -165,7 +165,7 @@ func TestSharedTx_DeleteMember(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		id pkg.UserIDs
+		id ids.UserIDs
 	}
 	tests := []struct {
 		name    string
@@ -269,7 +269,7 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 			},
 			args: args{
 				inv: reader.NewMockMemberBuilder(userID).
-					Build().CarryOverInvoice().WithOrderID(pkg.MustOrderID()),
+					Build().CarryOverInvoice().WithOrderID(ids.MustOrderID()),
 			},
 		},
 		{

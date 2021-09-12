@@ -2,7 +2,7 @@ package accounts
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 )
 
@@ -11,7 +11,7 @@ import (
 // email does not exists.
 // If no error returned, the AuthResult.PasswordMatched
 // field indicates whether the password is correct.
-func (env Env) Authenticate(params pkg.EmailLoginParams) (account.AuthResult, error) {
+func (env Env) Authenticate(params input.EmailLoginParams) (account.AuthResult, error) {
 	var r account.AuthResult
 	err := env.DBs.Read.Get(&r,
 		account.StmtVerifyEmailPassword,
@@ -43,7 +43,7 @@ func (env Env) SignUpCount(params account.SignUpRateParams) (account.SignUpLimit
 	return limit, nil
 }
 
-func (env Env) VerifyPassword(params pkg.PasswordUpdateParams) (account.AuthResult, error) {
+func (env Env) VerifyPassword(params input.PasswordUpdateParams) (account.AuthResult, error) {
 	var matched bool
 	err := env.DBs.Read.Get(&matched, account.StmtVerifyPassword, params.Old, params.FtcID)
 
@@ -59,7 +59,7 @@ func (env Env) VerifyPassword(params pkg.PasswordUpdateParams) (account.AuthResu
 
 // UpdatePassword updates reader's password.
 // This is used both by resetting password if forgotten and updating password after logged in.
-func (env Env) UpdatePassword(p pkg.PasswordUpdateParams) error {
+func (env Env) UpdatePassword(p input.PasswordUpdateParams) error {
 
 	_, err := env.DBs.Write.NamedExec(account.StmtUpdatePassword,
 		p)
