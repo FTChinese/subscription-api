@@ -8,7 +8,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/apple"
@@ -62,7 +62,7 @@ const (
 	MobileLinkHasProfilePhoneTaken
 )
 
-func (r Repo) GenerateMobileLinkParams(kind MobileLinkAccountKind) (string, pkg.MobileLinkParams) {
+func (r Repo) GenerateMobileLinkParams(kind MobileLinkAccountKind) (string, input.MobileLinkParams) {
 	defer r.logger.Sync()
 	sugar := r.logger.Sugar()
 
@@ -90,8 +90,8 @@ func (r Repo) GenerateMobileLinkParams(kind MobileLinkAccountKind) (string, pkg.
 	sugar.Infof("Mobile verifier: %+v", v)
 	r.MustSaveMobileVerifier(v)
 
-	param := pkg.MobileLinkParams{
-		EmailLoginParams: pkg.EmailLoginParams{
+	param := input.MobileLinkParams{
+		EmailLoginParams: input.EmailLoginParams{
 			Email:       baseAccount.Email,
 			Password:    baseAccount.Password,
 			DeviceToken: null.StringFrom(rand.String(36)),
