@@ -1,7 +1,7 @@
 package subs
 
 import (
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
@@ -12,7 +12,7 @@ type Invoices struct {
 }
 
 // Create new membership based on purchased invoice and optional carry over invoice.
-func (i Invoices) membership(userID pkg.UserIDs, current reader.Membership) (reader.Membership, error) {
+func (i Invoices) membership(userID ids.UserIDs, current reader.Membership) (reader.Membership, error) {
 	// This will update expiration date.
 	current, err := current.WithInvoice(userID, i.Purchased)
 
