@@ -18,6 +18,8 @@ func NewCharge(price Price, offer Discount) Charge {
 	}
 }
 
+// WithTest set paying amount to a fixed number.
+// Deprecated.
 func (c Charge) WithTest() Charge {
 	c.Amount = 0.01
 	return c
