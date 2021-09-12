@@ -1,105 +1,108 @@
 package products
 
 import (
-	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
-	"github.com/patrickmn/go-cache"
 )
 
-// retrieveProductPrices lists active product prices on paywall, directly from DB.
-func (env Env) retrieveProductPrices() ([]price.FtcPrice, error) {
-	var schema = make([]pw.PriceSchema, 0)
-	var prices = make([]price.FtcPrice, 0)
-
-	err := env.dbs.Read.Select(&schema, pw.StmtActiveProductPrices)
+// CreatePrice inserts a row into plan table.
+func (env Env) CreatePrice(p price.FtcPrice) error {
+	_, err := env.dbs.Write.NamedExec(price.StmtCreatePrice, p)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	for _, v := range schema {
-		prices = append(prices, v.FtcPrice())
-	}
-
-	return prices, nil
+	return nil
 }
 
-// pricesResult contains a list of pricing plans and error occurred.
-type pricesResult struct {
-	value []price.FtcPrice
-	error error
-}
-
-// asyncRetrieveProductPrices retrieves a list of plans in a goroutine.
-// This is used to construct the paywall data.
-func (env Env) asyncRetrieveProductPrices() <-chan pricesResult {
-	ch := make(chan pricesResult)
-
-	go func() {
-		defer close(ch)
-
-		plans, err := env.retrieveProductPrices()
-
-		ch <- pricesResult{
-			value: plans,
-			error: err,
-		}
-	}()
-
-	return ch
-}
-
-// cacheActivePrices caching all currently active prices as an array.
-func (env Env) cacheActivePrices(p []price.FtcPrice) {
-	env.cache.Set(keyPricing, p, cache.DefaultExpiration)
-}
-
-// ActivePricesFromCacheOrDB tries to load all active pricing plans from cache,
-// then fallback to db if not found. If retrieved from DB,
-// the data will be cached.
-func (env Env) ActivePricesFromCacheOrDB() ([]price.FtcPrice, error) {
-	x, found := env.cache.Get(keyPricing)
-
-	if found {
-		if p, ok := x.([]price.FtcPrice); ok {
-			return p, nil
-		}
-	}
-
-	p, err := env.retrieveProductPrices()
+// ActivatePrice flags a price as active while all other
+// prices of the same edition and same live mode under the same product id
+// is turned to inactive.
+func (env Env) ActivatePrice(id string) error {
+	tx, err := env.dbs.Write.Beginx()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	env.cacheActivePrices(p)
-
-	return p, nil
-}
-
-// RetrievePrice retrieves a plan with discount by ID.
-func (env Env) RetrievePrice(id string) (price.FtcPrice, error) {
-	var schema pw.PriceSchema
-
-	err := env.dbs.Read.Get(&schema, pw.StmtProductPrice, id)
+	// Retrieve the price to activate.
+	var ftcPrice price.FtcPrice
+	err = tx.Get(&ftcPrice, price.StmtLockFtcPrice, id)
 	if err != nil {
-		return price.FtcPrice{}, nil
+		_ = tx.Rollback()
+		return err
 	}
 
-	return schema.FtcPrice(), nil
+	// Deactivate all other prices.
+	_, err = tx.NamedExec(price.StmtDeactivatePricesOfSameEdition, ftcPrice)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	// Activate the price
+	_, err = tx.NamedExec(price.StmtActivatePrice, ftcPrice)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// ActivePriceOfEdition retrieves an active plan by Edition.
-func (env Env) ActivePriceOfEdition(e price.Edition) (price.FtcPrice, error) {
-	prices, err := env.ActivePricesFromCacheOrDB()
+// RetrieveFtcPrice retrieves a single row by plan id.
+func (env Env) RetrieveFtcPrice(id string) (price.FtcPrice, error) {
+	var p price.FtcPrice
+	err := env.dbs.Read.Get(&p, price.StmtFtcPrice, id)
 	if err != nil {
 		return price.FtcPrice{}, err
 	}
 
-	for _, v := range prices {
-		if v.Edition == e {
-			return v, nil
-		}
+	return p, nil
+}
+
+// UpdateFtcPriceOffers after a new discount is created/paused/cancelled under this price.
+func (env Env) UpdateFtcPriceOffers(f price.FtcPrice) error {
+	_, err := env.dbs.Write.NamedExec(price.StmtSetPriceOffers, f)
+
+	if err != nil {
+		return err
 	}
 
-	return price.FtcPrice{}, sql.ErrNoRows
+	return nil
+}
+
+// RefreshFtcPriceOffers updated a price's discount list.
+func (env Env) RefreshFtcPriceOffers(f price.FtcPrice) (price.FtcPrice, error) {
+	offers, err := env.ListActiveDiscounts(f.ID, f.LiveMode)
+	if err != nil {
+		return price.FtcPrice{}, err
+	}
+
+	updated := f.SetOffers(offers)
+	err = env.UpdateFtcPriceOffers(updated)
+	if err != nil {
+		return price.FtcPrice{}, err
+	}
+
+	return updated, nil
+}
+
+// ListPrices retrieves all prices of a product, regardless whether they are live or not.
+// This is used by CMS to list a product's prices so that
+// user should be able to activate an inactive one.
+func (env Env) ListPrices(prodID string) ([]price.FtcPrice, error) {
+	var list = make([]price.FtcPrice, 0)
+	err := env.dbs.Read.Select(
+		&list,
+		price.StmtListPricesOfProduct,
+		prodID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
 }
