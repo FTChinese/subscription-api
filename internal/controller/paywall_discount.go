@@ -38,13 +38,13 @@ func (router PaywallRouter) CreateDiscount(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	ftcPrice, err = router.repo.RefreshFtcPriceOffers(ftcPrice)
+	_, err = router.repo.RefreshFtcPriceOffers(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_ = render.New(w).OK(ftcPrice)
+	_ = render.New(w).OK(discount)
 }
 
 func (router PaywallRouter) ListDiscounts(w http.ResponseWriter, req *http.Request) {
