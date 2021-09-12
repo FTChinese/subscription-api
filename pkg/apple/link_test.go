@@ -4,9 +4,9 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
@@ -21,7 +21,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 	ftcId := uuid.New().String()
 	origTxId := faker.GenAppleSubID()
 	expire := chrono.TimeFrom(time.Now().AddDate(1, 0, 0))
-	memberID := pkg.UserIDs{
+	memberID := ids.UserIDs{
 		CompoundID: "",
 		FtcID:      null.StringFrom(ftcId),
 		UnionID:    null.String{},
@@ -83,7 +83,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 				},
 				CurrentFtc: reader.Membership{},
 				CurrentIAP: NewMembership(MembershipParams{
-					UserID: pkg.UserIDs{
+					UserID: ids.UserIDs{
 						CompoundID: "",
 						FtcID:      null.StringFrom(uuid.New().String()),
 						UnionID:    null.String{},

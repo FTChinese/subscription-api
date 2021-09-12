@@ -1,14 +1,14 @@
 package apple
 
 import (
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 type SubsResultParams struct {
-	UserID        pkg.UserIDs
+	UserID        ids.UserIDs
 	CurrentMember reader.Membership
 	Action        reader.ArchiveAction
 }

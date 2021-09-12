@@ -3,7 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
@@ -11,7 +11,7 @@ import (
 // Used as response when client asks for subscription data.
 // Deprecated
 type Subscription struct {
-	AccountID pkg.UserIDs `json:"-"`
+	AccountID ids.UserIDs `json:"-"`
 	price.Edition
 	CancelAtPeriodEnd  bool        `json:"cancelAtPeriodEnd"`
 	Created            chrono.Time `json:"created"`

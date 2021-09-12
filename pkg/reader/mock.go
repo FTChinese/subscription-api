@@ -6,8 +6,8 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -66,7 +66,7 @@ func (b MockMemberBuilder) WithAccountKind(k enum.AccountKind) MockMemberBuilder
 	return b
 }
 
-func (b MockMemberBuilder) WithIDs(ids pkg.UserIDs) MockMemberBuilder {
+func (b MockMemberBuilder) WithIDs(ids ids.UserIDs) MockMemberBuilder {
 	b.ftcID = ids.FtcID.String
 	b.unionID = ids.UnionID.String
 	return b
@@ -123,22 +123,22 @@ func (b MockMemberBuilder) WithIapID(id string) MockMemberBuilder {
 }
 
 func (b MockMemberBuilder) Build() Membership {
-	var ids pkg.UserIDs
+	var userIDs ids.UserIDs
 	switch b.accountKind {
 	case enum.AccountKindFtc:
-		ids = pkg.UserIDs{
+		userIDs = ids.UserIDs{
 			CompoundID: b.ftcID,
 			FtcID:      null.StringFrom(b.ftcID),
 			UnionID:    null.String{},
 		}
 	case enum.AccountKindWx:
-		ids = pkg.UserIDs{
+		userIDs = ids.UserIDs{
 			CompoundID: b.unionID,
 			FtcID:      null.String{},
 			UnionID:    null.StringFrom(b.unionID),
 		}
 	case enum.AccountKindLinked:
-		ids = pkg.UserIDs{
+		userIDs = ids.UserIDs{
 			CompoundID: b.ftcID,
 			FtcID:      null.StringFrom(b.ftcID),
 			UnionID:    null.StringFrom(b.unionID),
@@ -146,7 +146,7 @@ func (b MockMemberBuilder) Build() Membership {
 	}
 
 	m := Membership{
-		UserIDs:       ids,
+		UserIDs:       userIDs,
 		Edition:       b.price.Edition,
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},

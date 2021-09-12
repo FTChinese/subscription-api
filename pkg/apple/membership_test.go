@@ -4,8 +4,8 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
@@ -32,14 +32,14 @@ func TestNewMembership(t *testing.T) {
 		{
 			name: "Build membership",
 			args: args{params: MembershipParams{
-				UserID: pkg.NewFtcUserID(userID),
+				UserID: ids.NewFtcUserID(userID),
 				Subs: NewMockSubsBuilder(userID).
 					WithOriginalTxID(txID).
 					Build(),
 				AddOn: addon.AddOn{},
 			}},
 			want: reader.Membership{
-				UserIDs:       pkg.NewFtcUserID(userID),
+				UserIDs:       ids.NewFtcUserID(userID),
 				Edition:       price.StdYearEdition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},

@@ -3,7 +3,7 @@ package stripe
 import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
@@ -17,7 +17,7 @@ func TestNewSubs(t *testing.T) {
 		return
 	}
 
-	subs, err := NewSubs(&ss, pkg.UserIDs{
+	subs, err := NewSubs(&ss, ids.UserIDs{
 		CompoundID: "",
 		FtcID:      null.StringFrom(uuid.New().String()),
 		UnionID:    null.String{},
