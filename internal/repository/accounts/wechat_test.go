@@ -3,8 +3,8 @@ package accounts
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
@@ -28,7 +28,7 @@ func TestEnv_WxSignUp(t *testing.T) {
 	}
 	type args struct {
 		unionID string
-		input   pkg.EmailSignUpParams
+		input   input.EmailSignUpParams
 	}
 	tests := []struct {
 		name    string
@@ -44,8 +44,8 @@ func TestEnv_WxSignUp(t *testing.T) {
 			},
 			args: args{
 				unionID: w.UnionID,
-				input: pkg.EmailSignUpParams{
-					EmailLoginParams: pkg.EmailLoginParams{
+				input: input.EmailSignUpParams{
+					EmailLoginParams: input.EmailLoginParams{
 						Email:       gofakeit.Email(),
 						Password:    "12345678",
 						DeviceToken: null.StringFrom(uuid.New().String()),
