@@ -5,10 +5,10 @@ import (
 )
 
 type Env struct {
-	dbs db.ReadWriteSplit
+	dbs db.ReadWriteMyDBs
 }
 
-func NewEnv(dbs db.ReadWriteSplit) Env {
+func NewEnv(dbs db.ReadWriteMyDBs) Env {
 	return Env{
 		dbs: dbs,
 	}

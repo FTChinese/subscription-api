@@ -7,11 +7,11 @@ import (
 )
 
 type Env struct {
-	dbs    db.ReadWriteSplit
+	dbs    db.ReadWriteMyDBs
 	logger *zap.Logger
 }
 
-func NewEnv(dbs db.ReadWriteSplit, logger *zap.Logger) Env {
+func NewEnv(dbs db.ReadWriteMyDBs, logger *zap.Logger) Env {
 	return Env{
 		dbs:    dbs,
 		logger: logger,
