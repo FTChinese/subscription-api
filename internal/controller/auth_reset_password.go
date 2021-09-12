@@ -3,7 +3,7 @@ package controller
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/letter"
@@ -25,7 +25,7 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	var params pkg.ForgotPasswordParams
+	var params input.ForgotPasswordParams
 
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		sugar.Error(err)
@@ -134,7 +134,7 @@ func (router AuthRouter) VerifyResetCode(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	var params pkg.AppResetPwSessionParams
+	var params input.AppResetPwSessionParams
 	if err := decoder.Decode(&params, req.Form); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -178,7 +178,7 @@ func (router AuthRouter) ResetPassword(w http.ResponseWriter, req *http.Request)
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	var params pkg.PasswordResetParams
+	var params input.PasswordResetParams
 
 	// `400 Bad Request`
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -212,7 +212,7 @@ func (router AuthRouter) ResetPassword(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Change password.
-	if err := router.userRepo.UpdatePassword(pkg.PasswordUpdateParams{
+	if err := router.userRepo.UpdatePassword(input.PasswordUpdateParams{
 		FtcID: baseAccount.FtcID,
 		New:   params.Password,
 	}); err != nil {

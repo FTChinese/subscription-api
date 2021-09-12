@@ -3,7 +3,7 @@ package controller
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"net/http"
 )
 
@@ -17,7 +17,7 @@ import (
 func (router AccountRouter) UpdatePassword(w http.ResponseWriter, req *http.Request) {
 	userID := req.Header.Get(ftcIDKey)
 
-	var input pkg.PasswordUpdateParams
+	var input input.PasswordUpdateParams
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest("")
 		return

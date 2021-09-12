@@ -3,7 +3,7 @@ package controller
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"net/http"
@@ -20,7 +20,7 @@ func (router AccountRouter) UpdateEmail(w http.ResponseWriter, req *http.Request
 
 	ftcID := req.Header.Get(ftcIDKey)
 
-	var params pkg.EmailUpdateParams
+	var params input.EmailUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -95,7 +95,7 @@ func (router AccountRouter) RequestVerification(w http.ResponseWriter, req *http
 
 	ftcID := req.Header.Get(ftcIDKey)
 
-	var params pkg.ReqEmailVrfParams
+	var params input.ReqEmailVrfParams
 
 	// Ignore empty body for backward-compatibility.
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
