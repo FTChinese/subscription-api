@@ -23,7 +23,7 @@ type FtcPay struct {
 	Logger       *zap.Logger
 }
 
-func New(dbs db.ReadWriteSplit, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
+func New(dbs db.ReadWriteMyDBs, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
 
 	aliApp := ali.MustInitApp()
 	wxApps := wechat.MustGetPayApps()
