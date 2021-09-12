@@ -23,7 +23,7 @@ type SubsRouter struct {
 	config        config.BuildConfig
 }
 
-func NewSubsRouter(dbs db.ReadWriteSplit, c *cache.Cache, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) SubsRouter {
+func NewSubsRouter(dbs db.ReadWriteMyDBs, c *cache.Cache, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) SubsRouter {
 
 	return SubsRouter{
 		FtcPay:   ftcpay.New(dbs, p, logger),
