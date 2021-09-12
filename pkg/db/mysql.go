@@ -54,14 +54,14 @@ func MustNewMySQL(c connect.Connect) *sqlx.DB {
 	return db
 }
 
-type ReadWriteSplit struct {
+type ReadWriteMyDBs struct {
 	Read   *sqlx.DB
 	Write  *sqlx.DB
 	Delete *sqlx.DB
 }
 
-func NewMyDB(prod bool) ReadWriteSplit {
-	return ReadWriteSplit{
+func MustNewMyDBs(prod bool) ReadWriteMyDBs {
+	return ReadWriteMyDBs{
 		Read:   MustNewMySQL(MustMySQLReadConn(prod)),
 		Write:  MustNewMySQL(MustMySQLWriteConn(prod)),
 		Delete: MustNewMySQL(MustMySQLDeleteConn(prod)),
