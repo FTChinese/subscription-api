@@ -91,3 +91,13 @@ UPDATE subs_product.plan
 SET is_active = TRUE
 WHERE id = :price_id
 LIMIT 1`
+
+// StmtActivatePriceLegacy put a price on a product's active list.
+// The product_id and cycle are multiple-key unique
+const StmtActivatePriceLegacy = `
+INSERT INTO subs_product.product_active_plans
+SET plan_id = :price_id,
+	product_id = :product_id,
+	cycle = :cycle
+ON DUPLICATE KEY UPDATE
+	plan_id = :price_id`
