@@ -71,6 +71,7 @@ func TestEnv_ActivatePrice(t *testing.T) {
 		WithActive().
 		Build()
 
+	test.NewRepo().CreateProduct(prodBuilder.Build())
 	test.NewRepo().CreatePrice(p1)
 	test.NewRepo().CreatePrice(p2)
 	test.NewRepo().CreatePrice(p3)
@@ -99,6 +100,7 @@ func TestEnv_ActivatePrice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := env.ActivatePrice(tt.args.id)
+			t.Logf("Activating price %s", tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ActivatePrice() error = %v, wantErr %v", err, tt.wantErr)
 				return
