@@ -32,16 +32,17 @@ func NewPrmProdBuilder() ProductBuilder {
 	return NewProductBuilder(enum.TierPremium)
 }
 
-func (b ProductBuilder) Build() pw.Product {
-	return pw.Product{
-		ProductBody: pw.ProductBody{
-			ID:          b.productID,
-			Tier:        b.tier,
-			Heading:     gofakeit.Sentence(10),
-			Description: null.StringFrom(gofakeit.Sentence(10)),
-			SmallPrint:  null.StringFrom(gofakeit.Sentence(10)),
-		},
-		Prices: nil,
+func (b ProductBuilder) Build() pw.ProductBody {
+	return pw.ProductBody{
+		ID:          b.productID,
+		Tier:        b.tier,
+		Heading:     gofakeit.Word(),
+		Description: null.StringFrom(gofakeit.Sentence(50)),
+		SmallPrint:  null.String{},
+		IsActive:    true,
+		CreatedUTC:  chrono.TimeNow(),
+		UpdatedUTC:  chrono.Time{},
+		CreatedBy:   gofakeit.Username(),
 	}
 }
 

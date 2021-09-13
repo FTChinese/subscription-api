@@ -46,6 +46,13 @@ func (env Env) ActivatePrice(id string) (price.FtcPrice, error) {
 		return price.FtcPrice{}, err
 	}
 
+	// Handle legacy activation approach.
+	_, err = tx.NamedExec(price.StmtActivatePriceLegacy, ftcPrice)
+	if err != nil {
+		_ = tx.Rollback()
+		return price.FtcPrice{}, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return price.FtcPrice{}, err
 	}

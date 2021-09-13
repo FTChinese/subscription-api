@@ -10,6 +10,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
@@ -288,6 +289,13 @@ func (r Repo) MustSaveIAPReceipt(schema apple.ReceiptSchema) {
 	err := r.SaveIAPReceipt(schema)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func (r Repo) CreateProduct(p pw.ProductBody) {
+	_, err := r.dbs.Write.NamedExec(pw.StmtCreateProduct, p)
+	if err != nil {
+		log.Fatalln(err)
 	}
 }
 
