@@ -65,7 +65,7 @@ func NewFtcPrice(p FtcPriceParams) FtcPrice {
 			Active:      false,
 			Currency:    "cny",
 			Description: p.Description,
-			LiveMode:    true,
+			LiveMode:    p.LiveMode,
 			Nickname:    p.Nickname,
 			ProductID:   p.ProductID,
 			Source:      SourceFTC,
