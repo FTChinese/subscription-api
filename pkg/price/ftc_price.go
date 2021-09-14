@@ -21,7 +21,7 @@ type FtcPriceParams struct {
 	Description null.String `json:"description"`
 	LiveMode    bool        `json:"liveMode"`
 	Nickname    null.String `json:"nickname"`
-	Price       float64     `json:"price"`
+	UnitAmount  float64     `json:"uniAmount"`
 	ProductID   string      `json:"productId"`
 }
 
@@ -37,7 +37,7 @@ func (p *FtcPriceParams) Validate() *render.ValidationError {
 		return ve
 	}
 
-	if p.Price <= 0 {
+	if p.UnitAmount <= 0 {
 		return &render.ValidationError{
 			Message: "Price could not be below 0",
 			Field:   "price",
@@ -69,7 +69,7 @@ func NewFtcPrice(p FtcPriceParams) FtcPrice {
 			Nickname:    p.Nickname,
 			ProductID:   p.ProductID,
 			Source:      SourceFTC,
-			UnitAmount:  p.Price,
+			UnitAmount:  p.UnitAmount,
 			CreatedUTC:  chrono.TimeNow(),
 			CreatedBy:   p.CreatedBy,
 		},
