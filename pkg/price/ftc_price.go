@@ -21,7 +21,7 @@ type FtcPriceParams struct {
 	Description null.String `json:"description"`
 	LiveMode    bool        `json:"liveMode"`
 	Nickname    null.String `json:"nickname"`
-	UnitAmount  float64     `json:"uniAmount"`
+	UnitAmount  float64     `json:"unitAmount"`
 	ProductID   string      `json:"productId"`
 }
 
