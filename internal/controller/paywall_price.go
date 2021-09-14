@@ -84,5 +84,6 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	// TODO: refresh discount list.
 	_ = render.New(w).OK(ftcPrice)
 }
