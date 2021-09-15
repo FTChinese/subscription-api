@@ -4,6 +4,8 @@ pipeline {
     stages {
         stage('Build') {
             steps {
+                echo 'Sync config file'
+                sh 'make config'
                 echo 'Build subscription api production'
 //                 sh 'make install-go'
                 sh 'make build'
@@ -17,8 +19,7 @@ pipeline {
                 }
             }
             steps {
-                echo 'Sync config file'
-                sh 'make config'
+
                 echo 'Copy binary'
                 sh 'make publish'
                 sh 'make restart'
