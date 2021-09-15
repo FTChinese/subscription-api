@@ -76,8 +76,6 @@ install-go:
 config :
 	# Download configuration file
 	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)
-	# Update configuration file
-	rsync -v ./$(build_dir)/$(config_file_name) ucloud:/data/node/config
 
 .PHONY: publish
 publish :
