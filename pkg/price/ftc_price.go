@@ -82,8 +82,7 @@ func NewFtcPrice(p FtcPriceParams) FtcPrice {
 // promotion offer if promotion period is valid.
 type FtcPrice struct {
 	Price
-	PromotionOffer Discount         `json:"promotionOffer"` // Deprecated
-	Offers         DiscountListJSON `json:"offers" db:"discount_list"`
+	Offers DiscountListJSON `json:"offers" db:"discount_list"`
 }
 
 func (f FtcPrice) Activate() FtcPrice {
