@@ -9,7 +9,7 @@ commit := `git log --max-count=1 --pretty=format:%aI_%h`
 
 ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
-app_name := subs-api-v2
+app_name := subs-api-v3
 go_version := go1.16
 
 sys := $(shell uname -s)
