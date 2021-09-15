@@ -72,7 +72,7 @@ install-go:
 
 .PHONY: config
 config :
-	mkdir -p ./(build_dir)
+	mkdir -p ./$(build_dir)
 	# Download configuration file
 	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)
 
