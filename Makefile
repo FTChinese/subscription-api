@@ -36,9 +36,6 @@ server_dir := /data/node/go/bin
 .PHONY: build
 build :
 	whoami
-	pwd
-	#source "/data/opt/server/jenkins/jenkins/.gvm/scripts/gvm"
-	@echo "PATH=$(PATH)"
 	which go
 	go version
 	@echo "GOROOT=$(GOROOT)"
@@ -46,6 +43,7 @@ build :
 	@echo "GOBIN=$(GOBIN)"
 	@echo "GO111MODULEON=$(GO111MODULEON)"
 	@echo "Build version $(version)"
+	ls ./build
 	$(compile_default_exec)
 
 .PHONY: devconfig
