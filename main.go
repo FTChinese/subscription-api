@@ -37,7 +37,7 @@ func init() {
 	config.MustSetupViperV2([]byte(tomlConfig))
 }
 
-// Version 1: Port 8300, https://www.ftacademy.cn/api/v1
+// Version 1: Port 8200, https://www.ftacademy.cn/api/v1
 // Version 2. Port 8202, subs-api-v2, https://www.ftacademy.cn/api/v2
 // Version 3. Port 8203, subs-api-v3, https://www.ftacademy.cn/api/v3
 func main() {
