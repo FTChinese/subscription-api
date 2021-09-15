@@ -43,7 +43,7 @@ func main() {
 		Version:    version,
 		Build:      build,
 		Commit:     commit,
-		Port:       "8202", // Version 1 uses 8200.
+		Port:       "8203", // Version 1: 8200, Version 2: 8202
 		Production: production,
 		Sandbox:    sandbox,
 	}
