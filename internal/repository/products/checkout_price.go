@@ -1,6 +1,9 @@
 package products
 
-import "github.com/FTChinese/subscription-api/pkg/price"
+import (
+	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/guregu/null"
+)
 
 type asyncPriceResult struct {
 	value price.FtcPrice
@@ -55,8 +58,8 @@ func (env Env) asyncLoadDiscount(id string) <-chan asyncDiscountResult {
 }
 
 // LoadCheckoutItem loads a price and a discount from db.
-func (env Env) LoadCheckoutItem(priceID, discountID string) (price.CheckoutItem, error) {
-	priceCh, discCh := env.asyncLoadPrice(priceID), env.asyncLoadDiscount(discountID)
+func (env Env) LoadCheckoutItem(priceID string, discountID null.String) (price.CheckoutItem, error) {
+	priceCh, discCh := env.asyncLoadPrice(priceID), env.asyncLoadDiscount(discountID.String)
 
 	priceResult, discResult := <-priceCh, <-discCh
 	if priceResult.error != nil {
