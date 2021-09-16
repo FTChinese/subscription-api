@@ -8,18 +8,20 @@ import (
 	"strings"
 )
 
-// ShoppingCart contains the item user want to buy.
+// OrderParams contains the item user want to buy.
 // Both price and offer only requires id field to be set.
-type ShoppingCart struct {
-	Price price.Price    `json:"price"`
-	Offer price.Discount `json:"offer"` // Optional
+type OrderParams struct {
+	PriceID    string         `json:"priceId"`
+	DiscountID null.String    `json:"discountId"`
+	Price      price.Price    `json:"price"`
+	Offer      price.Discount `json:"offer"` // Optional
 }
 
-func (s *ShoppingCart) Validate() *render.ValidationError {
-	if s.Price.ID == "" {
+func (s *OrderParams) Validate() *render.ValidationError {
+	if s.PriceID == "" {
 		return &render.ValidationError{
-			Message: "ID of price-to-subscribe not provided",
-			Field:   "price.id",
+			Message: "Missing priceId field",
+			Field:   "priceId",
 			Code:    render.CodeMissingField,
 		}
 	}
@@ -28,7 +30,7 @@ func (s *ShoppingCart) Validate() *render.ValidationError {
 }
 
 type WxPayReq struct {
-	ShoppingCart
+	OrderParams
 	// trade_type=JSAPI时（即JSAPI支付），此参数必传，此参数为微信用户在商户对应appid下的唯一标识。
 	OpenID   null.String      `json:"openId"`
 	Platform wechat.TradeType `json:"-"`
@@ -36,9 +38,9 @@ type WxPayReq struct {
 
 func NewWxPayReq(t wechat.TradeType) WxPayReq {
 	return WxPayReq{
-		ShoppingCart: ShoppingCart{},
-		OpenID:       null.String{},
-		Platform:     t,
+		OrderParams: OrderParams{},
+		OpenID:      null.String{},
+		Platform:    t,
 	}
 }
 
@@ -51,16 +53,16 @@ func (r *WxPayReq) Validate() *render.ValidationError {
 		}
 	}
 
-	return r.ShoppingCart.Validate()
+	return r.OrderParams.Validate()
 }
 
 type AliPayReq struct {
-	ShoppingCart
+	OrderParams
 	ReturnURL string `json:"returnUrl"` // Only required for desktop.
 }
 
 func (r AliPayReq) Validate() *render.ValidationError {
 	r.ReturnURL = strings.TrimSpace(r.ReturnURL)
 
-	return r.ShoppingCart.Validate()
+	return r.OrderParams.Validate()
 }

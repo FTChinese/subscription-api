@@ -57,7 +57,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		item, re := router.loadCheckoutItem(input.Price.ID, input.Offer.ID, !acnt.IsTest())
+		item, re := router.loadCheckoutItem(input.OrderParams, !acnt.IsTest())
 		if re != nil {
 			sugar.Error(re)
 			_ = render.New(w).JSON(re.StatusCode, re)

@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
+	ftcpay2 "github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -93,18 +94,18 @@ func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.C
 	return router.ConfirmOrder(result, order)
 }
 
-func (router SubsRouter) loadCheckoutItem(priceID, discountID string, live bool) (price.CheckoutItem, *render.ResponseError) {
+func (router SubsRouter) loadCheckoutItem(params ftcpay2.OrderParams, live bool) (price.CheckoutItem, *render.ResponseError) {
 	paywall, err := router.prodRepo.LoadPaywall(live)
 	// If price and discount could be found in paywall.
 	if err == nil {
-		item, err := paywall.FindCheckoutItem(priceID, discountID)
+		item, err := paywall.FindCheckoutItem(params.PriceID, params.DiscountID)
 		if err == nil {
 			return item, nil
 		}
 	}
 
 	// Otherwise, retrieve from db.
-	ci, err := router.prodRepo.LoadCheckoutItem(priceID, discountID)
+	ci, err := router.prodRepo.LoadCheckoutItem(params.PriceID, params.DiscountID)
 	if err != nil {
 		return price.CheckoutItem{}, render.NewDBError(err)
 	}
