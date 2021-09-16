@@ -59,13 +59,20 @@ func (w Paywall) findFtcPrice(id string) (price.FtcPrice, error) {
 	return price.FtcPrice{}, errors.New("the requested price is not found")
 }
 
-func (w Paywall) FindCheckoutItem(priceID, offerID string) (price.CheckoutItem, error) {
+func (w Paywall) FindCheckoutItem(priceID string, offerID null.String) (price.CheckoutItem, error) {
 	ftcPrice, err := w.findFtcPrice(priceID)
 	if err != nil {
 		return price.CheckoutItem{}, err
 	}
 
-	offer, _ := ftcPrice.Offers.FindValid(offerID)
+	if offerID.IsZero() {
+		return price.CheckoutItem{
+			Price: ftcPrice.Price,
+			Offer: price.Discount{},
+		}, nil
+	}
+
+	offer, _ := ftcPrice.Offers.FindValid(offerID.String)
 
 	return price.CheckoutItem{
 		Price: ftcPrice.Price,
