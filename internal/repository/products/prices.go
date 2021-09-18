@@ -114,3 +114,21 @@ func (env Env) ListPrices(prodID string) ([]price.FtcPrice, error) {
 
 	return list, nil
 }
+
+func (env Env) ArchivePrice(p price.FtcPrice) error {
+	_, err := env.dbs.Write.NamedExec(price.StmtArchivePrice, p)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (env Env) ArchivePriceDiscounts(p price.FtcPrice) error {
+	_, err := env.dbs.Write.NamedExec(price.StmtArchivePriceDiscounts, p)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

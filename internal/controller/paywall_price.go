@@ -87,3 +87,33 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 	// TODO: refresh discount list.
 	_ = render.New(w).OK(ftcPrice)
 }
+
+func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Request) {
+	priceID, err := getURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	p, err := router.repo.RetrieveFtcPrice(priceID)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	p = p.Archive()
+
+	err = router.repo.ArchivePrice(p)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	err = router.repo.ArchivePriceDiscounts(p)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(p)
+}
