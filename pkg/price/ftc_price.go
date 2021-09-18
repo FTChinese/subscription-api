@@ -63,6 +63,7 @@ func NewFtcPrice(p FtcPriceParams) FtcPrice {
 			ID:          ids.PriceID(),
 			Edition:     p.Edition,
 			Active:      false,
+			Archived:    false,
 			Currency:    "cny",
 			Description: p.Description,
 			LiveMode:    p.LiveMode,
@@ -103,6 +104,11 @@ func (f FtcPrice) VerifyOffer(o Discount) error {
 	}
 
 	return errors.New("the requested offer is not found")
+}
+
+func (f FtcPrice) Archive() FtcPrice {
+	f.Archived = true
+	return f
 }
 
 // CheckoutItem contains a price user is trying to purchase and optional discount of this price

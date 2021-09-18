@@ -4,8 +4,9 @@ const colFtcPrice = `
 SELECT p.id AS price_id,
 	p.tier,
 	p.cycle,
-	p.currency AS currency,
 	p.is_active AS is_active,
+	p.archived AS archived,
+	p.currency AS currency,
 	p.description AS description,
 	p.live_mode AS live_mode,
 	p.nickname AS nickname,
@@ -18,9 +19,9 @@ SELECT p.id AS price_id,
 FROM subs_product.plan AS p
 `
 
-// StmtFtcPrice retrieves a row from plan table
+// StmtFtcPrice retrieves a row from plan table that is not archived.
 const StmtFtcPrice = colFtcPrice + `
-WHERE p.id = ?
+WHERE p.id = ? ADN p.archived = FALSE
 LIMIT 1
 `
 
@@ -58,8 +59,9 @@ INSERT INTO subs_product.plan
 SET id = :price_id,
 	cycle = :cycle,
 	tier = :tier,
-	currency = :currency,
+	archived = :archived,
 	is_active = :is_active,
+	currency = :currency,
 	description = :description,
 	live_mode = :live_mode,
 	nickname = :nickname,
@@ -101,3 +103,15 @@ SET plan_id = :price_id,
 	cycle = :cycle
 ON DUPLICATE KEY UPDATE
 	plan_id = :price_id`
+
+const StmtArchivePrice = `
+UPDATE subs_product.plan
+SET archived = TRUE,
+	discount_list = NULL
+WHERE id = :price_id
+LIMIT 1`
+
+const StmtArchivePriceDiscounts = `
+UPDATE subs_product.discount
+SET current_status = 'cancelled'
+WHERE plan_id = :price_id`
