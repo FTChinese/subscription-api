@@ -99,7 +99,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 			SellerOrderID: pi.Order.ID,
 			TotalAmount:   pi.Order.AmountInCent(),
 			WebhookURL:    webhookURL,
-			ProductID:     pi.Order.PlanID,
+			ProductID:     pi.Pricing.ID,
 			TxKind:        tradeType,
 			UserIP:        clientApp.UserIP.String,
 			OpenID:        input.OpenID,
