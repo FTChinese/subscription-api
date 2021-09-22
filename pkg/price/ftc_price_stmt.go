@@ -21,7 +21,7 @@ FROM subs_product.plan AS p
 
 // StmtFtcPrice retrieves a row from plan table that is not archived.
 const StmtFtcPrice = colFtcPrice + `
-WHERE p.id = ? ADN p.archived = FALSE
+WHERE p.id = ?
 LIMIT 1
 `
 
@@ -42,7 +42,7 @@ ORDER BY p.cycle DESC
 `
 
 const StmtListPricesOfProduct = colFtcPrice + `
-WHERE p.product_id = ?
+WHERE p.product_id = ? ADN p.archived = FALSE
 ORDER BY p.is_active DESC, p.cycle DESC, p.created_utc DESC
 `
 
