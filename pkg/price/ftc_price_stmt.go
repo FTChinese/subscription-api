@@ -32,6 +32,7 @@ FOR UPDATE`
 
 // StmtListActivePrice retrieves all active prices
 // for products shown on paywall.
+// Use active
 const StmtListActivePrice = colFtcPrice + `
 LEFT JOIN subs_product.paywall_product AS active_prod
 	ON p.product_id = active_prod.product_id

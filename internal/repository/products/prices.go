@@ -47,10 +47,14 @@ func (env Env) ActivatePrice(id string) (price.FtcPrice, error) {
 	}
 
 	// Handle legacy activation approach.
-	_, err = tx.NamedExec(price.StmtActivatePriceLegacy, ftcPrice)
-	if err != nil {
-		_ = tx.Rollback()
-		return price.FtcPrice{}, err
+	// Due to table's unique constraint design, product_id and cycle combined must be unique,
+	// we cannot insert multiple price of the same cycle under the same product.
+	if ftcPrice.LiveMode {
+		_, err = tx.NamedExec(price.StmtActivatePriceLegacy, ftcPrice)
+		if err != nil {
+			_ = tx.Rollback()
+			return price.FtcPrice{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
