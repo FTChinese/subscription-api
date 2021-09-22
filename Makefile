@@ -88,7 +88,7 @@ restart :
 	# Rename xxx.bak to app name
 	ssh ucloud "cd $(server_dir)/ && \mv $(app_name).bak $(app_name)"
 	# Update supervistor
-	ssh ucloud supervisorctl update all
+	#ssh ucloud supervisorctl update all
 	ssh ucloud supervisorctl restart $(app_name)
 
 .PHONY: clean
