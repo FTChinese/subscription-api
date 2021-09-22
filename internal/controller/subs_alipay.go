@@ -71,9 +71,6 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			WxAppID:      null.String{},
 		}
 
-		//counter := subs.NewCounter(acnt, price).
-		//	WithAlipay()
-
 		pi, err := router.SubsRepo.CreateOrder(counter)
 		if err != nil {
 			_ = render.New(w).InternalServerError(err.Error())
