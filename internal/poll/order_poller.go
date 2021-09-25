@@ -170,7 +170,7 @@ func (p OrderPoller) Start(dryRun bool) error {
 			} else {
 				pollerLog.IncSuccess()
 			}
-
+			orderSem.Release(1)
 		}(order)
 	}
 

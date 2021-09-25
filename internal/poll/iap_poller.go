@@ -182,6 +182,7 @@ func (p IAPPoller) Start(dryRun bool) error {
 			} else {
 				pollerLog.IncSuccess()
 			}
+			iapSem.Release(1)
 		}(sub)
 	}
 
