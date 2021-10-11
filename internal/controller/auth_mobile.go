@@ -1,9 +1,8 @@
 package controller
 
 import (
-	"database/sql"
 	"errors"
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
@@ -39,19 +38,19 @@ func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http
 
 	// Retrieve account by mobile number.
 	// If not found, it indicates the mobile is used for the first time.
-	ftcAccount, err := router.userRepo.BaseAccountByMobile(params.Mobile)
+	mobileFound, err := router.userRepo.SearchByMobile(params.Mobile)
 	if err != nil {
 		sugar.Error(err)
-		if err != sql.ErrNoRows {
-			_ = render.New(w).DBError(err)
-			return
-		}
-		// Fallthrough for not found error.
+		_ = render.New(w).DBError(err)
+		return
 	}
+
+	// Fallthrough if mobileFound is zero value.
+	// It only indicates user might be logging for the 1st time.
 
 	// Create the verifier. If user id does not exist, it indicates
 	// user is using mobile to login for the first t ime.
-	vrf := ztsms.NewVerifier(params.Mobile, null.NewString(ftcAccount.FtcID, ftcAccount.FtcID != ""))
+	vrf := ztsms.NewVerifier(params.Mobile, mobileFound.ID)
 
 	err = router.userRepo.SaveSMSVerifier(vrf)
 	if err != nil {
@@ -139,13 +138,53 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 				sugar.Error(err)
 			}
 		}()
+
+		_ = render.New(w).OK(account.NewSearchResult(vrf.FtcID.String))
+		return
 	}
 
-	_ = render.New(w).OK(account.NewSearchResult(vrf.FtcID.String))
+	// If it goes here, it indicates user_db.profile table
+	// does not have a row with the mobile number provided in request body.
+	// Then we use mobile's faked email to search user in the userinfo table.
+	result, err := router.userRepo.SearchByEmail(account.MobileEmail(params.Mobile))
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).OK(account.SearchResult{})
+		return
+	}
+
+	// If user id is found this way,
+	// it indicates the mobile number exists in userinfo table
+	// but does not exist in profile table.
+	// Two cases here:
+	// 1. profile table does not have a row for this ftc id, insert directly.
+	// 2. profile table have this ftc id and mobile_phone column is empty, update it.
+	if result.ID.Valid {
+		go func() {
+			err := router.userRepo.UpsertMobile(ztsms.MobileUpdater{
+				FtcID:  result.ID.String,
+				Mobile: null.StringFrom(params.Mobile),
+			})
+			if err != nil {
+				sugar.Error(err)
+				fp := footprint.
+					New(result.ID.String, footprint.NewClient(req)).
+					FromLogin().
+					WithAuth(enum.LoginMethodMobile, params.DeviceToken)
+
+				err := router.userRepo.SaveFootprint(fp)
+				if err != nil {
+					sugar.Error(err)
+				}
+			}
+		}()
+	}
+
+	_ = render.New(w).OK(result)
 }
 
-// LinkMobile authenticates an existing email account, and link to
-// the mobile phone which is used to login for the first time.
+// LinkMobile authenticates an existing email account,
+// and link to the provided mobile phone.
 //
 // Input:
 // email: string;
@@ -173,7 +212,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Find the user id and password matching state by email.
-	// If not found, it indicates the account does not exists.
+	// If not found, it indicates the account does not exist.
 	authResult, err := router.userRepo.Authenticate(params.EmailLoginParams)
 	if err != nil {
 		sugar.Error(err)
@@ -187,7 +226,8 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = router.userRepo.SetMobile(ztsms.MobileUpdater{
+	// Credentials authenticated, set mobile to this account.
+	err = router.userRepo.UpsertMobile(ztsms.MobileUpdater{
 		FtcID:  authResult.UserID,
 		Mobile: null.StringFrom(params.Mobile),
 	})
@@ -245,7 +285,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(acnt)
 }
 
-// MobileSignUp creates a new email account.
+// MobileSignUp creates a new mobile account.
 // Input:
 // * mobile: string;
 // * deviceToken?: string; - Required for Android app.
