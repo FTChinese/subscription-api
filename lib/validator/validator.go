@@ -19,6 +19,7 @@ type Validator struct {
 	min        int
 	max        int
 	isEmail    bool
+	isMobile   bool
 	isURL      bool
 }
 
@@ -51,6 +52,11 @@ func (v *Validator) Range(min, max int) *Validator {
 
 func (v *Validator) Email() *Validator {
 	v.isEmail = true
+	return v
+}
+
+func (v *Validator) Mobile() *Validator {
+	v.isMobile = true
 	return v
 }
 
@@ -99,6 +105,14 @@ func (v *Validator) Validate(value string) *render.ValidationError {
 	if v.isEmail && !govalidator.IsEmail(value) {
 		return &render.ValidationError{
 			Message: "Invalid email address",
+			Field:   v.fieldName,
+			Code:    render.CodeInvalid,
+		}
+	}
+
+	if v.isMobile && !IsMobile(value) {
+		return &render.ValidationError{
+			Message: "Invalid mobile number",
 			Field:   v.fieldName,
 			Code:    render.CodeInvalid,
 		}
