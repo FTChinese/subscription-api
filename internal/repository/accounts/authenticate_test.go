@@ -41,8 +41,10 @@ func TestEnv_Authenticate(t *testing.T) {
 			},
 			args: args{
 				params: input.EmailLoginParams{
-					Email:       a.Email,
-					Password:    a.Password,
+					EmailCredentials: input.EmailCredentials{
+						Email:    a.Email,
+						Password: a.Password,
+					},
 					DeviceToken: null.StringFrom(uuid.New().String()),
 				},
 			},
