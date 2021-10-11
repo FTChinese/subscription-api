@@ -45,12 +45,12 @@ func TestEnv_WxSignUp(t *testing.T) {
 			args: args{
 				unionID: w.UnionID,
 				input: input.EmailSignUpParams{
-					EmailLoginParams: input.EmailLoginParams{
-						Email:       gofakeit.Email(),
-						Password:    "12345678",
-						DeviceToken: null.StringFrom(uuid.New().String()),
+					EmailCredentials: input.EmailCredentials{
+						Email:    gofakeit.Email(),
+						Password: "12345678",
 					},
-					SourceURL: "",
+					DeviceToken: null.StringFrom(uuid.New().String()),
+					SourceURL:   "",
 				},
 			},
 			wantErr: false,
