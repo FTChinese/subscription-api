@@ -16,7 +16,7 @@ import (
 	"net/http"
 )
 
-// RequestSMSVerification sends a SMS to user for login.
+// RequestSMSVerification sends an SMS to user for login.
 // Input:
 // mobile: string
 func (router AuthRouter) RequestSMSVerification(w http.ResponseWriter, req *http.Request) {
@@ -247,12 +247,8 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 
 // MobileSignUp creates a new email account.
 // Input:
-// * email: string;
-// * password: string;
 // * mobile: string;
 // * deviceToken?: string; - Required for Android app.
-// * sourceUrl?: string; - Used to compose email verification link.
-
 func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -298,18 +294,9 @@ func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) 
 		}
 	}()
 
-	// Send verification email.
-	go func() {
-		_ = router.SendEmailVerification(
-			baseAccount,
-			params.SourceURL,
-			true)
-	}()
-
-	// Compose an reader.Account instance.
 	_ = render.New(w).OK(reader.Account{
 		BaseAccount: baseAccount,
-		LoginMethod: enum.LoginMethodEmail,
+		LoginMethod: enum.LoginMethodMobile,
 		Wechat:      account.Wechat{},
 		Membership:  reader.Membership{},
 	})
