@@ -1,3 +1,4 @@
+//go:build !production
 // +build !production
 
 package faker
@@ -70,14 +71,6 @@ func GenWxAccessToken() string {
 
 func GenTxID() string {
 	return rand.String(28)
-}
-
-func RandomPayMethod() enum.PayMethod {
-	return enum.PayMethod(rand.IntRange(1, 3))
-}
-
-func RandomTier() enum.Tier {
-	return enum.Tier(rand.IntRange(1, 3))
 }
 
 func RandomGender() enum.Gender {
