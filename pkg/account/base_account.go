@@ -1,12 +1,18 @@
 package account
 
 import (
+	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"strings"
 )
+
+// mobileEmail generates a fake email from mobile.
+func mobileEmail(m string) string {
+	return m + "@ftchinese.user"
+}
 
 // BaseAccount contains the minimal information to identify a user.
 type BaseAccount struct {
@@ -22,6 +28,7 @@ type BaseAccount struct {
 	CampaignCode null.String `json:"campaignCode" db:"campaign_code"`
 }
 
+// NewEmailBaseAccount creates an email-oriented account.
 func NewEmailBaseAccount(params input.EmailSignUpParams) BaseAccount {
 	return BaseAccount{
 		FtcID:      uuid.New().String(),
@@ -36,23 +43,20 @@ func NewEmailBaseAccount(params input.EmailSignUpParams) BaseAccount {
 	}
 }
 
+// NewMobileBaseAccount creates a mobile-oriented account.
 func NewMobileBaseAccount(params input.MobileSignUpParams) BaseAccount {
+
 	return BaseAccount{
 		FtcID:      uuid.New().String(),
 		UnionID:    null.String{},
 		StripeID:   null.String{},
-		Email:      params.Email,
-		Password:   params.Password,
+		Email:      mobileEmail(params.Mobile),
+		Password:   rand.String(8),
 		Mobile:     null.StringFrom(params.Mobile),
-		UserName:   null.StringFrom(params.Email),
+		UserName:   null.StringFrom(params.Mobile),
 		AvatarURL:  null.String{},
 		IsVerified: false,
 	}
-}
-
-func (a BaseAccount) WithMobile(m string) BaseAccount {
-	a.Mobile = null.StringFrom(m)
-	return a
 }
 
 func (a BaseAccount) WithUserName(name string) BaseAccount {
