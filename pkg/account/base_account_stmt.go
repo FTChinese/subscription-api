@@ -60,10 +60,6 @@ const StmtBaseAccountByEmail = stmtFtcBaseAccount + `
 WHERE u.email = ?
 LIMIT 1`
 
-const StmtBaseAccountByMobile = stmtFtcBaseAccount + `
-WHERE p.mobile_phone = ?
-LIMIT 1`
-
 const StmtBaseAccountByWx = colsBaseAccount + `,
 w.union_id 						AS wx_union_id
 FROM user_db.wechat_userinfo AS w
