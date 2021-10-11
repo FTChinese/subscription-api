@@ -37,19 +37,12 @@ func (env Env) CreateAccount(a account.BaseAccount) error {
 	return nil
 }
 
+// BaseAccountByEmail retrieves a user's base account by email field.
+// Joins userinfo and profile table.
+// Used userinfo.email column as key.
 func (env Env) BaseAccountByEmail(email string) (account.BaseAccount, error) {
 	var a account.BaseAccount
 	err := env.DBs.Read.Get(&a, account.StmtBaseAccountByEmail, email)
-	if err != nil {
-		return account.BaseAccount{}, err
-	}
-
-	return a, nil
-}
-
-func (env Env) BaseAccountByMobile(mobile string) (account.BaseAccount, error) {
-	var a account.BaseAccount
-	err := env.DBs.Read.Get(&a, account.StmtBaseAccountByMobile, mobile)
 	if err != nil {
 		return account.BaseAccount{}, err
 	}
