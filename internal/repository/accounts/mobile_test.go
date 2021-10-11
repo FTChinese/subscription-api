@@ -180,8 +180,8 @@ func TestEnv_SetMobile(t *testing.T) {
 				Mobile: null.StringFrom(linkParams.Mobile),
 			}
 
-			if err := env.SetMobile(arg); (err != nil) != tt.wantErr {
-				t.Errorf("SetMobile() error = %v, wantErr %v", err, tt.wantErr)
+			if err := env.UpsertMobile(arg); (err != nil) != tt.wantErr {
+				t.Errorf("UpsertMobile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
