@@ -9,12 +9,6 @@ type MobileUpdater struct {
 	Mobile null.String `db:"mobile_phone"`
 }
 
-const StmtUserIDByPhone = `
-SELECT user_id
-FROM user_db.profile
-WHERE mobile_phone = ?
-LIMIT 1`
-
 const StmtLockMobileByID = `
 SELECT user_id AS ftc_id,
 	mobile_phone
@@ -28,8 +22,8 @@ mobile_phone = :mobile_phone,
 updated_utc = UTC_TIMESTAMP()
 `
 
-// StmtSetPhone set a mobile phone to user account.
-const StmtSetPhone = `
+// StmtUpsertPhone set a mobile phone to user account.
+const StmtUpsertPhone = `
 INSERT INTO user_db.profile
 SET user_id = :ftc_id,
 ` + colsSetPhone + `
