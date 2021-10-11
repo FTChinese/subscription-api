@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-// mobileEmail generates a fake email from mobile.
-func mobileEmail(m string) string {
+// MobileEmail generates a fake email from mobile.
+func MobileEmail(m string) string {
 	return m + "@ftchinese.user"
 }
 
@@ -46,14 +46,16 @@ func NewEmailBaseAccount(params input.EmailSignUpParams) BaseAccount {
 // NewMobileBaseAccount creates a mobile-oriented account.
 func NewMobileBaseAccount(params input.MobileSignUpParams) BaseAccount {
 
+	email := MobileEmail(params.Mobile)
+
 	return BaseAccount{
 		FtcID:      uuid.New().String(),
 		UnionID:    null.String{},
 		StripeID:   null.String{},
-		Email:      mobileEmail(params.Mobile),
+		Email:      email,
 		Password:   rand.String(8),
 		Mobile:     null.StringFrom(params.Mobile),
-		UserName:   null.StringFrom(params.Mobile),
+		UserName:   null.StringFrom(email),
 		AvatarURL:  null.String{},
 		IsVerified: false,
 	}
