@@ -88,7 +88,7 @@ func StartServer(s ServerStatus) {
 			// won't exist along with the code, which indicates the
 			// user is logging in using mobile for the first  time.
 			r.Put("/verification", authRouter.RequestSMSVerification)
-			// Verifies a SMS code. If the code is found, a nullable
+			// Verifies an SMS code. If the code is found, a nullable
 			// user id associated with the code is returned.
 			// If the user id is null, it indicates the user is
 			// logging in with mobile for the first time.
