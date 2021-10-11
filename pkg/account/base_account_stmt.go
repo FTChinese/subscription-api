@@ -8,6 +8,7 @@ SET user_id = :ftc_id,
 	email = :email,
 	password = MD5(:password),
 	user_name = :user_name,
+	mobile_phone_no = :mobile_phone,
 	created_utc = UTC_TIMESTAMP(),
 	updated_utc = UTC_TIMESTAMP()`
 
