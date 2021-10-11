@@ -1,17 +1,18 @@
 package controller
 
 import (
-	"database/sql"
 	"errors"
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/guregu/null"
 	"net/http"
 )
 
-// RequestSMSVerification sends a SMS to the specified mobile number.
+// RequestSMSVerification sends an SMS to the specified mobile number.
+// Used to verify and link a mobile after email account logged in.
 // Input:
 // mobile: string;
 func (router AccountRouter) RequestSMSVerification(w http.ResponseWriter, req *http.Request) {
@@ -47,10 +48,15 @@ func (router AccountRouter) RequestSMSVerification(w http.ResponseWriter, req *h
 	}
 
 	// Ensure the mobile is not used by an account yet.
-	_, err = router.userRepo.BaseAccountByMobile(params.Mobile)
-	if err == nil {
-		// Account is retrieve by mobile. It means mobile already used either by current user, or by another account.
-		// 422
+	mobileFound, err := router.userRepo.SearchByMobile(params.Mobile)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	// If the mobile is found
+	// It means mobile already used either by current user, or by another account.
+	if mobileFound.ID.Valid {
 		_ = render.New(w).Unprocessable(&render.ValidationError{
 			Message: "This mobile already exists",
 			Field:   "mobile",
@@ -58,11 +64,34 @@ func (router AccountRouter) RequestSMSVerification(w http.ResponseWriter, req *h
 		})
 		return
 	}
-	if err != sql.ErrNoRows {
+
+	// If the mobile was used to create an account in userinfo,
+	// but it does not appear in profile table,
+	// then we have to make sure that userinfo's id matches this
+	// user id; otherwise we treat it as taken by another account.
+	mobileFound, err = router.userRepo.SearchByEmail(account.MobileEmail(params.Mobile))
+	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
+	// If we found this mobile in userinfo table.
+	if mobileFound.ID.Valid {
+		// The mobile is already used by another id.
+		if mobileFound.ID.String != ftcID {
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: "This mobile already exists",
+				Field:   "mobile",
+				Code:    render.CodeAlreadyExists,
+			})
+			return
+		}
+		// No action if the two ids matches.
+		// This means we allow an existing mobile user to
+		// populate missing db column.
+	}
 
+	// Mobile is not found.
+	// User is allowed to link current account to this mobile.
 	vrf := ztsms.NewVerifier(params.Mobile, null.StringFrom(ftcID))
 
 	err = router.userRepo.SaveSMSVerifier(vrf)
@@ -124,7 +153,7 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	err = router.userRepo.SetMobile(ztsms.MobileUpdater{
+	err = router.userRepo.UpsertMobile(ztsms.MobileUpdater{
 		FtcID:  ftcID,
 		Mobile: null.StringFrom(vrf.Mobile),
 	})
