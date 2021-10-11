@@ -7,22 +7,21 @@ import (
 	"strings"
 )
 
-type EmailLoginParams struct {
-	Email       string      `json:"email" db:"email"`
-	Password    string      `json:"password" db:"password"`
-	DeviceToken null.String `json:"deviceToken"` // Required only for android.
+type EmailCredentials struct {
+	Email    string `json:"email" db:"email"`
+	Password string `json:"password" db:"password"`
 }
 
-func (l *EmailLoginParams) Validate() *render.ValidationError {
-	l.Email = strings.TrimSpace(l.Email)
-	l.Password = strings.TrimSpace(l.Password)
+func (c *EmailCredentials) Validate() *render.ValidationError {
+	c.Email = strings.TrimSpace(c.Email)
+	c.Password = strings.TrimSpace(c.Password)
 
 	ve := validator.
 		New("email").
 		Required().
 		MaxLen(64).
 		Email().
-		Validate(l.Email)
+		Validate(c.Email)
 
 	if ve != nil {
 		return ve
@@ -32,7 +31,18 @@ func (l *EmailLoginParams) Validate() *render.ValidationError {
 		New("password").
 		Required().
 		MaxLen(64).
-		Validate(l.Password)
+		Validate(c.Password)
+}
+
+type EmailLoginParams struct {
+	EmailCredentials
+	DeviceToken null.String `json:"deviceToken"` // Required only for android.
+}
+
+type EmailSignUpParams struct {
+	EmailCredentials
+	DeviceToken null.String `json:"deviceToken"` // Required only for android.
+	SourceURL   string      `json:"sourceUrl"`   // Used to compose verification link.
 }
 
 // MobileLinkParams contains the request data when a mobile phone
@@ -53,38 +63,23 @@ func (l *MobileLinkParams) Validate() *render.ValidationError {
 
 	return validator.New(l.Mobile).
 		Required().
+		Mobile().
 		Validate(l.Mobile)
 }
 
-type EmailSignUpParams struct {
-	EmailLoginParams
-	SourceURL string `json:"sourceUrl"` // Used to compose verification link.
-}
-
-func (s *EmailSignUpParams) Validate() *render.ValidationError {
-	ve := s.EmailLoginParams.Validate()
-	if ve != nil {
-		return ve
-	}
-
-	return nil
-}
-
+// MobileSignUpParams collects signup parameters with mobile.
 type MobileSignUpParams struct {
-	EmailSignUpParams
-	Mobile string `json:"mobile"`
+	Mobile      string      `json:"mobile"`
+	DeviceToken null.String `json:"deviceToken"` // Required only for android.
 }
 
 func (s *MobileSignUpParams) Validate() *render.ValidationError {
-	ve := s.EmailLoginParams.Validate()
-	if ve != nil {
-		return ve
-	}
 
 	s.Mobile = strings.TrimSpace(s.Mobile)
 
 	return validator.New("mobile").
 		Required().
+		Mobile().
 		Validate(s.Mobile)
 }
 
