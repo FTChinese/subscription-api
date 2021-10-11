@@ -68,9 +68,11 @@ func (tx AccountTx) RetrieveMobile(ftcID string) (ztsms.MobileUpdater, error) {
 	return p, nil
 }
 
+// SetMobile inserts a row into profile table, or update the mobile_phone
+// column if user id already exists
 func (tx AccountTx) SetMobile(params ztsms.MobileUpdater) error {
 	_, err := tx.NamedExec(
-		ztsms.StmtSetPhone,
+		ztsms.StmtUpsertPhone,
 		params)
 
 	if err != nil {
