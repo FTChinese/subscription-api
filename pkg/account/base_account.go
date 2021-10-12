@@ -3,18 +3,28 @@ package account
 import (
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
+	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"strings"
 )
 
+const mobileEmailSuffix = "@ftchinese.user"
+
 // MobileEmail generates a fake email from mobile.
 func MobileEmail(m string) string {
-	return m + "@ftchinese.user"
+	return m + mobileEmailSuffix
 }
 
 // BaseAccount contains the minimal information to identify a user.
+// A user's account could have those possible combintations:
+// * Email only
+// * Mobile only
+// * Wechat only
+// * Email + Mobile
+// * Email + Mobile + Wechat
+// * Email + Wechat
 type BaseAccount struct {
 	FtcID        string      `json:"id" db:"ftc_id"`           // FTC's uuid
 	UnionID      null.String `json:"unionId" db:"wx_union_id"` // Wechat's union id
@@ -46,19 +56,35 @@ func NewEmailBaseAccount(params input.EmailSignUpParams) BaseAccount {
 // NewMobileBaseAccount creates a mobile-oriented account.
 func NewMobileBaseAccount(params input.MobileSignUpParams) BaseAccount {
 
-	email := MobileEmail(params.Mobile)
-
 	return BaseAccount{
 		FtcID:      uuid.New().String(),
 		UnionID:    null.String{},
 		StripeID:   null.String{},
-		Email:      email,
+		Email:      MobileEmail(params.Mobile),
 		Password:   rand.String(8),
 		Mobile:     null.StringFrom(params.Mobile),
-		UserName:   null.StringFrom(email),
+		UserName:   null.StringFrom(params.Mobile),
 		AvatarURL:  null.String{},
 		IsVerified: false,
 	}
+}
+
+// IsMobileEmail checks if a user's email is a faked one derived from phone number
+// but Mobile field is missing.
+func (a BaseAccount) IsMobileEmail() bool {
+	return strings.HasSuffix(a.Email, mobileEmailSuffix) && a.Mobile.IsZero()
+}
+
+func (a BaseAccount) SyncMobile() BaseAccount {
+	m := strings.Split(a.Email, "@")[0]
+
+	if !validator.IsMobile(m) {
+		return a
+	}
+
+	a.Mobile = null.StringFrom(m)
+
+	return a
 }
 
 func (a BaseAccount) WithUserName(name string) BaseAccount {
