@@ -161,21 +161,22 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 	// 2. profile table have this ftc id and mobile_phone column is empty, update it.
 	if result.ID.Valid {
 		go func() {
-			err := router.userRepo.UpsertMobile(ztsms.MobileUpdater{
+			err := router.userRepo.UpsertMobile(account.MobileUpdater{
 				FtcID:  result.ID.String,
 				Mobile: null.StringFrom(params.Mobile),
 			})
 			if err != nil {
 				sugar.Error(err)
-				fp := footprint.
-					New(result.ID.String, footprint.NewClient(req)).
-					FromLogin().
-					WithAuth(enum.LoginMethodMobile, params.DeviceToken)
+			}
 
-				err := router.userRepo.SaveFootprint(fp)
-				if err != nil {
-					sugar.Error(err)
-				}
+			fp := footprint.
+				New(result.ID.String, footprint.NewClient(req)).
+				FromLogin().
+				WithAuth(enum.LoginMethodMobile, params.DeviceToken)
+
+			err = router.userRepo.SaveFootprint(fp)
+			if err != nil {
+				sugar.Error(err)
 			}
 		}()
 	}
@@ -194,6 +195,11 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 // sourceUrl?: string; // Used to compose email verification link.
 //
 // Returns reader.Account.
+// Possible cases:
+// * The link target does not exist in profile table. Insert.
+// * The link target present in profile table but mobile column missing. Update.
+// * The link target present in profile table and mobile column is taken by another mobile number. Deny.
+// * The link target present in profile and mobile column is this mobile number. No action.
 func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -213,7 +219,7 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 
 	// Find the user id and password matching state by email.
 	// If not found, it indicates the account does not exist.
-	authResult, err := router.userRepo.Authenticate(params.EmailLoginParams)
+	authResult, err := router.userRepo.Authenticate(params.EmailCredentials)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -227,22 +233,30 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Credentials authenticated, set mobile to this account.
-	err = router.userRepo.UpsertMobile(ztsms.MobileUpdater{
+	err = router.userRepo.UpsertMobile(account.MobileUpdater{
 		FtcID:  authResult.UserID,
 		Mobile: null.StringFrom(params.Mobile),
 	})
 
 	if err != nil {
-		if errors.Is(err, ztsms.ErrMobileAlreadyExists) {
-			// If already set to to other mobile
+		if errors.Is(err, account.ErrMobileTaken) {
+			// Used by another account.
 			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: "This email account is already linked to another mobile",
+				Message: err.Error(),
 				Field:   "mobile",
 				Code:    render.CodeAlreadyExists,
 			})
 			return
 		}
-		if errors.Is(err, ztsms.ErrMobileAlreadySet) {
+		if errors.Is(err, account.ErrAccountHasMobileSet) {
+			// This account has another mobile set
+			_ = render.New(w).JSON(http.StatusConflict, render.ResponseError{
+				Message: err.Error(),
+			})
+			return
+		}
+		if errors.Is(err, account.ErrMobileSet) {
+			// Retrieve account and return it.
 			acnt, err := router.userRepo.AccountByFtcID(authResult.UserID)
 			if err != nil {
 				// There shouldn't be ErrNoRow error here.
