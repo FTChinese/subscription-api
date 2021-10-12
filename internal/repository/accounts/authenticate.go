@@ -11,7 +11,7 @@ import (
 // email does not exists.
 // If no error returned, the AuthResult.PasswordMatched
 // field indicates whether the password is correct.
-func (env Env) Authenticate(params input.EmailLoginParams) (account.AuthResult, error) {
+func (env Env) Authenticate(params input.EmailCredentials) (account.AuthResult, error) {
 	var r account.AuthResult
 	err := env.DBs.Read.Get(&r,
 		account.StmtVerifyEmailPassword,
