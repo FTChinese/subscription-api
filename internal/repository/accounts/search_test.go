@@ -148,7 +148,7 @@ func TestEnv_NameExists(t *testing.T) {
 }
 
 func TestEnv_SearchByEmail(t *testing.T) {
-	a := test.NewPersona().MobileBaseAccount()
+	a := test.NewPersona().MobileOnlyAccount()
 	repo := test.NewRepo()
 	repo.MustCreateFtcAccount(a)
 
@@ -195,7 +195,7 @@ func TestEnv_SearchByEmail(t *testing.T) {
 }
 
 func TestEnv_SearchByMobile(t *testing.T) {
-	a := test.NewPersona().MobileBaseAccount()
+	a := test.NewPersona().MobileOnlyAccount()
 	test.NewRepo().MustCreateFtcAccount(a)
 
 	env := New(db.MockMySQL(), zaptest.NewLogger(t))
