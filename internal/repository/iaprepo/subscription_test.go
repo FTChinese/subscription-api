@@ -2,7 +2,6 @@ package iaprepo
 
 import (
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
@@ -18,7 +17,6 @@ import (
 )
 
 func TestEnv_SaveSubs(t *testing.T) {
-	p := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 
 	env := Env{
 		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
@@ -26,12 +24,14 @@ func TestEnv_SaveSubs(t *testing.T) {
 		logger: zaptest.NewLogger(t),
 	}
 
-	p2 := test.NewPersona().
-		SetPayMethod(enum.PayMethodApple)
+	p2 := test.NewPersona()
 
-	m := p2.Membership()
-	m.ExpireDate = chrono.DateFrom(time.Now().AddDate(0, -6, 0))
+	m := p2.MemberBuilder().
+		WithApple(faker.GenAppleSubID()).
+		WithExpiration(time.Now().AddDate(0, -6, 0)).
+		Build()
 	test.NewRepo().MustSaveMembership(m)
+	s := p2.IAPBuilder().Build()
 
 	type args struct {
 		s apple.Subscription
@@ -44,9 +44,8 @@ func TestEnv_SaveSubs(t *testing.T) {
 		{
 			name: "Save unlinked iap subscription",
 			args: args{
-				s: apple.
-					NewMockSubsBuilder(p.FtcID).
-					WithOriginalTxID(p.AppleSubID).
+				s: test.NewPersona().
+					IAPBuilder().
 					Build(),
 			},
 			wantErr: false,
@@ -54,10 +53,7 @@ func TestEnv_SaveSubs(t *testing.T) {
 		{
 			name: "Save linked iap subscription",
 			args: args{
-				s: apple.
-					NewMockSubsBuilder(p2.FtcID).
-					WithOriginalTxID(p2.AppleSubID).
-					Build(),
+				s: s,
 			},
 			wantErr: false,
 		},
@@ -173,7 +169,7 @@ func TestEnv_LoadSubs(t *testing.T) {
 
 func TestEnv_countSubs(t *testing.T) {
 	p := test.NewPersona()
-	test.NewRepo().MustSaveIAPSubs(p.IAPSubsLinked())
+	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	env := Env{
 		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
@@ -218,7 +214,7 @@ func TestEnv_countSubs(t *testing.T) {
 
 func TestEnv_listSubs(t *testing.T) {
 	p := test.NewPersona()
-	test.NewRepo().MustSaveIAPSubs(p.IAPSubsLinked())
+	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	env := Env{
 		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
@@ -266,7 +262,7 @@ func TestEnv_listSubs(t *testing.T) {
 
 func TestEnv_ListSubs(t *testing.T) {
 	p := test.NewPersona()
-	test.NewRepo().MustSaveIAPSubs(p.IAPSubsLinked())
+	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	env := Env{
 		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),

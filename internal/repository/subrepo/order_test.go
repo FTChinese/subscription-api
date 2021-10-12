@@ -52,7 +52,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "New order",
 			args: args{
 				counter: ftcpay.Counter{
-					BaseAccount: newPersona.BaseAccount(),
+					BaseAccount: newPersona.EmailBaseAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: price.MockPriceStdYear.Price,
 						Offer: price.Discount{},
@@ -86,7 +86,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "Renewal order",
 			args: args{
 				counter: ftcpay.Counter{
-					BaseAccount: newPersona.BaseAccount(),
+					BaseAccount: newPersona.EmailBaseAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: price.MockPriceStdYear.Price,
 						Offer: price.Discount{},
@@ -121,7 +121,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "Upgrade order",
 			args: args{
 				counter: ftcpay.Counter{
-					BaseAccount: newPersona.BaseAccount(),
+					BaseAccount: newPersona.EmailBaseAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: price.MockPricePrm.Price,
 						Offer: price.Discount{},
@@ -156,7 +156,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			name: "Add-on order",
 			args: args{
 				counter: ftcpay.Counter{
-					BaseAccount: newPersona.BaseAccount(),
+					BaseAccount: newPersona.EmailBaseAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: price.MockPriceStdYear.Price,
 						Offer: price.Discount{},
@@ -314,7 +314,11 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 func TestEnv_LoadFullOrder(t *testing.T) {
 
 	p := test.NewPersona()
-	order := p.NewOrder(enum.OrderKindCreate)
+	order := p.OrderBuilder().
+		WithStdYear().
+		WithCreate().
+		WithAlipay().
+		Build()
 
 	t.Logf("Order id: %s", order.ID)
 

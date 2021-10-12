@@ -1,7 +1,4 @@
-//go:build !production
-// +build !production
-
-package reader
+package test
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
@@ -10,12 +7,12 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/google/uuid"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"time"
 )
 
-type MockMemberBuilder struct {
+type MemberBuilder struct {
 	accountKind  enum.AccountKind
 	ftcID        string
 	unionID      string
@@ -30,63 +27,30 @@ type MockMemberBuilder struct {
 	b2bLicID     string
 }
 
-// NewMockMemberBuilder creates a new membership builder.
-// Deprecated
-func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
-	if ftcID == "" {
-		ftcID = uuid.New().String()
-	}
-
-	return MockMemberBuilder{
-		accountKind: enum.AccountKindFtc,
-		ftcID:       ftcID,
-		unionID:     faker.GenWxID(),
-		price:       price.MockPriceStdYear.Price,
-		payMethod:   enum.PayMethodAli,
-		expiration:  time.Now().AddDate(0, 1, 0),
-	}
-}
-
-func NewMockMemberBuilderV2(k enum.AccountKind) MockMemberBuilder {
-	return MockMemberBuilder{
-		accountKind:  k,
-		ftcID:        uuid.New().String(),
-		unionID:      faker.GenWxID(),
-		price:        price.MockPriceStdYear.Price,
-		payMethod:    enum.PayMethodAli,
-		expiration:   time.Now().AddDate(0, 1, 0),
-		subsStatus:   0,
-		autoRenewal:  false,
-		addOn:        addon.AddOn{},
-		iapTxID:      "",
-		stripeSubsID: "",
-	}
-}
-
-func (b MockMemberBuilder) WithAccountKind(k enum.AccountKind) MockMemberBuilder {
+func (b MemberBuilder) WithAccountKind(k enum.AccountKind) MemberBuilder {
 	b.accountKind = k
 	return b
 }
 
-func (b MockMemberBuilder) WithIDs(ids ids.UserIDs) MockMemberBuilder {
+func (b MemberBuilder) WithIDs(ids ids.UserIDs) MemberBuilder {
 	b.ftcID = ids.FtcID.String
 	b.unionID = ids.UnionID.String
 	return b
 }
 
-func (b MockMemberBuilder) WithFtcID(id string) MockMemberBuilder {
+func (b MemberBuilder) WithFtcID(id string) MemberBuilder {
 	b.ftcID = id
 	return b
 }
 
-func (b MockMemberBuilder) WithWxID(id string) MockMemberBuilder {
+func (b MemberBuilder) WithWxID(id string) MemberBuilder {
 	b.unionID = id
 	return b
 }
 
 // WithPayMethod sets payment method.
 // Deprecated.
-func (b MockMemberBuilder) WithPayMethod(m enum.PayMethod) MockMemberBuilder {
+func (b MemberBuilder) WithPayMethod(m enum.PayMethod) MemberBuilder {
 	b.payMethod = m
 	if m == enum.PayMethodStripe || m == enum.PayMethodApple {
 		b.autoRenewal = true
@@ -95,25 +59,25 @@ func (b MockMemberBuilder) WithPayMethod(m enum.PayMethod) MockMemberBuilder {
 	return b
 }
 
-func (b MockMemberBuilder) WithAlipay() MockMemberBuilder {
+func (b MemberBuilder) WithAlipay() MemberBuilder {
 	b.payMethod = enum.PayMethodAli
 	return b
 }
 
-func (b MockMemberBuilder) WithWx() MockMemberBuilder {
+func (b MemberBuilder) WithWx() MemberBuilder {
 	b.payMethod = enum.PayMethodWx
 	return b
 }
 
 // WithPrice sets the subscription plan for payment method alipay or wechat.
 // Call this together with WithAlipay or WithWx
-func (b MockMemberBuilder) WithPrice(p price.Price) MockMemberBuilder {
+func (b MemberBuilder) WithPrice(p price.Price) MemberBuilder {
 	b.price = p
 
 	return b
 }
 
-func (b MockMemberBuilder) WithStripe(subsID string) MockMemberBuilder {
+func (b MemberBuilder) WithStripe(subsID string) MemberBuilder {
 	if subsID == "" {
 		subsID = faker.GenStripeSubID()
 	}
@@ -126,7 +90,7 @@ func (b MockMemberBuilder) WithStripe(subsID string) MockMemberBuilder {
 	return b
 }
 
-func (b MockMemberBuilder) WithApple(txID string) MockMemberBuilder {
+func (b MemberBuilder) WithApple(txID string) MemberBuilder {
 	if txID == "" {
 		txID = faker.GenAppleSubID()
 	}
@@ -137,7 +101,7 @@ func (b MockMemberBuilder) WithApple(txID string) MockMemberBuilder {
 	return b
 }
 
-func (b MockMemberBuilder) WithB2B(licID string) MockMemberBuilder {
+func (b MemberBuilder) WithB2B(licID string) MemberBuilder {
 	if licID == "" {
 		licID = faker.GenLicenceID()
 	}
@@ -148,46 +112,46 @@ func (b MockMemberBuilder) WithB2B(licID string) MockMemberBuilder {
 	return b
 }
 
-func (b MockMemberBuilder) WithExpiration(t time.Time) MockMemberBuilder {
+func (b MemberBuilder) WithExpiration(t time.Time) MemberBuilder {
 	b.expiration = t
 	return b
 }
 
 // WithAutoRenewal switches auto renewal status.
 // Deprecated.
-func (b MockMemberBuilder) WithAutoRenewal(t bool) MockMemberBuilder {
+func (b MemberBuilder) WithAutoRenewal(t bool) MemberBuilder {
 	b.autoRenewal = t
 	return b
 }
 
-func (b MockMemberBuilder) WithAutoRenewOn() MockMemberBuilder {
+func (b MemberBuilder) WithAutoRenewOn() MemberBuilder {
 	b.autoRenewal = true
 	return b
 }
 
-func (b MockMemberBuilder) WithAutoRenewOff() MockMemberBuilder {
+func (b MemberBuilder) WithAutoRenewOff() MemberBuilder {
 	b.autoRenewal = false
 	return b
 }
 
-func (b MockMemberBuilder) WithSubsStatus(s enum.SubsStatus) MockMemberBuilder {
+func (b MemberBuilder) WithSubsStatus(s enum.SubsStatus) MemberBuilder {
 	b.subsStatus = s
 	return b
 }
 
-func (b MockMemberBuilder) WithAddOn(r addon.AddOn) MockMemberBuilder {
+func (b MemberBuilder) WithAddOn(r addon.AddOn) MemberBuilder {
 	b.addOn = r
 	return b
 }
 
 // WithIapID sets iap subscription id.
 // Deprecated.
-func (b MockMemberBuilder) WithIapID(id string) MockMemberBuilder {
+func (b MemberBuilder) WithIapID(id string) MemberBuilder {
 	b.iapTxID = id
 	return b
 }
 
-func (b MockMemberBuilder) Build() Membership {
+func (b MemberBuilder) Build() reader.Membership {
 	var userIDs ids.UserIDs
 	switch b.accountKind {
 	case enum.AccountKindFtc:
@@ -210,7 +174,7 @@ func (b MockMemberBuilder) Build() Membership {
 		}
 	}
 
-	m := Membership{
+	m := reader.Membership{
 		UserIDs:       userIDs,
 		Edition:       b.price.Edition,
 		LegacyTier:    null.Int{},

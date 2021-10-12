@@ -92,7 +92,7 @@ func TestEnv_SaveReceiptToDB(t *testing.T) {
 		{
 			name: "Save receipt to db",
 			args: args{
-				r: test.NewPersona().IAPReceiptSchema(),
+				r: test.NewPersona().IAPBuilder().ReceiptSchema(),
 			},
 		},
 	}
@@ -108,7 +108,7 @@ func TestEnv_SaveReceiptToDB(t *testing.T) {
 
 func TestEnv_LoadReceiptFromDB(t *testing.T) {
 	p := test.NewPersona()
-	rt := p.IAPReceiptSchema()
+	rt := p.IAPBuilder().ReceiptSchema()
 	test.NewRepo().MustSaveIAPReceipt(rt)
 
 	env := Env{
