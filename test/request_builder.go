@@ -4,10 +4,7 @@
 package test
 
 import (
-	"bytes"
-	"encoding/json"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
@@ -17,102 +14,120 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 )
 
 const baseUrl = "http://localhost:8202"
-
-func BuildReqBody(v interface{}) (io.Reader, error) {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-
-	return bytes.NewReader(b), nil
-}
-
-func GetRespBody(body io.Reader) []byte {
-	b, err := ioutil.ReadAll(body)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return b
-}
-
-func MustBuildReqBody(v interface{}) io.Reader {
-	r, err := BuildReqBody(v)
-	if err != nil {
-		panic(err)
-	}
-
-	return r
-}
-
-type MobileLinkAccountKind int
-
 const (
-	MobileLinkNoProfile MobileLinkAccountKind = iota
-	MobileLinkHasProfileNoPhone
-	MobileLinkHasProfilePhoneSet
-	MobileLinkHasProfilePhoneTaken
+	urlMobileVrf    = baseUrl + "/auth/mobile/verification"
+	urlMobileLink   = baseUrl + "/auth/mobile/link"
+	urlMobileSignUp = baseUrl + "/auth/mobile/signup"
+	urlAppleSubs    = baseUrl + "/apple/subs"
 )
 
-func (r Repo) GenerateMobileLinkParams(kind MobileLinkAccountKind) (string, input.MobileLinkParams) {
-	defer r.logger.Sync()
-	sugar := r.logger.Sugar()
+// ReqVerifySMSCode creates a request to verify sms code.
+// To make it workable, you have to have a row in mobile_verify table.
+func (r Repo) ReqVerifySMSCode(v ztsms.Verifier) *http.Request {
 
-	builder := account.NewMockFtcAccountBuilder(enum.AccountKindFtc)
-	if kind == MobileLinkHasProfileNoPhone {
-		builder = builder.WithMobile("")
-	}
-	baseAccount := builder.Build()
-
-	sugar.Infof("Account to link mobile: %+v", baseAccount)
-
-	r.MustCreateUserInfo(baseAccount)
-	if kind != MobileLinkNoProfile {
-		r.MustCreateProfile(baseAccount)
-	}
-
-	var phone string
-	if kind == MobileLinkHasProfilePhoneSet {
-		phone = baseAccount.Mobile.String
-	} else {
-		phone = faker.GenPhone()
-	}
-
-	v := ztsms.NewVerifier(phone, null.String{})
-	sugar.Infof("Mobile verifier: %+v", v)
 	r.MustSaveMobileVerifier(v)
 
-	param := input.MobileLinkParams{
-		EmailLoginParams: input.EmailLoginParams{
-			EmailCredentials: input.EmailCredentials{
-				Email:    baseAccount.Email,
-				Password: baseAccount.Password,
-			},
-			DeviceToken: null.StringFrom(rand.String(36)),
-		},
-		Mobile: v.Mobile,
+	params := ztsms.VerifierParams{
+		Mobile:      v.Mobile,
+		Code:        v.Code,
+		DeviceToken: null.String{},
 	}
-	sugar.Infof("%s", faker.MustMarshalIndent(param))
-
-	return baseAccount.FtcID, param
-}
-
-func (r Repo) BuildMobileLinkReq(kind MobileLinkAccountKind) *http.Request {
-	_, params := r.GenerateMobileLinkParams(kind)
 
 	return httptest.NewRequest(
 		"POST",
-		baseUrl+"/auth/mobile/link",
-		MustBuildReqBody(params))
+		urlMobileVrf,
+		faker.MustMarshalToReader(params))
+}
+
+func (r Repo) ReqVerifySMSForMobileEmail(v ztsms.Verifier) *http.Request {
+
+	r.MustCreateUserInfo(
+		NewPersona().
+			WithMobile(v.Mobile).
+			MobileOnlyAccount(),
+	)
+
+	r.MustSaveMobileVerifier(v)
+
+	params := ztsms.VerifierParams{
+		Mobile:      v.Mobile,
+		Code:        v.Code,
+		DeviceToken: null.String{},
+	}
+
+	return httptest.NewRequest(
+		"POST",
+		urlMobileVrf,
+		faker.MustMarshalToReader(params))
+}
+
+func (r Repo) ReqMobileLinkNoProfile(a account.BaseAccount) *http.Request {
+	repo := NewRepo()
+
+	repo.MustCreateUserInfo(a)
+
+	params := input.MobileLinkParams{
+		EmailCredentials: input.EmailCredentials{
+			Email:    a.Email,
+			Password: a.Password,
+		},
+		DeviceToken: null.String{},
+		Mobile:      faker.GenPhone(),
+	}
+
+	return httptest.NewRequest(
+		"POST",
+		urlMobileLink,
+		faker.MustMarshalToReader(params))
+}
+
+func (r Repo) ReqMobileLinkWithProfile(a account.BaseAccount) *http.Request {
+	repo := NewRepo()
+	repo.MustCreateFtcAccount(a)
+
+	mobile := a.Mobile.String
+	if mobile == "" {
+		mobile = faker.GenPhone()
+	}
+
+	params := input.MobileLinkParams{
+		EmailCredentials: input.EmailCredentials{
+			Email:    a.Email,
+			Password: a.Password,
+		},
+		DeviceToken: null.String{},
+		Mobile:      mobile,
+	}
+
+	return httptest.NewRequest(
+		"POST",
+		urlMobileLink,
+		faker.MustMarshalToReader(params))
+}
+
+func (r Repo) ReqMobileLinkPhoneTaken(a account.BaseAccount) *http.Request {
+	repo := NewRepo()
+	repo.MustCreateFtcAccount(a)
+
+	params := input.MobileLinkParams{
+		EmailCredentials: input.EmailCredentials{
+			Email:    a.Email,
+			Password: a.Password,
+		},
+		DeviceToken: null.String{},
+		Mobile:      faker.GenPhone(),
+	}
+
+	return httptest.NewRequest(
+		"POST",
+		urlMobileLink,
+		faker.MustMarshalToReader(params))
 }
 
 func (r Repo) GenerateIAPUnlinkParams(hasAddOn bool) apple.LinkInput {
@@ -142,8 +157,8 @@ func (r Repo) GenerateIAPUnlinkParams(hasAddOn bool) apple.LinkInput {
 	sugar.Infof("%s", faker.MustMarshalIndent(iapSub))
 
 	repo := NewRepo()
-	repo.SaveMembership(m)
-	repo.SaveIAPSubs(iapSub)
+	repo.MustSaveMembership(m)
+	repo.MustSaveIAPSubs(iapSub)
 
 	return apple.LinkInput{
 		FtcID:        ftcID,
@@ -156,7 +171,7 @@ func AppleLinkReq(params apple.LinkInput) *http.Request {
 	req := httptest.NewRequest(
 		"POST",
 		baseUrl+"/apple/link",
-		MustBuildReqBody(params))
+		faker.MustMarshalToReader(params))
 
 	return req
 }
@@ -169,7 +184,7 @@ func AppleUnlinkReq() *http.Request {
 
 	id := faker.GenAppleSubID()
 
-	repo.MustCreateFtcAccount(p.EmailBaseAccount())
+	repo.MustCreateFtcAccount(p.EmailOnlyAccount())
 	repo.MustSaveIAPSubs(
 		NewIAPBuilder(id).
 			Build())
@@ -183,7 +198,7 @@ func AppleUnlinkReq() *http.Request {
 	req := httptest.NewRequest(
 		"POST",
 		baseUrl+"/apple/unlink",
-		MustBuildReqBody(input))
+		faker.MustMarshalToReader(input))
 
 	return req
 }
@@ -195,7 +210,7 @@ func AppleListSubsReq() *http.Request {
 
 	req := httptest.NewRequest(
 		"GET",
-		baseUrl+"/apple/subs?page=1&per_page=10",
+		urlAppleSubs+"?page=1&per_page=10",
 		nil)
 
 	return req
@@ -208,7 +223,7 @@ func AppleSingleSubsReq() *http.Request {
 
 	req := httptest.NewRequest(
 		"GET",
-		baseUrl+"/apple/subs/"+p.AppleSubID,
+		urlAppleSubs+"/"+p.AppleSubID,
 		nil)
 
 	return req
