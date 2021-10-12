@@ -25,14 +25,14 @@ func TestEnv_CreateAccount(t *testing.T) {
 		{
 			name: "Create ftc-only account",
 			args: args{
-				a: test.NewPersona().EmailBaseAccount(),
+				a: test.NewPersona().EmailOnlyAccount(),
 			},
 			wantErr: false,
 		},
 		{
 			name: "Create mobile account",
 			args: args{
-				a: test.NewPersona().MobileBaseAccount(),
+				a: test.NewPersona().MobileOnlyAccount(),
 			},
 			wantErr: false,
 		},

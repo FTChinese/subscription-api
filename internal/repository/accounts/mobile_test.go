@@ -3,6 +3,7 @@ package accounts
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
@@ -129,58 +130,86 @@ func TestEnv_SMSVerifierUsed(t *testing.T) {
 
 func TestEnv_SetMobile(t *testing.T) {
 
+	noProfile := test.NewPersona()
+	mobileTaken := test.NewPersona()
+	mobileLinked := test.NewPersona()
+	ftcWithoutMobile := test.NewPersona()
+	ftcWithMobileTaken := test.NewPersona()
+
 	env := New(test.SplitDB, zaptest.NewLogger(t))
 	repo := test.NewRepo()
 
-	type requisite struct {
-		kind test.MobileLinkAccountKind
-	}
 	type args struct {
-		params ztsms.MobileUpdater
+		params account.MobileUpdater
 	}
 	tests := []struct {
-		name      string
-		requisite requisite
-		wantErr   bool
+		name        string
+		baseAccount account.BaseAccount
+		hasProfile  bool
+		args        args
+		wantErr     bool
 	}{
 		{
-			name: "Row does not exist",
-			requisite: requisite{
-				kind: test.MobileLinkNoProfile,
+			name:        "Row does not exist",
+			baseAccount: noProfile.EmailOnlyAccount(),
+			hasProfile:  false,
+			args: args{
+				params: noProfile.MobileUpdater(),
 			},
 			wantErr: false,
 		},
 		{
-			name: "Profile exists with empty mobile",
-			requisite: requisite{
-				kind: test.MobileLinkHasProfileNoPhone,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Profile exists with mobile taken",
-			requisite: requisite{
-				kind: test.MobileLinkHasProfilePhoneSet,
+			name:        "Mobile linked to another account",
+			baseAccount: mobileTaken.EmailMobileAccount(),
+			hasProfile:  true,
+			args: args{
+				params: test.NewPersona().
+					WithMobile(mobileTaken.Mobile).
+					MobileUpdater(),
 			},
 			wantErr: true,
 		},
 		{
-			name: "Profile exists with mobile set",
-			requisite: requisite{
-				kind: test.MobileLinkHasProfilePhoneTaken,
+			name:        "Mobile and ftc id linked",
+			baseAccount: mobileLinked.EmailMobileAccount(),
+			hasProfile:  true,
+			args: args{
+				params: mobileLinked.MobileUpdater(),
+			},
+			wantErr: true,
+		},
+		{
+			name:        "FTC id exists without mobile",
+			baseAccount: ftcWithoutMobile.EmailOnlyAccount(),
+			hasProfile:  true,
+			args: args{
+				params: ftcWithoutMobile.MobileUpdater(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "FTC id exists with other mobile",
+			baseAccount: ftcWithMobileTaken.
+				EmailMobileAccount(),
+			hasProfile: true,
+			args: args{
+				params: ftcWithMobileTaken.
+					WithMobile(faker.GenPhone()).
+					MobileUpdater(),
 			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ftcID, linkParams := repo.GenerateMobileLinkParams(tt.requisite.kind)
-			arg := ztsms.MobileUpdater{
-				FtcID:  ftcID,
-				Mobile: null.StringFrom(linkParams.Mobile),
+			repo.CreateUserInfo(tt.baseAccount)
+			if tt.hasProfile {
+				repo.CreateProfile(tt.baseAccount)
 			}
 
-			if err := env.UpsertMobile(arg); (err != nil) != tt.wantErr {
+			t.Logf("%v", tt.args.params)
+
+			if err := env.UpsertMobile(tt.args.params); (err != nil) != tt.wantErr {
 				t.Errorf("UpsertMobile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
