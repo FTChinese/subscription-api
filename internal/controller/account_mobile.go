@@ -153,12 +153,28 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	err = router.userRepo.UpsertMobile(ztsms.MobileUpdater{
+	err = router.userRepo.UpsertMobile(account.MobileUpdater{
 		FtcID:  ftcID,
 		Mobile: null.StringFrom(vrf.Mobile),
 	})
 	if err != nil {
-		if errors.Is(err, ztsms.ErrMobileAlreadySet) {
+		if errors.Is(err, account.ErrMobileTaken) {
+			// Used by another account.
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: err.Error(),
+				Field:   "mobile",
+				Code:    render.CodeAlreadyExists,
+			})
+			return
+		}
+		if errors.Is(err, account.ErrAccountHasMobileSet) {
+			// This account has another mobile set
+			_ = render.New(w).JSON(http.StatusConflict, render.ResponseError{
+				Message: err.Error(),
+			})
+			return
+		}
+		if errors.Is(err, account.ErrMobileSet) {
 			baseAccount, err := router.userRepo.BaseAccountByUUID(ftcID)
 			if err != nil {
 				sugar.Error(err)
@@ -166,14 +182,6 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 				return
 			}
 			_ = render.New(w).OK(baseAccount)
-			return
-		}
-		if errors.Is(err, ztsms.ErrMobileAlreadyExists) {
-			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: "This mobile is already used by another account",
-				Field:   "mobile",
-				Code:    render.CodeAlreadyExists,
-			})
 			return
 		}
 		_ = render.New(w).DBError(err)
@@ -235,7 +243,7 @@ func (router AccountRouter) DeleteMobile(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	err = router.userRepo.DeleteMobile(ztsms.MobileUpdater{
+	err = router.userRepo.DeleteMobile(account.MobileUpdater{
 		FtcID:  ftcID,
 		Mobile: null.String{},
 	})
