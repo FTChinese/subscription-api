@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -19,7 +20,7 @@ func NewAccountRouter(myDBs db.ReadWriteMyDBs, postman postoffice.PostOffice, l 
 	}
 }
 
-func (router AccountRouter) LoadAccountByEmail(w http.ResponseWriter, req *http.Request) {
+func (router AccountRouter) LoadAccountByFtcID(w http.ResponseWriter, req *http.Request) {
 	userID := req.Header.Get(ftcIDKey)
 
 	acnt, err := router.userRepo.AccountByFtcID(userID)
@@ -27,6 +28,12 @@ func (router AccountRouter) LoadAccountByEmail(w http.ResponseWriter, req *http.
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
+	}
+
+	if acnt.IsMobileEmail() {
+		acnt.BaseAccount = acnt.SyncMobile()
+		acnt.LoginMethod = enum.LoginMethodMobile
+		router.SyncMobile(acnt.BaseAccount)
 	}
 
 	_ = render.New(w).OK(acnt)
