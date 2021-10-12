@@ -1,8 +1,7 @@
 package accounts
 
 import (
-	"database/sql"
-	"errors"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 )
 
@@ -38,14 +37,18 @@ func (env Env) SMSVerifierUsed(v ztsms.Verifier) error {
 // UpsertMobile inserts a new row in profile table or set
 // mobile phone field if empty.
 // Possibilities when you are trying to set the phone number:
-// * The row with this user id does not exist at all.
-//   In such case you should insert a row directly;
-// * The row with this user id exists:
-//   * If this row does not have mobile phone set, set it;
-//   * If this row does have mobile phone set:
-//     * If existing mobile matches the required one, stop;
-//     * If existing mobile does not match the required one, it's conflict error.
-func (env Env) UpsertMobile(params ztsms.MobileUpdater) error {
+// * Both ftc id and mobile does not exist in table: insert directly.
+// * Mobile exists:
+//   - It is linked to another ftc id. This user is not allowed to use this mobile
+//   - It is already linked to this ftc id. Do nothing.
+// * Ftc ID exists:
+//   - Its mobile_phone column is empty. Update it with this mobile.
+//   - Its mobile_phone column is not empty and does not match this mobile number, indicating this ftc id already has a phone set.
+//   - Its mobile_phone column is not empty and matches this one. Already linked and do nothing.
+//
+// In general, to set the mobile to this ftc id, we must make sure
+// the mobile never appears in table.
+func (env Env) UpsertMobile(params account.MobileUpdater) error {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
 
@@ -55,35 +58,22 @@ func (env Env) UpsertMobile(params ztsms.MobileUpdater) error {
 		return err
 	}
 
-	// Retrieve a row matching the specified ftc id from profile table.
-	// If the row does not exist, get a zero value.
-	current, err := tx.RetrieveMobile(params.FtcID)
+	mobileRows, err := tx.RetrieveMobiles(params)
 	if err != nil {
-		if err != sql.ErrNoRows {
-			sugar.Error(err)
-			_ = tx.Rollback()
-			return err
-		}
-		// Fallthrough for error no rows.
-	}
-
-	// If current.Mobile exists, the row must exist.
-	// If mobile already exists.
-	if current.Mobile.Valid {
 		_ = tx.Rollback()
-		// This ftc id already has this mobile set.
-		if current.Mobile.String == params.Mobile.String {
-			return errors.New("mobile already set")
-		} else {
-			return errors.New("already taken by another mobile")
-		}
+		return err
 	}
 
-	// Now the Mobile field is zero.
-	// There are two cases here:
-	// 1. The row does not exist, insert a new row into profile;
-	// 2. The row exists but mobile is not set, update it.
-	err = tx.SetMobile(params)
+	err = account.IsMobileSettable(mobileRows, params)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	// The table does not have this mobile number.
+	// A row for this ftc id either does not exist,
+	// or existed but mobile_phone column is empty.
+	err = tx.UpsertMobile(params)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -98,8 +88,8 @@ func (env Env) UpsertMobile(params ztsms.MobileUpdater) error {
 	return nil
 }
 
-func (env Env) DeleteMobile(params ztsms.MobileUpdater) error {
-	_, err := env.DBs.Write.Exec(ztsms.StmtUnsetMobile, params.FtcID)
+func (env Env) DeleteMobile(params account.MobileUpdater) error {
+	_, err := env.DBs.Write.Exec(account.StmtUnsetMobile, params.FtcID)
 	if err != nil {
 		return err
 	}
