@@ -1,3 +1,4 @@
+//go:build !production
 // +build !production
 
 package test
@@ -35,6 +36,7 @@ func NewRepo() Repo {
 	}
 }
 
+// Deprecated
 func NewRepoV2(logger *zap.Logger) Repo {
 	return Repo{
 		db:     SplitDB.Write,
@@ -42,6 +44,7 @@ func NewRepoV2(logger *zap.Logger) Repo {
 	}
 }
 
+// CreateUserInfo inserts a row into userinfo table.
 func (r Repo) CreateUserInfo(a account.BaseAccount) error {
 	_, err := r.db.NamedExec(
 		account.StmtCreateFtc,
@@ -57,6 +60,7 @@ func (r Repo) MustCreateUserInfo(a account.BaseAccount) {
 	}
 }
 
+// CreateProfile inserts a row into profile table.
 func (r Repo) CreateProfile(a account.BaseAccount) error {
 	_, err := r.db.NamedExec(
 		account.StmtCreateProfile,
@@ -72,6 +76,7 @@ func (r Repo) MustCreateProfile(a account.BaseAccount) {
 	}
 }
 
+// CreateFtcAccount creates a complete user account.
 func (r Repo) CreateFtcAccount(a account.BaseAccount) error {
 	err := r.CreateUserInfo(a)
 
