@@ -68,7 +68,7 @@ func TestEnv_CreateSubscription(t *testing.T) {
 
 	pa, err := newCustomerAndPayment(
 		NewClient(false, zaptest.NewLogger(t)),
-		p.EmailBaseAccount(),
+		p.EmailOnlyAccount(),
 	)
 	if err != nil {
 		t.Error(err)

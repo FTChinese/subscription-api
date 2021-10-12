@@ -15,7 +15,7 @@ func TestWxPayClient_MockWebhookPayload(t *testing.T) {
 		WithKind(enum.OrderKindCreate).
 		Build()
 
-	account := p.EmailBaseAccount()
+	account := p.EmailOnlyAccount()
 
 	repo := test.NewRepo()
 	repo.MustCreateFtcAccount(account)

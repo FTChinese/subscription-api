@@ -2,7 +2,6 @@ package txrepo
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -57,22 +56,36 @@ func (tx AccountTx) AddUnionIDToFtc(a account.BaseAccount) error {
 	return nil
 }
 
-func (tx AccountTx) RetrieveMobile(ftcID string) (ztsms.MobileUpdater, error) {
-	var p ztsms.MobileUpdater
-	err := tx.Get(&p, ztsms.StmtLockMobileByID, ftcID)
+// RetrieveMobiles retrieves all rows matching a ftc id
+// or a mobile number.
+// Returns two row at maximum.
+// If two rows returned, in indicates the ftc id and mobile
+// does not belong the same account. You should not link the
+// passed-in MobileUpdater.
+// If zero row returned, you are safe to insert the MobileUpdater.
+// If one row returned, you could only update it with
+// the provided mobile if this row does not have mobile set
+// and the ftc id matches.
+func (tx AccountTx) RetrieveMobiles(u account.MobileUpdater) ([]account.MobileUpdater, error) {
+	var mobiles = make([]account.MobileUpdater, 0)
+	err := tx.Select(
+		&mobiles,
+		account.StmtLockProfileByIDOrMobile,
+		u.FtcID,
+		u.Mobile)
 
 	if err != nil {
-		return ztsms.MobileUpdater{}, err
+		return nil, err
 	}
 
-	return p, nil
+	return mobiles, nil
 }
 
-// SetMobile inserts a row into profile table, or update the mobile_phone
+// UpsertMobile inserts a row into profile table, or update the mobile_phone
 // column if user id already exists
-func (tx AccountTx) SetMobile(params ztsms.MobileUpdater) error {
+func (tx AccountTx) UpsertMobile(params account.MobileUpdater) error {
 	_, err := tx.NamedExec(
-		ztsms.StmtUpsertPhone,
+		account.StmtUpsertPhone,
 		params)
 
 	if err != nil {
