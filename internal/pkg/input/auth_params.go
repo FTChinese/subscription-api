@@ -49,12 +49,13 @@ type EmailSignUpParams struct {
 // is logging in for the first time and is trying to link to an
 // existing email account.
 type MobileLinkParams struct {
-	EmailLoginParams
-	Mobile string `json:"mobile"`
+	EmailCredentials
+	DeviceToken null.String `json:"deviceToken"` // Required only for android.
+	Mobile      string      `json:"mobile"`
 }
 
 func (l *MobileLinkParams) Validate() *render.ValidationError {
-	ve := l.EmailLoginParams.Validate()
+	ve := l.EmailCredentials.Validate()
 	if ve != nil {
 		return ve
 	}
