@@ -10,6 +10,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"time"
 
 	"github.com/FTChinese/go-rest/enum"
@@ -26,7 +27,7 @@ type Persona struct {
 	UnionID    string
 	StripeID   string
 	Email      string
-	Password   string
+	Password   string // Deprecated
 	UserName   string
 	Mobile     string
 	Nickname   string
@@ -47,7 +48,7 @@ func NewPersona() *Persona {
 		Email:      gofakeit.Email(),
 		Password:   "12345678",
 		UserName:   gofakeit.Username(),
-		Mobile:     gofakeit.Phone(),
+		Mobile:     faker.GenPhone(),
 		Nickname:   gofakeit.Name(),
 		Avatar:     faker.GenAvatar(),
 		AppleSubID: faker.GenAppleSubID(),
@@ -62,7 +63,7 @@ func (p *Persona) WithAccountKind(k enum.AccountKind) *Persona {
 	return p
 }
 
-func (p *Persona) WithFtcKind() *Persona {
+func (p *Persona) WithEmailKind() *Persona {
 	return p.WithAccountKind(enum.AccountKindFtc)
 }
 
@@ -74,7 +75,7 @@ func (p *Persona) WithLinkedKind() *Persona {
 	return p.WithAccountKind(enum.AccountKindLinked)
 }
 
-// WithMobile set mobile the specified one.
+// WithMobile set/unset mobile.
 func (p *Persona) WithMobile(m string) *Persona {
 	p.Mobile = m
 	return p
@@ -128,12 +129,60 @@ func (p *Persona) MobileSignUpParams() input.MobileSignUpParams {
 	}
 }
 
-func (p *Persona) EmailBaseAccount() account.BaseAccount {
-	return account.NewEmailBaseAccount(p.EmailSignUpParams())
+func (p *Persona) EmailOnlyAccount() account.BaseAccount {
+	return account.BaseAccount{
+		FtcID:        p.FtcID,
+		UnionID:      null.String{},
+		StripeID:     null.NewString(p.StripeID, p.StripeID != ""),
+		Email:        p.Email,
+		Password:     "12345678",
+		Mobile:       null.String{},
+		UserName:     null.StringFrom(p.UserName),
+		AvatarURL:    null.String{},
+		IsVerified:   false,
+		CampaignCode: null.String{},
+	}
 }
 
-func (p *Persona) MobileBaseAccount() account.BaseAccount {
-	return account.NewMobileBaseAccount(p.MobileSignUpParams())
+func (p *Persona) MobileOnlyAccount() account.BaseAccount {
+	return account.BaseAccount{
+		FtcID:        p.FtcID,
+		UnionID:      null.String{},
+		StripeID:     null.String{},
+		Email:        account.MobileEmail(p.Mobile),
+		Password:     "12345678",
+		Mobile:       null.StringFrom(p.Mobile),
+		UserName:     null.StringFrom(p.Mobile),
+		AvatarURL:    null.String{},
+		IsVerified:   false,
+		CampaignCode: null.String{},
+	}
+}
+
+func (p *Persona) EmailMobileAccount() account.BaseAccount {
+	return account.BaseAccount{
+		FtcID:        p.FtcID,
+		UnionID:      null.String{},
+		StripeID:     null.NewString(p.StripeID, p.StripeID != ""),
+		Email:        p.Email,
+		Password:     "12345678",
+		Mobile:       null.StringFrom(p.Mobile),
+		UserName:     null.StringFrom(p.UserName),
+		AvatarURL:    null.String{},
+		IsVerified:   false,
+		CampaignCode: null.String{},
+	}
+}
+
+func (p *Persona) MobileUpdater() account.MobileUpdater {
+	return account.MobileUpdater{
+		FtcID:  p.FtcID,
+		Mobile: null.StringFrom(p.Mobile),
+	}
+}
+
+func (p *Persona) MobileVerifier() ztsms.Verifier {
+	return ztsms.NewVerifier(p.Mobile, null.StringFrom(p.FtcID))
 }
 
 func (p *Persona) MemberBuilder() MemberBuilder {
