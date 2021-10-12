@@ -71,8 +71,8 @@ func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Not found if email does not exists
-	authResult, err := router.userRepo.Authenticate(params)
+	// Not found if email does not exist
+	authResult, err := router.userRepo.Authenticate(params.EmailCredentials)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -102,6 +102,12 @@ func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 			sugar.Error(err)
 		}
 	}()
+
+	if acnt.IsMobileEmail() {
+		acnt.BaseAccount = acnt.SyncMobile()
+		acnt.LoginMethod = enum.LoginMethodMobile
+		router.SyncMobile(acnt.BaseAccount)
+	}
 
 	_ = render.New(w).OK(acnt)
 }
