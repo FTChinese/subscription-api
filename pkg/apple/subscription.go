@@ -17,7 +17,7 @@ type SubsFilter struct {
 }
 
 // Subscription contains a user's subscription data.
-// It it built from app store's verification response.
+// It is built from app store's verification response.
 // The original transaction id is used to uniquely identify a user.
 type Subscription struct {
 	BaseSchema
