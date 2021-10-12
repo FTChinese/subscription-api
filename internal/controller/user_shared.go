@@ -64,3 +64,23 @@ func (us UserShared) SendEmailVerification(baseAccount account.BaseAccount, sour
 
 	return nil
 }
+
+func (us UserShared) SyncMobile(a account.BaseAccount) {
+	// There are cases that the mobile is not actually a mobile number.
+	if !a.Mobile.Valid {
+		return
+	}
+	go func() {
+		defer us.logger.Sync()
+		sugar := us.logger.Sugar()
+
+		err := us.userRepo.UpsertMobile(account.MobileUpdater{
+			FtcID:  a.FtcID,
+			Mobile: a.Mobile,
+		})
+
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+}
