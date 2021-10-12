@@ -4,7 +4,6 @@
 package faker
 
 import (
-	"encoding/json"
 	"fmt"
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
@@ -91,17 +90,12 @@ func GenLicenceID() string {
 }
 
 func GenPhone() string {
-	SeedGoFake()
-	return "1" + gofakeit.Phone()
+	return fmt.Sprintf("1%d%d", rand.IntRange(3, 9), rand.IntRange(100000000, 999999999))
 }
 
 func GenEmail() string {
 	SeedGoFake()
 	return gofakeit.Email()
-}
-
-func SimplePassword() string {
-	return gofakeit.Password(true, false, true, false, false, 8)
 }
 
 func GenCardSerial() string {
@@ -110,14 +104,4 @@ func GenCardSerial() string {
 	suffix := rand.IntRange(0, 9999)
 
 	return fmt.Sprintf("%d%02d%04d", anni, now.Month(), suffix)
-}
-
-func MustMarshalIndent(v interface{}) []byte {
-	b, err := json.MarshalIndent(v, "", "\t")
-
-	if err != nil {
-		panic(err)
-	}
-
-	return b
 }
