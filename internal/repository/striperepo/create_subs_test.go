@@ -3,14 +3,13 @@ package striperepo
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
-	"github.com/jmoiron/sqlx"
 	stripeSdk "github.com/stripe/stripe-go/v72"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
@@ -69,34 +68,25 @@ func TestEnv_CreateSubscription(t *testing.T) {
 
 	pa, err := newCustomerAndPayment(
 		NewClient(false, zaptest.NewLogger(t)),
-		p.BaseAccount(),
+		p.EmailBaseAccount(),
 	)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	type fields struct {
-		db     *sqlx.DB
-		client Client
-		logger *zap.Logger
-	}
+	env := New(db.MockMySQL(), NewClient(false, zaptest.NewLogger(t)), zaptest.NewLogger(t))
+
 	type args struct {
 		params stripe.SubsParams
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Create subscription",
-			fields: fields{
-				db:     test.DB,
-				client: NewClient(false, zaptest.NewLogger(t)),
-				logger: zaptest.NewLogger(t),
-			},
 			args: args{
 				params: stripe.SubsParams{
 					Account: pa.account,
@@ -111,11 +101,6 @@ func TestEnv_CreateSubscription(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				db:     tt.fields.db,
-				client: tt.fields.client,
-				logger: tt.fields.logger,
-			}
 
 			got, err := env.CreateSubscription(tt.args.params)
 			if (err != nil) != tt.wantErr {

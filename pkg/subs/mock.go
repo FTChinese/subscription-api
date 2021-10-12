@@ -1,3 +1,4 @@
+//go:build !production
 // +build !production
 
 package subs
@@ -60,9 +61,37 @@ func (b MockOrderBuilder) WithPrice(p price.FtcPrice) MockOrderBuilder {
 	return b
 }
 
+func (b MockOrderBuilder) WithStdYear() MockOrderBuilder {
+	return b.WithPrice(price.MockPriceStdYear)
+}
+
+func (b MockOrderBuilder) WithStdMonth() MockOrderBuilder {
+	return b.WithPrice(price.MockPriceStdMonth)
+}
+
+func (b MockOrderBuilder) WithPrm() MockOrderBuilder {
+	return b.WithPrice(price.MockPricePrm)
+}
+
 func (b MockOrderBuilder) WithKind(k enum.OrderKind) MockOrderBuilder {
 	b.kind = k
 	return b
+}
+
+func (b MockOrderBuilder) WithCreate() MockOrderBuilder {
+	return b.WithKind(enum.OrderKindCreate)
+}
+
+func (b MockOrderBuilder) WithRenew() MockOrderBuilder {
+	return b.WithKind(enum.OrderKindRenew)
+}
+
+func (b MockOrderBuilder) WithAddOn() MockOrderBuilder {
+	return b.WithKind(enum.OrderKindAddOn)
+}
+
+func (b MockOrderBuilder) WithUpgrade() MockOrderBuilder {
+	return b.WithKind(enum.OrderKindUpgrade)
 }
 
 func (b MockOrderBuilder) WithOfferKinds(k []price.OfferKind) MockOrderBuilder {
@@ -76,6 +105,14 @@ func (b MockOrderBuilder) WithPayMethod(m enum.PayMethod) MockOrderBuilder {
 		b.wxAppId = null.StringFrom(faker.GenWxID())
 	}
 	return b
+}
+
+func (b MockOrderBuilder) WithAlipay() MockOrderBuilder {
+	return b.WithPayMethod(enum.PayMethodAli)
+}
+
+func (b MockOrderBuilder) WithWx() MockOrderBuilder {
+	return b.WithPayMethod(enum.PayMethodWx)
 }
 
 func (b MockOrderBuilder) WithConfirmed() MockOrderBuilder {

@@ -1,7 +1,6 @@
 package subrepo
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -29,8 +28,12 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Save Ali Notification",
-			args:    args{n: subs.MockAliNoti(p.NewOrder(enum.OrderKindCreate))},
+			name: "Save Ali Notification",
+			args: args{
+				n: subs.MockAliNoti(
+					p.OrderBuilder().Build(),
+				),
+			},
 			wantErr: false,
 		},
 	}
@@ -66,7 +69,9 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 		{
 			name: "Save Prepay Response",
 			args: args{
-				resp: wechat.NewOrderResp(p.NewOrder(enum.OrderKindCreate).ID, client.MockOrderPayload(or)),
+				resp: wechat.NewOrderResp(
+					p.OrderBuilder().Build().ID,
+					client.MockOrderPayload(or)),
 			},
 		},
 	}
@@ -85,7 +90,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 	client := NewWxPayClient(test.WxPayApp, zaptest.NewLogger(t))
 
 	p := test.NewPersona()
-	noti := test.NewWxWHUnsigned(p.NewOrder(enum.OrderKindCreate))
+	noti := test.NewWxWHUnsigned(p.OrderBuilder().Build())
 
 	env := Env{
 		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
