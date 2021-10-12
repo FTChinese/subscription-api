@@ -153,7 +153,7 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		// Get account by uuid.
-		r.With(controller.RequireFtcID).Get("/", accountRouter.LoadAccountByEmail)
+		r.With(controller.RequireFtcID).Get("/", accountRouter.LoadAccountByFtcID)
 
 		r.Route("/email", func(r chi.Router) {
 			r.Use(controller.RequireFtcID)
