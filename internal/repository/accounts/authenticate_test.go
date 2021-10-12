@@ -60,7 +60,7 @@ func TestEnv_Authenticate(t *testing.T) {
 			env := Env{
 				Env: tt.fields.Env,
 			}
-			got, err := env.Authenticate(tt.args.params)
+			got, err := env.Authenticate(tt.args.params.EmailCredentials)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Authenticate() error = %v, wantErr %v", err, tt.wantErr)
 				return
