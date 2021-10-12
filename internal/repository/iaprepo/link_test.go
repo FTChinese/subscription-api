@@ -1,25 +1,25 @@
 package iaprepo
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
 func TestEnv_GetSubAndSetFtcID(t *testing.T) {
-	p := test.NewPersona().SetPayMethod(enum.PayMethodApple)
 
-	test.NewRepo().MustSaveIAPSubs(apple.
-		NewMockSubsBuilder(p.FtcID).
-		WithOriginalTxID(p.AppleSubID).
-		Build())
+	s := test.NewPersona().
+		IAPBuilder().
+		Build()
+
+	test.NewRepo().MustSaveIAPSubs(s)
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    readers.New(db.MockMySQL(), zaptest.NewLogger(t)),
 		rdb:    nil,
 		logger: zaptest.NewLogger(t),
 	}
@@ -36,8 +36,8 @@ func TestEnv_GetSubAndSetFtcID(t *testing.T) {
 			name: "Get subscription and optionally set ftc id",
 			args: args{
 				input: apple.LinkInput{
-					FtcID:        p.FtcID,
-					OriginalTxID: p.AppleSubID,
+					FtcID:        s.FtcUserID.String,
+					OriginalTxID: s.OriginalTransactionID,
 				},
 			},
 			wantErr: false,

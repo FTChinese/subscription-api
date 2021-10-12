@@ -1,3 +1,4 @@
+//go:build !production
 // +build !production
 
 package test
@@ -92,8 +93,10 @@ func (r Repo) GenerateMobileLinkParams(kind MobileLinkAccountKind) (string, inpu
 
 	param := input.MobileLinkParams{
 		EmailLoginParams: input.EmailLoginParams{
-			Email:       baseAccount.Email,
-			Password:    baseAccount.Password,
+			EmailCredentials: input.EmailCredentials{
+				Email:    baseAccount.Email,
+				Password: baseAccount.Password,
+			},
 			DeviceToken: null.StringFrom(rand.String(36)),
 		},
 		Mobile: v.Mobile,
@@ -160,13 +163,18 @@ func AppleLinkReq(params apple.LinkInput) *http.Request {
 
 func AppleUnlinkReq() *http.Request {
 
-	p := NewPersona().SetPayMethod(enum.PayMethodApple)
+	p := NewPersona()
 
 	repo := NewRepo()
 
-	repo.MustCreateFtcAccount(p.BaseAccount())
-	repo.MustSaveIAPSubs(p.IAPSubs())
-	repo.MustSaveMembership(p.Membership())
+	id := faker.GenAppleSubID()
+
+	repo.MustCreateFtcAccount(p.EmailBaseAccount())
+	repo.MustSaveIAPSubs(
+		NewIAPBuilder(id).
+			Build())
+
+	repo.MustSaveMembership(p.MemberBuilder().WithApple(id).Build())
 
 	input := p.IAPLinkInput()
 
@@ -183,7 +191,7 @@ func AppleUnlinkReq() *http.Request {
 func AppleListSubsReq() *http.Request {
 	p := NewPersona()
 
-	NewRepo().MustSaveIAPSubs(p.IAPSubs())
+	NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	req := httptest.NewRequest(
 		"GET",
@@ -196,7 +204,7 @@ func AppleListSubsReq() *http.Request {
 func AppleSingleSubsReq() *http.Request {
 	p := NewPersona()
 
-	NewRepo().MustSaveIAPSubs(p.IAPSubs())
+	NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	req := httptest.NewRequest(
 		"GET",

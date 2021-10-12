@@ -1,17 +1,19 @@
+//go:build !production
 // +build !production
 
 package test
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"time"
 
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
@@ -26,18 +28,13 @@ type Persona struct {
 	Email      string
 	Password   string
 	UserName   string
+	Mobile     string
 	Nickname   string
 	Avatar     string
 	OpenID     string
 	IP         string
 	AppleSubID string
-
-	kind      enum.AccountKind
-	price     price.FtcPrice
-	payMethod enum.PayMethod
-	expired   bool
-	autoRenew bool
-	addOn     addon.AddOn
+	kind       enum.AccountKind
 }
 
 func NewPersona() *Persona {
@@ -48,54 +45,38 @@ func NewPersona() *Persona {
 		UnionID:    faker.GenWxID(),
 		StripeID:   faker.GenCustomerID(),
 		Email:      gofakeit.Email(),
-		Password:   faker.SimplePassword(),
+		Password:   "12345678",
 		UserName:   gofakeit.Username(),
+		Mobile:     gofakeit.Phone(),
 		Nickname:   gofakeit.Name(),
 		Avatar:     faker.GenAvatar(),
+		AppleSubID: faker.GenAppleSubID(),
 		OpenID:     faker.GenWxID(),
 		IP:         gofakeit.IPv4Address(),
-		AppleSubID: faker.GenAppleSubID(),
-
-		kind:      enum.AccountKindFtc,
-		price:     price.MockPriceStdYear,
-		payMethod: enum.PayMethodAli,
-		expired:   false,
-		autoRenew: false,
+		kind:       enum.AccountKindFtc,
 	}
 }
 
-func (p *Persona) SetAccountKind(k enum.AccountKind) *Persona {
+func (p *Persona) WithAccountKind(k enum.AccountKind) *Persona {
 	p.kind = k
 	return p
 }
 
-func (p *Persona) SetPrice(pp price.FtcPrice) *Persona {
-	p.price = pp
-	return p
+func (p *Persona) WithFtcKind() *Persona {
+	return p.WithAccountKind(enum.AccountKindFtc)
 }
 
-func (p *Persona) SetAddOn(r addon.AddOn) *Persona {
-	p.addOn = r
-
-	return p
+func (p *Persona) WithWxKind() *Persona {
+	return p.WithAccountKind(enum.AccountKindWx)
 }
 
-func (p *Persona) GetPlan() price.FtcPrice {
-	return p.price
+func (p *Persona) WithLinkedKind() *Persona {
+	return p.WithAccountKind(enum.AccountKindLinked)
 }
 
-func (p *Persona) SetPayMethod(m enum.PayMethod) *Persona {
-	p.payMethod = m
-	return p
-}
-
-func (p *Persona) SetExpired(expired bool) *Persona {
-	p.expired = expired
-	return p
-}
-
-func (p *Persona) SetAutoRenew(t bool) *Persona {
-	p.autoRenew = t
+// WithMobile set mobile the specified one.
+func (p *Persona) WithMobile(m string) *Persona {
+	p.Mobile = m
 	return p
 }
 
@@ -129,34 +110,61 @@ func (p *Persona) AccountID() ids.UserIDs {
 	return id
 }
 
-func (p *Persona) BaseAccount() account.BaseAccount {
-	return account.NewMockFtcAccountBuilder(p.kind).
-		WithFtcID(p.FtcID).
-		WithWxID(p.UnionID).
-		WithStripeID(p.StripeID).
-		Build()
-}
-
-func (p *Persona) Membership() reader.Membership {
-	expiresDate := time.Now().AddDate(1, 0, 1)
-	if p.expired {
-		expiresDate = time.Now().AddDate(0, -6, 0)
+func (p *Persona) EmailSignUpParams() input.EmailSignUpParams {
+	return input.EmailSignUpParams{
+		EmailCredentials: input.EmailCredentials{
+			Email:    p.Email,
+			Password: p.Password,
+		},
+		DeviceToken: null.String{},
+		SourceURL:   "",
 	}
-
-	return reader.NewMockMemberBuilder("").
-		WithIDs(p.AccountID()).
-		WithExpiration(expiresDate).
-		WithPayMethod(p.payMethod).
-		WithPrice(p.price.Price).
-		WithAddOn(p.addOn).
-		WithAutoRenewal(p.autoRenew).
-		Build()
 }
 
-func (p *Persona) NewOrder(k enum.OrderKind) subs.Order {
-	return subs.NewMockOrderBuilder(p.FtcID).
-		WithPrice(p.price).
-		WithKind(k).
-		WithPayMethod(p.payMethod).
-		Build()
+func (p *Persona) MobileSignUpParams() input.MobileSignUpParams {
+	return input.MobileSignUpParams{
+		Mobile:      p.Mobile,
+		DeviceToken: null.String{},
+	}
+}
+
+func (p *Persona) EmailBaseAccount() account.BaseAccount {
+	return account.NewEmailBaseAccount(p.EmailSignUpParams())
+}
+
+func (p *Persona) MobileBaseAccount() account.BaseAccount {
+	return account.NewMobileBaseAccount(p.MobileSignUpParams())
+}
+
+func (p *Persona) MemberBuilder() MemberBuilder {
+	return MemberBuilder{
+		accountKind:  p.kind,
+		ftcID:        p.FtcID,
+		unionID:      p.UnionID,
+		price:        price.Price{},
+		payMethod:    0,
+		expiration:   time.Time{},
+		subsStatus:   0,
+		autoRenewal:  false,
+		addOn:        addon.AddOn{},
+		iapTxID:      "",
+		stripeSubsID: "",
+		b2bLicID:     "",
+	}
+}
+
+func (p *Persona) IAPLinkInput() apple.LinkInput {
+	return apple.LinkInput{
+		FtcID:        p.FtcID,
+		OriginalTxID: p.AppleSubID,
+	}
+}
+
+// IAPBuilder creates a linked builder instance.
+func (p *Persona) IAPBuilder() IAPBuilder {
+	return NewIAPBuilder(p.AppleSubID).WithFtcID(p.FtcID)
+}
+
+func (p *Persona) OrderBuilder() subs.MockOrderBuilder {
+	return subs.NewMockOrderBuilder(p.FtcID)
 }

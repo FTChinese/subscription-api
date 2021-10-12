@@ -9,10 +9,13 @@ import (
 )
 
 func TestWxPayClient_MockWebhookPayload(t *testing.T) {
-	p := test.NewPersona().
-		SetPayMethod(enum.PayMethodWx)
-	order := p.NewOrder(enum.OrderKindCreate)
-	account := p.BaseAccount()
+	p := test.NewPersona()
+	order := p.OrderBuilder().
+		WithPayMethod(enum.PayMethodWx).
+		WithKind(enum.OrderKindCreate).
+		Build()
+
+	account := p.EmailBaseAccount()
 
 	repo := test.NewRepo()
 	repo.MustCreateFtcAccount(account)

@@ -141,12 +141,12 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 
 	p := test.NewPersona()
 
-	orderCreate := p.NewOrder(enum.OrderKindCreate)
+	orderCreate := p.OrderBuilder().Build()
 	repo.MustSaveOrder(orderCreate)
 	orderCreate.ConfirmedAt = chrono.TimeNow()
 	orderCreate.DatePeriod = dt.NewTimeRange(time.Now()).AddYears(1).ToDatePeriod()
 
-	orderAddOn := p.NewOrder(enum.OrderKindAddOn)
+	orderAddOn := p.OrderBuilder().WithAddOn().Build()
 	repo.MustSaveOrder(orderAddOn)
 	orderAddOn.ConfirmedAt = chrono.TimeNow()
 
