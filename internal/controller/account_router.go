@@ -20,6 +20,8 @@ func NewAccountRouter(myDBs db.ReadWriteMyDBs, postman postoffice.PostOffice, l 
 	}
 }
 
+// LoadAccountByFtcID loads a user's full account data
+// by ftc id provided in request header.
 func (router AccountRouter) LoadAccountByFtcID(w http.ResponseWriter, req *http.Request) {
 	userID := req.Header.Get(ftcIDKey)
 
