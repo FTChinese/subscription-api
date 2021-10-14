@@ -41,8 +41,22 @@ type EmailLoginParams struct {
 
 type EmailSignUpParams struct {
 	EmailCredentials
+	Mobile      null.String `json:"mobile"`
 	DeviceToken null.String `json:"deviceToken"` // Required only for android.
 	SourceURL   string      `json:"sourceUrl"`   // Used to compose verification link.
+}
+
+func (p EmailSignUpParams) Validate() *render.ValidationError {
+	ve := p.EmailCredentials.Validate()
+	if ve != nil {
+		return ve
+	}
+
+	if p.Mobile.Valid {
+		return validator.New("mobile").Mobile().Validate(p.Mobile.String)
+	}
+
+	return nil
 }
 
 // MobileLinkParams contains the request data when a mobile phone
@@ -50,8 +64,8 @@ type EmailSignUpParams struct {
 // existing email account.
 type MobileLinkParams struct {
 	EmailCredentials
-	DeviceToken null.String `json:"deviceToken"` // Required only for android.
 	Mobile      string      `json:"mobile"`
+	DeviceToken null.String `json:"deviceToken"` // Required only for android.
 }
 
 func (l *MobileLinkParams) Validate() *render.ValidationError {
@@ -70,8 +84,18 @@ func (l *MobileLinkParams) Validate() *render.ValidationError {
 
 // MobileSignUpParams collects signup parameters with mobile.
 type MobileSignUpParams struct {
-	Mobile      string      `json:"mobile"`
-	DeviceToken null.String `json:"deviceToken"` // Required only for android.
+	EmailCredentials             // Deprecated. Kept for backward compatibility. Will be removed in v4.
+	Mobile           string      `json:"mobile"`
+	DeviceToken      null.String `json:"deviceToken"` // Required only for android.
+	SourceURL        string      `json:"sourceUrl"`   // Deprecated. Used to compose verification link.
+}
+
+// HasCredentials checks if email + password was provided to keep backward compatible
+// since the /auth/mobile/signup endpoint was previously (prior to Android app 5.1.0)
+// used to create a new email account and link the mobile to it.
+// Since Android app 5.1.0 it was used to create a new account with mobile number directly.
+func (s *MobileSignUpParams) HasCredentials() bool {
+	return s.Email != "" && s.Password != ""
 }
 
 func (s *MobileSignUpParams) Validate() *render.ValidationError {
