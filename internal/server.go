@@ -69,6 +69,9 @@ func StartServer(s ServerStatus) {
 			// Authenticate user's email + password combination.
 			r.Post("/login", authRouter.EmailLogin)
 			// Create a new account using the provided email + password
+			// When user login with mobile for the 1st time,
+			// choose to sign up with a new email, it is
+			// also handled by this endpoint.
 			r.Post("/signup", authRouter.EmailSignUp)
 			// Verify user's email by checking the validity of
 			// a token send to user's email.
@@ -90,25 +93,30 @@ func StartServer(s ServerStatus) {
 			r.Put("/verification", authRouter.RequestSMSVerification)
 			// Verifies an SMS code. If the code is found, a nullable
 			// user id associated with the code is returned.
-			// If the user id is null, it indicates the user is
-			// logging in with mobile for the first time.
-			// Client should then ask user to link to an existing
-			// account, or create a new account accordingly.
-			// If user id is not null, client should use the user to
-			// retrieve account data from /account, providing the
-			// user id in header.
+			// There are 3 choices to follow depending on the
+			// user id nullability:
+			// * If user id is not null, use the /account endpoint to retrieve data;
+			// * If user is null, it indicates we didn't find the phone, client could:
+			//   - Let user to signup with the phone, which will create a faked email derived from this phone number;
+			//   - Let user link to an existing email account;
+			//   - Let user sign up with a new email+password just as the email signup workflow,
+			//     and this new email account will have mobile attached.
 			r.Post("/verification", authRouter.VerifySMSCode)
 			// Verifies an existing email account credentials.
 			// If passed, retrieve user's full account and check if
 			// the mobile is set to another one. If it is taken
-			// by another one, returns 422; otherwise update the
+			// by another one, returns 422; otherwise update
 			// the account's mobile field and returns it.
 			// In background thread we persist phone number to db.
-			r.Post("/link", authRouter.LinkMobile)
+			r.Post("/link", authRouter.MobileLinkExistingEmail)
 			// When user login with mobile for the first time,
-			// and has not account previously created, create a
+			// and has no account previously created, create a
 			// new email account with mobile number set to the
 			// specified one.
+			// FIX: this actually should not be named as signup.
+			// It combines two actions: signup with email and then perform
+			// mobile to email link.
+			// Signup should use mobile derived email to create a new account.
 			r.Post("/signup", authRouter.MobileSignUp)
 		})
 
