@@ -55,7 +55,7 @@ func TestMobileSignUp_RealPhone(t *testing.T) {
 // Mobile login case 1: mobile used for the 1st time,
 // and user wants to create a new account with this mobile.
 // Simply generate a new phone works.
-func TestMobileSignUp_FakePhoneEmail(t *testing.T) {
+func TestMobileSignUp_FakeEmailFromPhone(t *testing.T) {
 	v := ztsms.NewVerifier(faker.GenPhone(), null.String{})
 
 	NewRepo().MustSaveMobileVerifier(v)
@@ -68,7 +68,7 @@ func TestMobileSignUp_FakePhoneEmail(t *testing.T) {
 // mobile set.
 // Generates a new phone, and generates a new email account
 // but does not save it.
-func TestMobileSignUp_NewEmailAccount(t *testing.T) {
+func TestMobileSignUp_LinkNewEmail(t *testing.T) {
 	a := NewPersona().EmailOnlyAccount()
 
 	v := ztsms.NewVerifier(faker.GenPhone(), null.String{})
@@ -82,7 +82,7 @@ func TestMobileSignUp_NewEmailAccount(t *testing.T) {
 // Mobile login case 3: mobile used for the 1st time,
 // and user wants to link to an existing email account.
 // Generate a new phone, and create an email-only account.
-func TestMobileLinkExistingEmail(t *testing.T) {
+func TestMobileSignUp_LinkExistingEmail(t *testing.T) {
 	a := NewPersona().EmailOnlyAccount()
 	v := ztsms.NewVerifier(faker.GenPhone(), null.String{})
 
