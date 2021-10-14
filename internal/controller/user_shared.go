@@ -65,6 +65,14 @@ func (us UserShared) SendEmailVerification(baseAccount account.BaseAccount, sour
 	return nil
 }
 
+// SyncMobile handles a case where user have a mobile-derived
+// account in userinfo but does not have the mobile set in
+// profile table.
+// We extract the mobile from the faked email and upsert it into
+// profile table.
+// This operation only performs once for a specific user.
+// The next time the account is retrieves, it has mobile set
+// and won't trigger this process.
 func (us UserShared) SyncMobile(a account.BaseAccount) {
 	// There are cases that the mobile is not actually a mobile number.
 	if !a.Mobile.Valid {
