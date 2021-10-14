@@ -69,6 +69,24 @@ func NewMobileBaseAccount(params input.MobileSignUpParams) BaseAccount {
 	}
 }
 
+func (a BaseAccount) IsFtc() bool {
+	return a.FtcID != ""
+}
+
+func (a BaseAccount) IsWxOnly() bool {
+	return a.FtcID == "" && a.UnionID.Valid
+}
+
+// IsMobileEmail checks if a user's email is a faked one derived from phone number
+// but Mobile field is missing.
+func (a BaseAccount) IsMobileEmail() bool {
+	return strings.HasSuffix(a.Email, mobileEmailSuffix) && a.Mobile.IsZero()
+}
+
+func (a BaseAccount) IsMobileOnly() bool {
+	return strings.HasSuffix(a.Email, mobileEmailSuffix) && (a.Mobile.IsZero() || strings.HasPrefix(a.Email, a.Mobile.String))
+}
+
 func (a BaseAccount) ExtractEmailName() string {
 	return strings.Split(a.Email, "@")[0]
 }
@@ -83,12 +101,6 @@ func (a BaseAccount) GetMobile() string {
 	}
 
 	return ""
-}
-
-// IsMobileEmail checks if a user's email is a faked one derived from phone number
-// but Mobile field is missing.
-func (a BaseAccount) IsMobileEmail() bool {
-	return strings.HasSuffix(a.Email, mobileEmailSuffix) && a.Mobile.IsZero()
 }
 
 func (a BaseAccount) SyncMobile() BaseAccount {
@@ -159,14 +171,6 @@ func (a BaseAccount) ValidateEnv(liveEnv bool) string {
 
 		return ""
 	}
-}
-
-func (a BaseAccount) IsFtc() bool {
-	return a.FtcID != ""
-}
-
-func (a BaseAccount) IsWxOnly() bool {
-	return a.FtcID == "" && a.UnionID.Valid
 }
 
 // NormalizeName returns user name, or the name part of email if name does not exist.
