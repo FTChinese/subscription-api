@@ -127,7 +127,7 @@ func TestAuthRouter_LinkMobile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			router.LinkMobile(tt.args.w, tt.args.req)
+			router.MobileLinkExistingEmail(tt.args.w, tt.args.req)
 
 			resp := tt.args.w.Result()
 
