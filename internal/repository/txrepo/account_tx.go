@@ -81,11 +81,21 @@ func (tx AccountTx) RetrieveMobiles(u account.MobileUpdater) ([]account.MobileUp
 	return mobiles, nil
 }
 
-// UpsertMobile inserts a row into profile table, or update the mobile_phone
-// column if user id already exists
-func (tx AccountTx) UpsertMobile(params account.MobileUpdater) error {
+func (tx AccountTx) InsertMobile(params account.MobileUpdater) error {
 	_, err := tx.NamedExec(
-		account.StmtUpsertPhone,
+		account.StmtCreateProfile,
+		params)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx AccountTx) UpdateMobile(params account.MobileUpdater) error {
+	_, err := tx.NamedExec(
+		account.StmtSetPhone,
 		params)
 
 	if err != nil {
