@@ -111,7 +111,9 @@ func (router AccountRouter) RequestSMSVerification(w http.ResponseWriter, req *h
 }
 
 // UpdateMobile set mobile_phone field to the specified number.
-// When updating mobile, we must ensure this mobile is not used by anyone else.
+// When updating mobile, we must ensure this new mobile is not used by anyone else.
+// If account is created from mobile directly, we should
+// forbid updating mobile.
 //
 // after checking the SMS code sent to user's device.
 // Input:
@@ -153,45 +155,9 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	err = router.userRepo.UpsertMobile(account.MobileUpdater{
-		FtcID:  ftcID,
-		Mobile: null.StringFrom(vrf.Mobile),
-	})
-	if err != nil {
-		if errors.Is(err, account.ErrMobileTaken) {
-			// Used by another account.
-			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: err.Error(),
-				Field:   "mobile",
-				Code:    render.CodeAlreadyExists,
-			})
-			return
-		}
-		if errors.Is(err, account.ErrAccountHasMobileSet) {
-			// This account has another mobile set
-			_ = render.New(w).JSON(http.StatusConflict, render.ResponseError{
-				Message: err.Error(),
-			})
-			return
-		}
-		if errors.Is(err, account.ErrMobileSet) {
-			baseAccount, err := router.userRepo.BaseAccountByUUID(ftcID)
-			if err != nil {
-				sugar.Error(err)
-				_ = render.New(w).DBError(err)
-				return
-			}
-			_ = render.New(w).OK(baseAccount)
-			return
-		}
-		_ = render.New(w).DBError(err)
-		return
-	}
-
 	// Flag the verifier as used.
-	vrf = vrf.WithUsed()
 	go func() {
-		err = router.userRepo.SMSVerifierUsed(vrf)
+		err = router.userRepo.SMSVerifierUsed(vrf.WithUsed())
 		sugar.Error(err)
 	}()
 
@@ -203,7 +169,33 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	_ = render.New(w).OK(baseAccount)
+	currentMobile := baseAccount.GetMobile()
+	// Already set.
+	// Here's the difference from MobileLinkExistingEmail:
+	// we permit overriding the account's existing mobile.
+	if currentMobile == params.Mobile {
+		_ = render.New(w).OK(baseAccount)
+		return
+	}
+
+	err = router.userRepo.UpsertMobile(account.MobileUpdater{
+		FtcID:  ftcID,
+		Mobile: null.StringFrom(vrf.Mobile),
+	})
+
+	if err != nil {
+		// Ensure the new mobile is not used by anyone.
+		if errors.Is(err, account.ErrMobileTakenByOther) {
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: err.Error(),
+				Field:   "mobile",
+				Code:    render.CodeAlreadyExists,
+			})
+		}
+		_ = render.New(w).DBError(err)
+	}
+
+	_ = render.New(w).OK(baseAccount.WithMobile(params.Mobile))
 }
 
 // DeleteMobile sets mobile phone to NULL.

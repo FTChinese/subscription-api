@@ -156,19 +156,11 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 	// If user id is found this way,
 	// it indicates the mobile number exists in userinfo table
 	// but does not exist in profile table.
-	// Two cases here:
-	// 1. profile table does not have a row for this ftc id, insert directly.
-	// 2. profile table have this ftc id and mobile_phone column is empty, update it.
+	// In such case we will treat the mobile already exists
+	// and the mobile should be synced between tables, which is
+	// delayed till the account is fetched.
 	if result.ID.Valid {
 		go func() {
-			err := router.userRepo.UpsertMobile(account.MobileUpdater{
-				FtcID:  result.ID.String,
-				Mobile: null.StringFrom(params.Mobile),
-			})
-			if err != nil {
-				sugar.Error(err)
-			}
-
 			fp := footprint.
 				New(result.ID.String, footprint.NewClient(req)).
 				FromLogin().
@@ -184,7 +176,7 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 	_ = render.New(w).OK(result)
 }
 
-// LinkMobile authenticates an existing email account,
+// MobileLinkExistingEmail authenticates an existing email account,
 // and link to the provided mobile phone.
 //
 // Input:
@@ -200,7 +192,7 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 // * The link target present in profile table but mobile column missing. Update.
 // * The link target present in profile table and mobile column is taken by another mobile number. Deny.
 // * The link target present in profile and mobile column is this mobile number. No action.
-func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
+func (router AuthRouter) MobileLinkExistingEmail(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -232,48 +224,10 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Credentials authenticated, set mobile to this account.
-	err = router.userRepo.UpsertMobile(account.MobileUpdater{
-		FtcID:  authResult.UserID,
-		Mobile: null.StringFrom(params.Mobile),
-	})
-
-	if err != nil {
-		if errors.Is(err, account.ErrMobileTaken) {
-			// Used by another account.
-			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: err.Error(),
-				Field:   "mobile",
-				Code:    render.CodeAlreadyExists,
-			})
-			return
-		}
-		if errors.Is(err, account.ErrAccountHasMobileSet) {
-			// This account has another mobile set
-			_ = render.New(w).JSON(http.StatusConflict, render.ResponseError{
-				Message: err.Error(),
-			})
-			return
-		}
-		if errors.Is(err, account.ErrMobileSet) {
-			// Retrieve account and return it.
-			acnt, err := router.userRepo.AccountByFtcID(authResult.UserID)
-			if err != nil {
-				// There shouldn't be ErrNoRow error here.
-				sugar.Error(err)
-				_ = render.New(w).DBError(err)
-				return
-			}
-			_ = render.New(w).OK(acnt)
-			return
-		}
-
-		_ = render.New(w).DBError(err)
-		return
-	}
-
 	// Retrieve account by user id.
 	// There shouldn't be any 404 error here.
+	// We should make sure this account does not have any
+	// mobile attached before linking.
 	acnt, err := router.userRepo.AccountByFtcID(authResult.UserID)
 	if err != nil {
 		// There shouldn't be ErrNoRow error here.
@@ -281,6 +235,67 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		_ = render.New(w).DBError(err)
 		return
 	}
+
+	currentMobile := acnt.GetMobile()
+	if currentMobile != "" {
+		// Mobile already set. Return the account immediately.
+		if currentMobile == params.Mobile {
+			_ = render.New(w).OK(acnt)
+			return
+		}
+
+		// Account linked to another mobile.
+		// We do not allow overriding existing email account's
+		// mobile here.
+		_ = render.New(w).Unprocessable(&render.ValidationError{
+			Message: "This email account already has another mobile set",
+			Field:   "mobile",
+			Code:    render.CodeAlreadyExists,
+		})
+		return
+	}
+
+	// Up till now we can make sure this email account does
+	// not have mobile set.
+	// We have to make sure the mobile does not exist
+	// in current db.
+	mobileSearch, err := router.userRepo.SearchByMobile(params.Mobile)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	// If found, the mobile must be linked to another account
+	// since if it is linked to the requested email account,
+	// it has already stopped in previous step.
+	if mobileSearch.ID.Valid {
+		_ = render.New(w).Unprocessable(&render.ValidationError{
+			Message: "The mobile already used by another account",
+			Field:   "mobile",
+			Code:    render.CodeAlreadyExists,
+		})
+
+		return
+	}
+
+	err = router.userRepo.UpsertMobile(account.MobileUpdater{
+		FtcID:  acnt.FtcID,
+		Mobile: null.StringFrom(params.Mobile),
+	})
+	if err != nil {
+		// Ensure the new mobile is not used by anyone.
+		if errors.Is(err, account.ErrMobileTakenByOther) {
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: err.Error(),
+				Field:   "mobile",
+				Code:    render.CodeAlreadyExists,
+			})
+		}
+		sugar.Error(err)
+	}
+
+	acnt.Mobile = null.StringFrom(params.Mobile)
 
 	// Tracking.
 	clientApp := footprint.NewClient(req)
@@ -293,7 +308,6 @@ func (router AuthRouter) LinkMobile(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			sugar.Error()
 		}
-		// TODO: send email?
 	}()
 
 	_ = render.New(w).OK(acnt)
@@ -314,6 +328,21 @@ func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	// Kept for backward compatible as this was previously
+	// used to create a new email account when mobile is
+	// used to log in for the first time.
+	if params.HasCredentials() {
+		router.emailSignUp(w, input.EmailSignUpParams{
+			EmailCredentials: params.EmailCredentials,
+			Mobile:           null.StringFrom(params.Mobile),
+			DeviceToken:      params.DeviceToken,
+			SourceURL:        params.SourceURL,
+		}, footprint.NewClient(req))
+		return
+	}
+
+	// No email+password provided. Use phone number to generate
+	// a fake email.
 	if ve := params.Validate(); ve != nil {
 		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
