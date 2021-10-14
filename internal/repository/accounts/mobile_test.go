@@ -128,13 +128,13 @@ func TestEnv_SMSVerifierUsed(t *testing.T) {
 	}
 }
 
-func TestEnv_SetMobile(t *testing.T) {
+func TestEnv_UpsertMobile(t *testing.T) {
 
 	noProfile := test.NewPersona()
 	mobileTaken := test.NewPersona()
 	mobileLinked := test.NewPersona()
 	ftcWithoutMobile := test.NewPersona()
-	ftcWithMobileTaken := test.NewPersona()
+	ftcWithMobile := test.NewPersona()
 
 	env := New(test.SplitDB, zaptest.NewLogger(t))
 	repo := test.NewRepo()
@@ -176,7 +176,7 @@ func TestEnv_SetMobile(t *testing.T) {
 			args: args{
 				params: mobileLinked.MobileUpdater(),
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name:        "FTC id exists without mobile",
@@ -189,15 +189,15 @@ func TestEnv_SetMobile(t *testing.T) {
 		},
 		{
 			name: "FTC id exists with other mobile",
-			baseAccount: ftcWithMobileTaken.
+			baseAccount: ftcWithMobile.
 				EmailMobileAccount(),
 			hasProfile: true,
 			args: args{
-				params: ftcWithMobileTaken.
+				params: ftcWithMobile.
 					WithMobile(faker.GenPhone()).
 					MobileUpdater(),
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -207,6 +207,7 @@ func TestEnv_SetMobile(t *testing.T) {
 				repo.CreateProfile(tt.baseAccount)
 			}
 
+			t.Logf("%s", faker.MustMarshalIndent(tt.baseAccount))
 			t.Logf("%v", tt.args.params)
 
 			if err := env.UpsertMobile(tt.args.params); (err != nil) != tt.wantErr {
