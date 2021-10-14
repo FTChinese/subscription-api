@@ -117,9 +117,11 @@ func (router AuthRouter) EmailLogin(w http.ResponseWriter, req *http.Request) {
 // 	POST /users/signup
 //
 // Input:
-// email: string
-// password: string
-// sourceUrl?: string From which site the request is sent. Not required for mobile apps.
+// * email: string;
+// * password: string;
+// * mobile?: string;
+// * deviceToken?: string;
+// * sourceUrl?: string From which site the request is sent. Not required for mobile apps.
 //
 // The footprint.Client headers are required.
 func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
@@ -147,36 +149,54 @@ func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	router.emailSignUp(w, params, clientApp)
+}
+
+// emailSignUp creates a new email account.
+// Input:
+// * email: string;
+// * password: string;
+// * mobile?: string; - Required only when mobile is linking to new account.
+// * deviceToken?: string; - Required for Android app.
+// * sourceUrl?: string; - Used to compose email verification link.
+func (router AuthRouter) emailSignUp(w http.ResponseWriter, params input.EmailSignUpParams, client footprint.Client) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	if ve := params.Validate(); ve != nil {
 		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
+	// Create account from input data.
 	baseAccount := account.NewEmailBaseAccount(params)
+	// Save it.
 	err := router.userRepo.CreateAccount(baseAccount)
 	if err != nil {
 		sugar.Error(err)
+		// Check for duplicate.
 		if db.IsAlreadyExists(err) {
 			_ = render.New(w).Unprocessable(render.NewVEAlreadyExists("email"))
 			return
 		}
-
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	fp := footprint.New(baseAccount.FtcID, clientApp).
+	// Tracking.
+	fp := footprint.New(baseAccount.FtcID, client).
 		FromSignUp().
-		WithAuth(enum.LoginMethodEmail, params.DeviceToken)
+		WithAuth(enum.LoginMethodMobile, params.DeviceToken)
 
 	go func() {
 		err := router.userRepo.SaveFootprint(fp)
 		if err != nil {
-			sugar.Error(err)
+			sugar.Error()
 		}
 	}()
 
+	// Send verification email.
 	go func() {
 		_ = router.SendEmailVerification(
 			baseAccount,
@@ -184,6 +204,7 @@ func (router AuthRouter) EmailSignUp(w http.ResponseWriter, req *http.Request) {
 			true)
 	}()
 
+	// Compose reader.Account instance.
 	_ = render.New(w).OK(reader.Account{
 		BaseAccount: baseAccount,
 		LoginMethod: enum.LoginMethodEmail,
