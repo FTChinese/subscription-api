@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 )
 
@@ -48,6 +49,11 @@ func (env Env) SMSVerifierUsed(v ztsms.Verifier) error {
 //
 // In general, to set the mobile to this ftc id, we must make sure
 // the mobile never appears in table.
+// If the ftc id appears in profile table, update the
+// mobile_phone column with the new mobile regardless whether
+// this column has a value or not.
+// If the ftc id does not appear in profile, then insert a
+// row with the ftc id and mobile.
 func (env Env) UpsertMobile(params account.MobileUpdater) error {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
@@ -64,16 +70,23 @@ func (env Env) UpsertMobile(params account.MobileUpdater) error {
 		return err
 	}
 
-	err = account.IsMobileSettable(mobileRows, params)
+	writeKind, err := account.PermitUpsertMobile(mobileRows, params)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
 	}
 
-	// The table does not have this mobile number.
-	// A row for this ftc id either does not exist,
-	// or existed but mobile_phone column is empty.
-	err = tx.UpsertMobile(params)
+	switch writeKind {
+	case db.WriteKindDenial:
+		return nil
+
+	case db.WriteKindInsert:
+		err = tx.InsertMobile(params)
+
+	case db.WriteKindUpdate:
+		err = tx.UpdateMobile(params)
+	}
+
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
