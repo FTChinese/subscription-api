@@ -85,7 +85,7 @@ func TestBaseAccount_SyncMobile(t *testing.T) {
 				CampaignCode: tt.fields.CampaignCode,
 			}
 			if got := a.SyncMobile(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SyncMobile() = %v, want %v", got, tt.want)
+				t.Errorf("UpsertMobile() = %v, want %v", got, tt.want)
 			}
 		})
 	}
