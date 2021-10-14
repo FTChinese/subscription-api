@@ -169,6 +169,11 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
+	if baseAccount.IsMobileOnly() {
+		_ = render.New(w).BadRequest("Mobile-created account is not allowed to switch phone number")
+		return
+	}
+
 	currentMobile := baseAccount.GetMobile()
 	// Already set.
 	// Here's the difference from MobileLinkExistingEmail:
