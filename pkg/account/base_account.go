@@ -46,7 +46,7 @@ func NewEmailBaseAccount(params input.EmailSignUpParams) BaseAccount {
 		StripeID:   null.String{},
 		Email:      params.Email,
 		Password:   params.Password,
-		Mobile:     null.String{},
+		Mobile:     params.Mobile,
 		UserName:   null.StringFrom(params.Email),
 		AvatarURL:  null.String{},
 		IsVerified: false,
@@ -69,6 +69,22 @@ func NewMobileBaseAccount(params input.MobileSignUpParams) BaseAccount {
 	}
 }
 
+func (a BaseAccount) ExtractEmailName() string {
+	return strings.Split(a.Email, "@")[0]
+}
+
+func (a BaseAccount) GetMobile() string {
+	if a.Mobile.Valid {
+		return a.Mobile.String
+	}
+
+	if strings.HasSuffix(a.Email, mobileEmailSuffix) {
+		return a.ExtractEmailName()
+	}
+
+	return ""
+}
+
 // IsMobileEmail checks if a user's email is a faked one derived from phone number
 // but Mobile field is missing.
 func (a BaseAccount) IsMobileEmail() bool {
@@ -76,7 +92,7 @@ func (a BaseAccount) IsMobileEmail() bool {
 }
 
 func (a BaseAccount) SyncMobile() BaseAccount {
-	m := strings.Split(a.Email, "@")[0]
+	m := a.ExtractEmailName()
 
 	if !validator.IsMobile(m) {
 		return a
@@ -95,6 +111,11 @@ func (a BaseAccount) WithUserName(name string) BaseAccount {
 
 func (a BaseAccount) WithEmail(email string) BaseAccount {
 	a.Email = email
+	return a
+}
+
+func (a BaseAccount) WithMobile(m string) BaseAccount {
+	a.Mobile = null.StringFrom(m)
 	return a
 }
 
@@ -154,5 +175,5 @@ func (a BaseAccount) NormalizeName() string {
 		return strings.Split(a.UserName.String, "@")[0]
 	}
 
-	return strings.Split(a.Email, "@")[0]
+	return a.ExtractEmailName()
 }
