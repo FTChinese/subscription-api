@@ -1,6 +1,9 @@
 package account
 
-import "github.com/guregu/null"
+import (
+	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/guregu/null"
+)
 
 // MobileUpdater is sued to retrieve/set user mobile
 // number in profile table.
@@ -9,40 +12,52 @@ type MobileUpdater struct {
 	Mobile null.String `db:"mobile_phone"`
 }
 
-// IsMobileSettable verifies if dest MobileUpdater could be
+// PermitUpsertMobile verifies if dest MobileUpdater could be
 // inserted/updated on profile table when it has rows of
 // MobileUpdater.
-func IsMobileSettable(rows []MobileUpdater, dest MobileUpdater) error {
+// Rules to set a mobile on an account:
+// The mobile must not exist yet;
+// The profile table might not have row for this ftc id,
+// or it has a row but mobile_phone column is empty,
+// or mobile_phone column has another phone (override)
+func PermitUpsertMobile(rows []MobileUpdater, dest MobileUpdater) (db.WriteKind, error) {
 	rowCount := len(rows)
 
+	// Both ftc id and mobile has a row.
+	// Since they are different, ftc row has another mobile set
+	// while the mobile row has another ftc id.
 	if rowCount > 1 {
-		return ErrMobileTaken
+		return db.WriteKindDenial, ErrMobileTakenByOther
 	}
 
+	// Only one row retrieved
 	if rowCount == 1 {
 		current := rows[0]
 		// If this row's ftc id does not match the params.FtcID,
-		// it means this row is retrieve by mobile number and
-		// the mobile is set on another account.
+		// it means the profile table does not have a row for this ftc id,
+		// and the row is retrieved by mobile number.
+		// The mobile is set on another account so this ftc id should not be allowed to use it.
 		if current.FtcID != dest.FtcID {
-			return ErrMobileTaken
+			return db.WriteKindDenial, ErrMobileTakenByOther
 		}
 
 		// This row indeed belong to the params.FtcID.
 		// Let's see its Mobile field.
-		// Only allowed to proceed if the Mobile is empty.
 		if current.Mobile.Valid {
 			// This ftc id already has this mobile set.
 			if current.Mobile.String == dest.Mobile.String {
-				return ErrMobileSet
+				return db.WriteKindDenial, nil
 			} else {
-				return ErrAccountHasMobileSet
+				// The ftc id has another mobile on it, you could override it.
+				return db.WriteKindUpdate, nil
 			}
 		}
+
 		// Mobile field is empty, fallthrough.
+		return db.WriteKindUpdate, nil
 	}
 
-	return nil
+	return db.WriteKindInsert, nil
 }
 
 const StmtLockProfileByIDOrMobile = `
@@ -52,18 +67,12 @@ FROM user_db.profile
 WHERE user_id = ? OR mobile_phone = ?
 FOR UPDATE`
 
-const colsSetPhone = `
-mobile_phone = :mobile_phone,
-updated_utc = UTC_TIMESTAMP()
-`
-
-// StmtUpsertPhone set a mobile phone to user account.
-const StmtUpsertPhone = `
-INSERT INTO user_db.profile
-SET user_id = :ftc_id,
-` + colsSetPhone + `
-ON DUPLICATE KEY UPDATE
-` + colsSetPhone
+const StmtSetPhone = `
+UPDATE user_db.profile
+SET mobile_phone = :mobile_phone,
+	updated_utc = UTC_TIMESTAMP()
+WHERE user_id = :ftc_id
+LIMIT 1`
 
 const StmtUnsetMobile = `
 UPDATE user_db.profile
