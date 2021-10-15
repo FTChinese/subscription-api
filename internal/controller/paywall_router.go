@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 	"net/http"
@@ -51,13 +52,22 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) {
 	router.repo.ClearCache()
 
-	pw, err := router.repo.LoadPaywall(true)
+	pwLive, err := router.repo.LoadPaywall(true)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_ = render.New(w).JSON(http.StatusOK, pw)
+	pwTest, err := router.repo.LoadPaywall(false)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).JSON(http.StatusOK, map[string]pw.Paywall{
+		"live": pwLive,
+		"test": pwTest,
+	})
 }
 
 func (router PaywallRouter) LoadPricing(w http.ResponseWriter, req *http.Request) {
