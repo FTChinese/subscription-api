@@ -9,7 +9,7 @@
 
 其中，`introductory`, `retention`, `win_back` 三类互斥，一个用户在某一时间只会处于某一状态下。 
 
-步骤1：根据Membership中包含的数据推测该用户属于哪些折扣类别（可能包含多个）：
+步骤1：根据Membership中包含的数据推测该用户可以使用哪些折扣类别（可能包含多个）：
 
 * 当Membership中的`tier`为`null`时，用户可能未登录，或者没有会员记录，则`promotion`和`introductory`均适用
 * 如果`tier`不是`null`，则检测是否已经过期，过期的标准是`expireDate`在今天之前，并且`autoRenew`是`false`。如果已经过期，则属于`promotion` 或者`win_back`。
