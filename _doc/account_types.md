@@ -37,21 +37,21 @@ interface Wechat {
 
 ```typescript
 interface Membership {
-    ftcId?: string;
-    unionId: string,
-    tier?: 'standard' | 'premium';
-    cycle?: 'month' | 'year';
-    expireDate?: string;
-    payMethod?: 'alipay' | 'wechat' | 'stripe' | 'apple' | 'b2b';
-    ftcPlanId?: string;
-    stripeSubsId?: string;
+    ftcId: string | null;
+    unionId: string | null,
+    tier: 'standard' | 'premium' | null;
+    cycle: 'month' | 'year' | null;
+    expireDate: string | null;
+    payMethod: 'alipay' | 'wechat' | 'stripe' | 'apple' | 'b2b' | null;
+    ftcPlanId: string | null;
+    stripeSubsId: string | null;
     autoRenew: boolean;
-    status?: 'active' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'trialing' | 'unpaid'; // Stripe subscription status
-    appleSubsId?: string;
-    b2bLicenceId?: string;
+    status?: 'active' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'trialing' | 'unpaid' | null; // Stripe subscription status
+    appleSubsId: string | null;
+    b2bLicenceId: string | null;
     standardAddOn: number; // Default 0
     premiumAddOn: number;
-    vip: boolean;
+    vip: boolean; // Default false
 }
 ```
 
