@@ -13,7 +13,7 @@
 
 * 当Membership中的`tier`为`null`时，用户可能未登录，或者没有会员记录，则`promotion`和`introductory`均适用
 * 如果`tier`不是`null`，则检测是否已经过期，过期的标准是`expireDate`在今天之前，并且`autoRenew`是`false`。如果已经过期，则属于`promotion` 或者`win_back`。
-* 如果未过期，则属于`promotion`或者`win_back`。
+* 如果未过期，则属于`promotion`或者`retention`。
 
 步骤2：筛选出一个价格下的有效折扣。如果一个折扣未设置起止时间，则为永久性折扣，始终有效；如果有起止时间，则当前时刻处于起止时间中的折扣才有效。有效折扣可能会有多个。
 
