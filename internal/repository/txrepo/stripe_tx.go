@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// StripeTx extends SharedTx.
 type StripeTx struct {
 	SharedTx
 }
