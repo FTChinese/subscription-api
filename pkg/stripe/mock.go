@@ -1,3 +1,4 @@
+//go:build !production
 // +build !production
 
 package stripe
@@ -36,6 +37,10 @@ type MockSubsBuilder struct {
 }
 
 func NewMockSubsBuilder(ftcID string) MockSubsBuilder {
+	if ftcID == "" {
+		ftcID = uuid.New().String()
+	}
+
 	return MockSubsBuilder{
 		ftcID:   ftcID,
 		edition: price.StripeEditions.MustFindByEdition(price.StdYearEdition, false),
@@ -53,16 +58,27 @@ func (b MockSubsBuilder) WithStatus(s enum.SubsStatus) MockSubsBuilder {
 	return b
 }
 
+func (b MockSubsBuilder) WithCanceled() MockSubsBuilder {
+	return b.WithStatus(enum.SubsStatusCanceled)
+}
+
 func (b MockSubsBuilder) Build() Subs {
 	start := time.Now()
 	end := dt.NewTimeRange(start).WithCycle(b.edition.Cycle).End
+	canceled := time.Time{}
+
+	if b.status == enum.SubsStatusCanceled {
+		end = time.Now().AddDate(0, 0, -1)
+		start = dt.NewTimeRange(end).WithCycleN(b.edition.Cycle, -1).End
+		canceled = end
+	}
 
 	return Subs{
 		ID:                   faker.GenStripeSubID(),
 		Edition:              b.edition.Edition,
 		WillCancelAtUtc:      chrono.Time{},
 		CancelAtPeriodEnd:    false,
-		CanceledUTC:          chrono.Time{},
+		CanceledUTC:          chrono.TimeFrom(canceled), // Set it for automatic cancel.
 		CurrentPeriodEnd:     chrono.TimeFrom(end),
 		CurrentPeriodStart:   chrono.TimeFrom(start),
 		CustomerID:           faker.GenCustomerID(),
