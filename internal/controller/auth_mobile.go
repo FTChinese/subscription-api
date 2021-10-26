@@ -184,7 +184,8 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 // password: string;
 // mobile: string;
 // deviceToken?: string;
-// sourceUrl?: string; // Used to compose email verification link.
+//
+// Require header footprint.Client.
 //
 // Returns reader.Account.
 // Possible cases:
