@@ -128,15 +128,15 @@ func RequireAppID(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// LogRequest print request headers.
-func LogRequest(next http.Handler) http.Handler {
+// DumpRequest print request headers.
+func DumpRequest(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		dump, err := httputil.DumpRequest(req, false)
 
 		if err != nil {
 			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
 		}
-		log.Printf(string(dump))
+		log.Printf("\n------Dump request starts------\n%s------Dump request ends------\n", string(dump))
 
 		next.ServeHTTP(w, req)
 	}
