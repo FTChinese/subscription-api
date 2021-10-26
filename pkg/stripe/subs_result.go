@@ -60,7 +60,7 @@ func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
 	// Only create a snapshot if membership exists and is actually modified.
 	var snapshot reader.MemberSnapshot
 	if !params.CurrentMember.IsZero() && isModified {
-		snapshot = params.CurrentMember.Snapshot(reader.StripeArchiver(params.Action))
+		snapshot = params.CurrentMember.Snapshot(reader.NewStripeArchiver(params.Action))
 	}
 
 	return SubsResult{

@@ -7,7 +7,7 @@ import (
 )
 
 func TestFtcArchiver(t *testing.T) {
-	assert.Equal(t, FtcArchiver(enum.OrderKindRenew).String(), "order.renew")
+	assert.Equal(t, NewOrderArchiver(enum.OrderKindRenew).String(), "order.renew")
 
-	assert.Equal(t, FtcArchiver(enum.OrderKindUpgrade).String(), "order.upgrade")
+	assert.Equal(t, NewOrderArchiver(enum.OrderKindUpgrade).String(), "order.upgrade")
 }

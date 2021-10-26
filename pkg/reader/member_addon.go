@@ -230,6 +230,6 @@ func (m Membership) ClaimAddOns(inv []invoice.Invoice) (AddOnClaimed, error) {
 	return AddOnClaimed{
 		Invoices:   addOns,
 		Membership: newM,
-		Snapshot:   m.Snapshot(FtcArchiver(enum.OrderKindAddOn)),
+		Snapshot:   m.Snapshot(NewOrderArchiver(enum.OrderKindAddOn)),
 	}, nil
 }

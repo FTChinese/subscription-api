@@ -46,7 +46,7 @@ func NewSubsResult(subs Subscription, params SubsResultParams) (SubsResult, erro
 
 	var snapshot reader.MemberSnapshot
 	if !params.CurrentMember.IsZero() {
-		snapshot = params.CurrentMember.Snapshot(reader.AppleArchiver(params.Action))
+		snapshot = params.CurrentMember.Snapshot(reader.NewAppleArchiver(params.Action))
 	}
 
 	return SubsResult{

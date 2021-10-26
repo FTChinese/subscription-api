@@ -85,7 +85,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 		UserIDs:       params.Account.CompoundIDs(),
 		CurrentMember: mmb,
 		Kind:          subsKind,
-		Action:        reader.ActionCreate,
+		Action:        reader.ActionActionCreate,
 	})
 
 	if err != nil {
