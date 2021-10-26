@@ -11,11 +11,11 @@ import (
 	"net/http"
 )
 
-// RequestSMSVerification sends an SMS to the specified mobile number.
+// SMSToModifyMobile sends an SMS to the specified mobile number.
 // Used to verify and link a mobile after email account logged in.
 // Input:
 // mobile: string;
-func (router AccountRouter) RequestSMSVerification(w http.ResponseWriter, req *http.Request) {
+func (router AccountRouter) SMSToModifyMobile(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
