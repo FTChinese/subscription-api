@@ -55,7 +55,7 @@ func StartServer(s ServerStatus) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(controller.LogRequest)
+	r.Use(controller.DumpRequest)
 	r.Use(controller.NoCache)
 
 	r.Route("/auth", func(r chi.Router) {
@@ -192,7 +192,7 @@ func StartServer(s ServerStatus) {
 			// When creating a record in DB, user id is save alongside
 			// the SMS code so that later when performing verification,
 			// we could verify this code is indeed target at this user.
-			r.Put("/verification", accountRouter.RequestSMSVerification)
+			r.Put("/verification", accountRouter.SMSToModifyMobile)
 		})
 
 		r.Route("/address", func(r chi.Router) {
