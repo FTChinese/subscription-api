@@ -2,6 +2,7 @@ package readers
 
 import (
 	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -168,8 +169,8 @@ func TestEnv_ArchiveMember(t *testing.T) {
 			},
 			args: args{
 				snapshot: m.Snapshot(reader.Archiver{
-					Name:   reader.NameOrder,
-					Action: reader.ActionCreate,
+					Name:   reader.ArchiveNameOrder,
+					Action: reader.ActionActionCreate,
 				}),
 			},
 			wantErr: false,
@@ -196,17 +197,17 @@ func TestEnv_ListSnapshot(t *testing.T) {
 	env.ArchiveMember(reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
 		WithFtcID(ftcID).
 		Build().
-		Snapshot(reader.FtcArchiver(enum.OrderKindCreate)))
+		Snapshot(reader.NewOrderArchiver(enum.OrderKindCreate)))
 
 	env.ArchiveMember(reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
 		WithFtcID(ftcID).
 		Build().
-		Snapshot(reader.FtcArchiver(enum.OrderKindRenew)))
+		Snapshot(reader.NewOrderArchiver(enum.OrderKindRenew)))
 
 	env.ArchiveMember(reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
 		WithFtcID(ftcID).
 		Build().
-		Snapshot(reader.FtcArchiver(enum.OrderKindUpgrade)))
+		Snapshot(reader.NewOrderArchiver(enum.OrderKindUpgrade)))
 
 	type fields struct {
 		DBs    db.ReadWriteMyDBs
@@ -251,6 +252,49 @@ func TestEnv_ListSnapshot(t *testing.T) {
 			}
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
+
+func TestEnv_VersionMembership(t *testing.T) {
+
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+
+	p := test.NewPersona()
+
+	type args struct {
+		v reader.MembershipVersioned
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Save membership version",
+			args: args{
+				v: reader.MembershipVersioned{
+					ID: ids.SnapshotID(),
+					AnteChange: reader.MembershipJSON{
+						Membership: p.MemberBuilder().Build(),
+					},
+					CreatedBy:        null.StringFrom(reader.NewStripeArchiver(reader.ActionActionWebhook).String()),
+					CreatedUTC:       chrono.TimeNow(),
+					B2BTransactionID: null.String{},
+					PostChange: reader.MembershipJSON{
+						Membership: p.MemberBuilder().Build(),
+					},
+					RetailOrderID: null.String{},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := env.VersionMembership(tt.args.v); (err != nil) != tt.wantErr {
+				t.Errorf("VersionMembership() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }
