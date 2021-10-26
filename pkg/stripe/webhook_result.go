@@ -47,6 +47,17 @@ type WebhookResultBuilder struct {
 	FtcMember    reader.Membership
 }
 
+// Build generates WebhookResult.
+// Possibilities:
+// * No membership correspond to stripe subscription id. In such case what you can do depends on the ftc side:
+//    * Ftc side has no membership. You are safe to create a stripe membership directly;
+//    * Ftc side has membership but expired. You can override it.
+//    * Ftc side is a one-time purchase, possibilities are:
+//        * Stripe subscription expired, you are not allowed to touch ftc membership
+//        * Stripe subscription is not expired, override ftc side with carry over addon.
+// * Stripe side has membership:
+//    * If its user id does not match the account retrieve using customer id, it indicates data inconsistency, stop;
+//    * Otherwise the stripe membership already exists, simply update it.
 func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 	if b.StripeMember.IsZero() {
 		// If ftc side does not have membership.
@@ -115,15 +126,20 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 		return WebhookResult{}, errors.New("cannot permit stripe to override an existing membership")
 	}
 
+	// Since stripe membership exists, it must match user id;
+	// otherwise it indicates we are retrieving different users
+	// by subscription id and customer id, which shouldn't
+	// happen.
 	if b.StripeMember.CompoundID != b.UserIDs.CompoundID {
 		return WebhookResult{}, errors.New("stripe subscription is not targeting this user")
 	}
 
-	// Current membership must be created from the subs.
+	// Current membership must be created from the subs,
+	// simply update it.
 	newMmb := NewMembership(MembershipParams{
 		UserIDs: b.UserIDs,
 		Subs:    b.Subs,
-		AddOn:   b.StripeMember.AddOn,
+		AddOn:   b.StripeMember.AddOn, // Carry on previous addon without touch.
 	})
 
 	return WebhookResult{
