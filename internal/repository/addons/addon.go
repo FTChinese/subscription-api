@@ -81,6 +81,10 @@ func (env Env) ClaimAddOn(ids ids.UserIDs) (reader.AddOnClaimed, error) {
 	return result, nil
 }
 
+// CreateAddOn saves an addon invoice and increase
+// membership's addon fields. This is usually done manually
+// as a compensation mechanism.
+// Do not use it if addon is created automatically.
 func (env Env) CreateAddOn(inv invoice.Invoice) (reader.AddOnInvoiceCreated, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
@@ -90,7 +94,7 @@ func (env Env) CreateAddOn(inv invoice.Invoice) (reader.AddOnInvoiceCreated, err
 		sugar.Error(err)
 		return reader.AddOnInvoiceCreated{}, err
 	}
-	// Retrieve current membership. It must exists.
+	// Retrieve current membership. It must exist.
 	member, err := otx.RetrieveMember(inv.CompoundID)
 	if err != nil {
 		sugar.Error(err)
@@ -128,6 +132,6 @@ func (env Env) CreateAddOn(inv invoice.Invoice) (reader.AddOnInvoiceCreated, err
 	return reader.AddOnInvoiceCreated{
 		Invoice:    inv,
 		Membership: newM,
-		Snapshot:   member.Snapshot(reader.FtcArchiver(enum.OrderKindAddOn)),
+		Snapshot:   member.Snapshot(reader.NewOrderArchiver(enum.OrderKindAddOn)),
 	}, nil
 }
