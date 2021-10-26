@@ -3,8 +3,8 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/webhook"
@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-// Handle subscription received by webhook and refreshing.
+// Handle subscription received by webhook.
 func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 
 	defer router.logger.Sync()
@@ -22,11 +22,12 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 	account, err := router.stripeRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
-		// If user account is not found, we still want to save this subscription.
+		// If user account is not found,
+		// we still want to save this subscription.
+		// Stop here since we don't know who's using this subscription.
 		if err == sql.ErrNoRows {
 			subs, err := stripe.NewSubs(ss, ids.UserIDs{})
 			if err != nil {
-				sugar.Error(err)
 				return err
 			}
 
@@ -38,17 +39,32 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 		return err
 	}
 
-	result, err := router.stripeRepo.OnSubscription(ss, stripe.SubsResultParams{
-		UserIDs: account.CompoundIDs(),
-		Action:  reader.ActionWebhook,
-	})
+	// stripe.Subs could always be created regardless of user account present or not.
+	userIDs := account.CompoundIDs()
+	subs, err := stripe.NewSubs(ss, userIDs)
 	if err != nil {
-		sugar.Error(err)
 		return err
 	}
 
-	if result.Modified {
-		router.handleSubsResult(result)
+	result, err := router.stripeRepo.OnWebhookSubs(subs, userIDs)
+	if err != nil {
+		sugar.Error(err)
+
+		var whe stripe.WebhookError
+		if errors.As(err, &whe) {
+			err := router.stripeRepo.SaveWebhookError(whe)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}
+
+		return err
+	}
+
+	err = router.stripeRepo.VersionMembership(result.Versioned)
+
+	if err != nil {
+		sugar.Error(err)
 	}
 
 	return err
