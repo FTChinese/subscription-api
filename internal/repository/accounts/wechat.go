@@ -104,8 +104,8 @@ func (env Env) WxSignUp(unionID string, input input.EmailSignUpParams) (reader.W
 		Account:           merged,
 		FtcMemberSnapshot: reader.MemberSnapshot{},
 		WxMemberSnapshot: wxAccount.Membership.Snapshot(reader.Archiver{
-			Name:   reader.NameWechat,
-			Action: reader.ActionLink,
+			Name:   reader.ArchiveNameWechat,
+			Action: reader.ActionActionLink,
 		}),
 	}, nil
 }
@@ -215,8 +215,8 @@ func (env Env) UnlinkWx(acnt reader.Account, anchor enum.AccountKind) error {
 
 	go func() {
 		_ = env.ArchiveMember(acnt.Membership.Snapshot(reader.Archiver{
-			Name:   reader.NameWechat,
-			Action: reader.ActionUnlink,
+			Name:   reader.ArchiveNameWechat,
+			Action: reader.ActionActionUnlink,
 		}))
 	}()
 

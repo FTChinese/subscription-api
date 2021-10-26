@@ -103,12 +103,12 @@ func (b WxEmailLinkBuilder) Build() (WxEmailLinkResult, error) {
 		IsDuplicateLink: false,
 		Account:         mergedAccount,
 		FtcMemberSnapshot: b.FTC.Membership.Snapshot(Archiver{
-			Name:   NameWechat,
-			Action: ActionLink,
+			Name:   ArchiveNameWechat,
+			Action: ActionActionLink,
 		}),
 		WxMemberSnapshot: b.Wechat.Membership.Snapshot(Archiver{
-			Name:   NameWechat,
-			Action: ActionLink,
+			Name:   ArchiveNameWechat,
+			Action: ActionActionLink,
 		}),
 	}, nil
 }

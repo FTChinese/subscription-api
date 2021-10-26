@@ -32,7 +32,7 @@ func Test_newSubsResult(t *testing.T) {
 					UserIDs:       member.UserIDs,
 					Kind:          reader.SubsKindOneTimeToSub,
 					CurrentMember: member,
-					Action:        reader.ActionCreate,
+					Action:        reader.ActionActionCreate,
 				},
 			},
 			want: SubsResult{
@@ -55,7 +55,7 @@ func Test_newSubsResult(t *testing.T) {
 					B2BLicenceID:  null.String{},
 					AddOn:         member.CarriedOverAddOn(),
 				}.Sync(),
-				Snapshot: member.Snapshot(reader.StripeArchiver(reader.ActionCreate)),
+				Snapshot: member.Snapshot(reader.NewStripeArchiver(reader.ActionActionCreate)),
 				CarryOverInvoice: member.CarryOverInvoice().
 					WithStripeSubsID(subs.ID),
 			},

@@ -12,28 +12,28 @@ import (
 type ArchiveName string
 
 const (
-	NameOrder  ArchiveName = "order"
-	NameWechat ArchiveName = "wechat"
-	NameApple  ArchiveName = "apple"
-	NameStripe ArchiveName = "stripe"
-	NameB2B    ArchiveName = "b2b"
+	ArchiveNameOrder  ArchiveName = "order"  // For ftc order
+	ArchiveNameWechat ArchiveName = "wechat" // For linking wechat
+	ArchiveNameApple  ArchiveName = "apple"  // For apple link
+	ArchiveNameStripe ArchiveName = "stripe"
+	ArchiveNameB2B    ArchiveName = "b2b"
 )
 
 type ArchiveAction string
 
 const (
-	ActionCreate     ArchiveAction = "create"  // Alipay, wechat, stripe
-	ActionRenew      ArchiveAction = "renew"   // Alipay, wechat
-	ActionUpgrade    ArchiveAction = "upgrade" // Alipay, wechat, stripe
-	ActionAddOn      ArchiveAction = "transfer_addon"
-	ActionVerify     ArchiveAction = "verify"  // Apple
-	ActionPoll       ArchiveAction = "poll"    // Apple, alipay, wechat
-	ActionLink       ArchiveAction = "link"    // Apple
-	ActionUnlink     ArchiveAction = "unlink"  // Apple
-	ActionRefresh    ArchiveAction = "refresh" // Stripe refresh.
-	ActionCancel     ArchiveAction = "cancel"
-	ActionReactivate ArchiveAction = "reactivate"
-	ActionWebhook    ArchiveAction = "webhook" // Apple, Stripe webhook
+	ActionActionCreate     ArchiveAction = "create"  // Alipay, wechat, stripe
+	ActionActionRenew      ArchiveAction = "renew"   // Alipay, wechat
+	ActionActionUpgrade    ArchiveAction = "upgrade" // Alipay, wechat, stripe
+	ActionActionAddOn      ArchiveAction = "transfer_addon"
+	ActionActionVerify     ArchiveAction = "verify"  // Apple
+	ActionPoll             ArchiveAction = "poll"    // Apple, alipay, wechat
+	ActionActionLink       ArchiveAction = "link"    // Apple
+	ActionActionUnlink     ArchiveAction = "unlink"  // Apple
+	ActionActionRefresh    ArchiveAction = "refresh" // Stripe refresh.
+	ActionActionCancel     ArchiveAction = "cancel"
+	ActionActionReactivate ArchiveAction = "reactivate"
+	ActionActionWebhook    ArchiveAction = "webhook" // Apple, Stripe webhook
 )
 
 type Archiver struct {
@@ -41,66 +41,75 @@ type Archiver struct {
 	Action ArchiveAction
 }
 
+func (a Archiver) String() string {
+	return fmt.Sprintf("%s.%s", a.Name, a.Action)
+}
+
 var (
 	ArchiverAppleLink = Archiver{
-		Name:   NameApple,
-		Action: ActionLink,
+		Name:   ArchiveNameApple,
+		Action: ActionActionLink,
 	}
 	ArchiverAppleUnlink = Archiver{
-		Name:   NameApple,
-		Action: ActionUnlink,
+		Name:   ArchiveNameApple,
+		Action: ActionActionUnlink,
 	}
 )
 
-func FtcArchiver(k enum.OrderKind) Archiver {
+func NewOrderArchiver(k enum.OrderKind) Archiver {
 	switch k {
 	case enum.OrderKindCreate:
-		return Archiver{
-			Name:   NameOrder,
-			Action: ActionCreate,
-		}
+		return NewFtcArchiver(ActionActionCreate)
 
 	case enum.OrderKindRenew:
-		return Archiver{
-			Name:   NameOrder,
-			Action: ActionRenew,
-		}
+		return NewFtcArchiver(ActionActionRenew)
 
 	case enum.OrderKindUpgrade:
-		return Archiver{
-			Name:   NameOrder,
-			Action: ActionUpgrade,
-		}
+		return NewFtcArchiver(ActionActionUpgrade)
 
 	case enum.OrderKindAddOn:
-		return Archiver{
-			Name:   NameOrder,
-			Action: ActionAddOn,
-		}
+		return NewFtcArchiver(ActionActionAddOn)
 	}
 
 	return Archiver{
-		Name:   NameOrder,
+		Name:   ArchiveNameOrder,
 		Action: "Unknown",
 	}
 }
 
-func StripeArchiver(a ArchiveAction) Archiver {
+func NewFtcArchiver(a ArchiveAction) Archiver {
 	return Archiver{
-		Name:   NameStripe,
+		Name:   ArchiveNameOrder,
 		Action: a,
 	}
 }
 
-func AppleArchiver(a ArchiveAction) Archiver {
+func NewWechatArchiver(a ArchiveAction) Archiver {
 	return Archiver{
-		Name:   NameApple,
+		Name:   ArchiveNameWechat,
 		Action: a,
 	}
 }
 
-func (a Archiver) String() string {
-	return fmt.Sprintf("%s.%s", a.Name, a.Action)
+func NewStripeArchiver(a ArchiveAction) Archiver {
+	return Archiver{
+		Name:   ArchiveNameStripe,
+		Action: a,
+	}
+}
+
+func NewAppleArchiver(a ArchiveAction) Archiver {
+	return Archiver{
+		Name:   ArchiveNameApple,
+		Action: a,
+	}
+}
+
+func NewB2BArchiver(a ArchiveAction) Archiver {
+	return Archiver{
+		Name:   ArchiveNameB2B,
+		Action: a,
+	}
 }
 
 const StmtSaveSnapshot = `
@@ -142,6 +151,7 @@ WHERE FIND_IN_SET(compound_id, ?) > 0`
 
 // MemberSnapshot saves a membership's status prior to
 // placing an order.
+// Deprecated. Will be saved in a single column as JSON.
 type MemberSnapshot struct {
 	SnapshotID string      `json:"id" db:"snapshot_id"`
 	CreatedBy  null.String `json:"createdBy" db:"created_by"`
