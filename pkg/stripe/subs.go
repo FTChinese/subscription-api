@@ -47,7 +47,9 @@ type Subs struct {
 	price.Edition
 	// A date in the future at which the subscription will automatically get canceled
 	WillCancelAtUtc chrono.Time `json:"cancelAtUtc" db:"cancel_at_utc"`
-	// If the subscription has been canceled with the at_period_end flag set to true, cancel_at_period_end on the subscription will be true. You can use this attribute to determine whether a subscription that has a status of active is scheduled to be canceled at the end of the current period.
+	// If the subscription has been canceled with the cancel_at_period_end flag set to true,
+	// cancel_at_period_end on the subscription will be true.
+	// You can use this attribute to determine whether a subscription that has a status of active is scheduled to be canceled at the end of the current period.
 	// When this field is true and it is not the end of current period,
 	// status is still active.
 	CancelAtPeriodEnd bool `json:"cancelAtPeriodEnd" db:"cancel_at_period_end"`
@@ -163,6 +165,16 @@ func (s Subs) IsAutoRenewal() bool {
 	return s.Status == enum.SubsStatusActive ||
 		s.Status == enum.SubsStatusIncomplete ||
 		s.Status == enum.SubsStatusTrialing
+}
+
+func (s Subs) IsExpired() bool {
+	if s.IsAutoRenewal() {
+		return false
+	}
+
+	expiresAt := s.ExpiresAt()
+
+	return expiresAt.Before(time.Now().Truncate(24 * time.Hour))
 }
 
 // ShouldUpsert checks whether stripe subscription should be allowed to
