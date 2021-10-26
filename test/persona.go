@@ -81,7 +81,7 @@ func (p *Persona) WithMobile(m string) *Persona {
 	return p
 }
 
-func (p *Persona) AccountID() ids.UserIDs {
+func (p *Persona) UserIDs() ids.UserIDs {
 
 	var id ids.UserIDs
 
@@ -190,9 +190,9 @@ func (p *Persona) MemberBuilder() MemberBuilder {
 		accountKind:  p.kind,
 		ftcID:        p.FtcID,
 		unionID:      p.UnionID,
-		price:        price.Price{},
-		payMethod:    0,
-		expiration:   time.Time{},
+		price:        price.MockPriceStdYear.Price,
+		payMethod:    enum.PayMethodAli,
+		expiration:   time.Now().AddDate(1, 0, 0),
 		subsStatus:   0,
 		autoRenewal:  false,
 		addOn:        addon.AddOn{},
