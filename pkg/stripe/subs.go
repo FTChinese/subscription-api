@@ -40,14 +40,14 @@ func NewSubsItem(ss *stripe.Subscription) SubsItem {
 }
 
 // Subs contains the essential data of a stripe subscription.
-// It it created from stripe's subscription upon initial creation,
+// It is created from stripe's subscription upon initial creation,
 // or refresh, or upgrade.
 type Subs struct {
 	ID string `json:"id" db:"id"`
 	price.Edition
 	// A date in the future at which the subscription will automatically get canceled
 	WillCancelAtUtc chrono.Time `json:"cancelAtUtc" db:"cancel_at_utc"`
-	// If the subscription has been canceled with the cancel_at_period_end flag set to true,
+	// If the subscription has been canceled with the at_period_end flag set to true,
 	// cancel_at_period_end on the subscription will be true.
 	// You can use this attribute to determine whether a subscription that has a status of active is scheduled to be canceled at the end of the current period.
 	// When this field is true and it is not the end of current period,
@@ -135,13 +135,21 @@ func NewSubs(ss *stripe.Subscription, ids ids.UserIDs) (Subs, error) {
 	}, nil
 }
 
+// ExpiresAt determines the exact expiration time.
+// If subscription is not in `canceled` status, then
+// current_period_end will be the final expiration time.
+// If subscription is in canceled state, it might be canceled
+// automatically (payment stopped) or manually.
+// For automatic cancel, canceled_at should be regarded as the final expiration time.
+// For manual cancel, the cancel_at_period_end is true. It will
+// expire upon current period end.
 func (s Subs) ExpiresAt() time.Time {
 	// If status is not in canceled state.
 	if s.Status != enum.SubsStatusCanceled {
 		return s.CurrentPeriodEnd.Time
 	}
 
-	// If canceled.
+	// If canceled. Might be automatic cancel.
 	// If it is neither scheduled to cancel at period end, nor
 	// in a future time, use the canceled_at field.
 	if !s.CancelAtPeriodEnd && s.WillCancelAtUtc.IsZero() {
@@ -154,6 +162,7 @@ func (s Subs) ExpiresAt() time.Time {
 	}
 
 	// cancel_at is set, use it.
+	// This won't happen for our design.
 	return s.WillCancelAtUtc.Time
 }
 
