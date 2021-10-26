@@ -23,6 +23,8 @@ func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(result.Membership)
 }
 
+// CreateAddOn manually add an addon to a user.
+// This is usually used to perform compensation.
 func (router SubsRouter) CreateAddOn(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
