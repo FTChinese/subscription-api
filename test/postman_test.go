@@ -28,6 +28,18 @@ func TestVerifySMSCode_NewMobile(t *testing.T) {
 	t.Logf("%s", faker.MustMarshalIndent(v))
 }
 
+func TestVerifySMSCode_ExistingMobile(t *testing.T) {
+	a := NewPersona().EmailMobileAccount()
+	repo := NewRepo()
+
+	repo.MustCreateFtcAccount(a)
+
+	v := ztsms.NewVerifier(a.Mobile.String, null.StringFrom(a.FtcID))
+	repo.MustSaveMobileVerifier(v)
+
+	t.Logf("%s", faker.MustMarshalIndent(v))
+}
+
 // Generate sms verification parameters for a mobile-only user.
 // * Create a mobile-derived account in userinfo.
 // * Create a verifier for this phone.
