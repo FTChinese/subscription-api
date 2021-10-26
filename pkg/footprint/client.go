@@ -15,10 +15,10 @@ import (
 // * `X-User-Agent: chrome`, only applicable to web app which forwards user agent here.
 // * `User-Agent: okhttp` only applicable to mobile devices.
 type Client struct {
-	Platform  enum.Platform `db:"platform"`
-	Version   null.String   `db:"client_version"`
-	UserIP    null.String   `db:"user_ip"`
-	UserAgent null.String   `db:"user_agent"`
+	Platform  enum.Platform `db:"platform"`       // For X-Client-Type
+	Version   null.String   `db:"client_version"` // For X-Client-Version
+	UserIP    null.String   `db:"user_ip"`        // For X-User-Ip, X-Real-Ip, X-Forwarded-For
+	UserAgent null.String   `db:"user_agent"`     // For X-User-Agent, User-Agent
 }
 
 // NewClient collects information from a request.
