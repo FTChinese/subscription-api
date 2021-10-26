@@ -63,7 +63,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			},
 			want: subs.Order{
 				ID:         "",
-				UserIDs:    newPersona.AccountID(),
+				UserIDs:    newPersona.UserIDs(),
 				PlanID:     price.MockPriceStdYear.ID,
 				DiscountID: null.String{},
 				Price:      price.MockPriceStdYear.UnitAmount,
@@ -98,7 +98,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			},
 			want: subs.Order{
 				ID:         "",
-				UserIDs:    renewalPerson.AccountID(),
+				UserIDs:    renewalPerson.UserIDs(),
 				PlanID:     price.MockPriceStdYear.ID,
 				DiscountID: null.String{},
 				Price:      price.MockPriceStdYear.UnitAmount,
@@ -133,7 +133,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			},
 			want: subs.Order{
 				ID:         "",
-				UserIDs:    upgradePerson.AccountID(),
+				UserIDs:    upgradePerson.UserIDs(),
 				PlanID:     price.MockPricePrm.ID,
 				DiscountID: null.String{},
 				Price:      price.MockPricePrm.UnitAmount,
@@ -168,7 +168,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 			},
 			want: subs.Order{
 				ID:         "",
-				UserIDs:    addOnPerson.AccountID(),
+				UserIDs:    addOnPerson.UserIDs(),
 				PlanID:     price.MockPriceStdYear.ID,
 				DiscountID: null.String{},
 				Price:      price.MockPriceStdYear.UnitAmount,
