@@ -330,7 +330,7 @@ func TestCtxSubs_Render(t *testing.T) {
 						Build(),
 					CarriedOver: invoice.Invoice{},
 				},
-				Snapshot: reader.NewMockMemberBuilder("").WithPayMethod(enum.PayMethodStripe).Build().Snapshot(reader.FtcArchiver(enum.OrderKindAddOn)),
+				Snapshot: reader.NewMockMemberBuilder("").WithPayMethod(enum.PayMethodStripe).Build().Snapshot(reader.NewOrderArchiver(enum.OrderKindAddOn)),
 			},
 			wantErr: false,
 		},

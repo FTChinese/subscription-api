@@ -94,5 +94,5 @@ func (p ConfirmationParams) invoices() (Invoices, error) {
 }
 
 func (p ConfirmationParams) snapshot() reader.MemberSnapshot {
-	return p.Member.Snapshot(reader.FtcArchiver(p.Order.Kind))
+	return p.Member.Snapshot(reader.NewOrderArchiver(p.Order.Kind))
 }

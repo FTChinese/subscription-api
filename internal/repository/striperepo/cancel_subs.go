@@ -68,9 +68,9 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 
 	var action reader.ArchiveAction
 	if params.Cancel {
-		action = reader.ActionCancel
+		action = reader.ActionActionCancel
 	} else {
-		action = reader.ActionReactivate
+		action = reader.ActionActionReactivate
 	}
 
 	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{

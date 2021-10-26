@@ -59,7 +59,7 @@ func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 		UserIDs:       mmb.UserIDs,
 		Kind:          subsKind,
 		CurrentMember: mmb,
-		Action:        reader.ActionUpgrade,
+		Action:        reader.ActionActionUpgrade,
 	})
 
 	if err != nil {
