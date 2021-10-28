@@ -76,7 +76,7 @@ func (l *MobileLinkParams) Validate() *render.ValidationError {
 
 	l.Mobile = strings.TrimSpace(l.Mobile)
 
-	return validator.New(l.Mobile).
+	return validator.New("mobile").
 		Required().
 		Mobile().
 		Validate(l.Mobile)
