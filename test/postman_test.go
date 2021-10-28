@@ -67,7 +67,7 @@ func TestMobileSignUp_RealPhone(t *testing.T) {
 // Mobile login case 1: mobile used for the 1st time,
 // and user wants to create a new account with this mobile.
 // Simply generate a new phone works.
-func TestMobileSignUp_FakeEmailFromPhone(t *testing.T) {
+func TestMobileSignUp_NewMobileAccount(t *testing.T) {
 	v := ztsms.NewVerifier(faker.GenPhone(), null.String{})
 
 	NewRepo().MustSaveMobileVerifier(v)
@@ -104,6 +104,21 @@ func TestMobileSignUp_LinkExistingEmail(t *testing.T) {
 
 	t.Logf("%s", faker.MustMarshalIndent(a))
 	t.Logf("%s", faker.MustMarshalIndent(v))
+}
+
+func TestEmailVerification_NewToken(t *testing.T) {
+	p := NewPersona()
+
+	vrf, err := account.NewEmailVerifier(p.Email, "")
+	if err != nil {
+		panic(err)
+	}
+
+	repo := NewRepo()
+	repo.CreateFtcAccount(p.EmailOnlyAccount())
+	repo.MustSaveEmailVerifier(vrf)
+
+	t.Logf("%s", faker.MustMarshalIndent(vrf))
 }
 
 func TestLoadAccountByFtcID_SyncMobile(t *testing.T) {
