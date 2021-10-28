@@ -180,10 +180,10 @@ func (router AuthRouter) VerifySMSCode(w http.ResponseWriter, req *http.Request)
 // and link to the provided mobile phone.
 //
 // Input:
-// email: string;
-// password: string;
-// mobile: string;
-// deviceToken?: string;
+// * email: string;
+// * password: string;
+// * mobile: string;
+// * deviceToken?: string;
 //
 // Require header footprint.Client.
 //
