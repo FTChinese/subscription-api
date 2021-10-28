@@ -228,8 +228,10 @@ func (router AuthRouter) VerifyEmail(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Retrieve verifier by token
 	vrf, err := router.userRepo.RetrieveEmailVerifier(token)
 	if err != nil {
+		// Might not be found.
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
@@ -237,6 +239,7 @@ func (router AuthRouter) VerifyEmail(w http.ResponseWriter, req *http.Request) {
 
 	baseAccount, err := router.userRepo.BaseAccountByEmail(vrf.Email)
 	if err != nil {
+		// Email might not be found.
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
