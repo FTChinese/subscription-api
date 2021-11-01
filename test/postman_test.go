@@ -4,7 +4,6 @@
 package test
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
@@ -130,10 +129,26 @@ func TestLoadAccountByFtcID_SyncMobile(t *testing.T) {
 	t.Logf("%s", faker.MustMarshalIndent(a))
 }
 
-func TestUnsetMobile(t *testing.T) {
-	a := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).Build()
+func TestAccount_Delete(t *testing.T) {
+	a := NewPersona().EmailOnlyAccount()
 
-	NewRepo().MustCreateFtcAccount(a)
+	repo := NewRepo()
+
+	repo.CreateFtcAccount(a)
 
 	t.Logf("%s", faker.MustMarshalIndent(a))
+}
+
+func TestAccount_DeleteWithValidMembership(t *testing.T) {
+	p := NewPersona()
+	a := p.EmailOnlyAccount()
+	m := p.MemberBuilder().Build()
+
+	repo := NewRepo()
+
+	repo.MustCreateFtcAccount(a)
+	repo.MustSaveMembership(m)
+
+	t.Logf("%s", faker.MustMarshalIndent(a))
+	t.Logf("%s", faker.MustMarshalIndent(m))
 }
