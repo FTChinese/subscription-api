@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
@@ -128,34 +129,30 @@ func TestEnv_SignUpCount(t *testing.T) {
 	}
 }
 
-func TestEnv_VerifyPassword(t *testing.T) {
-	a := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).Build()
+func TestEnv_VerifyIDPassword(t *testing.T) {
+	p := test.NewPersona()
+	a := p.EmailOnlyAccount()
 
-	test.NewRepo().MustCreateFtcAccount(a)
+	repo := test.NewRepo()
+	repo.CreateFtcAccount(a)
 
-	type fields struct {
-		Env readers.Env
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
-		params input.PasswordUpdateParams
+		params account.IDCredentials
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    account.AuthResult
 		wantErr bool
 	}{
 		{
-			name: "Verify password before permitting change",
-			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
+			name: "Verify id and password",
 			args: args{
-				params: input.PasswordUpdateParams{
-					FtcID: a.FtcID,
-					Old:   a.Password,
-					New:   "",
+				params: account.IDCredentials{
+					FtcID:    a.FtcID,
+					Password: a.Password,
 				},
 			},
 			want: account.AuthResult{
@@ -167,48 +164,42 @@ func TestEnv_VerifyPassword(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
-			got, err := env.VerifyPassword(tt.args.params)
+
+			got, err := env.VerifyIDPassword(tt.args.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("VerifyPassword() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("VerifyIDPassword() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("VerifyPassword() got = %v, want %v", got, tt.want)
+				t.Errorf("VerifyIDPassword() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
 func TestEnv_UpdatePassword(t *testing.T) {
-	a := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).Build()
+	p := test.NewPersona()
+	a := p.EmailOnlyAccount()
 
-	test.NewRepo().MustCreateFtcAccount(a)
+	repo := test.NewRepo()
+	repo.CreateFtcAccount(a)
 
-	type fields struct {
-		Env readers.Env
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
-		p input.PasswordUpdateParams
+		p account.IDCredentials
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Update password",
-			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
-				p: input.PasswordUpdateParams{
-					FtcID: a.FtcID,
-					Old:   "",
-					New:   "23456789",
+				p: account.IDCredentials{
+					FtcID:    a.FtcID,
+					Password: "0987654321",
 				},
 			},
 			wantErr: false,
@@ -216,11 +207,20 @@ func TestEnv_UpdatePassword(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
+
 			if err := env.UpdatePassword(tt.args.p); (err != nil) != tt.wantErr {
 				t.Errorf("UpdatePassword() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			result, err := env.VerifyIDPassword(tt.args.p)
+			if err != nil {
+				t.Errorf("VerifyIDPassowrd() error = %v", err)
+				return
+			}
+
+			if !result.PasswordMatched {
+				t.Errorf("Changing password failed")
 			}
 		})
 	}
