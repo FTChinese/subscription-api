@@ -129,7 +129,7 @@ func TestLoadAccountByFtcID_SyncMobile(t *testing.T) {
 	t.Logf("%s", faker.MustMarshalIndent(a))
 }
 
-func TestAccount_Delete(t *testing.T) {
+func TestAccount_DeleteNoMembership(t *testing.T) {
 	a := NewPersona().EmailOnlyAccount()
 
 	repo := NewRepo()
@@ -151,4 +151,14 @@ func TestAccount_DeleteWithValidMembership(t *testing.T) {
 
 	t.Logf("%s", faker.MustMarshalIndent(a))
 	t.Logf("%s", faker.MustMarshalIndent(m))
+}
+
+func TestAccount_ChangePassword(t *testing.T) {
+	a := NewPersona().EmailOnlyAccount()
+
+	repo := NewRepo()
+
+	repo.CreateFtcAccount(a)
+
+	t.Logf("%s", faker.MustMarshalIndent(a))
 }
