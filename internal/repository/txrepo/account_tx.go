@@ -104,3 +104,33 @@ func (tx AccountTx) UpdateMobile(params account.MobileUpdater) error {
 
 	return nil
 }
+
+func (tx AccountTx) DeleteUserInfo(id string) error {
+	_, err := tx.Exec(account.StmtDeleteUser, id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx AccountTx) DeleteProfile(id string) error {
+	_, err := tx.Exec(account.StmtDeleteProfile, id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx AccountTx) SaveDeletedUser(d account.DeletedUser) error {
+	_, err := tx.NamedExec(account.StmtSaveDeletedUser, d)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
