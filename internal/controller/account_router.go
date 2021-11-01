@@ -115,9 +115,10 @@ func (router AccountRouter) DeleteFtcAccount(w http.ResponseWriter, req *http.Re
 
 	// email_missing: the requested email does not match this account's email, thus resource missing.
 	// subscription_already_exists: a valid membership exists, thus deletion not allowed.
-	if ve := acnt.VerifyDelete(params.Email); err != nil {
+	if ve := acnt.VerifyDelete(params.Email); ve != nil {
 		sugar.Error(err)
 		_ = render.New(w).Unprocessable(ve)
+		return
 	}
 
 	err = router.userRepo.DeleteAccount(acnt.Deleted())
