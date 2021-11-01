@@ -161,7 +161,11 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		// Get account by uuid.
-		r.With(controller.RequireFtcID).Get("/", accountRouter.LoadAccountByFtcID)
+		r.With(controller.RequireFtcID).
+			Get("/", accountRouter.LoadAccountByFtcID)
+
+		r.With(controller.RequireFtcID).
+			Delete("/", accountRouter.DeleteFtcAccount)
 
 		r.Route("/email", func(r chi.Router) {
 			r.Use(controller.RequireFtcID)
@@ -178,8 +182,13 @@ func StartServer(s ServerStatus) {
 		r.With(controller.RequireFtcID).
 			Patch("/name", accountRouter.UpdateName)
 
-		r.With(controller.RequireFtcID).
-			Patch("/password", accountRouter.UpdatePassword)
+		r.Route("/password", func(r chi.Router) {
+			r.Use(controller.RequireFtcID)
+
+			// Update password.
+			r.Patch("/", accountRouter.UpdatePassword)
+			//r.Post("/verification", accountRouter.VerifyPassword)
+		})
 
 		r.Route("/mobile", func(r chi.Router) {
 			r.Use(controller.RequireFtcID)
@@ -189,7 +198,7 @@ func StartServer(s ServerStatus) {
 			// Create a verification code for a logged-in user.
 			// It differs from /auth/mobile/verification in that
 			// this one requires user id being set in header.
-			// When creating a record in DB, user id is save alongside
+			// When creating a record in DB, user id is saved alongside
 			// the SMS code so that later when performing verification,
 			// we could verify this code is indeed target at this user.
 			r.Put("/verification", accountRouter.SMSToModifyMobile)
