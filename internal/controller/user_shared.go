@@ -51,6 +51,8 @@ func (us UserShared) SendEmailVerification(baseAccount account.BaseAccount, sour
 		IsSignUp: isSignUp,
 	})
 
+	sugar.Info(parcel)
+
 	if err != nil {
 		sugar.Error(err)
 		return err
