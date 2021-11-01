@@ -173,7 +173,7 @@ func (a BaseAccount) ValidateEnv(liveEnv bool) string {
 	}
 }
 
-// NormalizeName returns user name, or the name part of email if name does not exist.
+// NormalizeName returns username, or the name part of email if name does not exist.
 func (a BaseAccount) NormalizeName() string {
 	if a.UserName.Valid {
 		return strings.Split(a.UserName.String, "@")[0]
