@@ -139,7 +139,7 @@ func (a Account) VerifyDelete(email string) *render.ValidationError {
 		}
 	}
 
-	if a.HasMember() && !a.Membership.IsExpired() {
+	if !a.Membership.IsExpired() {
 		// A valid subscription exists, thus you cannot delete this resource.
 		return &render.ValidationError{
 			Message: "Subscription is still valid",
