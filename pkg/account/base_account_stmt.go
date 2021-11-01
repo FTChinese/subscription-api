@@ -19,6 +19,14 @@ SET user_id = :ftc_id,
 	updated_utc = UTC_TIMESTAMP(),
 	mobile_phone = :mobile_phone`
 
+const StmtSignUpCount = `
+SELECT COUNT(*) AS su_count
+FROM user_db.client_footprint
+WHERE created_utc BETWEEN CAST(? AS DATETIME) AND CAST(? AS DATETIME)
+	AND source = 'signup'
+GROUP BY user_ip
+HAVING user_ip = INET6_ATON(?)`
+
 const colsBaseAccount = `
 SELECT 
 	IFNULL(u.user_id, '')			AS ftc_id,
