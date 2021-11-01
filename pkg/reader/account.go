@@ -128,3 +128,25 @@ func (a Account) Link(other Account) (Account, error) {
 
 	return merged, nil
 }
+
+func (a Account) VerifyDelete(email string) *render.ValidationError {
+	if a.Email != email {
+		// The resource for this email does not exist.
+		return &render.ValidationError{
+			Message: "Email mismatched",
+			Field:   "email",
+			Code:    render.CodeMissing,
+		}
+	}
+
+	if a.HasMember() && !a.Membership.IsExpired() {
+		// A valid subscription exists, thus you cannot delete this resource.
+		return &render.ValidationError{
+			Message: "Subscription is still valid",
+			Field:   "subscription",
+			Code:    render.CodeAlreadyExists,
+		}
+	}
+
+	return nil
+}
