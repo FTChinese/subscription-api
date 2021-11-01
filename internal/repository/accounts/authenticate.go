@@ -43,9 +43,13 @@ func (env Env) SignUpCount(params account.SignUpRateParams) (account.SignUpLimit
 	return limit, nil
 }
 
-func (env Env) VerifyPassword(params input.PasswordUpdateParams) (account.AuthResult, error) {
+func (env Env) VerifyIDPassword(params account.IDCredentials) (account.AuthResult, error) {
 	var matched bool
-	err := env.DBs.Read.Get(&matched, account.StmtVerifyPassword, params.Old, params.FtcID)
+	err := env.DBs.Read.Get(
+		&matched,
+		account.StmtVerifyPassword,
+		params.Password,
+		params.FtcID)
 
 	if err != nil {
 		return account.AuthResult{}, err
@@ -59,9 +63,10 @@ func (env Env) VerifyPassword(params input.PasswordUpdateParams) (account.AuthRe
 
 // UpdatePassword updates reader's password.
 // This is used both by resetting password if forgotten and updating password after logged in.
-func (env Env) UpdatePassword(p input.PasswordUpdateParams) error {
+func (env Env) UpdatePassword(p account.IDCredentials) error {
 
-	_, err := env.DBs.Write.NamedExec(account.StmtUpdatePassword,
+	_, err := env.DBs.Write.NamedExec(
+		account.StmtUpdatePassword,
 		p)
 
 	if err != nil {
