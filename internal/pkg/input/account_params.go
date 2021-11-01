@@ -39,26 +39,61 @@ func (p *NameUpdateParams) Validate() *render.ValidationError {
 		Validate(p.UserName)
 }
 
+// PasswordUpdateParams is used to hold data to change password.
+// Use CurrentPassword to verify before changing to NewPassword.
 type PasswordUpdateParams struct {
-	FtcID string `json:"-" db:"ftc_id"`
-	Old   string `json:"oldPassword"`
-	New   string `json:"password" db:"password"` // required. max 128 chars
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+	Old             string `json:"oldPassword"` // Deprecated. Use CurrentPassword.
+	New             string `json:"password"`    // Deprecated. Use NewPassword.
 }
 
 // Validate is only used when a logged-in user changing password.
 func (a *PasswordUpdateParams) Validate() *render.ValidationError {
 	a.New = strings.TrimSpace(a.New)
 	a.Old = strings.TrimSpace(a.Old)
+	a.CurrentPassword = strings.TrimSpace(a.CurrentPassword)
+	a.NewPassword = strings.TrimSpace(a.NewPassword)
 
-	ve := validator.EnsurePassword(a.New)
+	// Validate legacy fields.
+	if a.New != "" || a.Old != "" {
+		ve := validator.EnsurePassword(a.New)
+		if ve != nil {
+			return ve
+		}
+
+		ve = validator.
+			New("oldPassword").
+			Required().
+			Validate(a.Old)
+
+		if ve != nil {
+			return ve
+		}
+
+		a.CurrentPassword = a.Old
+		a.NewPassword = a.New
+
+		return nil
+	}
+
+	ve := validator.
+		New("currentPassword").
+		Required().
+		MaxLen(64).
+		MinLen(8).
+		Validate(a.CurrentPassword)
+
 	if ve != nil {
 		return ve
 	}
 
 	return validator.
-		New("oldPassword").
+		New("newPassword").
 		Required().
-		Validate(a.Old)
+		MaxLen(64).
+		MinLen(8).
+		Validate(a.NewPassword)
 }
 
 type LinkWxParams struct {
