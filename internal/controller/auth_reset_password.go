@@ -173,7 +173,9 @@ func (router AuthRouter) VerifyResetCode(w http.ResponseWriter, req *http.Reques
 //
 //	POST /users/password-reset
 //
-// Input {token: string, password: string}
+// Input
+// * token: string;
+// * password: string.
 func (router AuthRouter) ResetPassword(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -193,7 +195,7 @@ func (router AuthRouter) ResetPassword(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// Should we checking expiration time now?
+	// Should we check expiration time now?
 	session, err := router.userRepo.PwResetSessionByToken(params.Token)
 	// Not found error.
 	if err != nil {
@@ -202,20 +204,20 @@ func (router AuthRouter) ResetPassword(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// Find reader's account by token in case the token
-	// is no longer valid upon changing password.
+	// Find reader's account by the email stored under the token.
 	baseAccount, err := router.userRepo.BaseAccountByEmail(session.Email)
-	// Might not found.
+	// Might not be found.
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	// Change password.
-	if err := router.userRepo.UpdatePassword(input.PasswordUpdateParams{
-		FtcID: baseAccount.FtcID,
-		New:   params.Password,
-	}); err != nil {
+	err = router.userRepo.UpdatePassword(account.IDCredentials{
+		FtcID:    baseAccount.FtcID,
+		Password: params.Password,
+	})
+	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
