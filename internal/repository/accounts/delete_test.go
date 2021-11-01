@@ -10,9 +10,10 @@ import (
 )
 
 func TestEnv_DeleteAccount(t *testing.T) {
-	a := test.NewPersona().EmailOnlyAccount()
+	repo := test.NewRepo()
 
-	test.NewRepo().CreateFtcAccount(a)
+	a1 := test.NewPersona().EmailOnlyAccount()
+	repo.MustCreateFtcAccount(a1)
 
 	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
@@ -28,8 +29,8 @@ func TestEnv_DeleteAccount(t *testing.T) {
 			name: "Delete account",
 			args: args{
 				d: account.DeletedUser{
-					ID:         a.FtcID,
-					Email:      a.Email,
+					ID:         a1.FtcID,
+					Email:      a1.Email,
 					CreatedUTC: chrono.TimeNow(),
 				},
 			},
