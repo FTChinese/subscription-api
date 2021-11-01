@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/account"
 )
 
-// CreateAccount creates a new new FTC account.
+// CreateAccount creates a new FTC account.
 func (env Env) CreateAccount(a account.BaseAccount) error {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
