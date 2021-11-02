@@ -79,7 +79,7 @@ GET /account/wx
 
 微信用户登录后，选择关联邮箱，邮箱账号尚不存在，进入此步骤，创建新账号，新建账号会关联微信ID。
 
-请求的header建议提供 [Client](./account_types.md) 元数据。
+请求的header建议提供 [Client](./common_types.md) 元数据。
 
 ```
 POST /account/wx/signup
