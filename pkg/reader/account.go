@@ -14,6 +14,10 @@ type Account struct {
 	Membership  Membership       `json:"membership"`
 }
 
+// NewAccount concatenates data retrieve from multiple source
+// into a single Account.
+// NOTE Membership.VIP is copies from the JoinedSchema. It is
+// not retrieve anywhere else.
 func NewAccount(s account.JoinedSchema, m Membership, method enum.LoginMethod) Account {
 	if s.VIP {
 		m.Tier = enum.TierPremium
