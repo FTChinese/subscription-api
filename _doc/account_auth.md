@@ -172,7 +172,7 @@ interface MobileLinkParams {
 
 5. Set mobile to this account's mobile field.
 6. Save the mobile to db.
-7. Return the updated account which is a [Account](./account_types.md) instance.
+7. Return the updated account which is a [Account](./common_types.md) instance.
 
 ## Link Mobile to a New Email Account
 
@@ -198,4 +198,4 @@ interface MobileSignUpParams {
 
 1. Parse request body and validate.
 2. Create account. This step might fail if the mobile is already used by other accounts.
-3. Return the new [Account](./account_types.md)
+3. Return the new [Account](./common_types.md)
