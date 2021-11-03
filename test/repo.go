@@ -162,7 +162,7 @@ func (r Repo) MustSaveMobileVerifier(v ztsms.Verifier) ztsms.Verifier {
 }
 
 func (r Repo) SaveWxUser(u wxlogin.UserInfoSchema) error {
-	_, err := r.db.NamedExec(wxlogin.StmtInsertUserInfo, u)
+	_, err := r.db.NamedExec(wxlogin.StmtUpsertUserInfo, u)
 	if err != nil {
 		return err
 	}

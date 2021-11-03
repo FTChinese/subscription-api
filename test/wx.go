@@ -1,10 +1,10 @@
+//go:build !production
 // +build !production
 
 package test
 
 import (
 	"github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/subs"
@@ -53,21 +53,6 @@ func NewWxOrderUnsigned() wechat.OrderResp {
 	or.ResultCode = null.StringFrom("SUCCESS")
 
 	return or
-}
-
-func (p *Persona) WxAccess() wxlogin.OAuthAccess {
-	acc := wxlogin.OAuthAccess{
-		AccessToken:  faker.GenWxAccessToken(),
-		ExpiresIn:    7200,
-		RefreshToken: faker.GenWxAccessToken(),
-		OpenID:       p.OpenID,
-		Scope:        "snsapi_userinfo",
-		UnionID:      null.StringFrom(p.UnionID),
-	}
-	acc.GenerateSessionID()
-	acc.CreatedAt = chrono.TimeNow()
-	acc.UpdatedAt = chrono.TimeNow()
-	return acc
 }
 
 func (p *Persona) WxUser() wxlogin.UserInfoSchema {
