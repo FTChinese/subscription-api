@@ -1,28 +1,15 @@
 package wxoauth
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 )
 
 // SaveWxAccess saves the access token related data after acquired from wechat api.
-func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c footprint.Client) error {
+func (env Env) SaveWxAccess(s wxlogin.AccessSchema) error {
 
-	_, err := env.dbs.Write.Exec(wxlogin.StmtInsertAccess,
-		acc.SessionID,
-		appID,
-		acc.AccessToken,
-		acc.ExpiresIn,
-		acc.RefreshToken,
-		acc.OpenID,
-		acc.Scope,
-		acc.UnionID,
-		c.Platform,
-		c.Version,
-		c.UserIP,
-		c.UserAgent,
-		acc.CreatedAt,
-		acc.UpdatedAt,
+	_, err := env.dbs.Write.NamedExec(
+		wxlogin.StmtInsertAccess,
+		s,
 	)
 
 	if err != nil {
@@ -37,22 +24,14 @@ func (env Env) SaveWxAccess(appID string, acc wxlogin.OAuthAccess, c footprint.C
 // Or is it possible wechat generate same openID for different app?
 // What if iOS and Android used the same Wechat app? Will they use the same access token or different one?
 // Open ID is always the same the under the same Wechat app.
-func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error) {
+func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.AccessSchema, error) {
 
-	var acc wxlogin.OAuthAccess
-	err := env.dbs.Read.QueryRow(wxlogin.StmtSelectAccess,
+	var acc wxlogin.AccessSchema
+	err := env.dbs.Read.Get(
+		&acc,
+		wxlogin.StmtSelectAccess,
 		sessionID,
 		appID,
-	).Scan(
-		&acc.SessionID,
-		&acc.AccessToken,
-		&acc.ExpiresIn,
-		&acc.RefreshToken,
-		&acc.OpenID,
-		&acc.Scope,
-		&acc.UnionID,
-		&acc.CreatedAt,
-		&acc.UpdatedAt,
 	)
 
 	if err != nil {
@@ -63,11 +42,11 @@ func (env Env) LoadWxAccess(appID, sessionID string) (wxlogin.OAuthAccess, error
 }
 
 // UpdateWxAccess saves refreshed access token.
-func (env Env) UpdateWxAccess(sessionID, accessToken string) error {
+func (env Env) UpdateWxAccess(s wxlogin.AccessSchema) error {
 
-	_, err := env.dbs.Write.Exec(wxlogin.StmtUpdateAccess,
-		accessToken,
-		sessionID,
+	_, err := env.dbs.Write.NamedExec(
+		wxlogin.StmtUpdateAccess,
+		s,
 	)
 
 	if err != nil {
