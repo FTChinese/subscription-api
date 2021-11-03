@@ -1,19 +1,19 @@
 package accounts
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
 func TestEnv_JoinedByFtcID(t *testing.T) {
-	a := account.NewMockFtcAccountBuilder(enum.AccountKindLinked).Build()
-	w := wxlogin.MockUserInfo(a.UnionID.String)
+	p := test.NewPersona()
+
+	a := p.EmailWxAccount()
+	w := p.WxUser()
 
 	repo := test.NewRepo()
 	repo.MustCreateFtcAccount(a)
@@ -63,8 +63,10 @@ func TestEnv_JoinedByFtcID(t *testing.T) {
 }
 
 func TestEnv_JoinedByWxID(t *testing.T) {
-	a := account.NewMockFtcAccountBuilder(enum.AccountKindLinked).Build()
-	w := wxlogin.MockUserInfo(a.UnionID.String)
+	p := test.NewPersona()
+
+	a := p.EmailWxAccount()
+	w := p.WxUser()
 
 	repo := test.NewRepo()
 	repo.MustCreateFtcAccount(a)

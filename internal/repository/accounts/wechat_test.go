@@ -7,7 +7,6 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
@@ -19,7 +18,8 @@ import (
 func TestEnv_WxSignUp(t *testing.T) {
 	faker.SeedGoFake()
 
-	w := wxlogin.MockUserInfo(faker.GenWxID())
+	p := test.NewPersona()
+	w := p.WxUser()
 
 	test.NewRepo().MustSaveWxUser(w)
 
@@ -78,12 +78,12 @@ func TestEnv_WxSignUp(t *testing.T) {
 func TestEnv_LinkWechat(t *testing.T) {
 	faker.SeedGoFake()
 
-	ftcA := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).
-		Build()
-	wxA := account.NewMockFtcAccountBuilder(enum.AccountKindWx).
-		Build()
+	p1 := test.NewPersona()
+	p2 := test.NewPersona()
+	ftcA := p1.EmailOnlyAccount()
+	wxA := p1.EmailWxAccount()
 
-	w := wxlogin.MockUserInfo(wxA.UnionID.String)
+	w := p2.WxUser()
 
 	repo := test.NewRepo()
 	repo.MustSaveWxUser(w)
