@@ -29,7 +29,7 @@ func TestEnv_SaveWxUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := env.SaveWxUser(tt.args.u); (err != nil) != tt.wantErr {
+			if err := env.UpsertUserInfo(tt.args.u); (err != nil) != tt.wantErr {
 				t.Errorf("SaveWxUser() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
