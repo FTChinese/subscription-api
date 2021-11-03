@@ -27,7 +27,6 @@ type Persona struct {
 	UnionID    string
 	StripeID   string
 	Email      string
-	Password   string // Deprecated
 	UserName   string
 	Mobile     string
 	Nickname   string
@@ -46,7 +45,6 @@ func NewPersona() *Persona {
 		UnionID:    faker.GenWxID(),
 		StripeID:   faker.GenCustomerID(),
 		Email:      gofakeit.Email(),
-		Password:   "12345678",
 		UserName:   gofakeit.Username(),
 		Mobile:     faker.GenPhone(),
 		Nickname:   gofakeit.Name(),
@@ -115,7 +113,7 @@ func (p *Persona) EmailSignUpParams() input.EmailSignUpParams {
 	return input.EmailSignUpParams{
 		EmailCredentials: input.EmailCredentials{
 			Email:    p.Email,
-			Password: p.Password,
+			Password: "12345678",
 		},
 		DeviceToken: null.String{},
 		SourceURL:   "",
@@ -167,6 +165,21 @@ func (p *Persona) EmailMobileAccount() account.BaseAccount {
 		Email:        p.Email,
 		Password:     "12345678",
 		Mobile:       null.StringFrom(p.Mobile),
+		UserName:     null.StringFrom(p.UserName),
+		AvatarURL:    null.String{},
+		IsVerified:   false,
+		CampaignCode: null.String{},
+	}
+}
+
+func (p *Persona) EmailWxAccount() account.BaseAccount {
+	return account.BaseAccount{
+		FtcID:        p.FtcID,
+		UnionID:      null.StringFrom(p.UnionID),
+		StripeID:     null.NewString(p.StripeID, p.StripeID != ""),
+		Email:        p.Email,
+		Password:     "12345678",
+		Mobile:       null.String{},
 		UserName:     null.StringFrom(p.UserName),
 		AvatarURL:    null.String{},
 		IsVerified:   false,
