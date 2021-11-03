@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"testing"
 )
 
@@ -43,7 +42,7 @@ func TestRepo_SaveWxUser(t *testing.T) {
 	unionID := faker.GenWxID()
 	t.Logf("Wx user %s", unionID)
 
-	schema := wxlogin.MockUserInfo(unionID)
+	schema := NewPersona().WxUser()
 	err := NewRepo().SaveWxUser(schema)
 	if err != nil {
 		t.Error(err)
@@ -54,7 +53,7 @@ func TestRepo_CreateWxUser(t *testing.T) {
 	p := NewPersona()
 
 	repo := NewRepo()
-	w := wxlogin.MockUserInfo(p.UnionID)
+	w := p.WxUser()
 	t.Logf("%+v", w)
 	err := repo.SaveWxUser(w)
 	if err != nil {

@@ -162,3 +162,17 @@ func TestAccount_ChangePassword(t *testing.T) {
 
 	t.Logf("%s", faker.MustMarshalIndent(a))
 }
+
+func TestAccount_WxLinked(t *testing.T) {
+	p := NewPersona()
+
+	a := p.EmailWxAccount()
+	w := p.WxUser()
+
+	repo := NewRepo()
+	repo.MustCreateProfile(a)
+	repo.MustSaveWxUser(w)
+
+	t.Logf("%s", faker.MustMarshalIndent(a))
+	t.Logf("%s", faker.MustMarshalIndent(w))
+}
