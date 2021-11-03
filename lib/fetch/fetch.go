@@ -13,15 +13,6 @@ import (
 
 var httpClient = &http.Client{}
 
-type BasicAuth struct {
-	Username string
-	Password string
-}
-
-func (a BasicAuth) IsZero() bool {
-	return a.Username == "" || a.Password == ""
-}
-
 type Fetch struct {
 	method    string
 	url       string
@@ -63,6 +54,13 @@ func (f *Fetch) Put(url string) *Fetch {
 	return f
 }
 
+func (f *Fetch) Patch(url string) *Fetch {
+	f.method = "PATCH"
+	f.url = url
+
+	return f
+}
+
 func (f *Fetch) SetParam(key, value string) *Fetch {
 	f.Query.Set(key, value)
 
@@ -88,24 +86,9 @@ func (f *Fetch) SetQuery(q url.Values) *Fetch {
 	return f
 }
 
-func (f *Fetch) SetBearerAuth(key string) *Fetch {
-	f.Header.Set("Authorization", "Bearer "+key)
-
-	return f
-}
-
-func (f *Fetch) SetBasicAuth(username, password string) *Fetch {
-	f.basicAuth = BasicAuth{
-		Username: strings.TrimSpace(username),
-		Password: strings.TrimSpace(password),
-	}
-
-	return f
-}
-
-func (f *Fetch) AcceptLang(v string) *Fetch {
-	f.Header.Set("Accept-Language", v)
-
+// WithHeader overrides existing Header
+func (f *Fetch) WithHeader(h http.Header) *Fetch {
+	f.Header = h
 	return f
 }
 
@@ -123,9 +106,41 @@ func (f *Fetch) SetHeaderMap(h map[string]string) *Fetch {
 	return f
 }
 
+func (f *Fetch) AcceptLang(v string) *Fetch {
+	f.Header.Set("Accept-Language", v)
+
+	return f
+}
+
+func (f *Fetch) SetBearerAuth(key string) *Fetch {
+	f.Header.Set("Authorization", "Bearer "+key)
+
+	return f
+}
+
+func (f *Fetch) SetBasicAuth(username, password string) *Fetch {
+	f.basicAuth = BasicAuth{
+		Username: strings.TrimSpace(username),
+		Password: strings.TrimSpace(password),
+	}
+
+	return f
+}
+
 func (f *Fetch) Send(body io.Reader) *Fetch {
 	f.body = body
 	return f
+}
+
+func (f *Fetch) StreamJSON(body io.Reader) *Fetch {
+	f.Header.Add("Content-Type", ContentJSON)
+	f.body = body
+
+	return f
+}
+
+func (f *Fetch) SendJSONBlob(b []byte) *Fetch {
+	return f.StreamJSON(bytes.NewReader(b))
 }
 
 func (f *Fetch) SendJSON(v interface{}) *Fetch {
@@ -168,6 +183,28 @@ func (f *Fetch) End() (*http.Response, []error) {
 	return resp, nil
 }
 
+// EndBlob reads response body and returns as a slice of bytes
+func (f *Fetch) EndBlob() (Response, []error) {
+	resp, errs := f.End()
+	if errs != nil {
+		return Response{}, f.Errors
+	}
+
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		f.Errors = append(f.Errors, err)
+		return Response{}, f.Errors
+	}
+
+	return Response{
+		Status:     resp.Status,
+		StatusCode: resp.StatusCode,
+		Body:       b,
+	}, nil
+}
+
+// Deprecated
 func (f *Fetch) EndBytes() (*http.Response, []byte, []error) {
 	resp, errs := f.End()
 	if errs != nil {
