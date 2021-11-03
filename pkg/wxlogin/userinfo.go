@@ -1,10 +1,18 @@
 package wxlogin
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/guregu/null"
 	"strings"
 )
+
+// UserInfoParams is the parameter used to request userinfo.
+//
+type UserInfoParams struct {
+	AccessToken string
+	OpenID      string
+}
 
 func convertGender(s int) enum.Gender {
 	switch s {
@@ -25,16 +33,16 @@ func convertStrSlice(s []string) null.String {
 type UserInfoShared struct {
 	UnionID   string      `json:"unionid" db:"union_id"`
 	OpenID    string      `json:"openid" db:"open_id"`
-	NickName  null.String `json:"nickname" db:"nickname"`
 	AvatarURL null.String `json:"headimgurl" db:"avatar_url"`
-	Country   null.String `json:"country" db:"country"`
-	Province  null.String `json:"province" db:"province"`
 	City      null.String `json:"city" db:"city"`
+	Country   null.String `json:"country" db:"country"`
+	NickName  null.String `json:"nickname" db:"nickname"`
+	Province  null.String `json:"province" db:"province"`
 }
 
-// UserInfo is the response of Wechat endpoint
+// UserInfoResponse is the response of Wechat endpoint
 // /sns/userinfo?access_token=ACCESS_TOKEN&openid=OPENID
-type UserInfo struct {
+type UserInfoResponse struct {
 	UserInfoShared
 	// 1 for male, 2 for female, 0 for not set.
 	Sex        int      `json:"sex"`
@@ -42,16 +50,21 @@ type UserInfo struct {
 	RespStatus
 }
 
-func (u UserInfo) SQLSchema() UserInfoSchema {
+// UserInfoSchema standardizes wechat userinfo response
+type UserInfoSchema struct {
+	UserInfoShared
+	Gender     enum.Gender `json:"gender" db:"gender"`
+	Privilege  null.String `json:"privilege" db:"privilege"`
+	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
+	UpdateUTC  chrono.Time `json:"updateUtc" db:"updated_utc"`
+}
+
+func NewUserInfo(u UserInfoResponse) UserInfoSchema {
 	return UserInfoSchema{
 		UserInfoShared: u.UserInfoShared,
 		Gender:         convertGender(u.Sex),
 		Privilege:      convertStrSlice(u.Privileges),
+		CreatedUTC:     chrono.TimeNow(), // Ignored upon updating.
+		UpdateUTC:      chrono.TimeNow(),
 	}
-}
-
-type UserInfoSchema struct {
-	UserInfoShared
-	Gender    enum.Gender `db:"gender"`
-	Privilege null.String `db:"privilege"`
 }

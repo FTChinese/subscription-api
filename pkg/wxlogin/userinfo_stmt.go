@@ -1,24 +1,28 @@
 package wxlogin
 
+// colUserInfo maps to the shared fields of userinfo.
+// Open id is ignored in this table since the same user
+// might have multiple open id.
 const colUserInfo = `
-nickname = :nickname,
 avatar_url = :avatar_url,
-gender = :gender,
-country = :country,
-province = :province,
 city = :city,
+country = :country,
+gender = :gender,
+nickname = :nickname,
+province = :province,
 privilege = :privilege,
-updated_utc = UTC_TIMESTAMP()
+updated_utc = :updated_utc
 `
 
-const StmtInsertUserInfo = `
+const StmtUpsertUserInfo = `
 INSERT INTO user_db.wechat_userinfo
 SET union_id = :union_id,
 ` + colUserInfo + `,
-	created_utc = UTC_TIMESTAMP()
+	created_utc = :created_utc
 ON DUPLICATE KEY UPDATE
 ` + colUserInfo
 
+// Deprecated
 const StmtUpdateUserInfo = `
 UPDATE user_db.wechat_userinfo
 SET ` + colUserInfo + `
