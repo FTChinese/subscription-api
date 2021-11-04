@@ -130,7 +130,7 @@ func StartServer(s ServerStatus) {
 		r.Route("/wx", func(r chi.Router) {
 			r.Use(controller.RequireAppID)
 			r.Post("/login", wxAuth.Login)
-			r.Put("/refresh", wxAuth.Refresh)
+			r.Post("/refresh", wxAuth.Refresh)
 		})
 	})
 
