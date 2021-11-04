@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/subscription-api/lib/fetch"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
-	"log"
+	"go.uber.org/zap"
 )
 
 const (
@@ -15,11 +15,15 @@ const (
 
 // Client is used to access wechat API.
 type Client struct {
-	app config.WechatApp
+	app    config.WechatApp
+	logger *zap.Logger
 }
 
-func NewClient(app config.WechatApp) Client {
-	return Client{app: app}
+func NewClient(app config.WechatApp, logger *zap.Logger) Client {
+	return Client{
+		app:    app,
+		logger: logger,
+	}
 }
 
 func (c Client) GetApp() config.WechatApp {
@@ -35,6 +39,8 @@ func (c Client) GetApp() config.WechatApp {
 // Response without error: errcode: 0, errmsg: "";
 // What will be returned if two different code under the same Wechat app applied for access token simutaneously?
 func (c Client) GetAccessToken(code string) (wxlogin.AccessResponse, error) {
+	defer c.logger.Sync()
+	sugar := c.logger.Sugar()
 
 	resp, errs := fetch.New().
 		Get(apiBaseURL + "/oauth2/access_token").
@@ -48,6 +54,7 @@ func (c Client) GetAccessToken(code string) (wxlogin.AccessResponse, error) {
 		EndBlob()
 
 	if errs != nil {
+		sugar.Error(errs)
 		return wxlogin.AccessResponse{}, errs[0]
 	}
 
@@ -57,11 +64,11 @@ func (c Client) GetAccessToken(code string) (wxlogin.AccessResponse, error) {
 	// "openid":"ofP-k1LSVS-ObmrySM1aXKbv1Hjs",
 	// "scope":"snsapi_login",
 	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"}
-	log.Printf("Wechat access token response: %s\n", resp.Body)
+	sugar.Infof("GetAccessToken response: %s\n", resp.Body)
 
 	var acc wxlogin.AccessResponse
 	if err := json.Unmarshal(resp.Body, &acc); err != nil {
-		log.Print(err)
+		sugar.Error(err)
 		return acc, err
 	}
 
@@ -76,6 +83,8 @@ func (c Client) GetAccessToken(code string) (wxlogin.AccessResponse, error) {
 //
 // refresh_token 拥有较长的有效期（30 天）且无法续期，当 refresh_token 失效的后，需要用户重新授权后才可以继续获取用户头像昵称。
 func (c Client) RefreshAccess(refreshToken string) (wxlogin.AccessResponse, error) {
+	defer c.logger.Sync()
+	sugar := c.logger.Sugar()
 
 	var acc wxlogin.AccessResponse
 	resp, errs := fetch.New().
@@ -88,17 +97,15 @@ func (c Client) RefreshAccess(refreshToken string) (wxlogin.AccessResponse, erro
 		AcceptLang(acceptLang).
 		EndBlob()
 
-	log.Printf("Response: %s", resp.Body)
+	sugar.Infof("RefreshAccess response: %s", resp.Body)
 
 	if errs != nil {
-		log.Print(errs)
-
+		sugar.Error(errs)
 		return acc, errs[0]
 	}
 
 	if err := json.Unmarshal(resp.Body, &acc); err != nil {
-		log.Print(err)
-
+		sugar.Error(err)
 		return acc, err
 	}
 
@@ -107,6 +114,9 @@ func (c Client) RefreshAccess(refreshToken string) (wxlogin.AccessResponse, erro
 
 // IsAccessTokenValid checks if an access token is valid.
 func (c Client) IsAccessTokenValid(p wxlogin.UserInfoParams) bool {
+
+	defer c.logger.Sync()
+	sugar := c.logger.Sugar()
 
 	resp, errs := fetch.New().
 		Get(apiBaseURL + "/auth").
@@ -118,15 +128,15 @@ func (c Client) IsAccessTokenValid(p wxlogin.UserInfoParams) bool {
 		EndBlob()
 
 	if errs != nil {
-		log.Print(errs)
+		sugar.Error(errs)
 		return false
 	}
 
-	log.Printf("Response: %s", resp.Body)
+	sugar.Infof("IsAccessTokenValid response: %s", resp.Body)
 
 	var rs wxlogin.RespStatus
 	if err := json.Unmarshal(resp.Body, &rs); err != nil {
-		log.Print(err)
+		sugar.Error(err)
 		return false
 	}
 
@@ -140,6 +150,8 @@ func (c Client) IsAccessTokenValid(p wxlogin.UserInfoParams) bool {
 // GetUserInfo from Wechat by open id.
 // It seems wechat return empty fields as empty string.
 func (c Client) GetUserInfo(p wxlogin.UserInfoParams) (wxlogin.UserInfoResponse, error) {
+	defer c.logger.Sync()
+	sugar := c.logger.Sugar()
 
 	resp, errs := fetch.New().
 		Get(apiBaseURL + "/userinfo").
@@ -164,13 +176,15 @@ func (c Client) GetUserInfo(p wxlogin.UserInfoParams) (wxlogin.UserInfoResponse,
 	// }
 
 	if errs != nil {
-		log.Print(errs)
+		sugar.Error(errs)
 		return wxlogin.UserInfoResponse{}, errs[0]
 	}
 
+	sugar.Infof("GetUserInfo response %s", resp.Body)
+
 	var info wxlogin.UserInfoResponse
 	if err := json.Unmarshal(resp.Body, &info); err != nil {
-		log.Print(errs)
+		sugar.Error(errs)
 		return info, err
 	}
 
