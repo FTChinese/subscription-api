@@ -39,7 +39,7 @@ func (router WxAuthRouter) getClient(req *http.Request) (wxoauth.Client, error) 
 		return wxoauth.Client{}, errors.New("unknown app")
 	}
 
-	return wxoauth.NewClient(app), nil
+	return wxoauth.NewClient(app, router.logger), nil
 }
 
 func (router WxAuthRouter) handleWxApiErr(w http.ResponseWriter, rs wxlogin.RespStatus) {
