@@ -3,6 +3,30 @@
 Stripe订阅仅限使用邮箱登录的用户。用户ID通过 HTTP header `X-User-Id` 字段设置。
 除 `/stripe/prices` 之外的请求均需提供该值。
 
+## API接口列表
+
+* `/stripe/prices`
+* `/stripe/customers`
+* `/stripe/customers/{id}`
+* `/stripe/customers/{id}/default-payment-method`
+* `/stripe/customers/{id}/ephemeral-keys`
+* `/stripe/subs`
+* `/stripe/subs/{id}`
+* `/stripe/subs/{id}/refresh`
+* `/stripe/subs/{id}/upgrade`
+* `/stripe/subs/{id}/cancel`
+* `/stripe/subs/{id}/reactivate`
+
+注意：API返回的数据格式并不是Stripe的原始数据格式。
+
+API在调用Stripe SDK时，遇到Stripe API返回的任何错误，都原样转发给客户端，不作改动，见 [Errors](https://stripe.com/docs/api/errors)。
+
+## Gotchas and Pitfalls
+
+### Webhook
+
+You could create as many webhook endpoints as you like. However, every webhook endpoint has its own signing key. Do remember to update it when you change webhook.
+
 ## Customer
 
 在使用Stripe订阅之前，必须先在Stripe[创建 Customer](https://stripe.com/docs/api/customers/create).
@@ -130,23 +154,7 @@ if status == "canceled" {
 }
 ```
 
-## 处理Stripe的API接口列表
 
-* `/stripe/prices`
-* `/stripe/customers`
-* `/stripe/customers/{id}`
-* `/stripe/customers/{id}/default-payment-method`
-* `/stripe/customers/{id}/ephemeral-keys`
-* `/stripe/subs`
-* `/stripe/subs/{id}`
-* `/stripe/subs/{id}/refresh`
-* `/stripe/subs/{id}/upgrade`
-* `/stripe/subs/{id}/cancel`
-* `/stripe/subs/{id}/reactivate`
-
-注意：API返回的数据格式并不是Stripe的原始数据格式。
-
-API在调用Stripe SDK时，遇到Stripe API返回的任何错误，都原样转发给客户端，不作改动，见 [Errors](https://stripe.com/docs/api/errors)。
 
 ## 获取Stripe价格列表
 
