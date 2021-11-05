@@ -28,7 +28,7 @@ See [details](./account_auth.md)
 ### With Wechat
 
 * POST `/auth/wx/login` Wechat login
-* PUT `/auth/wx/refresh` Refresh wechat login account.
+* POST `/auth/wx/refresh` Refresh wechat login account.
 * GET `/oauth/wx/callback/next-reader` Redirect for wechat login in browsers.
 
 ## Account Manipulation
