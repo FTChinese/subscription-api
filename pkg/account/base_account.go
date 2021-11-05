@@ -155,24 +155,6 @@ func (a BaseAccount) IsTest() bool {
 	return strings.HasSuffix(a.Email, ".test@ftchinese.com")
 }
 
-func (a BaseAccount) ValidateEnv(liveEnv bool) string {
-	if liveEnv {
-		// Live environment.
-		if a.IsTest() {
-			return "Please use sandbox environment for test account."
-		}
-
-		return ""
-	} else {
-		// Sandbox environment.
-		if !a.IsTest() {
-			return "Please use production environment for live account"
-		}
-
-		return ""
-	}
-}
-
 // NormalizeName returns username, or the name part of email if name does not exist.
 func (a BaseAccount) NormalizeName() string {
 	if a.UserName.Valid {
