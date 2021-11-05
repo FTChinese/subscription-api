@@ -11,11 +11,11 @@ import (
 
 // CreateSubs create a stripe subscription.
 // Input:
-// tier: string;
-// cycle: string;
-// coupon?: string;
-// defaultPaymentMethod?: string;
-// idempotency?: string;
+// * tier: string;
+// * cycle: string;
+// * coupon?: string;
+// * defaultPaymentMethod?: string;
+// * idempotency?: string;
 // Why this field?
 //
 // PITFALLS:
@@ -61,11 +61,6 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	// If this user is not a stripe customer yet.
 	if acnt.StripeID.IsZero() {
 		_ = render.New(w).NotFound("Stripe customer not found")
-		return
-	}
-
-	if denied := acnt.ValidateEnv(router.config.Live()); denied != "" {
-		_ = render.New(w).Forbidden(denied)
 		return
 	}
 
@@ -149,11 +144,6 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	// If this user is not a stripe customer yet.
 	if account.StripeID.IsZero() {
 		_ = render.New(w).NotFound("Stripe customer not found")
-		return
-	}
-
-	if denied := account.ValidateEnv(router.config.Live()); denied != "" {
-		_ = render.New(w).Forbidden(denied)
 		return
 	}
 

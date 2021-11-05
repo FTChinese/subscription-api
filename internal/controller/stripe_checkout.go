@@ -39,11 +39,6 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 		return
 	}
 
-	if denied := account.ValidateEnv(router.config.Live()); denied != "" {
-		_ = render.New(w).Forbidden(denied)
-		return
-	}
-
 	sp, err := price.StripeEditions.FindByEdition(input.Edition, router.config.Live())
 	if err != nil {
 		sugar.Error(err)
