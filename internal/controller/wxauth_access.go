@@ -9,10 +9,16 @@ import (
 	"net/http"
 )
 
-// Login performs the Step 2 of OAuth as
-// described by https://open.weixin.qq.com/cgi-bin/showdocument?action=dir_list&t=resource/res_list&verify=1&id=open1419317851&token=&lang=zh_CN.
+// Login performs the Step 2 and Step 3 of OAuth workflow as described by
+// https://open.weixin.qq.com/cgi-bin/showdocument?action=dir_list&t=resource/res_list&verify=1&id=open1419317851&token=&lang=zh_CN.
+// or
+// https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html
 //
-// It uses Wechat's OAuth code to exchange for access token, and then use access token to get user info.
+// It uses OAuth code acquired by any client to exchange for
+// access token, and then use access token to get user info, and
+// returns a session id and wechat's union id to client so that
+// client could use the union id to get user account or use the session id
+// to refresh account.
 //
 // The code is acquired by different approach depending on the platform:
 // * For native app, it gets the code by calling Wechat SDK;
