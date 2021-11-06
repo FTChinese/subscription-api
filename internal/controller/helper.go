@@ -9,10 +9,6 @@ import (
 	"net/http"
 )
 
-const (
-	wxOAuthCallback = "https://users.ftchinese.com/login/wechat/callback?"
-)
-
 var decoder = schema.NewDecoder()
 
 // getURLParam gets a url parameter.
