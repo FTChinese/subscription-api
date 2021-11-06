@@ -9,6 +9,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
@@ -131,29 +132,20 @@ func StartServer(s ServerStatus) {
 			r.Use(controller.RequireAppID)
 			r.Post("/login", wxAuth.Login)
 			r.Post("/refresh", wxAuth.Refresh)
+			r.Route("/callback", func(r chi.Router) {
+				r.Use(controller.FormParsed)
+				r.Get("/next-user", controller.WxCallbackHandler(wxlogin.CallbackAppNextUser))
+				r.Get("/fta-reader", controller.WxCallbackHandler(wxlogin.CallbackAppFtaReader))
+			})
 		})
 	})
 
-	// Handle wechat oauth.
-	// Deprecated. Use /auth/wx.
-	r.Route("/wx", func(r chi.Router) {
-
-		r.Route("/oauth", func(r chi.Router) {
-
-			r.With(controller.RequireAppID).Post("/login", wxAuth.Login)
-
-			r.With(controller.RequireAppID).Put("/refresh", wxAuth.Refresh)
-
-			// Do not check access token here since it is used by wx.
-			r.Get("/callback", wxAuth.WebCallback)
-		})
-	})
-
+	// Deprecated.
 	r.Route("/oauth", func(r chi.Router) {
 		// Callback for web to get oauth code.
 		// Do not check access token here since it is used by wx.
 		r.Route("/wx/callback", func(r chi.Router) {
-			r.Get("/next-reader", wxAuth.WebCallback)
+			r.Get("/next-reader", controller.WxCallbackHandler(wxlogin.CallbackAppNextUser))
 		})
 	})
 
