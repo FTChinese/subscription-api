@@ -38,6 +38,7 @@ import (
 //
 // Request header:
 // * X-App-Id: xxxx
+// Header for footprint.Client are required.
 //
 // Error:
 // 422:
