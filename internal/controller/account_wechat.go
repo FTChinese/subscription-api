@@ -17,10 +17,11 @@ import (
 //	POST /users/wx/signup
 //
 // Header `X-Union-Id: <wechat union id>`
-// Input: user.SignUpInput
-// email: string;
-// password: string;
-// sourceUrl?: string;
+//
+// Input: input.EmailSignUpParams
+// * email: string;
+// * password: string;
+// * sourceUrl?: string;
 //
 // The footprint.Client headers are required.
 func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
