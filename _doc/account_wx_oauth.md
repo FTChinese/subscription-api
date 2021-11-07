@@ -27,6 +27,14 @@ https://open.weixin.qq.com/connect/qrconnect?appid=<APPID>&redirect_uri=<REDIREC
 * `scope: 'snsapi_login'`
 * `state: string` An optional random. Recommend. Returned as is.
 
+由于 `redirect_uri` 的域名仅限在微信注册的域名（不包括子域名），API运行在该域名下，但APP并不一定，因此，我们把 `redirect_uri` 设为API的一个地址，改地址收到数据后再执行一次跳转，回到调用的APP内。
+
+Calling APP  ----> Wechat OAuth page (https://open.weixin.qq.com/connect/qrconnect...)
+      ^               |
+      |               | 
+      |----API <------|
+                   
+
 跳转到上述网址后，微信会显示一个二维码，用户使用微信扫码，情况分两种：
 
 * 用户允许授权后，将会重定向到上述`redirect_uri`的网址上，并且带上`code`和`state`参数：
