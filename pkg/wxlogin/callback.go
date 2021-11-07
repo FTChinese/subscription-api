@@ -36,7 +36,7 @@ var callbackURLs = map[CallbackApp]url.URL{
 	},
 	CallbackAppFtaReader: {
 		Scheme:   "https",
-		Opaque:   "www.ftacademy.cn",
+		Opaque:   "next.ftacademy.cn",
 		Path:     "/reader/oauth/callback",
 		RawQuery: "",
 	},
