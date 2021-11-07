@@ -214,6 +214,9 @@ func StartServer(s ServerStatus) {
 			r.Post("/signup", accountRouter.WxSignUp)
 			// Wechat logged-in user links to an existing email account,
 			// or email logged-in user links to wechat after authorization.
+			// For wechat user, you must first verify email + password just like
+			// user is logging in. Get the email account full data and inspect
+			// if the links is permitted on the client side. Then sent link request here.
 			r.Post("/link", accountRouter.LinkWechat)
 			r.Post("/unlink", accountRouter.UnlinkWx)
 		})
