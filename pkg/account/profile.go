@@ -15,8 +15,8 @@ type BaseProfile struct {
 	FamilyName null.String `json:"familyName" db:"family_name"` // Optional. Max 50 chars.
 	GivenName  null.String `json:"givenName" db:"given_name"`   // Optional. Max 50 chars
 	Birthday   null.String `json:"birthday" db:"birthday"`      // Optional. Max 10 chars.
-	CreatedAt  chrono.Time `json:"createdAt" db:"created_utc"`
-	UpdatedAt  chrono.Time `json:"updatedAt" db:"updated_utc"`
+	CreatedUtc chrono.Time `json:"createdUtc" db:"created_utc"`
+	UpdatedUtc chrono.Time `json:"updatedUtc" db:"updated_utc"`
 }
 
 // Validate performs validation when user update profile: gender, familyName, givenName, birthdate.
