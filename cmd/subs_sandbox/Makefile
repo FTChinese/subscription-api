@@ -7,8 +7,8 @@ commit := `git log --max-count=1 --pretty=format:%aI_%h`
 
 ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
-app_name := aliwx-poller
-
+app_name := subs_sandbox
+go_version := go1.16
 
 sys := $(shell uname -s)
 hardware := $(shell uname -m)
@@ -24,10 +24,10 @@ compile_linux_x86 := GOOS=linux GOARCH=amd64 go build -o $(linux_x86_exec) $(ldf
 linux_arm_exec := $(build_dir)/linux/arm/$(app_name)
 compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec) $(ldflags) -tags production -v $(src_dir)
 
-# Development
+server_dir := /data/node/go/bin
+
 .PHONY: build
-build :
-	@echo "Build dev version $(version)"
+build : outdir
 	$(compile_default_exec)
 
 .PHONY: outdir
@@ -40,7 +40,7 @@ devconfig : outdir
 
 .PHONY: run
 run :
-	$(default_exec)
+	$(default_exec) -sandbox=true
 
 .PHONY: amd64
 amd64 :
@@ -52,6 +52,11 @@ arm :
 	@echo "Build production arm version $(version)"
 	$(compile_linux_arm)
 
+.PHONY: install-go
+install-go:
+	@echo "Install go version $(go_version)"
+	gvm install $(go_version)
+
 .PHONY: config
 config : outdir
 	# Download configuration file
@@ -59,17 +64,20 @@ config : outdir
 
 .PHONY: publish
 publish :
-	rsync -v $(linux_x86_exec) tk11:/home/node/go/bin/
+	# Remove the .bak file
+	ssh ucloud "rm -f $(server_dir)/$(app_name).bak"
+	# Sync binary to the xxx.bak file
+	rsync -v ./$(default_exec) ucloud:$(server_dir)/$(app_name).bak
 
 .PHONY: restart
 restart :
-	ssh tk11 supervisorctl restart $(app_name)
-
-.PHONY: deploy
-deploy : amd64 publish restart
-	@echo "Deploy finished"
+	# Rename xxx.bak to app name
+	ssh ucloud "cd $(server_dir)/ && \mv $(app_name).bak $(app_name)"
+	# Update supervistor
+	#ssh ucloud supervisorctl update all
+	ssh ucloud supervisorctl restart $(app_name)
 
 .PHONY: clean
 clean :
 	go clean -x
-	rm build/**
+	rm -rf build/*

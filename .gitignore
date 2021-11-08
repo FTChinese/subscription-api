@@ -15,6 +15,7 @@
 vendor/
 .idea/
 build/
+env/
 _docs/**/*.png
 _docs/build
 .env
