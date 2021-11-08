@@ -100,9 +100,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		sugar.Info(s)
-
-		w.WriteHeader(http.StatusOK)
+		sugar.Infof("customer.subscription.created: %v", s)
 
 		go func() {
 			err := router.onSubscription(&s)
@@ -110,6 +108,8 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 				sugar.Error(err)
 			}
 		}()
+
+		w.WriteHeader(http.StatusOK)
 		return
 
 	//	Occurs whenever a subscription changes (e.g., switching from one plan to another, or changing the status from trial to active).
@@ -119,8 +119,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		sugar.Info(s)
-		w.WriteHeader(http.StatusOK)
+		sugar.Infof("customer.subscription.updated: %v", s)
 
 		go func() {
 			err := router.onSubscription(&s)
@@ -129,6 +128,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			}
 		}()
 
+		w.WriteHeader(http.StatusOK)
 		return
 
 	case "invoice.created":
@@ -140,10 +140,15 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-		if err != nil {
-			sugar.Error()
-		}
+		sugar.Infof("invoice.created: %v", i)
+
+		go func() {
+			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+
 		w.WriteHeader(http.StatusOK)
 		return
 
@@ -155,10 +160,15 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-		if err != nil {
-			sugar.Error()
-		}
+		sugar.Infof("invoice.payment_failed: %v", i)
+
+		go func() {
+			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+			if err != nil {
+				sugar.Error()
+			}
+		}()
+
 		w.WriteHeader(http.StatusOK)
 		return
 
@@ -169,10 +179,15 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-		if err != nil {
-			sugar.Error()
-		}
+		sugar.Infof("invoice.payment_action_required: %v", i)
+
+		go func() {
+			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+			if err != nil {
+				sugar.Error()
+			}
+		}()
+
 		w.WriteHeader(http.StatusOK)
 		return
 
@@ -184,10 +199,15 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-		if err != nil {
-			sugar.Error()
-		}
+		sugar.Infof("invoice.upcoming: %v", i)
+
+		go func() {
+			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+			if err != nil {
+				sugar.Error()
+			}
+		}()
+
 		w.WriteHeader(http.StatusOK)
 		return
 
@@ -198,10 +218,15 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-		if err != nil {
-			sugar.Error()
-		}
+		sugar.Infof("invoice.payment_succeeded: %v", i)
+
+		go func() {
+			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+			if err != nil {
+				sugar.Error()
+			}
+		}()
+
 		w.WriteHeader(http.StatusOK)
 		return
 
@@ -211,13 +236,19 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-		if err != nil {
-			sugar.Error()
-		}
+		sugar.Infof("invoice.finalized: %v", i)
+
+		go func() {
+			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+			if err != nil {
+				sugar.Error()
+			}
+		}()
+
 		w.WriteHeader(http.StatusOK)
 		return
-	}
 
-	w.WriteHeader(http.StatusOK)
+	default:
+		w.WriteHeader(http.StatusOK)
+	}
 }
