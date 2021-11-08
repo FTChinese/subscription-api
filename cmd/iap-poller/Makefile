@@ -1,3 +1,6 @@
+config_file_name := api.toml
+local_config_file := $(HOME)/config/$(config_file_name)
+
 version := `git tag -l --sort=-v:refname | head -n 1`
 build_time := `date +%FT%T%z`
 commit := `git log --max-count=1 --pretty=format:%aI_%h`
@@ -5,12 +8,11 @@ commit := `git log --max-count=1 --pretty=format:%aI_%h`
 ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
 
 app_name := iap-poller
-src_dir := .
 
 sys := $(shell uname -s)
 hardware := $(shell uname -m)
-
-build_dir := ../../build
+build_dir := build
+src_dir := .
 
 default_exec := $(build_dir)/$(sys)/$(hardware)/$(app_name)
 compile_default_exec := go build -o $(default_exec) $(ldflags) -tags production -v $(src_dir)
@@ -27,12 +29,19 @@ dev :
 	@echo "Build dev version $(version)"
 	$(compile_default_exec)
 
+.PHONY: outdir
+outdir :
+	mkdir -p ./$(build_dir)
+
+.PHONY: devconfig
+devconfig : outdir
+	rsync $(local_config_file) $(build_dir)/$(config_file_name)
+
 .PHONY: run
 run :
 	$(default_exec)
 
-# For CI/CD
-.PHONY: build
+.PHONY: amd64
 amd64 :
 	@echo "Build production linux version $(version)"
 	$(compile_linux_x86)
@@ -41,6 +50,11 @@ amd64 :
 arm :
 	@echo "Build production arm version $(version)"
 	$(compile_linux_arm)
+
+.PHONY: config
+config : outdir
+	# Download configuration file
+	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)/$(config_file_name)
 
 .PHONY: publish
 publish :
@@ -57,4 +71,4 @@ deploy : amd64 publish restart
 .PHONY: clean
 clean :
 	go clean -x
-	rm -rf ../../build/**
+	rm -rf build/**
