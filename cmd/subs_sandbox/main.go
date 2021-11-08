@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"fmt"
 	"github.com/FTChinese/subscription-api/internal"
@@ -8,6 +9,9 @@ import (
 	"log"
 	"os"
 )
+
+//go:embed build/api.toml
+var tomlConfig string
 
 var (
 	version    string
@@ -29,7 +33,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	config.MustSetupViper()
+	config.MustSetupViperV2([]byte(tomlConfig))
 }
 
 func main() {

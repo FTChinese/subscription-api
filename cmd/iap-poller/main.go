@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
@@ -12,6 +13,9 @@ import (
 	"os"
 	"time"
 )
+
+//go:embed build/api.toml
+var tomlConfig string
 
 var (
 	version    string
@@ -32,7 +36,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	config.MustSetupViper()
+	config.MustSetupViperV2([]byte(tomlConfig))
 }
 
 func task() {

@@ -46,10 +46,18 @@ build :
 	ls ./build
 	$(compile_default_exec)
 
-.PHONY: devconfig
-devconfig :
-	rsync $(local_config_file) $(build_dir)/$(config_file_name)
+outdir :
+	mkdir -p ./$(build_dir)
+	mkdir -p ./cmd/aliwx-poller/$(build_dir)
+	mkdir -p ./cmd/iap-poller/$(build_dir)
+	mkdir -p ./subs_sandbox/$(build_dir)
 
+.PHONY: devconfig
+devconfig : outdir
+	rsync $(local_config_file) $(build_dir)/$(config_file_name)
+	rsync $(local_config_file) ./cmd/aliwx-poller/$(build_dir)/$(config_file_name)
+	rsync $(local_config_file) ./cmd/iap-poller/$(build_dir)/$(config_file_name)
+	rsync $(local_config_file) ./subs_sandbox/$(build_dir)/$(config_file_name)
 
 .PHONY: run
 run :
@@ -71,7 +79,7 @@ install-go:
 	gvm install $(go_version)
 
 .PHONY: config
-config :
+config : outdir
 	mkdir -p ./$(build_dir)
 	# Download configuration file
 	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)

@@ -4,10 +4,12 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-//                 sh 'make install-go'
-                echo 'Build sandbox version'
-                sh 'make build ENV=sandbox'
-                archiveArtifacts artifacts: 'build/**/*', fingerprint: true
+                // https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/#dir-change-current-directory
+                dir('cmd/subs_sandbox') {
+                    sh 'make config'
+                    sh 'make build'
+                    archiveArtifacts artifacts: 'build/**/*', fingerprint: true
+                }
             }
         }
         stage('Deploy') {
@@ -17,11 +19,10 @@ pipeline {
                 }
             }
             steps {
-                echo 'Sync config file'
-                sh 'make config'
-                echo 'Copy binary'
-                sh 'make publish ENV=sandbox'
-                sh 'make restart ENV=sandbox'
+                dir('cmd/subs_sandbox') {
+                    sh 'make publish'
+                    sh 'make restart'
+                }
             }
         }
     }
