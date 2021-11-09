@@ -143,11 +143,11 @@ func TestEnv_LinkWechat(t *testing.T) {
 			}
 			err := env.LinkWechat(tt.args.result)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("LinkWechat() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("WxLinkEmail() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("LinkWechat() got = %v, want %v", got, tt.want)
+			//	t.Errorf("WxLinkEmail() got = %v, want %v", got, tt.want)
 			//}
 		})
 	}
@@ -194,7 +194,7 @@ func TestEnv_UnlinkWx(t *testing.T) {
 				Env: tt.fields.Env,
 			}
 			if err := env.UnlinkWx(tt.args.acnt, tt.args.anchor); (err != nil) != tt.wantErr {
-				t.Errorf("UnlinkWx() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("WxUnlinkEmail() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
