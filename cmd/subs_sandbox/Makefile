@@ -66,11 +66,10 @@ config : outdir
 
 .PHONY: publish
 publish :
-	# Remove the .bak file
 	@echo "Removing app binary on server side"
 	ssh ucloud "rm -f $(server_dir)/$(app_name).bak"
 	@echo "Uploading binary to server"
-	rsync -v ./$(default_exec) ucloud:$(server_dir)/$(app_name).bak
+	rsync -v $(default_exec) ucloud:$(server_dir)/$(app_name).bak
 
 .PHONY: restart
 restart :
