@@ -10,10 +10,11 @@ ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time
 app_name := subs_sandbox
 go_version := go1.16
 
+current_dir := $(shell pwd)
 sys := $(shell uname -s)
 hardware := $(shell uname -m)
-build_dir := build
-src_dir := .
+build_dir := $(current_dir)/build
+src_dir := $(current_dir)
 
 default_exec := $(build_dir)/$(sys)/$(hardware)/$(app_name)
 compile_default_exec := go build -o $(default_exec) $(ldflags) -tags production -v $(src_dir)
@@ -28,11 +29,12 @@ server_dir := /data/node/go/bin
 
 .PHONY: build
 build : outdir
+	@echo "Build from dir $(current_dir)"
 	$(compile_default_exec)
 
 .PHONY: outdir
 outdir :
-	mkdir -p ./$(build_dir)
+	mkdir -p $(build_dir)
 
 .PHONY: devconfig
 devconfig : outdir
@@ -59,14 +61,15 @@ install-go:
 
 .PHONY: config
 config : outdir
-	# Download configuration file
-	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)/$(config_file_name)
+	@echo "Pulling config  file from server"
+	rsync -v tk11:/home/node/config/$(config_file_name) $(build_dir)/$(config_file_name)
 
 .PHONY: publish
 publish :
 	# Remove the .bak file
+	@echo "Removing app binary on server side"
 	ssh ucloud "rm -f $(server_dir)/$(app_name).bak"
-	# Sync binary to the xxx.bak file
+	@echo "Uploading binary to server"
 	rsync -v ./$(default_exec) ucloud:$(server_dir)/$(app_name).bak
 
 .PHONY: restart

@@ -6,7 +6,6 @@ pipeline {
             steps {
                 // https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/#dir-change-current-directory
                 dir('cmd/subs_sandbox') {
-                    sh 'pwd'
                     sh 'make config'
                     sh 'make build'
                     archiveArtifacts artifacts: 'build/**/*', fingerprint: true
@@ -21,7 +20,6 @@ pipeline {
             }
             steps {
                 dir('cmd/subs_sandbox') {
-                    sh 'pwd'
                     sh 'make publish'
                     sh 'make restart'
                 }
