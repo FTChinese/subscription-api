@@ -103,7 +103,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(result.Account)
 }
 
-// LinkWechat links FTC account with a Wechat account.
+// WxLinkEmail links FTC account with a Wechat account.
 //
 //	POST /account/wx/link
 //
@@ -113,7 +113,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 // ```ts
 // ftcId: string;
 // ```
-func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request) {
+func (router AccountRouter) WxLinkEmail(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
@@ -208,7 +208,7 @@ func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request)
 	_ = render.New(w).NoContent()
 }
 
-// UnlinkWx revert linking accounts.
+// WxUnlinkEmail revert linking accounts.
 //
 // PUT /user/unlink/wx
 //
@@ -221,7 +221,7 @@ func (router AccountRouter) LinkWechat(w http.ResponseWriter, req *http.Request)
 // If user is a member and
 // not expired, `anchor` field must be provided indicating
 // after accounts unlinked, with which side the membership should be kept.
-func (router AccountRouter) UnlinkWx(w http.ResponseWriter, req *http.Request) {
+func (router AccountRouter) WxUnlinkEmail(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 

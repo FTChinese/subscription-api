@@ -217,8 +217,8 @@ func StartServer(s ServerStatus) {
 			// For wechat user, you must first verify email + password just like
 			// user is logging in. Get the email account full data and inspect
 			// if the links is permitted on the client side. Then sent link request here.
-			r.Post("/link", accountRouter.LinkWechat)
-			r.Post("/unlink", accountRouter.UnlinkWx)
+			r.Post("/link", accountRouter.WxLinkEmail)
+			r.Post("/unlink", accountRouter.WxUnlinkEmail)
 		})
 	})
 
