@@ -107,12 +107,11 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 //
 //	POST /account/wx/link
 //
-// Header `X-Union-Id: <wechat union id>`
+// Header
+// * `X-Union-Id: <wechat union id>`
 //
-// Input: user.LinkInput
-// ```ts
-// ftcId: string;
-// ```
+// Input: input.LinkWxParams
+// * ftcId: string;
 func (router AccountRouter) WxLinkEmail(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
