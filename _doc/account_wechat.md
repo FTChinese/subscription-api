@@ -25,6 +25,9 @@
               Finish                 |
                                   /account/wx/link
                                     关联两个ID
+                                     |
+                                     |
+                    Refresh from /account/wx or /account depending on login method
 
 ## 获取微信登录用户账号数据
 
