@@ -29,7 +29,7 @@ server_dir := /data/node/go/bin
 
 .PHONY: build
 build : outdir
-	@echo "Build from dir $(current_dir)"
+	@echo "* Build from dir $(current_dir)"
 	$(compile_default_exec)
 
 .PHONY: outdir
@@ -46,27 +46,27 @@ run :
 
 .PHONY: amd64
 amd64 :
-	@echo "Build production linux version $(version)"
+	@echo "* Build production linux version $(version)"
 	$(compile_linux_x86)
 
 .PHONY: arm
 arm :
-	@echo "Build production arm version $(version)"
+	@echo "* Build production arm version $(version)"
 	$(compile_linux_arm)
 
 .PHONY: install-go
 install-go:
-	@echo "Install go version $(go_version)"
+	@echo "* Install go version $(go_version)"
 	gvm install $(go_version)
 
 .PHONY: config
 config : outdir
-	@echo "Pulling config  file from server"
+	@echo "* Pulling config  file from server"
 	rsync -v tk11:/home/node/config/$(config_file_name) $(build_dir)/$(config_file_name)
 
 .PHONY: publish
 publish :
-	@echo "Removing app binary on server side"
+	@echo "* Removing app binary on server side"
 	ssh ucloud "rm -f $(server_dir)/$(app_name).bak"
 	@echo "Uploading binary to server"
 	rsync -v $(default_exec) ucloud:$(server_dir)/$(app_name).bak
