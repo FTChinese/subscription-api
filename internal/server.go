@@ -132,20 +132,24 @@ func StartServer(s ServerStatus) {
 			r.Use(controller.RequireAppID)
 			r.Post("/login", wxAuth.Login)
 			r.Post("/refresh", wxAuth.Refresh)
-			r.Route("/callback", func(r chi.Router) {
-				r.Use(controller.FormParsed)
-				r.Get("/next-user", controller.WxCallbackHandler(wxlogin.CallbackAppNextUser))
-				r.Get("/fta-reader", controller.WxCallbackHandler(wxlogin.CallbackAppFtaReader))
-			})
 		})
 	})
 
-	// Deprecated.
+	// A dedicated root path to handle oauth callback to avoid access checking.
 	r.Route("/oauth", func(r chi.Router) {
 		// Callback for web to get oauth code.
 		// Do not check access token here since it is used by wx.
+		// Deprecated.
 		r.Route("/wx/callback", func(r chi.Router) {
 			r.Get("/next-reader", controller.WxCallbackHandler(wxlogin.CallbackAppNextUser))
+		})
+
+		r.Route("/callback", func(r chi.Router) {
+			r.Use(controller.FormParsed)
+			r.Route("/wx", func(r chi.Router) {
+				r.Get("/next-user", controller.WxCallbackHandler(wxlogin.CallbackAppNextUser))
+				r.Get("/fta-reader", controller.WxCallbackHandler(wxlogin.CallbackAppFtaReader))
+			})
 		})
 	})
 
