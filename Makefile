@@ -1,5 +1,3 @@
-ENV := production
-
 config_file_name := api.toml
 local_config_file := $(HOME)/config/$(config_file_name)
 
@@ -12,15 +10,12 @@ ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time
 app_name := subs-api-v3
 go_version := go1.16
 
+current_dir := $(shell pwd)
 sys := $(shell uname -s)
 hardware := $(shell uname -m)
-build_dir := build
-src_dir := .
-
-ifeq ($(ENV), sandbox)
-	app_name := subs_sandbox
-	src_dir := ./cmd/subs_sandbox/
-endif
+src_dir := $(current_dir)
+build_dir_name := build
+build_dir := $(current_dir)/$(build_dir_name)
 
 default_exec := $(build_dir)/$(sys)/$(hardware)/$(app_name)
 compile_default_exec := go build -o $(default_exec) $(ldflags) -tags production -v $(src_dir)
@@ -42,22 +37,22 @@ build :
 	@echo "GOPATH=$(GOPATH)"
 	@echo "GOBIN=$(GOBIN)"
 	@echo "GO111MODULEON=$(GO111MODULEON)"
-	@echo "Build version $(version)"
+	@echo "* Build from dir $(current_dir), $(version)"
 	ls ./build
 	$(compile_default_exec)
 
 outdir :
 	mkdir -p ./$(build_dir)
-	mkdir -p ./cmd/aliwx-poller/$(build_dir)
-	mkdir -p ./cmd/iap-poller/$(build_dir)
-	mkdir -p ./subs_sandbox/$(build_dir)
 
 .PHONY: devconfig
 devconfig : outdir
 	rsync $(local_config_file) $(build_dir)/$(config_file_name)
-	rsync $(local_config_file) ./cmd/aliwx-poller/$(build_dir)/$(config_file_name)
-	rsync $(local_config_file) ./cmd/iap-poller/$(build_dir)/$(config_file_name)
-	rsync $(local_config_file) ./subs_sandbox/$(build_dir)/$(config_file_name)
+	mkdir -p ./cmd/aliwx-poller/build
+	rsync $(local_config_file) ./cmd/aliwx-poller/build/$(config_file_name)
+	mkdir -p ./cmd/iap-poller/build
+	rsync $(local_config_file) ./cmd/iap-poller/build/$(config_file_name)
+	mkdir -p ./subs_sandbox/build
+	rsync $(local_config_file) ./subs_sandbox/build/$(config_file_name)
 
 .PHONY: run
 run :
@@ -75,21 +70,21 @@ arm :
 
 .PHONY: install-go
 install-go:
-	@echo "Install go version $(go_version)"
+	@echo "* Install go version $(go_version)"
 	gvm install $(go_version)
 
 .PHONY: config
 config : outdir
-	mkdir -p ./$(build_dir)
+	@echo "* Pulling config  file from server"
 	# Download configuration file
-	rsync -v tk11:/home/node/config/$(config_file_name) ./$(build_dir)
+	rsync -v tk11:/home/node/config/$(config_file_name) $(build_dir)/$(config_file_name)
 
 .PHONY: publish
 publish :
 	# Remove the .bak file
 	ssh ucloud "rm -f $(server_dir)/$(app_name).bak"
 	# Sync binary to the xxx.bak file
-	rsync -v ./$(default_exec) ucloud:$(server_dir)/$(app_name).bak
+	rsync -v $(default_exec) ucloud:$(server_dir)/$(app_name).bak
 
 .PHONY: restart
 restart :
