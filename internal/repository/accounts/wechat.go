@@ -17,7 +17,7 @@ func (env Env) WxSignUp(unionID string, input input.EmailSignUpParams) (reader.W
 
 	// A new complete email account.
 	// You should set LoginMethod to LoginMethodEmail
-	// so that the Link step knows how to copy data.
+	// so that the Link step knows how to merge data.
 	ftcAccount := reader.Account{
 		BaseAccount: account.NewEmailBaseAccount(input),
 		LoginMethod: enum.LoginMethodEmail,

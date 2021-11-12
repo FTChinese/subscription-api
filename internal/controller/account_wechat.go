@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
@@ -100,6 +101,8 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 
 	}()
 
+	// Change login method to wechat so that when unlinked, client knows which side should be used.
+	result.Account.LoginMethod = enum.LoginMethodWx
 	_ = render.New(w).OK(result.Account)
 }
 
