@@ -5,6 +5,9 @@ import "github.com/stripe/stripe-go/v72"
 func (c Client) ListPrices() ([]*stripe.Price, error) {
 	iter := c.sc.Prices.List(&stripe.PriceListParams{
 		Active: stripe.Bool(true),
+		ListParams: stripe.ListParams{
+			Limit: stripe.Int64(100),
+		},
 	})
 
 	list := iter.PriceList()
