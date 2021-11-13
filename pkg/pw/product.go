@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
-	"strings"
 )
 
 // ProductBody defines a price without plans.
@@ -44,12 +43,12 @@ func NewPaywallProducts(prods []ProductBody, prices []price.FtcPrice) []Product 
 		}
 
 		// Calculate daily price.
-		for _, pp := range prodPrices {
-			dailyCost := pp.DailyCost()
-			// Replace daily price placeholder in price body.
-			desc := strings.Replace(prod.Description.String, dailyCost.Holder, dailyCost.Replacer, 1)
-			prod.Description = null.NewString(desc, desc != "")
-		}
+		//for _, pp := range prodPrices {
+		//	dailyCost := pp.DailyCost()
+		//	// Replace daily price placeholder in price body.
+		//	desc := strings.Replace(prod.Description.String, dailyCost.Holder, dailyCost.Replacer, 1)
+		//	prod.Description = null.NewString(desc, desc != "")
+		//}
 
 		result = append(result, Product{
 			ProductBody: prod,
