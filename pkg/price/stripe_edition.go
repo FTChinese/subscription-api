@@ -5,8 +5,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ids"
 )
 
-// StripeEdition contains ftc associates ftc price edition with Stripe
-// plan/price id.
+// StripeEdition maps Edition to stripe id.
 type StripeEdition struct {
 	Edition
 	PriceID string
@@ -69,7 +68,7 @@ func newStripeEditions() *stripeEditions {
 func (s stripeEditions) FindByEdition(e Edition, live bool) (StripeEdition, error) {
 	i, ok := s.indexEdition[e.NamedKey()+"_"+ids.GetBoolKey(live)]
 	if !ok {
-		return StripeEdition{}, fmt.Errorf("stripe plan for %s is not found", e)
+		return StripeEdition{}, fmt.Errorf("stripe price for %s is not found", e)
 	}
 
 	return s.editions[i], nil
