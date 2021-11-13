@@ -75,6 +75,19 @@ func (env Env) RetrieveFtcPrice(id string) (price.FtcPrice, error) {
 	return p, nil
 }
 
+// UpdateFtcPrice updates a price's description and stripe price id.
+func (env Env) UpdateFtcPrice(f price.FtcPrice) error {
+	_, err := env.dbs.Write.NamedExec(
+		price.StmtUpdatePrice,
+		f)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // UpdateFtcPriceOffers after a new discount is created/paused/cancelled under this price.
 func (env Env) UpdateFtcPriceOffers(f price.FtcPrice) error {
 	_, err := env.dbs.Write.NamedExec(price.StmtSetPriceOffers, f)
@@ -86,7 +99,8 @@ func (env Env) UpdateFtcPriceOffers(f price.FtcPrice) error {
 	return nil
 }
 
-// RefreshFtcPriceOffers updated a price's discount list.
+// RefreshFtcPriceOffers retrieves all discounts of a price
+// and save them as JSON in the price's row.
 func (env Env) RefreshFtcPriceOffers(f price.FtcPrice) (price.FtcPrice, error) {
 	offers, err := env.ListActiveDiscounts(f.ID, f.LiveMode)
 	if err != nil {
@@ -128,6 +142,8 @@ func (env Env) ArchivePrice(p price.FtcPrice) error {
 	return nil
 }
 
+// ArchivePriceDiscounts turns all discount under a price into
+// cancelled mode.
 func (env Env) ArchivePriceDiscounts(p price.FtcPrice) error {
 	_, err := env.dbs.Write.NamedExec(price.StmtArchivePriceDiscounts, p)
 	if err != nil {
