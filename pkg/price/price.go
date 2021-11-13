@@ -12,7 +12,7 @@ type Price struct {
 	ID string `json:"id" db:"price_id"`
 	Edition
 	Active      bool        `json:"active" db:"is_active"`
-	Archived    bool        `json:"archived" db:"archived"`
+	Archived    bool        `json:"archived" db:"archived"` // Deprecated
 	Currency    Currency    `json:"currency" db:"currency"`
 	Description null.String `json:"description" db:"description"`
 	LiveMode    bool        `json:"liveMode" db:"live_mode"`
@@ -25,6 +25,7 @@ type Price struct {
 }
 
 // DailyCost calculates the daily average price depending on the cycles.
+// Deprecated. Moved to client.
 func (p Price) DailyCost() DailyCost {
 	switch p.Cycle {
 	case enum.CycleYear:
