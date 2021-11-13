@@ -311,6 +311,7 @@ func StartServer(s ServerStatus) {
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
+		// List stripe prices. If query parameter has refresh=true, no cached data will be used.
 		// ?refresh=true|false
 		r.Get("/prices", stripeRouter.ListPrices)
 
@@ -398,11 +399,6 @@ func StartServer(s ServerStatus) {
 		r.With(controller.FormParsed).
 			Get("/active/prices", paywallRouter.LoadPricing)
 
-		// List all active pricing plans.
-		// Deprecated
-		//r.With(controller.FormParsed).
-		//	Get("/plans", paywallRouter.LoadPricing)
-
 		// The following are used by CMS to create/update prices and discounts.
 		// Get a list of prices under a product. This does not distinguish is_active or live_mode
 		// ?product_id=<string>
@@ -410,9 +406,14 @@ func StartServer(s ServerStatus) {
 			Get("/prices", paywallRouter.ListPrices)
 		// Create a price for a product. The price's live mode is determined by client.
 		r.Post("/prices", paywallRouter.CreatePrice)
+
 		r.Post("/prices/{id}", paywallRouter.ActivatePrice)
+		r.Post("/prices/{id}/activate", paywallRouter.ActivatePrice)
+		r.Post("/prices/{id}/refresh", paywallRouter.RefreshPrice)
+
 		// Retrieve all discounts of a price and save in under price row as JSON.
 		// A price should only retrieve discount of the same live mode.
+		// TODO: changed to update price.
 		r.Patch("/prices/{id}", paywallRouter.RefreshPrice)
 		r.Delete("/prices/{id}", paywallRouter.ArchivePrice)
 
