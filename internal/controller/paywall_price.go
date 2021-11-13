@@ -37,8 +37,13 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	p := price.NewFtcPrice(params)
-	err := router.repo.CreatePrice(p)
+	p, err := price.NewFtcPrice(params)
+	if err != nil {
+		_ = render.NewInternalError(err.Error())
+		return
+	}
+
+	err = router.repo.CreatePrice(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -47,7 +52,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 	_ = render.New(w).OK(p)
 }
 
-// RefreshPrice discounts.
+// RefreshPrice discounts and stripe price id.
 func (router PaywallRouter) RefreshPrice(w http.ResponseWriter, req *http.Request) {
 	priceID, err := getURLParam(req, "id").ToString()
 	if err != nil {
@@ -62,10 +67,17 @@ func (router PaywallRouter) RefreshPrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
+	// Update offers
 	ftcPrice, err = router.repo.RefreshFtcPriceOffers(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
+	}
+
+	// Update stripe price id.
+	ftcPrice, err = ftcPrice.FillStripePriceID()
+	if err == nil {
+		_ = router.repo.UpdateFtcPrice(ftcPrice)
 	}
 
 	_ = render.New(w).OK(ftcPrice)
@@ -84,7 +96,6 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	// TODO: refresh discount list.
 	_ = render.New(w).OK(ftcPrice)
 }
 
