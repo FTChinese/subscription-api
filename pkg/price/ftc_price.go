@@ -57,7 +57,12 @@ func (p *FtcPriceParams) Validate() *render.ValidationError {
 }
 
 // NewFtcPrice creates a price for ftc product
-func NewFtcPrice(p FtcPriceParams) FtcPrice {
+func NewFtcPrice(p FtcPriceParams) (FtcPrice, error) {
+	se, err := StripeEditions.FindByEdition(p.Edition, p.LiveMode)
+	if err != nil {
+		return FtcPrice{}, err
+	}
+
 	return FtcPrice{
 		Price: Price{
 			ID:          ids.PriceID(),
@@ -74,8 +79,9 @@ func NewFtcPrice(p FtcPriceParams) FtcPrice {
 			CreatedUTC:  chrono.TimeNow(),
 			CreatedBy:   p.CreatedBy,
 		},
-		Offers: make([]Discount, 0),
-	}
+		StripePriceID: se.PriceID,
+		Offers:        make([]Discount, 0),
+	}, nil
 }
 
 // FtcPrice contains a price's original price and promotion.
@@ -83,7 +89,21 @@ func NewFtcPrice(p FtcPriceParams) FtcPrice {
 // promotion offer if promotion period is valid.
 type FtcPrice struct {
 	Price
-	Offers DiscountListJSON `json:"offers" db:"discount_list"`
+	StripePriceID string           `json:"stripePriceId" db:"stripe_price_id"`
+	Offers        DiscountListJSON `json:"offers" db:"discount_list"`
+}
+
+// FillStripePriceID finds stripe price id corresponding to this price.
+// Returns the updated FtcPrice or original one in case of error.
+func (f FtcPrice) FillStripePriceID() (FtcPrice, error) {
+	se, err := StripeEditions.FindByEdition(f.Edition, f.LiveMode)
+	if err != nil {
+		return f, err
+	}
+
+	f.StripePriceID = se.PriceID
+
+	return f, nil
 }
 
 func (f FtcPrice) Activate() FtcPrice {
@@ -106,6 +126,8 @@ func (f FtcPrice) VerifyOffer(o Discount) error {
 	return errors.New("the requested offer is not found")
 }
 
+// Archive put a price into archive and no longer usable.
+// No idea why I created this.
 func (f FtcPrice) Archive() FtcPrice {
 	f.Archived = true
 	return f
