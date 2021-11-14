@@ -18,7 +18,7 @@ func NewStripePriceMeta(m map[string]string) StripePriceMeta {
 	ok, _ := strconv.ParseBool(m["introductory"])
 	return StripePriceMeta{
 		Tier:         t,
-		PeriodDays:   d,
+		PeriodDays:   int64(d),
 		Introductory: ok,
 	}
 }
