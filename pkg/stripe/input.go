@@ -36,8 +36,15 @@ func (p SubsParams) Validate() *render.ValidationError {
 		return ve
 	}
 
-	return validator.New("idempotency").Required().Validate(i.IdempotencyKey)
-}
+	if p.Introductory.PriceID != "" {
+		if p.Introductory.PeriodDays < 1 {
+			return &render.ValidationError{
+				Message: "Introductory offer period must be provided",
+				Field:   "introductory.periodDays",
+				Code:    render.CodeInvalid,
+			}
+		}
+	}
 
 // SubsParams contains the data used to create/upgrade a subscription.
 type SubsParams struct {
