@@ -32,7 +32,7 @@ func MockNewSubs() Subs {
 
 type MockSubsBuilder struct {
 	ftcID   string
-	edition price.StripeEdition
+	edition PriceEdition
 	status  enum.SubsStatus
 }
 
@@ -43,13 +43,13 @@ func NewMockSubsBuilder(ftcID string) MockSubsBuilder {
 
 	return MockSubsBuilder{
 		ftcID:   ftcID,
-		edition: price.StripeEditions.MustFindByEdition(price.StdYearEdition, false),
+		edition: PriceEditionStore.MustFindByEdition(price.StdYearEdition, false),
 		status:  enum.SubsStatusActive,
 	}
 }
 
 func (b MockSubsBuilder) WithEdition(e price.Edition) MockSubsBuilder {
-	b.edition = price.StripeEditions.MustFindByEdition(e, false)
+	b.edition = PriceEditionStore.MustFindByEdition(e, false)
 	return b
 }
 

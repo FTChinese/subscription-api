@@ -33,8 +33,8 @@ func addExtraSubParams(params *stripe.SubscriptionParams, other SubSharedParams)
 }
 
 type CheckoutItem struct {
-	Price        price.StripePrice
-	Introductory price.StripePrice // This is optional.
+	Price        Price
+	Introductory Price // This is optional.
 }
 
 func (ci CheckoutItem) Edition() price.Edition {
