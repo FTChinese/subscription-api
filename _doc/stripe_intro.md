@@ -27,7 +27,24 @@ You always start using Stripe by creating [Products](https://stripe.com/docs/api
 
 ## Design of introductory offer
 
-Take advantage of [Combining trials with add_invoice_items](https://stripe.com/docs/billing/subscriptions/trials#combine-trial-add-invoice-items)
+Take advantage of [Combining trials with add_invoice_items](https://stripe.com/docs/billing/subscriptions/trials#combine-trial-add-invoice-items).
+
+The general idea is that when creating a subscription, you should set a trial period which is free by Stripe's definition. Then add an extra invoice for a specific one-time price.
+
+Steps to set up an introductory offer:
+
+* Open the product page you want to attach an introductory offer. 
+* Click "Add another price".
+* Enter a price you want to charge for this introductory offer. Select "One time".
+* In the "Price description" box, enter something that could help you recall its purpose.
+* After the price created, click it and "Edit metadata". Enter the following key-value pairs:
+    - `tier`: The tier of product this price belongs to. For standard edition it's `standard`, or `premium` for premium edition.
+    - `period_days`: The number of days for this introductory offer. For example `7` for a week's trial, `30` or `31` or a month of trial.
+    - `introductory`: `true`.
+
+Once created, the introductory offer will be kept forever unless you deleted it. However, it won't come into effect forever. It will only be used when the paywall data fetch from this API contains a valid introductory offer under a price. So as long as you set any introductory offer under a price in Superyard, alipay, wechat pay, and Stripe will all be notified to offer user an introductory trial period.
+
+Do remember to set the "Edit metadata" as stated above. I need this information to distinguish a introductory price from regular prices. You should also keep in mind not creating multiple introductory price under the same product; otherwise there's currently no way to determine which one to use.
 
 ## Stripe订阅状态
 
