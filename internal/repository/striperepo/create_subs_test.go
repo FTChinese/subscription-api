@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
@@ -92,8 +91,8 @@ func TestEnv_CreateSubscription(t *testing.T) {
 			args: args{
 				ba: pa.account,
 				item: stripe.CheckoutItem{
-					Price:        price.StripePrice{},
-					Introductory: price.StripePrice{},
+					Price:        stripe.Price{},
+					Introductory: stripe.Price{},
 				},
 				params: stripe.SubSharedParams{
 					DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
