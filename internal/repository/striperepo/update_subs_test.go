@@ -3,6 +3,7 @@ package striperepo
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
@@ -30,20 +31,25 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 		logger: zaptest.NewLogger(t),
 	}
 
-	_, err = env.CreateSubscription(stripe.SubsParams{
-		Account: pa.account,
-		Edition: price.StripeEditions.MustFindByEdition(price.StdMonthEdition, false),
-		SharedParams: stripe.SharedParams{
+	_, err = env.CreateSubscription(
+		pa.account,
+		stripe.CheckoutItem{
+			Price:        price.StripePrice{},
+			Introductory: price.StripePrice{},
+		},
+		stripe.SubSharedParams{
 			DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
 		},
-	})
+	)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	type args struct {
-		cfg stripe.SubsParams
+		ba     account.BaseAccount
+		item   stripe.CheckoutItem
+		params stripe.SubSharedParams
 	}
 	tests := []struct {
 		name    string
@@ -53,12 +59,13 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 		{
 			name: "Switch cycle",
 			args: args{
-				cfg: stripe.SubsParams{
-					Account: pa.account,
-					Edition: price.StripeEditions.MustFindByEdition(price.StdYearEdition, false),
-					SharedParams: stripe.SharedParams{
-						DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
-					},
+				ba: pa.account,
+				item: stripe.CheckoutItem{
+					Price:        price.StripePrice{},
+					Introductory: price.StripePrice{},
+				},
+				params: stripe.SubSharedParams{
+					DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
 				},
 			},
 			wantErr: false,
@@ -66,12 +73,13 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 		{
 			name: "Upgrade",
 			args: args{
-				cfg: stripe.SubsParams{
-					Account: pa.account,
-					Edition: price.StripeEditions.MustFindByEdition(price.PremiumEdition, false),
-					SharedParams: stripe.SharedParams{
-						DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
-					},
+				ba: pa.account,
+				item: stripe.CheckoutItem{
+					Price:        price.StripePrice{},
+					Introductory: price.StripePrice{},
+				},
+				params: stripe.SubSharedParams{
+					DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
 				},
 			},
 			wantErr: false,
@@ -79,7 +87,8 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := env.UpdateSubscription(tt.args.cfg)
+			got, err := env.UpdateSubscription(
+				tt.args.ba, tt.args.item, tt.args.params)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateSubscription() error = %v, wantErr %v", err, tt.wantErr)
 				return
