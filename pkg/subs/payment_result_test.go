@@ -1,12 +1,12 @@
 package subs
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/faker"
 	"testing"
 )
 
 func TestNewAliWebhookResult(t *testing.T) {
-	config.MustSetupViper()
+	faker.MustSetupViper()
 
 	order := NewMockOrderBuilder("").Build()
 

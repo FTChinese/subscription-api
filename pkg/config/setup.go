@@ -5,28 +5,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// SetupViper config viper
-// Deprecated.
-func SetupViper() error {
-	viper.SetConfigName("api")
-	viper.AddConfigPath("$HOME/config")
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// MustSetupViper config viper or panic
-// Deprecated
-func MustSetupViper() {
-	if err := SetupViper(); err != nil {
-		panic(err)
-	}
-}
-
 func SetupViperV2(b []byte) error {
 	viper.SetConfigType("toml")
 
