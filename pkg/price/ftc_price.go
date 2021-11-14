@@ -57,11 +57,7 @@ func (p *FtcPriceParams) Validate() *render.ValidationError {
 }
 
 // NewFtcPrice creates a price for ftc product
-func NewFtcPrice(p FtcPriceParams) (FtcPrice, error) {
-	se, err := StripeEditions.FindByEdition(p.Edition, p.LiveMode)
-	if err != nil {
-		return FtcPrice{}, err
-	}
+func NewFtcPrice(p FtcPriceParams, stripePrice string) FtcPrice {
 
 	return FtcPrice{
 		Price: Price{
@@ -79,9 +75,9 @@ func NewFtcPrice(p FtcPriceParams) (FtcPrice, error) {
 			CreatedUTC:  chrono.TimeNow(),
 			CreatedBy:   p.CreatedBy,
 		},
-		StripePriceID: se.PriceID,
+		StripePriceID: stripePrice,
 		Offers:        make([]Discount, 0),
-	}, nil
+	}
 }
 
 // FtcPrice contains a price's original price and promotion.
@@ -93,17 +89,13 @@ type FtcPrice struct {
 	Offers        DiscountListJSON `json:"offers" db:"discount_list"`
 }
 
-// FillStripePriceID finds stripe price id corresponding to this price.
-// Returns the updated FtcPrice or original one in case of error.
-func (f FtcPrice) FillStripePriceID() (FtcPrice, error) {
-	se, err := StripeEditions.FindByEdition(f.Edition, f.LiveMode)
-	if err != nil {
-		return f, err
-	}
-
-	f.StripePriceID = se.PriceID
-
-	return f, nil
+// WithStripePrice adds links the ftc price with stripe price.
+// Kept for backward compatible.
+// This should be removed if we could provide it on client side
+// when creating an FtcPrice.
+func (f FtcPrice) WithStripePrice(id string) FtcPrice {
+	f.StripePriceID = id
+	return f
 }
 
 func (f FtcPrice) Activate() FtcPrice {
