@@ -1,9 +1,11 @@
+//go:build !production
 // +build !production
 
 package test
 
 import (
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -24,7 +26,7 @@ var (
 )
 
 func init() {
-	config.MustSetupViper()
+	faker.MustSetupViper()
 
 	SplitDB = db.MustNewMyDBs(false)
 	DB = SplitDB.Write
