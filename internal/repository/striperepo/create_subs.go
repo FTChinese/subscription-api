@@ -2,6 +2,7 @@ package striperepo
 
 import (
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
@@ -19,7 +20,7 @@ import (
 // util.ErrNonStripeValidSub
 // util.ErrStripeDuplicateSub
 // util.ErrUnknownSubState
-func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, error) {
+func (env Env) CreateSubscription(ba account.BaseAccount, item stripe.CheckoutItem, params stripe.SubSharedParams) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -30,7 +31,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 	}
 
 	// Retrieve member for this user to check whether the operation is allowed.
-	mmb, err := tx.RetrieveMember(params.Account.CompoundID())
+	mmb, err := tx.RetrieveMember(ba.CompoundID())
 	sugar.Infof("Current membership before creating stripe subscription: %v", mmb)
 
 	if err != nil {
@@ -40,7 +41,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
-	subsKind, err := mmb.SubsKindOfStripe(params.Edition.Edition)
+	subsKind, err := mmb.SubsKindOfStripe(item.Edition())
 	//intent, err := reader.NewCheckoutIntents(mmb, params.Edition.Edition).
 	//	Get(enum.PayMethodStripe)
 	if err != nil {
@@ -66,7 +67,9 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 
 	sugar.Info("Creating stripe subscription")
 	// Contact Stripe API.
-	ss, err := env.client.NewSubs(params)
+	ss, err := env.client.NewSubs(
+		item.NewSubParams(ba.StripeID.String, params),
+	)
 
 	// {"status":400,
 	// "message":"Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than '4a857eb3-396c-4c91-a8f1-4014868a8437' if you meant to execute a different request.","request_id":"req_Dv6N7d9lF8uDHJ",
@@ -82,7 +85,7 @@ func (env Env) CreateSubscription(params stripe.SubsParams) (stripe.SubsResult, 
 
 	// Build Membership based on stripe subscription.
 	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
-		UserIDs:       params.Account.CompoundIDs(),
+		UserIDs:       ba.CompoundIDs(),
 		CurrentMember: mmb,
 		Kind:          subsKind,
 		Action:        reader.ActionActionCreate,
