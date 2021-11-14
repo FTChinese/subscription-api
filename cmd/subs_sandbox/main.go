@@ -33,7 +33,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	config.MustSetupViperV2([]byte(tomlConfig))
+	config.MustSetupViper([]byte(tomlConfig))
 }
 
 func main() {
