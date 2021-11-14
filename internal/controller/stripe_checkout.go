@@ -3,7 +3,6 @@ package controller
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
 	"net/http"
@@ -39,7 +38,7 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 		return
 	}
 
-	sp, err := price.StripeEditions.FindByEdition(input.Edition, router.config.Live())
+	sp, err := stripe.PriceEditionStore.FindByEdition(input.Edition, router.config.Live())
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())

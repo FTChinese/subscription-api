@@ -4,6 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
 )
 
@@ -37,11 +38,13 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	p, err := price.NewFtcPrice(params)
+	se, err := stripe.PriceEditionStore.FindByEdition(params.Edition, params.LiveMode)
 	if err != nil {
 		_ = render.NewInternalError(err.Error())
 		return
 	}
+
+	p := price.NewFtcPrice(params, se.PriceID)
 
 	err = router.repo.CreatePrice(p)
 	if err != nil {
@@ -74,9 +77,15 @@ func (router PaywallRouter) RefreshPrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
+	se, err := stripe.PriceEditionStore.
+		FindByEdition(
+			ftcPrice.Edition,
+			ftcPrice.LiveMode,
+		)
+
 	// Update stripe price id.
-	ftcPrice, err = ftcPrice.FillStripePriceID()
 	if err == nil {
+		ftcPrice = ftcPrice.WithStripePrice(se.PriceID)
 		_ = router.repo.UpdateFtcPrice(ftcPrice)
 	}
 
