@@ -46,11 +46,7 @@ func (p SubsParams) Validate() *render.ValidationError {
 		}
 	}
 
-// SubsParams contains the data used to create/upgrade a subscription.
-type SubsParams struct {
-	Account account.BaseAccount
-	Edition price.StripeEdition
-	SharedParams
+	return validator.New("idempotency").Required().Validate(p.IdempotencyKey)
 }
 
 type CancelParams struct {
