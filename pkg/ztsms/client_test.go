@@ -3,6 +3,7 @@ package ztsms
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -14,7 +15,7 @@ import (
 )
 
 func TestClient_SendVerifier(t *testing.T) {
-	config.MustSetupViper()
+	faker.MustSetupViper()
 
 	type fields struct {
 		credentials config.Credentials
@@ -63,7 +64,7 @@ func TestClient_hashPassword(t *testing.T) {
 
 	ts := strconv.FormatInt(time.Now().Unix(), 10)
 
-	config.MustSetupViper()
+	faker.MustSetupViper()
 
 	c := config.MustSMSCredentials()
 

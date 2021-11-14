@@ -2,12 +2,13 @@ package letter
 
 import (
 	"github.com/FTChinese/go-rest/postoffice"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"testing"
 )
 
 func TestDeliverParcel(t *testing.T) {
-	config.MustSetupViper()
+	faker.MustSetupViper()
 
 	conn := config.MustGetHanqiConn()
 	t.Logf("%v", conn)
