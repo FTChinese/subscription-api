@@ -16,10 +16,17 @@ type SubSharedParams struct {
 	IdempotencyKey       string      `json:"idempotency"` // TODO: add when and why this is needed.
 }
 
-// SubsInput is the request body to create a new subscription.
-type SubsInput struct {
-	price.Edition // Use this to find strip's price id.
-	SharedParams
+type IntroductoryParams struct {
+	PriceID    string `json:"priceId"`
+	PeriodDays int    `json:"periodDays"`
+}
+
+// SubsParams is the request body to create a new subscription
+// or update an existing one.
+type SubsParams struct {
+	PriceID      string             `json:"priceId"`
+	Introductory IntroductoryParams `json:"introductory"`
+	SubSharedParams
 }
 
 // Validate checks if customer and idempotency fields are set.
