@@ -7,10 +7,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	expandPI = "latest_invoice.payment_intent"
-)
-
 type Client struct {
 	live   bool
 	sc     *client.API
