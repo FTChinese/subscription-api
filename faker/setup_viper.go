@@ -26,5 +26,5 @@ func MustReadConfigFile() []byte {
 }
 
 func MustSetupViper() {
-	config.MustSetupViperV2(MustReadConfigFile())
+	config.MustSetupViper(MustReadConfigFile())
 }

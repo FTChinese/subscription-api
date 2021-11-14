@@ -34,7 +34,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	config.MustSetupViperV2([]byte(tomlConfig))
+	config.MustSetupViper([]byte(tomlConfig))
 }
 
 // Version 1: Port 8200, https://www.ftacademy.cn/api/v1
