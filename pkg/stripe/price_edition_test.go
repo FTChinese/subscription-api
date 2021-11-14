@@ -1,4 +1,4 @@
-package price
+package stripe
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -6,7 +6,7 @@ import (
 )
 
 func Test_newPlanStore(t *testing.T) {
-	store := newStripeEditions()
+	store := newPriceEditionStore()
 
 	assert.Len(t, store.editions, 6)
 	assert.Len(t, store.indexEdition, 6)

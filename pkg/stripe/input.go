@@ -84,6 +84,6 @@ func (i *CheckoutInput) Validate() *render.ValidationError {
 
 type CheckoutParams struct {
 	Account account.BaseAccount
-	Plan    price.StripeEdition
+	Plan    PriceEdition
 	Input   CheckoutInput
 }

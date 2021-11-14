@@ -1,4 +1,4 @@
-package price
+package stripe
 
 import (
 	"github.com/FTChinese/go-rest/enum"
@@ -6,61 +6,61 @@ import (
 	"strconv"
 )
 
-type StripePriceMeta struct {
+type PriceMetadata struct {
 	Tier         enum.Tier `json:"tier"`
 	PeriodDays   int64     `json:"periodDays"`
 	Introductory bool      `json:"introductory"`
 }
 
-func NewStripePriceMeta(m map[string]string) StripePriceMeta {
+func NewStripePriceMeta(m map[string]string) PriceMetadata {
 	t, _ := enum.ParseTier(m["tier"])
 	d, _ := strconv.Atoi(m["period_days"])
 	ok, _ := strconv.ParseBool(m["introductory"])
-	return StripePriceMeta{
+	return PriceMetadata{
 		Tier:         t,
 		PeriodDays:   int64(d),
 		Introductory: ok,
 	}
 }
 
-type StripePriceRecurring struct {
+type PriceRecurring struct {
 	Interval      stripe.PriceRecurringInterval  `json:"interval"`
 	IntervalCount int64                          `json:"intervalCount"`
 	UsageType     stripe.PriceRecurringUsageType `json:"usageType"`
 }
 
-func NewStripePriceRecurring(r *stripe.PriceRecurring) StripePriceRecurring {
+func NewPriceRecurring(r *stripe.PriceRecurring) PriceRecurring {
 	if r == nil {
-		return StripePriceRecurring{}
+		return PriceRecurring{}
 	}
 
-	return StripePriceRecurring{
+	return PriceRecurring{
 		Interval:      r.Interval,
 		IntervalCount: r.IntervalCount,
 		UsageType:     r.UsageType,
 	}
 }
 
-func (r StripePriceRecurring) IsZero() bool {
+func (r PriceRecurring) IsZero() bool {
 	return r.Interval == "" && r.IntervalCount == 0 && r.UsageType == ""
 }
 
-type StripePrice struct {
-	Active     bool                 `json:"active"`
-	Created    int64                `json:"created"`
-	Currency   stripe.Currency      `json:"currency"`
-	ID         string               `json:"id"`
-	LiveMode   bool                 `json:"liveMode"`
-	Metadata   StripePriceMeta      `json:"metadata"`
-	Nickname   string               `json:"nickname"`
-	Product    string               `json:"product"`
-	Recurring  StripePriceRecurring `json:"recurring"`
-	Type       stripe.PriceType     `json:"type"`
-	UnitAmount int64                `json:"unitAmount"`
+type Price struct {
+	Active     bool             `json:"active"`
+	Created    int64            `json:"created"`
+	Currency   stripe.Currency  `json:"currency"`
+	ID         string           `json:"id"`
+	LiveMode   bool             `json:"liveMode"`
+	Metadata   PriceMetadata    `json:"metadata"`
+	Nickname   string           `json:"nickname"`
+	Product    string           `json:"product"`
+	Recurring  PriceRecurring   `json:"recurring"`
+	Type       stripe.PriceType `json:"type"`
+	UnitAmount int64            `json:"unitAmount"`
 }
 
-func NewStripePrice(p *stripe.Price) StripePrice {
-	return StripePrice{
+func NewPrice(p *stripe.Price) Price {
+	return Price{
 		Active:     p.Active,
 		Created:    p.Created,
 		Currency:   p.Currency,
@@ -69,12 +69,12 @@ func NewStripePrice(p *stripe.Price) StripePrice {
 		Metadata:   NewStripePriceMeta(p.Metadata),
 		Nickname:   p.Nickname,
 		Product:    p.Product.ID,
-		Recurring:  NewStripePriceRecurring(p.Recurring),
+		Recurring:  NewPriceRecurring(p.Recurring),
 		Type:       p.Type,
 		UnitAmount: p.UnitAmount,
 	}
 }
 
-func (p StripePrice) IsZero() bool {
+func (p Price) IsZero() bool {
 	return p.ID == ""
 }
