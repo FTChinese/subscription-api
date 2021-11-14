@@ -26,13 +26,14 @@ func (c Client) UpdateSubs(subID string, params *stripe.SubscriptionParams) (*st
 	return c.sc.Subscriptions.Update(subID, params)
 }
 
-func (c Client) GetSubs(subID string) (*stripe.Subscription, error) {
-	p := stripe.Params{}
-	p.AddExpand(expandPI)
+func (c Client) GetSubs(subID string, expand bool) (*stripe.Subscription, error) {
+	var params *stripe.SubscriptionParams
+	if expand {
+		p := stripe.Params{}
+		p.AddExpand(ftcStripe.KeyLatestInvoicePaymentIntent)
+	}
 
-	return c.sc.Subscriptions.Get(subID, &stripe.SubscriptionParams{
-		Params: p,
-	})
+	return c.sc.Subscriptions.Get(subID, params)
 }
 
 // CancelSubs cancels a subscription at current period end if the passed in parameter `cancel` is true, or reactivate it if false.
