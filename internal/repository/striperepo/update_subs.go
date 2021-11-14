@@ -2,13 +2,14 @@ package striperepo
 
 import (
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
 )
 
 // UpdateSubscription switches subscription plan.
-func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, error) {
+func (env Env) UpdateSubscription(ba account.BaseAccount, item stripe.CheckoutItem, params stripe.SubSharedParams) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -19,14 +20,14 @@ func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 	}
 
 	// Retrieve current membership.
-	mmb, err := tx.RetrieveMember(cfg.Account.CompoundID())
+	mmb, err := tx.RetrieveMember(ba.CompoundID())
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, nil
 	}
 
-	subsKind, err := mmb.SubsKindOfStripe(cfg.Edition.Edition)
+	subsKind, err := mmb.SubsKindOfStripe(item.Edition())
 
 	if err != nil {
 		sugar.Error(err)
@@ -47,7 +48,17 @@ func (env Env) UpdateSubscription(cfg stripe.SubsParams) (stripe.SubsResult, err
 		}
 	}
 
-	ss, err := env.client.UpdateSubs(mmb.StripeSubsID.String, cfg)
+	ss, err := env.client.GetSubs(mmb.StripeSubsID.String, false)
+	if err != nil {
+		sugar.Error(err)
+		_ = tx.Rollback()
+		return stripe.SubsResult{}, err
+	}
+
+	ss, err = env.client.UpdateSubs(
+		ss.ID,
+		item.UpdateSubParams(ss, params),
+	)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
