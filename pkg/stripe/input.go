@@ -30,8 +30,9 @@ type SubsParams struct {
 }
 
 // Validate checks if customer and idempotency fields are set.
-func (i SubsInput) Validate() *render.ValidationError {
-	if ve := i.Edition.Validate(); ve != nil {
+func (p SubsParams) Validate() *render.ValidationError {
+	ve := validator.New("priceId").Required().Validate(p.PriceID)
+	if ve != nil {
 		return ve
 	}
 
