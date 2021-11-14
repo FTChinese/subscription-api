@@ -12,8 +12,93 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
+	"github.com/stripe/stripe-go/v72"
 	"time"
 )
+
+var MockPriceStdIntro = Price{
+	Active:   true,
+	Created:  1636704870,
+	Currency: "gbp",
+	ID:       "price_1Juuu2BzTK0hABgJTXiK4NTt",
+	LiveMode: false,
+	Metadata: PriceMetadata{
+		Tier:         enum.TierStandard,
+		PeriodDays:   30,
+		Introductory: true,
+	},
+	Nickname:   "Introductory Offer",
+	Product:    "prod_FOde1wE4ZTRMcD",
+	Recurring:  PriceRecurring{},
+	Type:       stripe.PriceTypeOneTime,
+	UnitAmount: 10,
+}
+
+var MockPriceStdYear = Price{
+	Active:   true,
+	Created:  1613617385,
+	Currency: "gbp",
+	ID:       "price_1IM2nFBzTK0hABgJiIDeDIox",
+	LiveMode: false,
+	Metadata: PriceMetadata{
+		Tier:         enum.TierStandard,
+		PeriodDays:   365,
+		Introductory: false,
+	},
+	Nickname: "Annual Price",
+	Product:  "prod_FOde1wE4ZTRMcD",
+	Recurring: PriceRecurring{
+		Interval:      stripe.PriceRecurringIntervalYear,
+		IntervalCount: 1,
+		UsageType:     stripe.PriceRecurringUsageTypeLicensed,
+	},
+	Type:       stripe.PriceTypeRecurring,
+	UnitAmount: 3999,
+}
+
+var MockPriceStdMonth = Price{
+	Active:   true,
+	Created:  1613617350,
+	Currency: "gbp",
+	ID:       "price_1IM2mgBzTK0hABgJVH8o9Sjm",
+	LiveMode: false,
+	Metadata: PriceMetadata{
+		Tier:         enum.TierStandard,
+		PeriodDays:   30,
+		Introductory: false,
+	},
+	Nickname: "Monthly Price",
+	Product:  "prod_FOde1wE4ZTRMcD",
+	Recurring: PriceRecurring{
+		Interval:      stripe.PriceRecurringIntervalMonth,
+		IntervalCount: 1,
+		UsageType:     stripe.PriceRecurringUsageTypeLicensed,
+	},
+	Type:       stripe.PriceTypeRecurring,
+	UnitAmount: 499,
+}
+
+var MockPricePrmYear = Price{
+	Active:   true,
+	Created:  1562567431,
+	Currency: "gbp",
+	ID:       "plan_FOde0uAr0V4WmT",
+	LiveMode: false,
+	Metadata: PriceMetadata{
+		Tier:         enum.TierPremium,
+		PeriodDays:   365,
+		Introductory: false,
+	},
+	Nickname: "Premium Yearly Price",
+	Product:  "prod_FOdd1iNT29BIGq",
+	Recurring: PriceRecurring{
+		Interval:      stripe.PriceRecurringIntervalYear,
+		IntervalCount: 1,
+		UsageType:     stripe.PriceRecurringUsageTypeLicensed,
+	},
+	Type:       stripe.PriceTypeRecurring,
+	UnitAmount: 23800,
+}
 
 func MockNewSubs() Subs {
 
