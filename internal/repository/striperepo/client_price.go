@@ -34,7 +34,7 @@ func (c Client) GetAndCachePrice(id string) (stripe.Price, error) {
 	}
 
 	p := stripe.NewPrice(sp)
-	StripePriceCache.Upsert(p)
+	PriceCache.Upsert(p)
 
 	return p, nil
 }

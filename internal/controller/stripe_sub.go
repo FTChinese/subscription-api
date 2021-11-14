@@ -10,7 +10,7 @@ import (
 )
 
 func (router StripeRouter) getPrice(id string) (stripe.Price, error) {
-	p, ok := striperepo.StripePriceCache.Find(id)
+	p, ok := striperepo.PriceCache.Find(id)
 
 	if ok {
 		return p, nil

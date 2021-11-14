@@ -5,8 +5,8 @@ import (
 )
 
 func (env Env) ListPrices(force bool) ([]stripe.Price, error) {
-	if !force && StripePriceCache.Len() != 0 {
-		return StripePriceCache.
+	if !force && PriceCache.Len() != 0 {
+		return PriceCache.
 			List(env.client.live), nil
 	}
 
@@ -15,8 +15,8 @@ func (env Env) ListPrices(force bool) ([]stripe.Price, error) {
 		return nil, err
 	}
 
-	StripePriceCache.AddAll(sp)
+	PriceCache.AddAll(sp)
 
-	return StripePriceCache.
+	return PriceCache.
 		List(env.client.live), nil
 }
