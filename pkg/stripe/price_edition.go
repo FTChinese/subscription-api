@@ -1,53 +1,54 @@
-package price
+package stripe
 
 import (
 	"fmt"
 	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
-// StripeEdition maps Edition to stripe id.
-type StripeEdition struct {
-	Edition
+// PriceEdition maps price.Edition to stripe price id.
+type PriceEdition struct {
+	price.Edition
 	PriceID string
 	Live    bool
 }
 
-type stripeEditions struct {
-	editions     []StripeEdition
+type priceEditionStore struct {
+	editions     []PriceEdition
 	indexEdition map[string]int // Index the editions array by `<tier>_<cycle>_<live | test>`
 	indexID      map[string]int // Index the editions array by stripe plan/price id.
 }
 
-func newStripeEditions() *stripeEditions {
-	s := &stripeEditions{
-		editions: []StripeEdition{
+func newPriceEditionStore() *priceEditionStore {
+	s := &priceEditionStore{
+		editions: []PriceEdition{
 			{
-				Edition: StdMonthEdition,
+				Edition: price.StdMonthEdition,
 				PriceID: "price_1IM2Z4BzTK0hABgJ9Sh0u35h",
 				Live:    true,
 			},
 			{
-				Edition: StdMonthEdition,
+				Edition: price.StdMonthEdition,
 				PriceID: "price_1IM2mgBzTK0hABgJVH8o9Sjm",
 				Live:    false,
 			},
 			{
-				Edition: StdYearEdition,
+				Edition: price.StdYearEdition,
 				PriceID: "price_1IM2aNBzTK0hABgJeJVIx3kL",
 				Live:    true,
 			},
 			{
-				Edition: StdYearEdition,
+				Edition: price.StdYearEdition,
 				PriceID: "price_1IM2nFBzTK0hABgJiIDeDIox",
 				Live:    false,
 			},
 			{
-				Edition: PremiumEdition,
+				Edition: price.PremiumEdition,
 				PriceID: "plan_FXZbv1cDTsUKOg",
 				Live:    true,
 			},
 			{
-				Edition: PremiumEdition,
+				Edition: price.PremiumEdition,
 				PriceID: "plan_FOde0uAr0V4WmT",
 				Live:    false,
 			},
@@ -65,16 +66,16 @@ func newStripeEditions() *stripeEditions {
 	return s
 }
 
-func (s stripeEditions) FindByEdition(e Edition, live bool) (StripeEdition, error) {
+func (s priceEditionStore) FindByEdition(e price.Edition, live bool) (PriceEdition, error) {
 	i, ok := s.indexEdition[e.NamedKey()+"_"+ids.GetBoolKey(live)]
 	if !ok {
-		return StripeEdition{}, fmt.Errorf("stripe price for %s is not found", e)
+		return PriceEdition{}, fmt.Errorf("stripe price for %s is not found", e)
 	}
 
 	return s.editions[i], nil
 }
 
-func (s stripeEditions) MustFindByEdition(e Edition, live bool) StripeEdition {
+func (s priceEditionStore) MustFindByEdition(e price.Edition, live bool) PriceEdition {
 	se, err := s.FindByEdition(e, live)
 	if err != nil {
 		panic(err)
@@ -83,14 +84,14 @@ func (s stripeEditions) MustFindByEdition(e Edition, live bool) StripeEdition {
 	return se
 }
 
-// FindByID gets StripeEdition by stripe price id.
-func (s stripeEditions) FindByID(priceID string) (StripeEdition, error) {
+// FindByID gets PriceEdition by stripe price id.
+func (s priceEditionStore) FindByID(priceID string) (PriceEdition, error) {
 	i, ok := s.indexID[priceID]
 	if !ok {
-		return StripeEdition{}, fmt.Errorf("stripe plan with id %s is not found", priceID)
+		return PriceEdition{}, fmt.Errorf("stripe plan with id %s is not found", priceID)
 	}
 
 	return s.editions[i], nil
 }
 
-var StripeEditions = newStripeEditions()
+var PriceEditionStore = newPriceEditionStore()
