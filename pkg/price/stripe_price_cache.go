@@ -28,23 +28,22 @@ func (store *stripePriceCache) Len() int {
 // AddAll caches an array of stripe prices.
 func (store *stripePriceCache) AddAll(sps []*stripe.Price) {
 	store.mux.Lock()
+	defer store.mux.Unlock()
+
 	for _, sp := range sps {
-		_ = store.upsert(sp)
+		_ = store.upsert(NewStripePrice(sp))
 	}
-	store.mux.Unlock()
 }
 
 // Upsert inserts or update a price.
-func (store *stripePriceCache) Upsert(sp *stripe.Price) error {
+func (store *stripePriceCache) Upsert(p StripePrice) int {
 	store.mux.Lock()
 	defer store.mux.Unlock()
 
-	return store.upsert(sp)
+	return store.upsert(p)
 }
 
-func (store *stripePriceCache) upsert(sp *stripe.Price) error {
-
-	p := NewStripePrice(sp)
+func (store *stripePriceCache) upsert(p StripePrice) int {
 
 	// If this price already cached, update it.
 	// We perform this operation in case of any update on the Stripe side.
@@ -53,13 +52,13 @@ func (store *stripePriceCache) upsert(sp *stripe.Price) error {
 	index, ok := store.idIndex[p.ID]
 	if ok {
 		store.prices[index] = p
-		return nil
+		return index
 	}
 
 	// Now this price is not cached.
 	// If stripe plan is not active, ignore it.
-	if !sp.Active {
-		return nil
+	if !p.Active {
+		return -1
 	}
 
 	// The price is not cached, append to the end.
@@ -67,7 +66,7 @@ func (store *stripePriceCache) upsert(sp *stripe.Price) error {
 	// Index it.
 	store.idIndex[p.ID] = store.len
 	store.len++
-	return nil
+	return store.len - 1
 }
 
 // List returned a list all prices in the specified environment.
@@ -83,6 +82,16 @@ func (store *stripePriceCache) List(live bool) []StripePrice {
 	}
 
 	return prices
+}
+
+// Find tries to find a StripePrice by id.
+func (store *stripePriceCache) Find(id string) (StripePrice, bool) {
+	i, ok := store.idIndex[id]
+	if !ok {
+		return StripePrice{}, false
+	}
+
+	return store.prices[i], true
 }
 
 var StripePriceCache = newStripePriceStore()
