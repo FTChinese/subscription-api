@@ -8,7 +8,7 @@ import (
 
 type StripePriceMeta struct {
 	Tier         enum.Tier `json:"tier"`
-	PeriodDays   int       `json:"periodDays"`
+	PeriodDays   int64     `json:"periodDays"`
 	Introductory bool      `json:"introductory"`
 }
 
