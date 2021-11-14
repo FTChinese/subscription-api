@@ -74,3 +74,7 @@ func NewStripePrice(p *stripe.Price) StripePrice {
 		UnitAmount: p.UnitAmount,
 	}
 }
+
+func (p StripePrice) IsZero() bool {
+	return p.ID == ""
+}
