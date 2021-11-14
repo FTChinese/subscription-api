@@ -28,7 +28,7 @@ func (c Client) Live() bool {
 	return c.live
 }
 
-// CreateEphemeralKey generate a key so that client could restricted customer API directly.
+// CreateEphemeralKey generate a key so that client could restrict customer API directly.
 func (c Client) CreateEphemeralKey(cusID, version string) ([]byte, error) {
 	params := &stripe.EphemeralKeyParams{
 		Customer:      stripe.String(cusID),

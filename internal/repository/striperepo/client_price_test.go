@@ -9,26 +9,18 @@ import (
 func TestClient_ListPrices(t *testing.T) {
 	faker.MustSetupViper()
 
-	client := NewClient(true, zaptest.NewLogger(t))
+	client := NewClient(false, zaptest.NewLogger(t))
 	stripePrices, err := client.ListPrices()
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	t.Log(len(stripePrices))
-
-	t.Log(stripePrices)
-
-	for _, p := range stripePrices {
-		t.Log(p)
-	}
-
 	PriceCache.AddAll(stripePrices)
 
-	prices := PriceCache.List(true)
+	prices := PriceCache.List(false)
 
-	for _, sp := range prices {
-		t.Logf("%s", faker.MustMarshalIndent(sp))
+	for _, v := range prices {
+		t.Logf("%s", faker.MustMarshalIndent(v))
 	}
 }
