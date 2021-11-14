@@ -9,17 +9,52 @@ import (
 	"net/http"
 )
 
+func (router StripeRouter) getPrice(id string) (price.StripePrice, error) {
+	p, ok := price.StripePriceCache.Find(id)
+
+	if ok {
+		return p, nil
+	}
+
+	return router.client.GetAndCachePrice(id)
+}
+
+func (router StripeRouter) getCheckoutItem(params stripe.SubsParams) (stripe.CheckoutItem, error) {
+	p, err := router.getPrice(params.PriceID)
+	if err != nil {
+		return stripe.CheckoutItem{}, err
+	}
+
+	if params.Introductory.PriceID == "" {
+		return stripe.CheckoutItem{
+			Price:        p,
+			Introductory: price.StripePrice{},
+		}, nil
+	}
+
+	introPrice, err := router.getPrice(params.Introductory.PriceID)
+	if err != nil {
+		return stripe.CheckoutItem{}, err
+	}
+
+	return stripe.CheckoutItem{
+		Price:        p,
+		Introductory: introPrice,
+	}, nil
+}
+
 // CreateSubs create a stripe subscription.
 // Input:
-// * tier: string;
-// * cycle: string;
+// * priceId: string - The stripe price id to subscribe
+// * introductory?: object - Optional introductory price
+// * introductory.priceId: string - A one-time stripe price id to create an extra invoice
+// * introductory.periodDays: number - The duration of introductory period.
 // * coupon?: string;
 // * defaultPaymentMethod?: string;
 // * idempotency?: string;
-// Why this field?
 //
 // PITFALLS:
-// If you creates a plan in CNY, and a customer is subscribed to
+// If you create a plan in CNY, and a customer is subscribed to
 // it, and after that you created another plan in GBP, then
 // Stripe will decline your subsequent subscription request.
 // It's better to create different plans in the same currency.
@@ -40,7 +75,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
-	var input stripe.SubsInput
+	var input stripe.SubsParams
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -64,19 +99,24 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	sp, err := price.StripeEditions.FindByEdition(input.Edition, router.config.Live())
+	item, err := router.getCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
+	if ve := item.Validate(); ve != nil {
+		sugar.Error(err)
+		_ = render.New(w).Unprocessable(ve)
+		return
+	}
+
 	// Create stripe subscription.
-	result, err := router.stripeRepo.CreateSubscription(stripe.SubsParams{
-		Account:      acnt,
-		Edition:      sp,
-		SharedParams: input.SharedParams,
-	})
+	result, err := router.stripeRepo.CreateSubscription(
+		acnt,
+		item,
+		input.SubSharedParams)
 
 	if err != nil {
 		sugar.Error(err)
@@ -106,11 +146,10 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 // UpdateSubs updates a stripe subscription:
 // user could switch cycle of the same tier, or upgrading to a higher tier.
 // Input:
-// tier: string;
-// cycle: string;
-// coupon?: "",
-// defaultPaymentMethod?: ""
-// idempotency?: string
+// * priceId: string - The price to change to.
+// * coupon?: "",
+// * defaultPaymentMethod?: ""
+// * idempotency?: string
 //
 // Error response:
 // 404 if membership if not found.
@@ -124,7 +163,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
-	var input stripe.SubsInput
+	var input stripe.SubsParams
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -147,18 +186,18 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	sp, err := price.StripeEditions.FindByEdition(input.Edition, router.config.Live())
+	item, err := router.getCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	result, err := router.stripeRepo.UpdateSubscription(stripe.SubsParams{
-		Account:      account,
-		Edition:      sp,
-		SharedParams: input.SharedParams,
-	})
+	result, err := router.stripeRepo.UpdateSubscription(
+		account,
+		item,
+		input.SubSharedParams,
+	)
 
 	if err != nil {
 		sugar.Error(err)
@@ -219,7 +258,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Use Stripe SDK to retrieve data.
-	ss, err := router.client.GetSubs(subsID)
+	ss, err := router.client.GetSubs(subsID, true)
 	if err != nil {
 		sugar.Error(err)
 		err = handleErrResp(w, err)
