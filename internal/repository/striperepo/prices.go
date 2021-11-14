@@ -1,12 +1,12 @@
 package striperepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
-func (env Env) ListPrices(force bool) ([]price.StripePrice, error) {
-	if !force && price.StripePriceCache.Len() != 0 {
-		return price.StripePriceCache.
+func (env Env) ListPrices(force bool) ([]stripe.Price, error) {
+	if !force && StripePriceCache.Len() != 0 {
+		return StripePriceCache.
 			List(env.client.live), nil
 	}
 
@@ -15,8 +15,8 @@ func (env Env) ListPrices(force bool) ([]price.StripePrice, error) {
 		return nil, err
 	}
 
-	price.StripePriceCache.AddAll(sp)
+	StripePriceCache.AddAll(sp)
 
-	return price.StripePriceCache.
+	return StripePriceCache.
 		List(env.client.live), nil
 }
