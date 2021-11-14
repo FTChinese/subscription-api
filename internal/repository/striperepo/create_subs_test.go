@@ -78,7 +78,9 @@ func TestEnv_CreateSubscription(t *testing.T) {
 	env := New(db.MockMySQL(), NewClient(false, zaptest.NewLogger(t)), zaptest.NewLogger(t))
 
 	type args struct {
-		params stripe.SubsParams
+		ba     account.BaseAccount
+		item   stripe.CheckoutItem
+		params stripe.SubSharedParams
 	}
 	tests := []struct {
 		name    string
@@ -88,12 +90,13 @@ func TestEnv_CreateSubscription(t *testing.T) {
 		{
 			name: "Create subscription",
 			args: args{
-				params: stripe.SubsParams{
-					Account: pa.account,
-					Edition: price.StripeEditions.MustFindByEdition(price.StdYearEdition, false),
-					SharedParams: stripe.SharedParams{
-						DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
-					},
+				ba: pa.account,
+				item: stripe.CheckoutItem{
+					Price:        price.StripePrice{},
+					Introductory: price.StripePrice{},
+				},
+				params: stripe.SubSharedParams{
+					DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
 				},
 			},
 			wantErr: false,
@@ -102,7 +105,7 @@ func TestEnv_CreateSubscription(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := env.CreateSubscription(tt.args.params)
+			got, err := env.CreateSubscription(tt.args.ba, tt.args.item, tt.args.params)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateSubscription() error = %v, wantErr %v", err, tt.wantErr)
 				return
