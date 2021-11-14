@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func SetupViperV2(b []byte) error {
+func SetupViper(b []byte) error {
 	viper.SetConfigType("toml")
 
 	err := viper.ReadConfig(bytes.NewBuffer(b))
@@ -16,8 +16,8 @@ func SetupViperV2(b []byte) error {
 	return nil
 }
 
-func MustSetupViperV2(b []byte) {
-	if err := SetupViperV2(b); err != nil {
+func MustSetupViper(b []byte) {
+	if err := SetupViper(b); err != nil {
 		panic(err)
 	}
 }
