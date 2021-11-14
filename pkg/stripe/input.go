@@ -9,7 +9,8 @@ import (
 	"strings"
 )
 
-type SharedParams struct {
+// SubSharedParams contains common fields of subscription.
+type SubSharedParams struct {
 	CouponID             null.String `json:"coupon"`
 	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
 	IdempotencyKey       string      `json:"idempotency"` // TODO: add when and why this is needed.
