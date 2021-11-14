@@ -3,14 +3,14 @@ package controller
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
 )
 
-func (router StripeRouter) getPrice(id string) (price.StripePrice, error) {
-	p, ok := price.StripePriceCache.Find(id)
+func (router StripeRouter) getPrice(id string) (stripe.Price, error) {
+	p, ok := striperepo.StripePriceCache.Find(id)
 
 	if ok {
 		return p, nil
@@ -28,7 +28,7 @@ func (router StripeRouter) getCheckoutItem(params stripe.SubsParams) (stripe.Che
 	if params.Introductory.PriceID == "" {
 		return stripe.CheckoutItem{
 			Price:        p,
-			Introductory: price.StripePrice{},
+			Introductory: stripe.Price{},
 		}, nil
 	}
 
