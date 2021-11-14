@@ -16,76 +16,13 @@ import (
 //    "request_id": "req_BthzW5QZzNDTwN",
 //    "type": "invalid_request_error"
 // }
-func (c Client) NewSubs(cfg ftcStripe.SubsParams) (*stripe.Subscription, error) {
-	params := &stripe.SubscriptionParams{
-		Customer:          stripe.String(cfg.Account.StripeID.String),
-		CancelAtPeriodEnd: stripe.Bool(false),
-		Items: []*stripe.SubscriptionItemsParams{
-			{
-				Price: stripe.String(cfg.Edition.PriceID),
-			},
-		},
-	}
-
-	// Expand latest_invoice.
-	params.AddExpand(expandPI)
-
-	// {
-	// "status":400,
-	// "message":"Idempotent key length is 0 characters long, which is outside accepted lengths. Idempotent Keys must be 1-255 characters long. If you're looking for a decent generator, try using a UUID defined by IETF RFC 4122.",
-	// "request_id":"req_O6zILK5QEVpViw",
-	// "type":"idempotency_error"
-	// }
-	if cfg.IdempotencyKey != "" {
-		params.SetIdempotencyKey(cfg.IdempotencyKey)
-	}
-
-	if cfg.CouponID.Valid {
-		params.Coupon = stripe.String(cfg.DefaultPaymentMethod.String)
-	}
-
-	if cfg.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripe.String(cfg.DefaultPaymentMethod.String)
-	}
-
+func (c Client) NewSubs(params *stripe.SubscriptionParams) (*stripe.Subscription, error) {
 	return c.sc.Subscriptions.New(params)
 }
 
 // UpdateSubs switches subscription billing cycle,
 // or upgrading from standard to premium.
-func (c Client) UpdateSubs(subID string, cfg ftcStripe.SubsParams) (*stripe.Subscription, error) {
-	// Retrieve the subscription first.
-	ss, err := c.sc.Subscriptions.Get(subID, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	params := &stripe.SubscriptionParams{
-		CancelAtPeriodEnd: stripe.Bool(false),
-		ProrationBehavior: stripe.String(string(stripe.SubscriptionProrationBehaviorCreateProrations)),
-		Items: []*stripe.SubscriptionItemsParams{
-			{
-				ID:    stripe.String(ss.Items.Data[0].ID),
-				Price: stripe.String(cfg.Edition.PriceID),
-			},
-		},
-	}
-
-	// Expand latest_invoice.
-	params.AddExpand(expandPI)
-
-	if cfg.IdempotencyKey != "" {
-		params.SetIdempotencyKey(cfg.IdempotencyKey)
-	}
-
-	if cfg.CouponID.Valid {
-		params.Coupon = stripe.String(cfg.DefaultPaymentMethod.String)
-	}
-
-	if cfg.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripe.String(cfg.DefaultPaymentMethod.String)
-	}
-
+func (c Client) UpdateSubs(subID string, params *stripe.SubscriptionParams) (*stripe.Subscription, error) {
 	return c.sc.Subscriptions.Update(subID, params)
 }
 
