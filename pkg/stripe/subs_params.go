@@ -13,16 +13,11 @@ type SubSharedParams struct {
 	IdempotencyKey       string      `json:"idempotency"` // TODO: add when and why this is needed.
 }
 
-type IntroductoryParams struct {
-	PriceID    string `json:"priceId"`
-	PeriodDays int    `json:"periodDays"`
-}
-
 // SubsParams is the request body to create a new subscription
 // or update an existing one.
 type SubsParams struct {
-	PriceID      string             `json:"priceId"`
-	Introductory IntroductoryParams `json:"introductory"`
+	PriceID             string      `json:"priceId"`
+	IntroductoryPriceID null.String `json:"introductoryPriceId"`
 	SubSharedParams
 }
 
@@ -31,16 +26,6 @@ func (p SubsParams) Validate() *render.ValidationError {
 	ve := validator.New("priceId").Required().Validate(p.PriceID)
 	if ve != nil {
 		return ve
-	}
-
-	if p.Introductory.PriceID != "" {
-		if p.Introductory.PeriodDays < 1 {
-			return &render.ValidationError{
-				Message: "Introductory offer period must be provided",
-				Field:   "introductory.periodDays",
-				Code:    render.CodeInvalid,
-			}
-		}
 	}
 
 	return validator.New("idempotency").Required().Validate(p.IdempotencyKey)
