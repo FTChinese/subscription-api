@@ -48,6 +48,10 @@ Once created, the introductory offer will be kept forever unless you deleted it.
 
 Do remember to set the "Edit metadata" as stated above. I need this information to distinguish a introductory price from regular prices. You should also keep in mind not creating multiple introductory price under the same product; otherwise there's currently no way to determine which one to use.
 
+### Upgrade from standard to premium during trialing period
+
+Stripe allows a subscription switching another pricing, which applies to trialing period. If a user is subscribed to standard edition with a trialing period, it could switch to premium directly. 
+
 ## Stripe订阅状态
 
 参见 https://stripe.com/docs/api/subscriptions
