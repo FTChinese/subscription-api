@@ -30,15 +30,6 @@ type PaymentIntent struct {
 	Status stripe.PaymentIntentStatus `json:"status"`
 }
 
-func (pi PaymentIntent) RequiresAction() bool {
-	return pi.Status == stripe.PaymentIntentStatusRequiresAction
-}
-
-// IsZero tests whether payment intent is missing from the response.
-func (pi PaymentIntent) IsZero() bool {
-	return pi.ID == ""
-}
-
 func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 	if pi == nil {
 		return PaymentIntent{}
@@ -58,4 +49,13 @@ func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 		PaymentMethodID:    pi.PaymentMethod.ID,
 		Status:             pi.Status,
 	}
+}
+
+func (pi PaymentIntent) RequiresAction() bool {
+	return pi.Status == stripe.PaymentIntentStatusRequiresAction
+}
+
+// IsZero tests whether payment intent is missing from the response.
+func (pi PaymentIntent) IsZero() bool {
+	return pi.ID == ""
 }
