@@ -47,6 +47,10 @@ func (c Client) GetPriceFromCacheOrAPI(id string) (stripe.Price, error) {
 	if ok {
 		return p, nil
 	}
+	sp, err := c.RetrievePrice(id)
+	if err != nil {
+		return stripe.Price{}, err
+	}
 
-	return c.RetrieveAndCachePrice(id)
+	return stripe.NewPrice(sp), nil
 }
