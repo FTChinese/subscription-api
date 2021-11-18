@@ -38,6 +38,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	// Attach the strip price id to ftc price.
 	se, err := stripe.PriceEditionStore.FindByEdition(params.Edition, params.LiveMode)
 	if err != nil {
 		_ = render.NewInternalError(err.Error())
