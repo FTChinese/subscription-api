@@ -1,13 +1,13 @@
-package subs
+package config
 
 import "github.com/FTChinese/go-rest/enum"
 
-func WebhookURL(sandbox bool, method enum.PayMethod) string {
+func AliWxWebhookURL(sandbox bool, method enum.PayMethod) string {
 	var baseURL string
 	if sandbox {
 		baseURL = "https://www.ftacademy.cn/api/sandbox"
 	} else {
-		baseURL = "https://www.ftacademy.cn/api/v3"
+		baseURL = "https://www.ftacademy.cn/api/v4"
 	}
 
 	switch method {
