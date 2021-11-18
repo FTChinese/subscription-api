@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
@@ -26,7 +27,7 @@ import (
 // cycle: string;
 // planId?: string;
 func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
-	webhookURL := subs.WebhookURL(router.config.Sandbox(), enum.PayMethodAli)
+	webhookURL := config.AliWxWebhookURL(router.config.Sandbox(), enum.PayMethodAli)
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer router.Logger.Sync()

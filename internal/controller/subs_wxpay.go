@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
+	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
@@ -23,7 +24,7 @@ import (
 // planId: string;
 func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
-	webhookURL := subs.WebhookURL(router.config.Sandbox(), enum.PayMethodWx)
+	webhookURL := config.AliWxWebhookURL(router.config.Sandbox(), enum.PayMethodWx)
 
 	// Find the client to use for wxpay
 	payClient, err := router.WxPayClients.ClientByPlatform(tradeType)
