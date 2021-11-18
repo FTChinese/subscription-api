@@ -1,9 +1,7 @@
 package stripe
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/stripe/stripe-go/v72"
 )
 
@@ -35,26 +33,6 @@ func addExtraSubParams(params *stripe.SubscriptionParams, other SubSharedParams)
 type CheckoutItem struct {
 	Price        Price
 	Introductory Price // This is optional.
-}
-
-func (ci CheckoutItem) Edition() price.Edition {
-	days := ci.Price.Metadata.PeriodDays
-
-	if days >= 365 {
-		return price.Edition{
-			Tier:  ci.Price.Metadata.Tier,
-			Cycle: enum.CycleYear,
-		}
-	}
-
-	if days >= 30 && days < 365 {
-		return price.Edition{
-			Tier:  ci.Price.Metadata.Tier,
-			Cycle: enum.CycleMonth,
-		}
-	}
-
-	return price.Edition{}
 }
 
 // Validate ensures introductory price is correctly set.
