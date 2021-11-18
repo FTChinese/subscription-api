@@ -8,30 +8,6 @@ import (
 	"net/http"
 )
 
-func (router StripeRouter) getCheckoutItem(params stripe.SubsParams) (stripe.CheckoutItem, error) {
-	p, err := router.client.GetPriceFromCacheOrAPI(params.PriceID)
-	if err != nil {
-		return stripe.CheckoutItem{}, err
-	}
-
-	if params.IntroductoryPriceID.IsZero() {
-		return stripe.CheckoutItem{
-			Price:        p,
-			Introductory: stripe.Price{},
-		}, nil
-	}
-
-	introPrice, err := router.client.GetPriceFromCacheOrAPI(params.IntroductoryPriceID.String)
-	if err != nil {
-		return stripe.CheckoutItem{}, err
-	}
-
-	return stripe.CheckoutItem{
-		Price:        p,
-		Introductory: introPrice,
-	}, nil
-}
-
 // CreateSubs create a stripe subscription.
 // Input:
 // * priceId: string - The stripe price id to subscribe
@@ -88,7 +64,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	item, err := router.getCheckoutItem(input)
+	item, err := router.stripeRepo.LoadCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
 		err := handleErrResp(w, err)
@@ -180,7 +156,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	item, err := router.getCheckoutItem(input)
+	item, err := router.stripeRepo.LoadCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
