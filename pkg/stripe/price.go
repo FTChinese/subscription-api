@@ -2,6 +2,7 @@ package stripe
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 	"strconv"
@@ -87,4 +88,41 @@ func NewPrice(p *stripe.Price) Price {
 
 func (p Price) IsZero() bool {
 	return p.ID == ""
+}
+
+// Edition deduces the edition of stripe price since that
+// information might be missing.
+func (p Price) Edition() price.Edition {
+	se, err := PriceEditionStore.FindByID(p.ID)
+	if err == nil {
+		return se.Edition
+	}
+
+	if p.Type == stripe.PriceTypeRecurring {
+		cycle, err := enum.ParseCycle(string(p.Recurring.Interval))
+		if err == nil {
+			return price.Edition{
+				Tier:  p.Metadata.Tier,
+				Cycle: cycle,
+			}
+		}
+	}
+
+	days := p.Metadata.PeriodDays
+
+	if days >= 365 {
+		return price.Edition{
+			Tier:  p.Metadata.Tier,
+			Cycle: enum.CycleYear,
+		}
+	}
+
+	if days >= 30 && days <= 366 {
+		return price.Edition{
+			Tier:  p.Metadata.Tier,
+			Cycle: enum.CycleMonth,
+		}
+	}
+
+	return price.Edition{}
 }
