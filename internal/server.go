@@ -316,6 +316,7 @@ func StartServer(s ServerStatus) {
 			// List stripe prices. If query parameter has refresh=true, no cached data will be used.
 			// ?refresh=true|false
 			r.Get("/", stripeRouter.ListPrices)
+			r.Get("/{id}", stripeRouter.LoadPrice)
 		})
 
 		r.Route("/customers", func(r chi.Router) {
