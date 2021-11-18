@@ -83,6 +83,7 @@ func (ci CheckoutItem) Validate() *render.ValidationError {
 	return nil
 }
 
+// NewSubParams build stripe subscription parameters based on the item to check out.
 func (ci CheckoutItem) NewSubParams(cusID string, other SubSharedParams) *stripe.SubscriptionParams {
 	params := &stripe.SubscriptionParams{
 		Customer:          stripe.String(cusID),
