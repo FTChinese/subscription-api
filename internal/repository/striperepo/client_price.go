@@ -29,18 +29,6 @@ func (c Client) RetrievePrice(id string) (*stripeSdk.Price, error) {
 	return c.sc.Prices.Get(id, nil)
 }
 
-func (c Client) RetrieveAndCachePrice(id string) (stripe.Price, error) {
-	sp, err := c.RetrievePrice(id)
-	if err != nil {
-		return stripe.Price{}, err
-	}
-
-	p := stripe.NewPrice(sp)
-	PriceCache.Upsert(p)
-
-	return p, nil
-}
-
 func (c Client) GetPriceFromCacheOrAPI(id string) (stripe.Price, error) {
 	p, ok := PriceCache.Find(id)
 
