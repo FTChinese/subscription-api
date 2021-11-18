@@ -45,7 +45,7 @@ func (env Env) CreateSubscription(
 	}
 
 	// Check whether creating stripe subscription is allowed for this member.
-	subsKind, err := mmb.SubsKindOfStripe(item.Edition())
+	subsKind, err := mmb.SubsKindOfStripe(item.Price.Edition())
 	//intent, err := reader.NewCheckoutIntents(mmb, params.Edition.Edition).
 	//	Get(enum.PayMethodStripe)
 	if err != nil {

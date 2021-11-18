@@ -9,6 +9,8 @@ import (
 )
 
 // UpdateSubscription switches subscription plan.
+// It could either change to a different billing cycle, for example from month to year,
+// to change to a different product, for example from standard to premium.
 func (env Env) UpdateSubscription(ba account.BaseAccount, item stripe.CheckoutItem, params stripe.SubSharedParams) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
@@ -27,7 +29,7 @@ func (env Env) UpdateSubscription(ba account.BaseAccount, item stripe.CheckoutIt
 		return stripe.SubsResult{}, nil
 	}
 
-	subsKind, err := mmb.SubsKindOfStripe(item.Edition())
+	subsKind, err := mmb.SubsKindOfStripe(item.Price.Edition())
 
 	if err != nil {
 		sugar.Error(err)
