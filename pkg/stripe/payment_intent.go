@@ -30,6 +30,9 @@ type PaymentIntent struct {
 	Status stripe.PaymentIntentStatus `json:"status"`
 }
 
+// NewPaymentIntent transforms stripe's payment intent.
+// The PaymentIntent is generated when the invoice is finalized, and can then be used to pay the invoice.
+// Trialing might not have one.
 func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 	if pi == nil {
 		return PaymentIntent{}
