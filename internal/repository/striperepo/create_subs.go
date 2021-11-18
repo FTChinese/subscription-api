@@ -20,7 +20,11 @@ import (
 // util.ErrNonStripeValidSub
 // util.ErrStripeDuplicateSub
 // util.ErrUnknownSubState
-func (env Env) CreateSubscription(ba account.BaseAccount, item stripe.CheckoutItem, params stripe.SubSharedParams) (stripe.SubsResult, error) {
+func (env Env) CreateSubscription(
+	ba account.BaseAccount,
+	item stripe.CheckoutItem,
+	params stripe.SubSharedParams,
+) (stripe.SubsResult, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -31,8 +35,8 @@ func (env Env) CreateSubscription(ba account.BaseAccount, item stripe.CheckoutIt
 	}
 
 	// Retrieve member for this user to check whether the operation is allowed.
+	sugar.Infof("Retrieving membership before creating stripe subscription: %s", ba.CompoundID())
 	mmb, err := tx.RetrieveMember(ba.CompoundID())
-	sugar.Infof("Current membership before creating stripe subscription: %v", mmb)
 
 	if err != nil {
 		sugar.Error(err)
@@ -57,6 +61,7 @@ func (env Env) CreateSubscription(ba account.BaseAccount, item stripe.CheckoutIt
 	sugar.Infof("Stripe subscripiton kind: %s", subsKind.Localize())
 
 	if !subsKind.IsNewSubs() {
+		sugar.Infof("Abort stripe new subscription due to not eligible.")
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, &render.ResponseError{
 			StatusCode: http.StatusBadRequest,
@@ -81,7 +86,7 @@ func (env Env) CreateSubscription(ba account.BaseAccount, item stripe.CheckoutIt
 		return stripe.SubsResult{}, err
 	}
 
-	sugar.Infof("Subscription id %s, status %s, payment intent status %s", ss.ID, ss.Status, ss.LatestInvoice.PaymentIntent.Status)
+	sugar.Infof("New subscription created %v", ss.ID)
 
 	// Build Membership based on stripe subscription.
 	result, err := stripe.NewSubsResult(ss, stripe.SubsResultParams{
