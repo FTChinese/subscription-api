@@ -38,6 +38,7 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 		return
 	}
 
+	// TODO: this is no longer a valid approach.
 	sp, err := stripe.PriceEditionStore.FindByEdition(input.Edition, router.config.Live())
 	if err != nil {
 		sugar.Error(err)
