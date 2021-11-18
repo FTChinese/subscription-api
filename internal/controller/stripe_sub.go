@@ -25,14 +25,14 @@ func (router StripeRouter) getCheckoutItem(params stripe.SubsParams) (stripe.Che
 		return stripe.CheckoutItem{}, err
 	}
 
-	if params.Introductory.PriceID == "" {
+	if params.IntroductoryPriceID.IsZero() {
 		return stripe.CheckoutItem{
 			Price:        p,
 			Introductory: stripe.Price{},
 		}, nil
 	}
 
-	introPrice, err := router.getPrice(params.Introductory.PriceID)
+	introPrice, err := router.getPrice(params.IntroductoryPriceID.String)
 	if err != nil {
 		return stripe.CheckoutItem{}, err
 	}
