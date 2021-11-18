@@ -129,10 +129,10 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		router.handleSubsResult(result)
 	}()
 
-	if result.MissingPaymentIntent {
-		_ = render.New(w).BadRequest("PaymentIntent is not expanded")
-		return
-	}
+	//if result.MissingPaymentIntent {
+	//	_ = render.New(w).BadRequest("PaymentIntent is not expanded")
+	//	return
+	//}
 
 	_ = render.New(w).OK(result)
 }

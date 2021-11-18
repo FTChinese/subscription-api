@@ -55,9 +55,12 @@ type Subs struct {
 	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
 	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
 
-	Status        enum.SubsStatus `json:"status" db:"sub_status"`
-	FtcUserID     null.String     `json:"ftcUserId" db:"ftc_user_id"`
-	PaymentIntent PaymentIntent   `json:"paymentIntent"` // This does not exist when refreshing current subscription.
+	Status    enum.SubsStatus `json:"status" db:"sub_status"`
+	FtcUserID null.String     `json:"ftcUserId" db:"ftc_user_id"`
+	// This does not exist when refreshing current subscription.
+	// Occasionally stripe just does not expand it.
+	// Do not rely on it.
+	PaymentIntent PaymentIntent `json:"paymentIntent"`
 }
 
 // NewSubs converts stripe's subscription. It returns error if there's
