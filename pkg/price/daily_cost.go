@@ -8,7 +8,7 @@ type DailyCost struct {
 func NewDailyCostOfYear(price float64) DailyCost {
 	return DailyCost{
 		Holder:   "{{dailyAverageOfYear}}",
-		Replacer: FormatMoney(price / 360),
+		Replacer: FormatMoney(price / 365),
 	}
 }
 
