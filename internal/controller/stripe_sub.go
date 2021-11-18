@@ -3,24 +3,13 @@ package controller
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
 )
 
-func (router StripeRouter) getPrice(id string) (stripe.Price, error) {
-	p, ok := striperepo.PriceCache.Find(id)
-
-	if ok {
-		return p, nil
-	}
-
-	return router.client.GetAndCachePrice(id)
-}
-
 func (router StripeRouter) getCheckoutItem(params stripe.SubsParams) (stripe.CheckoutItem, error) {
-	p, err := router.getPrice(params.PriceID)
+	p, err := router.client.GetPriceFromCacheOrAPI(params.PriceID)
 	if err != nil {
 		return stripe.CheckoutItem{}, err
 	}
@@ -32,7 +21,7 @@ func (router StripeRouter) getCheckoutItem(params stripe.SubsParams) (stripe.Che
 		}, nil
 	}
 
-	introPrice, err := router.getPrice(params.IntroductoryPriceID.String)
+	introPrice, err := router.client.GetPriceFromCacheOrAPI(params.IntroductoryPriceID.String)
 	if err != nil {
 		return stripe.CheckoutItem{}, err
 	}
@@ -102,6 +91,10 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	item, err := router.getCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
+		err := handleErrResp(w, err)
+		if err == nil {
+			return
+		}
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
@@ -138,6 +131,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 
 	if result.MissingPaymentIntent {
 		_ = render.New(w).BadRequest("PaymentIntent is not expanded")
+		return
 	}
 
 	_ = render.New(w).OK(result)
