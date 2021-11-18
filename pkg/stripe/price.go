@@ -2,24 +2,32 @@ package stripe
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 	"strconv"
 )
 
 type PriceMetadata struct {
-	Tier         enum.Tier `json:"tier"`
-	PeriodDays   int64     `json:"periodDays"`
-	Introductory bool      `json:"introductory"`
+	Tier         enum.Tier   `json:"tier"`
+	PeriodDays   int64       `json:"periodDays"`
+	Introductory bool        `json:"introductory"`
+	StartUTC     null.String `json:"startUtc"`
+	EndUTC       null.String `json:"endUtc"`
 }
 
 func NewStripePriceMeta(m map[string]string) PriceMetadata {
 	t, _ := enum.ParseTier(m["tier"])
 	d, _ := strconv.Atoi(m["period_days"])
-	ok, _ := strconv.ParseBool(m["introductory"])
+	isIntro, _ := strconv.ParseBool(m["introductory"])
+	start, _ := m["start_utc"]
+	end, _ := m["end_utc"]
+
 	return PriceMetadata{
 		Tier:         t,
 		PeriodDays:   int64(d),
-		Introductory: ok,
+		Introductory: isIntro,
+		StartUTC:     null.NewString(start, start != ""),
+		EndUTC:       null.NewString(end, end != ""),
 	}
 }
 
