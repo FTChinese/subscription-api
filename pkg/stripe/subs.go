@@ -12,31 +12,9 @@ import (
 	"time"
 )
 
-// isSubscribed checks if stripe subscription has valid subscription items.
-func isSubscribed(ss *stripe.Subscription) bool {
-	return ss.Items != nil && len(ss.Items.Data) > 0
-}
-
 func getStatus(sts stripe.SubscriptionStatus) enum.SubsStatus {
 	status, _ := enum.ParseSubsStatus(string(sts))
 	return status
-}
-
-type SubsItem struct {
-	ItemID  string `json:"subsItemId" db:"subs_item_id"`
-	PriceID string `json:"priceId" db:"price_id"`
-}
-
-// NewSubsItem gets the subscription item id and price id from a stripe subscription.
-func NewSubsItem(ss *stripe.Subscription) SubsItem {
-	if isSubscribed(ss) {
-		return SubsItem{
-			ItemID:  ss.Items.Data[0].ID,
-			PriceID: ss.Items.Data[0].Price.ID,
-		}
-	}
-
-	return SubsItem{}
 }
 
 // Subs contains the essential data of a stripe subscription.
@@ -79,7 +57,7 @@ type Subs struct {
 
 	Status        enum.SubsStatus `json:"status" db:"sub_status"`
 	FtcUserID     null.String     `json:"ftcUserId" db:"ftc_user_id"`
-	PaymentIntent PaymentIntent   `json:"paymentIntent"` // This does not exists when refreshing current subscription.
+	PaymentIntent PaymentIntent   `json:"paymentIntent"` // This does not exist when refreshing current subscription.
 }
 
 // NewSubs converts stripe's subscription. It returns error if there's
@@ -97,12 +75,7 @@ func NewSubs(ss *stripe.Subscription, ids ids.UserIDs) (Subs, error) {
 		invID = ss.LatestInvoice.ID
 	}
 
-	subsItem := NewSubsItem(ss)
-
-	se, err := PriceEditionStore.FindByID(subsItem.PriceID)
-	if err != nil {
-		return Subs{}, err
-	}
+	subsItem := NewSubsItem(ss.Items)
 
 	status := getStatus(ss.Status)
 
@@ -114,7 +87,7 @@ func NewSubs(ss *stripe.Subscription, ids ids.UserIDs) (Subs, error) {
 
 	return Subs{
 		ID:                   ss.ID,
-		Edition:              se.Edition,
+		Edition:              subsItem.Price.Edition(),
 		WillCancelAtUtc:      chrono.TimeFrom(dt.FromUnix(ss.CancelAt)),
 		CancelAtPeriodEnd:    ss.CancelAtPeriodEnd,
 		CanceledUTC:          chrono.TimeFrom(dt.FromUnix(ss.CanceledAt)),
