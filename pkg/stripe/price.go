@@ -7,12 +7,14 @@ import (
 	"strconv"
 )
 
+// PriceMetadata parsed the fields defined in stripe price's medata field.
+// Those are customer-defined key-value pairs.
 type PriceMetadata struct {
-	Tier         enum.Tier   `json:"tier"`
-	PeriodDays   int64       `json:"periodDays"`
-	Introductory bool        `json:"introductory"`
-	StartUTC     null.String `json:"startUtc"`
-	EndUTC       null.String `json:"endUtc"`
+	Tier         enum.Tier   `json:"tier"`         // The tier of this price.
+	PeriodDays   int64       `json:"periodDays"`   // The days this price purchased.
+	Introductory bool        `json:"introductory"` // Is this an introductory price? If false, it is treated as regular price.
+	StartUTC     null.String `json:"startUtc"`     // Start time if Introductory is true; otherwise omit.
+	EndUTC       null.String `json:"endUtc"`       // End time if Introductory is true; otherwise omit.
 }
 
 func NewStripePriceMeta(m map[string]string) PriceMetadata {
