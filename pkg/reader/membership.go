@@ -221,6 +221,10 @@ func (m Membership) IsInvalidStripe() bool {
 	return m.IsStripe() && (m.Status == enum.SubsStatusIncompleteExpired || m.Status == enum.SubsStatusPastDue || m.Status == enum.SubsStatusCanceled || m.Status == enum.SubsStatusUnpaid)
 }
 
+func (m Membership) IsTrialing() bool {
+	return m.Status == enum.SubsStatusTrialing
+}
+
 // IsIAP tests whether this membership comes from Apple.
 // This is actually not necessary. However, as People are allowed to changed DB directly, if an IAP membership is
 // changed to other payment methods, and chances are high that humans only change the payment method column but
@@ -330,6 +334,10 @@ func (m Membership) EnjoyOffer(o price.Discount) bool {
 
 // SubsKindOfStripe deduces what kind of subscription user is trying ot create when paying via Stripe.
 func (m Membership) SubsKindOfStripe(e price.Edition) (SubsKind, error) {
+	if e.Tier == enum.TierNull || e.Cycle == enum.CycleNull {
+		return SubsKindZero, errors.New("unknown edition of stripe price")
+	}
+
 	if m.IsExpired() || m.IsInvalidStripe() {
 		return SubsKindNew, nil
 	}
@@ -347,6 +355,9 @@ func (m Membership) SubsKindOfStripe(e price.Edition) (SubsKind, error) {
 		switch e.Tier {
 		// Standard upgrade to premium
 		case enum.TierPremium:
+			if m.IsTrialing() {
+				return SubsKindZero, errors.New("upgrading in trialing period is not allowed")
+			}
 			return SubsKindUpgrade, nil
 
 		// Standard to standard
