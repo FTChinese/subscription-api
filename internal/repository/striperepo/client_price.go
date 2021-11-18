@@ -21,14 +21,16 @@ func (c Client) ListPrices() ([]*stripeSdk.Price, error) {
 	return list.Data, nil
 }
 
-func (c Client) GetPrice(id string) (*stripeSdk.Price, error) {
-	return c.sc.Prices.Get(id, &stripeSdk.PriceParams{
-		Active: stripeSdk.Bool(true),
-	})
+// RetrievePrice from stripe API.
+// See https://stripe.com/docs/api/prices/retrieve.
+// It seems the SDK handled it incorrectly since the API doc
+// says no parameter is required.
+func (c Client) RetrievePrice(id string) (*stripeSdk.Price, error) {
+	return c.sc.Prices.Get(id, nil)
 }
 
-func (c Client) GetAndCachePrice(id string) (stripe.Price, error) {
-	sp, err := c.GetPrice(id)
+func (c Client) RetrieveAndCachePrice(id string) (stripe.Price, error) {
+	sp, err := c.RetrievePrice(id)
 	if err != nil {
 		return stripe.Price{}, err
 	}
@@ -37,4 +39,14 @@ func (c Client) GetAndCachePrice(id string) (stripe.Price, error) {
 	PriceCache.Upsert(p)
 
 	return p, nil
+}
+
+func (c Client) GetPriceFromCacheOrAPI(id string) (stripe.Price, error) {
+	p, ok := PriceCache.Find(id)
+
+	if ok {
+		return p, nil
+	}
+
+	return c.RetrieveAndCachePrice(id)
 }
