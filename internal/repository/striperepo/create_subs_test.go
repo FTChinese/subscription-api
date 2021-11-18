@@ -4,9 +4,7 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 	"go.uber.org/zap/zaptest"
@@ -58,22 +56,6 @@ func newCustomerAndPayment(client Client, acnt account.BaseAccount) (paymentAtta
 
 func TestEnv_CreateSubscription(t *testing.T) {
 
-	p := test.NewPersona()
-	m := reader.NewMockMemberBuilder(p.FtcID).Build()
-	t.Logf("%v", m.UserIDs)
-
-	repo := test.NewRepo()
-	repo.MustSaveMembership(m)
-
-	pa, err := newCustomerAndPayment(
-		NewClient(false, zaptest.NewLogger(t)),
-		p.EmailOnlyAccount(),
-	)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
 	env := New(db.MockMySQL(), NewClient(false, zaptest.NewLogger(t)), zaptest.NewLogger(t))
 
 	type args struct {
@@ -89,14 +71,22 @@ func TestEnv_CreateSubscription(t *testing.T) {
 		{
 			name: "Create subscription",
 			args: args{
-				ba: pa.account,
+				ba: account.BaseAccount{
+					FtcID:        "c07f79dc-664b-44ca-87ea-42958e7991b0",
+					UnionID:      null.String{},
+					StripeID:     null.StringFrom("cus_IXp31Fk2jYJmU3"),
+					Email:        "stripe.test@ftchinese.com",
+					Mobile:       null.String{},
+					UserName:     null.String{},
+					AvatarURL:    null.String{},
+					IsVerified:   false,
+					CampaignCode: null.String{},
+				},
 				item: stripe.CheckoutItem{
-					Price:        stripe.Price{},
-					Introductory: stripe.Price{},
+					Price:        stripe.MockPriceStdYear,
+					Introductory: stripe.MockPriceStdIntro,
 				},
-				params: stripe.SubSharedParams{
-					DefaultPaymentMethod: null.StringFrom(pa.paymentMethodID),
-				},
+				params: stripe.SubSharedParams{},
 			},
 			wantErr: false,
 		},
