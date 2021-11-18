@@ -41,6 +41,8 @@ Steps to set up an introductory offer:
     - `tier`: The tier of product this price belongs to. For standard edition it's `standard`, or `premium` for premium edition.
     - `period_days`: The number of days for this introductory offer. For example `7` for a week's trial, `30` or `31` or a month of trial.
     - `introductory`: `true`.
+    - `start_utc`: A UTC time string when this price is available. For example `2021-11-16T16:00:00Z`
+    - `end_utc`: A UTC time string when this price should be ended. For example `2021-12-16T16:00:00Z`
 
 Once created, the introductory offer will be kept forever unless you deleted it. However, it won't come into effect forever. It will only be used when the paywall data fetch from this API contains a valid introductory offer under a price. So as long as you set any introductory offer under a price in Superyard, alipay, wechat pay, and Stripe will all be notified to offer user an introductory trial period.
 
