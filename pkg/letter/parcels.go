@@ -3,9 +3,9 @@ package letter
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 )
@@ -25,14 +25,14 @@ var accountKindCN = map[enum.AccountKind]string{
 }
 
 // VerificationParcel generates the email body for verification letter from text template.
-func VerificationParcel(ctx CtxVerification) (postoffice.Parcel, error) {
+func VerificationParcel(ctx CtxVerification) (postman.Parcel, error) {
 
 	body, err := ctx.Render()
 	if err != nil {
-		return postoffice.Parcel{}, err
+		return postman.Parcel{}, err
 	}
 
-	return postoffice.Parcel{
+	return postman.Parcel{
 		FromAddress: fromAddress,
 		FromName:    "FT中文网",
 		ToName:      ctx.UserName,
@@ -43,16 +43,16 @@ func VerificationParcel(ctx CtxVerification) (postoffice.Parcel, error) {
 }
 
 // GreetingParcel creates a parcel to be delivered after email is verified.
-func GreetingParcel(a account.BaseAccount) (postoffice.Parcel, error) {
+func GreetingParcel(a account.BaseAccount) (postman.Parcel, error) {
 	body, err := CtxVerified{
 		UserName: a.NormalizeName(),
 	}.Render()
 
 	if err != nil {
-		return postoffice.Parcel{}, err
+		return postman.Parcel{}, err
 	}
 
-	return postoffice.Parcel{
+	return postman.Parcel{
 		FromAddress: fromAddress,
 		FromName:    "FT中文网",
 		ToName:      a.NormalizeName(),
@@ -63,7 +63,7 @@ func GreetingParcel(a account.BaseAccount) (postoffice.Parcel, error) {
 }
 
 // PasswordResetParcel generates the email body for password reset.
-func PasswordResetParcel(a account.BaseAccount, session account.PwResetSession) (postoffice.Parcel, error) {
+func PasswordResetParcel(a account.BaseAccount, session account.PwResetSession) (postman.Parcel, error) {
 
 	body, err := CtxPwReset{
 		UserName: a.NormalizeName(),
@@ -73,10 +73,10 @@ func PasswordResetParcel(a account.BaseAccount, session account.PwResetSession) 
 	}.Render()
 
 	if err != nil {
-		return postoffice.Parcel{}, err
+		return postman.Parcel{}, err
 	}
 
-	return postoffice.Parcel{
+	return postman.Parcel{
 		FromAddress: fromAddress,
 		FromName:    "FT中文网",
 		ToAddress:   a.Email,
@@ -88,7 +88,7 @@ func PasswordResetParcel(a account.BaseAccount, session account.PwResetSession) 
 
 // WxSignUpParcel compose the parcel used to sent letter after wechat user creates and binds a new email account.
 // Returns the parcel to be delivered by postman.
-func WxSignUpParcel(a reader.Account, verifier account.EmailVerifier) (postoffice.Parcel, error) {
+func WxSignUpParcel(a reader.Account, verifier account.EmailVerifier) (postman.Parcel, error) {
 	body, err := CtxWxSignUp{
 		CtxLinkBase: CtxLinkBase{
 			UserName:   a.NormalizeName(),
@@ -99,10 +99,10 @@ func WxSignUpParcel(a reader.Account, verifier account.EmailVerifier) (postoffic
 	}.Render()
 
 	if err != nil {
-		return postoffice.Parcel{}, err
+		return postman.Parcel{}, err
 	}
 
-	return postoffice.Parcel{
+	return postman.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网",
 		ToName:      a.NormalizeName(),
@@ -113,7 +113,7 @@ func WxSignUpParcel(a reader.Account, verifier account.EmailVerifier) (postoffic
 }
 
 // LinkedParcel generates a email parcel after accounts are linked.
-func LinkedParcel(linkResult reader.WxEmailLinkResult) (postoffice.Parcel, error) {
+func LinkedParcel(linkResult reader.WxEmailLinkResult) (postman.Parcel, error) {
 
 	body, err := CtxAccountLink{
 		CtxLinkBase: CtxLinkBase{
@@ -127,10 +127,10 @@ func LinkedParcel(linkResult reader.WxEmailLinkResult) (postoffice.Parcel, error
 	}.Render()
 
 	if err != nil {
-		return postoffice.Parcel{}, err
+		return postman.Parcel{}, err
 	}
 
-	return postoffice.Parcel{
+	return postman.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网",
 		ToName:      linkResult.Account.NormalizeName(),
@@ -143,7 +143,7 @@ func LinkedParcel(linkResult reader.WxEmailLinkResult) (postoffice.Parcel, error
 // UnlinkParcel builds an email parcel after a linked
 // account severs the link.
 // The receiver is the Account instance prior to unlinking.
-func UnlinkParcel(a reader.Account, anchor enum.AccountKind) (postoffice.Parcel, error) {
+func UnlinkParcel(a reader.Account, anchor enum.AccountKind) (postman.Parcel, error) {
 
 	body, err := CtxAccountUnlink{
 		CtxLinkBase: CtxLinkBase{
@@ -156,10 +156,10 @@ func UnlinkParcel(a reader.Account, anchor enum.AccountKind) (postoffice.Parcel,
 	}.Render()
 
 	if err != nil {
-		return postoffice.Parcel{}, err
+		return postman.Parcel{}, err
 	}
 
-	return postoffice.Parcel{
+	return postman.Parcel{
 		FromAddress: "no-reply@ftchinese.com",
 		FromName:    "FT中文网",
 		ToName:      a.NormalizeName(),
@@ -169,7 +169,7 @@ func UnlinkParcel(a reader.Account, anchor enum.AccountKind) (postoffice.Parcel,
 	}, nil
 }
 
-func NewSubParcel(a account.BaseAccount, result subs.ConfirmationResult) (postoffice.Parcel, error) {
+func NewSubParcel(a account.BaseAccount, result subs.ConfirmationResult) (postman.Parcel, error) {
 
 	ctx := CtxSubs{
 		UserName: a.NormalizeName(),
@@ -180,10 +180,10 @@ func NewSubParcel(a account.BaseAccount, result subs.ConfirmationResult) (postof
 
 	body, err := ctx.Render()
 	if err != nil {
-		return postoffice.Parcel{}, err
+		return postman.Parcel{}, err
 	}
 
-	return postoffice.Parcel{
+	return postman.Parcel{
 		FromAddress: fromAddress,
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   a.Email,
@@ -193,7 +193,7 @@ func NewSubParcel(a account.BaseAccount, result subs.ConfirmationResult) (postof
 	}, nil
 }
 
-func NewIAPLinkParcel(acnt account.BaseAccount, m reader.Membership) (postoffice.Parcel, error) {
+func NewIAPLinkParcel(acnt account.BaseAccount, m reader.Membership) (postman.Parcel, error) {
 	ctx := CtxIAPLinked{
 		UserName:   acnt.NormalizeName(),
 		Email:      acnt.Email,
@@ -203,10 +203,10 @@ func NewIAPLinkParcel(acnt account.BaseAccount, m reader.Membership) (postoffice
 
 	body, err := RenderIAPLinked(ctx)
 	if err != nil {
-		return postoffice.Parcel{}, err
+		return postman.Parcel{}, err
 	}
 
-	return postoffice.Parcel{
+	return postman.Parcel{
 		FromAddress: fromAddress,
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   acnt.Email,
@@ -216,7 +216,7 @@ func NewIAPLinkParcel(acnt account.BaseAccount, m reader.Membership) (postoffice
 	}, nil
 }
 
-func NewIAPUnlinkParcel(a account.BaseAccount, m apple.Subscription) (postoffice.Parcel, error) {
+func NewIAPUnlinkParcel(a account.BaseAccount, m apple.Subscription) (postman.Parcel, error) {
 	ctx := CtxIAPLinked{
 		UserName:   a.NormalizeName(),
 		Email:      a.Email,
@@ -226,10 +226,10 @@ func NewIAPUnlinkParcel(a account.BaseAccount, m apple.Subscription) (postoffice
 
 	body, err := RenderIAPUnlinked(ctx)
 	if err != nil {
-		return postoffice.Parcel{}, err
+		return postman.Parcel{}, err
 	}
 
-	return postoffice.Parcel{
+	return postman.Parcel{
 		FromAddress: fromAddress,
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   a.Email,
