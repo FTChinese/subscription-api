@@ -38,6 +38,7 @@ When upgrading to a new version. do remember to change the following configurati
     ```
     8. Upload the configuration file to tk11 machine.
     9. Also run `make devconfig` command so that the modified configuration file is synced to your current directory so that Go's embedding of static assets works for development.
+4. In makefile, change `app_name := subs-api-v<your version name>`
 
 ## TODO
 
