@@ -204,7 +204,8 @@ func (f *Fetch) EndBlob() (Response, []error) {
 	}, nil
 }
 
-// Deprecated
+// EndBytes reads the response body and returns it as bytes.
+// Deprecated. Use EndBlob.
 func (f *Fetch) EndBytes() (*http.Response, []byte, []error) {
 	resp, errs := f.End()
 	if errs != nil {
