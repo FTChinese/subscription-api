@@ -58,12 +58,12 @@ func MustLoadAuthKeys(name string) AuthKeys {
 	return k
 }
 
-func MustLoadStripeAPIKeys() AuthKeys {
+func MustStripeAPIKey() AuthKeys {
 	return MustLoadAuthKeys("api_keys.stripe_secret")
 }
 
-func MustLoadStripeSigningKey() AuthKeys {
-	return MustLoadAuthKeys("api_keys.stripe_webhook_v3")
+func MustStripeWebhookKey() AuthKeys {
+	return MustLoadAuthKeys("api_keys.stripe_webhook_v4")
 }
 
 func MustLoadPollingKey() AuthKeys {
