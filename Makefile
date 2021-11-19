@@ -51,8 +51,8 @@ devconfig : outdir
 	rsync $(local_config_file) ./cmd/aliwx-poller/build/$(config_file_name)
 	mkdir -p ./cmd/iap-poller/build
 	rsync $(local_config_file) ./cmd/iap-poller/build/$(config_file_name)
-	mkdir -p ./subs_sandbox/build
-	rsync $(local_config_file) ./subs_sandbox/build/$(config_file_name)
+	mkdir -p ./cmd/subs_sandbox/build
+	rsync $(local_config_file) ./cmd/subs_sandbox/build/$(config_file_name)
 
 .PHONY: run
 run :
