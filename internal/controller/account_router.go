@@ -3,11 +3,11 @@ package controller
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/postman"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -16,10 +16,13 @@ type AccountRouter struct {
 	UserShared
 }
 
-func NewAccountRouter(myDBs db.ReadWriteMyDBs, postman postoffice.PostOffice, l *zap.Logger) AccountRouter {
+func NewAccountRouter(
+	myDBs db.ReadWriteMyDBs,
+	pm postman.Postman,
+	l *zap.Logger) AccountRouter {
 
 	return AccountRouter{
-		UserShared: NewUserShared(myDBs, postman, l),
+		UserShared: NewUserShared(myDBs, pm, l),
 	}
 }
 

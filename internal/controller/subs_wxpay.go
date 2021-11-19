@@ -24,7 +24,9 @@ import (
 // planId: string;
 func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
-	webhookURL := config.AliWxWebhookURL(router.config.Sandbox(), enum.PayMethodWx)
+	webhookURL := config.AliWxWebhookURL(
+		router.isProd,
+		enum.PayMethodWx)
 
 	// Find the client to use for wxpay
 	payClient, err := router.WxPayClients.ClientByPlatform(tradeType)

@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/letter"
+	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"go.uber.org/zap"
 )
@@ -15,10 +15,13 @@ type UserShared struct {
 	userRepo  accounts.Env
 	smsClient ztsms.Client
 	logger    *zap.Logger
-	postman   postoffice.PostOffice
+	postman   postman.Postman
 }
 
-func NewUserShared(dbs db.ReadWriteMyDBs, pm postoffice.PostOffice, l *zap.Logger) UserShared {
+func NewUserShared(
+	dbs db.ReadWriteMyDBs,
+	pm postman.Postman,
+	l *zap.Logger) UserShared {
 	return UserShared{
 		userRepo:  accounts.New(dbs, l),
 		smsClient: ztsms.NewClient(l),
