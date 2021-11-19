@@ -13,12 +13,12 @@ type PriceJSON struct {
 
 // Value implements Valuer interface by serializing an Invitation into
 // JSON data.
-func (l PriceJSON) Value() (driver.Value, error) {
-	if l.ID == "" {
+func (j PriceJSON) Value() (driver.Value, error) {
+	if j.ID == "" {
 		return nil, nil
 	}
 
-	b, err := json.Marshal(l)
+	b, err := json.Marshal(j)
 	if err != nil {
 		return nil, err
 	}
@@ -27,9 +27,9 @@ func (l PriceJSON) Value() (driver.Value, error) {
 }
 
 // Scan implements Valuer interface by deserializing an invitation field.
-func (l *PriceJSON) Scan(src interface{}) error {
+func (j *PriceJSON) Scan(src interface{}) error {
 	if src == nil {
-		*l = PriceJSON{}
+		*j = PriceJSON{}
 		return nil
 	}
 
@@ -40,7 +40,7 @@ func (l *PriceJSON) Scan(src interface{}) error {
 		if err != nil {
 			return err
 		}
-		*l = tmp
+		*j = tmp
 		return nil
 
 	default:
