@@ -42,25 +42,22 @@ type Subs struct {
 	CustomerID string `json:"customerId" db:"customer_id"`
 	// ID of the default payment method for the subscription. It must belong to the customer associated with the subscription. This takes precedence over default_source. If neither are set, invoices will use the customer’s invoice_settings.default_payment_method or default_source.
 	DefaultPaymentMethod null.String `json:"defaultPaymentMethod" db:"default_payment_method"`
-	SubsItem
-	LatestInvoiceID string `json:"latestInvoiceId" db:"latest_invoice_id"`
-	LiveMode        bool   `json:"liveMode" db:"live_mode"`
-
-	// Date when the subscription was first created. The date might differ from the created date due to backdating.
-	StartDateUTC chrono.Time `json:"startDateUtc" db:"start_date_utc"`
 	// If the subscription has ended, the date the subscription ended
-	EndedUTC chrono.Time `json:"endedUtc" db:"ended_utc"`
-
-	// Time at which the object was created. Measured in seconds since the Unix epoch.
-	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
-	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
-
-	Status    enum.SubsStatus `json:"status" db:"sub_status"`
-	FtcUserID null.String     `json:"ftcUserId" db:"ftc_user_id"`
+	EndedUTC        chrono.Time `json:"endedUtc" db:"ended_utc"`
+	FtcUserID       null.String `json:"ftcUserId" db:"ftc_user_id"`
+	LatestInvoiceID string      `json:"latestInvoiceId" db:"latest_invoice_id"`
+	LiveMode        bool        `json:"liveMode" db:"live_mode"`
+	SubsItem
+	// Date when the subscription was first created. The date might differ from the created date due to backdating.
+	StartDateUTC chrono.Time     `json:"startDateUtc" db:"start_date_utc"`
+	Status       enum.SubsStatus `json:"status" db:"sub_status"`
 	// This does not exist when refreshing current subscription.
 	// Occasionally stripe just does not expand it.
 	// Do not rely on it.
 	PaymentIntent PaymentIntent `json:"paymentIntent"`
+	// Time at which the object was created. Measured in seconds since the Unix epoch.
+	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
+	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
 }
 
 // NewSubs converts stripe's subscription. It returns error if there's

@@ -10,13 +10,14 @@ current_period_end = :current_period_end,
 current_period_start = :current_period_start,
 customer_id = :customer_id,
 default_payment_method = :default_payment_method,
-subs_item_id = :subs_item_id,
 price_id = :price_id,
+price = :price,
 latest_invoice_id = :latest_invoice_id,
 live_mode = :live_mode,
 start_date_utc = :start_date_utc,
 ended_utc = :ended_utc,
 updated_utc = :updated_utc,
+subs_item_id = :subs_item_id,
 sub_status = :sub_status
 `
 
@@ -39,16 +40,17 @@ SELECT id,
 	current_period_start,
 	customer_id,
 	default_payment_method,
-	subs_item_id,
-	price_id,
+	ended_utc,
+	ftc_user_id,
 	latest_invoice_id,
 	live_mode,
+	price,
+	price_id,
 	start_date_utc,
-	ended_utc,
-	created_utc,
-	updated_utc,
+	subs_item_id,
 	sub_status,
-	ftc_user_id
+	created_utc,
+	updated_utc
 FROM premium.stripe_subscription
 WHERE id = ?
 LIMIT 1`
