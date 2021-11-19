@@ -14,21 +14,24 @@ import (
 )
 
 type StripeRouter struct {
-	config     config.BuildConfig
 	signingKey string
 	addOnRepo  addons.Env
 	stripeRepo striperepo.Env
 	client     striperepo.Client
 	logger     *zap.Logger
+	isLive     bool
 }
 
 // NewStripeRouter initializes StripeRouter.
-func NewStripeRouter(dbs db.ReadWriteMyDBs, cfg config.BuildConfig, logger *zap.Logger) StripeRouter {
-	client := striperepo.NewClient(cfg.Live(), logger)
+func NewStripeRouter(
+	dbs db.ReadWriteMyDBs,
+	logger *zap.Logger,
+	isLive bool,
+) StripeRouter {
+	client := striperepo.NewClient(isLive, logger)
 
 	return StripeRouter{
-		config:     cfg,
-		signingKey: config.MustLoadStripeSigningKey().Pick(cfg.Live()),
+		signingKey: config.MustLoadStripeSigningKey().Pick(isLive),
 		addOnRepo:  addons.NewEnv(dbs, logger),
 		stripeRepo: striperepo.New(dbs, client, logger),
 		client:     client,

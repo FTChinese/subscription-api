@@ -3,14 +3,13 @@ package controller
 import (
 	"errors"
 	"fmt"
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
 	ftcpay2 "github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
+	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/patrickmn/go-cache"
@@ -22,15 +21,21 @@ import (
 type SubsRouter struct {
 	ftcpay.FtcPay // This contains readers.Env to access account data.
 	prodRepo      products.Env
-	config        config.BuildConfig
+	isProd        bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
 }
 
-func NewSubsRouter(dbs db.ReadWriteMyDBs, c *cache.Cache, cfg config.BuildConfig, p postoffice.PostOffice, logger *zap.Logger) SubsRouter {
+func NewSubsRouter(
+	dbs db.ReadWriteMyDBs,
+	c *cache.Cache,
+	isProd bool,
+	p postman.Postman,
+	logger *zap.Logger,
+) SubsRouter {
 
 	return SubsRouter{
 		FtcPay:   ftcpay.New(dbs, p, logger),
 		prodRepo: products.NewEnv(dbs, c),
-		config:   cfg,
+		isProd:   isProd,
 	}
 }
 

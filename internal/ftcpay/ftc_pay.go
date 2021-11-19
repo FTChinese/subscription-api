@@ -2,12 +2,12 @@ package ftcpay
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/letter"
+	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"go.uber.org/zap"
@@ -19,11 +19,11 @@ type FtcPay struct {
 	AddOnRepo    addons.Env
 	AliPayClient subrepo.AliPayClient
 	WxPayClients subrepo.WxPayClientStore
-	Postman      postoffice.PostOffice
+	Postman      postman.Postman
 	Logger       *zap.Logger
 }
 
-func New(dbs db.ReadWriteMyDBs, p postoffice.PostOffice, logger *zap.Logger) FtcPay {
+func New(dbs db.ReadWriteMyDBs, p postman.Postman, logger *zap.Logger) FtcPay {
 
 	aliApp := ali.MustInitApp()
 	wxApps := wechat.MustGetPayApps()
