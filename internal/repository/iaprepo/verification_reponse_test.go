@@ -3,13 +3,10 @@ package iaprepo
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
-
-var cfg = config.NewBuildConfig(false, false)
 
 func TestEnv_SaveDecodedReceipt(t *testing.T) {
 

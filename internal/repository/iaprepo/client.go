@@ -9,14 +9,14 @@ import (
 	"log"
 )
 
-func verifyURL(sandbox bool) string {
-	if sandbox {
-		log.Print("Using IAP sandbox url")
-		return "https://sandbox.itunes.apple.com/verifyReceipt"
+func verifyURL(live bool) string {
+	if live {
+		log.Print("Using IAP production url")
+		return "https://buy.itunes.apple.com/verifyReceipt"
 	}
 
-	log.Print("Using IAP production url")
-	return "https://buy.itunes.apple.com/verifyReceipt"
+	log.Print("Using IAP sandbox url")
+	return "https://sandbox.itunes.apple.com/verifyReceipt"
 }
 
 type Client struct {
@@ -36,7 +36,7 @@ func NewClient(logger *zap.Logger) Client {
 // For subscription-api, sandbox is determined by cli args upon startup. It will never change after server started.
 // However, when polling App Store, sandbox is dynamically determined
 // by environment value retrieved from DB.
-func (c Client) Verify(receipt string, sandbox bool) (apple.VerificationResp, error) {
+func (c Client) Verify(receipt string, live bool) (apple.VerificationResp, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
 
@@ -46,20 +46,20 @@ func (c Client) Verify(receipt string, sandbox bool) (apple.VerificationResp, er
 		ExcludeOldTransactions: false,
 	}
 
-	resp, b, errs := fetch.New().
-		Post(verifyURL(sandbox)).
+	resp, errs := fetch.New().
+		Post(verifyURL(live)).
 		SendJSON(payload).
-		EndBytes()
+		EndBlob()
 
 	sugar.Infof("App store response status code %d", resp.StatusCode)
-	sugar.Infof("App store verification raw content %s", b)
+	sugar.Infof("App store verification raw content %s", resp.Body)
 
 	if errs != nil {
 		return apple.VerificationResp{}, errs[0]
 	}
 
 	var vrfResult apple.VerificationResp
-	if err := json.Unmarshal(b, &vrfResult); err != nil {
+	if err := json.Unmarshal(resp.Body, &vrfResult); err != nil {
 		return apple.VerificationResp{}, err
 	}
 
@@ -70,8 +70,8 @@ func (c Client) Verify(receipt string, sandbox bool) (apple.VerificationResp, er
 
 // VerifyAndValidate verifies an receipt and validate if the response is valid.
 // The return error might be an instance of render.ValidationError.
-func (c Client) VerifyAndValidate(receipt string, sandbox bool) (apple.VerificationResp, error) {
-	resp, err := c.Verify(receipt, sandbox)
+func (c Client) VerifyAndValidate(receipt string, live bool) (apple.VerificationResp, error) {
+	resp, err := c.Verify(receipt, live)
 	if err != nil {
 		return apple.VerificationResp{}, err
 	}
