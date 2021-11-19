@@ -2,13 +2,13 @@ package db
 
 import (
 	"fmt"
-	"github.com/FTChinese/go-rest/connect"
+	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"time"
 )
 
-func NewMySQL(c connect.Connect) (*sqlx.DB, error) {
+func NewMySQL(c config.Connect) (*sqlx.DB, error) {
 	cfg := &mysql.Config{
 		User:   c.User,
 		Passwd: c.Pass,
@@ -45,7 +45,7 @@ func NewMySQL(c connect.Connect) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func MustNewMySQL(c connect.Connect) *sqlx.DB {
+func MustNewMySQL(c config.Connect) *sqlx.DB {
 	db, err := NewMySQL(c)
 	if err != nil {
 		panic(err)
@@ -54,16 +54,16 @@ func MustNewMySQL(c connect.Connect) *sqlx.DB {
 	return db
 }
 
+func MustNewMyDBs(prod bool) ReadWriteMyDBs {
+	return ReadWriteMyDBs{
+		Read:   MustNewMySQL(config.MustMySQLReadConn(prod)),
+		Write:  MustNewMySQL(config.MustMySQLWriteConn(prod)),
+		Delete: MustNewMySQL(config.MustMySQLDeleteConn(prod)),
+	}
+}
+
 type ReadWriteMyDBs struct {
 	Read   *sqlx.DB
 	Write  *sqlx.DB
 	Delete *sqlx.DB
-}
-
-func MustNewMyDBs(prod bool) ReadWriteMyDBs {
-	return ReadWriteMyDBs{
-		Read:   MustNewMySQL(MustMySQLReadConn(prod)),
-		Write:  MustNewMySQL(MustMySQLWriteConn(prod)),
-		Delete: MustNewMySQL(MustMySQLDeleteConn(prod)),
-	}
 }
