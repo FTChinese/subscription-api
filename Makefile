@@ -56,7 +56,7 @@ devconfig : outdir
 
 .PHONY: run
 run :
-	$(default_exec) -sandbox=true
+	$(default_exec) -production=false -livemode=false
 
 .PHONY: amd64
 amd64 :
