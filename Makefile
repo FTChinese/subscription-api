@@ -42,7 +42,7 @@ build :
 	$(compile_default_exec)
 
 outdir :
-	mkdir -p ./$(build_dir)
+	mkdir -p $(build_dir)
 
 .PHONY: devconfig
 devconfig : outdir
