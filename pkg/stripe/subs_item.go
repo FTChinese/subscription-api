@@ -7,8 +7,8 @@ import "github.com/stripe/stripe-go/v72"
 // Usually one subscription has only one item.
 type SubsItem struct {
 	ItemID  string    `json:"subsItemId" db:"subs_item_id"`
-	PriceID string    `json:"priceId" db:"price_id"`
 	Price   PriceJSON `json:"price" db:"price"`
+	PriceID string    `json:"priceId" db:"price_id"`
 }
 
 // NewSubsItem gets the subscription item id and price id from a stripe subscription.
