@@ -3,14 +3,41 @@
 ## TOC
 
 * [Getting Started](./_doc/getting_started.md)
+* [Common Data Type Definition](./_doc/common_types.md)
 * [Account Endpoints](./_doc/account_intro.md)
-* [Subscription Introduction](./_doc/subscription_intro.md)
+* [Ftc Purchase](./_doc/subscription_intro.md)
+* [Stripe Subscription](./_doc/stripe_intro.md)
+* [Apple Subscription](./_doc/apple_intro.md)
+* [Database Design](./_doc/db_architecture.md)
 
 API for subscription service
 
 ## Versioning
 
 * v2: starting from January 2021.
+* v3: starting from September 2021, due to discounts added.
+* v4: Starting from November 2021, due to Stripe introductory offer.
+
+When upgrading to a new version. do remember to change the following configurations manually:
+
+1. In `pkg.config.port` file change the `Port` to a new one. Currently, all versions are using "820x" port. Replace the `x` with you current version.
+2. In `pkg.config.webhook_url` file, change the production version of alipay/wechat pay server-to-server notification url.
+3. Change stripe webhook url with the following steps:
+   1. Go to Stripe dashboard.
+   2. Find the "Developers" configuration page. 
+   3. Select "Webhooks" from sidebar. 
+   4. Click "Add endpoint". 
+   5. Add new version's Stripe webhook url. 
+   6. Copy the "Signing secret". 
+   7. On your machine's configuration file `~/config/api.toml`. In the `api_keys` section, add a section like:
+
+    ```toml
+    [api_keys.stripe_webhook_v<your-current-version>]
+    dev = "the test key. Simply copy it from previous versions since it won't be changed."
+    prod = "the singing key you copied"
+    ```
+    8. Upload the configuration file to tk11 machine.
+    9. Also run `make devconfig` command so that the modified configuration file is synced to your current directory so that Go's embedding of static assets works for development.
 
 ## TODO
 
@@ -27,7 +54,7 @@ make build APP=consumer
 
 ## Base URL
 
-* Production: `http://www.ftacademy.cn/api/v1`
+* Production: `http://www.ftacademy.cn/api/v<xx>`
 * Sandbox: `http://www.ftacademy.cn/api/sandbox`
 
 For Stripe and Apple IAP, the sandbox have the same meaning as their APIs: running in sandbox mode hits their sandbox endpoints; otherwise to production endpoints.
