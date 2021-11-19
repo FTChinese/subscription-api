@@ -120,7 +120,7 @@ func (p IAPPoller) verify(s apple.BaseSchema) error {
 	}
 
 	sugar.Info("Verifying...")
-	resp, err := p.verifier.VerifyAndValidate(receipt, s.Environment == apple.EnvSandbox)
+	resp, err := p.verifier.VerifyAndValidate(receipt, s.Environment == apple.EnvProduction)
 	if err != nil {
 		sugar.Error(err)
 		return err
