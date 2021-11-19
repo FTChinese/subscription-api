@@ -2,12 +2,15 @@ package config
 
 import "github.com/FTChinese/go-rest/enum"
 
-func AliWxWebhookURL(sandbox bool, method enum.PayMethod) string {
+// AliWxWebhookURL builds the url for one-time purchase.
+// If isProd is true, use online production server;
+// otherwise always use sandbox server.
+func AliWxWebhookURL(isProd bool, method enum.PayMethod) string {
 	var baseURL string
-	if sandbox {
-		baseURL = "https://www.ftacademy.cn/api/sandbox"
-	} else {
+	if isProd {
 		baseURL = "https://www.ftacademy.cn/api/v4"
+	} else {
+		baseURL = "https://www.ftacademy.cn/api/sandbox"
 	}
 
 	switch method {
