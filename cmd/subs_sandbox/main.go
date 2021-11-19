@@ -19,11 +19,13 @@ var (
 	commit     string
 	production bool
 	sandbox    bool
+	liveMode   bool
 )
 
 func init() {
-	flag.BoolVar(&production, "production", false, "Connect to production MySQL database if present. Default to localhost.")
-	flag.BoolVar(&sandbox, "sandbox", false, "Use sandbox for alipay and wxpay webhook url and stripe keys")
+	flag.BoolVar(&production, "production", true, "Connect to production MySQL database if present. Default to localhost.")
+	flag.BoolVar(&liveMode, "livemode", true, "Determine live/sandbox mode for webhook, and which of Stripe or Apple service to use")
+
 	var v = flag.Bool("v", false, "print current version")
 
 	flag.Parse()
@@ -44,12 +46,12 @@ func main() {
 		Commit:     commit,
 		Port:       "8201", // Sandbox port never changes
 		Production: production,
-		Sandbox:    sandbox,
+		LiveMode:   liveMode,
 	}
 
 	log.Printf("Starting subscription api %s, built at %s with commit %s", s.Version, s.Build, s.Commit)
 
-	log.Printf("Production %t. Sandbox %t. Port %s", s.Production, s.Sandbox, s.Port)
+	log.Printf("Production %t. LiveMode %t. Port %s", s.Production, s.LiveMode, s.Port)
 
 	internal.StartServer(s)
 }

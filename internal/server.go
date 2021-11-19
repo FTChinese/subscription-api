@@ -23,8 +23,9 @@ type ServerStatus struct {
 	Build      string `json:"build"`
 	Commit     string `json:"commit"`
 	Port       string `json:"-"`
-	Production bool   `json:"production"`
-	Sandbox    bool   `json:"sandbox"`
+	Production bool   `json:"production"` // Determine which db to use.
+	Sandbox    bool   `json:"sandbox"`    // Deprecated.
+	LiveMode   bool   `json:"liveMode"`
 }
 
 func StartServer(s ServerStatus) {
@@ -52,7 +53,7 @@ func StartServer(s ServerStatus) {
 	payRouter := controller.NewSubsRouter(
 		myDBs,
 		promoCache,
-		s.Production,
+		s.LiveMode,
 		post,
 		logger)
 	iapRouter := controller.NewIAPRouter(
@@ -60,11 +61,11 @@ func StartServer(s ServerStatus) {
 		rdb,
 		logger,
 		post,
-		!s.Sandbox)
+		s.LiveMode)
 	stripeRouter := controller.NewStripeRouter(
 		myDBs,
 		logger,
-		!s.Sandbox)
+		s.LiveMode)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.NewPaywallRouter(
