@@ -27,7 +27,9 @@ import (
 // cycle: string;
 // planId?: string;
 func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
-	webhookURL := config.AliWxWebhookURL(router.config.Sandbox(), enum.PayMethodAli)
+	webhookURL := config.AliWxWebhookURL(
+		router.isProd,
+		enum.PayMethodAli)
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer router.Logger.Sync()

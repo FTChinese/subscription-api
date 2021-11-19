@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
@@ -11,28 +12,32 @@ import (
 	"net/http"
 
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/config"
 )
 
 type IAPRouter struct {
 	iapRepo iaprepo.Env
-	postman postoffice.PostOffice
+	postman postman.Postman
 
-	sandbox   bool
+	isLive    bool
 	iapClient iaprepo.Client
 	logger    *zap.Logger
 }
 
-func NewIAPRouter(dbs db.ReadWriteMyDBs, rdb *redis.Client, logger *zap.Logger, p postoffice.PostOffice, cfg config.BuildConfig) IAPRouter {
+func NewIAPRouter(
+	dbs db.ReadWriteMyDBs,
+	rdb *redis.Client,
+	logger *zap.Logger,
+	p postman.Postman,
+	isLive bool,
+) IAPRouter {
 
 	return IAPRouter{
 		iapRepo:   iaprepo.NewEnv(dbs, rdb, logger),
 		postman:   p,
-		sandbox:   cfg.Sandbox(),
+		isLive:    isLive,
 		iapClient: iaprepo.NewClient(logger),
 		logger:    logger,
 	}
@@ -47,7 +52,7 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 	sugar := router.logger.Sugar()
 
 	// Send data to IAP endpoint for verification
-	resp, err := router.iapClient.VerifyAndValidate(receipt, router.sandbox)
+	resp, err := router.iapClient.VerifyAndValidate(receipt, router.isLive)
 
 	if err != nil {
 		sugar.Error(err)
