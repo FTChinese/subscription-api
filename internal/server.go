@@ -24,7 +24,6 @@ type ServerStatus struct {
 	Commit     string `json:"commit"`
 	Port       string `json:"-"`
 	Production bool   `json:"production"` // Determine which db to use.
-	Sandbox    bool   `json:"sandbox"`    // Deprecated.
 	LiveMode   bool   `json:"liveMode"`
 }
 
