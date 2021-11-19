@@ -28,7 +28,7 @@ import (
 // planId?: string;
 func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 	webhookURL := config.AliWxWebhookURL(
-		router.isProd,
+		router.isLive,
 		enum.PayMethodAli)
 
 	return func(w http.ResponseWriter, req *http.Request) {

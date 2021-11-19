@@ -21,7 +21,7 @@ import (
 type SubsRouter struct {
 	ftcpay.FtcPay // This contains readers.Env to access account data.
 	prodRepo      products.Env
-	isProd        bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
+	isLive        bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
 }
 
 func NewSubsRouter(
@@ -35,7 +35,7 @@ func NewSubsRouter(
 	return SubsRouter{
 		FtcPay:   ftcpay.New(dbs, p, logger),
 		prodRepo: products.NewEnv(dbs, c),
-		isProd:   isProd,
+		isLive:   isProd,
 	}
 }
 
