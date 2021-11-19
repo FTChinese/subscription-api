@@ -39,6 +39,14 @@ When upgrading to a new version. do remember to change the following configurati
     8. Upload the configuration file to tk11 machine.
     9. Also run `make devconfig` command so that the modified configuration file is synced to your current directory so that Go's embedding of static assets works for development.
 4. In makefile, change `app_name := subs-api-v<your version name>`
+5. Configure URL. Map external URL to the new version's port.
+
+| Version  | Port  | Binary name      | External URL |
+| -------- | ----- | ---------------- | ------------ |
+| 1        ｜ 8200 ｜ subscription-api | https://www.ftacademy.cn/api/v1 |
+| 2        | 8202  | subs-api-v2      | https://www.ftacademy.cn/api/v2 |
+| 3        | 8203  | subs-api-v3      | https://www.ftacademy.cn/api/v3 |
+| 4        | 8204  | subs-api-v4      | https://www.ftacademy.cn/api/v4 |
 
 ## TODO
 
