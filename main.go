@@ -26,7 +26,7 @@ var (
 )
 
 func init() {
-	flag.BoolVar(&production, "production", true, "Connect to production MySQL database if present. Default to localhost.")
+	flag.BoolVar(&production, "production", true, "Connect to production MySQL database by default, or localhost if false")
 	flag.BoolVar(&liveMode, "livemode", true, "Determine live/sandbox mode for webhook, and which of Stripe or Apple service to use")
 	var v = flag.Bool("v", false, "print current version")
 
