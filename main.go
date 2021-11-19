@@ -50,7 +50,7 @@ func main() {
 		Version:    version,
 		Build:      build,
 		Commit:     commit,
-		Port:       "8203", // Version 1: 8200,
+		Port:       config.Port,
 		Production: production,
 		LiveMode:   liveMode,
 	}
