@@ -1,9 +1,9 @@
 package letter
 
 import (
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/pkg/postman"
 	"testing"
 )
 
@@ -13,7 +13,7 @@ func TestDeliverParcel(t *testing.T) {
 	conn := config.MustGetHanqiConn()
 	t.Logf("%v", conn)
 
-	postman := postoffice.New(conn)
+	pm := postman.New(conn)
 
 	parcel, err := VerificationParcel(CtxVerification{
 		UserName: "Victor",
@@ -27,7 +27,7 @@ func TestDeliverParcel(t *testing.T) {
 		return
 	}
 
-	err = postman.Deliver(parcel)
+	err = pm.Deliver(parcel)
 	if err != nil {
 		t.Error(err)
 	}

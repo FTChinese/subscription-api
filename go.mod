@@ -6,6 +6,7 @@ require (
 	github.com/brianvoe/gofakeit/v5 v5.11.2
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-co-op/gocron v0.3.3
+	github.com/go-mail/mail v2.3.1+incompatible // indirect
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.3.0
