@@ -1,13 +1,13 @@
 package internal
 
 import (
-	"github.com/FTChinese/go-rest/postoffice"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/controller"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/go-chi/chi"
@@ -28,7 +28,6 @@ type ServerStatus struct {
 }
 
 func StartServer(s ServerStatus) {
-	cfg := config.NewBuildConfig(s.Production, s.Sandbox)
 	logger := config.MustGetLogger(s.Production)
 
 	myDBs := db.MustNewMyDBs(s.Production)
@@ -38,18 +37,40 @@ func StartServer(s ServerStatus) {
 	// Set the cache default expiration time to 2 hours.
 	promoCache := cache.New(2*time.Hour, 0)
 
-	post := postoffice.New(config.MustGetHanqiConn())
+	post := postman.New(config.MustGetHanqiConn())
 
 	guard := access.NewGuard(myDBs)
 
-	authRouter := controller.NewAuthRouter(myDBs, post, logger)
-	accountRouter := controller.NewAccountRouter(myDBs, post, logger)
-	payRouter := controller.NewSubsRouter(myDBs, promoCache, cfg, post, logger)
-	iapRouter := controller.NewIAPRouter(myDBs, rdb, logger, post, cfg)
-	stripeRouter := controller.NewStripeRouter(myDBs, cfg, logger)
+	authRouter := controller.NewAuthRouter(
+		myDBs,
+		post,
+		logger)
+	accountRouter := controller.NewAccountRouter(
+		myDBs,
+		post,
+		logger)
+	payRouter := controller.NewSubsRouter(
+		myDBs,
+		promoCache,
+		s.Production,
+		post,
+		logger)
+	iapRouter := controller.NewIAPRouter(
+		myDBs,
+		rdb,
+		logger,
+		post,
+		!s.Sandbox)
+	stripeRouter := controller.NewStripeRouter(
+		myDBs,
+		logger,
+		!s.Sandbox)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := controller.NewPaywallRouter(myDBs, promoCache, logger)
+	paywallRouter := controller.NewPaywallRouter(
+		myDBs,
+		promoCache,
+		logger)
 
 	wxAuth := controller.NewWxAuth(myDBs, logger)
 
