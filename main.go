@@ -22,7 +22,6 @@ var (
 	// For online sandbox server, production == true, sandbox == true
 	// For online production server, production == true, sandbox == false
 	production bool // Determine which db to use
-	sandbox    bool // Deprecated. Determine the mode when using Stripe/Apple service.
 	liveMode   bool // Determine the mode when using Stripe/Apple service.
 )
 
