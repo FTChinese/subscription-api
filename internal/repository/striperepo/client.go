@@ -15,7 +15,7 @@ type Client struct {
 
 func NewClient(live bool, logger *zap.Logger) Client {
 
-	key := config.MustLoadStripeAPIKeys().Pick(live)
+	key := config.MustStripeAPIKey().Pick(live)
 
 	return Client{
 		live:   live,

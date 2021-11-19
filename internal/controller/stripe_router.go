@@ -31,7 +31,7 @@ func NewStripeRouter(
 	client := striperepo.NewClient(isLive, logger)
 
 	return StripeRouter{
-		signingKey: config.MustLoadStripeSigningKey().Pick(isLive),
+		signingKey: config.MustStripeWebhookKey().Pick(isLive),
 		addOnRepo:  addons.NewEnv(dbs, logger),
 		stripeRepo: striperepo.New(dbs, client, logger),
 		client:     client,
