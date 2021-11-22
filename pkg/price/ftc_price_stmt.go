@@ -11,7 +11,6 @@ SELECT p.id AS price_id,
 	p.live_mode AS live_mode,
 	p.nickname AS nickname,
 	p.product_id AS product_id,
-	IFNULL(p.source, 'ftc') AS source,
 	p.price AS unit_amount,
 	IFNULL(stripe_price_id, '') AS stripe_price_id,
 	p.created_utc AS created_utc,
@@ -68,7 +67,6 @@ SET id = :price_id,
 	live_mode = :live_mode,
 	nickname = :nickname,
 	product_id = :product_id,
-	source = :source,
 	price = :unit_amount,
 	stripe_price_id = :stripe_price_id,
 	created_utc = :created_utc,
@@ -78,6 +76,7 @@ SET id = :price_id,
 const StmtUpdatePrice = `
 UPDATE subs_product.plan
 SET description = :description,
+	nickname = :nickname,
 	stripe_price_id = :stripe_price_id
 WHERE id = :price_id
 LIMIT 1
