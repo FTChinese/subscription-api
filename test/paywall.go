@@ -109,7 +109,6 @@ func (b PriceBuilder) Build() price.Price {
 		LiveMode:    b.live,
 		Nickname:    null.String{},
 		ProductID:   b.productID,
-		Source:      price.SourceFTC,
 		UnitAmount:  amount,
 		CreatedUTC:  chrono.TimeNow(),
 		CreatedBy:   gofakeit.Username(),
