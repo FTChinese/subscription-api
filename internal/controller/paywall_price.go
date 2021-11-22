@@ -4,7 +4,6 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
 )
 
@@ -26,6 +25,16 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 }
 
 // CreatePrice creates a new price.
+// Request body:
+// - createdBy: string
+// - tier: standard | premium
+// - cycle: year | month
+// - description?: string
+// - liveMode: boolean
+// - nickname?: string
+// - productId: string
+// - stripePriceId: string
+// - unitAmount: number
 func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request) {
 	var params price.FtcPriceParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -38,22 +47,45 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	// Attach the strip price id to ftc price.
-	se, err := stripe.PriceEditionStore.FindByEdition(params.Edition, params.LiveMode)
-	if err != nil {
-		_ = render.NewInternalError(err.Error())
-		return
-	}
+	p := price.NewFtcPrice(params)
 
-	p := price.NewFtcPrice(params, se.PriceID)
-
-	err = router.repo.CreatePrice(p)
+	err := router.repo.CreatePrice(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	_ = render.New(w).OK(p)
+}
+
+// UpdatePrice changes a price's Description, Nickname, or StripePriceID fields
+// Input body:
+// - description?: string;
+// - nickname?: string;
+// - stripePriceId: string;
+func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request) {
+	id, _ := getURLParam(req, "").ToString()
+
+	var params price.FtcPriceUpdateParams
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	ftcPrice, err := router.repo.RetrieveFtcPrice(id)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	updated := ftcPrice.WithUpdate(params)
+	err = router.repo.UpdateFtcPrice(updated)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(updated)
 }
 
 // RefreshPrice discounts and stripe price id.
@@ -76,18 +108,6 @@ func (router PaywallRouter) RefreshPrice(w http.ResponseWriter, req *http.Reques
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
-	}
-
-	se, err := stripe.PriceEditionStore.
-		FindByEdition(
-			ftcPrice.Edition,
-			ftcPrice.LiveMode,
-		)
-
-	// Update stripe price id.
-	if err == nil {
-		ftcPrice = ftcPrice.WithStripePrice(se.PriceID)
-		_ = router.repo.UpdateFtcPrice(ftcPrice)
 	}
 
 	_ = render.New(w).OK(ftcPrice)
