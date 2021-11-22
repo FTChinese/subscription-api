@@ -444,7 +444,7 @@ func StartServer(s ServerStatus) {
 		// Delete discount and refresh the related price.
 		r.Delete("/discounts/{id}", paywallRouter.RemoveDiscount)
 
-		// Bust cache.
+		// Bust cache, regardless of live mode or not.
 		r.Get("/__refresh", paywallRouter.BustCache)
 	})
 
