@@ -320,15 +320,6 @@ func StartServer(s ServerStatus) {
 		r.Get("/{id}", payRouter.LoadInvoice)
 	})
 
-	// Deprecated. Use /membership/addons
-	r.Route("/addon", func(r chi.Router) {
-		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
-
-		// Redeem add-on
-		r.Post("/", payRouter.ClaimAddOn)
-	})
-
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
@@ -416,6 +407,8 @@ func StartServer(s ServerStatus) {
 
 		// Data used to build a paywall.
 		// ?live=<true|false> to get prices for different mode.
+		// TODO: in v5 this behavior will be dropped.
+		// Live server only outputs live data while sandbox for sandbox data only.
 		r.With(controller.FormParsed).
 			Get("/", paywallRouter.LoadPaywall)
 
@@ -432,6 +425,7 @@ func StartServer(s ServerStatus) {
 		// Create a price for a product. The price's live mode is determined by client.
 		r.Post("/prices", paywallRouter.CreatePrice)
 
+		// Deprecated.
 		r.Post("/prices/{id}", paywallRouter.ActivatePrice)
 		r.Post("/prices/{id}/activate", paywallRouter.ActivatePrice)
 		r.Post("/prices/{id}/refresh", paywallRouter.RefreshPrice)
