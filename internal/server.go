@@ -425,8 +425,6 @@ func StartServer(s ServerStatus) {
 		// Create a price for a product. The price's live mode is determined by client.
 		r.Post("/prices", paywallRouter.CreatePrice)
 
-		// Deprecated.
-		r.Post("/prices/{id}", paywallRouter.ActivatePrice)
 		r.Post("/prices/{id}/activate", paywallRouter.ActivatePrice)
 		r.Post("/prices/{id}/refresh", paywallRouter.RefreshPrice)
 
