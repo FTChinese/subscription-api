@@ -427,11 +427,7 @@ func StartServer(s ServerStatus) {
 
 		r.Post("/prices/{id}/activate", paywallRouter.ActivatePrice)
 		r.Post("/prices/{id}/refresh", paywallRouter.RefreshPrice)
-
-		// Retrieve all discounts of a price and save in under price row as JSON.
-		// A price should only retrieve discount of the same live mode.
-		// TODO: changed to update price.
-		r.Patch("/prices/{id}", paywallRouter.RefreshPrice)
+		r.Patch("/prices/{id}", paywallRouter.UpdatePrice)
 		r.Delete("/prices/{id}", paywallRouter.ArchivePrice)
 
 		// List discounts of a price.
