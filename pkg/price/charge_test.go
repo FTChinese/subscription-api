@@ -24,7 +24,6 @@ func TestNewCharge(t *testing.T) {
 		LiveMode:    false,
 		Nickname:    null.String{},
 		ProductID:   "",
-		Source:      "",
 		UnitAmount:  35,
 		CreatedUTC:  chrono.Time{},
 		CreatedBy:   "",
