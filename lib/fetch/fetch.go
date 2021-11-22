@@ -61,13 +61,20 @@ func (f *Fetch) Patch(url string) *Fetch {
 	return f
 }
 
-func (f *Fetch) SetParam(key, value string) *Fetch {
+func (f *Fetch) Delete(url string) *Fetch {
+	f.method = "DELETE"
+	f.url = url
+
+	return f
+}
+
+func (f *Fetch) SetQuery(key, value string) *Fetch {
 	f.Query.Set(key, value)
 
 	return f
 }
 
-func (f *Fetch) SetParamMap(kv map[string]string) *Fetch {
+func (f *Fetch) SetQueryN(kv map[string]string) *Fetch {
 	for k, v := range kv {
 		f.Query.Set(k, v)
 	}
@@ -75,12 +82,12 @@ func (f *Fetch) SetParamMap(kv map[string]string) *Fetch {
 	return f
 }
 
-func (f *Fetch) AddQueryParam(key, value string) *Fetch {
+func (f *Fetch) AddQuery(key, value string) *Fetch {
 	f.Query.Add(key, value)
 	return f
 }
 
-func (f *Fetch) SetQuery(q url.Values) *Fetch {
+func (f *Fetch) WithQuery(q url.Values) *Fetch {
 	f.Query = q
 
 	return f
@@ -98,7 +105,7 @@ func (f *Fetch) SetHeader(k, v string) *Fetch {
 	return f
 }
 
-func (f *Fetch) SetHeaderMap(h map[string]string) *Fetch {
+func (f *Fetch) SetHeaderN(h map[string]string) *Fetch {
 	for k, v := range h {
 		f.Header.Set(k, v)
 	}
@@ -151,10 +158,7 @@ func (f *Fetch) SendJSON(v interface{}) *Fetch {
 		return f
 	}
 
-	f.Header.Add("Content-Type", ContentJSON)
-	f.body = bytes.NewReader(d)
-
-	return f
+	return f.SendJSONBlob(d)
 }
 
 func (f *Fetch) End() (*http.Response, []error) {
