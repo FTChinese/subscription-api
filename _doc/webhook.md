@@ -1,6 +1,13 @@
-# Notification
+# Webhook
 
-Those endpoints are used to receive payment result from Alipay and Wechat pay, not being used by us. **DO NOT** impose any access rights on them.
+Those endpoints are used to receive server-sdie notification from Alipay, Wechat, Stripe, and Apple, not being used by us. **DO NOT** impose any access rights on them.
+
+Handle payment provider's server-to-server notification.
+
+* POST `/webhook/wxpay` Wechat pay notification
+* POST `/webhook/alipay` Alipay notification
+* POST `/webhook/stripe` Stripe notification
+* POST `/webhook/apple` Apple notification
 
 ## Wechat Pay Notification
 
