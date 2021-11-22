@@ -1,3 +1,4 @@
+//go:build !production
 // +build !production
 
 package price
@@ -22,7 +23,6 @@ var MockPriceStdYear = FtcPrice{
 		LiveMode:   true,
 		Nickname:   null.String{},
 		ProductID:  "prod_zjWdiTUpDN8l",
-		Source:     SourceFTC,
 		UnitAmount: 298,
 	},
 	Offers: []Discount{
@@ -85,7 +85,6 @@ var MockPriceStdMonth = FtcPrice{
 		LiveMode:   true,
 		Nickname:   null.String{},
 		ProductID:  "prod_zjWdiTUpDN8l",
-		Source:     SourceFTC,
 		UnitAmount: 28,
 	},
 	Offers: []Discount{
@@ -119,7 +118,6 @@ var MockPricePrm = FtcPrice{
 		LiveMode:   true,
 		Nickname:   null.String{},
 		ProductID:  "prod_IaoK5SbK79g8",
-		Source:     SourceFTC,
 		UnitAmount: 1998,
 	},
 	Offers: []Discount{
