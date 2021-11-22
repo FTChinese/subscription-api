@@ -44,7 +44,7 @@ func (c Client) GetAccessToken(code string) (wxlogin.AccessResponse, error) {
 
 	resp, errs := fetch.New().
 		Get(apiBaseURL + "/oauth2/access_token").
-		SetParamMap(map[string]string{
+		SetQueryN(map[string]string{
 			"appid":      c.app.AppID,
 			"secret":     c.app.AppSecret,
 			"code":       code,
@@ -89,7 +89,7 @@ func (c Client) RefreshAccess(refreshToken string) (wxlogin.AccessResponse, erro
 	var acc wxlogin.AccessResponse
 	resp, errs := fetch.New().
 		Get(apiBaseURL + "/oauth2/refresh_token").
-		SetParamMap(map[string]string{
+		SetQueryN(map[string]string{
 			"appid":         c.app.AppID,
 			"grant_type":    "refresh_token",
 			"refresh_token": refreshToken,
@@ -120,7 +120,7 @@ func (c Client) IsAccessTokenValid(p wxlogin.UserInfoParams) bool {
 
 	resp, errs := fetch.New().
 		Get(apiBaseURL + "/auth").
-		SetParamMap(map[string]string{
+		SetQueryN(map[string]string{
 			"access_token": p.AccessToken,
 			"openid":       p.OpenID,
 		}).
@@ -155,7 +155,7 @@ func (c Client) GetUserInfo(p wxlogin.UserInfoParams) (wxlogin.UserInfoResponse,
 
 	resp, errs := fetch.New().
 		Get(apiBaseURL + "/userinfo").
-		SetParamMap(map[string]string{
+		SetQueryN(map[string]string{
 			"access_token": p.AccessToken,
 			"openid":       p.OpenID,
 		}).
