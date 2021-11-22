@@ -12,17 +12,26 @@ import (
 	"strings"
 )
 
+type FtcPriceUpdateParams struct {
+	Description   null.String `json:"description"`
+	Nickname      null.String `json:"nickname"`
+	StripePriceID string      `json:"stripePriceId"`
+}
+
+func (p FtcPriceUpdateParams) Validate() *render.ValidationError {
+	return validator.New("stripePriceId").Required().Validate(p.StripePriceID)
+}
+
 // FtcPriceParams is the form data submitted to create a price.
 // A new plan is always created under a certain product.
 // Therefore, the input data does not have tier field.
 type FtcPriceParams struct {
 	CreatedBy string `json:"createdBy"`
 	Edition
-	Description null.String `json:"description"`
-	LiveMode    bool        `json:"liveMode"`
-	Nickname    null.String `json:"nickname"`
-	UnitAmount  float64     `json:"unitAmount"`
-	ProductID   string      `json:"productId"`
+	FtcPriceUpdateParams
+	LiveMode   bool    `json:"liveMode"`
+	ProductID  string  `json:"productId"`
+	UnitAmount float64 `json:"unitAmount"`
 }
 
 // Validate checks whether the input data to create a new plan is valid.
@@ -32,9 +41,12 @@ func (p *FtcPriceParams) Validate() *render.ValidationError {
 
 	p.Description.String = strings.TrimSpace(p.Description.String)
 
-	ve := validator.New("productId").Required().Validate(p.ProductID)
-	if ve != nil {
-		return ve
+	if p.Cycle == enum.CycleNull {
+		return &render.ValidationError{
+			Message: "Invalid cycle",
+			Field:   "cycle",
+			Code:    render.CodeInvalid,
+		}
 	}
 
 	if p.UnitAmount <= 0 {
@@ -45,19 +57,25 @@ func (p *FtcPriceParams) Validate() *render.ValidationError {
 		}
 	}
 
-	if p.Cycle == enum.CycleNull {
-		return &render.ValidationError{
-			Message: "Invalid cycle",
-			Field:   "cycle",
-			Code:    render.CodeInvalid,
-		}
+	ve := validator.New("productId").Required().Validate(p.ProductID)
+	if ve != nil {
+		return ve
 	}
 
-	return nil
+	return p.FtcPriceUpdateParams.Validate()
+}
+
+// FtcPrice contains a price's original price and promotion.
+// The actual price user paid should be the original price minus
+// promotion offer if promotion period is valid.
+type FtcPrice struct {
+	Price
+	StripePriceID string           `json:"stripePriceId" db:"stripe_price_id"`
+	Offers        DiscountListJSON `json:"offers" db:"discount_list"`
 }
 
 // NewFtcPrice creates a price for ftc product
-func NewFtcPrice(p FtcPriceParams, stripePrice string) FtcPrice {
+func NewFtcPrice(p FtcPriceParams) FtcPrice {
 
 	return FtcPrice{
 		Price: Price{
@@ -70,31 +88,20 @@ func NewFtcPrice(p FtcPriceParams, stripePrice string) FtcPrice {
 			LiveMode:    p.LiveMode,
 			Nickname:    p.Nickname,
 			ProductID:   p.ProductID,
-			Source:      SourceFTC,
 			UnitAmount:  p.UnitAmount,
 			CreatedUTC:  chrono.TimeNow(),
 			CreatedBy:   p.CreatedBy,
 		},
-		StripePriceID: stripePrice,
+		StripePriceID: p.StripePriceID,
 		Offers:        make([]Discount, 0),
 	}
 }
 
-// FtcPrice contains a price's original price and promotion.
-// The actual price user paid should be the original price minus
-// promotion offer if promotion period is valid.
-type FtcPrice struct {
-	Price
-	StripePriceID string           `json:"stripePriceId" db:"stripe_price_id"`
-	Offers        DiscountListJSON `json:"offers" db:"discount_list"`
-}
+func (f FtcPrice) WithUpdate(p FtcPriceUpdateParams) FtcPrice {
+	f.Description = p.Description
+	f.Nickname = p.Nickname
+	f.StripePriceID = p.StripePriceID
 
-// WithStripePrice adds links the ftc price with stripe price.
-// Kept for backward compatible.
-// This should be removed if we could provide it on client side
-// when creating an FtcPrice.
-func (f FtcPrice) WithStripePrice(id string) FtcPrice {
-	f.StripePriceID = id
 	return f
 }
 
