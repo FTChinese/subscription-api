@@ -28,7 +28,7 @@ func (router PaywallRouter) SaveBanner(w http.ResponseWriter, req *http.Request)
 			_ = render.New(w).DBError(err)
 			return
 		} else {
-			pwb = pw.NewPaywallBase(router.live)
+			pwb = pw.NewPaywallDoc(router.live)
 		}
 	}
 
