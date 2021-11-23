@@ -15,7 +15,7 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	prices, err := router.repo.ListPrices(productID)
+	prices, err := router.repo.ListPrices(productID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
