@@ -12,8 +12,9 @@ type AuthRouter struct {
 
 func NewAuthRouter(
 	myDBs db.ReadWriteMyDBs,
+	l *zap.Logger,
 	pm postman.Postman,
-	l *zap.Logger) AuthRouter {
+) AuthRouter {
 	return AuthRouter{
 		UserShared: NewUserShared(myDBs, pm, l),
 	}

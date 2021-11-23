@@ -28,8 +28,8 @@ type IAPRouter struct {
 
 func NewIAPRouter(
 	dbs db.ReadWriteMyDBs,
-	rdb *redis.Client,
 	logger *zap.Logger,
+	rdb *redis.Client,
 	p postman.Postman,
 	isLive bool,
 ) IAPRouter {
