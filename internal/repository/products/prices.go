@@ -18,29 +18,29 @@ func (env Env) CreatePrice(p price.FtcPrice) error {
 // prices of the same edition and same live mode under the same product id
 // is turned to inactive.
 func (env Env) ActivatePrice(id string) (price.FtcPrice, error) {
-	tx, err := env.dbs.Write.Beginx()
+	tx, err := env.beginPriceTx()
 	if err != nil {
 		return price.FtcPrice{}, err
 	}
 
 	// Retrieve the price to activate.
-	var ftcPrice price.FtcPrice
-	err = tx.Get(&ftcPrice, price.StmtLockFtcPrice, id)
+	ftcPrice, err := tx.RetrieveFtcPrice(id)
 	if err != nil {
 		_ = tx.Rollback()
 		return price.FtcPrice{}, err
 	}
 
 	// Deactivate all other prices.
-	_, err = tx.NamedExec(price.StmtDeactivatePricesOfSameEdition, ftcPrice)
+	err = tx.DeactivateSiblingPrice(ftcPrice)
 	if err != nil {
 		_ = tx.Rollback()
 		return price.FtcPrice{}, err
 	}
 
 	ftcPrice = ftcPrice.Activate()
+
 	// Activate the price
-	_, err = tx.NamedExec(price.StmtActivatePrice, ftcPrice)
+	err = tx.ActivatePrice(ftcPrice)
 	if err != nil {
 		_ = tx.Rollback()
 		return price.FtcPrice{}, err
@@ -50,7 +50,7 @@ func (env Env) ActivatePrice(id string) (price.FtcPrice, error) {
 	// Due to table's unique constraint design, product_id and cycle combined must be unique,
 	// we cannot insert multiple price of the same cycle under the same product.
 	if ftcPrice.LiveMode {
-		_, err = tx.NamedExec(price.StmtActivatePriceLegacy, ftcPrice)
+		err = tx.ActivatePriceLegacy(ftcPrice)
 		if err != nil {
 			_ = tx.Rollback()
 			return price.FtcPrice{}, err
