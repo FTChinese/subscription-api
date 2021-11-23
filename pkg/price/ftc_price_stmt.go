@@ -25,11 +25,6 @@ WHERE p.id = ?
 LIMIT 1
 `
 
-const StmtLockFtcPrice = colFtcPrice + `
-WHERE p.id = ?
-LIMIT 1
-FOR UPDATE`
-
 // StmtListPaywallPrice retrieves all active prices
 // under products, which are put on paywall.
 // You get all such prices by left joining the paywall_product
