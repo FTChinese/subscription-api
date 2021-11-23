@@ -297,7 +297,7 @@ func (r Repo) MustSaveIAPReceipt(schema apple.ReceiptSchema) {
 	}
 }
 
-func (r Repo) CreateProduct(p pw.ProductBody) {
+func (r Repo) CreateProduct(p pw.Product) {
 	_, err := r.dbs.Write.NamedExec(pw.StmtCreateProduct, p)
 	if err != nil {
 		log.Fatalln(err)
