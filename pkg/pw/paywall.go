@@ -2,48 +2,64 @@ package pw
 
 import (
 	"errors"
-	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 )
 
-type Banner struct {
-	ID         int64       `json:"id" db:"banner_id"`
-	Heading    string      `json:"heading" db:"heading"`
-	SubHeading null.String `json:"subHeading" db:"sub_heading"`
-	CoverURL   null.String `json:"coverUrl" db:"cover_url"`
-	Content    null.String `json:"content" db:"content"`
+// PaywallDoc contains the banner for both daily user
+// promotion. Each time the daily or promo version is edited,
+// a new version is created and save to db, which means
+// the data is immutable. We actually do not allow user to
+// edit data.
+// Only the last row is retrieved upon using.
+type PaywallDoc struct {
+	ID          int64       `json:"id" db:"id"` // Ignore this field when inserting data since it is auto-incremented.
+	DailyBanner BannerJSON  `json:"banner" db:"daily_banner"`
+	PromoBanner BannerJSON  `json:"promo" db:"promo_banner"`
+	LiveMode    bool        `json:"liveMode" db:"live_mode"`
+	CreatedUTC  chrono.Time `json:"createdUtc" db:"created_utc"`
 }
 
-type Promo struct {
-	PromoID    null.String `json:"id" db:"promo_id"`
-	Heading    null.String `json:"heading" db:"promo_heading"`
-	SubHeading null.String `json:"subHeading" db:"promo_sub_heading"`
-	CoverURL   null.String `json:"coverUrl" db:"promo_cover_url"`
-	Content    null.String `json:"content" db:"promo_content"`
-	Terms      null.String `json:"terms" db:"terms_conditions"`
-	dt.DateTimePeriod
+// NewPaywallBase creates a new banner for paywall.
+// The data is immutable. Every time a new row is created.
+func NewPaywallBase(live bool) PaywallDoc {
+	return PaywallDoc{
+		ID:          0,
+		DailyBanner: BannerJSON{},
+		PromoBanner: BannerJSON{},
+		LiveMode:    live,
+		CreatedUTC:  chrono.TimeNow(),
+	}
 }
 
-// BannerSchema represents data when retrieving banner by joining promo.
-type BannerSchema struct {
-	Banner
-	Promo
+// WithBanner creates a new paywall by updating current paywall
+// banner.
+func (p PaywallDoc) WithBanner(b BannerJSON) PaywallDoc {
+	p.DailyBanner = b
+	p.CreatedUTC = chrono.TimeNow()
+
+	return p
+}
+
+// WithPromo attaches a promotion banner to current paywall
+// and creates a new version of PaywallDoc.
+func (p PaywallDoc) WithPromo(b BannerJSON) PaywallDoc {
+	p.PromoBanner = b
+	p.CreatedUTC = chrono.TimeNow()
+
+	return p
 }
 
 type Paywall struct {
-	Banner   Banner    `json:"banner"`
-	Promo    Promo     `json:"promo"`
+	PaywallDoc
 	Products []Product `json:"products"`
-	LiveMode bool      `json:"liveMode"`
 }
 
-func NewPaywall(b BannerSchema, p []Product, live bool) Paywall {
+func NewPaywall(pwb PaywallDoc, p []Product) Paywall {
 	return Paywall{
-		Banner:   b.Banner,
-		Promo:    b.Promo,
-		Products: p,
-		LiveMode: live,
+		PaywallDoc: pwb,
+		Products:   p,
 	}
 }
 
