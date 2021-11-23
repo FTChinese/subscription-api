@@ -15,17 +15,6 @@ func NewPriceTx(tx *sqlx.Tx) PriceTx {
 	}
 }
 
-// RetrieveFtcPrice locks a row in price and retrieve it.
-func (tx PriceTx) RetrieveFtcPrice(id string) (price.FtcPrice, error) {
-	var ftcPrice price.FtcPrice
-	err := tx.Get(&ftcPrice, price.StmtLockFtcPrice, id)
-	if err != nil {
-		return price.FtcPrice{}, err
-	}
-
-	return ftcPrice, nil
-}
-
 // DeactivateSiblingPrice turns to false the is_active flag of
 // all prices' under a product of the same edition
 // to ensure there won't be multiple editions being in active
