@@ -8,10 +8,10 @@ import (
 
 type Paywall struct {
 	PaywallDoc
-	Products []Product `json:"products"`
+	Products []PaywallProduct `json:"products"`
 }
 
-func NewPaywall(pwb PaywallDoc, p []Product) Paywall {
+func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
 	return Paywall{
 		PaywallDoc: pwb,
 		Products:   p,
