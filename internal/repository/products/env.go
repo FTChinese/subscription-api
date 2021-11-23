@@ -31,3 +31,13 @@ func (env Env) beginPriceTx() (txrepo.PriceTx, error) {
 
 	return txrepo.NewPriceTx(tx), nil
 }
+
+func (env Env) beginProductTx() (txrepo.ProductTx, error) {
+	tx, err := env.dbs.Write.Beginx()
+
+	if err != nil {
+		return txrepo.ProductTx{}, err
+	}
+
+	return txrepo.NewProductTx(tx), nil
+}
