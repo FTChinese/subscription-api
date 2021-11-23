@@ -120,7 +120,15 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	ftcPrice, err := router.repo.ActivatePrice(priceID)
+	ftcPrice, err := router.repo.RetrieveFtcPrice(priceID, router.live)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	ftcPrice = ftcPrice.Activate()
+
+	err = router.repo.ActivatePrice(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
