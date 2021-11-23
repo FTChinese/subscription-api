@@ -72,7 +72,7 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	ftcPrice, err := router.repo.RetrieveFtcPrice(id)
+	ftcPrice, err := router.repo.RetrieveFtcPrice(id, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
