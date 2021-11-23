@@ -51,6 +51,14 @@ func PwResetCode() string {
 	return strconv.Itoa(rand.IntRange(100000, 999999))
 }
 
+func BannerID() string {
+	return "banner_" + rand.String(12)
+}
+
+func PromoID() string {
+	return "promo_" + rand.String(12)
+}
+
 func ProductID() string {
 	return "prod_" + rand.String(12)
 }
