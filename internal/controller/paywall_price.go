@@ -64,7 +64,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 // - nickname?: string;
 // - stripePriceId: string;
 func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request) {
-	id, _ := getURLParam(req, "").ToString()
+	id, _ := getURLParam(req, "id").ToString()
 
 	var params price.FtcPriceUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
