@@ -33,14 +33,14 @@ func (env Env) LoadPaywall(live bool) (pw.Paywall, error) {
 // retrievePaywall retrieves all elements of paywall concurrently
 // and then build them into a single Paywall instance.
 func (env Env) retrievePaywall(live bool) (pw.Paywall, error) {
-	bannerCh, productsCh, plansCh := env.asyncRetrieveBanner(), env.asyncRetrieveProducts(), env.asyncListActivePrices(live)
+	pwDocCh, productsCh, plansCh := env.asyncPwDoc(live), env.asyncRetrieveProducts(), env.asyncListActivePrices(live)
 
 	// Retrieve banner and its promo, products, and each price's plans
 	// in 3 goroutine.
-	bannerRes, productsRes, plansRes := <-bannerCh, <-productsCh, <-plansCh
+	pwDocRes, productsRes, plansRes := <-pwDocCh, <-productsCh, <-plansCh
 
-	if bannerRes.error != nil {
-		return pw.Paywall{}, bannerRes.error
+	if pwDocRes.error != nil {
+		return pw.Paywall{}, pwDocRes.error
 	}
 
 	if productsRes.error != nil {
@@ -55,7 +55,7 @@ func (env Env) retrievePaywall(live bool) (pw.Paywall, error) {
 	products := pw.NewPaywallProducts(productsRes.value, plansRes.value)
 
 	// Build paywall.
-	return pw.NewPaywall(bannerRes.value, products, live), nil
+	return pw.NewPaywall(pwDocRes.value, products), nil
 }
 
 // cachePaywall caches paywall data after retrieved from db.
@@ -66,40 +66,31 @@ func (env Env) cachePaywall(p pw.Paywall) {
 		cache.NoExpiration)
 }
 
-// retrieveBanner retrieves a banner and the optional promo attached to it.
-// The banner id is fixed to 1.
-func (env Env) retrieveBanner() (pw.BannerSchema, error) {
-	var schema pw.BannerSchema
-
-	err := env.dbs.Read.Get(&schema, pw.StmtBanner)
-	if err != nil {
-		return pw.BannerSchema{}, err
-	}
-
-	return schema, nil
-}
-
-type bannerResult struct {
-	value pw.BannerSchema
+type pwDocResult struct {
+	value pw.PaywallDoc
 	error error
 }
 
-// asyncRetrieveBanner retrieves banner in a goroutine.
-func (env Env) asyncRetrieveBanner() <-chan bannerResult {
-	c := make(chan bannerResult)
+func (env Env) asyncPwDoc(live bool) <-chan pwDocResult {
+	c := make(chan pwDocResult)
 
 	go func() {
 		defer close(c)
 
-		banner, err := env.retrieveBanner()
+		pwDoc, err := env.RetrievePaywallDoc(live)
 
-		c <- bannerResult{
-			value: banner,
+		c <- pwDocResult{
+			value: pwDoc,
 			error: err,
 		}
 	}()
 
 	return c
+}
+
+type productsResult struct {
+	value []pw.ProductBody
+	error error
 }
 
 // retrieveActiveProducts retrieve all products present on paywall.
@@ -113,11 +104,6 @@ func (env Env) retrieveActiveProducts() ([]pw.ProductBody, error) {
 	}
 
 	return products, nil
-}
-
-type productsResult struct {
-	value []pw.ProductBody
-	error error
 }
 
 // asyncRetrieveProducts retrieves products in a goroutine.
@@ -142,13 +128,13 @@ type activePricesResult struct {
 	error error
 }
 
-// ListActivePrices lists active product prices on paywall, directly from DB.
+// ListActivePrices lists active prices of products on paywall, directly from DB.
 func (env Env) ListActivePrices(live bool) ([]price.FtcPrice, error) {
 	var prices = make([]price.FtcPrice, 0)
 
 	err := env.dbs.Read.Select(
 		&prices,
-		price.StmtListActivePrice,
+		price.StmtListPaywallPrice,
 		live)
 	if err != nil {
 		return nil, err
