@@ -18,8 +18,9 @@ type AccountRouter struct {
 
 func NewAccountRouter(
 	myDBs db.ReadWriteMyDBs,
+	l *zap.Logger,
 	pm postman.Postman,
-	l *zap.Logger) AccountRouter {
+) AccountRouter {
 
 	return AccountRouter{
 		UserShared: NewUserShared(myDBs, pm, l),
