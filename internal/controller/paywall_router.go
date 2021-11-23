@@ -1,7 +1,7 @@
 package controller
 
 import (
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -15,13 +15,16 @@ import (
 type PaywallRouter struct {
 	repo   products.Env
 	logger *zap.Logger
+	live   bool // TODO: initialize this field.
+
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(dbs db.ReadWriteMyDBs, c *cache.Cache, logger *zap.Logger) PaywallRouter {
+func NewPaywallRouter(dbs db.ReadWriteMyDBs, logger *zap.Logger, c *cache.Cache, live bool) PaywallRouter {
 	return PaywallRouter{
 		repo:   products.NewEnv(dbs, c),
 		logger: logger,
+		live:   live,
 	}
 }
 

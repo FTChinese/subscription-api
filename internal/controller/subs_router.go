@@ -26,10 +26,10 @@ type SubsRouter struct {
 
 func NewSubsRouter(
 	dbs db.ReadWriteMyDBs,
-	c *cache.Cache,
-	isProd bool,
-	p postman.Postman,
 	logger *zap.Logger,
+	c *cache.Cache,
+	p postman.Postman,
+	isProd bool,
 ) SubsRouter {
 
 	return SubsRouter{

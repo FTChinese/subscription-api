@@ -43,22 +43,22 @@ func StartServer(s ServerStatus) {
 
 	authRouter := controller.NewAuthRouter(
 		myDBs,
-		post,
-		logger)
+		logger,
+		post)
 	accountRouter := controller.NewAccountRouter(
 		myDBs,
-		post,
-		logger)
+		logger,
+		post)
 	payRouter := controller.NewSubsRouter(
 		myDBs,
+		logger,
 		promoCache,
-		s.LiveMode,
 		post,
-		logger)
+		s.LiveMode)
 	iapRouter := controller.NewIAPRouter(
 		myDBs,
-		rdb,
 		logger,
+		rdb,
 		post,
 		s.LiveMode)
 	stripeRouter := controller.NewStripeRouter(
@@ -69,8 +69,9 @@ func StartServer(s ServerStatus) {
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.NewPaywallRouter(
 		myDBs,
+		logger,
 		promoCache,
-		logger)
+		s.LiveMode)
 
 	wxAuth := controller.NewWxAuth(myDBs, logger)
 
