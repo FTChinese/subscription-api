@@ -74,7 +74,7 @@ type FtcPrice struct {
 }
 
 // NewFtcPrice creates a price for ftc product
-func NewFtcPrice(p FtcPriceParams) FtcPrice {
+func NewFtcPrice(p FtcPriceParams, live bool) FtcPrice {
 
 	return FtcPrice{
 		Price: Price{
@@ -84,7 +84,7 @@ func NewFtcPrice(p FtcPriceParams) FtcPrice {
 			Archived:    false,
 			Currency:    "cny",
 			Description: p.Description,
-			LiveMode:    p.LiveMode,
+			LiveMode:    live,
 			Nickname:    p.Nickname,
 			ProductID:   p.ProductID,
 			UnitAmount:  p.UnitAmount,
