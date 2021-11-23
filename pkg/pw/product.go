@@ -6,8 +6,8 @@ import (
 	"github.com/guregu/null"
 )
 
-// ProductBody defines a price without plans.
-type ProductBody struct {
+// Product defines a price without plans.
+type Product struct {
 	ID          string      `json:"id" db:"product_id"`
 	Tier        enum.Tier   `json:"tier" db:"tier"`
 	Heading     string      `json:"heading" db:"heading"`

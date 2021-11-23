@@ -32,8 +32,8 @@ func NewPrmProdBuilder() ProductBuilder {
 	return NewProductBuilder(enum.TierPremium)
 }
 
-func (b ProductBuilder) Build() pw.ProductBody {
-	return pw.ProductBody{
+func (b ProductBuilder) Build() pw.Product {
+	return pw.Product{
 		ID:          b.productID,
 		Tier:        b.tier,
 		Heading:     gofakeit.Word(),

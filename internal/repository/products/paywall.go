@@ -89,13 +89,13 @@ func (env Env) asyncPwDoc(live bool) <-chan pwDocResult {
 }
 
 type productsResult struct {
-	value []pw.ProductBody
+	value []pw.Product
 	error error
 }
 
 // retrieveActiveProducts retrieve all products present on paywall.
-func (env Env) retrieveActiveProducts() ([]pw.ProductBody, error) {
-	var products = make([]pw.ProductBody, 0)
+func (env Env) retrieveActiveProducts() ([]pw.Product, error) {
+	var products = make([]pw.Product, 0)
 
 	err := env.dbs.Read.Select(&products, pw.StmtPaywallProducts)
 
