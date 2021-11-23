@@ -3,6 +3,7 @@ package test
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -15,12 +16,14 @@ import (
 type ProductBuilder struct {
 	productID string
 	tier      enum.Tier
+	live      bool
 }
 
 func NewProductBuilder(t enum.Tier) ProductBuilder {
 	return ProductBuilder{
 		productID: ids.ProductID(),
 		tier:      t,
+		live:      true,
 	}
 }
 
@@ -32,18 +35,30 @@ func NewPrmProdBuilder() ProductBuilder {
 	return NewProductBuilder(enum.TierPremium)
 }
 
+func (b ProductBuilder) WithLive() ProductBuilder {
+	b.live = true
+	return b
+}
+
+func (b ProductBuilder) WithSandbox() ProductBuilder {
+	b.live = false
+	return b
+}
+
 func (b ProductBuilder) Build() pw.Product {
-	return pw.Product{
-		ID:          b.productID,
-		Tier:        b.tier,
-		Heading:     gofakeit.Word(),
-		Description: null.StringFrom(gofakeit.Sentence(50)),
-		SmallPrint:  null.String{},
-		IsActive:    true,
-		CreatedUTC:  chrono.TimeNow(),
-		UpdatedUTC:  chrono.Time{},
-		CreatedBy:   gofakeit.Username(),
-	}
+	faker.SeedGoFake()
+
+	return pw.NewProduct(
+		pw.ProductParams{
+			CreatedBy: gofakeit.Username(),
+			Description: null.StringFrom(gofakeit.Paragraph(
+				4, 1, 10, "\n")),
+			Heading:    b.tier.StringCN(),
+			SmallPrint: null.String{},
+			Tier:       b.tier,
+		},
+		b.live,
+	)
 }
 
 func (b ProductBuilder) NewPriceBuilder(c enum.Cycle) PriceBuilder {
