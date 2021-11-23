@@ -421,26 +421,36 @@ func StartServer(s ServerStatus) {
 		r.Post("/banner", paywallRouter.SaveBanner)
 		r.Post("/promo", paywallRouter.SavePromo)
 
-		// The following are used by CMS to create/update prices and discounts.
-		// Get a list of prices under a product. This does not distinguish is_active or live_mode
-		// ?product_id=<string>
-		r.With(controller.FormParsed).
-			Get("/prices", paywallRouter.ListPrices)
-		// Create a price for a product. The price's live mode is determined by client.
-		r.Post("/prices", paywallRouter.CreatePrice)
+		r.Route("/products", func(r chi.Router) {
+			r.Get("/", paywallRouter.ListProducts)
+			r.Post("/", paywallRouter.CreateProduct)
+			r.Get("/", paywallRouter.LoadProduct)
+			r.Patch("/{id}", paywallRouter.UpdateProduct)
+			r.Post("/{id}/activate", paywallRouter.ActivateProduct)
+		})
 
-		r.Post("/prices/{id}/activate", paywallRouter.ActivatePrice)
-		r.Post("/prices/{id}/refresh", paywallRouter.RefreshPrice)
-		r.Patch("/prices/{id}", paywallRouter.UpdatePrice)
-		r.Delete("/prices/{id}", paywallRouter.ArchivePrice)
+		// The following are used by CMS to create/update prices and discounts.
+		r.Route("/prices", func(r chi.Router) {
+			// Get a list of prices under a product. This does not distinguish is_active or live_mode
+			// ?product_id=<string>
+			r.With(controller.FormParsed).Get("/", paywallRouter.ListPrices)
+			// Create a price for a product. The price's live mode is determined by client.
+			r.Post("/", paywallRouter.CreatePrice)
+			r.Post("/{id}/activate", paywallRouter.ActivatePrice)
+			r.Post("/{id}/refresh", paywallRouter.RefreshPrice)
+			r.Patch("/{id}", paywallRouter.UpdatePrice)
+			r.Delete("/{id}", paywallRouter.ArchivePrice)
+		})
 
 		// List discounts of a price.
 		// ?price_id=<string>
-		r.Get("/discounts", paywallRouter.ListDiscounts)
-		// Creates a new discounts for a price.
-		r.Post("/discounts", paywallRouter.CreateDiscount)
-		// Delete discount and refresh the related price.
-		r.Delete("/discounts/{id}", paywallRouter.RemoveDiscount)
+		r.Route("/discounts", func(r chi.Router) {
+			r.Get("/", paywallRouter.ListDiscounts)
+			// Creates a new discounts for a price.
+			r.Post("/", paywallRouter.CreateDiscount)
+			// Delete discount and refresh the related price.
+			r.Delete("/{id}", paywallRouter.RemoveDiscount)
+		})
 
 		// Bust cache, regardless of live mode or not.
 		r.Get("/__refresh", paywallRouter.BustCache)
