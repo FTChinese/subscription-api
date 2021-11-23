@@ -418,6 +418,9 @@ func StartServer(s ServerStatus) {
 		r.With(controller.FormParsed).
 			Get("/active/prices", paywallRouter.LoadPricing)
 
+		r.Post("/banner", paywallRouter.SaveBanner)
+		r.Post("/promo", paywallRouter.SavePromo)
+
 		// The following are used by CMS to create/update prices and discounts.
 		// Get a list of prices under a product. This does not distinguish is_active or live_mode
 		// ?product_id=<string>
