@@ -1,6 +1,7 @@
 package products
 
 import (
+	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/patrickmn/go-cache"
@@ -20,4 +21,13 @@ func NewEnv(dbs db.ReadWriteMyDBs, cache *cache.Cache) Env {
 
 func getPaywallCacheKey(live bool) string {
 	return "paywall_" + ids.GetBoolKey(live)
+}
+
+func (env Env) beginPriceTx() (txrepo.PriceTx, error) {
+	tx, err := env.dbs.Write.Beginx()
+	if err != nil {
+		return txrepo.PriceTx{}, err
+	}
+
+	return txrepo.NewPriceTx(tx), nil
 }
