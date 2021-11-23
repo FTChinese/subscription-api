@@ -97,7 +97,7 @@ func (router PaywallRouter) RefreshPrice(w http.ResponseWriter, req *http.Reques
 	}
 
 	// Find the price for this discount first.
-	ftcPrice, err := router.repo.RetrieveFtcPrice(priceID)
+	ftcPrice, err := router.repo.RetrieveFtcPrice(priceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
