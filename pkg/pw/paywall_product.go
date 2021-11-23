@@ -4,13 +4,13 @@ import "github.com/FTChinese/subscription-api/pkg/price"
 
 // PaywallProduct describes the data used to present to user on paywall.
 type PaywallProduct struct {
-	ProductBody
+	Product
 	Prices []price.FtcPrice `json:"prices"`
 }
 
 // NewPaywallProducts zips price body with its prices.
-// Currently we have two ProductBody, and three FtcPrice.
-func NewPaywallProducts(prods []ProductBody, prices []price.FtcPrice) []PaywallProduct {
+// Currently we have two Product, and three FtcPrice.
+func NewPaywallProducts(prods []Product, prices []price.FtcPrice) []PaywallProduct {
 	groupedPrices := groupProductPrices(prices)
 
 	var result = make([]PaywallProduct, 0)
@@ -33,8 +33,8 @@ func NewPaywallProducts(prods []ProductBody, prices []price.FtcPrice) []PaywallP
 		//}
 
 		result = append(result, PaywallProduct{
-			ProductBody: prod,
-			Prices:      prodPrices,
+			Product: prod,
+			Prices:  prodPrices,
 		})
 	}
 
