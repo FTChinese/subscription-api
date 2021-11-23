@@ -96,7 +96,7 @@ func NewFtcPrice(p FtcPriceParams, live bool) FtcPrice {
 	}
 }
 
-func (f FtcPrice) WithUpdate(p FtcPriceUpdateParams) FtcPrice {
+func (f FtcPrice) Update(p FtcPriceUpdateParams) FtcPrice {
 	f.Description = p.Description
 	f.Nickname = p.Nickname
 	f.StripePriceID = p.StripePriceID
