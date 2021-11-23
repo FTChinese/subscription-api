@@ -47,7 +47,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	p := price.NewFtcPrice(params)
+	p := price.NewFtcPrice(params, router.live)
 
 	err := router.repo.CreatePrice(p)
 	if err != nil {
