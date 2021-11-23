@@ -14,60 +14,15 @@ func (env Env) CreatePrice(p price.FtcPrice) error {
 	return nil
 }
 
-// ActivatePrice flags a price as active while all other
-// prices of the same edition and same live mode under the same product id
-// is turned to inactive.
-func (env Env) ActivatePrice(id string) (price.FtcPrice, error) {
-	tx, err := env.beginPriceTx()
-	if err != nil {
-		return price.FtcPrice{}, err
-	}
-
-	// Retrieve the price to activate.
-	ftcPrice, err := tx.RetrieveFtcPrice(id)
-	if err != nil {
-		_ = tx.Rollback()
-		return price.FtcPrice{}, err
-	}
-
-	// Deactivate all other prices.
-	err = tx.DeactivateSiblingPrice(ftcPrice)
-	if err != nil {
-		_ = tx.Rollback()
-		return price.FtcPrice{}, err
-	}
-
-	ftcPrice = ftcPrice.Activate()
-
-	// Activate the price
-	err = tx.ActivatePrice(ftcPrice)
-	if err != nil {
-		_ = tx.Rollback()
-		return price.FtcPrice{}, err
-	}
-
-	// Handle legacy activation approach.
-	// Due to table's unique constraint design, product_id and cycle combined must be unique,
-	// we cannot insert multiple price of the same cycle under the same product.
-	if ftcPrice.LiveMode {
-		err = tx.ActivatePriceLegacy(ftcPrice)
-		if err != nil {
-			_ = tx.Rollback()
-			return price.FtcPrice{}, err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return price.FtcPrice{}, err
-	}
-
-	return ftcPrice, nil
-}
-
 // RetrieveFtcPrice retrieves a single row by plan id.
-func (env Env) RetrieveFtcPrice(id string) (price.FtcPrice, error) {
+func (env Env) RetrieveFtcPrice(id string, live bool) (price.FtcPrice, error) {
 	var p price.FtcPrice
-	err := env.dbs.Read.Get(&p, price.StmtFtcPrice, id)
+	err := env.dbs.Read.Get(
+		&p,
+		price.StmtFtcPrice,
+		id,
+		live)
+
 	if err != nil {
 		return price.FtcPrice{}, err
 	}
@@ -82,6 +37,49 @@ func (env Env) UpdateFtcPrice(f price.FtcPrice) error {
 		f)
 
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ActivatePrice flags a price as active while all other
+// prices of the same edition and same live mode under the same product id
+// is turned to inactive.
+func (env Env) ActivatePrice(ftcPrice price.FtcPrice) error {
+	tx, err := env.beginPriceTx()
+	if err != nil {
+		return err
+	}
+
+	// Deactivate all other prices.
+	err = tx.DeactivateSiblingPrice(ftcPrice)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	ftcPrice = ftcPrice.Activate()
+
+	// Activate the price
+	err = tx.ActivatePrice(ftcPrice)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	// Handle legacy activation approach.
+	// Due to table's unique constraint design, product_id and cycle combined must be unique,
+	// we cannot insert multiple price of the same cycle under the same product.
+	if ftcPrice.LiveMode {
+		err = tx.ActivatePriceLegacy(ftcPrice)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
@@ -119,12 +117,13 @@ func (env Env) RefreshFtcPriceOffers(f price.FtcPrice) (price.FtcPrice, error) {
 // ListPrices retrieves all prices of a product, regardless whether they are live or not.
 // This is used by CMS to list a product's prices so that
 // user should be able to activate an inactive one.
-func (env Env) ListPrices(prodID string) ([]price.FtcPrice, error) {
+func (env Env) ListPrices(prodID string, live bool) ([]price.FtcPrice, error) {
 	var list = make([]price.FtcPrice, 0)
 	err := env.dbs.Read.Select(
 		&list,
 		price.StmtListPricesOfProduct,
-		prodID)
+		prodID,
+		live)
 
 	if err != nil {
 		return nil, err
