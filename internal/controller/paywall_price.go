@@ -144,7 +144,7 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	p, err := router.repo.RetrieveFtcPrice(priceID)
+	p, err := router.repo.RetrieveFtcPrice(priceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
