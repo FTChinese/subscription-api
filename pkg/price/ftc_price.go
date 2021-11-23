@@ -29,7 +29,6 @@ type FtcPriceParams struct {
 	CreatedBy string `json:"createdBy"`
 	Edition
 	FtcPriceUpdateParams
-	LiveMode   bool    `json:"liveMode"`
 	ProductID  string  `json:"productId"`
 	UnitAmount float64 `json:"unitAmount"`
 }
