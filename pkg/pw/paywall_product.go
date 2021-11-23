@@ -9,7 +9,7 @@ type PaywallProduct struct {
 }
 
 // NewPaywallProducts zips price body with its prices.
-// Currently we have two Product, and three FtcPrice.
+// Currently, we have two Product, and three price.FtcPrice.
 func NewPaywallProducts(prods []Product, prices []price.FtcPrice) []PaywallProduct {
 	groupedPrices := groupProductPrices(prices)
 
