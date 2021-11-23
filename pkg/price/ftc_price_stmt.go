@@ -22,6 +22,7 @@ FROM subs_product.plan AS p
 // StmtFtcPrice retrieves a row from plan table that is not archived.
 const StmtFtcPrice = colFtcPrice + `
 WHERE p.id = ?
+	AND live_mode = ?
 LIMIT 1
 `
 
