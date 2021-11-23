@@ -30,13 +30,16 @@ WHERE p.id = ?
 LIMIT 1
 FOR UPDATE`
 
-// StmtListActivePrice retrieves all active prices
-// for products shown on paywall.
-// Use active
-const StmtListActivePrice = colFtcPrice + `
+// StmtListPaywallPrice retrieves all active prices
+// under products, which are put on paywall.
+// You get all such prices by left joining the paywall_product
+// table and filter out those nullable product id.
+// NOTE we don't need an extra table to record which prices
+// are put on paywall.
+const StmtListPaywallPrice = colFtcPrice + `
 LEFT JOIN subs_product.paywall_product AS active_prod
 	ON p.product_id = active_prod.product_id
-WHERE p.is_active = TRUE
+WHERE p.is_active = 1
 	AND p.live_mode = ?
 	AND active_prod.product_id IS NOT NULL
 ORDER BY p.cycle DESC
@@ -85,6 +88,8 @@ LIMIT 1
 // StmtDeactivatePricesOfSameEdition flags all price of the
 // specified edition under a product to inactive, except
 // the one that will be turned to active.
+// In this way we could ensure a product won't have duplicate
+// active price of the same edition.
 const StmtDeactivatePricesOfSameEdition = `
 UPDATE subs_product.plan
 SET is_active = FALSE
@@ -104,15 +109,18 @@ SET is_active = TRUE
 WHERE id = :price_id
 LIMIT 1`
 
-// StmtActivatePriceLegacy put a price on a product's active list.
-// The product_id and cycle are multiple-key unique
-const StmtActivatePriceLegacy = `
+// StmtActivatePriceUnderProduct put a price on a product's active list.
+// This is not a proper approach.
+// Adopt a new approach using price's is_active column.
+// Deprecated. Kept only for backward compatible with v2.
+const StmtActivatePriceUnderProduct = `
 INSERT INTO subs_product.product_active_plans
 SET plan_id = :price_id,
 	product_id = :product_id,
 	cycle = :cycle
 ON DUPLICATE KEY UPDATE
-	plan_id = :price_id`
+	plan_id = :price_id
+`
 
 const StmtArchivePrice = `
 UPDATE subs_product.plan
