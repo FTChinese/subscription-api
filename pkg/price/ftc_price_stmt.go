@@ -42,7 +42,9 @@ ORDER BY p.cycle DESC
 `
 
 const StmtListPricesOfProduct = colFtcPrice + `
-WHERE p.product_id = ? AND p.archived = FALSE
+WHERE p.product_id = ? 
+	AND live_mode = ?
+	AND p.archived = FALSE
 ORDER BY p.is_active DESC, p.cycle DESC, p.created_utc DESC
 `
 
