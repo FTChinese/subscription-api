@@ -33,7 +33,7 @@ func (env Env) LoadPaywall(live bool) (pw.Paywall, error) {
 // retrievePaywall retrieves all elements of paywall concurrently
 // and then build them into a single Paywall instance.
 func (env Env) retrievePaywall(live bool) (pw.Paywall, error) {
-	pwDocCh, productsCh, plansCh := env.asyncPwDoc(live), env.asyncRetrieveProducts(), env.asyncListActivePrices(live)
+	pwDocCh, productsCh, plansCh := env.asyncPwDoc(live), env.asyncRetrieveActiveProducts(live), env.asyncListActivePrices(live)
 
 	// Retrieve banner and its promo, products, and each price's plans
 	// in 3 goroutine.
@@ -94,10 +94,13 @@ type productsResult struct {
 }
 
 // retrieveActiveProducts retrieve all products present on paywall.
-func (env Env) retrieveActiveProducts() ([]pw.Product, error) {
+func (env Env) retrieveActiveProducts(live bool) ([]pw.Product, error) {
 	var products = make([]pw.Product, 0)
 
-	err := env.dbs.Read.Select(&products, pw.StmtPaywallProducts)
+	err := env.dbs.Read.Select(
+		&products,
+		pw.StmtPaywallProducts,
+		live)
 
 	if err != nil {
 		return nil, err
@@ -106,12 +109,12 @@ func (env Env) retrieveActiveProducts() ([]pw.Product, error) {
 	return products, nil
 }
 
-// asyncRetrieveProducts retrieves products in a goroutine.
-func (env Env) asyncRetrieveProducts() <-chan productsResult {
+// asyncRetrieveActiveProducts retrieves products in a goroutine.
+func (env Env) asyncRetrieveActiveProducts(live bool) <-chan productsResult {
 	ch := make(chan productsResult)
 
 	go func() {
-		products, err := env.retrieveActiveProducts()
+		products, err := env.retrieveActiveProducts(live)
 
 		ch <- productsResult{
 			value: products,
