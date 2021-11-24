@@ -9,7 +9,7 @@ import (
 // For compatibility you should check where this user exists
 // in profile table after account retrieved.
 func (env Env) AccountByFtcID(ftcID string) (reader.Account, error) {
-	aChan, mChan := env.AsyncJoinedByFtcID(ftcID), env.AsyncMembership(ftcID)
+	aChan, mChan := env.AsyncJoinedByFtcID(ftcID), env.AsyncLoadMembership(ftcID)
 
 	aResult, mResult := <-aChan, <-mChan
 
@@ -28,7 +28,7 @@ func (env Env) AccountByFtcID(ftcID string) (reader.Account, error) {
 }
 
 func (env Env) AccountByWxID(unionID string) (reader.Account, error) {
-	aChan, mChan := env.AsyncJoinedByWx(unionID), env.AsyncMembership(unionID)
+	aChan, mChan := env.AsyncJoinedByWx(unionID), env.AsyncLoadMembership(unionID)
 
 	aResult, mResult := <-aChan, <-mChan
 
