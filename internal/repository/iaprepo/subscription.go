@@ -84,7 +84,7 @@ func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) 
 	result, err := apple.NewSubsResult(s, apple.SubsResultParams{
 		UserID:        currMember.UserIDs,
 		CurrentMember: currMember,
-		Action:        reader.ActionActionVerify,
+		Action:        reader.ArchiveActionVerify,
 	})
 	if err != nil {
 		sugar.Error(err)
