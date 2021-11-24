@@ -1,6 +1,7 @@
 package readers
 
 import (
+	"database/sql"
 	"errors"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/ids"
@@ -48,4 +49,17 @@ func (env Env) FindBaseAccount(ids ids.UserIDs) (account.BaseAccount, error) {
 	}
 
 	return account.BaseAccount{}, errors.New("either ftc id nor wechat id should be specified")
+}
+
+func (env Env) SearchUserByFtcOrWxID(id string) (account.BaseAccount, error) {
+	ba, err := env.BaseAccountByUUID(id)
+	if err == nil {
+		return ba, nil
+	}
+
+	if err != sql.ErrNoRows {
+		return account.BaseAccount{}, err
+	}
+
+	return env.BaseAccountByWxID(id)
 }
