@@ -1,7 +1,6 @@
 package readers
 
 import (
-	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
@@ -9,7 +8,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
-	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -170,7 +168,7 @@ func TestEnv_ArchiveMember(t *testing.T) {
 			args: args{
 				snapshot: m.Snapshot(reader.Archiver{
 					Name:   reader.ArchiveNameOrder,
-					Action: reader.ActionActionCreate,
+					Action: reader.ArchiveActionCreate,
 				}),
 			},
 			wantErr: false,
@@ -185,73 +183,6 @@ func TestEnv_ArchiveMember(t *testing.T) {
 			if err := env.ArchiveMember(tt.args.snapshot); (err != nil) != tt.wantErr {
 				t.Errorf("ArchiveMember() error = %v, wantErr %v", err, tt.wantErr)
 			}
-		})
-	}
-}
-
-func TestEnv_ListSnapshot(t *testing.T) {
-	ftcID := uuid.New().String()
-
-	env := New(test.SplitDB, zaptest.NewLogger(t))
-
-	env.ArchiveMember(reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithFtcID(ftcID).
-		Build().
-		Snapshot(reader.NewOrderArchiver(enum.OrderKindCreate)))
-
-	env.ArchiveMember(reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithFtcID(ftcID).
-		Build().
-		Snapshot(reader.NewOrderArchiver(enum.OrderKindRenew)))
-
-	env.ArchiveMember(reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithFtcID(ftcID).
-		Build().
-		Snapshot(reader.NewOrderArchiver(enum.OrderKindUpgrade)))
-
-	type fields struct {
-		DBs    db.ReadWriteMyDBs
-		Logger *zap.Logger
-	}
-	type args struct {
-		ids ids.UserIDs
-		p   gorest.Pagination
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "List snapshot",
-			fields: fields{
-				DBs:    test.SplitDB,
-				Logger: zaptest.NewLogger(t),
-			},
-			args: args{
-				ids: ids.UserIDs{
-					CompoundID: "",
-					FtcID:      null.StringFrom(ftcID),
-				}.MustNormalize(),
-				p: gorest.NewPagination(1, 10),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				DBs:    tt.fields.DBs,
-				Logger: tt.fields.Logger,
-			}
-			got, err := env.ListSnapshot(tt.args.ids, tt.args.p)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ListSnapshot() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
@@ -278,7 +209,7 @@ func TestEnv_VersionMembership(t *testing.T) {
 					AnteChange: reader.MembershipJSON{
 						Membership: p.MemberBuilder().Build(),
 					},
-					CreatedBy:        null.StringFrom(reader.NewStripeArchiver(reader.ActionActionWebhook).String()),
+					CreatedBy:        null.StringFrom(reader.NewStripeArchiver(reader.ArchiveActionWebhook).String()),
 					CreatedUTC:       chrono.TimeNow(),
 					B2BTransactionID: null.String{},
 					PostChange: reader.MembershipJSON{
