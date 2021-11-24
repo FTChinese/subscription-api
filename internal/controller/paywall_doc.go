@@ -8,6 +8,14 @@ import (
 	"net/http"
 )
 
+// SaveBanner saves a new banner. It actually creates a new
+// row based on latest paywall.
+// Request body:
+// - heading: string;
+// - subHeading?: string;
+// - coverUrl?: string;
+// - content?: string;
+// - terms?: string;
 func (router PaywallRouter) SaveBanner(w http.ResponseWriter, req *http.Request) {
 	var params pw.BannerJSON
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
