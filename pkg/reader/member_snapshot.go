@@ -22,18 +22,21 @@ const (
 type ArchiveAction string
 
 const (
-	ActionActionCreate     ArchiveAction = "create"  // Alipay, wechat, stripe
-	ActionActionRenew      ArchiveAction = "renew"   // Alipay, wechat
-	ActionActionUpgrade    ArchiveAction = "upgrade" // Alipay, wechat, stripe
-	ActionActionAddOn      ArchiveAction = "transfer_addon"
-	ActionActionVerify     ArchiveAction = "verify"  // Apple
-	ActionPoll             ArchiveAction = "poll"    // Apple, alipay, wechat
-	ActionActionLink       ArchiveAction = "link"    // Apple
-	ActionActionUnlink     ArchiveAction = "unlink"  // Apple
-	ActionActionRefresh    ArchiveAction = "refresh" // Stripe refresh.
-	ActionActionCancel     ArchiveAction = "cancel"
-	ActionActionReactivate ArchiveAction = "reactivate"
-	ActionActionWebhook    ArchiveAction = "webhook" // Apple, Stripe webhook
+	ArchiveActionCreate     ArchiveAction = "create"  // Alipay, wechat, stripe
+	ArchiveActionRenew      ArchiveAction = "renew"   // Alipay, wechat
+	ArchiveActionUpgrade    ArchiveAction = "upgrade" // Alipay, wechat, stripe
+	ArchiveActionAddOn      ArchiveAction = "transfer_addon"
+	ArchiveActionVerify     ArchiveAction = "verify"  // Apple
+	ArchiveActionPoll       ArchiveAction = "poll"    // Apple, alipay, wechat
+	ArchiveActionLink       ArchiveAction = "link"    // Apple
+	ArchiveActionUnlink     ArchiveAction = "unlink"  // Apple
+	ArchiveActionRefresh    ArchiveAction = "refresh" // Stripe refresh.
+	ArchiveActionCancel     ArchiveAction = "cancel"
+	ArchiveActionReactivate ArchiveAction = "reactivate"
+	ArchiveActionWebhook    ArchiveAction = "webhook" // Apple, Stripe webhook
+	ArchiveActionManual     ArchiveAction = "manual"
+	ArchiveActionUpdate     ArchiveAction = "update"
+	ArchiveActionDelete     ArchiveAction = "delete"
 )
 
 type Archiver struct {
@@ -48,27 +51,27 @@ func (a Archiver) String() string {
 var (
 	ArchiverAppleLink = Archiver{
 		Name:   ArchiveNameApple,
-		Action: ActionActionLink,
+		Action: ArchiveActionLink,
 	}
 	ArchiverAppleUnlink = Archiver{
 		Name:   ArchiveNameApple,
-		Action: ActionActionUnlink,
+		Action: ArchiveActionUnlink,
 	}
 )
 
 func NewOrderArchiver(k enum.OrderKind) Archiver {
 	switch k {
 	case enum.OrderKindCreate:
-		return NewFtcArchiver(ActionActionCreate)
+		return NewFtcArchiver(ArchiveActionCreate)
 
 	case enum.OrderKindRenew:
-		return NewFtcArchiver(ActionActionRenew)
+		return NewFtcArchiver(ArchiveActionRenew)
 
 	case enum.OrderKindUpgrade:
-		return NewFtcArchiver(ActionActionUpgrade)
+		return NewFtcArchiver(ArchiveActionUpgrade)
 
 	case enum.OrderKindAddOn:
-		return NewFtcArchiver(ActionActionAddOn)
+		return NewFtcArchiver(ArchiveActionAddOn)
 	}
 
 	return Archiver{
