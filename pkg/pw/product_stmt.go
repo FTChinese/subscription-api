@@ -15,7 +15,7 @@ SET id = :product_id,
 `
 
 const colProduct = `
-SELECT product_id,
+SELECT id AS product_id,
 	description,
 	heading,
 	is_active,
@@ -65,9 +65,19 @@ WHERE id = :product_id
 LIMIT 1
 `
 
-const StmtPutProductOnPaywall = `
+// StmtPutProductOnPaywallLegacy could only put live mode product on paywall.
+// Kept for backward compatible for API < 4
+const StmtPutProductOnPaywallLegacy = `
 INSERT INTO subs_product.paywall_product
 SET product_id = :product_id,
 	tier = :tier
+ON DUPLICATE KEY UPDATE
+	product_id = :product_id`
+
+const StmtPutProductOnPaywall = `
+INSERT INTO subs_product.paywall_product_v4
+SET product_id = :product_id,
+	tier = :tier,
+	live_mode = :live_mode
 ON DUPLICATE KEY UPDATE
 	product_id = :product_id`
