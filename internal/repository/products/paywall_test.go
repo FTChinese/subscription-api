@@ -47,24 +47,36 @@ func TestEnv_retrievePaywall(t *testing.T) {
 }
 
 func TestEnv_retrieveActiveProducts(t *testing.T) {
-	env := Env{
-		dbs:   test.SplitDB,
-		cache: test.Cache,
+	env := NewEnv(db.MockMySQL(), nil)
+
+	type args struct {
+		live bool
 	}
 
 	tests := []struct {
 		name    string
+		args    args
+		want    []pw.Product
 		wantErr bool
 	}{
 		{
-			name: "Load products for paywall",
-
+			name: "Load active product for sandbox",
+			args: args{
+				live: false,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Load active product for live",
+			args: args{
+				live: true,
+			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := env.retrieveActiveProducts()
+			got, err := env.retrieveActiveProducts(tt.args.live)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("retrieveActiveProducts() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -115,6 +127,53 @@ func TestEnv_listActivePrices(t *testing.T) {
 			}
 			//if !reflect.DeepEqual(got, tt.want) {
 			//	t.Errorf("ListActivePrices() got = %v, want %v", got, tt.want)
+			//}
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
+
+func TestEnv_LoadPaywall(t *testing.T) {
+
+	env := NewEnv(db.MockMySQL(), test.Cache)
+
+	type args struct {
+		live bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    pw.Paywall
+		wantErr bool
+	}{
+		{
+			name: "Paywall live",
+			args: args{
+				live: true,
+			},
+			want:    pw.Paywall{},
+			wantErr: false,
+		},
+		{
+			name: "Paywall sandbox",
+			args: args{
+				live: true,
+			},
+			want:    pw.Paywall{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := env.LoadPaywall(tt.args.live)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LoadPaywall() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("LoadPaywall() got = %v, want %v", got, tt.want)
 			//}
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
