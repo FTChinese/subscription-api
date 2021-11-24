@@ -94,7 +94,7 @@ func TestEnv_ArchiveLinkCheating(t *testing.T) {
 func TestEnv_Unlink(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 
-	repo := test.NewRepoV2(logger)
+	repo := test.NewRepo()
 
 	env := Env{
 		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
