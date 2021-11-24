@@ -30,34 +30,39 @@ type MembershipVersioned struct {
 	RetailOrderID    null.String    `json:"retailOderId" db:"retail_order_id"` // Only exists when user is performing renewal or upgrading.
 }
 
-// IsZero tests if a snapshot exists.
-func (s MembershipVersioned) IsZero() bool {
-	return s.ID == ""
+func (v MembershipVersioned) WithCreator(name string) MembershipVersioned {
+	v.CreatedBy = null.StringFrom(name)
+	return v
 }
 
-func (s MembershipVersioned) WithB2BTxnID(id string) MembershipVersioned {
-	s.B2BTransactionID = null.StringFrom(id)
-	return s
+// IsZero tests if a snapshot exists.
+func (v MembershipVersioned) IsZero() bool {
+	return v.ID == ""
+}
+
+func (v MembershipVersioned) WithB2BTxnID(id string) MembershipVersioned {
+	v.B2BTransactionID = null.StringFrom(id)
+	return v
 }
 
 // WithRetailOrderID sets the retail order id when taking a
 // snapshot.
-func (s MembershipVersioned) WithRetailOrderID(id string) MembershipVersioned {
-	s.RetailOrderID = null.StringFrom(id)
-	return s
+func (v MembershipVersioned) WithRetailOrderID(id string) MembershipVersioned {
+	v.RetailOrderID = null.StringFrom(id)
+	return v
 }
 
 // WithPriorVersion stores a previous version of membership
 // before modification.
 // It may not exist for newly created membership.
-func (s MembershipVersioned) WithPriorVersion(m Membership) MembershipVersioned {
+func (v MembershipVersioned) WithPriorVersion(m Membership) MembershipVersioned {
 	if m.IsZero() {
-		return s
+		return v
 	}
 
-	s.AnteChange = MembershipJSON{m}
+	v.AnteChange = MembershipJSON{m}
 
-	return s
+	return v
 }
 
 // Version takes a snapshots of the latest membership.
@@ -75,6 +80,18 @@ func (m Membership) Version(by Archiver) MembershipVersioned {
 		CreatedUTC:       chrono.TimeNow(),
 		B2BTransactionID: null.String{},
 		PostChange:       MembershipJSON{m},
+		RetailOrderID:    null.String{},
+	}
+}
+
+func (m Membership) Deleted(by Archiver) MembershipVersioned {
+	return MembershipVersioned{
+		ID:               ids.SnapshotID(),
+		AnteChange:       MembershipJSON{m},
+		CreatedBy:        null.StringFrom(by.String()),
+		CreatedUTC:       chrono.TimeNow(),
+		B2BTransactionID: null.String{},
+		PostChange:       MembershipJSON{},
 		RetailOrderID:    null.String{},
 	}
 }
