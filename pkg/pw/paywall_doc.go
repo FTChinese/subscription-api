@@ -28,6 +28,10 @@ func NewPaywallDoc(live bool) PaywallDoc {
 	}
 }
 
+func (p PaywallDoc) IsEmpty() bool {
+	return p.ID > 0
+}
+
 // WithBanner creates a new paywall by updating current paywall
 // banner.
 func (p PaywallDoc) WithBanner(b BannerJSON) PaywallDoc {
