@@ -15,6 +15,7 @@ func NewProductTx(tx *sqlx.Tx) ProductTx {
 	}
 }
 
+// DeactivateSiblingProduct turns products of same tier in same mode to inactive except the specified one.
 func (tx ProductTx) DeactivateSiblingProduct(p pw.Product) error {
 	_, err := tx.NamedExec(
 		pw.StmtDeactivateSiblingProducts,
@@ -30,6 +31,18 @@ func (tx ProductTx) DeactivateSiblingProduct(p pw.Product) error {
 func (tx ProductTx) ActivateProduct(p pw.Product) error {
 	_, err := tx.NamedExec(
 		pw.StmtActivateProduct,
+		p)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx ProductTx) SetProductOnPaywallLegacy(p pw.Product) error {
+	_, err := tx.NamedExec(
+		pw.StmtPutProductOnPaywallLegacy,
 		p)
 
 	if err != nil {
