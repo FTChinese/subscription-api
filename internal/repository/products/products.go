@@ -76,11 +76,17 @@ func (env Env) SetProductOnPaywall(p pw.Product) error {
 	// Ignore products in test mode since the paywall table
 	// is only designed for live data.
 	if p.LiveMode {
-		err = tx.SetProductOnPaywall(p)
+		err := tx.SetProductOnPaywallLegacy(p)
 		if err != nil {
 			_ = tx.Rollback()
 			return err
 		}
+	}
+
+	err = tx.SetProductOnPaywall(p)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
