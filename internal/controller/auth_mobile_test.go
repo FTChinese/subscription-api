@@ -18,8 +18,8 @@ func TestAuthRouter_VerifySMSCode(t *testing.T) {
 
 	router := NewAuthRouter(
 		db.MockMySQL(),
-		test.Postman,
 		zaptest.NewLogger(t),
+		test.Postman,
 	)
 
 	type args struct {
@@ -74,7 +74,7 @@ func TestAuthRouter_LinkMobile(t *testing.T) {
 
 	repo := test.NewRepo()
 
-	router := NewAuthRouter(test.SplitDB, test.Postman, zaptest.NewLogger(t))
+	router := NewAuthRouter(test.SplitDB, zaptest.NewLogger(t), test.Postman)
 
 	type args struct {
 		w   *httptest.ResponseRecorder
