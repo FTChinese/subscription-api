@@ -110,7 +110,7 @@ func (router SubsRouter) loadCheckoutItem(params ftcpay2.OrderParams, live bool)
 	}
 
 	// Otherwise, retrieve from db.
-	ci, err := router.prodRepo.LoadCheckoutItem(params.PriceID, params.DiscountID)
+	ci, err := router.prodRepo.LoadCheckoutItem(params.PriceID, params.DiscountID, router.isLive)
 	if err != nil {
 		return price.CheckoutItem{}, render.NewDBError(err)
 	}
