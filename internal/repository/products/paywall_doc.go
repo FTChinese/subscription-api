@@ -1,6 +1,7 @@
 package products
 
 import (
+	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg/pw"
 )
 
@@ -30,7 +31,11 @@ func (env Env) RetrievePaywallDoc(live bool) (pw.PaywallDoc, error) {
 		live)
 
 	if err != nil {
-		return pw.PaywallDoc{}, err
+		if err != sql.ErrNoRows {
+			return pw.PaywallDoc{}, err
+		}
+
+		return pw.PaywallDoc{}, nil
 	}
 
 	return pwb, nil
