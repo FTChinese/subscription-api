@@ -13,8 +13,9 @@ SELECT prod.id AS product_id,
 	prod.created_by AS created_by,
     prod.created_utc AS created_utc,
     prod.updated_utc AS updated_utc
-FROM subs_product.paywall_product AS pp
+FROM subs_product.paywall_product_v4 AS pp
 	LEFT JOIN subs_product.product AS prod
-	ON pp.product_id = prod.id
+		ON pp.product_id = prod.id
 WHERE prod.id IS NOT NULL
+	AND pp.live_mode = ?
 ORDER BY prod.tier ASC`
