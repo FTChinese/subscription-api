@@ -3,6 +3,8 @@ package reader
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/pkg/input"
+	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
@@ -61,6 +63,40 @@ type Membership struct {
 	B2BLicenceID null.String     `json:"b2bLicenceId" db:"b2b_licence_id"`
 	addon.AddOn
 	VIP bool `json:"vip" db:"is_vip"`
+}
+
+// NewMembership creates attaches membership directly to a user,
+// without any means of payment.
+func NewMembership(ba account.BaseAccount, params input.MemberParams) Membership {
+	return Membership{
+		UserIDs: ba.CompoundIDs(),
+		Edition: price.Edition{
+			Tier:  params.Tier,
+			Cycle: params.Cycle,
+		},
+		LegacyTier:    null.Int{},
+		LegacyExpire:  null.Int{},
+		ExpireDate:    params.ExpireDate,
+		PaymentMethod: params.PayMethod,
+		FtcPlanID:     null.String{},
+		StripeSubsID:  null.String{},
+		StripePlanID:  null.String{},
+		AutoRenewal:   false,
+		Status:        0,
+		AppleSubsID:   null.String{},
+		B2BLicenceID:  null.String{},
+		AddOn:         addon.AddOn{},
+		VIP:           false,
+	}.Sync()
+}
+
+func (m Membership) Update(params input.MemberParams) Membership {
+	m.Tier = params.Tier
+	m.Cycle = params.Cycle
+	m.ExpireDate = params.ExpireDate
+	m.PaymentMethod = params.PayMethod
+
+	return m
 }
 
 // IsZero test whether the instance is empty.
