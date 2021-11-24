@@ -13,6 +13,31 @@ import (
 	"time"
 )
 
+func NewDailyBanner() pw.BannerJSON {
+	faker.SeedGoFake()
+
+	return pw.BannerJSON{
+		ID:             ids.BannerID(),
+		Heading:        gofakeit.Word(),
+		SubHeading:     null.StringFrom(gofakeit.Sentence(5)),
+		CoverURL:       null.StringFrom(gofakeit.URL()),
+		Content:        null.StringFrom(gofakeit.Paragraph(2, 1, 10, "\n")),
+		Terms:          null.String{},
+		DateTimePeriod: dt.DateTimePeriod{},
+	}
+}
+
+func NewPromoBanner() pw.BannerJSON {
+	b := NewDailyBanner()
+
+	b.DateTimePeriod = dt.DateTimePeriod{
+		StartUTC: chrono.TimeNow(),
+		EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 7)),
+	}
+
+	return b
+}
+
 type ProductBuilder struct {
 	productID string
 	tier      enum.Tier
