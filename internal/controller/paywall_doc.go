@@ -24,12 +24,12 @@ func (router PaywallRouter) SaveBanner(w http.ResponseWriter, req *http.Request)
 
 	pwb, err := router.repo.RetrievePaywallDoc(router.live)
 	if err != nil {
-		if err != sql.ErrNoRows {
-			_ = render.New(w).DBError(err)
-			return
-		} else {
-			pwb = pw.NewPaywallDoc(router.live)
-		}
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	if pwb.IsEmpty() {
+		pwb = pw.NewPaywallDoc(router.live)
 	}
 
 	pwb = pwb.WithBanner(banner)
