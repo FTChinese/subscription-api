@@ -58,7 +58,7 @@ func NewProduct(params ProductParams, live bool) Product {
 		Active:        false,
 		LiveMode:      live,
 		CreatedUTC:    chrono.TimeNow(),
-		UpdatedUTC:    chrono.TimeNow(),
+		UpdatedUTC:    chrono.Time{},
 	}
 }
 
