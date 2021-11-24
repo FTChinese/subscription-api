@@ -45,3 +45,10 @@ func (p PaywallDoc) WithPromo(b BannerJSON) PaywallDoc {
 
 	return p
 }
+
+func (p PaywallDoc) DropPromo() PaywallDoc {
+	p.PromoBanner = BannerJSON{}
+	p.CreatedUTC = chrono.TimeNow()
+
+	return p
+}
