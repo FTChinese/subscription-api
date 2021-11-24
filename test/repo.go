@@ -36,14 +36,6 @@ func NewRepo() Repo {
 	}
 }
 
-// Deprecated
-func NewRepoV2(logger *zap.Logger) Repo {
-	return Repo{
-		db:     SplitDB.Write,
-		logger: logger,
-	}
-}
-
 // CreateUserInfo inserts a row into userinfo table.
 func (r Repo) CreateUserInfo(a account.BaseAccount) error {
 	_, err := r.db.NamedExec(
