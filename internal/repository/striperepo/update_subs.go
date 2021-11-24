@@ -72,7 +72,7 @@ func (env Env) UpdateSubscription(ba account.BaseAccount, item stripe.CheckoutIt
 		UserIDs:       mmb.UserIDs,
 		Kind:          subsKind,
 		CurrentMember: mmb,
-		Action:        reader.ActionActionUpgrade,
+		Action:        reader.ArchiveActionUpgrade,
 	})
 
 	if err != nil {

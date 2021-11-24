@@ -93,7 +93,7 @@ func (env Env) CreateSubscription(
 		UserIDs:       ba.CompoundIDs(),
 		CurrentMember: mmb,
 		Kind:          subsKind,
-		Action:        reader.ActionActionCreate,
+		Action:        reader.ArchiveActionCreate,
 	})
 
 	if err != nil {
