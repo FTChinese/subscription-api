@@ -33,7 +33,7 @@ LIMIT 1
 // NOTE we don't need an extra table to record which prices
 // are put on paywall.
 const StmtListPaywallPrice = colFtcPrice + `
-LEFT JOIN subs_product.paywall_product AS active_prod
+LEFT JOIN subs_product.paywall_product_v4 AS active_prod
 	ON p.product_id = active_prod.product_id
 WHERE p.is_active = 1
 	AND p.live_mode = ?
