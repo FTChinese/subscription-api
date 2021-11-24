@@ -34,3 +34,12 @@ func (env Env) beginUnlinkTx() (txrepo.UnlinkTx, error) {
 
 	return txrepo.UnlinkTx{Tx: tx}, nil
 }
+
+func (env Env) beginMemberTx() (txrepo.SharedTx, error) {
+	tx, err := env.DBs.Write.Beginx()
+	if err != nil {
+		return txrepo.SharedTx{}, err
+	}
+
+	return txrepo.NewSharedTx(tx), nil
+}
