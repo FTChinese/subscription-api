@@ -79,3 +79,27 @@ func (router PaywallRouter) SavePromo(w http.ResponseWriter, req *http.Request) 
 
 	_ = render.New(w).OK(pwb)
 }
+
+func (router PaywallRouter) DropPromo(w http.ResponseWriter, req *http.Request) {
+	pwb, err := router.repo.RetrievePaywallDoc(router.live)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			_ = render.New(w).DBError(err)
+			return
+		}
+	}
+
+	pwb = pwb.DropPromo()
+
+	// Save a new version
+	id, err := router.repo.CreatePaywallDoc(pwb)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	// Change id to latest.
+	pwb.ID = id
+
+	_ = render.New(w).OK(pwb)
+}
