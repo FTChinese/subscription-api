@@ -286,13 +286,14 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 		r.Use(controller.RequireFtcOrUnionID)
 		// Get the membership of a user
-		r.Get("/", payRouter.LoadMembership)
-		// Update the membership of a user
-		r.Patch("/", payRouter.UpdateMembership)
+		r.Get("/", accountRouter.LoadMembership)
 		// Create a membership of a user
-		r.Put("/", payRouter.CreateMembership)
+		r.Put("/", accountRouter.CreateMembership)
+		// Update the membership of a user
+		r.Patch("/", accountRouter.UpdateMembership)
+		r.Delete("/", accountRouter.DeleteMembership)
 		// List the modification history of a user's membership
-		r.Get("/snapshots", payRouter.ListMemberSnapshots)
+		r.Get("/snapshots", accountRouter.ListMemberSnapshots)
 		r.Post("/addons", payRouter.ClaimAddOn)
 		r.Patch("/addons", payRouter.CreateAddOn)
 	})
@@ -418,8 +419,11 @@ func StartServer(s ServerStatus) {
 		r.With(controller.FormParsed).
 			Get("/active/prices", paywallRouter.LoadPricing)
 
-		r.Post("/banner", paywallRouter.SaveBanner)
-		r.Post("/promo", paywallRouter.SavePromo)
+		r.Route("/banner", func(r chi.Router) {
+			r.Post("/", paywallRouter.SaveBanner)
+			r.Post("/promo", paywallRouter.SavePromo)
+			r.Delete("/promo", paywallRouter.DropPromo)
+		})
 
 		r.Route("/products", func(r chi.Router) {
 			r.Get("/", paywallRouter.ListProducts)
