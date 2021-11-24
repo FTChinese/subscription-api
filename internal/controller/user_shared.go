@@ -21,7 +21,8 @@ type UserShared struct {
 func NewUserShared(
 	dbs db.ReadWriteMyDBs,
 	pm postman.Postman,
-	l *zap.Logger) UserShared {
+	l *zap.Logger,
+) UserShared {
 	return UserShared{
 		userRepo:  accounts.New(dbs, l),
 		smsClient: ztsms.NewClient(l),
