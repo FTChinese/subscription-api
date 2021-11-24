@@ -250,7 +250,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 
 	result, err := router.stripeRepo.RefreshSubscription(ss, stripe.SubsResultParams{
 		UserIDs: account.CompoundIDs(),
-		Action:  reader.ActionActionRefresh,
+		Action:  reader.ArchiveActionRefresh,
 	})
 
 	if err != nil {
