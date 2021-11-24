@@ -10,13 +10,13 @@ type asyncPriceResult struct {
 	error error
 }
 
-func (env Env) asyncLoadPrice(id string) <-chan asyncPriceResult {
+func (env Env) asyncLoadPrice(id string, live bool) <-chan asyncPriceResult {
 	c := make(chan asyncPriceResult)
 
 	go func() {
 		defer close(c)
 
-		p, err := env.RetrieveFtcPrice(id)
+		p, err := env.RetrieveFtcPrice(id, live)
 
 		c <- asyncPriceResult{
 			value: p,
@@ -58,8 +58,8 @@ func (env Env) asyncLoadDiscount(id string) <-chan asyncDiscountResult {
 }
 
 // LoadCheckoutItem loads a price and a discount from db.
-func (env Env) LoadCheckoutItem(priceID string, discountID null.String) (price.CheckoutItem, error) {
-	priceCh, discCh := env.asyncLoadPrice(priceID), env.asyncLoadDiscount(discountID.String)
+func (env Env) LoadCheckoutItem(priceID string, discountID null.String, live bool) (price.CheckoutItem, error) {
+	priceCh, discCh := env.asyncLoadPrice(priceID, live), env.asyncLoadDiscount(discountID.String)
 
 	priceResult, discResult := <-priceCh, <-discCh
 	if priceResult.error != nil {
