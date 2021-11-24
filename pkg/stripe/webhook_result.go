@@ -69,7 +69,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 			})
 			return WebhookResult{
 				Member:           newMmb,
-				Versioned:        newMmb.Version(reader.NewStripeArchiver(reader.ActionActionWebhook)),
+				Versioned:        newMmb.Version(reader.NewStripeArchiver(reader.ArchiveActionWebhook)),
 				CarryOverInvoice: invoice.Invoice{},
 			}, nil
 		}
@@ -85,7 +85,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 			return WebhookResult{
 				Member: newMmb,
 				Versioned: newMmb.Version(
-					reader.NewStripeArchiver(reader.ActionActionWebhook)).
+					reader.NewStripeArchiver(reader.ArchiveActionWebhook)).
 					WithPriorVersion(b.FtcMember),
 				CarryOverInvoice: invoice.Invoice{},
 			}, nil
@@ -112,7 +112,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 				Versioned: newMmb.
 					Version(
 						reader.NewStripeArchiver(
-							reader.ActionActionWebhook,
+							reader.ArchiveActionWebhook,
 						)).
 					WithPriorVersion(b.FtcMember),
 				CarryOverInvoice: inv,
@@ -146,7 +146,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 		Member: newMmb,
 		Versioned: newMmb.Version(
 			reader.NewStripeArchiver(
-				reader.ActionActionWebhook)).
+				reader.ArchiveActionWebhook)).
 			WithPriorVersion(b.FtcMember),
 		CarryOverInvoice: invoice.Invoice{},
 	}, nil
