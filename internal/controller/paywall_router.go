@@ -41,15 +41,14 @@ func getParamLiveMode(req *http.Request) bool {
 
 // LoadPaywall loads paywall data from db or cache.
 func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request) {
-	liveMode := getParamLiveMode(req)
 
-	pw, err := router.repo.LoadPaywall(liveMode)
+	paywall, err := router.repo.LoadPaywall(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_ = render.New(w).JSON(http.StatusOK, pw)
+	_ = render.New(w).JSON(http.StatusOK, paywall)
 }
 
 func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) {
