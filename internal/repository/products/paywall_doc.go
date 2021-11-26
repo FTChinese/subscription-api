@@ -35,7 +35,10 @@ func (env Env) RetrievePaywallDoc(live bool) (pw.PaywallDoc, error) {
 			return pw.PaywallDoc{}, err
 		}
 
-		return pw.PaywallDoc{}, nil
+		// No paywall doc exists yet. Returns an empty version.
+		return pw.PaywallDoc{
+			LiveMode: live,
+		}, nil
 	}
 
 	return pwb, nil
