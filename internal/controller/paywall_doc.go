@@ -53,6 +53,15 @@ func (router PaywallRouter) SaveBanner(w http.ResponseWriter, req *http.Request)
 	_ = render.New(w).OK(pwb)
 }
 
+// SavePromo attaches a promotion banner to paywall.
+// Request body:
+// - heading: string;
+// - subHeading?: string;
+// - coverUrl?: string;
+// - content?: string;
+// - terms?: string;
+// - startUtc: string;
+// - endUtc: string;
 func (router PaywallRouter) SavePromo(w http.ResponseWriter, req *http.Request) {
 	var params pw.BannerJSON
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
