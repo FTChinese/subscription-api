@@ -13,7 +13,7 @@ import (
 // ProductParams defines the request data to create a new
 // product.
 type ProductParams struct {
-	CreatedBy   string      `json:"createdBy" db:"created_by"`
+	CreatedBy   string      `json:"createdBy" db:"created_by"` // Only present in creation. Omit it in update.
 	Description null.String `json:"description" db:"description"`
 	Heading     string      `json:"heading" db:"heading"`
 	SmallPrint  null.String `json:"smallPrint" db:"small_print"`
