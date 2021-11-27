@@ -49,10 +49,16 @@ func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Reque
 
 // LoadProduct loads a single product by id.
 func (router PaywallRouter) LoadProduct(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	id, _ := getURLParam(req, "id").ToString()
 
-	prod, err := router.repo.RetrieveFtcPrice(id, router.live)
+	sugar.Infof("Retrieving product %s", id)
+
+	prod, err := router.repo.RetrieveProduct(id, router.live)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
@@ -60,29 +66,45 @@ func (router PaywallRouter) LoadProduct(w http.ResponseWriter, req *http.Request
 	_ = render.New(w).OK(prod)
 }
 
+// UpdateProduct changes product content.
+// Request boyd:
+// - description: string;
+// - heading: string;
+// - smallPrint: string;
 func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	id, _ := getURLParam(req, "id").ToString()
 
 	var params pw.ProductParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
 	if ve := params.Validate(true); ve != nil {
+		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
+	sugar.Infof("Retrieving product %s", id)
+
 	prod, err := router.repo.RetrieveProduct(id, router.live)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
+	sugar.Infof("Product retrieved %v", prod)
+
 	updated := prod.Update(params)
 	err = router.repo.UpdateProduct(updated)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
