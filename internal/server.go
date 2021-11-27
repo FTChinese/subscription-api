@@ -428,7 +428,7 @@ func StartServer(s ServerStatus) {
 		r.Route("/products", func(r chi.Router) {
 			r.Get("/", paywallRouter.ListProducts)
 			r.Post("/", paywallRouter.CreateProduct)
-			r.Get("/", paywallRouter.LoadProduct)
+			r.Get("/{id}", paywallRouter.LoadProduct)
 			r.Patch("/{id}", paywallRouter.UpdateProduct)
 			r.Post("/{id}/activate", paywallRouter.ActivateProduct)
 		})
