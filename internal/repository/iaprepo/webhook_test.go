@@ -28,7 +28,7 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 	}
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 

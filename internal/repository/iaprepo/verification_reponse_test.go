@@ -11,7 +11,7 @@ import (
 func TestEnv_SaveDecodedReceipt(t *testing.T) {
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}
@@ -43,7 +43,7 @@ func TestEnv_SaveDecodedReceipt(t *testing.T) {
 
 func TestEnv_SaveTransaction(t *testing.T) {
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}
@@ -75,7 +75,7 @@ func TestEnv_SaveTransaction(t *testing.T) {
 
 func TestEnv_SavePendingRenewal(t *testing.T) {
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}

@@ -3,8 +3,8 @@ package accounts
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -55,24 +55,19 @@ func TestEnv_BaseAccountByEmail(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	type fields struct {
-		Env readers.Env
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		email string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    account.BaseAccount
 		wantErr bool
 	}{
 		{
 			name: "Retrieve base account by email",
-			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				email: a.Email,
 			},
@@ -81,9 +76,6 @@ func TestEnv_BaseAccountByEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			got, err := env.BaseAccountByEmail(tt.args.email)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BaseAccountByEmail() error = %v, wantErr %v", err, tt.wantErr)

@@ -2,8 +2,8 @@ package accounts
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -19,24 +19,19 @@ func TestEnv_JoinedByFtcID(t *testing.T) {
 	repo.MustCreateFtcAccount(a)
 	repo.MustSaveWxUser(w)
 
-	type fields struct {
-		Env readers.Env
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		ftcID string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    account.JoinedSchema
 		wantErr bool
 	}{
 		{
 			name: "Retrieve joined accont of ftc and wechat",
-			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				ftcID: a.FtcID,
 			},
@@ -45,9 +40,6 @@ func TestEnv_JoinedByFtcID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			got, err := env.JoinedByFtcID(tt.args.ftcID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("JoinedByFtcID() error = %v, wantErr %v", err, tt.wantErr)
@@ -72,24 +64,19 @@ func TestEnv_JoinedByWxID(t *testing.T) {
 	repo.MustCreateFtcAccount(a)
 	repo.MustSaveWxUser(w)
 
-	type fields struct {
-		Env readers.Env
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		unionID string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    account.JoinedSchema
 		wantErr bool
 	}{
 		{
 			name: "Retrieve account by wechat id",
-			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				unionID: w.UnionID,
 			},
@@ -98,9 +85,6 @@ func TestEnv_JoinedByWxID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			got, err := env.JoinedByWxID(tt.args.unionID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("JoinedByWxID() error = %v, wantErr %v", err, tt.wantErr)
