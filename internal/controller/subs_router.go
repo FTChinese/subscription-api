@@ -7,13 +7,9 @@ import (
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
 	ftcpay2 "github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"github.com/patrickmn/go-cache"
-	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -25,17 +21,14 @@ type SubsRouter struct {
 }
 
 func NewSubsRouter(
-	dbs db.ReadWriteMyDBs,
-	logger *zap.Logger,
-	c *cache.Cache,
-	p postman.Postman,
-	isProd bool,
+	payShared ftcpay.FtcPay,
+	prodRepo products.Env,
+	isLive bool,
 ) SubsRouter {
-
 	return SubsRouter{
-		FtcPay:   ftcpay.New(dbs, p, logger),
-		prodRepo: products.NewEnv(dbs, c),
-		isLive:   isProd,
+		FtcPay:   payShared,
+		prodRepo: prodRepo,
+		isLive:   isLive,
 	}
 }
 

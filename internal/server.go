@@ -4,6 +4,8 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/controller"
+	"github.com/FTChinese/subscription-api/internal/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/ali"
@@ -44,32 +46,32 @@ func StartServer(s ServerStatus) {
 
 	guard := access.NewGuard(myDBs)
 
-	stripeBaseRepo := shared.StripeBaseRepo{
-		Client: stripeclient.New(s.LiveMode, logger),
-		Live:   s.LiveMode,
-		Cache:  stripe.NewPriceCache(),
-	}
-
-	authRouter := controller.NewAuthRouter(
+	userShared := controller.NewUserShared(
 		myDBs,
-		logger,
-		post)
-	accountRouter := controller.NewAccountRouter(
-		myDBs,
-		logger,
-		post)
-	payRouter := controller.NewSubsRouter(
-		myDBs,
-		logger,
-		promoCache,
 		post,
+		logger)
+	authRouter := controller.NewAuthRouter(userShared)
+	accountRouter := controller.NewAccountRouter(userShared)
+
+	ftcPay := ftcpay.New(myDBs, post, logger)
+	prodRepo := products.NewEnv(myDBs, promoCache)
+	payRouter := controller.NewSubsRouter(
+		ftcPay,
+		prodRepo,
 		s.LiveMode)
+
 	iapRouter := controller.NewIAPRouter(
 		myDBs,
 		logger,
 		rdb,
 		post,
 		s.LiveMode)
+
+	stripeBaseRepo := shared.StripeBaseRepo{
+		Client: stripeclient.New(s.LiveMode, logger),
+		Live:   s.LiveMode,
+		Cache:  stripe.NewPriceCache(),
+	}
 	stripeRouter := controller.NewStripeRouter(
 		myDBs,
 		logger,
@@ -78,11 +80,10 @@ func StartServer(s ServerStatus) {
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.NewPaywallRouter(
-		myDBs,
+		prodRepo,
+		stripeBaseRepo,
 		logger,
-		promoCache,
-		s.LiveMode,
-		stripeBaseRepo)
+		s.LiveMode)
 
 	wxAuth := controller.NewWxAuth(myDBs, logger)
 

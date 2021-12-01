@@ -6,9 +6,6 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/postman"
-	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -16,14 +13,9 @@ type AccountRouter struct {
 	UserShared
 }
 
-func NewAccountRouter(
-	myDBs db.ReadWriteMyDBs,
-	l *zap.Logger,
-	pm postman.Postman,
-) AccountRouter {
-
+func NewAccountRouter(shared UserShared) AccountRouter {
 	return AccountRouter{
-		UserShared: NewUserShared(myDBs, pm, l),
+		UserShared: shared,
 	}
 }
 
