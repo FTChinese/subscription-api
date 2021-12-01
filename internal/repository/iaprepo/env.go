@@ -2,7 +2,7 @@ package iaprepo
 
 import (
 	"context"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/go-redis/redis/v8"
@@ -12,16 +12,16 @@ import (
 var ctx = context.Background()
 
 type Env struct {
-	readers.Env
+	shared.ReaderBaseRepo
 	rdb    *redis.Client
 	logger *zap.Logger
 }
 
 func NewEnv(dbs db.ReadWriteMyDBs, rdb *redis.Client, logger *zap.Logger) Env {
 	return Env{
-		Env:    readers.New(dbs, logger),
-		rdb:    rdb,
-		logger: logger,
+		ReaderBaseRepo: shared.New(dbs),
+		rdb:            rdb,
+		logger:         logger,
 	}
 }
 
