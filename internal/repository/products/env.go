@@ -12,7 +12,10 @@ type Env struct {
 	cache *cache.Cache
 }
 
-func NewEnv(dbs db.ReadWriteMyDBs, cache *cache.Cache) Env {
+func NewEnv(
+	dbs db.ReadWriteMyDBs,
+	cache *cache.Cache,
+) Env {
 	return Env{
 		dbs:   dbs,
 		cache: cache,
