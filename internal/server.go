@@ -4,10 +4,13 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/controller"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/postman"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/go-chi/chi"
@@ -41,6 +44,12 @@ func StartServer(s ServerStatus) {
 
 	guard := access.NewGuard(myDBs)
 
+	stripeBaseRepo := shared.StripeBaseRepo{
+		Client: stripeclient.New(s.LiveMode, logger),
+		Live:   s.LiveMode,
+		Cache:  stripe.NewPriceCache(),
+	}
+
 	authRouter := controller.NewAuthRouter(
 		myDBs,
 		logger,
@@ -64,14 +73,16 @@ func StartServer(s ServerStatus) {
 	stripeRouter := controller.NewStripeRouter(
 		myDBs,
 		logger,
-		s.LiveMode)
+		s.LiveMode,
+		stripeBaseRepo)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.NewPaywallRouter(
 		myDBs,
 		logger,
 		promoCache,
-		s.LiveMode)
+		s.LiveMode,
+		stripeBaseRepo)
 
 	wxAuth := controller.NewWxAuth(myDBs, logger)
 
@@ -408,16 +419,11 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		// Data used to build a paywall.
-		// ?live=<true|false> to get prices for different mode.
-		// TODO: in v5 this behavior will be dropped.
 		// Live server only outputs live data while sandbox for sandbox data only.
-		r.With(controller.FormParsed).
-			Get("/", paywallRouter.LoadPaywall)
+		r.Get("/", paywallRouter.LoadPaywall)
 
 		// List active prices used on paywall.
-		// ?live=<true|false>
-		r.With(controller.FormParsed).
-			Get("/active/prices", paywallRouter.LoadPricing)
+		r.Get("/active/prices", paywallRouter.LoadPricing)
 
 		r.Route("/banner", func(r chi.Router) {
 			r.Post("/", paywallRouter.SaveBanner)
