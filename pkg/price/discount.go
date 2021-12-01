@@ -17,14 +17,15 @@ import (
 // DiscountParams contains fields submitted by client
 // when creating a discount.
 type DiscountParams struct {
-	CreatedBy         string      `json:"createdBy" db:"created_by"`
-	Description       null.String `json:"description" db:"discount_desc"`
-	Kind              OfferKind   `json:"kind" db:"kind"`
-	Percent           null.Int    `json:"percent" db:"percent"`
-	dt.DateTimePeriod             // Optional. Zero value indicates permanent discount.
-	PriceOff          null.Float  `json:"priceOff" db:"price_off"`
-	PriceID           string      `json:"priceId" db:"price_id"`
-	Recurring         bool        `json:"recurring" db:"recurring"`
+	Description       null.String         `json:"description" db:"discount_desc"`
+	Kind              OfferKind           `json:"kind" db:"kind"`
+	OverridePeriod    dt.YearMonthDayJSON `json:"overridePeriod" db:"override_period"`
+	Percent           null.Int            `json:"percent" db:"percent"`
+	PriceOff          null.Float          `json:"priceOff" db:"price_off"`
+	PriceID           string              `json:"priceId" db:"price_id"`
+	Recurring         bool                `json:"recurring" db:"recurring"`
+	dt.DateTimePeriod                     // Optional. Zero value indicates permanent discount.
+	CreatedBy         string              `json:"createdBy" db:"created_by"`
 }
 
 func (p DiscountParams) Validate() *render.ValidationError {
@@ -53,11 +54,11 @@ func (p DiscountParams) Validate() *render.ValidationError {
 
 type Discount struct {
 	// The id fields started with Disc to avoid conflict when used in ExpandedPlanSchema.
-	ID string `json:"id" db:"discount_id"`
+	ID       string         `json:"id" db:"discount_id"`
+	LiveMode bool           `json:"liveMode" db:"live_mode"`
+	Status   DiscountStatus `json:"status" db:"current_status"`
 	DiscountParams
-	LiveMode   bool           `json:"liveMode" db:"live_mode"`
-	Status     DiscountStatus `json:"status" db:"current_status"`
-	CreatedUTC chrono.Time    `json:"createdUtc" db:"created_utc"`
+	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
 }
 
 func NewDiscount(params DiscountParams, live bool) Discount {
