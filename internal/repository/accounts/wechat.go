@@ -12,8 +12,8 @@ import (
 // If user already purchased membership with Wechat account, the membership will be bound to this signup email.
 // Returns the new account's UUID.
 func (env Env) WxSignUp(unionID string, input input.EmailSignUpParams) (reader.WxEmailLinkResult, error) {
-	defer env.Logger.Sync()
-	sugar := env.Logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	// A new complete email account.
 	// You should set LoginMethod to LoginMethodEmail
@@ -124,8 +124,8 @@ func (env Env) WxSignUp(unionID string, input input.EmailSignUpParams) (reader.W
 // membership is linked while the accounts are not. We need to
 // allow linking for such accounts.
 func (env Env) LinkWechat(result reader.WxEmailLinkResult) error {
-	defer env.Logger.Sync()
-	sugar := env.Logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginAccountTx()
 	if err != nil {
@@ -188,8 +188,8 @@ func (env Env) LinkWechat(result reader.WxEmailLinkResult) error {
 // First unlink membership if exists, then unlink account.
 func (env Env) UnlinkWx(acnt reader.Account, anchor enum.AccountKind) error {
 
-	defer env.Logger.Sync()
-	sugar := env.Logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	ltx, err := env.beginUnlinkTx()
 	if err != nil {
