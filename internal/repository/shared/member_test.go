@@ -1,4 +1,4 @@
-package readers
+package shared
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
@@ -74,9 +74,8 @@ func TestEnv_RetrieveMember(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				DBs:    tt.fields.DBs,
-				Logger: tt.fields.Logger,
+			env := ReaderBaseRepo{
+				DBs: tt.fields.DBs,
 			}
 			got, err := env.RetrieveMember(tt.args.compoundID)
 			if (err != nil) != tt.wantErr {
@@ -125,9 +124,8 @@ func TestEnv_RetrieveAppleMember(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				DBs:    tt.fields.DBs,
-				Logger: tt.fields.Logger,
+			env := ReaderBaseRepo{
+				DBs: tt.fields.DBs,
 			}
 			got, err := env.RetrieveAppleMember(tt.args.txID)
 			if (err != nil) != tt.wantErr {
@@ -176,9 +174,8 @@ func TestEnv_ArchiveMember(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				DBs:    tt.fields.DBs,
-				Logger: tt.fields.Logger,
+			env := ReaderBaseRepo{
+				DBs: tt.fields.DBs,
 			}
 			if err := env.ArchiveMember(tt.args.snapshot); (err != nil) != tt.wantErr {
 				t.Errorf("ArchiveMember() error = %v, wantErr %v", err, tt.wantErr)
@@ -189,7 +186,7 @@ func TestEnv_ArchiveMember(t *testing.T) {
 
 func TestEnv_VersionMembership(t *testing.T) {
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL())
 
 	p := test.NewPersona()
 

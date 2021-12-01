@@ -17,7 +17,7 @@ func TestEnv_SavePwResetSession(t *testing.T) {
 	faker.SeedGoFake()
 
 	type fields struct {
-		Env readers.Env
+		Env shared.Env
 	}
 	type args struct {
 		s account.PwResetSession
@@ -31,7 +31,7 @@ func TestEnv_SavePwResetSession(t *testing.T) {
 		{
 			name: "Save password reset session",
 			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
+				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
 				s: account.MustNewPwResetSession(input.ForgotPasswordParams{
@@ -65,7 +65,7 @@ func TestEnv_PwResetSessionByToken(t *testing.T) {
 	_ = New(test.SplitDB, zaptest.NewLogger(t)).SavePwResetSession(sess)
 
 	type fields struct {
-		Env readers.Env
+		Env shared.Env
 	}
 	type args struct {
 		token string
@@ -80,7 +80,7 @@ func TestEnv_PwResetSessionByToken(t *testing.T) {
 		{
 			name: "Retrieve password reset session",
 			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
+				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
 				token: sess.URLToken,
@@ -118,7 +118,7 @@ func TestEnv_PwResetSessionByCode(t *testing.T) {
 	_ = New(test.SplitDB, zaptest.NewLogger(t)).SavePwResetSession(sess)
 
 	type fields struct {
-		Env readers.Env
+		Env shared.Env
 	}
 	type args struct {
 		params input.AppResetPwSessionParams
@@ -133,7 +133,7 @@ func TestEnv_PwResetSessionByCode(t *testing.T) {
 		{
 			name: "Retrieve password reset session for mobile app",
 			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
+				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
 				params: input.AppResetPwSessionParams{
@@ -174,7 +174,7 @@ func TestEnv_DisablePasswordReset(t *testing.T) {
 	_ = New(test.SplitDB, zaptest.NewLogger(t)).SavePwResetSession(sess)
 
 	type fields struct {
-		Env readers.Env
+		Env shared.Env
 	}
 	type args struct {
 		t string
@@ -188,7 +188,7 @@ func TestEnv_DisablePasswordReset(t *testing.T) {
 		{
 			name: "Disable password reset session",
 			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
+				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
 				t: sess.URLToken,

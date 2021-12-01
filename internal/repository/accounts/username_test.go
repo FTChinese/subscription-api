@@ -24,7 +24,7 @@ func TestEnv_UpdateUserName(t *testing.T) {
 	a.UserName = null.StringFrom(gofakeit.Username())
 
 	type fields struct {
-		Env readers.Env
+		Env shared.Env
 	}
 	type args struct {
 		a account.BaseAccount
@@ -38,7 +38,7 @@ func TestEnv_UpdateUserName(t *testing.T) {
 		{
 			name: "Update user name",
 			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
+				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
 				a: a,

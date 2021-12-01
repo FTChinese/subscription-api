@@ -2,7 +2,8 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
@@ -14,7 +15,7 @@ import (
 func TestEnv_UpdateSubscription(t *testing.T) {
 	p := test.NewPersona()
 
-	client := NewClient(false, zaptest.NewLogger(t))
+	client := stripeclient.New(false, zaptest.NewLogger(t))
 
 	pa, err := newCustomerAndPayment(
 		client,
@@ -25,9 +26,9 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 	}
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		client: NewClient(false, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.New(test.SplitDB),
+		StripeBaseRepo: shared.StripeBaseRepo{},
+		logger:         zaptest.NewLogger(t),
 	}
 
 	_, err = env.CreateSubscription(
