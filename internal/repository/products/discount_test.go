@@ -3,7 +3,9 @@ package products
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/test"
 	"testing"
@@ -63,7 +65,7 @@ func TestEnv_CreateDiscount(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Create discount",
+			name: "Intro discount",
 			args: args{
 				d: test.NewStdProdBuilder().
 					NewMonthPriceBuilder().
@@ -73,7 +75,7 @@ func TestEnv_CreateDiscount(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Create discount",
+			name: "Promo discount",
 			args: args{
 				d: test.NewProductBuilder(enum.TierStandard).
 					NewPriceBuilder(enum.CycleYear).
@@ -81,6 +83,36 @@ func TestEnv_CreateDiscount(t *testing.T) {
 					BuildPromo(),
 			},
 			wantErr: false,
+		},
+		{
+			name: "Custom discount period",
+			args: args{
+				d: test.NewDiscountBuilder(ids.DiscountID()).
+					WithMode(false).
+					WithPriceOff(10).
+					WithPeriod(
+						dt.YearMonthDay{
+							Years:  0,
+							Months: 3,
+							Days:   0,
+						}).
+					BuildPromo(),
+			},
+		},
+		{
+			name: "Specified price",
+			args: args{
+				d: test.NewDiscountBuilder("price_WHc5ssjh6pqw").
+					WithMode(false).
+					WithPriceOff(20).
+					WithPeriod(
+						dt.YearMonthDay{
+							Years:  1,
+							Months: 3,
+							Days:   0,
+						}).
+					BuildPromo(),
+			},
 		},
 	}
 	for _, tt := range tests {
