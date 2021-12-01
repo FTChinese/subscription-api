@@ -180,23 +180,54 @@ type DiscountBuilder struct {
 	priceID string
 	off     float64
 	live    bool
+	period  dt.YearMonthDay
+}
+
+func NewDiscountBuilder(priceID string) DiscountBuilder {
+	return DiscountBuilder{
+		priceID: priceID,
+		off:     0,
+		live:    false,
+		period:  dt.YearMonthDay{},
+	}
+}
+
+func (b DiscountBuilder) WithPriceOff(off float64) DiscountBuilder {
+	b.off = off
+
+	return b
+}
+
+func (b DiscountBuilder) WithMode(live bool) DiscountBuilder {
+	b.live = live
+
+	return b
+}
+
+func (b DiscountBuilder) WithPeriod(p dt.YearMonthDay) DiscountBuilder {
+	b.period = p
+
+	return b
 }
 
 func (b DiscountBuilder) Build(k price.OfferKind) price.Discount {
 	return price.Discount{
 		ID: ids.DiscountID(),
 		DiscountParams: price.DiscountParams{
-			CreatedBy:   gofakeit.Username(),
 			Description: null.StringFrom(gofakeit.Sentence(10)),
 			Kind:        k,
-			Percent:     null.Int{},
+			OverridePeriod: dt.YearMonthDayJSON{
+				YearMonthDay: b.period,
+			},
+			Percent:   null.Int{},
+			PriceOff:  null.FloatFrom(b.off),
+			PriceID:   b.priceID,
+			Recurring: false,
 			DateTimePeriod: dt.DateTimePeriod{
 				StartUTC: chrono.TimeNow(),
 				EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 7)),
 			},
-			PriceOff:  null.FloatFrom(b.off),
-			PriceID:   b.priceID,
-			Recurring: false,
+			CreatedBy: gofakeit.Username(),
 		},
 		LiveMode:   b.live,
 		Status:     price.DiscountStatusActive,
