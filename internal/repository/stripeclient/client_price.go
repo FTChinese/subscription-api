@@ -1,4 +1,4 @@
-package striperepo
+package stripeclient
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/stripe"
@@ -30,7 +30,7 @@ func (c Client) RetrievePrice(id string) (*stripeSdk.Price, error) {
 }
 
 func (c Client) GetPriceFromCacheOrAPI(id string) (stripe.Price, error) {
-	p, ok := PriceCache.Find(id)
+	p, ok := stripe.PriceCacheStore.Find(id)
 
 	if ok {
 		return p, nil
