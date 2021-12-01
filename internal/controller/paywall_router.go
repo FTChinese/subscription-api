@@ -4,10 +4,8 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -22,13 +20,13 @@ type PaywallRouter struct {
 
 // NewPaywallRouter creates a new instance of pricing router.
 func NewPaywallRouter(
-	dbs db.ReadWriteMyDBs,
+	prodRepo products.Env,
+	stripeRepo shared.StripeBaseRepo,
 	logger *zap.Logger,
-	c *cache.Cache,
 	live bool,
-	stripeRepo shared.StripeBaseRepo) PaywallRouter {
+) PaywallRouter {
 	return PaywallRouter{
-		prodRepo:  products.NewEnv(dbs, c),
+		prodRepo:  prodRepo,
 		stripeReo: stripeRepo,
 		logger:    logger,
 		live:      live,
