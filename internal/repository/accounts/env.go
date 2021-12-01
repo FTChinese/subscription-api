@@ -1,19 +1,21 @@
 package accounts
 
 import (
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
 )
 
 type Env struct {
-	readers.Env
+	shared.ReaderBaseRepo
+	logger *zap.Logger
 }
 
 func New(dbs db.ReadWriteMyDBs, logger *zap.Logger) Env {
 	return Env{
-		Env: readers.New(dbs, logger),
+		ReaderBaseRepo: shared.New(dbs),
+		logger:         logger,
 	}
 }
 
