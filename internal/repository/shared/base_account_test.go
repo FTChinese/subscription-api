@@ -1,4 +1,4 @@
-package readers
+package shared
 
 import (
 	"github.com/FTChinese/go-rest/enum"
