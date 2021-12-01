@@ -1,4 +1,4 @@
-package striperepo
+package stripeclient
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
@@ -11,7 +11,7 @@ import (
 func TestClient_NewSubs(t *testing.T) {
 	faker.MustSetupViper()
 
-	client := NewClient(false, zaptest.NewLogger(t))
+	client := New(false, zaptest.NewLogger(t))
 
 	type args struct {
 		params *stripe.SubscriptionParams

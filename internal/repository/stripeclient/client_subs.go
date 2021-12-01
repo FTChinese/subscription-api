@@ -1,4 +1,4 @@
-package striperepo
+package stripeclient
 
 import (
 	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
