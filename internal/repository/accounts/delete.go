@@ -3,8 +3,8 @@ package accounts
 import "github.com/FTChinese/subscription-api/pkg/account"
 
 func (env Env) DeleteAccount(d account.DeletedUser) error {
-	defer env.Logger.Sync()
-	sugar := env.Logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginAccountTx()
 	if err != nil {
