@@ -55,8 +55,8 @@ func (env Env) SMSVerifierUsed(v ztsms.Verifier) error {
 // If the ftc id does not appear in profile, then insert a
 // row with the ftc id and mobile.
 func (env Env) UpsertMobile(params account.MobileUpdater) error {
-	defer env.Logger.Sync()
-	sugar := env.Logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginAccountTx()
 	if err != nil {
