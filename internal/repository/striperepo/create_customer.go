@@ -29,7 +29,7 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 	// If stripe customer id already exists, abort.
 	if baseAccount.StripeID.Valid {
 		_ = tx.Rollback()
-		cus, err := env.client.RetrieveCustomer(baseAccount.StripeID.String)
+		cus, err := env.Client.RetrieveCustomer(baseAccount.StripeID.String)
 		if err != nil {
 			return stripe.CustomerAccount{}, err
 		}
@@ -39,7 +39,7 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 
 	// Request stripe api to create customer.
 	// Return *stripe.Error if occurred.
-	cus, err := env.client.CreateCustomer(baseAccount.Email)
+	cus, err := env.Client.CreateCustomer(baseAccount.Email)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
