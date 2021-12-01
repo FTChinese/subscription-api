@@ -88,8 +88,9 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 	_ = render.New(w).OK(updated)
 }
 
-// RefreshPrice discounts and stripe price id.
-func (router PaywallRouter) RefreshPrice(w http.ResponseWriter, req *http.Request) {
+// RefreshPriceOffers attaches all valid discounts to
+// a price row as json column.
+func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.Request) {
 	priceID, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
