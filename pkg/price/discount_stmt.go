@@ -4,17 +4,18 @@ package price
 const StmtCreateDiscount = `
 INSERT INTO subs_product.discount
 SET id = :discount_id,
+	live_mode = :live_mode,
+	current_status = :current_status,
 	description = :discount_desc,
 	kind = :kind,
+	override_period = :override_period,
 	percent = :percent,
-	start_utc = :start_utc,
-    end_utc = :end_utc,
 	price_off = :price_off,
 	plan_id = :price_id,
 	recurring = :recurring,
-	live_mode = :live_mode,
-	current_status = :current_status,
     created_utc = :created_utc,
+	start_utc = :start_utc,
+    end_utc = :end_utc,
     created_by = :created_by
 `
 
@@ -26,16 +27,17 @@ LIMIT 1`
 
 const colDiscount = `
 SELECT id AS discount_id,
+	live_mode,
+	current_status,
 	description AS discount_desc,
 	kind,
+	override_period,
 	percent,
 	start_utc,
 	end_utc,
 	price_off,
 	plan_id AS price_id,
 	recurring,
-	live_mode,
-	current_status,
 	created_utc,
 	created_by
 FROM subs_product.discount
@@ -52,6 +54,7 @@ const StmtListPriceActiveDiscounts = colDiscount + `
 WHERE plan_id = ?
 	AND current_status = 'active'
 	AND live_mode = ?
+	AND (end_utc IS NULL OR end_utc >= UTC_TIMESTAMP)
 ORDER BY price_off DESC`
 
 // StmtListDiscountsOfPrice retrieves all discount under a price.
