@@ -1,4 +1,4 @@
-package readers
+package shared
 
 import (
 	"database/sql"
@@ -7,7 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ids"
 )
 
-func (env Env) BaseAccountByUUID(id string) (account.BaseAccount, error) {
+func (env ReaderBaseRepo) BaseAccountByUUID(id string) (account.BaseAccount, error) {
 	var a account.BaseAccount
 	err := env.DBs.Read.Get(&a, account.StmtBaseAccountByUUID, id)
 	if err != nil {
@@ -17,7 +17,7 @@ func (env Env) BaseAccountByUUID(id string) (account.BaseAccount, error) {
 	return a, nil
 }
 
-func (env Env) BaseAccountByStripeID(cusID string) (account.BaseAccount, error) {
+func (env ReaderBaseRepo) BaseAccountByStripeID(cusID string) (account.BaseAccount, error) {
 	var a account.BaseAccount
 	err := env.DBs.Read.Get(&a, account.StmtBaseAccountOfStripe, cusID)
 	if err != nil {
@@ -28,7 +28,7 @@ func (env Env) BaseAccountByStripeID(cusID string) (account.BaseAccount, error) 
 }
 
 // BaseAccountByWxID retrieves BaseAccount for a wechat user.
-func (env Env) BaseAccountByWxID(unionID string) (account.BaseAccount, error) {
+func (env ReaderBaseRepo) BaseAccountByWxID(unionID string) (account.BaseAccount, error) {
 	var a account.BaseAccount
 	err := env.DBs.Read.Get(&a, account.StmtBaseAccountByWx, unionID)
 	if err != nil {
@@ -39,7 +39,7 @@ func (env Env) BaseAccountByWxID(unionID string) (account.BaseAccount, error) {
 }
 
 // FindBaseAccount retrieve account by ftc id if exists, then fallback to union id.
-func (env Env) FindBaseAccount(ids ids.UserIDs) (account.BaseAccount, error) {
+func (env ReaderBaseRepo) FindBaseAccount(ids ids.UserIDs) (account.BaseAccount, error) {
 	if ids.FtcID.Valid {
 		return env.BaseAccountByUUID(ids.FtcID.String)
 	}
@@ -51,7 +51,7 @@ func (env Env) FindBaseAccount(ids ids.UserIDs) (account.BaseAccount, error) {
 	return account.BaseAccount{}, errors.New("either ftc id nor wechat id should be specified")
 }
 
-func (env Env) SearchUserByFtcOrWxID(id string) (account.BaseAccount, error) {
+func (env ReaderBaseRepo) SearchUserByFtcOrWxID(id string) (account.BaseAccount, error) {
 	ba, err := env.BaseAccountByUUID(id)
 	if err == nil {
 		return ba, nil
