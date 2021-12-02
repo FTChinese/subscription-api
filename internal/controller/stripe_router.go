@@ -26,17 +26,18 @@ type StripeRouter struct {
 
 // NewStripeRouter initializes StripeRouter.
 func NewStripeRouter(
+	readerBase shared.ReaderBaseRepo,
+	stripeBase shared.StripeBaseRepo,
 	dbs db.ReadWriteMyDBs,
 	logger *zap.Logger,
 	isLive bool,
-	baseRepo shared.StripeBaseRepo,
 ) StripeRouter {
 	client := stripeclient.New(isLive, logger)
 
 	return StripeRouter{
 		signingKey: config.MustStripeWebhookKey().Pick(isLive),
 		addOnRepo:  addons.NewEnv(dbs, logger),
-		stripeRepo: striperepo.New(dbs, logger, baseRepo),
+		stripeRepo: striperepo.New(readerBase, stripeBase, logger),
 		client:     client,
 		logger:     logger,
 	}
