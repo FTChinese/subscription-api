@@ -453,7 +453,7 @@ func StartServer(s ServerStatus) {
 			// Creates a new discounts for a price.
 			r.Post("/", paywallRouter.CreateDiscount)
 			// Delete discount and refresh the related price.
-			r.Delete("/{id}", paywallRouter.RemoveDiscount)
+			r.Delete("/{id}", paywallRouter.DropDiscount)
 		})
 
 		// Bust cache, regardless of live mode or not.
