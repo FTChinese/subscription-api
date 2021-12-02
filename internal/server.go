@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/controller"
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
-	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/ali"
@@ -40,17 +39,20 @@ func StartServer(s ServerStatus) {
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
 	// Set the cache default expiration time to 2 hours.
-	promoCache := cache.New(2*time.Hour, 0)
+	paywallCache := cache.New(2*time.Hour, 0)
 
 	post := postman.New(config.MustGetHanqiConn())
 
 	guard := access.NewGuard(myDBs)
 
 	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
-	prodRepo := products.NewEnv(myDBs, promoCache)
+	paywallBaseRepo := shared.PaywallCommon{
+		DBs:   myDBs,
+		Cache: paywallCache,
+	}
+
 	stripeBaseRepo := shared.StripeBaseRepo{
 		Client: stripeclient.New(s.LiveMode, logger),
-		Live:   s.LiveMode,
 		Cache:  stripe.NewPriceCache(),
 	}
 
@@ -64,7 +66,7 @@ func StartServer(s ServerStatus) {
 	ftcPay := ftcpay.New(myDBs, post, logger)
 	payRouter := controller.NewSubsRouter(
 		ftcPay,
-		prodRepo,
+		paywallBaseRepo,
 		s.LiveMode)
 
 	iapRouter := controller.NewIAPRouter(
@@ -83,7 +85,7 @@ func StartServer(s ServerStatus) {
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.NewPaywallRouter(
-		prodRepo,
+		paywallBaseRepo,
 		stripeBaseRepo,
 		logger,
 		s.LiveMode)
