@@ -12,24 +12,24 @@ import (
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	prodRepo  products.Env
-	stripeReo shared.StripeBaseRepo
-	logger    *zap.Logger
-	live      bool
+	prodRepo   products.Env
+	stripeRepo shared.StripeBaseRepo
+	logger     *zap.Logger
+	live       bool
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
 func NewPaywallRouter(
-	prodRepo products.Env,
-	stripeRepo shared.StripeBaseRepo,
+	paywallBaseRepo shared.PaywallCommon,
+	stripeBaseRepo shared.StripeBaseRepo,
 	logger *zap.Logger,
 	live bool,
 ) PaywallRouter {
 	return PaywallRouter{
-		prodRepo:  prodRepo,
-		stripeReo: stripeRepo,
-		logger:    logger,
-		live:      live,
+		prodRepo:   products.New(paywallBaseRepo),
+		stripeRepo: stripeBaseRepo,
+		logger:     logger,
+		live:       live,
 	}
 }
 
@@ -55,17 +55,23 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	_, err = router.stripeRepo.ListPrices(router.live, true)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
 	stripeIDs := paywall.StripePriceIDs()
 
 	for _, id := range stripeIDs {
-		_, err := router.stripeReo.LoadPrice(id, false)
+		_, err := router.stripeRepo.LoadPrice(id, false)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 			return
 		}
 	}
 
-	stripePrices, err := router.stripeReo.ListPrices(false)
+	stripePrices, err := router.stripeRepo.ListPrices(router.live, false)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

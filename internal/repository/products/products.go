@@ -4,7 +4,7 @@ import "github.com/FTChinese/subscription-api/pkg/pw"
 
 func (env Env) ListProducts(live bool) ([]pw.Product, error) {
 	var list = make([]pw.Product, 0)
-	err := env.dbs.Read.Select(
+	err := env.DBs.Read.Select(
 		&list,
 		pw.StmtListProducts,
 		live)
@@ -17,7 +17,7 @@ func (env Env) ListProducts(live bool) ([]pw.Product, error) {
 }
 
 func (env Env) CreateProduct(p pw.Product) error {
-	_, err := env.dbs.Write.NamedExec(
+	_, err := env.DBs.Write.NamedExec(
 		pw.StmtCreateProduct,
 		p)
 
@@ -30,7 +30,7 @@ func (env Env) CreateProduct(p pw.Product) error {
 
 func (env Env) RetrieveProduct(id string, live bool) (pw.Product, error) {
 	var p pw.Product
-	err := env.dbs.Read.Get(
+	err := env.DBs.Read.Get(
 		&p,
 		pw.StmtRetrieveProduct,
 		id,
@@ -44,7 +44,7 @@ func (env Env) RetrieveProduct(id string, live bool) (pw.Product, error) {
 }
 
 func (env Env) UpdateProduct(p pw.Product) error {
-	_, err := env.dbs.Write.NamedExec(
+	_, err := env.DBs.Write.NamedExec(
 		pw.StmtUpdateProduct,
 		p)
 
