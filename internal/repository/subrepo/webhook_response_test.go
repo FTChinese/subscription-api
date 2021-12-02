@@ -15,7 +15,7 @@ func TestEnv_SaveAliNotification(t *testing.T) {
 	p := test.NewPersona()
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -54,7 +54,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 	or := test.NewWxOrderUnsigned()
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 
@@ -93,7 +93,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 	noti := test.NewWxWHUnsigned(p.OrderBuilder().Build())
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		logger: zaptest.NewLogger(t),
 	}
 

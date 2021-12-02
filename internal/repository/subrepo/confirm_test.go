@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -51,8 +51,8 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		Build()
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -130,8 +130,8 @@ func TestEnv_ConfirmOrder_Renewal(t *testing.T) {
 	repo.MustSaveOrder(order)
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	paymentResult := subs.MockNewPaymentResult(order)
@@ -165,8 +165,8 @@ func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
 	repo.MustSaveOrder(order)
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	paymentResult := subs.MockNewPaymentResult(order)
@@ -205,8 +205,8 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 	repo.MustSaveOrder(order)
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	paymentResult := subs.MockNewPaymentResult(order)
@@ -223,8 +223,8 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 func TestEnv_SaveConfirmationErr(t *testing.T) {
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -259,8 +259,8 @@ func TestEnv_SaveConfirmationErr(t *testing.T) {
 func TestEnv_SavePayResult(t *testing.T) {
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {

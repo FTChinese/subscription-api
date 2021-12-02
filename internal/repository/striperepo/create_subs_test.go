@@ -2,6 +2,7 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
@@ -16,13 +17,10 @@ type paymentAttached struct {
 	paymentMethodID string
 }
 
-func newCustomerAndPayment(client Client, acnt account.BaseAccount) (paymentAttached, error) {
-	defer client.logger.Sync()
-	sugar := client.logger.Sugar()
+func newCustomerAndPayment(client stripeclient.Client, acnt account.BaseAccount) (paymentAttached, error) {
 
 	cus, err := client.CreateCustomer(acnt.Email)
 	if err != nil {
-		sugar.Error(err)
 		return paymentAttached{}, err
 	}
 
@@ -34,17 +32,13 @@ func newCustomerAndPayment(client Client, acnt account.BaseAccount) (paymentAtta
 		Token:    nil,
 	})
 	if err != nil {
-		sugar.Error(err)
 		return paymentAttached{}, err
 	}
 
-	si, err := client.AttachPaymentMethod(cus.ID, pm.ID)
+	_, err = client.AttachPaymentMethod(cus.ID, pm.ID)
 	if err != nil {
-		sugar.Error(err)
 		return paymentAttached{}, err
 	}
-
-	sugar.Infof("%v", si)
 
 	acnt.StripeID = null.StringFrom(cus.ID)
 
@@ -56,7 +50,7 @@ func newCustomerAndPayment(client Client, acnt account.BaseAccount) (paymentAtta
 
 func TestEnv_CreateSubscription(t *testing.T) {
 
-	env := New(db.MockMySQL(), NewClient(false, zaptest.NewLogger(t)), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		ba     account.BaseAccount

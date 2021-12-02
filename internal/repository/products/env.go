@@ -1,30 +1,27 @@
 package products
 
 import (
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
-	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/patrickmn/go-cache"
 )
 
+// Env extends PaywallCommon, mostly with db write capabilities.
 type Env struct {
-	dbs   db.ReadWriteMyDBs
-	cache *cache.Cache
+	shared.PaywallCommon
 }
 
-func NewEnv(dbs db.ReadWriteMyDBs, cache *cache.Cache) Env {
+func New(base shared.PaywallCommon) Env {
 	return Env{
-		dbs:   dbs,
-		cache: cache,
+		PaywallCommon: base,
 	}
 }
 
-func getPaywallCacheKey(live bool) string {
-	return "paywall_" + ids.GetBoolKey(live)
+func (env Env) ClearCache() {
+	env.Cache.Flush()
 }
 
 func (env Env) beginPriceTx() (txrepo.PriceTx, error) {
-	tx, err := env.dbs.Write.Beginx()
+	tx, err := env.DBs.Write.Beginx()
 	if err != nil {
 		return txrepo.PriceTx{}, err
 	}
@@ -33,7 +30,7 @@ func (env Env) beginPriceTx() (txrepo.PriceTx, error) {
 }
 
 func (env Env) beginProductTx() (txrepo.ProductTx, error) {
-	tx, err := env.dbs.Write.Beginx()
+	tx, err := env.DBs.Write.Beginx()
 
 	if err != nil {
 		return txrepo.ProductTx{}, err

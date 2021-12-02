@@ -63,8 +63,8 @@ func (env Env) listMemberSnapshot(ids ids.UserIDs, p gorest.Pagination) ([]reade
 }
 
 func (env Env) ListSnapshot(ids ids.UserIDs, p gorest.Pagination) (reader.SnapshotList, error) {
-	defer env.Logger.Sync()
-	sugar := env.Logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	countCh := make(chan int64)
 	listCh := make(chan reader.SnapshotList)
@@ -108,8 +108,8 @@ func (env Env) ListSnapshot(ids ids.UserIDs, p gorest.Pagination) (reader.Snapsh
 
 // CreateMembership manually.
 func (env Env) CreateMembership(ba account.BaseAccount, params input.MemberParams) (reader.Membership, error) {
-	defer env.Logger.Sync()
-	sugar := env.Logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginMemberTx()
 	if err != nil {
@@ -150,8 +150,8 @@ func (env Env) CreateMembership(ba account.BaseAccount, params input.MemberParam
 }
 
 func (env Env) UpdateMembership(compoundID string, params input.MemberParams) (reader.MembershipVersioned, error) {
-	defer env.Logger.Sync()
-	sugar := env.Logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginMemberTx()
 	if err != nil {
@@ -200,8 +200,8 @@ func (env Env) UpdateMembership(compoundID string, params input.MemberParams) (r
 }
 
 func (env Env) DeleteMembership(compoundID string) (reader.Membership, error) {
-	defer env.Logger.Sync()
-	sugar := env.Logger.Sugar()
+	defer env.logger.Sync()
+	sugar := env.logger.Sugar()
 
 	tx, err := env.beginMemberTx()
 	if err != nil {

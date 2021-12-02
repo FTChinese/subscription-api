@@ -3,7 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/go-redis/redis/v8"
@@ -26,16 +26,10 @@ type IAPRouter struct {
 	logger    *zap.Logger
 }
 
-func NewIAPRouter(
-	dbs db.ReadWriteMyDBs,
-	logger *zap.Logger,
-	rdb *redis.Client,
-	p postman.Postman,
-	isLive bool,
-) IAPRouter {
+func NewIAPRouter(baseRepo shared.ReaderBaseRepo, logger *zap.Logger, rdb *redis.Client, p postman.Postman, isLive bool) IAPRouter {
 
 	return IAPRouter{
-		iapRepo:   iaprepo.NewEnv(dbs, rdb, logger),
+		iapRepo:   iaprepo.New(baseRepo, rdb, logger),
 		postman:   p,
 		isLive:    isLive,
 		iapClient: iaprepo.NewClient(logger),

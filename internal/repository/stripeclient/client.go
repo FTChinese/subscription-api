@@ -1,4 +1,4 @@
-package striperepo
+package stripeclient
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/config"
@@ -8,12 +8,12 @@ import (
 )
 
 type Client struct {
-	live   bool
+	live   bool // Deprecated
 	sc     *client.API
 	logger *zap.Logger
 }
 
-func NewClient(live bool, logger *zap.Logger) Client {
+func New(live bool, logger *zap.Logger) Client {
 
 	key := config.MustStripeAPIKey().Pick(live)
 
@@ -24,6 +24,7 @@ func NewClient(live bool, logger *zap.Logger) Client {
 	}
 }
 
+// Deprecated
 func (c Client) Live() bool {
 	return c.live
 }

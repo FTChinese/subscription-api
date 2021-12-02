@@ -16,7 +16,7 @@ import (
 )
 
 func TestEnv_SaveSMSVerifier(t *testing.T) {
-	env := New(test.SplitDB, zaptest.NewLogger(t))
+	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
 
 	faker.SeedGoFake()
 
@@ -48,7 +48,7 @@ func TestEnv_SaveSMSVerifier(t *testing.T) {
 }
 
 func TestEnv_RetrieveSMSVerifier(t *testing.T) {
-	env := New(test.SplitDB, zaptest.NewLogger(t))
+	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
 
 	faker.SeedGoFake()
 
@@ -94,7 +94,7 @@ func TestEnv_RetrieveSMSVerifier(t *testing.T) {
 }
 
 func TestEnv_SMSVerifierUsed(t *testing.T) {
-	env := New(test.SplitDB, zaptest.NewLogger(t))
+	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
 
 	v := ztsms.NewVerifier(gofakeit.Phone(), null.StringFrom(uuid.New().String()))
 
@@ -136,7 +136,7 @@ func TestEnv_UpsertMobile(t *testing.T) {
 	ftcWithoutMobile := test.NewPersona()
 	ftcWithMobile := test.NewPersona()
 
-	env := New(test.SplitDB, zaptest.NewLogger(t))
+	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
 	repo := test.NewRepo()
 
 	type args struct {

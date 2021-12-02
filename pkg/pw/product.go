@@ -13,11 +13,12 @@ import (
 // ProductParams defines the request data to create a new
 // product.
 type ProductParams struct {
-	CreatedBy   string      `json:"createdBy" db:"created_by"` // Only present in creation. Omit it in update.
-	Description null.String `json:"description" db:"description"`
-	Heading     string      `json:"heading" db:"heading"`
-	SmallPrint  null.String `json:"smallPrint" db:"small_print"`
-	Tier        enum.Tier   `json:"tier" db:"tier"` // Immutable once a product is created
+	CreatedBy    string           `json:"createdBy" db:"created_by"` // Only present in creation. Omit it in update.
+	Description  null.String      `json:"description" db:"description"`
+	Heading      string           `json:"heading" db:"heading"`
+	SmallPrint   null.String      `json:"smallPrint" db:"small_print"`
+	Tier         enum.Tier        `json:"tier" db:"tier"` // Immutable once a product is created
+	Introductory IntroductoryJSON `json:"introductory" db:"introductory"`
 }
 
 // Validate checks fields to create or update a product.
@@ -43,10 +44,10 @@ func (p *ProductParams) Validate(isUpdate bool) *render.ValidationError {
 
 // Product defines a price without plans.
 type Product struct {
-	ID string `json:"id" db:"product_id"`
+	ID       string `json:"id" db:"product_id"`
+	Active   bool   `json:"active" db:"is_active"` // Indicates whether is product is on paywall
+	LiveMode bool   `json:"liveMode" db:"live_mode"`
 	ProductParams
-	Active     bool        `json:"active" db:"is_active"` // Indicates whether is product is on paywall
-	LiveMode   bool        `json:"liveMode" db:"live_mode"`
 	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
 	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
 }

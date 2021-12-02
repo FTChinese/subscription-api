@@ -1,8 +1,9 @@
 package iaprepo
 
 import (
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
@@ -76,9 +77,9 @@ func TestLoadReceiptFromDisk(t *testing.T) {
 func TestEnv_SaveReceiptToDB(t *testing.T) {
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		rdb:            test.Redis,
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -112,9 +113,9 @@ func TestEnv_LoadReceiptFromDB(t *testing.T) {
 	test.NewRepo().MustSaveIAPReceipt(rt)
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(db.MockMySQL()),
+		rdb:            test.Redis,
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {

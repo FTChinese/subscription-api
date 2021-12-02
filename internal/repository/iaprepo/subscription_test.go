@@ -4,7 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
@@ -19,9 +19,9 @@ import (
 func TestEnv_SaveSubs(t *testing.T) {
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		rdb:            test.Redis,
+		logger:         zaptest.NewLogger(t),
 	}
 
 	p2 := test.NewPersona()
@@ -83,9 +83,9 @@ func TestEnv_updateMembership(t *testing.T) {
 	test.NewRepo().MustSaveMembership(current)
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		rdb:            test.Redis,
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -133,9 +133,9 @@ func TestEnv_LoadSubs(t *testing.T) {
 		Build())
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		rdb:            test.Redis,
+		logger:         zaptest.NewLogger(t),
 	}
 	type args struct {
 		originalID string
@@ -172,9 +172,9 @@ func TestEnv_countSubs(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		rdb:            test.Redis,
+		logger:         zaptest.NewLogger(t),
 	}
 	type fields struct {
 		db *sqlx.DB
@@ -217,9 +217,9 @@ func TestEnv_listSubs(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		rdb:            test.Redis,
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -265,9 +265,9 @@ func TestEnv_ListSubs(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		rdb:            test.Redis,
+		logger:         zaptest.NewLogger(t),
 	}
 
 	t.Logf("Create IAP %s", p.AppleSubID)

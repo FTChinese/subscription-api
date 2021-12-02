@@ -1,16 +1,18 @@
-package products
+package shared
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/pw"
-	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
 
 func TestEnv_retrievePaywall(t *testing.T) {
-	env := NewEnv(db.MockMySQL(), nil)
+	env := PaywallCommon{
+		DBs:   db.MockMySQL(),
+		Cache: nil,
+	}
 
 	type args struct {
 		live bool
@@ -47,7 +49,10 @@ func TestEnv_retrievePaywall(t *testing.T) {
 }
 
 func TestEnv_retrieveActiveProducts(t *testing.T) {
-	env := NewEnv(db.MockMySQL(), nil)
+	env := PaywallCommon{
+		DBs:   db.MockMySQL(),
+		Cache: nil,
+	}
 
 	type args struct {
 		live bool
@@ -89,7 +94,10 @@ func TestEnv_retrieveActiveProducts(t *testing.T) {
 
 func TestEnv_listActivePrices(t *testing.T) {
 
-	env := NewEnv(db.MockMySQL(), nil)
+	env := PaywallCommon{
+		DBs:   db.MockMySQL(),
+		Cache: nil,
+	}
 
 	type args struct {
 		live bool
@@ -136,7 +144,10 @@ func TestEnv_listActivePrices(t *testing.T) {
 
 func TestEnv_LoadPaywall(t *testing.T) {
 
-	env := NewEnv(db.MockMySQL(), test.Cache)
+	env := PaywallCommon{
+		DBs:   db.MockMySQL(),
+		Cache: nil,
+	}
 
 	type args struct {
 		live bool
