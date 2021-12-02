@@ -57,10 +57,10 @@ func (r PriceRecurring) IsZero() bool {
 }
 
 type Price struct {
+	ID         string           `json:"id"`
 	Active     bool             `json:"active"`
 	Created    int64            `json:"created"`
 	Currency   stripe.Currency  `json:"currency"`
-	ID         string           `json:"id"`
 	LiveMode   bool             `json:"liveMode"`
 	Metadata   PriceMetadata    `json:"metadata"`
 	Nickname   string           `json:"nickname"`
