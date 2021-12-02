@@ -68,6 +68,7 @@ func (p Product) Update(input ProductParams) Product {
 	p.Heading = input.Heading
 	p.Description = input.Description
 	p.SmallPrint = input.SmallPrint
+	p.Introductory = input.Introductory
 
 	return p
 }
