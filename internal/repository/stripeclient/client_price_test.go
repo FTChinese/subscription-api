@@ -17,9 +17,10 @@ func TestClient_ListPrices(t *testing.T) {
 		return
 	}
 
-	stripe.PriceCacheStore.AddAll(stripePrices)
+	cache := stripe.NewPriceCache()
+	cache.AddAll(stripePrices)
 
-	prices := stripe.PriceCacheStore.List(false)
+	prices := cache.List(false)
 
 	for _, v := range prices {
 		t.Logf("%s", faker.MustMarshalIndent(v))
