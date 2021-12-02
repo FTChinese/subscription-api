@@ -7,14 +7,13 @@ import (
 
 type StripeBaseRepo struct {
 	Client stripeclient.Client
-	Live   bool // Deprecated
 	Cache  *stripe.PriceCache
 }
 
-func (repo StripeBaseRepo) ListPrices(bustCache bool) ([]stripe.Price, error) {
+func (repo StripeBaseRepo) ListPrices(live bool, bustCache bool) ([]stripe.Price, error) {
 	if !bustCache && repo.Cache.Len() != 0 {
 		return repo.Cache.
-			List(repo.Live), nil
+			List(live), nil
 	}
 
 	sp, err := repo.Client.ListPrices()
@@ -25,7 +24,7 @@ func (repo StripeBaseRepo) ListPrices(bustCache bool) ([]stripe.Price, error) {
 	repo.Cache.AddAll(sp)
 
 	return repo.Cache.
-		List(repo.Live), nil
+		List(live), nil
 }
 
 func (repo StripeBaseRepo) LoadPrice(id string, bustCache bool) (stripe.Price, error) {
