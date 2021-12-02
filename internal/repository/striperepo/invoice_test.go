@@ -3,7 +3,7 @@ package striperepo
 import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 	"go.uber.org/zap/zaptest"
@@ -20,10 +20,7 @@ func MustNewInvoice() stripe.Invoice {
 }
 
 func TestEnv_UpsertInvoice(t *testing.T) {
-	env := Env{
-		StripeBaseRepo: shared.StripeBaseRepo{},
-		logger:         zaptest.NewLogger(t),
-	}
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		i stripe.Invoice
