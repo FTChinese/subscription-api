@@ -93,6 +93,3 @@ func (store *PriceCache) Find(id string) (Price, bool) {
 
 	return store.prices[i], true
 }
-
-// Deprecated
-var PriceCacheStore = NewPriceCache()
