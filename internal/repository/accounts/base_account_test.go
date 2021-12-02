@@ -12,7 +12,7 @@ import (
 
 func TestEnv_CreateAccount(t *testing.T) {
 
-	env := New(test.SplitDB, zaptest.NewLogger(t))
+	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
 
 	type args struct {
 		a account.BaseAccount
@@ -55,7 +55,7 @@ func TestEnv_BaseAccountByEmail(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		email string

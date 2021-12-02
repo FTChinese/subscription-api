@@ -46,8 +46,9 @@ func StartServer(s ServerStatus) {
 
 	guard := access.NewGuard(myDBs)
 
+	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
 	userShared := controller.NewUserShared(
-		myDBs,
+		readerBaseRepo,
 		post,
 		logger)
 	authRouter := controller.NewAuthRouter(userShared)
