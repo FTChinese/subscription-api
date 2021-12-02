@@ -2,7 +2,6 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -51,11 +50,7 @@ func newCustomerAndPayment(client stripeclient.Client, acnt account.BaseAccount)
 
 func TestEnv_CreateSubscription(t *testing.T) {
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t), shared.StripeBaseRepo{
-		Client: stripeclient.New(false, zaptest.NewLogger(t)),
-		Live:   false,
-		Cache:  nil,
-	})
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		ba     account.BaseAccount

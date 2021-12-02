@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -36,7 +37,7 @@ func NewIAPPoller(dbs db.ReadWriteMyDBs, prod bool, logger *zap.Logger) IAPPolle
 
 	return IAPPoller{
 		db:        dbs.Read,
-		iapRepo:   iaprepo.NewEnv(dbs, rdb, logger),
+		iapRepo:   iaprepo.New(shared.NewReaderBaseRepo(dbs), rdb, logger),
 		addOnRepo: addons.NewEnv(dbs, logger),
 		verifier:  iaprepo.NewClient(logger),
 		apiClient: NewAPIClient(prod),
