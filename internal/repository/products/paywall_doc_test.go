@@ -11,7 +11,7 @@ import (
 
 func TestEnv_CreatePaywallDoc(t *testing.T) {
 
-	env := NewEnv(db.MockMySQL(), nil)
+	env := newTestEnv(db.MockMySQL(), nil)
 
 	type args struct {
 		pwb pw.PaywallDoc
@@ -51,7 +51,7 @@ func TestEnv_CreatePaywallDoc(t *testing.T) {
 
 func TestEnv_RetrievePaywallDoc(t *testing.T) {
 
-	env := NewEnv(db.MockMySQL(), nil)
+	env := newTestEnv(db.MockMySQL(), nil)
 
 	type args struct {
 		live bool

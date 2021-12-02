@@ -12,7 +12,7 @@ import (
 )
 
 func TestEnv_LoadDiscount(t *testing.T) {
-	env := NewEnv(db.MockMySQL(), nil)
+	env := newTestEnv(db.MockMySQL(), nil)
 
 	pb := test.NewStdProdBuilder().NewYearPriceBuilder()
 	disc := pb.NewDiscountBuilder().BuildRetention()
@@ -54,7 +54,7 @@ func TestEnv_LoadDiscount(t *testing.T) {
 }
 
 func TestEnv_CreateDiscount(t *testing.T) {
-	env := NewEnv(db.MockMySQL(), nil)
+	env := newTestEnv(db.MockMySQL(), nil)
 
 	type args struct {
 		d price.Discount
@@ -125,7 +125,7 @@ func TestEnv_CreateDiscount(t *testing.T) {
 }
 
 func TestEnv_UpdateDiscount(t *testing.T) {
-	env := NewEnv(db.MockMySQL(), nil)
+	env := newTestEnv(db.MockMySQL(), nil)
 
 	pb := test.NewStdProdBuilder().NewYearPriceBuilder()
 	disc := pb.NewDiscountBuilder().BuildRetention()
@@ -161,7 +161,7 @@ func TestEnv_UpdateDiscount(t *testing.T) {
 }
 
 func TestEnv_ListActiveDiscounts(t *testing.T) {
-	env := NewEnv(db.MockMySQL(), nil)
+	env := newTestEnv(db.MockMySQL(), nil)
 
 	pb := test.NewStdProdBuilder().NewYearPriceBuilder()
 
@@ -210,7 +210,7 @@ func TestEnv_ListActiveDiscounts(t *testing.T) {
 }
 
 func TestEnv_ListDiscounts(t *testing.T) {
-	env := NewEnv(db.MockMySQL(), nil)
+	env := newTestEnv(db.MockMySQL(), nil)
 
 	pb := test.NewStdProdBuilder().NewYearPriceBuilder()
 

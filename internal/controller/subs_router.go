@@ -6,36 +6,29 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
 	ftcpay2 "github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
-	"github.com/FTChinese/subscription-api/internal/repository/products"
-	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"github.com/patrickmn/go-cache"
-	"go.uber.org/zap"
 	"net/http"
 )
 
 // SubsRouter is the base type used to handle shared payment operations.
 type SubsRouter struct {
 	ftcpay.FtcPay // This contains readers.Env to access account data.
-	prodRepo      products.Env
+	paywallRepo   shared.PaywallCommon
 	isLive        bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
 }
 
 func NewSubsRouter(
-	dbs db.ReadWriteMyDBs,
-	logger *zap.Logger,
-	c *cache.Cache,
-	p postman.Postman,
-	isProd bool,
+	payShared ftcpay.FtcPay,
+	paywallRepo shared.PaywallCommon,
+	isLive bool,
 ) SubsRouter {
-
 	return SubsRouter{
-		FtcPay:   ftcpay.New(dbs, p, logger),
-		prodRepo: products.NewEnv(dbs, c),
-		isLive:   isProd,
+		FtcPay:      payShared,
+		paywallRepo: paywallRepo,
+		isLive:      isLive,
 	}
 }
 
@@ -100,7 +93,7 @@ func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.C
 }
 
 func (router SubsRouter) loadCheckoutItem(params ftcpay2.OrderParams, live bool) (price.CheckoutItem, *render.ResponseError) {
-	paywall, err := router.prodRepo.LoadPaywall(live)
+	paywall, err := router.paywallRepo.LoadPaywall(live)
 	// If price and discount could be found in paywall.
 	if err == nil {
 		item, err := paywall.FindCheckoutItem(params.PriceID, params.DiscountID)
@@ -110,7 +103,7 @@ func (router SubsRouter) loadCheckoutItem(params ftcpay2.OrderParams, live bool)
 	}
 
 	// Otherwise, retrieve from db.
-	ci, err := router.prodRepo.LoadCheckoutItem(params.PriceID, params.DiscountID, router.isLive)
+	ci, err := router.paywallRepo.LoadCheckoutItem(params.PriceID, params.DiscountID, router.isLive)
 	if err != nil {
 		return price.CheckoutItem{}, render.NewDBError(err)
 	}

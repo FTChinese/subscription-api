@@ -16,7 +16,7 @@ func TestEnv_SaveEmailVerifier(t *testing.T) {
 	faker.SeedGoFake()
 
 	type fields struct {
-		Env readers.Env
+		Env shared.Env
 	}
 	type args struct {
 		v account.EmailVerifier
@@ -30,7 +30,7 @@ func TestEnv_SaveEmailVerifier(t *testing.T) {
 		{
 			name: "Save email verification token",
 			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
+				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
 				v: account.MustNewEmailVerifier(gofakeit.Email(), ""),
@@ -58,7 +58,7 @@ func TestEnv_RetrieveEmailVerifier(t *testing.T) {
 	test.NewRepo().MustSaveEmailVerifier(v)
 
 	type fields struct {
-		Env readers.Env
+		Env shared.Env
 	}
 	type args struct {
 		token string
@@ -73,7 +73,7 @@ func TestEnv_RetrieveEmailVerifier(t *testing.T) {
 		{
 			name: "Retrieve email verifier",
 			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
+				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
 				token: v.Token,
@@ -109,7 +109,7 @@ func TestEnv_EmailVerified(t *testing.T) {
 	test.NewRepo().MustCreateFtcAccount(a)
 
 	type fields struct {
-		Env readers.Env
+		Env shared.Env
 	}
 	type args struct {
 		ftcID string
@@ -123,7 +123,7 @@ func TestEnv_EmailVerified(t *testing.T) {
 		{
 			name: "Flag email verified",
 			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
+				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
 			},
 			args: args{
 				ftcID: a.FtcID,

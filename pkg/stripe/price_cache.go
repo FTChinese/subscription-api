@@ -1,50 +1,49 @@
-package striperepo
+package stripe
 
 import (
-	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/stripe/stripe-go/v72"
 	"sync"
 )
 
-// priceCache acts as a cache after retrieving Stripe prices.
-type priceCache struct {
+// PriceCache acts as a cache after retrieving Stripe prices.
+type PriceCache struct {
 	len     int
-	prices  []ftcStripe.Price // Use an array to store the prices.
-	idIndex map[string]int    // price id to its position in the array.
-	mux     sync.Mutex        // The data is global. Lock it for concurrency.
+	prices  []Price        // Use an array to store the prices.
+	idIndex map[string]int // price id to its position in the array.
+	mux     sync.Mutex     // The data is global. Lock it for concurrency.
 }
 
-func newPriceCache() *priceCache {
-	return &priceCache{
+func NewPriceCache() *PriceCache {
+	return &PriceCache{
 		len:     0,
-		prices:  make([]ftcStripe.Price, 0),
+		prices:  make([]Price, 0),
 		idIndex: map[string]int{},
 	}
 }
 
-func (store *priceCache) Len() int {
+func (store *PriceCache) Len() int {
 	return store.len
 }
 
 // AddAll caches an array of stripe prices.
-func (store *priceCache) AddAll(sps []*stripe.Price) {
+func (store *PriceCache) AddAll(sps []*stripe.Price) {
 	store.mux.Lock()
 	defer store.mux.Unlock()
 
 	for _, sp := range sps {
-		_ = store.upsert(ftcStripe.NewPrice(sp))
+		_ = store.upsert(NewPrice(sp))
 	}
 }
 
 // Upsert inserts or update a price.
-func (store *priceCache) Upsert(p ftcStripe.Price) int {
+func (store *PriceCache) Upsert(p Price) int {
 	store.mux.Lock()
 	defer store.mux.Unlock()
 
 	return store.upsert(p)
 }
 
-func (store *priceCache) upsert(p ftcStripe.Price) int {
+func (store *PriceCache) upsert(p Price) int {
 
 	// If this price already cached, update it.
 	// We perform this operation in case of any update on the Stripe side.
@@ -71,8 +70,8 @@ func (store *priceCache) upsert(p ftcStripe.Price) int {
 }
 
 // List returned a list all prices in the specified environment.
-func (store *priceCache) List(live bool) []ftcStripe.Price {
-	var prices = make([]ftcStripe.Price, 0)
+func (store *PriceCache) List(live bool) []Price {
+	var prices = make([]Price, 0)
 
 	for _, v := range store.prices {
 		if v.LiveMode != live {
@@ -86,13 +85,11 @@ func (store *priceCache) List(live bool) []ftcStripe.Price {
 }
 
 // Find tries to find a Price by id.
-func (store *priceCache) Find(id string) (ftcStripe.Price, bool) {
+func (store *PriceCache) Find(id string) (Price, bool) {
 	i, ok := store.idIndex[id]
 	if !ok {
-		return ftcStripe.Price{}, false
+		return Price{}, false
 	}
 
 	return store.prices[i], true
 }
-
-var PriceCache = newPriceCache()

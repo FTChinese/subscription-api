@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
@@ -22,24 +21,19 @@ func TestEnv_Authenticate(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	type fields struct {
-		Env readers.Env
-	}
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		params input.EmailLoginParams
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    account.AuthResult
 		wantErr bool
 	}{
 		{
 			name: "Authenticate email and password",
-			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				params: input.EmailLoginParams{
 					EmailCredentials: input.EmailCredentials{
@@ -58,9 +52,6 @@ func TestEnv_Authenticate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			got, err := env.Authenticate(tt.args.params.EmailCredentials)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Authenticate() error = %v, wantErr %v", err, tt.wantErr)
@@ -85,24 +76,19 @@ func TestEnv_SignUpCount(t *testing.T) {
 		WithSource(footprint.SourceSignUp).
 		BuildN(5))
 
-	type fields struct {
-		Env readers.Env
-	}
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		params account.SignUpRateParams
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    account.SignUpLimit
 		wantErr bool
 	}{
 		{
 			name: "Count sign-up of same ip",
-			fields: fields{
-				Env: readers.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				params: account.NewSignUpRateParams(ip, 1),
 			},
@@ -114,9 +100,6 @@ func TestEnv_SignUpCount(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			got, err := env.SignUpCount(tt.args.params)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SignUpCount() error = %v, wantErr %v", err, tt.wantErr)
@@ -136,7 +119,7 @@ func TestEnv_VerifyIDPassword(t *testing.T) {
 	repo := test.NewRepo()
 	repo.CreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		params account.IDCredentials
@@ -184,7 +167,7 @@ func TestEnv_UpdatePassword(t *testing.T) {
 	repo := test.NewRepo()
 	repo.CreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		p account.IDCredentials

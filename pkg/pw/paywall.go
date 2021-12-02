@@ -50,3 +50,20 @@ func (w Paywall) FindCheckoutItem(priceID string, offerID null.String) (price.Ch
 		Offer: offer,
 	}, nil
 }
+
+// StripePriceIDs collect all stripe price id present on paywall.
+func (w Paywall) StripePriceIDs() []string {
+	var ids = make([]string, 0)
+
+	for _, pwProd := range w.Products {
+		if pwProd.Introductory.StripePriceID.Valid {
+			ids = append(ids, pwProd.Introductory.StripePriceID.String)
+		}
+
+		for _, pwPrice := range pwProd.Prices {
+			ids = append(ids, pwPrice.StripePriceID)
+		}
+	}
+
+	return ids
+}

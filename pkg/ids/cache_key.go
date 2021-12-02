@@ -8,3 +8,7 @@ var boolKey = map[bool]string{
 func GetBoolKey(k bool) string {
 	return boolKey[k]
 }
+
+func PaywallCacheKey(live bool) string {
+	return "paywall_" + GetBoolKey(live)
+}

@@ -1,7 +1,8 @@
-package striperepo
+package stripeclient
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
@@ -9,16 +10,17 @@ import (
 func TestClient_ListPrices(t *testing.T) {
 	faker.MustSetupViper()
 
-	client := NewClient(false, zaptest.NewLogger(t))
+	client := New(false, zaptest.NewLogger(t))
 	stripePrices, err := client.ListPrices()
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	PriceCache.AddAll(stripePrices)
+	cache := stripe.NewPriceCache()
+	cache.AddAll(stripePrices)
 
-	prices := PriceCache.List(false)
+	prices := cache.List(false)
 
 	for _, v := range prices {
 		t.Logf("%s", faker.MustMarshalIndent(v))
@@ -28,7 +30,7 @@ func TestClient_ListPrices(t *testing.T) {
 func TestClient_RetrievePrice(t *testing.T) {
 	faker.MustSetupViper()
 
-	client := NewClient(false, zaptest.NewLogger(t))
+	client := New(false, zaptest.NewLogger(t))
 	p, err := client.RetrievePrice("price_1Juuu2BzTK0hABgJTXiK4NTt")
 	if err != nil {
 		t.Error(err)

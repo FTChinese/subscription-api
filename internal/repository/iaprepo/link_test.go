@@ -19,7 +19,7 @@ func TestEnv_GetSubAndSetFtcID(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(s)
 
 	env := Env{
-		Env:    readers.New(db.MockMySQL(), zaptest.NewLogger(t)),
+		Env:    shared.New(db.MockMySQL(), zaptest.NewLogger(t)),
 		rdb:    nil,
 		logger: zaptest.NewLogger(t),
 	}
@@ -61,7 +61,7 @@ func TestEnv_ArchiveLinkCheating(t *testing.T) {
 	p := test.NewPersona()
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    nil,
 		logger: zaptest.NewLogger(t),
 	}
@@ -97,7 +97,7 @@ func TestEnv_Unlink(t *testing.T) {
 	repo := test.NewRepo()
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: logger,
 	}
@@ -144,7 +144,7 @@ func TestEnv_ArchiveUnlink(t *testing.T) {
 	p := test.NewPersona()
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
+		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
 		rdb:    test.Redis,
 		logger: zaptest.NewLogger(t),
 	}

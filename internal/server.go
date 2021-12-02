@@ -4,10 +4,14 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/controller"
+	"github.com/FTChinese/subscription-api/internal/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/postman"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/go-chi/chi"
@@ -35,42 +39,55 @@ func StartServer(s ServerStatus) {
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
 	// Set the cache default expiration time to 2 hours.
-	promoCache := cache.New(2*time.Hour, 0)
+	paywallCache := cache.New(2*time.Hour, 0)
 
 	post := postman.New(config.MustGetHanqiConn())
 
 	guard := access.NewGuard(myDBs)
 
-	authRouter := controller.NewAuthRouter(
-		myDBs,
-		logger,
-		post)
-	accountRouter := controller.NewAccountRouter(
-		myDBs,
-		logger,
-		post)
-	payRouter := controller.NewSubsRouter(
-		myDBs,
-		logger,
-		promoCache,
+	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
+	paywallBaseRepo := shared.PaywallCommon{
+		DBs:   myDBs,
+		Cache: paywallCache,
+	}
+
+	stripeBaseRepo := shared.StripeBaseRepo{
+		Client: stripeclient.New(s.LiveMode, logger),
+		Cache:  stripe.NewPriceCache(),
+	}
+
+	userShared := controller.NewUserShared(
+		readerBaseRepo,
 		post,
+		logger)
+	authRouter := controller.NewAuthRouter(userShared)
+	accountRouter := controller.NewAccountRouter(userShared)
+
+	ftcPay := ftcpay.New(myDBs, post, logger)
+	payRouter := controller.NewSubsRouter(
+		ftcPay,
+		paywallBaseRepo,
 		s.LiveMode)
+
 	iapRouter := controller.NewIAPRouter(
-		myDBs,
+		readerBaseRepo,
 		logger,
 		rdb,
 		post,
 		s.LiveMode)
+
 	stripeRouter := controller.NewStripeRouter(
+		readerBaseRepo,
+		stripeBaseRepo,
 		myDBs,
 		logger,
 		s.LiveMode)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.NewPaywallRouter(
-		myDBs,
+		paywallBaseRepo,
+		stripeBaseRepo,
 		logger,
-		promoCache,
 		s.LiveMode)
 
 	wxAuth := controller.NewWxAuth(myDBs, logger)
@@ -408,16 +425,11 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		// Data used to build a paywall.
-		// ?live=<true|false> to get prices for different mode.
-		// TODO: in v5 this behavior will be dropped.
 		// Live server only outputs live data while sandbox for sandbox data only.
-		r.With(controller.FormParsed).
-			Get("/", paywallRouter.LoadPaywall)
+		r.Get("/", paywallRouter.LoadPaywall)
 
 		// List active prices used on paywall.
-		// ?live=<true|false>
-		r.With(controller.FormParsed).
-			Get("/active/prices", paywallRouter.LoadPricing)
+		r.Get("/active/prices", paywallRouter.LoadPricing)
 
 		r.Route("/banner", func(r chi.Router) {
 			r.Post("/", paywallRouter.SaveBanner)
