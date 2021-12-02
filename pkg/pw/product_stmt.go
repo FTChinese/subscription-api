@@ -1,18 +1,27 @@
 package pw
 
+const colUpsertProduct = `
+description = :description,
+heading = :heading,
+introductory = :introductory,
+small_print = :small_print
+`
+
 const StmtCreateProduct = `
 INSERT INTO subs_product.product
 SET id = :product_id,
-	description = :description,
-	heading = :heading,
 	is_active = :is_active,
 	live_mode = :live_mode,
-    small_print = :small_print,
 	tier = :tier,
-	introductory = :introductory,
     created_by = :created_by,
     created_utc = :created_utc,
-    updated_utc = :updated_utc
+` + colUpsertProduct
+
+const StmtUpdateProduct = `
+UPDATE subs_product.product
+SET ` + colUpsertProduct + `
+WHERE id = :product_id
+LIMIT 1
 `
 
 const colProduct = `
@@ -40,16 +49,6 @@ LIMIT 1
 const StmtListProducts = colProduct + `
 WHERE live_mode = ?
 ORDER BY is_active DESC, tier ASC, created_utc DESC
-`
-
-const StmtUpdateProduct = `
-UPDATE subs_product.product
-SET heading = :heading,
-    description = :description,
-    small_print = :small_print,
-    updated_utc = :updated_utc
-WHERE id = :product_id
-LIMIT 1
 `
 
 const StmtDeactivateSiblingProducts = `
