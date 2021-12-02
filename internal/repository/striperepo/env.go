@@ -3,7 +3,6 @@ package striperepo
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
 )
 
@@ -14,16 +13,10 @@ type Env struct {
 	logger *zap.Logger
 }
 
-// New creates a new instance of Env.
-// `sandbox` is used to determine which table to write subscription data.
-func New(
-	dbs db.ReadWriteMyDBs,
-	logger *zap.Logger,
-	baseRepo shared.StripeBaseRepo,
-) Env {
+func New(readerBase shared.ReaderBaseRepo, stripeBase shared.StripeBaseRepo, logger *zap.Logger) Env {
 	return Env{
-		ReaderBaseRepo: shared.New(dbs),
-		StripeBaseRepo: baseRepo,
+		ReaderBaseRepo: readerBase,
+		StripeBaseRepo: stripeBase,
 		logger:         logger,
 	}
 }

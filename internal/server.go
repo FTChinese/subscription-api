@@ -48,6 +48,11 @@ func StartServer(s ServerStatus) {
 
 	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
 	prodRepo := products.NewEnv(myDBs, promoCache)
+	stripeBaseRepo := shared.StripeBaseRepo{
+		Client: stripeclient.New(s.LiveMode, logger),
+		Live:   s.LiveMode,
+		Cache:  stripe.NewPriceCache(),
+	}
 
 	userShared := controller.NewUserShared(
 		readerBaseRepo,
@@ -69,16 +74,12 @@ func StartServer(s ServerStatus) {
 		post,
 		s.LiveMode)
 
-	stripeBaseRepo := shared.StripeBaseRepo{
-		Client: stripeclient.New(s.LiveMode, logger),
-		Live:   s.LiveMode,
-		Cache:  stripe.NewPriceCache(),
-	}
 	stripeRouter := controller.NewStripeRouter(
+		readerBaseRepo,
+		stripeBaseRepo,
 		myDBs,
 		logger,
-		s.LiveMode,
-		stripeBaseRepo)
+		s.LiveMode)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.NewPaywallRouter(
