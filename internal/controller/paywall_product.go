@@ -8,7 +8,7 @@ import (
 )
 
 func (router PaywallRouter) ListProducts(w http.ResponseWriter, req *http.Request) {
-	products, err := router.repo.ListProducts(router.live)
+	products, err := router.prodRepo.ListProducts(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -38,7 +38,7 @@ func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Reque
 
 	p := pw.NewProduct(params, router.live)
 
-	err := router.repo.CreateProduct(p)
+	err := router.prodRepo.CreateProduct(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -56,7 +56,7 @@ func (router PaywallRouter) LoadProduct(w http.ResponseWriter, req *http.Request
 
 	sugar.Infof("Retrieving product %s", id)
 
-	prod, err := router.repo.RetrieveProduct(id, router.live)
+	prod, err := router.prodRepo.RetrieveProduct(id, router.live)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -92,7 +92,7 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 
 	sugar.Infof("Retrieving product %s", id)
 
-	prod, err := router.repo.RetrieveProduct(id, router.live)
+	prod, err := router.prodRepo.RetrieveProduct(id, router.live)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -102,7 +102,7 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 	sugar.Infof("Product retrieved %v", prod)
 
 	updated := prod.Update(params)
-	err = router.repo.UpdateProduct(updated)
+	err = router.prodRepo.UpdateProduct(updated)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -119,14 +119,14 @@ func (router PaywallRouter) ActivateProduct(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	prod, err := router.repo.RetrieveProduct(id, router.live)
+	prod, err := router.prodRepo.RetrieveProduct(id, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	prod = prod.Activate()
-	err = router.repo.SetProductOnPaywall(prod)
+	err = router.prodRepo.SetProductOnPaywall(prod)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

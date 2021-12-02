@@ -1,7 +1,6 @@
-package striperepo
+package stripeclient
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 )
 
@@ -27,18 +26,4 @@ func (c Client) ListPrices() ([]*stripeSdk.Price, error) {
 // says no parameter is required.
 func (c Client) RetrievePrice(id string) (*stripeSdk.Price, error) {
 	return c.sc.Prices.Get(id, nil)
-}
-
-func (c Client) GetPriceFromCacheOrAPI(id string) (stripe.Price, error) {
-	p, ok := PriceCache.Find(id)
-
-	if ok {
-		return p, nil
-	}
-	sp, err := c.RetrievePrice(id)
-	if err != nil {
-		return stripe.Price{}, err
-	}
-
-	return stripe.NewPrice(sp), nil
 }

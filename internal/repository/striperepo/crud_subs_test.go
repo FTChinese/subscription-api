@@ -3,7 +3,7 @@ package striperepo
 import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
@@ -36,9 +36,8 @@ func MustNewSubs() stripe.Subs {
 func TestEnv_UpsertSubs(t *testing.T) {
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		client: Client{},
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -69,9 +68,8 @@ func TestEnv_UpsertSubs(t *testing.T) {
 
 func TestEnv_RetrieveSubs(t *testing.T) {
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		client: Client{},
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -106,9 +104,8 @@ func TestEnv_RetrieveSubs(t *testing.T) {
 
 func TestEnv_SubsExists(t *testing.T) {
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		client: Client{},
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {

@@ -9,7 +9,7 @@ import (
 func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) {
 	refresh := req.FormValue("refresh") == "true"
 
-	prices, err := router.stripeRepo.ListPrices(refresh)
+	prices, err := router.stripeRepo.ListPrices(router.isLive, refresh)
 
 	if err != nil {
 		err := handleErrResp(w, err)

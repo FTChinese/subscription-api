@@ -57,7 +57,7 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 		}, nil
 	}
 
-	ss, err := env.client.CancelSubs(params.SubID, params.Cancel)
+	ss, err := env.Client.CancelSubs(params.SubID, params.Cancel)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()

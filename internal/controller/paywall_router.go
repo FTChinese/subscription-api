@@ -1,48 +1,42 @@
 package controller
 
 import (
-	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
-	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/pw"
-	"github.com/patrickmn/go-cache"
+	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"go.uber.org/zap"
 	"net/http"
 )
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	repo   products.Env
-	logger *zap.Logger
-	live   bool // TODO: initialize this field.
-
+	prodRepo   products.Env
+	stripeRepo shared.StripeBaseRepo
+	logger     *zap.Logger
+	live       bool
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
-func NewPaywallRouter(dbs db.ReadWriteMyDBs, logger *zap.Logger, c *cache.Cache, live bool) PaywallRouter {
+func NewPaywallRouter(
+	paywallBaseRepo shared.PaywallCommon,
+	stripeBaseRepo shared.StripeBaseRepo,
+	logger *zap.Logger,
+	live bool,
+) PaywallRouter {
 	return PaywallRouter{
-		repo:   products.NewEnv(dbs, c),
-		logger: logger,
-		live:   live,
+		prodRepo:   products.New(paywallBaseRepo),
+		stripeRepo: stripeBaseRepo,
+		logger:     logger,
+		live:       live,
 	}
-}
-
-func getParamLiveMode(req *http.Request) bool {
-	liveMode, err := gorest.GetQueryParam(req, "live").ToBool()
-	// For backward compatibility. Query parameter
-	// `live` does not exist prior to v2.6.x
-	if err != nil {
-		return true
-	}
-
-	return liveMode
 }
 
 // LoadPaywall loads paywall data from db or cache.
 func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request) {
 
-	paywall, err := router.repo.LoadPaywall(router.live)
+	paywall, err := router.prodRepo.LoadPaywall(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -51,30 +45,49 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 	_ = render.New(w).JSON(http.StatusOK, paywall)
 }
 
+// BustCache clears the cached paywall data.
 func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) {
-	router.repo.ClearCache()
+	router.prodRepo.ClearCache()
 
-	pwLive, err := router.repo.LoadPaywall(true)
+	paywall, err := router.prodRepo.LoadPaywall(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	pwTest, err := router.repo.LoadPaywall(false)
+	_, err = router.stripeRepo.ListPrices(router.live, true)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_ = render.New(w).JSON(http.StatusOK, map[string]pw.Paywall{
-		"live": pwLive,
-		"test": pwTest,
+	stripeIDs := paywall.StripePriceIDs()
+
+	for _, id := range stripeIDs {
+		_, err := router.stripeRepo.LoadPrice(id, false)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			return
+		}
+	}
+
+	stripePrices, err := router.stripeRepo.ListPrices(router.live, false)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).JSON(http.StatusOK, struct {
+		Paywall      pw.Paywall     `json:"paywall"`
+		StripePrices []stripe.Price `json:"stripePrices"`
+	}{
+		Paywall:      paywall,
+		StripePrices: stripePrices,
 	})
 }
 
 func (router PaywallRouter) LoadPricing(w http.ResponseWriter, req *http.Request) {
-	live := getParamLiveMode(req)
-	p, err := router.repo.ListActivePrices(live)
+	p, err := router.prodRepo.ListActivePrices(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

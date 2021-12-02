@@ -3,9 +3,8 @@ package striperepo
 import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/FTChinese/subscription-api/test"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -21,11 +20,7 @@ func MustNewInvoice() stripe.Invoice {
 }
 
 func TestEnv_UpsertInvoice(t *testing.T) {
-	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		client: Client{},
-		logger: zaptest.NewLogger(t),
-	}
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		i stripe.Invoice

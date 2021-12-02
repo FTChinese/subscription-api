@@ -4,6 +4,8 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -17,23 +19,25 @@ type StripeRouter struct {
 	signingKey string
 	addOnRepo  addons.Env
 	stripeRepo striperepo.Env
-	client     striperepo.Client
+	client     stripeclient.Client
 	logger     *zap.Logger
 	isLive     bool
 }
 
 // NewStripeRouter initializes StripeRouter.
 func NewStripeRouter(
+	readerBase shared.ReaderBaseRepo,
+	stripeBase shared.StripeBaseRepo,
 	dbs db.ReadWriteMyDBs,
 	logger *zap.Logger,
 	isLive bool,
 ) StripeRouter {
-	client := striperepo.NewClient(isLive, logger)
+	client := stripeclient.New(isLive, logger)
 
 	return StripeRouter{
 		signingKey: config.MustStripeWebhookKey().Pick(isLive),
 		addOnRepo:  addons.NewEnv(dbs, logger),
-		stripeRepo: striperepo.New(dbs, client, logger),
+		stripeRepo: striperepo.New(readerBase, stripeBase, logger),
 		client:     client,
 		logger:     logger,
 	}

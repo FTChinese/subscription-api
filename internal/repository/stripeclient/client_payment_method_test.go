@@ -1,4 +1,4 @@
-package striperepo
+package stripeclient
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestClient_NewPaymentMethod(t *testing.T) {
-	c := NewClient(false, zaptest.NewLogger(t))
+	c := New(false, zaptest.NewLogger(t))
 
 	pm, err := c.NewPaymentMethod(&stripe.PaymentMethodCardParams{
 		CVC:      stripe.String("001"),
@@ -30,7 +30,7 @@ func TestClient_NewPaymentMethod(t *testing.T) {
 func TestClient_AttachPaymentMethod(t *testing.T) {
 	faker.SeedGoFake()
 
-	client := NewClient(false, zaptest.NewLogger(t))
+	client := New(false, zaptest.NewLogger(t))
 
 	cus, err := client.CreateCustomer(gofakeit.Email())
 	if err != nil {

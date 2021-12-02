@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
@@ -18,7 +18,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"reflect"
 	"testing"
@@ -34,8 +33,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 	addOnPerson := test.NewPersona()
 
 	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
+		logger:         zaptest.NewLogger(t),
 	}
 
 	type args struct {
@@ -227,24 +226,19 @@ func TestEnv_CreateOrder(t *testing.T) {
 }
 
 func TestEnv_LogOrderMeta(t *testing.T) {
-	type fields struct {
-		dbs    db.ReadWriteMyDBs
-		logger *zap.Logger
-	}
+
+	env := NewEnv(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		c footprint.OrderClient
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Log order meta data",
-			fields: fields{
-				dbs: test.SplitDB,
-			},
 			args: args{
 				c: footprint.OrderClient{
 					OrderID: ids.MustOrderID(),
@@ -256,10 +250,6 @@ func TestEnv_LogOrderMeta(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-				logger: tt.fields.logger,
-			}
 			if err := env.SaveOrderMeta(tt.args.c); (err != nil) != tt.wantErr {
 				t.Errorf("SaveOrderMeta() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -277,10 +267,7 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 		WithKind(enum.OrderKindCreate).
 		Build())
 
-	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
-	}
+	env := NewEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		orderID string
@@ -324,10 +311,7 @@ func TestEnv_LoadFullOrder(t *testing.T) {
 
 	test.NewRepo().MustSaveOrder(order)
 
-	env := Env{
-		Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
-	}
+	env := NewEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		orderID string
@@ -378,26 +362,19 @@ func TestEnv_ListOrders(t *testing.T) {
 		WithKind(enum.OrderKindCreate).
 		Build())
 
-	type fields struct {
-		Env    readers.Env
-		logger *zap.Logger
-	}
+	env := NewEnv(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		ids ids.UserIDs
 		p   gorest.Pagination
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "List orders",
-			fields: fields{
-				Env:    readers.New(test.SplitDB, zaptest.NewLogger(t)),
-				logger: zaptest.NewLogger(t),
-			},
 			args: args{
 				ids: ids.UserIDs{
 					CompoundID: "",
@@ -411,10 +388,6 @@ func TestEnv_ListOrders(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env:    tt.fields.Env,
-				logger: tt.fields.logger,
-			}
 			got, err := env.ListOrders(tt.args.ids, tt.args.p)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListOrders() error = %v, wantErr %v", err, tt.wantErr)
