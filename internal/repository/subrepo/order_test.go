@@ -33,7 +33,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 	addOnPerson := test.NewPersona()
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 

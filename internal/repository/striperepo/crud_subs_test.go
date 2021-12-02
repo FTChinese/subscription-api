@@ -36,7 +36,7 @@ func MustNewSubs() stripe.Subs {
 func TestEnv_UpsertSubs(t *testing.T) {
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 
@@ -68,7 +68,7 @@ func TestEnv_UpsertSubs(t *testing.T) {
 
 func TestEnv_RetrieveSubs(t *testing.T) {
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 
@@ -104,7 +104,7 @@ func TestEnv_RetrieveSubs(t *testing.T) {
 
 func TestEnv_SubsExists(t *testing.T) {
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 
