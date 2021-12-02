@@ -63,19 +63,24 @@ func (router PaywallRouter) ListDiscounts(w http.ResponseWriter, req *http.Reque
 	_ = render.New(w).OK(discounts)
 }
 
-func (router PaywallRouter) RemoveDiscount(w http.ResponseWriter, req *http.Request) {
+// DropDiscount flags a discount as inactive and refresh all discounts saved
+// as JSON under its parent price.
+func (router PaywallRouter) DropDiscount(w http.ResponseWriter, req *http.Request) {
+	// Get discount id
 	id, err := getURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
+	// Retrieve discount
 	discount, err := router.repo.LoadDiscount(id)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
+	// Flag the discount as cancelled.
 	discount = discount.Cancel()
 	err = router.repo.UpdateDiscount(discount)
 	if err != nil {
@@ -83,17 +88,20 @@ func (router PaywallRouter) RemoveDiscount(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	// Use the discount's price id to retrieve its parent price.
 	ftcPrice, err := router.repo.RetrieveFtcPrice(discount.PriceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
+	// Refresh the discount_list column.
 	ftcPrice, err = router.repo.RefreshFtcPriceOffers(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
+	// Return the updated price together with discount list.
 	_ = render.New(w).OK(ftcPrice)
 }
