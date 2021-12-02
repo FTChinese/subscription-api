@@ -77,7 +77,7 @@ func TestLoadReceiptFromDisk(t *testing.T) {
 func TestEnv_SaveReceiptToDB(t *testing.T) {
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		rdb:            test.Redis,
 		logger:         zaptest.NewLogger(t),
 	}
@@ -113,7 +113,7 @@ func TestEnv_LoadReceiptFromDB(t *testing.T) {
 	test.NewRepo().MustSaveIAPReceipt(rt)
 
 	env := Env{
-		ReaderBaseRepo: shared.New(db.MockMySQL()),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(db.MockMySQL()),
 		rdb:            test.Redis,
 		logger:         zaptest.NewLogger(t),
 	}

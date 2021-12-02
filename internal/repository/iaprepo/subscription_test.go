@@ -19,7 +19,7 @@ import (
 func TestEnv_SaveSubs(t *testing.T) {
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		rdb:            test.Redis,
 		logger:         zaptest.NewLogger(t),
 	}
@@ -83,7 +83,7 @@ func TestEnv_updateMembership(t *testing.T) {
 	test.NewRepo().MustSaveMembership(current)
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		rdb:            test.Redis,
 		logger:         zaptest.NewLogger(t),
 	}
@@ -133,7 +133,7 @@ func TestEnv_LoadSubs(t *testing.T) {
 		Build())
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		rdb:            test.Redis,
 		logger:         zaptest.NewLogger(t),
 	}
@@ -172,7 +172,7 @@ func TestEnv_countSubs(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		rdb:            test.Redis,
 		logger:         zaptest.NewLogger(t),
 	}
@@ -217,7 +217,7 @@ func TestEnv_listSubs(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		rdb:            test.Redis,
 		logger:         zaptest.NewLogger(t),
 	}
@@ -265,7 +265,7 @@ func TestEnv_ListSubs(t *testing.T) {
 	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		rdb:            test.Redis,
 		logger:         zaptest.NewLogger(t),
 	}
