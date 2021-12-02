@@ -2,9 +2,9 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
@@ -25,11 +25,7 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 		return
 	}
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		StripeBaseRepo: shared.StripeBaseRepo{},
-		logger:         zaptest.NewLogger(t),
-	}
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	_, err = env.CreateSubscription(
 		pa.account,

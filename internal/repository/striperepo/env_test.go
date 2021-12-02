@@ -17,7 +17,6 @@ func newTestEnv(
 		ReaderBaseRepo: shared.NewReaderBaseRepo(dbs),
 		StripeBaseRepo: shared.StripeBaseRepo{
 			Client: stripeclient.Client{},
-			Live:   false,
 			Cache:  nil,
 		},
 		logger: logger,
