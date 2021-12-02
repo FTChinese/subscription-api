@@ -3,6 +3,7 @@ package accounts
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
@@ -16,7 +17,7 @@ func TestEnv_LoadAddress(t *testing.T) {
 	a := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).Build()
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(shared.NewReaderBaseRepo(db.MockMySQL()), zaptest.NewLogger(t))
 
 	type args struct {
 		ftcID string
@@ -60,7 +61,7 @@ func TestEnv_UpdateAddress(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(shared.NewReaderBaseRepo(db.MockMySQL()), zaptest.NewLogger(t))
 
 	type args struct {
 		addr account.Address

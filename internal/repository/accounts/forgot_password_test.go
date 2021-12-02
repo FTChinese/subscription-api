@@ -4,8 +4,8 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
@@ -16,23 +16,18 @@ import (
 func TestEnv_SavePwResetSession(t *testing.T) {
 	faker.SeedGoFake()
 
-	type fields struct {
-		Env shared.Env
-	}
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		s account.PwResetSession
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Save password reset session",
-			fields: fields{
-				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				s: account.MustNewPwResetSession(input.ForgotPasswordParams{
 					Email:     gofakeit.Email(),
@@ -44,9 +39,6 @@ func TestEnv_SavePwResetSession(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			if err := env.SavePwResetSession(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("SavePwResetSession() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -62,26 +54,21 @@ func TestEnv_PwResetSessionByToken(t *testing.T) {
 		SourceURL: null.String{},
 	})
 
-	_ = New(test.SplitDB, zaptest.NewLogger(t)).SavePwResetSession(sess)
+	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
 
-	type fields struct {
-		Env shared.Env
-	}
+	_ = env.SavePwResetSession(sess)
+
 	type args struct {
 		token string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    account.PwResetSession
 		wantErr bool
 	}{
 		{
 			name: "Retrieve password reset session",
-			fields: fields{
-				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				token: sess.URLToken,
 			},
@@ -90,9 +77,6 @@ func TestEnv_PwResetSessionByToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			got, err := env.PwResetSessionByToken(tt.args.token)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PwResetSessionByToken() error = %v, wantErr %v", err, tt.wantErr)
@@ -115,26 +99,20 @@ func TestEnv_PwResetSessionByCode(t *testing.T) {
 		SourceURL: null.String{},
 	}).WithPlatform(enum.PlatformAndroid)
 
-	_ = New(test.SplitDB, zaptest.NewLogger(t)).SavePwResetSession(sess)
+	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
+	_ = env.SavePwResetSession(sess)
 
-	type fields struct {
-		Env shared.Env
-	}
 	type args struct {
 		params input.AppResetPwSessionParams
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    account.PwResetSession
 		wantErr bool
 	}{
 		{
 			name: "Retrieve password reset session for mobile app",
-			fields: fields{
-				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				params: input.AppResetPwSessionParams{
 					Email:   sess.Email,
@@ -146,9 +124,6 @@ func TestEnv_PwResetSessionByCode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			got, err := env.PwResetSessionByCode(tt.args.params)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PwResetSessionByCode() error = %v, wantErr %v", err, tt.wantErr)
@@ -171,25 +146,19 @@ func TestEnv_DisablePasswordReset(t *testing.T) {
 		SourceURL: null.String{},
 	})
 
-	_ = New(test.SplitDB, zaptest.NewLogger(t)).SavePwResetSession(sess)
+	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
+	_ = env.SavePwResetSession(sess)
 
-	type fields struct {
-		Env shared.Env
-	}
 	type args struct {
 		t string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Disable password reset session",
-			fields: fields{
-				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				t: sess.URLToken,
 			},
@@ -198,9 +167,6 @@ func TestEnv_DisablePasswordReset(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			if err := env.DisablePasswordReset(tt.args.t); (err != nil) != tt.wantErr {
 				t.Errorf("DisablePasswordReset() error = %v, wantErr %v", err, tt.wantErr)
 			}

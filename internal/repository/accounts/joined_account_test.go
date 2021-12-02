@@ -19,7 +19,7 @@ func TestEnv_JoinedByFtcID(t *testing.T) {
 	repo.MustCreateFtcAccount(a)
 	repo.MustSaveWxUser(w)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		ftcID string
@@ -64,7 +64,7 @@ func TestEnv_JoinedByWxID(t *testing.T) {
 	repo.MustCreateFtcAccount(a)
 	repo.MustSaveWxUser(w)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		unionID string
