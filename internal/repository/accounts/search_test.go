@@ -11,7 +11,7 @@ import (
 
 func TestEnv_IDExists(t *testing.T) {
 
-	env := New(test.SplitDB, zaptest.NewLogger(t))
+	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
 
 	a := account.NewMockFtcAccountBuilder(enum.AccountKindFtc).Build()
 
@@ -56,7 +56,7 @@ func TestEnv_EmailExists(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		email string
@@ -96,7 +96,7 @@ func TestEnv_NameExists(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		name string
@@ -135,7 +135,7 @@ func TestEnv_SearchByEmail(t *testing.T) {
 	repo := test.NewRepo()
 	repo.MustCreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		email string
@@ -181,7 +181,7 @@ func TestEnv_SearchByMobile(t *testing.T) {
 	a := test.NewPersona().MobileOnlyAccount()
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		mobile string

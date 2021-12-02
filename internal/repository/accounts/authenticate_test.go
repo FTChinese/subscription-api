@@ -21,7 +21,7 @@ func TestEnv_Authenticate(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		params input.EmailLoginParams
@@ -76,7 +76,7 @@ func TestEnv_SignUpCount(t *testing.T) {
 		WithSource(footprint.SourceSignUp).
 		BuildN(5))
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		params account.SignUpRateParams
@@ -119,7 +119,7 @@ func TestEnv_VerifyIDPassword(t *testing.T) {
 	repo := test.NewRepo()
 	repo.CreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		params account.IDCredentials
@@ -167,7 +167,7 @@ func TestEnv_UpdatePassword(t *testing.T) {
 	repo := test.NewRepo()
 	repo.CreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		p account.IDCredentials

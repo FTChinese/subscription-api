@@ -23,7 +23,7 @@ func TestEnv_WxSignUp(t *testing.T) {
 
 	test.NewRepo().MustSaveWxUser(w)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		unionID string
@@ -104,7 +104,7 @@ func TestEnv_LinkWechat(t *testing.T) {
 		return
 	}
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		result reader.WxEmailLinkResult
@@ -144,7 +144,7 @@ func TestEnv_UnlinkWx(t *testing.T) {
 	repo := test.NewRepo()
 	repo.MustCreateFtcAccount(a)
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		acnt   reader.Account

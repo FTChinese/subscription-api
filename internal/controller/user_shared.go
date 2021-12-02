@@ -2,8 +2,8 @@ package controller
 
 import (
 	"github.com/FTChinese/subscription-api/internal/repository/accounts"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
@@ -19,12 +19,12 @@ type UserShared struct {
 }
 
 func NewUserShared(
-	dbs db.ReadWriteMyDBs,
+	readerBaseRepo shared.ReaderBaseRepo,
 	pm postman.Postman,
 	l *zap.Logger,
 ) UserShared {
 	return UserShared{
-		userRepo:  accounts.New(dbs, l),
+		userRepo:  accounts.New(readerBaseRepo, l),
 		smsClient: ztsms.NewClient(l),
 		logger:    l,
 		postman:   pm,
