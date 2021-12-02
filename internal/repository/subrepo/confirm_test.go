@@ -51,7 +51,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		Build()
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 
@@ -130,7 +130,7 @@ func TestEnv_ConfirmOrder_Renewal(t *testing.T) {
 	repo.MustSaveOrder(order)
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 
@@ -165,7 +165,7 @@ func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
 	repo.MustSaveOrder(order)
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 
@@ -205,7 +205,7 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 	repo.MustSaveOrder(order)
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 
@@ -223,7 +223,7 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 func TestEnv_SaveConfirmationErr(t *testing.T) {
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 
@@ -259,7 +259,7 @@ func TestEnv_SaveConfirmationErr(t *testing.T) {
 func TestEnv_SavePayResult(t *testing.T) {
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		logger:         zaptest.NewLogger(t),
 	}
 

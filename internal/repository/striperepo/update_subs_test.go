@@ -26,7 +26,7 @@ func TestEnv_UpdateSubscription(t *testing.T) {
 	}
 
 	env := Env{
-		ReaderBaseRepo: shared.New(test.SplitDB),
+		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
 		StripeBaseRepo: shared.StripeBaseRepo{},
 		logger:         zaptest.NewLogger(t),
 	}
