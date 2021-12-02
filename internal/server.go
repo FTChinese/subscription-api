@@ -47,6 +47,8 @@ func StartServer(s ServerStatus) {
 	guard := access.NewGuard(myDBs)
 
 	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
+	prodRepo := products.NewEnv(myDBs, promoCache)
+
 	userShared := controller.NewUserShared(
 		readerBaseRepo,
 		post,
@@ -55,14 +57,13 @@ func StartServer(s ServerStatus) {
 	accountRouter := controller.NewAccountRouter(userShared)
 
 	ftcPay := ftcpay.New(myDBs, post, logger)
-	prodRepo := products.NewEnv(myDBs, promoCache)
 	payRouter := controller.NewSubsRouter(
 		ftcPay,
 		prodRepo,
 		s.LiveMode)
 
 	iapRouter := controller.NewIAPRouter(
-		myDBs,
+		readerBaseRepo,
 		logger,
 		rdb,
 		post,

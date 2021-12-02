@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 )
@@ -17,9 +16,9 @@ type Env struct {
 	logger *zap.Logger
 }
 
-func NewEnv(dbs db.ReadWriteMyDBs, rdb *redis.Client, logger *zap.Logger) Env {
+func New(baseRepo shared.ReaderBaseRepo, rdb *redis.Client, logger *zap.Logger) Env {
 	return Env{
-		ReaderBaseRepo: shared.New(dbs),
+		ReaderBaseRepo: baseRepo,
 		rdb:            rdb,
 		logger:         logger,
 	}
