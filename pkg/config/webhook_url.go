@@ -8,7 +8,7 @@ import "github.com/FTChinese/go-rest/enum"
 func AliWxWebhookURL(isProd bool, method enum.PayMethod) string {
 	var baseURL string
 	if isProd {
-		baseURL = "https://www.ftacademy.cn/api/v4"
+		baseURL = aliWxWebhookBaseURL
 	} else {
 		baseURL = "https://www.ftacademy.cn/api/sandbox"
 	}
