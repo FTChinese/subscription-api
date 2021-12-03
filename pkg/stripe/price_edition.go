@@ -94,4 +94,6 @@ func (s priceEditionStore) FindByID(priceID string) (PriceEdition, error) {
 	return s.editions[i], nil
 }
 
+// PriceEditionStore keeps a copy of stripe price ids.
+// Deprecated.
 var PriceEditionStore = newPriceEditionStore()
