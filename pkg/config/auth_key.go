@@ -63,13 +63,14 @@ func MustStripeAPIKey() AuthKeys {
 }
 
 func MustStripeWebhookKey() AuthKeys {
-	return MustLoadAuthKeys("api_keys.stripe_webhook_v4")
+	return MustLoadAuthKeys(stripeWebhookKey)
 }
 
 func MustLoadPollingKey() AuthKeys {
 	return MustLoadAuthKeys("api_keys.ftc_polling")
 }
 
+// MustSubsAPIv1BaseURL is kept for backward compatible for polling service.
 func MustSubsAPIv1BaseURL() AuthKeys {
 	return MustLoadAuthKeys("api_urls.subs_v1")
 }
