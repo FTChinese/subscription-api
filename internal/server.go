@@ -125,7 +125,7 @@ func StartServer(s ServerStatus) {
 			// there is not user id set in header; therefore the record
 			// in DB does not have user id field save alongside the
 			// code.
-			// After getting mobile number, we first tries to retrieve
+			// After getting mobile number, we first try to retrieve
 			// the minimal account data. If found, we will save the
 			// code and user id together; otherwise we user id field
 			// won't exist along with the code, which indicates the
