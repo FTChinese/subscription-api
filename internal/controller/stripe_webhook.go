@@ -93,14 +93,14 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	switch event.Type {
 
-	// Occurs whenever a customer is signed up for a new plan.
-	case "customer.subscription.created":
+	// create occurs whenever a customer is signed up for a new plan.
+	// update occurs whenever a subscription changes (e.g., switching from one plan to another, or changing the status from trial to active).
+	case "customer.subscription.created", "customer.subscription.updated":
 		s := stripeSdk.Subscription{}
 		if err := json.Unmarshal(event.Data.Raw, &s); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		sugar.Infof("customer.subscription.created: %v", s)
 
 		go func() {
 			err := router.onSubscription(&s)
@@ -112,26 +112,8 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 
-	//	Occurs whenever a subscription changes (e.g., switching from one plan to another, or changing the status from trial to active).
-	case "customer.subscription.updated":
-		s := stripeSdk.Subscription{}
-		if err := json.Unmarshal(event.Data.Raw, &s); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		sugar.Infof("customer.subscription.updated: %v", s)
-
-		go func() {
-			err := router.onSubscription(&s)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-
-		w.WriteHeader(http.StatusOK)
-		return
-
-	case "invoice.created":
+		// A few days prior to renewal, your site receives an invoice.upcoming event at the webhook endpoint.
+	case "invoice.created", "invoice.payment_failed", "invoice.payment_action_required", "invoice.upcoming", "invoice.payment_succeeded", "invoice.finalized":
 		// Stripe waits an hour after receiving a successful response to the invoice.created event before attempting payment.
 		// If a successful response isn’t received within 72 hours, Stripe attempts to finalize and send the invoice.
 		// In live mode, if your webhook endpoint does not respond properly, Stripe continues retrying the webhook notification for up to three days with an exponential back off
@@ -146,102 +128,6 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
 			if err != nil {
 				sugar.Error(err)
-			}
-		}()
-
-		w.WriteHeader(http.StatusOK)
-		return
-
-	// Handling payment failures
-	case "invoice.payment_failed":
-		// Send email to user.
-		var i stripeSdk.Invoice
-		if err := json.Unmarshal(event.Data.Raw, &i); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		sugar.Infof("invoice.payment_failed: %v", i)
-
-		go func() {
-			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-			if err != nil {
-				sugar.Error()
-			}
-		}()
-
-		w.WriteHeader(http.StatusOK)
-		return
-
-	// Handling payments that require additional action
-	case "invoice.payment_action_required":
-		var i stripeSdk.Invoice
-		if err := json.Unmarshal(event.Data.Raw, &i); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		sugar.Infof("invoice.payment_action_required: %v", i)
-
-		go func() {
-			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-			if err != nil {
-				sugar.Error()
-			}
-		}()
-
-		w.WriteHeader(http.StatusOK)
-		return
-
-	// Tracking active subscriptions
-	// A few days prior to renewal, your site receives an invoice.upcoming event at the webhook endpoint.
-	case "invoice.upcoming":
-		var i stripeSdk.Invoice
-		if err := json.Unmarshal(event.Data.Raw, &i); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		sugar.Infof("invoice.upcoming: %v", i)
-
-		go func() {
-			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-			if err != nil {
-				sugar.Error()
-			}
-		}()
-
-		w.WriteHeader(http.StatusOK)
-		return
-
-	case "invoice.payment_succeeded":
-		// Send email to user.
-		var i stripeSdk.Invoice
-		if err := json.Unmarshal(event.Data.Raw, &i); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		sugar.Infof("invoice.payment_succeeded: %v", i)
-
-		go func() {
-			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-			if err != nil {
-				sugar.Error()
-			}
-		}()
-
-		w.WriteHeader(http.StatusOK)
-		return
-
-	case "invoice.finalized":
-		var i stripeSdk.Invoice
-		if err := json.Unmarshal(event.Data.Raw, &i); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		sugar.Infof("invoice.finalized: %v", i)
-
-		go func() {
-			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
-			if err != nil {
-				sugar.Error()
 			}
 		}()
 
