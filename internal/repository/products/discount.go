@@ -4,7 +4,7 @@ import "github.com/FTChinese/subscription-api/pkg/price"
 
 func (env Env) CreateDiscount(d price.Discount) error {
 
-	_, err := env.DBs.Write.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		price.StmtCreateDiscount,
 		d)
 	if err != nil {
@@ -16,7 +16,7 @@ func (env Env) CreateDiscount(d price.Discount) error {
 
 // UpdateDiscount to change its status to paused or cancelled.
 func (env Env) UpdateDiscount(d price.Discount) error {
-	_, err := env.DBs.Write.NamedExec(price.StmtUpdateDiscount, d)
+	_, err := env.dbs.Write.NamedExec(price.StmtUpdateDiscount, d)
 	if err != nil {
 		return err
 	}
@@ -30,7 +30,7 @@ func (env Env) UpdateDiscount(d price.Discount) error {
 // user is requesting a price.
 func (env Env) ListActiveDiscounts(priceID string, live bool) ([]price.Discount, error) {
 	var list = make([]price.Discount, 0)
-	err := env.DBs.Read.Select(
+	err := env.dbs.Read.Select(
 		&list,
 		price.StmtListPriceActiveDiscounts,
 		priceID,
@@ -44,7 +44,7 @@ func (env Env) ListActiveDiscounts(priceID string, live bool) ([]price.Discount,
 
 func (env Env) ListDiscounts(priceID string) ([]price.Discount, error) {
 	var list = make([]price.Discount, 0)
-	err := env.DBs.Read.Select(
+	err := env.dbs.Read.Select(
 		&list,
 		price.StmtListDiscountsOfPrice,
 		priceID)

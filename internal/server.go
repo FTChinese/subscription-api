@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/controller"
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/ali"
@@ -83,8 +84,10 @@ func StartServer(s ServerStatus) {
 		logger,
 		s.LiveMode)
 
+	prodRepo := products.New(myDBs)
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.NewPaywallRouter(
+		prodRepo,
 		paywallBaseRepo,
 		stripeBaseRepo,
 		logger,
