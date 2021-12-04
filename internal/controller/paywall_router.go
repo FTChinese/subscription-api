@@ -14,20 +14,23 @@ import (
 type PaywallRouter struct {
 	prodRepo   products.Env
 	stripeRepo shared.StripeBaseRepo
+	pwRepo     shared.PaywallCommon
 	logger     *zap.Logger
 	live       bool
 }
 
 // NewPaywallRouter creates a new instance of pricing router.
 func NewPaywallRouter(
+	prodRepo products.Env,
 	paywallBaseRepo shared.PaywallCommon,
 	stripeBaseRepo shared.StripeBaseRepo,
 	logger *zap.Logger,
 	live bool,
 ) PaywallRouter {
 	return PaywallRouter{
-		prodRepo:   products.New(paywallBaseRepo),
+		prodRepo:   prodRepo,
 		stripeRepo: stripeBaseRepo,
+		pwRepo:     paywallBaseRepo,
 		logger:     logger,
 		live:       live,
 	}
@@ -36,7 +39,7 @@ func NewPaywallRouter(
 // LoadPaywall loads paywall data from db or cache.
 func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request) {
 
-	paywall, err := router.prodRepo.LoadPaywall(router.live)
+	paywall, err := router.pwRepo.LoadPaywall(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -47,9 +50,9 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 
 // BustCache clears the cached paywall data.
 func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) {
-	router.prodRepo.ClearCache()
+	router.pwRepo.ClearCache()
 
-	paywall, err := router.prodRepo.LoadPaywall(router.live)
+	paywall, err := router.pwRepo.LoadPaywall(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -87,7 +90,7 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 }
 
 func (router PaywallRouter) LoadPricing(w http.ResponseWriter, req *http.Request) {
-	p, err := router.prodRepo.ListActivePrices(router.live)
+	p, err := router.pwRepo.ListActivePrices(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

@@ -26,7 +26,7 @@ func (router PaywallRouter) CreateDiscount(w http.ResponseWriter, req *http.Requ
 	}
 
 	// Find the price for this discount first.
-	ftcPrice, err := router.prodRepo.RetrieveFtcPrice(params.PriceID, router.live)
+	ftcPrice, err := router.pwRepo.RetrieveFtcPrice(params.PriceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -70,7 +70,7 @@ func (router PaywallRouter) DropDiscount(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	discount, err := router.prodRepo.LoadDiscount(id)
+	discount, err := router.pwRepo.LoadDiscount(id)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -83,7 +83,7 @@ func (router PaywallRouter) DropDiscount(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	ftcPrice, err := router.prodRepo.RetrieveFtcPrice(discount.PriceID, router.live)
+	ftcPrice, err := router.pwRepo.RetrieveFtcPrice(discount.PriceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

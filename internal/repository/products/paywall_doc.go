@@ -5,7 +5,7 @@ import (
 )
 
 func (env Env) CreatePaywallDoc(pwb pw.PaywallDoc) (int64, error) {
-	result, err := env.DBs.Write.NamedExec(
+	result, err := env.dbs.Write.NamedExec(
 		pw.StmtInsertPaywallDoc,
 		pwb)
 

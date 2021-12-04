@@ -1,27 +1,23 @@
 package products
 
 import (
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
+	"github.com/FTChinese/subscription-api/pkg/db"
 )
 
 // Env extends PaywallCommon, mostly with db write capabilities.
 type Env struct {
-	shared.PaywallCommon
+	dbs db.ReadWriteMyDBs
 }
 
-func New(base shared.PaywallCommon) Env {
+func New(dbs db.ReadWriteMyDBs) Env {
 	return Env{
-		PaywallCommon: base,
+		dbs: dbs,
 	}
 }
 
-func (env Env) ClearCache() {
-	env.Cache.Flush()
-}
-
 func (env Env) beginPriceTx() (txrepo.PriceTx, error) {
-	tx, err := env.DBs.Write.Beginx()
+	tx, err := env.dbs.Write.Beginx()
 	if err != nil {
 		return txrepo.PriceTx{}, err
 	}
@@ -30,7 +26,7 @@ func (env Env) beginPriceTx() (txrepo.PriceTx, error) {
 }
 
 func (env Env) beginProductTx() (txrepo.ProductTx, error) {
-	tx, err := env.DBs.Write.Beginx()
+	tx, err := env.dbs.Write.Beginx()
 
 	if err != nil {
 		return txrepo.ProductTx{}, err
