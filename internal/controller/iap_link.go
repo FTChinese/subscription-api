@@ -24,8 +24,8 @@ import (
 //
 // Response: the linked Membership.
 func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	// Parse request body
 	var input apple.LinkInput
@@ -46,7 +46,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 		With("ftcId", input.FtcID)
 
 	// Check if the user actually exists.
-	baseAccount, err := router.iapRepo.BaseAccountByUUID(input.FtcID)
+	baseAccount, err := router.ReaderRepo.BaseAccountByUUID(input.FtcID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -54,14 +54,14 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	}
 
 	sugar.Info("Getting IAP subscription and set ftc id")
-	sub, err := router.iapRepo.GetSubAndSetFtcID(input)
+	sub, err := router.Repo.GetSubAndSetFtcID(input)
 	if err != nil {
 		// Only ErrIAPAlreadyLinked happens here.
 		ve, ok := apple.ConvertLinkErr(err)
 		if ok {
 			// Archive possible cheating.
 			go func() {
-				err := router.iapRepo.ArchiveLinkCheating(input)
+				err := router.Repo.ArchiveLinkCheating(input)
 				if err != nil {
 					sugar.Error(err)
 				}
@@ -77,7 +77,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 	// Do not retrieve memberships for both ftc and iap in a transaction.
 	// If they are already linked, retrieving a single row multiple times will result in deadlock.
-	ftcMember, err := router.iapRepo.RetrieveMember(baseAccount.CompoundID())
+	ftcMember, err := router.ReaderRepo.RetrieveMember(baseAccount.CompoundID())
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -85,7 +85,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	}
 	sugar.Infof("FTC side membership %v", ftcMember)
 
-	iapMember, err := router.iapRepo.RetrieveAppleMember(sub.OriginalTransactionID)
+	iapMember, err := router.ReaderRepo.RetrieveAppleMember(sub.OriginalTransactionID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -122,7 +122,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	sugar.Infof("Link result %v", result)
 
 	// Start to link apple subscription to ftc membership.
-	err = router.iapRepo.Link(result)
+	err = router.Repo.Link(result)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -132,7 +132,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 	go func() {
 		// Backup previous membership
 		if !result.Snapshot.IsZero() {
-			err := router.iapRepo.ArchiveMember(result.Snapshot)
+			err := router.ReaderRepo.ArchiveMember(result.Snapshot)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -145,7 +145,7 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			err = router.postman.Deliver(parcel)
+			err = router.Postman.Deliver(parcel)
 			if err != nil {
 				return
 			}
@@ -161,8 +161,8 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 // ftcId: string;
 // originalTxId: string;
 func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	var input apple.LinkInput
 	// 400 Bad Request if request body cannot be parsed.
@@ -178,7 +178,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 
 	// This will retrieve membership by apple original transaction id.
 	// So if target does not exists, if will simply gives 404 error.
-	result, err := router.iapRepo.Unlink(input)
+	result, err := router.Repo.Unlink(input)
 	if err != nil {
 		var ve *render.ValidationError
 		if errors.As(err, &ve) {
@@ -192,18 +192,18 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 
 	go func() {
 		if !result.Snapshot.IsZero() {
-			err := router.iapRepo.ArchiveMember(result.Snapshot)
+			err := router.ReaderRepo.ArchiveMember(result.Snapshot)
 			if err != nil {
 				sugar.Error(err)
 			}
 		}
 
-		err = router.iapRepo.ArchiveUnlink(input)
+		err = router.Repo.ArchiveUnlink(input)
 		if err != nil {
 			sugar.Error(err)
 		}
 
-		account, err := router.iapRepo.BaseAccountByUUID(result.Snapshot.FtcID.String)
+		account, err := router.ReaderRepo.BaseAccountByUUID(result.Snapshot.FtcID.String)
 		if err != nil {
 			return
 		}
@@ -213,7 +213,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err = router.postman.Deliver(parcel)
+		err = router.Postman.Deliver(parcel)
 		if err != nil {
 			return
 		}

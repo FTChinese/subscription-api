@@ -16,8 +16,8 @@ import (
 // SubsRouter is the base type used to handle shared payment operations.
 type SubsRouter struct {
 	ftcpay.FtcPay // This contains readers.Env to access account data.
-	paywallRepo   shared.PaywallCommon
-	isLive        bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
+	PaywallRepo   shared.PaywallCommon
+	Live          bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
 }
 
 func NewSubsRouter(
@@ -27,8 +27,8 @@ func NewSubsRouter(
 ) SubsRouter {
 	return SubsRouter{
 		FtcPay:      payShared,
-		paywallRepo: paywallRepo,
-		isLive:      isLive,
+		PaywallRepo: paywallRepo,
+		Live:        isLive,
 	}
 }
 
@@ -93,7 +93,7 @@ func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.C
 }
 
 func (router SubsRouter) loadCheckoutItem(params ftcpay2.OrderParams, live bool) (price.CheckoutItem, *render.ResponseError) {
-	paywall, err := router.paywallRepo.LoadPaywall(live)
+	paywall, err := router.PaywallRepo.LoadPaywall(live)
 	// If price and discount could be found in paywall.
 	if err == nil {
 		item, err := paywall.FindCheckoutItem(params.PriceID, params.DiscountID)
@@ -103,7 +103,7 @@ func (router SubsRouter) loadCheckoutItem(params ftcpay2.OrderParams, live bool)
 	}
 
 	// Otherwise, retrieve from db.
-	ci, err := router.paywallRepo.LoadCheckoutItem(params.PriceID, params.DiscountID, router.isLive)
+	ci, err := router.PaywallRepo.LoadCheckoutItem(params.PriceID, params.DiscountID, router.Live)
 	if err != nil {
 		return price.CheckoutItem{}, render.NewDBError(err)
 	}

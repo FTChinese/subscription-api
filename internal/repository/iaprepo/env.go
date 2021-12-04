@@ -2,8 +2,8 @@ package iaprepo
 
 import (
 	"context"
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 )
@@ -11,16 +11,16 @@ import (
 var ctx = context.Background()
 
 type Env struct {
-	shared.ReaderBaseRepo
+	dbs    db.ReadWriteMyDBs
 	rdb    *redis.Client
 	logger *zap.Logger
 }
 
-func New(baseRepo shared.ReaderBaseRepo, rdb *redis.Client, logger *zap.Logger) Env {
+func New(dbs db.ReadWriteMyDBs, rdb *redis.Client, logger *zap.Logger) Env {
 	return Env{
-		ReaderBaseRepo: baseRepo,
-		rdb:            rdb,
-		logger:         logger,
+		dbs:    dbs,
+		rdb:    rdb,
+		logger: logger,
 	}
 }
 
@@ -31,7 +31,7 @@ func New(baseRepo shared.ReaderBaseRepo, rdb *redis.Client, logger *zap.Logger) 
 // the CLI argument `-sandbox`.
 // All messages from apple is save in production DBs.
 func (env Env) beginIAPTx() (txrepo.IAPTx, error) {
-	tx, err := env.DBs.Delete.Beginx()
+	tx, err := env.dbs.Delete.Beginx()
 
 	if err != nil {
 		return txrepo.IAPTx{}, err
