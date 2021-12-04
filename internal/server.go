@@ -47,10 +47,7 @@ func StartServer(s ServerStatus) {
 	guard := access.NewGuard(myDBs)
 
 	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
-	paywallBaseRepo := shared.PaywallCommon{
-		DBs:   myDBs,
-		Cache: paywallCache,
-	}
+	paywallBaseRepo := shared.NewPaywallCommon(myDBs, paywallCache)
 
 	stripeBaseRepo := shared.StripeBaseRepo{
 		Client: stripeclient.New(s.LiveMode, logger),

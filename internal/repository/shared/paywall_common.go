@@ -10,25 +10,25 @@ import (
 )
 
 type PaywallCommon struct {
-	DBs   db.ReadWriteMyDBs
-	Cache *cache.Cache
+	dbs   db.ReadWriteMyDBs
+	cache *cache.Cache
 }
 
 func NewPaywallCommon(dbs db.ReadWriteMyDBs, c *cache.Cache) PaywallCommon {
 	return PaywallCommon{
-		DBs:   dbs,
-		Cache: c,
+		dbs:   dbs,
+		cache: c,
 	}
 }
 
 func (env PaywallCommon) ClearCache() {
-	env.Cache.Flush()
+	env.cache.Flush()
 }
 
 // LoadPaywall tries to load paywall from cache.
 // Fallback to db if not found in cache.
 func (env PaywallCommon) LoadPaywall(live bool) (pw.Paywall, error) {
-	x, found := env.Cache.Get(ids.PaywallCacheKey(live))
+	x, found := env.cache.Get(ids.PaywallCacheKey(live))
 
 	// If found in cache, and it can be cast to Paywall, return it;
 	// otherwise retrieve from DB.
@@ -79,7 +79,7 @@ func (env PaywallCommon) retrievePaywall(live bool) (pw.Paywall, error) {
 
 // cachePaywall caches paywall data after retrieved from db.
 func (env PaywallCommon) cachePaywall(p pw.Paywall) {
-	env.Cache.Set(
+	env.cache.Set(
 		ids.PaywallCacheKey(p.LiveMode),
 		p,
 		cache.NoExpiration)
@@ -89,7 +89,7 @@ func (env PaywallCommon) cachePaywall(p pw.Paywall) {
 func (env PaywallCommon) RetrievePaywallDoc(live bool) (pw.PaywallDoc, error) {
 	var pwb pw.PaywallDoc
 
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&pwb,
 		pw.StmtRetrievePaywallDoc,
 		live)
@@ -140,7 +140,7 @@ type productsResult struct {
 func (env PaywallCommon) retrieveActiveProducts(live bool) ([]pw.Product, error) {
 	var products = make([]pw.Product, 0)
 
-	err := env.DBs.Read.Select(
+	err := env.dbs.Read.Select(
 		&products,
 		pw.StmtPaywallProducts,
 		live)
@@ -178,7 +178,7 @@ type activePricesResult struct {
 func (env PaywallCommon) ListActivePrices(live bool) ([]price.FtcPrice, error) {
 	var prices = make([]price.FtcPrice, 0)
 
-	err := env.DBs.Read.Select(
+	err := env.dbs.Read.Select(
 		&prices,
 		price.StmtListPaywallPrice,
 		live)
