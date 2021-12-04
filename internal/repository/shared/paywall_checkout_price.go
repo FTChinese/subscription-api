@@ -8,7 +8,7 @@ import (
 // RetrieveFtcPrice retrieves a single row by plan id.
 func (env PaywallCommon) RetrieveFtcPrice(id string, live bool) (price.FtcPrice, error) {
 	var p price.FtcPrice
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&p,
 		price.StmtFtcPrice,
 		id,
@@ -46,7 +46,7 @@ func (env PaywallCommon) asyncLoadPrice(id string, live bool) <-chan asyncPriceR
 // LoadDiscount retrieve a single row of discount
 func (env PaywallCommon) LoadDiscount(id string) (price.Discount, error) {
 	var d price.Discount
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&d,
 		price.StmtSelectDiscount,
 		id)

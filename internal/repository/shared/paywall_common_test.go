@@ -10,8 +10,8 @@ import (
 
 func TestEnv_retrievePaywall(t *testing.T) {
 	env := PaywallCommon{
-		DBs:   db.MockMySQL(),
-		Cache: nil,
+		dbs:   db.MockMySQL(),
+		cache: nil,
 	}
 
 	type args struct {
@@ -50,8 +50,8 @@ func TestEnv_retrievePaywall(t *testing.T) {
 
 func TestEnv_retrieveActiveProducts(t *testing.T) {
 	env := PaywallCommon{
-		DBs:   db.MockMySQL(),
-		Cache: nil,
+		dbs:   db.MockMySQL(),
+		cache: nil,
 	}
 
 	type args struct {
@@ -95,8 +95,8 @@ func TestEnv_retrieveActiveProducts(t *testing.T) {
 func TestEnv_listActivePrices(t *testing.T) {
 
 	env := PaywallCommon{
-		DBs:   db.MockMySQL(),
-		Cache: nil,
+		dbs:   db.MockMySQL(),
+		cache: nil,
 	}
 
 	type args struct {
@@ -145,8 +145,8 @@ func TestEnv_listActivePrices(t *testing.T) {
 func TestEnv_LoadPaywall(t *testing.T) {
 
 	env := PaywallCommon{
-		DBs:   db.MockMySQL(),
-		Cache: nil,
+		dbs:   db.MockMySQL(),
+		cache: nil,
 	}
 
 	type args struct {
