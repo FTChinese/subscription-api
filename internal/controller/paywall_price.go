@@ -15,7 +15,7 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	prices, err := router.prodRepo.ListPrices(productID, router.live)
+	prices, err := router.WriteRepo.ListPrices(productID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -47,9 +47,9 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	p := price.NewFtcPrice(params, router.live)
+	p := price.NewFtcPrice(params, router.Live)
 
-	err := router.prodRepo.CreatePrice(p)
+	err := router.WriteRepo.CreatePrice(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -72,14 +72,14 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	ftcPrice, err := router.pwRepo.RetrieveFtcPrice(id, router.live)
+	ftcPrice, err := router.ReadRepo.RetrieveFtcPrice(id, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	updated := ftcPrice.Update(params)
-	err = router.prodRepo.UpdateFtcPrice(updated)
+	err = router.WriteRepo.UpdateFtcPrice(updated)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -98,14 +98,14 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 	}
 
 	// Find the price for this discount first.
-	ftcPrice, err := router.pwRepo.RetrieveFtcPrice(priceID, router.live)
+	ftcPrice, err := router.ReadRepo.RetrieveFtcPrice(priceID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	// Update offers
-	ftcPrice, err = router.prodRepo.RefreshFtcPriceOffers(ftcPrice)
+	ftcPrice, err = router.WriteRepo.RefreshFtcPriceOffers(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -121,7 +121,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	ftcPrice, err := router.pwRepo.RetrieveFtcPrice(priceID, router.live)
+	ftcPrice, err := router.ReadRepo.RetrieveFtcPrice(priceID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -129,7 +129,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 
 	ftcPrice = ftcPrice.Activate()
 
-	err = router.prodRepo.ActivatePrice(ftcPrice)
+	err = router.WriteRepo.ActivatePrice(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -145,7 +145,7 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	p, err := router.pwRepo.RetrieveFtcPrice(priceID, router.live)
+	p, err := router.ReadRepo.RetrieveFtcPrice(priceID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -153,13 +153,13 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 
 	p = p.Archive()
 
-	err = router.prodRepo.ArchivePrice(p)
+	err = router.WriteRepo.ArchivePrice(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	err = router.prodRepo.ArchivePriceDiscounts(p)
+	err = router.WriteRepo.ArchivePriceDiscounts(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

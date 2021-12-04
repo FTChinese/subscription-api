@@ -10,8 +10,8 @@ import (
 // an original transaction id, together with the
 // receipt used to verify it.
 func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	origTxID, err := getURLParam(req, "id").ToString()
 	if err != nil {
@@ -22,14 +22,14 @@ func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
 
 	fsOnly := req.FormValue("fs") == "true"
 
-	sub, err := router.iapRepo.LoadSubs(origTxID)
+	sub, err := router.Repo.LoadSubs(origTxID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema, fsOnly)
+	receipt, err := router.Repo.LoadReceipt(sub.BaseSchema, fsOnly)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound("Apple subscription not found")

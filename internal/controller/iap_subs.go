@@ -20,7 +20,7 @@ func (router IAPRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(ftcIDKey)
 	p := gorest.GetPagination(req)
 
-	list, err := router.iapRepo.ListSubs(ftcID, p)
+	list, err := router.Repo.ListSubs(ftcID, p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -35,8 +35,8 @@ func (router IAPRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
 // Input:
 // receiptData: string;
 func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	var input apple.ReceiptInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
@@ -59,7 +59,7 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 
 	sub, err := apple.NewSubscription(resp.UnifiedReceipt)
 
-	result, err := router.iapRepo.SaveSubs(sub)
+	result, err := router.Repo.SaveSubs(sub)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -84,7 +84,7 @@ func (router IAPRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	s, err := router.iapRepo.LoadSubs(id)
+	s, err := router.Repo.LoadSubs(id)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -99,8 +99,8 @@ func (router IAPRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 //
 // PATCH /apple/subs/{id}
 func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	origTxID, err := getURLParam(req, "id").ToString()
 	if err != nil {
@@ -111,7 +111,7 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 
 	// Find existing subscription data for this original transaction id.
 	// If not found, returns 404.
-	sub, err := router.iapRepo.LoadSubs(origTxID)
+	sub, err := router.Repo.LoadSubs(origTxID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -120,7 +120,7 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 
 	// Load the receipt file from disk.
 	// If error occurred, returns 404.
-	receipt, err := router.iapRepo.LoadReceipt(sub.BaseSchema, false)
+	receipt, err := router.Repo.LoadReceipt(sub.BaseSchema, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound("Not found the Apple subscription to refresh")
@@ -144,7 +144,7 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 	updatedSubs.CreatedUTC = sub.CreatedUTC
 
 	// Update subscription and possible membership
-	result, err := router.iapRepo.SaveSubs(updatedSubs)
+	result, err := router.Repo.SaveSubs(updatedSubs)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

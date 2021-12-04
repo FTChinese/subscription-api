@@ -23,12 +23,13 @@ WHERE DATEDIFF(expires_date_utc, UTC_DATE()) < 3
 ORDER BY expires_date_utc`
 
 type IAPPoller struct {
-	db        *sqlx.DB
-	iapRepo   iaprepo.Env
-	addOnRepo addons.Env
-	verifier  iaprepo.Client
-	apiClient APIClient
-	logger    *zap.Logger
+	db         *sqlx.DB
+	iapRepo    iaprepo.Env
+	readerRepo shared.ReaderBaseRepo
+	addOnRepo  addons.Env
+	verifier   iaprepo.Client
+	apiClient  APIClient
+	logger     *zap.Logger
 }
 
 func NewIAPPoller(dbs db.ReadWriteMyDBs, prod bool, logger *zap.Logger) IAPPoller {
@@ -36,12 +37,13 @@ func NewIAPPoller(dbs db.ReadWriteMyDBs, prod bool, logger *zap.Logger) IAPPolle
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(prod))
 
 	return IAPPoller{
-		db:        dbs.Read,
-		iapRepo:   iaprepo.New(shared.NewReaderBaseRepo(dbs), rdb, logger),
-		addOnRepo: addons.NewEnv(dbs, logger),
-		verifier:  iaprepo.NewClient(logger),
-		apiClient: NewAPIClient(prod),
-		logger:    logger,
+		db:         dbs.Read,
+		iapRepo:    iaprepo.New(dbs, rdb, logger),
+		readerRepo: shared.NewReaderBaseRepo(dbs),
+		addOnRepo:  addons.NewEnv(dbs, logger),
+		verifier:   iaprepo.NewClient(logger),
+		apiClient:  NewAPIClient(prod),
+		logger:     logger,
 	}
 }
 
@@ -144,7 +146,7 @@ func (p IAPPoller) verify(s apple.BaseSchema) error {
 	}
 
 	if !result.Snapshot.IsZero() {
-		err := p.iapRepo.ArchiveMember(result.Snapshot)
+		err := p.readerRepo.ArchiveMember(result.Snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}

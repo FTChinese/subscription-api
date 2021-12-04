@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/controller"
 	"github.com/FTChinese/subscription-api/internal/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
@@ -35,19 +36,13 @@ type ServerStatus struct {
 
 func StartServer(s ServerStatus) {
 	logger := config.MustGetLogger(s.Production)
-
 	myDBs := db.MustNewMyDBs(s.Production)
-
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
 	// Set the cache default expiration time to 2 hours.
 	paywallCache := cache.New(2*time.Hour, 0)
-
-	post := postman.New(config.MustGetHanqiConn())
-
-	guard := access.NewGuard(myDBs)
-
 	stripeClient := stripeclient.New(s.LiveMode, logger)
+	post := postman.New(config.MustGetHanqiConn())
 
 	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
 	paywallBaseRepo := shared.NewPaywallCommon(myDBs, paywallCache)
@@ -62,17 +57,20 @@ func StartServer(s ServerStatus) {
 
 	authRouter := controller.NewAuthRouter(userShared)
 	accountRouter := controller.NewAccountRouter(userShared)
-	payRouter := controller.NewSubsRouter(
-		ftcPay,
-		paywallBaseRepo,
-		s.LiveMode)
+	ftcSubsRouter := controller.SubsRouter{
+		FtcPay:      ftcPay,
+		PaywallRepo: paywallBaseRepo,
+		Live:        s.LiveMode,
+	}
 
-	iapRouter := controller.NewIAPRouter(
-		readerBaseRepo,
-		logger,
-		rdb,
-		post,
-		s.LiveMode)
+	iapRouter := controller.IAPRouter{
+		Repo:       iaprepo.New(myDBs, rdb, logger),
+		Client:     iaprepo.NewClient(logger),
+		ReaderRepo: readerBaseRepo,
+		Postman:    post,
+		Logger:     logger,
+		Live:       s.LiveMode,
+	}
 
 	stripeRouter := controller.StripeRouter{
 		SigningKey:      config.MustStripeWebhookKey().Pick(s.LiveMode),
@@ -84,16 +82,18 @@ func StartServer(s ServerStatus) {
 		Live:            s.LiveMode,
 	}
 
-	prodRepo := products.New(myDBs)
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := controller.NewPaywallRouter(
-		prodRepo,
-		paywallBaseRepo,
-		stripeBaseRepo,
-		logger,
-		s.LiveMode)
+	paywallRouter := controller.PaywallRouter{
+		WriteRepo:       products.New(myDBs),
+		ReadRepo:        paywallBaseRepo,
+		StripePriceRepo: stripeBaseRepo,
+		Logger:          logger,
+		Live:            s.LiveMode,
+	}
 
 	wxAuth := controller.NewWxAuth(myDBs, logger)
+
+	guard := access.NewGuard(myDBs)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -274,16 +274,16 @@ func StartServer(s ServerStatus) {
 		r.Use(controller.RequireFtcOrUnionID)
 
 		// Create a new subscription for desktop browser
-		r.Post("/desktop", payRouter.WxPay(wechat.TradeTypeDesktop))
+		r.Post("/desktop", ftcSubsRouter.WxPay(wechat.TradeTypeDesktop))
 
 		// Create an order for mobile browser
-		r.Post("/mobile", payRouter.WxPay(wechat.TradeTypeMobile))
+		r.Post("/mobile", ftcSubsRouter.WxPay(wechat.TradeTypeMobile))
 
 		// Create an order for wx-embedded browser
-		r.Post("/jsapi", payRouter.WxPay(wechat.TradeTypeJSAPI))
+		r.Post("/jsapi", ftcSubsRouter.WxPay(wechat.TradeTypeJSAPI))
 
 		// Creat an order for native app
-		r.Post("/app", payRouter.WxPay(wechat.TradeTypeApp))
+		r.Post("/app", ftcSubsRouter.WxPay(wechat.TradeTypeApp))
 	})
 
 	// Require user id.
@@ -293,13 +293,13 @@ func StartServer(s ServerStatus) {
 		r.Use(controller.FormParsed)
 
 		// Create an order for desktop browser
-		r.Post("/desktop", payRouter.AliPay(ali.EntryDesktopWeb))
+		r.Post("/desktop", ftcSubsRouter.AliPay(ali.EntryDesktopWeb))
 
 		// Create an order for mobile browser
-		r.Post("/mobile", payRouter.AliPay(ali.EntryMobileWeb))
+		r.Post("/mobile", ftcSubsRouter.AliPay(ali.EntryMobileWeb))
 
 		// Create an order for native app.
-		r.Post("/app", payRouter.AliPay(ali.EntryApp))
+		r.Post("/app", ftcSubsRouter.AliPay(ali.EntryApp))
 	})
 
 	r.Route("/membership", func(r chi.Router) {
@@ -314,8 +314,8 @@ func StartServer(s ServerStatus) {
 		r.Delete("/", accountRouter.DeleteMembership)
 		// List the modification history of a user's membership
 		r.Get("/snapshots", accountRouter.ListMemberSnapshots)
-		r.Post("/addons", payRouter.ClaimAddOn)
-		r.Patch("/addons", payRouter.CreateAddOn)
+		r.Post("/addons", ftcSubsRouter.ClaimAddOn)
+		r.Patch("/addons", ftcSubsRouter.CreateAddOn)
 	})
 
 	r.Route("/orders", func(r chi.Router) {
@@ -323,23 +323,23 @@ func StartServer(s ServerStatus) {
 		r.Use(controller.RequireFtcOrUnionID)
 
 		// Pagination: page=<int>&per_page=<int>
-		r.Get("/", payRouter.ListOrders)
-		r.Get("/{id}", payRouter.LoadOrder)
+		r.Get("/", ftcSubsRouter.ListOrders)
+		r.Get("/{id}", ftcSubsRouter.LoadOrder)
 
 		// Transfer order query data from ali or wx api as is.
-		r.Get("/{id}/payment-result", payRouter.RawPaymentResult)
+		r.Get("/{id}/payment-result", ftcSubsRouter.RawPaymentResult)
 		// Verify if an order is confirmed, and returns PaymentResult.
-		r.Post("/{id}/verify-payment", payRouter.VerifyPayment)
+		r.Post("/{id}/verify-payment", ftcSubsRouter.VerifyPayment)
 	})
 
 	r.Route("/invoices", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(controller.RequireFtcOrUnionID)
 		// List a user's invoices. Use query parameter `kind=create|renew|upgrade|addon` to filter.
-		r.Get("/", payRouter.ListInvoices)
-		r.Put("/", payRouter.CreateInvoice)
+		r.Get("/", ftcSubsRouter.ListInvoices)
+		r.Put("/", ftcSubsRouter.CreateInvoice)
 		// Show a single invoice.
-		r.Get("/{id}", payRouter.LoadInvoice)
+		r.Get("/{id}", ftcSubsRouter.LoadInvoice)
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
@@ -476,8 +476,8 @@ func StartServer(s ServerStatus) {
 	})
 
 	r.Route("/webhook", func(r chi.Router) {
-		r.Post("/wxpay", payRouter.WxWebHook)
-		r.Post("/alipay", payRouter.AliWebHook)
+		r.Post("/wxpay", ftcSubsRouter.WxWebHook)
+		r.Post("/alipay", ftcSubsRouter.AliWebHook)
 		// Events
 		//invoice.finalized
 		//invoice.payment_succeeded

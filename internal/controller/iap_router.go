@@ -6,7 +6,6 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
@@ -18,23 +17,12 @@ import (
 )
 
 type IAPRouter struct {
-	iapRepo iaprepo.Env
-	postman postman.Postman
-
-	isLive    bool
-	iapClient iaprepo.Client
-	logger    *zap.Logger
-}
-
-func NewIAPRouter(baseRepo shared.ReaderBaseRepo, logger *zap.Logger, rdb *redis.Client, p postman.Postman, isLive bool) IAPRouter {
-
-	return IAPRouter{
-		iapRepo:   iaprepo.New(baseRepo, rdb, logger),
-		postman:   p,
-		isLive:    isLive,
-		iapClient: iaprepo.NewClient(logger),
-		logger:    logger,
-	}
+	Repo       iaprepo.Env
+	Client     iaprepo.Client
+	ReaderRepo shared.ReaderBaseRepo
+	Postman    postman.Postman
+	Logger     *zap.Logger
+	Live       bool
 }
 
 // Verify a receipt and get response from app store.
@@ -42,11 +30,11 @@ func NewIAPRouter(baseRepo shared.ReaderBaseRepo, logger *zap.Logger, rdb *redis
 // link account and unlink account.
 // See https://developer.apple.com/documentation/storekit/in-app_purchase/validating_receipts_with_the_app_store
 func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, *render.ResponseError) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	// Send data to IAP endpoint for verification
-	resp, err := router.iapClient.VerifyAndValidate(receipt, router.isLive)
+	resp, err := router.Client.VerifyAndValidate(receipt, router.Live)
 
 	if err != nil {
 		sugar.Error(err)
@@ -61,23 +49,23 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 
 	// Save the decoded receipt as a session of verification
 	go func() {
-		_ = router.iapRepo.SaveDecodedReceipt(
+		_ = router.Repo.SaveDecodedReceipt(
 			resp.ReceiptSchema(),
 		)
 	}()
 
 	// Dissect and save other fields in the verification response.
-	router.iapRepo.SaveUnifiedReceipt(resp.UnifiedReceipt)
+	router.Repo.SaveUnifiedReceipt(resp.UnifiedReceipt)
 	return resp, nil
 }
 
 func (router IAPRouter) processSubsResult(snapshot reader.MemberSnapshot) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	// Backup previous membership
 	if !snapshot.IsZero() {
-		err := router.iapRepo.ArchiveMember(snapshot)
+		err := router.ReaderRepo.ArchiveMember(snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -92,8 +80,8 @@ func (router IAPRouter) processSubsResult(snapshot reader.MemberSnapshot) {
 // Input
 // receiptData: string
 func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	// Parse request body.
 	var input apple.ReceiptInput
@@ -128,7 +116,7 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 	if err == nil {
 		go func() {
 
-			result, err := router.iapRepo.SaveSubs(sub)
+			result, err := router.Repo.SaveSubs(sub)
 			if err != nil {
 				sugar.Error(err)
 				return
@@ -143,8 +131,8 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 
 // WebHook receives app store server-to-server notification.
 func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	var wh apple.WebHook
 	b, err := ioutil.ReadAll(req.Body)
@@ -161,7 +149,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = router.iapRepo.SaveWebhook(apple.NewWebHookSchema(wh))
+	err = router.Repo.SaveWebhook(apple.NewWebHookSchema(wh))
 	if err != nil {
 		sugar.Error(err)
 	}
@@ -179,7 +167,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// history.
 	wh.UnifiedReceipt.Parse()
 
-	router.iapRepo.SaveUnifiedReceipt(wh.UnifiedReceipt)
+	router.Repo.SaveUnifiedReceipt(wh.UnifiedReceipt)
 
 	// Build apple's subscription and save it.
 	sub, err := apple.NewSubscription(wh.UnifiedReceipt)
@@ -194,7 +182,7 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	// if this membership payMethod is null, and expireDate is not after sub.ExpireDateUTC,
 	// then we should update this membership using this subscription.
 	// This approach can be used in webhook notification and verify-receipt.
-	result, err := router.iapRepo.SaveSubs(sub)
+	result, err := router.Repo.SaveSubs(sub)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)

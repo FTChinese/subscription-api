@@ -1,7 +1,6 @@
 package iaprepo
 
 import (
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
@@ -76,11 +75,7 @@ func TestLoadReceiptFromDisk(t *testing.T) {
 
 func TestEnv_SaveReceiptToDB(t *testing.T) {
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		rdb:            test.Redis,
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		r apple.ReceiptSchema
@@ -112,11 +107,7 @@ func TestEnv_LoadReceiptFromDB(t *testing.T) {
 	rt := p.IAPBuilder().ReceiptSchema()
 	test.NewRepo().MustSaveIAPReceipt(rt)
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(db.MockMySQL()),
-		rdb:            test.Redis,
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		s apple.BaseSchema
