@@ -8,7 +8,7 @@ import (
 func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(ftcIDKey)
 
-	acnt, err := router.stripeRepo.BaseAccountByUUID(ftcID)
+	acnt, err := router.ReaderRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -18,7 +18,7 @@ func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	si, err := router.client.NewSetupCheckout(acnt.StripeID.String)
+	si, err := router.Client.NewSetupCheckout(acnt.StripeID.String)
 	if err != nil {
 		err := handleErrResp(w, err)
 		if err == nil {

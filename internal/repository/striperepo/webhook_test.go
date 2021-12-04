@@ -3,7 +3,6 @@ package striperepo
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestEnv_SaveWebhookError(t *testing.T) {
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	p := test.NewPersona()
 
@@ -61,7 +60,7 @@ func TestEnv_OnWebhookSubs(t *testing.T) {
 	repo := test.NewRepo()
 	repo.MustSaveMembership(ftcValid.MemberBuilder().Build())
 
-	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		subs    stripe.Subs

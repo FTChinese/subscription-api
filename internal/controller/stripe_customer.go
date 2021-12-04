@@ -13,7 +13,7 @@ import (
 func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
 	ftcID := req.Header.Get(ftcIDKey)
 
-	cusAccount, err := router.stripeRepo.CreateCustomer(ftcID)
+	cusAccount, err := router.StripeRepo.CreateCustomer(ftcID)
 
 	if err != nil {
 		err := handleErrResp(w, err)
@@ -36,7 +36,7 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	account, err := router.stripeRepo.BaseAccountByUUID(ftcID)
+	account, err := router.ReaderRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -49,7 +49,7 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 		_ = render.New(w).NotFound("")
 	}
 
-	cus, err := router.client.RetrieveCustomer(account.StripeID.String)
+	cus, err := router.Client.RetrieveCustomer(account.StripeID.String)
 	if err != nil {
 		err := handleErrResp(w, err)
 		if err == nil {
@@ -83,7 +83,7 @@ func (router StripeRouter) ChangeDefaultPaymentMethod(w http.ResponseWriter, req
 		return
 	}
 
-	acnt, err := router.stripeRepo.BaseAccountByUUID(ftcID)
+	acnt, err := router.ReaderRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -96,7 +96,7 @@ func (router StripeRouter) ChangeDefaultPaymentMethod(w http.ResponseWriter, req
 		_ = render.New(w).NotFound("")
 	}
 
-	cus, err := router.client.SetDefaultPaymentMethod(pm)
+	cus, err := router.Client.SetDefaultPaymentMethod(pm)
 	if err != nil {
 		err = handleErrResp(w, err)
 		if err != nil {
