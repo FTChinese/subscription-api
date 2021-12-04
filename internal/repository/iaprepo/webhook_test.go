@@ -2,9 +2,8 @@ package iaprepo
 
 import (
 	"encoding/json"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/test"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
@@ -27,10 +26,7 @@ func TestIAPEnv_SaveNotification(t *testing.T) {
 		},
 	}
 
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		w apple.WebHookSchema

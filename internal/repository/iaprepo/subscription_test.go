@@ -4,8 +4,8 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
@@ -18,11 +18,7 @@ import (
 
 func TestEnv_SaveSubs(t *testing.T) {
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		rdb:            test.Redis,
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	p2 := test.NewPersona()
 
@@ -82,11 +78,7 @@ func TestEnv_updateMembership(t *testing.T) {
 		Build()
 	test.NewRepo().MustSaveMembership(current)
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		rdb:            test.Redis,
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		s apple.Subscription
@@ -132,11 +124,8 @@ func TestEnv_LoadSubs(t *testing.T) {
 		WithOriginalTxID(p.AppleSubID).
 		Build())
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		rdb:            test.Redis,
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
+
 	type args struct {
 		originalID string
 	}
@@ -171,11 +160,8 @@ func TestEnv_countSubs(t *testing.T) {
 	p := test.NewPersona()
 	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		rdb:            test.Redis,
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
+
 	type fields struct {
 		db *sqlx.DB
 	}
@@ -216,11 +202,7 @@ func TestEnv_listSubs(t *testing.T) {
 	p := test.NewPersona()
 	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		rdb:            test.Redis,
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		ftcID string
@@ -264,11 +246,7 @@ func TestEnv_ListSubs(t *testing.T) {
 	p := test.NewPersona()
 	test.NewRepo().MustSaveIAPSubs(p.IAPBuilder().Build())
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		rdb:            test.Redis,
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	t.Logf("Create IAP %s", p.AppleSubID)
 
