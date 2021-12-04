@@ -72,7 +72,7 @@ func (env Env) CreateSubscription(
 
 	sugar.Info("Creating stripe subscription")
 	// Contact Stripe API.
-	ss, err := env.Client.NewSubs(
+	ss, err := env.client.NewSubs(
 		item.NewSubParams(ba.StripeID.String, params),
 	)
 

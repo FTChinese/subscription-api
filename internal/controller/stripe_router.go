@@ -3,12 +3,9 @@ package controller
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
-	"github.com/FTChinese/subscription-api/pkg/config"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 	"go.uber.org/zap"
@@ -16,31 +13,13 @@ import (
 )
 
 type StripeRouter struct {
-	signingKey string
-	addOnRepo  addons.Env
-	stripeRepo striperepo.Env
-	client     stripeclient.Client
-	logger     *zap.Logger
-	isLive     bool
-}
-
-// NewStripeRouter initializes StripeRouter.
-func NewStripeRouter(
-	readerBase shared.ReaderBaseRepo,
-	stripeBase shared.StripeBaseRepo,
-	dbs db.ReadWriteMyDBs,
-	logger *zap.Logger,
-	isLive bool,
-) StripeRouter {
-	client := stripeclient.New(isLive, logger)
-
-	return StripeRouter{
-		signingKey: config.MustStripeWebhookKey().Pick(isLive),
-		addOnRepo:  addons.NewEnv(dbs, logger),
-		stripeRepo: striperepo.New(readerBase, stripeBase, logger),
-		client:     client,
-		logger:     logger,
-	}
+	SigningKey      string
+	StripeRepo      striperepo.Env
+	StripePriceRepo shared.StripeBaseRepo
+	ReaderRepo      shared.ReaderBaseRepo
+	Client          stripeclient.Client
+	Logger          *zap.Logger
+	Live            bool
 }
 
 // Forward stripe error to smsClient, and give the error back to caller to handle if it is not stripe error.
@@ -65,16 +44,16 @@ func handleErrResp(w http.ResponseWriter, err error) error {
 }
 
 func (router StripeRouter) handleSubsResult(result stripe.SubsResult) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
-	err := router.stripeRepo.UpsertSubs(result.Subs)
+	err := router.StripeRepo.UpsertSubs(result.Subs)
 	if err != nil {
 		sugar.Error(err)
 	}
 
 	if !result.Snapshot.IsZero() {
-		err := router.stripeRepo.ArchiveMember(result.Snapshot)
+		err := router.ReaderRepo.ArchiveMember(result.Snapshot)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -86,8 +65,8 @@ func (router StripeRouter) handleSubsResult(result stripe.SubsResult) {
 //
 // POST /stripe/customers/{id}/ephemeral-keys?api_version=<version>
 func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	// Get stripe customer id.
 	cusID, err := getURLParam(req, "id").ToString()
@@ -103,7 +82,7 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	keyData, err := router.client.CreateEphemeralKey(cusID, stripeVersion)
+	keyData, err := router.Client.CreateEphemeralKey(cusID, stripeVersion)
 	if err != nil {
 		sugar.Error(err)
 		err = handleErrResp(w, err)

@@ -50,14 +50,14 @@ func (env Env) UpdateSubscription(ba account.BaseAccount, item stripe.CheckoutIt
 		}
 	}
 
-	ss, err := env.Client.GetSubs(mmb.StripeSubsID.String, false)
+	ss, err := env.client.GetSubs(mmb.StripeSubsID.String, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, err
 	}
 
-	ss, err = env.Client.UpdateSubs(
+	ss, err = env.client.UpdateSubs(
 		ss.ID,
 		item.UpdateSubParams(ss, params),
 	)

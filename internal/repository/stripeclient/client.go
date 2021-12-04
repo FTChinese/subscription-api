@@ -8,7 +8,6 @@ import (
 )
 
 type Client struct {
-	live   bool // Deprecated
 	sc     *client.API
 	logger *zap.Logger
 }
@@ -18,15 +17,9 @@ func New(live bool, logger *zap.Logger) Client {
 	key := config.MustStripeAPIKey().Pick(live)
 
 	return Client{
-		live:   live,
 		sc:     client.New(key, nil),
 		logger: logger,
 	}
-}
-
-// Deprecated
-func (c Client) Live() bool {
-	return c.live
 }
 
 // CreateEphemeralKey generate a key so that client could restrict customer API directly.

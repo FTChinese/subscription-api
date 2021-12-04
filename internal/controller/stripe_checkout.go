@@ -15,8 +15,8 @@ import (
 // tier: "standard | premium"
 // cycle: "month | year"
 func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	ftcID := req.Header.Get(ftcIDKey)
 
@@ -32,21 +32,21 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 		return
 	}
 
-	account, err := router.stripeRepo.BaseAccountByUUID(ftcID)
+	account, err := router.ReaderRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	// TODO: this is no longer a valid approach.
-	sp, err := stripe.PriceEditionStore.FindByEdition(input.Edition, router.isLive)
+	sp, err := stripe.PriceEditionStore.FindByEdition(input.Edition, router.Live)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	sess, err := router.client.NewCheckoutSession(stripe.CheckoutParams{
+	sess, err := router.Client.NewCheckoutSession(stripe.CheckoutParams{
 		Account: account,
 		Plan:    sp,
 		Input:   input,
@@ -65,7 +65,7 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 		account.StripeID = null.StringFrom(sess.Customer.ID)
 	}
 
-	err = router.stripeRepo.SetCustomer(account)
+	err = router.StripeRepo.SetCustomer(account)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

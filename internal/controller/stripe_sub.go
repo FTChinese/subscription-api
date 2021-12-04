@@ -35,8 +35,8 @@ import (
 // in case user already linked wechat.
 // Notification email is sent upon webhook receiving data, not here.
 func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
@@ -53,7 +53,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	acnt, err := router.stripeRepo.BaseAccountByUUID(ftcID)
+	acnt, err := router.ReaderRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -64,7 +64,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	item, err := router.stripeRepo.LoadCheckoutItem(input)
+	item, err := router.StripePriceRepo.LoadCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
 		err := handleErrResp(w, err)
@@ -82,7 +82,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Create stripe subscription.
-	result, err := router.stripeRepo.CreateSubscription(
+	result, err := router.StripeRepo.CreateSubscription(
 		acnt,
 		item,
 		input.SubSharedParams)
@@ -128,8 +128,8 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 // one is standard and another if premium.
 // So we cannot rely on this field to find FTC plan.
 func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := req.Header.Get(ftcIDKey)
@@ -145,7 +145,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	account, err := router.stripeRepo.BaseAccountByUUID(ftcID)
+	account, err := router.ReaderRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -156,14 +156,14 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	item, err := router.stripeRepo.LoadCheckoutItem(input)
+	item, err := router.StripePriceRepo.LoadCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	result, err := router.stripeRepo.UpdateSubscription(
+	result, err := router.StripeRepo.UpdateSubscription(
 		account,
 		item,
 		input.SubSharedParams,
@@ -205,7 +205,7 @@ func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	s, err := router.stripeRepo.RetrieveSubs(id)
+	s, err := router.StripeRepo.RetrieveSubs(id)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -216,8 +216,8 @@ func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 
 // RefreshSubs get the latest data of a subscription if user manually requested it.
 func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	// Get the subscription id from url
 	subsID, err := getURLParam(req, "id").ToString()
@@ -228,7 +228,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Use Stripe SDK to retrieve data.
-	ss, err := router.client.GetSubs(subsID, true)
+	ss, err := router.Client.GetSubs(subsID, true)
 	if err != nil {
 		sugar.Error(err)
 		err = handleErrResp(w, err)
@@ -241,14 +241,14 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Use Stripe customer id to find user account.
-	account, err := router.stripeRepo.BaseAccountByStripeID(ss.Customer.ID)
+	account, err := router.ReaderRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound("Stripe customer not found")
 		return
 	}
 
-	result, err := router.stripeRepo.RefreshSubscription(ss, stripe.SubsResultParams{
+	result, err := router.StripeRepo.RefreshSubscription(ss, stripe.SubsResultParams{
 		UserIDs: account.CompoundIDs(),
 		Action:  reader.ArchiveActionRefresh,
 	})
@@ -270,8 +270,8 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 // CancelSubs cancels a stripe subscription at period end.
 // See https://stripe.com/docs/billing/subscriptions/cancel
 func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	ftcID := req.Header.Get(ftcIDKey)
 
@@ -282,7 +282,7 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	result, err := router.stripeRepo.CancelSubscription(stripe.CancelParams{
+	result, err := router.StripeRepo.CancelSubscription(stripe.CancelParams{
 		FtcID:  ftcID,
 		SubID:  subsID,
 		Cancel: true,
@@ -310,8 +310,8 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 
 // ReactivateSubscription undo subscription cancellation before period ends.
 func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	ftcID := req.Header.Get(ftcIDKey)
 
@@ -321,7 +321,7 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 		return
 	}
 
-	result, err := router.stripeRepo.CancelSubscription(stripe.CancelParams{
+	result, err := router.StripeRepo.CancelSubscription(stripe.CancelParams{
 		FtcID:  ftcID,
 		SubID:  subsID,
 		Cancel: false,

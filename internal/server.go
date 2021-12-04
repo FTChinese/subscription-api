@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
+	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -46,22 +47,21 @@ func StartServer(s ServerStatus) {
 
 	guard := access.NewGuard(myDBs)
 
+	stripeClient := stripeclient.New(s.LiveMode, logger)
+
 	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
 	paywallBaseRepo := shared.NewPaywallCommon(myDBs, paywallCache)
-
-	stripeBaseRepo := shared.StripeBaseRepo{
-		Client: stripeclient.New(s.LiveMode, logger),
-		Cache:  stripe.NewPriceCache(),
-	}
+	stripeBaseRepo := shared.NewStripeCommon(stripeClient, stripe.NewPriceCache())
 
 	userShared := controller.NewUserShared(
 		readerBaseRepo,
 		post,
 		logger)
-	authRouter := controller.NewAuthRouter(userShared)
-	accountRouter := controller.NewAccountRouter(userShared)
 
 	ftcPay := ftcpay.New(myDBs, post, logger)
+
+	authRouter := controller.NewAuthRouter(userShared)
+	accountRouter := controller.NewAccountRouter(userShared)
 	payRouter := controller.NewSubsRouter(
 		ftcPay,
 		paywallBaseRepo,
@@ -74,12 +74,15 @@ func StartServer(s ServerStatus) {
 		post,
 		s.LiveMode)
 
-	stripeRouter := controller.NewStripeRouter(
-		readerBaseRepo,
-		stripeBaseRepo,
-		myDBs,
-		logger,
-		s.LiveMode)
+	stripeRouter := controller.StripeRouter{
+		SigningKey:      config.MustStripeWebhookKey().Pick(s.LiveMode),
+		StripeRepo:      striperepo.New(myDBs, stripeClient, logger),
+		StripePriceRepo: stripeBaseRepo,
+		ReaderRepo:      readerBaseRepo,
+		Client:          stripeClient,
+		Logger:          logger,
+		Live:            s.LiveMode,
+	}
 
 	prodRepo := products.New(myDBs)
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)

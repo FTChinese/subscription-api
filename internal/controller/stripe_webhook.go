@@ -15,11 +15,11 @@ import (
 // Handle subscription received by webhook.
 func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	// Find user account by stripe customer id.
-	account, err := router.stripeRepo.BaseAccountByStripeID(ss.Customer.ID)
+	account, err := router.ReaderRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
 		// If user account is not found,
@@ -31,7 +31,7 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 				return err
 			}
 
-			err = router.stripeRepo.UpsertSubs(subs)
+			err = router.StripeRepo.UpsertSubs(subs)
 			if err != nil {
 				return err
 			}
@@ -46,13 +46,13 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 		return err
 	}
 
-	result, err := router.stripeRepo.OnWebhookSubs(subs, userIDs)
+	result, err := router.StripeRepo.OnWebhookSubs(subs, userIDs)
 	if err != nil {
 		sugar.Error(err)
 
 		var whe stripe.WebhookError
 		if errors.As(err, &whe) {
-			err := router.stripeRepo.SaveWebhookError(whe)
+			err := router.StripeRepo.SaveWebhookError(whe)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -61,7 +61,7 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 		return err
 	}
 
-	err = router.stripeRepo.VersionMembership(result.Versioned)
+	err = router.ReaderRepo.VersionMembership(result.Versioned)
 
 	if err != nil {
 		sugar.Error(err)
@@ -71,8 +71,8 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 }
 
 func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sugar()
-	sugar := router.logger.Sugar()
+	defer router.Logger.Sugar()
+	sugar := router.Logger.Sugar()
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -81,7 +81,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	event, err := webhook.ConstructEvent(body, req.Header.Get("Stripe-Signature"), router.signingKey)
+	event, err := webhook.ConstructEvent(body, req.Header.Get("Stripe-Signature"), router.SigningKey)
 	if err != nil {
 		sugar.Errorf("Error verifying webhook signature: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -125,7 +125,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		sugar.Infof("invoice.created: %v", i)
 
 		go func() {
-			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+			err := router.StripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
 			if err != nil {
 				sugar.Error(err)
 			}
