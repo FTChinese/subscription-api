@@ -1,7 +1,6 @@
 package striperepo
 
 import (
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
@@ -14,11 +13,8 @@ func newTestEnv(
 	logger *zap.Logger,
 ) Env {
 	return Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(dbs),
-		StripeBaseRepo: shared.StripeBaseRepo{
-			Client: stripeclient.Client{},
-			Cache:  nil,
-		},
+		dbs:    dbs,
+		client: stripeclient.New(false, logger),
 		logger: logger,
 	}
 }
