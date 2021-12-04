@@ -11,48 +11,6 @@ import (
 	"testing"
 )
 
-func TestEnv_LoadDiscount(t *testing.T) {
-	env := newTestEnv(db.MockMySQL(), nil)
-
-	pb := test.NewStdProdBuilder().NewYearPriceBuilder()
-	disc := pb.NewDiscountBuilder().BuildRetention()
-
-	test.NewRepo().CreateDiscount(disc)
-
-	type args struct {
-		id string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    price.Discount
-		wantErr bool
-	}{
-		{
-			name: "Load discount",
-			args: args{
-				id: disc.ID,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			got, err := env.LoadDiscount(tt.args.id)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("LoadDiscount() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("LoadDiscount() got = %v, want %v", got, tt.want)
-			//}
-
-			t.Logf("%s", faker.MustMarshalIndent(got))
-		})
-	}
-}
-
 func TestEnv_CreateDiscount(t *testing.T) {
 	env := newTestEnv(db.MockMySQL(), nil)
 

@@ -14,6 +14,17 @@ type PaywallCommon struct {
 	Cache *cache.Cache
 }
 
+func NewPaywallCommon(dbs db.ReadWriteMyDBs, c *cache.Cache) PaywallCommon {
+	return PaywallCommon{
+		DBs:   dbs,
+		Cache: c,
+	}
+}
+
+func (env PaywallCommon) ClearCache() {
+	env.Cache.Flush()
+}
+
 // LoadPaywall tries to load paywall from cache.
 // Fallback to db if not found in cache.
 func (env PaywallCommon) LoadPaywall(live bool) (pw.Paywall, error) {
