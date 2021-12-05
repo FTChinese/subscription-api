@@ -1,4 +1,4 @@
-package ftcpay
+package paybase
 
 import (
 	"github.com/FTChinese/go-rest/enum"
@@ -14,8 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// FtcPay wraps functionalities for user data, subscription and email.
-type FtcPay struct {
+// FtcPayBase wraps shared functionalities used for both api's one-time pay and polling service.
+type FtcPayBase struct {
 	SubsRepo     subrepo.Env
 	ReaderRepo   shared.ReaderCommon
 	AddOnRepo    addons.Env
@@ -25,12 +25,12 @@ type FtcPay struct {
 	Logger       *zap.Logger
 }
 
-func New(dbs db.ReadWriteMyDBs, p postman.Postman, logger *zap.Logger) FtcPay {
+func New(dbs db.ReadWriteMyDBs, p postman.Postman, logger *zap.Logger) FtcPayBase {
 
 	aliApp := ali.MustInitApp()
 	wxApps := wechat.MustGetPayApps()
 
-	return FtcPay{
+	return FtcPayBase{
 		SubsRepo:     subrepo.New(dbs, logger),
 		ReaderRepo:   shared.NewReaderCommon(dbs),
 		AddOnRepo:    addons.New(dbs, logger),
@@ -42,7 +42,7 @@ func New(dbs db.ReadWriteMyDBs, p postman.Postman, logger *zap.Logger) FtcPay {
 }
 
 // SendConfirmEmail sends an email to user after an order is confirmed.
-func (pay FtcPay) SendConfirmEmail(pc subs.ConfirmationResult) error {
+func (pay FtcPayBase) SendConfirmEmail(pc subs.ConfirmationResult) error {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
@@ -79,7 +79,7 @@ func (pay FtcPay) SendConfirmEmail(pc subs.ConfirmationResult) error {
 // ConfirmOrder confirms an order, update membership, backup previous
 // membership state, and send email.
 // Used by both webhook and client verification.
-func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
+func (pay FtcPayBase) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
@@ -127,7 +127,7 @@ func (pay FtcPay) ConfirmOrder(result subs.PaymentResult, order subs.Order) (sub
 }
 
 // VerifyOrder verifies against payment providers that an order is actually paid.
-func (pay FtcPay) VerifyOrder(order subs.Order) (subs.PaymentResult, error) {
+func (pay FtcPayBase) VerifyOrder(order subs.Order) (subs.PaymentResult, error) {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
