@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
-	"github.com/FTChinese/subscription-api/pkg/postman"
+	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -17,12 +17,12 @@ import (
 )
 
 type IAPRouter struct {
-	Repo       iaprepo.Env
-	Client     iaprepo.Client
-	ReaderRepo shared.ReaderCommon
-	Postman    postman.Postman
-	Logger     *zap.Logger
-	Live       bool
+	Repo         iaprepo.Env
+	Client       iaprepo.Client
+	ReaderRepo   shared.ReaderCommon
+	EmailService letter.Service
+	Logger       *zap.Logger
+	Live         bool
 }
 
 // Verify a receipt and get response from app store.

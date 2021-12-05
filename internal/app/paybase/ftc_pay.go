@@ -5,12 +5,8 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
-	"github.com/FTChinese/subscription-api/pkg/ali"
-	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/letter"
-	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/subs"
-	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"go.uber.org/zap"
 )
 
@@ -21,54 +17,29 @@ type FtcPayBase struct {
 	AddOnRepo    addons.Env
 	AliPayClient subrepo.AliPayClient
 	WxPayClients subrepo.WxPayClientStore
-	Postman      postman.Postman
+	EmailService letter.Service
 	Logger       *zap.Logger
 }
 
-func New(dbs db.ReadWriteMyDBs, p postman.Postman, logger *zap.Logger) FtcPayBase {
-
-	aliApp := ali.MustInitApp()
-	wxApps := wechat.MustGetPayApps()
-
-	return FtcPayBase{
-		SubsRepo:     subrepo.New(dbs, logger),
-		ReaderRepo:   shared.NewReaderCommon(dbs),
-		AddOnRepo:    addons.New(dbs, logger),
-		AliPayClient: subrepo.NewAliPayClient(aliApp, logger),
-		WxPayClients: subrepo.NewWxClientStore(wxApps, logger),
-		Postman:      p,
-		Logger:       logger,
-	}
-}
-
 // SendConfirmEmail sends an email to user after an order is confirmed.
-func (pay FtcPayBase) SendConfirmEmail(pc subs.ConfirmationResult) error {
+func (pay FtcPayBase) SendConfirmEmail(result subs.ConfirmationResult) error {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
 	// If the FtcID field is null, it indicates this user
 	// does not have an FTC account linked. You cannot find out
 	// its email address.
-	if !pc.Order.FtcID.Valid {
+	if !result.Order.FtcID.Valid {
 		return nil
 	}
 	// Find this user's personal data
-	account, err := pay.ReaderRepo.BaseAccountByUUID(pc.Order.FtcID.String)
+	account, err := pay.ReaderRepo.BaseAccountByUUID(result.Order.FtcID.String)
 
 	if err != nil {
 		return err
 	}
 
-	parcel, err := letter.NewSubParcel(account, pc)
-
-	if err != nil {
-		sugar.Error(err)
-		return err
-	}
-
-	sugar.Info("Send subscription confirmation letter")
-
-	err = pay.Postman.Deliver(parcel)
+	err = pay.EmailService.SendOneTimePurchase(account, result)
 	if err != nil {
 		sugar.Error(err)
 		return err
