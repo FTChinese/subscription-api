@@ -4,11 +4,15 @@ import (
 	"context"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/internal/app/paybase"
-	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/FTChinese/subscription-api/internal/repository/addons"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
+	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/poller"
-	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
@@ -38,8 +42,16 @@ type OrderPoller struct {
 
 func NewOrderPoller(myDBs db.ReadWriteMyDBs, logger *zap.Logger) OrderPoller {
 	return OrderPoller{
-		db:         myDBs.Write,
-		FtcPayBase: paybase.New(myDBs, postman.New(config.MustGetHanqiConn()), logger),
+		db: myDBs.Write,
+		FtcPayBase: paybase.FtcPayBase{
+			SubsRepo:     subrepo.New(myDBs, logger),
+			ReaderRepo:   shared.NewReaderCommon(myDBs),
+			AddOnRepo:    addons.New(myDBs, logger),
+			AliPayClient: subrepo.NewAliPayClient(ali.MustInitApp(), logger),
+			WxPayClients: subrepo.NewWxClientStore(wechat.MustGetPayApps(), logger),
+			EmailService: letter.NewService(logger),
+			Logger:       logger,
+		},
 	}
 }
 

@@ -16,7 +16,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/postman"
+	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
@@ -46,18 +46,18 @@ func StartServer(s ServerStatus) {
 	// Set the cache default expiration time to 2 hours.
 	paywallCache := cache.New(2*time.Hour, 0)
 	stripeClient := stripeclient.New(s.LiveMode, logger)
-	post := postman.New(config.MustGetHanqiConn())
+	emailService := letter.NewService(logger)
 
 	readerBaseRepo := shared.NewReaderCommon(myDBs)
 	paywallBaseRepo := shared.NewPaywallCommon(myDBs, paywallCache)
 	stripeBaseRepo := shared.NewStripeCommon(stripeClient, stripe.NewPriceCache())
 
 	userShared := controller.UserShared{
-		Repo:       accounts.New(myDBs, logger),
-		ReaderRepo: readerBaseRepo,
-		SMSClient:  ztsms.NewClient(logger),
-		Logger:     logger,
-		Postman:    post,
+		Repo:         accounts.New(myDBs, logger),
+		ReaderRepo:   readerBaseRepo,
+		SMSClient:    ztsms.NewClient(logger),
+		Logger:       logger,
+		EmailService: emailService,
 	}
 
 	ftcPayShared := paybase.FtcPayBase{
@@ -66,8 +66,8 @@ func StartServer(s ServerStatus) {
 		AddOnRepo:    addons.New(myDBs, logger),
 		AliPayClient: subrepo.NewAliPayClient(ali.MustInitApp(), logger),
 		WxPayClients: subrepo.NewWxClientStore(wechat.MustGetPayApps(), logger),
-		Postman:      post,
 		Logger:       logger,
+		EmailService: emailService,
 	}
 
 	authRouter := controller.NewAuthRouter(userShared)
@@ -79,12 +79,12 @@ func StartServer(s ServerStatus) {
 	}
 
 	iapRouter := controller.IAPRouter{
-		Repo:       iaprepo.New(myDBs, rdb, logger),
-		Client:     iaprepo.NewClient(logger),
-		ReaderRepo: readerBaseRepo,
-		Postman:    post,
-		Logger:     logger,
-		Live:       s.LiveMode,
+		Repo:         iaprepo.New(myDBs, rdb, logger),
+		Client:       iaprepo.NewClient(logger),
+		ReaderRepo:   readerBaseRepo,
+		EmailService: emailService,
+		Logger:       logger,
+		Live:         s.LiveMode,
 	}
 
 	stripeRouter := controller.StripeRouter{

@@ -9,7 +9,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"net/http"
 )
@@ -266,12 +265,7 @@ func (router AuthRouter) VerifyEmail(w http.ResponseWriter, req *http.Request) {
 
 	// Send a greeting letter.
 	go func() {
-		parcel, err := letter.GreetingParcel(baseAccount)
-		if err != nil {
-			return
-		}
-
-		err = router.Postman.Deliver(parcel)
+		err := router.EmailService.SendGreeting(baseAccount)
 		if err != nil {
 			sugar.Error(err)
 		}

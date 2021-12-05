@@ -5,7 +5,6 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/letter"
 	"net/http"
 )
 
@@ -140,13 +139,9 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 		sugar.Info("Sending iap link email")
 		if result.Initial {
-			parcel, err := letter.NewIAPLinkParcel(baseAccount, result.Member)
+			err := router.EmailService.SendIAPLinked(baseAccount, result.Member)
 			if err != nil {
-				return
-			}
-
-			err = router.Postman.Deliver(parcel)
-			if err != nil {
+				sugar.Error(err)
 				return
 			}
 		}
@@ -208,12 +203,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		parcel, err := letter.NewIAPUnlinkParcel(account, result.IAPSubs)
-		if err != nil {
-			return
-		}
-
-		err = router.Postman.Deliver(parcel)
+		err = router.EmailService.SendIAPUnlinked(account, result.IAPSubs)
 		if err != nil {
 			return
 		}
