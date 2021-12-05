@@ -3,6 +3,7 @@ package ids
 import (
 	"errors"
 	"github.com/guregu/null"
+	"net/http"
 	"strings"
 )
 
@@ -21,12 +22,24 @@ type UserIDs struct {
 	UnionID    null.String `json:"unionId" db:"union_id"`
 }
 
+// Deprecated
 func NewFtcUserID(id string) UserIDs {
 	return UserIDs{
 		CompoundID: id,
 		FtcID:      null.StringFrom(id),
 		UnionID:    null.String{},
 	}
+}
+
+func NewUserIDs(h http.Header) UserIDs {
+	ftcID := h.Get(XUserID)
+	unionID := h.Get(XUnionID)
+
+	return UserIDs{
+		CompoundID: "",
+		FtcID:      null.NewString(ftcID, ftcID != ""),
+		UnionID:    null.NewString(unionID, unionID != ""),
+	}.MustNormalize()
 }
 
 func (u UserIDs) Normalize() (UserIDs, error) {
