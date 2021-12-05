@@ -13,7 +13,7 @@ import (
 // field indicates whether the password is correct.
 func (env Env) Authenticate(params input.EmailCredentials) (account.AuthResult, error) {
 	var r account.AuthResult
-	err := env.DBs.Read.Get(&r,
+	err := env.dbs.Read.Get(&r,
 		account.StmtVerifyEmailPassword,
 		params.Password,
 		params.Email)
@@ -27,7 +27,7 @@ func (env Env) Authenticate(params input.EmailCredentials) (account.AuthResult, 
 
 func (env Env) SignUpCount(params account.SignUpRateParams) (account.SignUpLimit, error) {
 	var limit account.SignUpLimit
-	err := env.DBs.Read.Get(&limit,
+	err := env.dbs.Read.Get(&limit,
 		account.StmtSignUpCount,
 		params.StartAt,
 		params.EndAt,
@@ -45,7 +45,7 @@ func (env Env) SignUpCount(params account.SignUpRateParams) (account.SignUpLimit
 
 func (env Env) VerifyIDPassword(params account.IDCredentials) (account.AuthResult, error) {
 	var matched bool
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&matched,
 		account.StmtVerifyPassword,
 		params.Password,
@@ -65,7 +65,7 @@ func (env Env) VerifyIDPassword(params account.IDCredentials) (account.AuthResul
 // This is used both by resetting password if forgotten and updating password after logged in.
 func (env Env) UpdatePassword(p account.IDCredentials) error {
 
-	_, err := env.DBs.Write.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		account.StmtUpdatePassword,
 		p)
 

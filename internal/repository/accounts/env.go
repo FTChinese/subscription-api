@@ -1,25 +1,25 @@
 package accounts
 
 import (
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
 )
 
 type Env struct {
-	shared.ReaderBaseRepo
+	dbs    db.ReadWriteMyDBs
 	logger *zap.Logger
 }
 
-func New(baseRepo shared.ReaderBaseRepo, logger *zap.Logger) Env {
+func New(dbs db.ReadWriteMyDBs, logger *zap.Logger) Env {
 	return Env{
-		ReaderBaseRepo: baseRepo,
-		logger:         logger,
+		dbs:    dbs,
+		logger: logger,
 	}
 }
 
 func (env Env) beginAccountTx() (txrepo.AccountTx, error) {
-	tx, err := env.DBs.Delete.Beginx()
+	tx, err := env.dbs.Delete.Beginx()
 	if err != nil {
 		return txrepo.AccountTx{}, err
 	}
@@ -28,7 +28,7 @@ func (env Env) beginAccountTx() (txrepo.AccountTx, error) {
 }
 
 func (env Env) beginUnlinkTx() (txrepo.UnlinkTx, error) {
-	tx, err := env.DBs.Write.Beginx()
+	tx, err := env.dbs.Write.Beginx()
 	if err != nil {
 		return txrepo.UnlinkTx{}, err
 	}
@@ -37,7 +37,7 @@ func (env Env) beginUnlinkTx() (txrepo.UnlinkTx, error) {
 }
 
 func (env Env) beginMemberTx() (txrepo.SharedTx, error) {
-	tx, err := env.DBs.Write.Beginx()
+	tx, err := env.dbs.Write.Beginx()
 	if err != nil {
 		return txrepo.SharedTx{}, err
 	}

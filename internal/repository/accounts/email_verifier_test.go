@@ -3,8 +3,8 @@ package accounts
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
 	"go.uber.org/zap/zaptest"
@@ -15,23 +15,18 @@ func TestEnv_SaveEmailVerifier(t *testing.T) {
 
 	faker.SeedGoFake()
 
-	type fields struct {
-		Env shared.Env
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		v account.EmailVerifier
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Save email verification token",
-			fields: fields{
-				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				v: account.MustNewEmailVerifier(gofakeit.Email(), ""),
 			},
@@ -40,9 +35,7 @@ func TestEnv_SaveEmailVerifier(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
+
 			if err := env.SaveEmailVerifier(tt.args.v); (err != nil) != tt.wantErr {
 				t.Errorf("SaveEmailVerifier() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -57,24 +50,19 @@ func TestEnv_RetrieveEmailVerifier(t *testing.T) {
 
 	test.NewRepo().MustSaveEmailVerifier(v)
 
-	type fields struct {
-		Env shared.Env
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		token string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    account.EmailVerifier
 		wantErr bool
 	}{
 		{
 			name: "Retrieve email verifier",
-			fields: fields{
-				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				token: v.Token,
 			},
@@ -83,9 +71,6 @@ func TestEnv_RetrieveEmailVerifier(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			got, err := env.RetrieveEmailVerifier(tt.args.token)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrieveEmailVerifier() error = %v, wantErr %v", err, tt.wantErr)
@@ -108,23 +93,18 @@ func TestEnv_EmailVerified(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	type fields struct {
-		Env shared.Env
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
+
 	type args struct {
 		ftcID string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "Flag email verified",
-			fields: fields{
-				Env: shared.New(test.SplitDB, zaptest.NewLogger(t)),
-			},
 			args: args{
 				ftcID: a.FtcID,
 			},
@@ -133,9 +113,6 @@ func TestEnv_EmailVerified(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := Env{
-				Env: tt.fields.Env,
-			}
 			if err := env.EmailVerified(tt.args.ftcID); (err != nil) != tt.wantErr {
 				t.Errorf("EmailVerified() error = %v, wantErr %v", err, tt.wantErr)
 			}

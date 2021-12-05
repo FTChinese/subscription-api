@@ -23,7 +23,7 @@ func TestEnv_UpdateEmail(t *testing.T) {
 
 	a.Email = gofakeit.Email()
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		a account.BaseAccount
@@ -59,7 +59,7 @@ func TestEnv_SaveEmailHistory(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		a account.BaseAccount
