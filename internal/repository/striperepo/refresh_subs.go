@@ -1,8 +1,8 @@
 package striperepo
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 )
 

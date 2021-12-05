@@ -1,6 +1,6 @@
 package striperepo
 
-import "github.com/FTChinese/subscription-api/pkg/stripe"
+import "github.com/FTChinese/subscription-api/internal/pkg/stripe"
 
 // SaveSubsError saves any error in stripe response.
 func (env Env) SaveSubsError(e stripe.APIError) error {

@@ -2,10 +2,10 @@ package striperepo
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/guregu/null"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 	"go.uber.org/zap/zaptest"

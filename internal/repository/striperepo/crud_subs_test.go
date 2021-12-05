@@ -3,9 +3,9 @@ package striperepo
 import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	stripeSdk "github.com/stripe/stripe-go/v72"

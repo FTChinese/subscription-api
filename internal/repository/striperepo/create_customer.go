@@ -1,8 +1,8 @@
 package striperepo
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
 // CreateCustomer create a customer under ftc account for user with `ftcID`.
