@@ -2,7 +2,7 @@ package iaprepo
 
 import (
 	"encoding/json"
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap/zaptest"
 	"testing"
