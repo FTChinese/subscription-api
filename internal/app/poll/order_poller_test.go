@@ -2,9 +2,9 @@ package poll
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/poller"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap/zaptest"
 	"testing"

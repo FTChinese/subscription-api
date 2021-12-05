@@ -3,10 +3,9 @@ package subrepo
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
+	subs2 "github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
 )
 
@@ -19,14 +18,14 @@ const wxAppNativeApp = "wxacddf1c20516eb69" // Used by native app to pay and log
 // For upgrading to premium with valid standard subscription,
 // the remaining days is converted to add-on.
 // For Stripe and IAP, the purchase is taken as add-on directly.
-func (env Env) CreateOrder(counter ftcpay.Counter) (subs.PaymentIntent, error) {
+func (env Env) CreateOrder(counter subs2.Counter) (subs2.PaymentIntent, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return subs.PaymentIntent{}, err
+		return subs2.PaymentIntent{}, err
 	}
 
 	// Step 1: Retrieve membership for this user.
@@ -37,7 +36,7 @@ func (env Env) CreateOrder(counter ftcpay.Counter) (subs.PaymentIntent, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.PaymentIntent{}, err
+		return subs2.PaymentIntent{}, err
 	}
 	sugar.Infof("Membership retrieved %+v", member)
 
@@ -52,20 +51,20 @@ func (env Env) CreateOrder(counter ftcpay.Counter) (subs.PaymentIntent, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.PaymentIntent{}, err
+		return subs2.PaymentIntent{}, err
 	}
 
 	// Step 4: Save this order.
 	if err := otx.SaveOrder(pi.Order); err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs.PaymentIntent{}, err
+		return subs2.PaymentIntent{}, err
 	}
 	sugar.Infof("Order saved %s", pi.Order.ID)
 
 	if err := otx.Commit(); err != nil {
 		sugar.Error(err)
-		return subs.PaymentIntent{}, err
+		return subs2.PaymentIntent{}, err
 	}
 
 	return pi, nil
@@ -85,16 +84,16 @@ func (env Env) SaveOrderMeta(c footprint.OrderClient) error {
 }
 
 // RetrieveOrder loads an order by its id.
-func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
-	var order subs.Order
+func (env Env) RetrieveOrder(orderID string) (subs2.Order, error) {
+	var order subs2.Order
 
 	err := env.dbs.Read.Get(
 		&order,
-		subs.StmtSelectOrder,
+		subs2.StmtSelectOrder,
 		orderID)
 
 	if err != nil {
-		return subs.Order{}, err
+		return subs2.Order{}, err
 	}
 
 	// Set wx app id to the one used by native app pay if missing.
@@ -109,7 +108,7 @@ func (env Env) countOrders(ids ids.UserIDs) (int64, error) {
 	var count int64
 	err := env.dbs.Read.Get(
 		&count,
-		subs.StmtCountOrders,
+		subs2.StmtCountOrders,
 		ids.BuildFindInSet(),
 	)
 
@@ -120,11 +119,11 @@ func (env Env) countOrders(ids ids.UserIDs) (int64, error) {
 	return count, nil
 }
 
-func (env Env) listOrders(ids ids.UserIDs, p gorest.Pagination) ([]subs.Order, error) {
-	var orders = make([]subs.Order, 0)
+func (env Env) listOrders(ids ids.UserIDs, p gorest.Pagination) ([]subs2.Order, error) {
+	var orders = make([]subs2.Order, 0)
 	err := env.dbs.Read.Select(
 		&orders,
-		subs.StmtListOrders,
+		subs2.StmtListOrders,
 		ids.BuildFindInSet(),
 		p.Limit,
 		p.Offset(),
@@ -136,12 +135,12 @@ func (env Env) listOrders(ids ids.UserIDs, p gorest.Pagination) ([]subs.Order, e
 	return orders, nil
 }
 
-func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs.OrderList, error) {
+func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs2.OrderList, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	countCh := make(chan int64)
-	listCh := make(chan subs.OrderList)
+	listCh := make(chan subs2.OrderList)
 
 	go func() {
 		defer close(countCh)
@@ -159,7 +158,7 @@ func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs.OrderList,
 		if err != nil {
 			sugar.Error(err)
 		}
-		listCh <- subs.OrderList{
+		listCh <- subs2.OrderList{
 			Total:      0,
 			Pagination: gorest.Pagination{},
 			Data:       o,
@@ -170,55 +169,55 @@ func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs.OrderList,
 	count, listResult := <-countCh, <-listCh
 
 	if listResult.Err != nil {
-		return subs.OrderList{}, listResult.Err
+		return subs2.OrderList{}, listResult.Err
 	}
 
-	return subs.OrderList{
+	return subs2.OrderList{
 		Total:      count,
 		Pagination: p,
 		Data:       listResult.Data,
 	}, nil
 }
 
-func (env Env) orderHeader(orderID string) (subs.Order, error) {
-	var order subs.Order
+func (env Env) orderHeader(orderID string) (subs2.Order, error) {
+	var order subs2.Order
 
 	err := env.dbs.Read.Get(
 		&order,
-		subs.StmtOrderHeader,
+		subs2.StmtOrderHeader,
 		orderID)
 
 	if err != nil {
-		return subs.Order{}, nil
+		return subs2.Order{}, nil
 	}
 
 	return order, nil
 }
 
-func (env Env) orderTail(orderID string) (subs.Order, error) {
-	var order subs.Order
+func (env Env) orderTail(orderID string) (subs2.Order, error) {
+	var order subs2.Order
 
 	err := env.dbs.Read.Get(
 		&order,
-		subs.StmtOrderTail,
+		subs2.StmtOrderTail,
 		orderID)
 
 	if err != nil {
-		return subs.Order{}, nil
+		return subs2.Order{}, nil
 	}
 
 	return order, nil
 }
 
 type orderResult struct {
-	order subs.Order
+	order subs2.Order
 	err   error
 }
 
 // LoadFullOrder retrieves an order by splitting a single row into two
 // concurrent retrieval since for unknown reasons the DB does not
 // respond if a row has two much columns.
-func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
+func (env Env) LoadFullOrder(orderID string) (subs2.Order, error) {
 	headerCh := make(chan orderResult)
 	tailCh := make(chan orderResult)
 
@@ -244,14 +243,14 @@ func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 
 	headerRes, tailRes := <-headerCh, <-tailCh
 	if headerRes.err != nil {
-		return subs.Order{}, headerRes.err
+		return subs2.Order{}, headerRes.err
 	}
 
 	if tailRes.err != nil {
-		return subs.Order{}, tailRes.err
+		return subs2.Order{}, tailRes.err
 	}
 
-	return subs.Order{
+	return subs2.Order{
 		ID:            headerRes.order.ID,
 		UserIDs:       headerRes.order.UserIDs,
 		PlanID:        headerRes.order.PlanID,

@@ -4,6 +4,7 @@
 package test
 
 import (
+	subs2 "github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
@@ -13,7 +14,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/jmoiron/sqlx"
@@ -192,9 +192,9 @@ func (r Repo) MustSaveMembership(m reader.Membership) {
 	}
 }
 
-func (r Repo) SaveOrder(order subs.Order) error {
+func (r Repo) SaveOrder(order subs2.Order) error {
 
-	var stmt = subs.StmtInsertOrder + `,
+	var stmt = subs2.StmtInsertOrder + `,
 		confirmed_utc = :confirmed_utc,
 		start_date = :start_date,
 		end_date = :end_date`
@@ -210,7 +210,7 @@ func (r Repo) SaveOrder(order subs.Order) error {
 	return nil
 }
 
-func (r Repo) MustSaveOrder(order subs.Order) subs.Order {
+func (r Repo) MustSaveOrder(order subs2.Order) subs2.Order {
 
 	if err := r.SaveOrder(order); err != nil {
 		panic(err)
@@ -219,7 +219,7 @@ func (r Repo) MustSaveOrder(order subs.Order) subs.Order {
 	return order
 }
 
-func (r Repo) MustSaveRenewalOrders(orders []subs.Order) {
+func (r Repo) MustSaveRenewalOrders(orders []subs2.Order) {
 	for _, v := range orders {
 		r.MustSaveOrder(v)
 	}

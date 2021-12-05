@@ -3,7 +3,7 @@ package subrepo
 import (
 	"errors"
 	"fmt"
-	"github.com/FTChinese/subscription-api/pkg/subs"
+	subs2 "github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/objcoding/wxpay"
 	"go.uber.org/zap"
@@ -101,7 +101,7 @@ func (s WxPayClientStore) GetWebhookPayload(req *http.Request) (wechat.Notificat
 	return payload, nil
 }
 
-func (s WxPayClientStore) QueryOrderRaw(order subs.Order) (wxpay.Params, error) {
+func (s WxPayClientStore) QueryOrderRaw(order subs2.Order) (wxpay.Params, error) {
 	client, err := s.ClientByAppID(order.WxAppID.String)
 	if err != nil {
 		return nil, err
@@ -110,14 +110,14 @@ func (s WxPayClientStore) QueryOrderRaw(order subs.Order) (wxpay.Params, error) 
 	return client.queryOrderRaw(order.ID)
 }
 
-func (s WxPayClientStore) VerifyPayment(order subs.Order) (subs.PaymentResult, error) {
+func (s WxPayClientStore) VerifyPayment(order subs2.Order) (subs2.PaymentResult, error) {
 	defer s.logger.Sync()
 	sugar := s.logger.Sugar()
 
 	client, err := s.ClientByAppID(order.WxAppID.String)
 	if err != nil {
 		sugar.Error(err)
-		return subs.PaymentResult{}, err
+		return subs2.PaymentResult{}, err
 	}
 
 	return client.VerifyPayment(order)
@@ -169,7 +169,7 @@ func (c WxPayClient) queryOrderRaw(id string) (wxpay.Params, error) {
 }
 
 //https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_2&index=4
-func (c WxPayClient) QueryOrder(order subs.Order) (wechat.OrderQueryResp, error) {
+func (c WxPayClient) QueryOrder(order subs2.Order) (wechat.OrderQueryResp, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
 
@@ -205,14 +205,14 @@ func (c WxPayClient) QueryOrder(order subs.Order) (wechat.OrderQueryResp, error)
 	return wechat.NewOrderQueryResp(raw), nil
 }
 
-func (c WxPayClient) VerifyPayment(order subs.Order) (subs.PaymentResult, error) {
+func (c WxPayClient) VerifyPayment(order subs2.Order) (subs2.PaymentResult, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
 
 	ordResp, err := c.QueryOrder(order)
 	if err != nil {
 		sugar.Error(err)
-		return subs.PaymentResult{}, err
+		return subs2.PaymentResult{}, err
 	}
 
 	// Validate if response is correct. This does not verify the payment is successful.
@@ -224,10 +224,10 @@ func (c WxPayClient) VerifyPayment(order subs.Order) (subs.PaymentResult, error)
 	err = ordResp.Validate(c.app)
 	if err != nil {
 		sugar.Error(err)
-		return subs.PaymentResult{}, err
+		return subs2.PaymentResult{}, err
 	}
 
-	return subs.NewWxPayResult(ordResp), nil
+	return subs2.NewWxPayResult(ordResp), nil
 }
 
 func (c WxPayClient) SignJSApiParams(or wechat.OrderResp) wechat.JSApiParams {
