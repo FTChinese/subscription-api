@@ -5,18 +5,17 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/letter"
-	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"go.uber.org/zap"
 )
 
 // UserShared wraps functionalities common to AuthRouter and AccountRouter.
 type UserShared struct {
-	Repo       accounts.Env
-	ReaderRepo shared.ReaderCommon
-	SMSClient  ztsms.Client
-	Logger     *zap.Logger
-	Postman    postman.Postman
+	Repo         accounts.Env
+	ReaderRepo   shared.ReaderCommon
+	SMSClient    ztsms.Client
+	Logger       *zap.Logger
+	EmailService letter.Service
 }
 
 func (us UserShared) SendEmailVerification(baseAccount account.BaseAccount, sourceURL string, isSignUp bool) error {
@@ -36,27 +35,12 @@ func (us UserShared) SendEmailVerification(baseAccount account.BaseAccount, sour
 		return err
 	}
 
-	parcel, err := letter.VerificationParcel(letter.CtxVerification{
+	return us.EmailService.SendVerification(letter.CtxVerification{
 		UserName: baseAccount.NormalizeName(),
 		Email:    baseAccount.Email,
 		Link:     verifier.BuildURL(),
 		IsSignUp: isSignUp,
 	})
-
-	sugar.Info(parcel)
-
-	if err != nil {
-		sugar.Error(err)
-		return err
-	}
-
-	err = us.Postman.Deliver(parcel)
-	if err != nil {
-		sugar.Error(err)
-		return err
-	}
-
-	return nil
 }
 
 // SyncMobile handles a case where user have a mobile-derived

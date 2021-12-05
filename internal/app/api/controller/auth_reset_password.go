@@ -6,7 +6,6 @@ import (
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/letter"
 	"net/http"
 )
 
@@ -70,17 +69,9 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 	}()
 
 	// Compose email
-	parcel, err := letter.PasswordResetParcel(baseAccount, session)
+	err = router.EmailService.SendPasswordReset(baseAccount, session)
 	if err != nil {
 		sugar.Error(err)
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-
-	sugar.Info(parcel)
-
-	// Send email
-	if err := router.Postman.Deliver(parcel); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}

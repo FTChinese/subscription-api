@@ -111,11 +111,11 @@ type CtxIAPLinked struct {
 	ExpireDate chrono.Date
 }
 
-func RenderIAPLinked(ctx CtxIAPLinked) (string, error) {
+func (ctx CtxIAPLinked) RenderIAPLinked() (string, error) {
 	return Render(keyIAPLinked, ctx)
 }
 
-func RenderIAPUnlinked(ctx CtxIAPLinked) (string, error) {
+func (ctx CtxIAPLinked) RenderIAPUnlinked() (string, error) {
 	return Render(keyIAPUnlinked, ctx)
 }
 

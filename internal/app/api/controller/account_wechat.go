@@ -9,7 +9,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"net/http"
 )
@@ -139,12 +138,10 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		parcel, err := letter.WxSignUpParcel(merged, verifier)
+		err = router.EmailService.SendWxSignUp(merged, verifier)
 		if err != nil {
 			return
 		}
-
-		err = router.Postman.Deliver(parcel)
 	}()
 
 	// Change login method to wechat so that when unlinked, client knows which side should be used.
@@ -241,13 +238,7 @@ func (router AccountRouter) WxLinkEmail(w http.ResponseWriter, req *http.Request
 
 	// Send email telling user that the accounts are linked.
 	go func() {
-		parcel, err := letter.LinkedParcel(result)
-		if err != nil {
-			sugar.Error(err)
-		}
-
-		sugar.Info("Sending wechat link email...")
-		err = router.Postman.Deliver(parcel)
+		err := router.EmailService.SendWxEmailLink(result)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -328,12 +319,9 @@ func (router AccountRouter) WxUnlinkEmail(w http.ResponseWriter, req *http.Reque
 	}()
 
 	go func() {
-		parcel, err := letter.UnlinkParcel(acnt, params.Anchor)
-		if err != nil {
-			sugar.Error(err)
-		}
-
-		err = router.Postman.Deliver(parcel)
+		err := router.EmailService.SendWxEmailUnlink(
+			acnt,
+			params.Anchor)
 		if err != nil {
 			sugar.Error(err)
 		}
