@@ -3,13 +3,16 @@ package internal
 import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
-	"github.com/FTChinese/subscription-api/internal/controller"
-	"github.com/FTChinese/subscription-api/internal/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/app/api/controller"
+	"github.com/FTChinese/subscription-api/internal/app/paybase"
+	"github.com/FTChinese/subscription-api/internal/repository/accounts"
+	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
+	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -17,6 +20,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
+	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
@@ -44,21 +48,32 @@ func StartServer(s ServerStatus) {
 	stripeClient := stripeclient.New(s.LiveMode, logger)
 	post := postman.New(config.MustGetHanqiConn())
 
-	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
+	readerBaseRepo := shared.NewReaderCommon(myDBs)
 	paywallBaseRepo := shared.NewPaywallCommon(myDBs, paywallCache)
 	stripeBaseRepo := shared.NewStripeCommon(stripeClient, stripe.NewPriceCache())
 
-	userShared := controller.NewUserShared(
-		readerBaseRepo,
-		post,
-		logger)
+	userShared := controller.UserShared{
+		Repo:       accounts.New(myDBs, logger),
+		ReaderRepo: readerBaseRepo,
+		SMSClient:  ztsms.NewClient(logger),
+		Logger:     logger,
+		Postman:    post,
+	}
 
-	ftcPay := ftcpay.New(myDBs, post, logger)
+	ftcPayShared := paybase.FtcPayBase{
+		SubsRepo:     subrepo.New(myDBs, logger),
+		ReaderRepo:   readerBaseRepo,
+		AddOnRepo:    addons.New(myDBs, logger),
+		AliPayClient: subrepo.NewAliPayClient(ali.MustInitApp(), logger),
+		WxPayClients: subrepo.NewWxClientStore(wechat.MustGetPayApps(), logger),
+		Postman:      post,
+		Logger:       logger,
+	}
 
 	authRouter := controller.NewAuthRouter(userShared)
 	accountRouter := controller.NewAccountRouter(userShared)
 	ftcSubsRouter := controller.SubsRouter{
-		FtcPay:      ftcPay,
+		FtcPayBase:  ftcPayShared,
 		PaywallRepo: paywallBaseRepo,
 		Live:        s.LiveMode,
 	}
