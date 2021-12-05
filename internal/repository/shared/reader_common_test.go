@@ -21,7 +21,7 @@ func TestEnv_BaseAccountByUUID(t *testing.T) {
 	repo := test.NewRepo()
 	repo.MustCreateFtcAccount(a)
 
-	env := NewReaderBaseRepo(db.MockMySQL())
+	env := NewReaderCommon(db.MockMySQL())
 
 	type args struct {
 		id string
@@ -62,7 +62,7 @@ func TestEnv_BaseAccountByStripeID(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := NewReaderBaseRepo(db.MockMySQL())
+	env := NewReaderCommon(db.MockMySQL())
 
 	type args struct {
 		cusID string
@@ -101,7 +101,7 @@ func TestEnv_BaseAccountByWxID(t *testing.T) {
 	a := account.NewMockFtcAccountBuilder(enum.AccountKindLinked).Build()
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := NewReaderBaseRepo(db.MockMySQL())
+	env := NewReaderCommon(db.MockMySQL())
 
 	type args struct {
 		unionID string
@@ -196,7 +196,7 @@ func TestEnv_RetrieveMember(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := ReaderBaseRepo{
+			env := ReaderCommon{
 				DBs: tt.fields.DBs,
 			}
 			got, err := env.RetrieveMember(tt.args.compoundID)
@@ -246,7 +246,7 @@ func TestEnv_RetrieveAppleMember(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := ReaderBaseRepo{
+			env := ReaderCommon{
 				DBs: tt.fields.DBs,
 			}
 			got, err := env.RetrieveAppleMember(tt.args.txID)
@@ -296,7 +296,7 @@ func TestEnv_ArchiveMember(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := ReaderBaseRepo{
+			env := ReaderCommon{
 				DBs: tt.fields.DBs,
 			}
 			if err := env.ArchiveMember(tt.args.snapshot); (err != nil) != tt.wantErr {
@@ -308,7 +308,7 @@ func TestEnv_ArchiveMember(t *testing.T) {
 
 func TestEnv_VersionMembership(t *testing.T) {
 
-	env := NewReaderBaseRepo(db.MockMySQL())
+	env := NewReaderCommon(db.MockMySQL())
 
 	p := test.NewPersona()
 

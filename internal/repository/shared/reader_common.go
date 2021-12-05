@@ -9,22 +9,22 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-// ReaderBaseRepo contains shared functionalities of a reader.
+// ReaderCommon contains shared functionalities of a reader.
 // It contains methods to retrieve user's
 // basic account data using various id fields.
 // It also contains methods to retrieve membership
 // using various ids.
-type ReaderBaseRepo struct {
+type ReaderCommon struct {
 	DBs db.ReadWriteMyDBs
 }
 
-func NewReaderBaseRepo(dbs db.ReadWriteMyDBs) ReaderBaseRepo {
-	return ReaderBaseRepo{
+func NewReaderCommon(dbs db.ReadWriteMyDBs) ReaderCommon {
+	return ReaderCommon{
 		DBs: dbs,
 	}
 }
 
-func (env ReaderBaseRepo) BaseAccountByUUID(id string) (account.BaseAccount, error) {
+func (env ReaderCommon) BaseAccountByUUID(id string) (account.BaseAccount, error) {
 	var a account.BaseAccount
 	err := env.DBs.Read.Get(&a, account.StmtBaseAccountByUUID, id)
 	if err != nil {
@@ -34,7 +34,7 @@ func (env ReaderBaseRepo) BaseAccountByUUID(id string) (account.BaseAccount, err
 	return a, nil
 }
 
-func (env ReaderBaseRepo) BaseAccountByStripeID(cusID string) (account.BaseAccount, error) {
+func (env ReaderCommon) BaseAccountByStripeID(cusID string) (account.BaseAccount, error) {
 	var a account.BaseAccount
 	err := env.DBs.Read.Get(&a, account.StmtBaseAccountOfStripe, cusID)
 	if err != nil {
@@ -45,7 +45,7 @@ func (env ReaderBaseRepo) BaseAccountByStripeID(cusID string) (account.BaseAccou
 }
 
 // BaseAccountByWxID retrieves BaseAccount for a wechat user.
-func (env ReaderBaseRepo) BaseAccountByWxID(unionID string) (account.BaseAccount, error) {
+func (env ReaderCommon) BaseAccountByWxID(unionID string) (account.BaseAccount, error) {
 	var a account.BaseAccount
 	err := env.DBs.Read.Get(&a, account.StmtBaseAccountByWx, unionID)
 	if err != nil {
@@ -56,7 +56,7 @@ func (env ReaderBaseRepo) BaseAccountByWxID(unionID string) (account.BaseAccount
 }
 
 // FindBaseAccount retrieve account by ftc id if exists, then fallback to union id.
-func (env ReaderBaseRepo) FindBaseAccount(ids ids.UserIDs) (account.BaseAccount, error) {
+func (env ReaderCommon) FindBaseAccount(ids ids.UserIDs) (account.BaseAccount, error) {
 	if ids.FtcID.Valid {
 		return env.BaseAccountByUUID(ids.FtcID.String)
 	}
@@ -68,7 +68,7 @@ func (env ReaderBaseRepo) FindBaseAccount(ids ids.UserIDs) (account.BaseAccount,
 	return account.BaseAccount{}, errors.New("either ftc id nor wechat id should be specified")
 }
 
-func (env ReaderBaseRepo) SearchUserByFtcOrWxID(id string) (account.BaseAccount, error) {
+func (env ReaderCommon) SearchUserByFtcOrWxID(id string) (account.BaseAccount, error) {
 	ba, err := env.BaseAccountByUUID(id)
 	if err == nil {
 		return ba, nil
@@ -83,7 +83,7 @@ func (env ReaderBaseRepo) SearchUserByFtcOrWxID(id string) (account.BaseAccount,
 
 // RetrieveMember loads reader.Membership of the specified id.
 // compoundID - Might be ftc uuid or wechat union id.
-func (env ReaderBaseRepo) RetrieveMember(compoundID string) (reader.Membership, error) {
+func (env ReaderCommon) RetrieveMember(compoundID string) (reader.Membership, error) {
 	var m reader.Membership
 
 	err := env.DBs.Read.Get(
@@ -101,7 +101,7 @@ func (env ReaderBaseRepo) RetrieveMember(compoundID string) (reader.Membership, 
 // RetrieveAppleMember selects membership by apple original transaction id.
 // // NOTE: sql.ErrNoRows are ignored. The returned
 //// Membership might be a zero value.
-func (env ReaderBaseRepo) RetrieveAppleMember(txID string) (reader.Membership, error) {
+func (env ReaderCommon) RetrieveAppleMember(txID string) (reader.Membership, error) {
 	var m reader.Membership
 
 	err := env.DBs.Read.Get(
@@ -118,7 +118,7 @@ func (env ReaderBaseRepo) RetrieveAppleMember(txID string) (reader.Membership, e
 
 // ArchiveMember saves a member's snapshot at a specific moment.
 // Deprecated.
-func (env ReaderBaseRepo) ArchiveMember(snapshot reader.MemberSnapshot) error {
+func (env ReaderCommon) ArchiveMember(snapshot reader.MemberSnapshot) error {
 	_, err := env.DBs.Write.NamedExec(
 		reader.StmtSaveSnapshot,
 		snapshot)
@@ -130,7 +130,7 @@ func (env ReaderBaseRepo) ArchiveMember(snapshot reader.MemberSnapshot) error {
 	return nil
 }
 
-func (env ReaderBaseRepo) VersionMembership(v reader.MembershipVersioned) error {
+func (env ReaderCommon) VersionMembership(v reader.MembershipVersioned) error {
 	_, err := env.DBs.Write.NamedExec(
 		reader.StmtVersionMembership,
 		v)

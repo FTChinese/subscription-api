@@ -1,11 +1,10 @@
-package accounts
+package shared
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
-	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
@@ -19,7 +18,7 @@ func TestEnv_JoinedByFtcID(t *testing.T) {
 	repo.MustCreateFtcAccount(a)
 	repo.MustSaveWxUser(w)
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := NewReaderCommon(db.MockMySQL())
 
 	type args struct {
 		ftcID string
@@ -64,7 +63,7 @@ func TestEnv_JoinedByWxID(t *testing.T) {
 	repo.MustCreateFtcAccount(a)
 	repo.MustSaveWxUser(w)
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := NewReaderCommon(db.MockMySQL())
 
 	type args struct {
 		unionID string
