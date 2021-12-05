@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/internal/poll"
+	"github.com/FTChinese/subscription-api/internal/app/poll"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/go-co-op/gocron"
