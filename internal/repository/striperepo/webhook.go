@@ -2,9 +2,9 @@ package striperepo
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
 func (env Env) OnWebhookSubs(subs stripe.Subs, userIDs ids.UserIDs) (stripe.WebhookResult, error) {
@@ -92,7 +92,7 @@ func (env Env) OnWebhookSubs(subs stripe.Subs, userIDs ids.UserIDs) (stripe.Webh
 }
 
 func (env Env) SaveWebhookError(whe stripe.WebhookError) error {
-	_, err := env.DBs.Write.NamedExec(stripe.StmtInsertWebhookError, whe)
+	_, err := env.dbs.Write.NamedExec(stripe.StmtInsertWebhookError, whe)
 
 	if err != nil {
 		return err

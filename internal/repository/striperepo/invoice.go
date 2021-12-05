@@ -1,6 +1,6 @@
 package striperepo
 
-import "github.com/FTChinese/subscription-api/pkg/stripe"
+import "github.com/FTChinese/subscription-api/internal/pkg/stripe"
 
 func (env Env) UpsertInvoice(i stripe.Invoice) error {
 	_, err := env.dbs.Write.NamedExec(stripe.StmtUpsertInvoice, i)

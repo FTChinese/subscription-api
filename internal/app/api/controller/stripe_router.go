@@ -3,10 +3,10 @@ package controller
 import (
 	"errors"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	stripeSdk "github.com/stripe/stripe-go/v72"
 	"go.uber.org/zap"
 	"net/http"

@@ -2,8 +2,8 @@ package striperepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
 // CancelSubscription cancels a subscription at period end if `CancelParams.Cancel` is true, else reactivate it.

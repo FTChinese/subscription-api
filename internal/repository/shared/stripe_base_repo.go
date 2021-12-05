@@ -1,8 +1,8 @@
 package shared
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
 type StripeBaseRepo struct {

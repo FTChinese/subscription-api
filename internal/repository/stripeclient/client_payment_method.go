@@ -1,7 +1,7 @@
 package stripeclient
 
 import (
-	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
+	ftcStripe "github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/stripe/stripe-go/v72"
 )
 
