@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 )
 
 func MustVerificationResponse() *apple.VerificationResp {

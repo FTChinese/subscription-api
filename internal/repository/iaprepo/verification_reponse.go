@@ -1,7 +1,7 @@
 package iaprepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 )
 
 // When a receipt is verified, or webhook is triggered,

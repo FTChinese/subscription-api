@@ -4,9 +4,9 @@
 package test
 
 import (
-	subs2 "github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
@@ -192,9 +192,9 @@ func (r Repo) MustSaveMembership(m reader.Membership) {
 	}
 }
 
-func (r Repo) SaveOrder(order subs2.Order) error {
+func (r Repo) SaveOrder(order subs.Order) error {
 
-	var stmt = subs2.StmtInsertOrder + `,
+	var stmt = subs.StmtInsertOrder + `,
 		confirmed_utc = :confirmed_utc,
 		start_date = :start_date,
 		end_date = :end_date`
@@ -210,7 +210,7 @@ func (r Repo) SaveOrder(order subs2.Order) error {
 	return nil
 }
 
-func (r Repo) MustSaveOrder(order subs2.Order) subs2.Order {
+func (r Repo) MustSaveOrder(order subs.Order) subs.Order {
 
 	if err := r.SaveOrder(order); err != nil {
 		panic(err)
@@ -219,7 +219,7 @@ func (r Repo) MustSaveOrder(order subs2.Order) subs2.Order {
 	return order
 }
 
-func (r Repo) MustSaveRenewalOrders(orders []subs2.Order) {
+func (r Repo) MustSaveRenewalOrders(orders []subs.Order) {
 	for _, v := range orders {
 		r.MustSaveOrder(v)
 	}

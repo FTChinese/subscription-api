@@ -1,7 +1,7 @@
 package iaprepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 )
 
 func (env Env) SaveWebhook(w apple.WebHookSchema) error {

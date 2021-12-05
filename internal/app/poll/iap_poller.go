@@ -3,10 +3,10 @@ package poll
 import (
 	"context"
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
-	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/poller"
