@@ -42,7 +42,7 @@ func (env Env) CreateAccount(a account.BaseAccount) error {
 // Used userinfo.email column as key.
 func (env Env) BaseAccountByEmail(email string) (account.BaseAccount, error) {
 	var a account.BaseAccount
-	err := env.DBs.Read.Get(&a, account.StmtBaseAccountByEmail, email)
+	err := env.dbs.Read.Get(&a, account.StmtBaseAccountByEmail, email)
 	if err != nil {
 		return account.BaseAccount{}, err
 	}

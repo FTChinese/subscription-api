@@ -15,7 +15,7 @@ func TestEnv_DeleteAccount(t *testing.T) {
 	a1 := test.NewPersona().EmailOnlyAccount()
 	repo.MustCreateFtcAccount(a1)
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		d account.DeletedUser

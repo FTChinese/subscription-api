@@ -9,7 +9,7 @@ import (
 // to indicates its existence.
 func (env Env) IDExists(id string) (bool, error) {
 	var ok bool
-	err := env.DBs.Read.Get(&ok, account.StmtIDExists, id)
+	err := env.dbs.Read.Get(&ok, account.StmtIDExists, id)
 	if err != nil {
 		return false, err
 	}
@@ -20,7 +20,7 @@ func (env Env) IDExists(id string) (bool, error) {
 // EmailExists tests whether a user's email exists.
 func (env Env) EmailExists(email string) (bool, error) {
 	var ok bool
-	err := env.DBs.Read.Get(&ok, account.StmtEmailExists, email)
+	err := env.dbs.Read.Get(&ok, account.StmtEmailExists, email)
 	if err != nil {
 		return false, err
 	}
@@ -31,7 +31,7 @@ func (env Env) EmailExists(email string) (bool, error) {
 // NameExists checks if a username exists the user_name column.
 func (env Env) NameExists(name string) (bool, error) {
 	var ok bool
-	err := env.DBs.Read.Get(&ok, account.StmtNameExists, name)
+	err := env.dbs.Read.Get(&ok, account.StmtNameExists, name)
 	if err != nil {
 		return false, err
 	}
@@ -44,7 +44,7 @@ func (env Env) NameExists(name string) (bool, error) {
 // Check the id to see if user is found.
 func (env Env) SearchByEmail(email string) (account.SearchResult, error) {
 	var result account.SearchResult
-	err := env.DBs.Read.Get(&result, account.StmtSearchByEmail, email)
+	err := env.dbs.Read.Get(&result, account.StmtSearchByEmail, email)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			return account.SearchResult{}, err
@@ -59,7 +59,7 @@ func (env Env) SearchByEmail(email string) (account.SearchResult, error) {
 // Check the returned id to see if the user exists or not.
 func (env Env) SearchByMobile(mobile string) (account.SearchResult, error) {
 	var result account.SearchResult
-	err := env.DBs.Read.Get(&result, account.StmtSearchByMobile, mobile)
+	err := env.dbs.Read.Get(&result, account.StmtSearchByMobile, mobile)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			return account.SearchResult{}, err

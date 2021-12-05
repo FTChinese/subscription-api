@@ -11,29 +11,9 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-type memberAsyncResult struct {
-	value reader.Membership
-	err   error
-}
-
-func (env Env) AsyncLoadMembership(compoundID string) <-chan memberAsyncResult {
-	c := make(chan memberAsyncResult)
-
-	go func() {
-		m, err := env.RetrieveMember(compoundID)
-
-		c <- memberAsyncResult{
-			value: m,
-			err:   err,
-		}
-	}()
-
-	return c
-}
-
 func (env Env) countMemberSnapshot(ids ids.UserIDs) (int64, error) {
 	var count int64
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&count,
 		reader.StmtCountSnapshot,
 		ids.BuildFindInSet(),
@@ -48,7 +28,7 @@ func (env Env) countMemberSnapshot(ids ids.UserIDs) (int64, error) {
 
 func (env Env) listMemberSnapshot(ids ids.UserIDs, p gorest.Pagination) ([]reader.MemberSnapshot, error) {
 	var s = make([]reader.MemberSnapshot, 0)
-	err := env.DBs.Read.Select(
+	err := env.dbs.Read.Select(
 		&s,
 		reader.StmtListSnapshots,
 		ids.BuildFindInSet(),
