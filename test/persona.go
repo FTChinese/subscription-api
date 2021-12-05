@@ -127,6 +127,13 @@ func (p *Persona) MobileSignUpParams() input.MobileSignUpParams {
 	}
 }
 
+func (p *Persona) Wechat() account.Wechat {
+	return account.Wechat{
+		WxNickname:  null.StringFrom(p.Nickname),
+		WxAvatarURL: null.StringFrom(p.Avatar),
+	}
+}
+
 func (p *Persona) EmailOnlyAccount() account.BaseAccount {
 	return account.BaseAccount{
 		FtcID:        p.FtcID,
