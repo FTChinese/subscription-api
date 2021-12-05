@@ -73,7 +73,7 @@ func (env Env) CreateOrder(counter ftcpay.Counter) (subs.PaymentIntent, error) {
 
 func (env Env) SaveOrderMeta(c footprint.OrderClient) error {
 
-	_, err := env.DBs.Write.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		footprint.StmtInsertOrderClient,
 		c)
 
@@ -88,7 +88,7 @@ func (env Env) SaveOrderMeta(c footprint.OrderClient) error {
 func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 	var order subs.Order
 
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&order,
 		subs.StmtSelectOrder,
 		orderID)
@@ -107,7 +107,7 @@ func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 
 func (env Env) countOrders(ids ids.UserIDs) (int64, error) {
 	var count int64
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&count,
 		subs.StmtCountOrders,
 		ids.BuildFindInSet(),
@@ -122,7 +122,7 @@ func (env Env) countOrders(ids ids.UserIDs) (int64, error) {
 
 func (env Env) listOrders(ids ids.UserIDs, p gorest.Pagination) ([]subs.Order, error) {
 	var orders = make([]subs.Order, 0)
-	err := env.DBs.Read.Select(
+	err := env.dbs.Read.Select(
 		&orders,
 		subs.StmtListOrders,
 		ids.BuildFindInSet(),
@@ -183,7 +183,7 @@ func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs.OrderList,
 func (env Env) orderHeader(orderID string) (subs.Order, error) {
 	var order subs.Order
 
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&order,
 		subs.StmtOrderHeader,
 		orderID)
@@ -198,7 +198,7 @@ func (env Env) orderHeader(orderID string) (subs.Order, error) {
 func (env Env) orderTail(orderID string) (subs.Order, error) {
 	var order subs.Order
 
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&order,
 		subs.StmtOrderTail,
 		orderID)
