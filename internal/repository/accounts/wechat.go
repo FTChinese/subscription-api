@@ -2,112 +2,74 @@ package accounts
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/pkg/input"
-	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/guregu/null"
 )
 
 // WxSignUp helps a Wechat-logged-in user to sign up on FTC.
 // If user already purchased membership with Wechat account, the membership will be bound to this signup email.
 // Returns the new account's UUID.
-func (env Env) WxSignUp(unionID string, input input.EmailSignUpParams) (reader.WxEmailLinkResult, error) {
+func (env Env) WxSignUp(merged reader.Account) error {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
-
-	// A new complete email account.
-	// You should set LoginMethod to LoginMethodEmail
-	// so that the Link step knows how to merge data.
-	ftcAccount := reader.Account{
-		BaseAccount: account.NewEmailBaseAccount(input),
-		LoginMethod: enum.LoginMethodEmail,
-		Wechat:      account.Wechat{},
-		Membership:  reader.Membership{},
-	}
-
-	ok, err := env.EmailExists(input.Email)
-	if err != nil {
-		sugar.Error(err)
-		return reader.WxEmailLinkResult{}, err
-	}
-
-	// Email already exists.
-	if ok {
-		return reader.WxEmailLinkResult{}, render.NewVEAlreadyExists("email")
-	}
-
-	// Retrieve account by wx union id.
-	wxAccount, err := env.AccountByWxID(unionID)
-	if err != nil {
-		sugar.Error(err)
-		return reader.WxEmailLinkResult{}, err
-	}
-
-	merged, err := ftcAccount.Link(wxAccount)
-	if err != nil {
-		sugar.Error(err)
-		return reader.WxEmailLinkResult{}, err
-	}
 
 	// Start persisting data.
 	tx, err := env.beginAccountTx()
 	if err != nil {
 		sugar.Error(err)
-		return reader.WxEmailLinkResult{}, err
+		return err
 	}
 
 	//
 	if err = tx.CreateAccount(merged.BaseAccount); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.WxEmailLinkResult{}, err
+		return err
 	}
 
 	if err = tx.CreateProfile(merged.BaseAccount); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.WxEmailLinkResult{}, err
+		return err
 	}
 
 	if merged.Membership.IsZero() {
 		if err := tx.Commit(); err != nil {
 			sugar.Error(err)
-			return reader.WxEmailLinkResult{}, err
+			return err
 		}
-		return reader.WxEmailLinkResult{
-			Account: merged,
-		}, nil
+		return nil
 	}
 
 	sugar.Infof("Removing merged members...")
-	if err := tx.DeleteMember(wxAccount.Membership.UserIDs); err != nil {
+	err = tx.DeleteMember(ids.UserIDs{
+		CompoundID: "",
+		FtcID:      null.String{},
+		UnionID:    merged.UnionID,
+	}.MustNormalize())
+
+	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.WxEmailLinkResult{}, err
+		return err
 	}
 
 	sugar.Infof("Inserting merged member...")
 	if err := tx.CreateMember(merged.Membership); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return reader.WxEmailLinkResult{}, err
+		return err
 	}
 
-	sugar.Infof("Wechat user %s has membership and is linked to new account %s", wxAccount.UnionID.String, ftcAccount.FtcID)
+	sugar.Infof("Wechat user %s has membership and is linked to new account %s", merged.UnionID.String, merged.FtcID)
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error()
-		return reader.WxEmailLinkResult{}, err
+		return err
 	}
 
-	return reader.WxEmailLinkResult{
-		Account:           merged,
-		FtcMemberSnapshot: reader.MemberSnapshot{},
-		WxMemberSnapshot: wxAccount.Membership.Snapshot(reader.Archiver{
-			Name:   reader.ArchiveNameWechat,
-			Action: reader.ArchiveActionLink,
-		}),
-	}, nil
+	return nil
 }
 
 // LinkWechat links an ftc account to wechat account.
@@ -212,13 +174,6 @@ func (env Env) UnlinkWx(acnt reader.Account, anchor enum.AccountKind) error {
 
 		return nil
 	}
-
-	go func() {
-		_ = env.ArchiveMember(acnt.Membership.Snapshot(reader.Archiver{
-			Name:   reader.ArchiveNameWechat,
-			Action: reader.ArchiveActionUnlink,
-		}))
-	}()
 
 	if err := ltx.UnlinkMember(acnt.Membership, anchor); err != nil {
 		sugar.Error(err)

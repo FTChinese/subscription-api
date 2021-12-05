@@ -6,7 +6,7 @@ import "github.com/FTChinese/subscription-api/pkg/account"
 // user_db.profile table.
 // This is usually used after user performed login.
 func (env Env) CreateProfile(a account.BaseAccount) error {
-	_, err := env.DBs.Write.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		account.StmtCreateProfile,
 		a)
 	if err != nil {
@@ -22,7 +22,7 @@ func (env Env) LoadProfile(ftcID string) (account.Profile, error) {
 
 	var s account.ProfileSchema
 
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&s,
 		account.StmtProfile,
 		ftcID,
@@ -38,7 +38,7 @@ func (env Env) LoadProfile(ftcID string) (account.Profile, error) {
 // UpdateProfile update a user's gender, familyName, givenName, birthday.
 func (env Env) UpdateProfile(p account.BaseProfile) error {
 
-	_, err := env.DBs.Write.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		account.StmtUpdateProfile,
 		p,
 	)

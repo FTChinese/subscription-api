@@ -18,7 +18,7 @@ func TestEnv_LoadProfile(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		ftcID string
@@ -63,7 +63,7 @@ func TestEnv_UpdateProfile(t *testing.T) {
 
 	t.Logf("%s", a.FtcID)
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		p account.BaseProfile

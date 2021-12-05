@@ -11,7 +11,7 @@ import (
 func (env Env) LoadAddress(ftcID string) (account.Address, error) {
 
 	var addr account.Address
-	err := env.DBs.Read.Get(
+	err := env.dbs.Read.Get(
 		&addr,
 		account.StmtLoadAddress,
 		ftcID,
@@ -32,7 +32,7 @@ func (env Env) LoadAddress(ftcID string) (account.Address, error) {
 // UpdateAddress updates user's physical address.
 func (env Env) UpdateAddress(addr account.Address) error {
 
-	_, err := env.DBs.Write.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		account.StmtUpdateAddress,
 		addr,
 	)

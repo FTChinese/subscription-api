@@ -9,7 +9,7 @@ import (
 // a password reset email.
 func (env Env) SavePwResetSession(s account.PwResetSession) error {
 
-	_, err := env.DBs.Write.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		account.StmtInsertPwResetSession,
 		s,
 	)
@@ -24,7 +24,7 @@ func (env Env) SavePwResetSession(s account.PwResetSession) error {
 // PwResetSessionByToken retrieves PwResetSession by token.
 func (env Env) PwResetSessionByToken(token string) (account.PwResetSession, error) {
 	var session account.PwResetSession
-	err := env.DBs.Read.Get(&session, account.StmtPwResetSessionByToken, token)
+	err := env.dbs.Read.Get(&session, account.StmtPwResetSessionByToken, token)
 	if err != nil {
 		return account.PwResetSession{}, err
 	}
@@ -37,7 +37,7 @@ func (env Env) PwResetSessionByToken(token string) (account.PwResetSession, erro
 // Use email + code to uniquely identify a row.
 func (env Env) PwResetSessionByCode(params input.AppResetPwSessionParams) (account.PwResetSession, error) {
 	var session account.PwResetSession
-	err := env.DBs.Read.Get(&session, account.StmtPwResetSessionByCode, params.AppCode, params.Email)
+	err := env.dbs.Read.Get(&session, account.StmtPwResetSessionByCode, params.AppCode, params.Email)
 	if err != nil {
 		return account.PwResetSession{}, err
 	}
@@ -48,7 +48,7 @@ func (env Env) PwResetSessionByCode(params input.AppResetPwSessionParams) (accou
 // DisablePasswordReset disables a token used.
 func (env Env) DisablePasswordReset(t string) error {
 
-	_, err := env.DBs.Write.Exec(account.StmtDisablePwResetToken, t)
+	_, err := env.dbs.Write.Exec(account.StmtDisablePwResetToken, t)
 
 	if err != nil {
 		return err
