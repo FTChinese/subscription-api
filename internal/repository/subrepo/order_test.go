@@ -6,7 +6,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
@@ -32,10 +31,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 	upgradePerson := test.NewPersona()
 	addOnPerson := test.NewPersona()
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		counter ftcpay.Counter
@@ -227,7 +223,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 
 func TestEnv_LogOrderMeta(t *testing.T) {
 
-	env := NewEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		c footprint.OrderClient
@@ -267,7 +263,7 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 		WithKind(enum.OrderKindCreate).
 		Build())
 
-	env := NewEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		orderID string
@@ -311,7 +307,7 @@ func TestEnv_LoadFullOrder(t *testing.T) {
 
 	test.NewRepo().MustSaveOrder(order)
 
-	env := NewEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		orderID string
@@ -362,7 +358,7 @@ func TestEnv_ListOrders(t *testing.T) {
 		WithKind(enum.OrderKindCreate).
 		Build())
 
-	env := NewEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		ids ids.UserIDs
