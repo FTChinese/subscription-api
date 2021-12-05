@@ -1,15 +1,14 @@
 package controller
 
 import (
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
 	"net/http"
 )
@@ -47,7 +46,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		var input ftcpay.AliPayReq
+		var input subs.AliPayReq
 		if err := gorest.ParseJSON(req.Body, &input); err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
@@ -68,7 +67,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		counter := ftcpay.Counter{
+		counter := subs.Counter{
 			BaseAccount:  acnt,
 			CheckoutItem: item,
 			PayMethod:    enum.PayMethodAli,

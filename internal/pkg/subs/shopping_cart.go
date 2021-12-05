@@ -1,4 +1,4 @@
-package ftcpay
+package subs
 
 import (
 	"github.com/FTChinese/go-rest/render"

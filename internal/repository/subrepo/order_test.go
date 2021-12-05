@@ -5,14 +5,13 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
+	subs2 "github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -34,19 +33,19 @@ func TestEnv_CreateOrder(t *testing.T) {
 	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
-		counter ftcpay.Counter
+		counter subs2.Counter
 		p       *test.Persona
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    subs.Order
+		want    subs2.Order
 		wantErr bool
 	}{
 		{
 			name: "New order",
 			args: args{
-				counter: ftcpay.Counter{
+				counter: subs2.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: price.MockPriceStdYear.Price,
@@ -56,7 +55,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 					WxAppID:   null.String{},
 				},
 			},
-			want: subs.Order{
+			want: subs2.Order{
 				ID:         "",
 				UserIDs:    newPersona.UserIDs(),
 				PlanID:     price.MockPriceStdYear.ID,
@@ -80,7 +79,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "Renewal order",
 			args: args{
-				counter: ftcpay.Counter{
+				counter: subs2.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: price.MockPriceStdYear.Price,
@@ -91,7 +90,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				},
 				p: renewalPerson,
 			},
-			want: subs.Order{
+			want: subs2.Order{
 				ID:         "",
 				UserIDs:    renewalPerson.UserIDs(),
 				PlanID:     price.MockPriceStdYear.ID,
@@ -115,7 +114,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "Upgrade order",
 			args: args{
-				counter: ftcpay.Counter{
+				counter: subs2.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: price.MockPricePrm.Price,
@@ -126,7 +125,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				},
 				p: upgradePerson,
 			},
-			want: subs.Order{
+			want: subs2.Order{
 				ID:         "",
 				UserIDs:    upgradePerson.UserIDs(),
 				PlanID:     price.MockPricePrm.ID,
@@ -150,7 +149,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "Add-on order",
 			args: args{
-				counter: ftcpay.Counter{
+				counter: subs2.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: price.MockPriceStdYear.Price,
@@ -161,7 +160,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				},
 				p: addOnPerson,
 			},
-			want: subs.Order{
+			want: subs2.Order{
 				ID:         "",
 				UserIDs:    addOnPerson.UserIDs(),
 				PlanID:     price.MockPriceStdYear.ID,
@@ -258,7 +257,7 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 	ftcID := uuid.New().String()
 
 	repo := test.NewRepo()
-	order := repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+	order := repo.MustSaveOrder(subs2.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
@@ -345,15 +344,15 @@ func TestEnv_ListOrders(t *testing.T) {
 	ftcID := uuid.New().String()
 
 	repo := test.NewRepo()
-	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+	repo.MustSaveOrder(subs2.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
-	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+	repo.MustSaveOrder(subs2.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
-	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+	repo.MustSaveOrder(subs2.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())

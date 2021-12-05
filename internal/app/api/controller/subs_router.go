@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/app/paybase"
-	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"net/http"
 )
 
@@ -80,7 +79,7 @@ func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.C
 	return router.ConfirmOrder(result, order)
 }
 
-func (router SubsRouter) loadCheckoutItem(params ftcpay.OrderParams, live bool) (price.CheckoutItem, *render.ResponseError) {
+func (router SubsRouter) loadCheckoutItem(params subs.OrderParams, live bool) (price.CheckoutItem, *render.ResponseError) {
 	paywall, err := router.PaywallRepo.LoadPaywall(live)
 	// If price and discount could be found in paywall.
 	if err == nil {

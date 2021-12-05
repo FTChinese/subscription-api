@@ -1,4 +1,4 @@
-package ftcpay
+package subs
 
 import (
 	"errors"
@@ -9,7 +9,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/guregu/null"
 )
 
@@ -20,13 +19,13 @@ type Counter struct {
 	WxAppID   null.String
 }
 
-func (c Counter) buildOrder(k enum.OrderKind) (subs.Order, error) {
+func (c Counter) buildOrder(k enum.OrderKind) (Order, error) {
 	orderID, err := ids.OrderID()
 	if err != nil {
-		return subs.Order{}, err
+		return Order{}, err
 	}
 
-	return subs.Order{
+	return Order{
 		ID:            orderID,
 		UserIDs:       c.BaseAccount.CompoundIDs(),
 		PlanID:        c.Price.ID,
@@ -44,23 +43,23 @@ func (c Counter) buildOrder(k enum.OrderKind) (subs.Order, error) {
 	}, nil
 }
 
-func (c Counter) PaymentIntent(m reader.Membership) (subs.PaymentIntent, error) {
+func (c Counter) PaymentIntent(m reader.Membership) (PaymentIntent, error) {
 
 	if !m.EnjoyOffer(c.Offer) {
-		return subs.PaymentIntent{}, errors.New("discount offer selected is not applicable to current membership")
+		return PaymentIntent{}, errors.New("discount offer selected is not applicable to current membership")
 	}
 
 	orderKind, err := m.OrderKindOfOneTime(c.Price.Edition)
 	if err != nil {
-		return subs.PaymentIntent{}, err
+		return PaymentIntent{}, err
 	}
 
 	order, err := c.buildOrder(orderKind)
 	if err != nil {
-		return subs.PaymentIntent{}, err
+		return PaymentIntent{}, err
 	}
 
-	return subs.PaymentIntent{
+	return PaymentIntent{
 		Pricing:    c.Price,
 		Offer:      c.Offer,
 		Order:      order,
