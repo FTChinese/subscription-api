@@ -2,7 +2,7 @@ package iaprepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"os"

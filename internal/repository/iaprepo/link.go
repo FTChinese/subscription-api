@@ -2,7 +2,7 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )

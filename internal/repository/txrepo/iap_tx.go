@@ -2,7 +2,7 @@ package txrepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/jmoiron/sqlx"
 )

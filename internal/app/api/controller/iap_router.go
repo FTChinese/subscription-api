@@ -10,10 +10,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
-	"github.com/FTChinese/subscription-api/pkg/apple"
 )
 
 type IAPRouter struct {
