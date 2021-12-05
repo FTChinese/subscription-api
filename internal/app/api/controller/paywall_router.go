@@ -2,10 +2,10 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/pw"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"go.uber.org/zap"
 	"net/http"
 )

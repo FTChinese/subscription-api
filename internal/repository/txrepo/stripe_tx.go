@@ -2,9 +2,9 @@ package txrepo
 
 import (
 	"database/sql"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"github.com/jmoiron/sqlx"
 )
 
