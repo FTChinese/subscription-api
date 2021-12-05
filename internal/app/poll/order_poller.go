@@ -3,7 +3,7 @@ package poll
 import (
 	"context"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/internal/app/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/app/paybase"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/poller"
@@ -33,13 +33,13 @@ WHERE o.trade_no IS NOT NULL
 
 type OrderPoller struct {
 	db *sqlx.DB // Needs delete privilege.
-	ftcpay.FtcPay
+	paybase.FtcPayBase
 }
 
 func NewOrderPoller(myDBs db.ReadWriteMyDBs, logger *zap.Logger) OrderPoller {
 	return OrderPoller{
-		db:     myDBs.Write,
-		FtcPay: ftcpay.New(myDBs, postman.New(config.MustGetHanqiConn()), logger),
+		db:         myDBs.Write,
+		FtcPayBase: paybase.New(myDBs, postman.New(config.MustGetHanqiConn()), logger),
 	}
 }
 

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/app/ftcpay"
-	ftcpay2 "github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/app/paybase"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -15,9 +15,9 @@ import (
 
 // SubsRouter is the base type used to handle shared payment operations.
 type SubsRouter struct {
-	ftcpay.FtcPay // This contains readers.Env to access account data.
-	PaywallRepo   shared.PaywallCommon
-	Live          bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
+	paybase.FtcPayBase // This contains readers.Env to access account data.
+	PaywallRepo        shared.PaywallCommon
+	Live               bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
 }
 
 // Centralized error handling after order creation.
@@ -80,7 +80,7 @@ func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.C
 	return router.ConfirmOrder(result, order)
 }
 
-func (router SubsRouter) loadCheckoutItem(params ftcpay2.OrderParams, live bool) (price.CheckoutItem, *render.ResponseError) {
+func (router SubsRouter) loadCheckoutItem(params ftcpay.OrderParams, live bool) (price.CheckoutItem, *render.ResponseError) {
 	paywall, err := router.PaywallRepo.LoadPaywall(live)
 	// If price and discount could be found in paywall.
 	if err == nil {
