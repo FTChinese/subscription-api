@@ -1,9 +1,8 @@
-package controller
+package xhttp
 
 import (
 	"fmt"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -30,8 +29,8 @@ func NoCache(next http.Handler) http.Handler {
 // or the value is empty.
 func RequireFtcOrUnionID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
-		userID := ids.GetFtcID(req.Header)
-		unionID := ids.GetUnionID(req.Header)
+		userID := GetFtcID(req.Header)
+		unionID := GetUnionID(req.Header)
 
 		userID = strings.TrimSpace(userID)
 		unionID = strings.TrimSpace(unionID)
@@ -44,11 +43,11 @@ func RequireFtcOrUnionID(next http.Handler) http.Handler {
 		}
 
 		if userID != "" {
-			req.Header.Set(ids.XUserID, userID)
+			req.Header.Set(XUserID, userID)
 		}
 
 		if unionID != "" {
-			req.Header.Set(ids.XUnionID, unionID)
+			req.Header.Set(XUnionID, unionID)
 		}
 
 		next.ServeHTTP(w, req)
@@ -63,7 +62,7 @@ func RequireFtcOrUnionID(next http.Handler) http.Handler {
 // or the value is empty.
 func RequireFtcID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
-		userID := ids.GetFtcID(req.Header)
+		userID := GetFtcID(req.Header)
 
 		userID = strings.TrimSpace(userID)
 
@@ -75,7 +74,7 @@ func RequireFtcID(next http.Handler) http.Handler {
 			return
 		}
 
-		req.Header.Set(ids.XUserID, userID)
+		req.Header.Set(XUserID, userID)
 
 		next.ServeHTTP(w, req)
 	}
@@ -89,7 +88,7 @@ func RequireFtcID(next http.Handler) http.Handler {
 // or the value is empty.
 func RequireUnionID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
-		unionID := ids.GetUnionID(req.Header)
+		unionID := GetUnionID(req.Header)
 
 		unionID = strings.TrimSpace(unionID)
 		if unionID == "" {
@@ -100,7 +99,7 @@ func RequireUnionID(next http.Handler) http.Handler {
 			return
 		}
 
-		req.Header.Set(ids.XUnionID, unionID)
+		req.Header.Set(XUnionID, unionID)
 
 		next.ServeHTTP(w, req)
 	}
@@ -110,7 +109,7 @@ func RequireUnionID(next http.Handler) http.Handler {
 
 func RequireAppID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
-		appID := ids.GetAppID(req.Header)
+		appID := GetAppID(req.Header)
 
 		appID = strings.TrimSpace(appID)
 		if appID == "" {
@@ -121,7 +120,7 @@ func RequireAppID(next http.Handler) http.Handler {
 			return
 		}
 
-		req.Header.Set(ids.XAppID, appID)
+		req.Header.Set(XAppID, appID)
 
 		next.ServeHTTP(w, req)
 	}

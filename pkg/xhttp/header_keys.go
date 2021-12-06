@@ -1,4 +1,4 @@
-package ids
+package xhttp
 
 import "net/http"
 
