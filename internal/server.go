@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
+	"github.com/FTChinese/subscription-api/internal/repository/cmsrepo"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
@@ -105,6 +106,13 @@ func StartServer(s ServerStatus) {
 		StripePriceRepo: stripeBaseRepo,
 		Logger:          logger,
 		Live:            s.LiveMode,
+	}
+
+	cmsRouter := controller.CMSRouter{
+		Repo:         cmsrepo.New(myDBs, logger),
+		ReaderRepo:   readerBaseRepo,
+		Logger:       logger,
+		EmailService: emailService,
 	}
 
 	wxAuth := controller.NewWxAuth(myDBs, logger)
@@ -323,15 +331,23 @@ func StartServer(s ServerStatus) {
 		r.Use(xhttp.RequireFtcOrUnionID)
 		// Get the membership of a user
 		r.Get("/", accountRouter.LoadMembership)
-		// Create a membership of a user
-		r.Put("/", accountRouter.CreateMembership)
-		// Update the membership of a user
-		r.Patch("/", accountRouter.UpdateMembership)
-		r.Delete("/", accountRouter.DeleteMembership)
-		// List the modification history of a user's membership
-		r.Get("/snapshots", accountRouter.ListMemberSnapshots)
 		r.Post("/addons", ftcSubsRouter.ClaimAddOn)
-		r.Patch("/addons", ftcSubsRouter.CreateAddOn)
+	})
+
+	r.Route("/cms", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+		r.Use(xhttp.RequireStaffName)
+
+		r.Route("/memberships", func(r chi.Router) {
+			// Create a membership of a user
+			r.Put("/{id}", cmsRouter.CreateMembership)
+			// Update the membership of a user
+			r.Patch("/{id}", cmsRouter.UpdateMembership)
+			r.Delete("/{id}", cmsRouter.DeleteMembership)
+			// List the modification history of a user's membership
+			r.Get("/{id}/snapshots", cmsRouter.ListMemberSnapshots)
+		})
+
 	})
 
 	r.Route("/orders", func(r chi.Router) {

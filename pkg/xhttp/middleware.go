@@ -155,3 +155,24 @@ func FormParsed(next http.Handler) http.Handler {
 		next.ServeHTTP(writer, request)
 	})
 }
+
+func RequireStaffName(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, req *http.Request) {
+		staffname := GetStaffName(req.Header)
+
+		staffname = strings.TrimSpace(staffname)
+		if staffname == "" {
+			log.Print("Missing X-Staff-Name header")
+
+			_ = render.New(w).Unauthorized("Missing X-Staff-Name header")
+
+			return
+		}
+
+		req.Header.Set(XStaffName, staffname)
+
+		next.ServeHTTP(w, req)
+	}
+
+	return http.HandlerFunc(fn)
+}

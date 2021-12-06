@@ -11,8 +11,8 @@ type MemberParams struct {
 	Cycle      enum.Cycle     `json:"cycle"`
 	ExpireDate chrono.Date    `json:"expireDate"`
 	PayMethod  enum.PayMethod `json:"payMethod"`
-	PriceID    string         `json:"priceId"` // TODO: send by client
-	CreatedBy  string         `json:"createdBy"`
+	PriceID    string         `json:"priceId"`   // TODO: send by client
+	CreatedBy  string         `json:"createdBy"` // Only exists when membership deleted/updated by ftc staff.
 }
 
 func (i MemberParams) Validate() *render.ValidationError {
