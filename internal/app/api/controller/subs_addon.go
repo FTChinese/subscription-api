@@ -8,6 +8,9 @@ import (
 	"net/http"
 )
 
+// ClaimAddOn extends expiration time by transferring addon periods.
+// This could be done either by client automatically, or by
+// ftc staff manually.
 func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
 	readerIDs := xhttp.GetUserIDs(req.Header)
 
@@ -26,6 +29,7 @@ func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
 
 // CreateAddOn manually add an addon to a user.
 // This is usually used to perform compensation.
+// TODO: this should be part of invoice creation.
 func (router SubsRouter) CreateAddOn(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
