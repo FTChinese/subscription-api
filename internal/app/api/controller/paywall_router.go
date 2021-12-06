@@ -50,16 +50,21 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 
 // BustCache clears the cached paywall data.
 func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
 	router.ReadRepo.ClearCache()
 
 	paywall, err := router.ReadRepo.LoadPaywall(router.Live)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	_, err = router.StripePriceRepo.ListPrices(router.Live, true)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
@@ -69,11 +74,13 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 	for _, id := range stripeIDs {
 		_, err := router.StripePriceRepo.LoadPrice(id, false)
 		if err != nil {
+			sugar.Error(err)
 			_ = render.New(w).DBError(err)
 			return
 		}
 	}
 
+	// List stripe prices from what we have just cached.
 	stripePrices, err := router.StripePriceRepo.ListPrices(router.Live, false)
 	if err != nil {
 		_ = render.New(w).DBError(err)
