@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -23,7 +23,7 @@ func NewAccountRouter(shared UserShared) AccountRouter {
 // LoadAccountByFtcID loads a user's full account data
 // by ftc id provided in request header.
 func (router AccountRouter) LoadAccountByFtcID(w http.ResponseWriter, req *http.Request) {
-	userID := ids.GetFtcID(req.Header)
+	userID := xhttp.GetFtcID(req.Header)
 
 	acnt, err := router.ReaderRepo.AccountByFtcID(userID)
 
@@ -46,7 +46,7 @@ func (router AccountRouter) LoadAccountByFtcID(w http.ResponseWriter, req *http.
 //	GET /wx/account
 // Header `X-Union-Id: <wechat union id>`
 func (router AccountRouter) LoadAccountByWx(w http.ResponseWriter, req *http.Request) {
-	unionID := ids.GetUnionID(req.Header)
+	unionID := xhttp.GetUnionID(req.Header)
 
 	acnt, err := router.ReaderRepo.AccountByWxID(unionID)
 
@@ -71,7 +71,7 @@ func (router AccountRouter) DeleteFtcAccount(w http.ResponseWriter, req *http.Re
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	userID := ids.GetFtcID(req.Header)
+	userID := xhttp.GetFtcID(req.Header)
 
 	var params input.EmailCredentials
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {

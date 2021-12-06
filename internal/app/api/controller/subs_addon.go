@@ -3,13 +3,13 @@ package controller
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
 func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
-	readerIDs := ids.NewUserIDs(req.Header)
+	readerIDs := xhttp.GetUserIDs(req.Header)
 
 	result, err := router.AddOnRepo.ClaimAddOn(readerIDs)
 	if err != nil {
@@ -30,7 +30,7 @@ func (router SubsRouter) CreateAddOn(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	readerIDs := ids.NewUserIDs(req.Header)
+	readerIDs := xhttp.GetUserIDs(req.Header)
 
 	var params invoice.AddOnParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {

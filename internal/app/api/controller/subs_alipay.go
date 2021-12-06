@@ -8,7 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"github.com/guregu/null"
 	"net/http"
 )
@@ -36,7 +36,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		sugar := router.Logger.Sugar()
 
 		clientApp := footprint.NewClient(req)
-		readerIDs := ids.NewUserIDs(req.Header)
+		readerIDs := xhttp.GetUserIDs(req.Header)
 
 		// Find user account.
 		acnt, err := router.ReaderRepo.FindBaseAccount(readerIDs)

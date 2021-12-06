@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -12,7 +13,7 @@ func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) 
 	prices, err := router.StripePriceRepo.ListPrices(router.Live, refresh)
 
 	if err != nil {
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}
@@ -31,7 +32,7 @@ func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) 
 
 func (router StripeRouter) LoadPrice(w http.ResponseWriter, req *http.Request) {
 	refresh := req.FormValue("refresh") == "true"
-	id, err := getURLParam(req, "id").ToString()
+	id, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -40,7 +41,7 @@ func (router StripeRouter) LoadPrice(w http.ResponseWriter, req *http.Request) {
 	price, err := router.StripePriceRepo.LoadPrice(id, refresh)
 
 	if err != nil {
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}

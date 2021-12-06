@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -87,7 +88,7 @@ func (router AuthRouter) VerifyResetToken(w http.ResponseWriter, req *http.Reque
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	token, err := getURLParam(req, "token").ToString()
+	token, err := xhttp.GetURLParam(req, "token").ToString()
 	// `400 Bad Request`
 	if err != nil {
 		sugar.Error(err)

@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/guregu/null"
 	"net/http"
@@ -20,7 +20,7 @@ func (router AccountRouter) SMSToModifyMobile(w http.ResponseWriter, req *http.R
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 	ok, err := router.Repo.IDExists(ftcID)
 	if err != nil {
 		sugar.Error(err)
@@ -125,7 +125,7 @@ func (router AccountRouter) UpdateMobile(w http.ResponseWriter, req *http.Reques
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	var params ztsms.VerifierParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -212,7 +212,7 @@ func (router AccountRouter) DeleteMobile(w http.ResponseWriter, req *http.Reques
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	var params ztsms.VerifierParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {

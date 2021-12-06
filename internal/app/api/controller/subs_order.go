@@ -5,8 +5,8 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -20,7 +20,7 @@ func (router SubsRouter) ListOrders(w http.ResponseWriter, req *http.Request) {
 	}
 
 	p := gorest.GetPagination(req)
-	userIDs := ids.NewUserIDs(req.Header)
+	userIDs := xhttp.GetUserIDs(req.Header)
 
 	list, err := router.SubsRepo.ListOrders(userIDs, p)
 	if err != nil {
@@ -32,9 +32,9 @@ func (router SubsRouter) ListOrders(w http.ResponseWriter, req *http.Request) {
 }
 
 func (router SubsRouter) LoadOrder(w http.ResponseWriter, req *http.Request) {
-	userIDs := ids.NewUserIDs(req.Header)
+	userIDs := xhttp.GetUserIDs(req.Header)
 
-	orderID, err := getURLParam(req, "id").ToString()
+	orderID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -61,7 +61,7 @@ func (router SubsRouter) RawPaymentResult(w http.ResponseWriter, req *http.Reque
 	sugar := router.Logger.Sugar()
 
 	// Get ftc order id from URL
-	orderID, err := getURLParam(req, "id").ToString()
+	orderID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -112,7 +112,7 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 	sugar := router.Logger.Sugar()
 
 	// Get ftc order id from URL
-	orderID, err := getURLParam(req, "id").ToString()
+	orderID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())

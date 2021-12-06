@@ -4,8 +4,8 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -40,7 +40,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	sugar := router.Logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 	var input stripe.SubsParams
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		sugar.Error(err)
@@ -68,7 +68,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	item, err := router.StripePriceRepo.LoadCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}
@@ -91,7 +91,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	if err != nil {
 		sugar.Error(err)
 
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}
@@ -133,7 +133,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	sugar := router.Logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 	var input stripe.SubsParams
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
@@ -172,7 +172,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}
@@ -200,7 +200,7 @@ func (router StripeRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
 
 func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 
-	id, err := getURLParam(req, "id").ToString()
+	id, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -221,7 +221,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	sugar := router.Logger.Sugar()
 
 	// Get the subscription id from url
-	subsID, err := getURLParam(req, "id").ToString()
+	subsID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -232,7 +232,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	ss, err := router.Client.GetSubs(subsID, true)
 	if err != nil {
 		sugar.Error(err)
-		err = handleErrResp(w, err)
+		err = xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}
@@ -274,9 +274,9 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
-	subsID, err := getURLParam(req, "id").ToString()
+	subsID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -291,7 +291,7 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}
@@ -314,9 +314,9 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
-	subsID, err := getURLParam(req, "id").ToString()
+	subsID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -330,7 +330,7 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 
 	if err != nil {
 		sugar.Error(err)
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}

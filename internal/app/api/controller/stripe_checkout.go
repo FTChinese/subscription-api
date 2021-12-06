@@ -4,7 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"github.com/guregu/null"
 	"net/http"
 )
@@ -19,7 +19,7 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	var input stripe.CheckoutInput
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
@@ -53,7 +53,7 @@ func (router StripeRouter) CreateCheckoutSession(w http.ResponseWriter, req *htt
 		Input:   input,
 	})
 	if err != nil {
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}

@@ -4,7 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -18,7 +18,7 @@ func (router IAPRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 	p := gorest.GetPagination(req)
 
 	list, err := router.Repo.ListSubs(ftcID, p)
@@ -79,7 +79,7 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 //
 // GET /apple/subs/{id}
 func (router IAPRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
-	id, err := getURLParam(req, "id").ToString()
+	id, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -103,7 +103,7 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	origTxID, err := getURLParam(req, "id").ToString()
+	origTxID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())

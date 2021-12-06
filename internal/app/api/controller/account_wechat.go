@@ -8,8 +8,8 @@ import (
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -30,7 +30,7 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	unionID := ids.GetUnionID(req.Header)
+	unionID := xhttp.GetUnionID(req.Header)
 
 	var in input.EmailSignUpParams
 	// 400 Bad Request.
@@ -163,7 +163,7 @@ func (router AccountRouter) WxLinkEmail(w http.ResponseWriter, req *http.Request
 	sugar := router.Logger.Sugar()
 
 	// Get union id from request header.
-	unionID := ids.GetUnionID(req.Header)
+	unionID := xhttp.GetUnionID(req.Header)
 
 	var params input.LinkWxParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -265,7 +265,7 @@ func (router AccountRouter) WxUnlinkEmail(w http.ResponseWriter, req *http.Reque
 	sugar := router.Logger.Sugar()
 
 	// Get union id from request header.
-	unionID := ids.GetUnionID(req.Header)
+	unionID := xhttp.GetUnionID(req.Header)
 
 	var params input.UnlinkWxParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
