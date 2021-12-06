@@ -3,7 +3,6 @@ package ids
 import (
 	"errors"
 	"github.com/guregu/null"
-	"net/http"
 	"strings"
 )
 
@@ -29,17 +28,6 @@ func NewFtcUserID(id string) UserIDs {
 		FtcID:      null.StringFrom(id),
 		UnionID:    null.String{},
 	}
-}
-
-func NewUserIDs(h http.Header) UserIDs {
-	ftcID := h.Get(XUserID)
-	unionID := h.Get(XUnionID)
-
-	return UserIDs{
-		CompoundID: "",
-		FtcID:      null.NewString(ftcID, ftcID != ""),
-		UnionID:    null.NewString(unionID, unionID != ""),
-	}.MustNormalize()
 }
 
 func (u UserIDs) Normalize() (UserIDs, error) {
