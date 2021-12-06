@@ -20,6 +20,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -113,8 +114,8 @@ func StartServer(s ServerStatus) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(controller.DumpRequest)
-	r.Use(controller.NoCache)
+	r.Use(xhttp.DumpRequest)
+	r.Use(xhttp.NoCache)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Use(guard.CheckToken)
@@ -186,7 +187,7 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/wx", func(r chi.Router) {
-			r.Use(controller.RequireAppID)
+			r.Use(xhttp.RequireAppID)
 			r.Post("/login", wxAuth.Login)
 			r.Post("/refresh", wxAuth.Refresh)
 		})
@@ -202,7 +203,7 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/callback", func(r chi.Router) {
-			r.Use(controller.FormParsed)
+			r.Use(xhttp.FormParsed)
 			r.Route("/wx", func(r chi.Router) {
 				r.Get("/next-user", controller.WxCallbackHandler(wxlogin.CallbackAppNextUser))
 				r.Get("/fta-reader", controller.WxCallbackHandler(wxlogin.CallbackAppFtaReader))
@@ -214,14 +215,14 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		// Get account by uuid.
-		r.With(controller.RequireFtcID).
+		r.With(xhttp.RequireFtcID).
 			Get("/", accountRouter.LoadAccountByFtcID)
 
-		r.With(controller.RequireFtcID).
+		r.With(xhttp.RequireFtcID).
 			Delete("/", accountRouter.DeleteFtcAccount)
 
 		r.Route("/email", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			// Update email.
 			// Possible issues when user is also a Stripe customer:
@@ -232,11 +233,11 @@ func StartServer(s ServerStatus) {
 			r.Post("/request-verification", accountRouter.RequestVerification)
 		})
 
-		r.With(controller.RequireFtcID).
+		r.With(xhttp.RequireFtcID).
 			Patch("/name", accountRouter.UpdateName)
 
 		r.Route("/password", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			// Update password.
 			r.Patch("/", accountRouter.UpdatePassword)
@@ -244,7 +245,7 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/mobile", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 			r.Post("/", accountRouter.DeleteMobile)
 			// Set/Update mobile number by verifying SMS code.
 			r.Patch("/", accountRouter.UpdateMobile)
@@ -258,19 +259,19 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/address", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 			r.Get("/", accountRouter.LoadAddress)
 			r.Patch("/", accountRouter.UpdateAddress)
 		})
 
 		r.Route("/profile", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 			r.Get("/", accountRouter.LoadProfile)
 			r.Patch("/", accountRouter.UpdateProfile)
 		})
 
 		r.Route("/wx", func(r chi.Router) {
-			r.Use(controller.RequireUnionID)
+			r.Use(xhttp.RequireUnionID)
 			r.Get("/", accountRouter.LoadAccountByWx)
 			r.Post("/signup", accountRouter.WxSignUp)
 			// Wechat logged-in user links to an existing email account,
@@ -286,7 +287,7 @@ func StartServer(s ServerStatus) {
 	// Requires user id.
 	r.Route("/wxpay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
+		r.Use(xhttp.RequireFtcOrUnionID)
 
 		// Create a new subscription for desktop browser
 		r.Post("/desktop", ftcSubsRouter.WxPay(wechat.TradeTypeDesktop))
@@ -304,8 +305,8 @@ func StartServer(s ServerStatus) {
 	// Require user id.
 	r.Route("/alipay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
-		r.Use(controller.FormParsed)
+		r.Use(xhttp.RequireFtcOrUnionID)
+		r.Use(xhttp.FormParsed)
 
 		// Create an order for desktop browser
 		r.Post("/desktop", ftcSubsRouter.AliPay(ali.EntryDesktopWeb))
@@ -319,7 +320,7 @@ func StartServer(s ServerStatus) {
 
 	r.Route("/membership", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
+		r.Use(xhttp.RequireFtcOrUnionID)
 		// Get the membership of a user
 		r.Get("/", accountRouter.LoadMembership)
 		// Create a membership of a user
@@ -335,7 +336,7 @@ func StartServer(s ServerStatus) {
 
 	r.Route("/orders", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
+		r.Use(xhttp.RequireFtcOrUnionID)
 
 		// Pagination: page=<int>&per_page=<int>
 		r.Get("/", ftcSubsRouter.ListOrders)
@@ -349,7 +350,7 @@ func StartServer(s ServerStatus) {
 
 	r.Route("/invoices", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
+		r.Use(xhttp.RequireFtcOrUnionID)
 		// List a user's invoices. Use query parameter `kind=create|renew|upgrade|addon` to filter.
 		r.Get("/", ftcSubsRouter.ListInvoices)
 		r.Put("/", ftcSubsRouter.CreateInvoice)
@@ -361,7 +362,7 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		r.Route("/prices", func(r chi.Router) {
-			r.Use(controller.FormParsed)
+			r.Use(xhttp.FormParsed)
 			// List stripe prices. If query parameter has refresh=true, no cached data will be used.
 			// ?refresh=true|false
 			r.Get("/", stripeRouter.ListPrices)
@@ -370,7 +371,7 @@ func StartServer(s ServerStatus) {
 
 		r.Route("/customers", func(r chi.Router) {
 
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			// Create a stripe customer if not exists yet, or
 			// just return the customer id if already exists.
@@ -385,18 +386,18 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/setup-intents", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 			r.Post("/", stripeRouter.CreateSetupIntent)
 		})
 
 		r.Route("/checkout", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			r.Post("/", stripeRouter.CreateCheckoutSession)
 		})
 
 		r.Route("/subs", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			// Create a subscription
 			r.Post("/", stripeRouter.CreateSubs)
@@ -428,7 +429,7 @@ func StartServer(s ServerStatus) {
 		// Load one subscription.
 
 		// ?page=<int>&per_page<int>
-		r.With(controller.RequireFtcID).Get("/subs", iapRouter.ListSubs)
+		r.With(xhttp.RequireFtcID).Get("/subs", iapRouter.ListSubs)
 		// Load a single subscription.
 		r.Get("/subs/{id}", iapRouter.LoadSubs)
 		// Refresh an existing subscription of an original transaction id.
@@ -467,7 +468,7 @@ func StartServer(s ServerStatus) {
 		r.Route("/prices", func(r chi.Router) {
 			// Get a list of prices under a product. This does not distinguish is_active or live_mode
 			// ?product_id=<string>
-			r.With(controller.FormParsed).Get("/", paywallRouter.ListPrices)
+			r.With(xhttp.FormParsed).Get("/", paywallRouter.ListPrices)
 			// Create a price for a product. The price's live mode is determined by client.
 			r.Post("/", paywallRouter.CreatePrice)
 			r.Post("/{id}/activate", paywallRouter.ActivatePrice)
