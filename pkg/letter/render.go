@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"strconv"
 	"strings"
 	"text/template"
@@ -111,11 +111,11 @@ type CtxIAPLinked struct {
 	ExpireDate chrono.Date
 }
 
-func RenderIAPLinked(ctx CtxIAPLinked) (string, error) {
+func (ctx CtxIAPLinked) RenderIAPLinked() (string, error) {
 	return Render(keyIAPLinked, ctx)
 }
 
-func RenderIAPUnlinked(ctx CtxIAPLinked) (string, error) {
+func (ctx CtxIAPLinked) RenderIAPUnlinked() (string, error) {
 	return Render(keyIAPUnlinked, ctx)
 }
 

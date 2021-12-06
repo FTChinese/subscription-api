@@ -3,17 +3,25 @@ package internal
 import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
-	"github.com/FTChinese/subscription-api/internal/controller"
-	"github.com/FTChinese/subscription-api/internal/ftcpay"
+	"github.com/FTChinese/subscription-api/internal/app/api/controller"
+	"github.com/FTChinese/subscription-api/internal/app/paybase"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
+	"github.com/FTChinese/subscription-api/internal/repository/accounts"
+	"github.com/FTChinese/subscription-api/internal/repository/addons"
+	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
+	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
+	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
+	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/postman"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
+	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/patrickmn/go-cache"
@@ -33,70 +41,81 @@ type ServerStatus struct {
 
 func StartServer(s ServerStatus) {
 	logger := config.MustGetLogger(s.Production)
-
 	myDBs := db.MustNewMyDBs(s.Production)
-
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
 	// Set the cache default expiration time to 2 hours.
 	paywallCache := cache.New(2*time.Hour, 0)
+	stripeClient := stripeclient.New(s.LiveMode, logger)
+	emailService := letter.NewService(logger)
 
-	post := postman.New(config.MustGetHanqiConn())
+	readerBaseRepo := shared.NewReaderCommon(myDBs)
+	paywallBaseRepo := shared.NewPaywallCommon(myDBs, paywallCache)
+	stripeBaseRepo := shared.NewStripeCommon(stripeClient, stripe.NewPriceCache())
 
-	guard := access.NewGuard(myDBs)
-
-	readerBaseRepo := shared.NewReaderBaseRepo(myDBs)
-	paywallBaseRepo := shared.PaywallCommon{
-		DBs:   myDBs,
-		Cache: paywallCache,
+	userShared := controller.UserShared{
+		Repo:         accounts.New(myDBs, logger),
+		ReaderRepo:   readerBaseRepo,
+		SMSClient:    ztsms.NewClient(logger),
+		Logger:       logger,
+		EmailService: emailService,
 	}
 
-	stripeBaseRepo := shared.StripeBaseRepo{
-		Client: stripeclient.New(s.LiveMode, logger),
-		Cache:  stripe.NewPriceCache(),
+	ftcPayShared := paybase.FtcPayBase{
+		SubsRepo:     subrepo.New(myDBs, logger),
+		ReaderRepo:   readerBaseRepo,
+		AddOnRepo:    addons.New(myDBs, logger),
+		AliPayClient: subrepo.NewAliPayClient(ali.MustInitApp(), logger),
+		WxPayClients: subrepo.NewWxClientStore(wechat.MustGetPayApps(), logger),
+		Logger:       logger,
+		EmailService: emailService,
 	}
 
-	userShared := controller.NewUserShared(
-		readerBaseRepo,
-		post,
-		logger)
 	authRouter := controller.NewAuthRouter(userShared)
 	accountRouter := controller.NewAccountRouter(userShared)
+	ftcSubsRouter := controller.SubsRouter{
+		FtcPayBase:  ftcPayShared,
+		PaywallRepo: paywallBaseRepo,
+		Live:        s.LiveMode,
+	}
 
-	ftcPay := ftcpay.New(myDBs, post, logger)
-	payRouter := controller.NewSubsRouter(
-		ftcPay,
-		paywallBaseRepo,
-		s.LiveMode)
+	iapRouter := controller.IAPRouter{
+		Repo:         iaprepo.New(myDBs, rdb, logger),
+		Client:       iaprepo.NewClient(logger),
+		ReaderRepo:   readerBaseRepo,
+		EmailService: emailService,
+		Logger:       logger,
+		Live:         s.LiveMode,
+	}
 
-	iapRouter := controller.NewIAPRouter(
-		readerBaseRepo,
-		logger,
-		rdb,
-		post,
-		s.LiveMode)
-
-	stripeRouter := controller.NewStripeRouter(
-		readerBaseRepo,
-		stripeBaseRepo,
-		myDBs,
-		logger,
-		s.LiveMode)
+	stripeRouter := controller.StripeRouter{
+		SigningKey:      config.MustStripeWebhookKey().Pick(s.LiveMode),
+		StripeRepo:      striperepo.New(myDBs, stripeClient, logger),
+		StripePriceRepo: stripeBaseRepo,
+		ReaderRepo:      readerBaseRepo,
+		Client:          stripeClient,
+		Logger:          logger,
+		Live:            s.LiveMode,
+	}
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := controller.NewPaywallRouter(
-		paywallBaseRepo,
-		stripeBaseRepo,
-		logger,
-		s.LiveMode)
+	paywallRouter := controller.PaywallRouter{
+		WriteRepo:       products.New(myDBs),
+		ReadRepo:        paywallBaseRepo,
+		StripePriceRepo: stripeBaseRepo,
+		Logger:          logger,
+		Live:            s.LiveMode,
+	}
 
 	wxAuth := controller.NewWxAuth(myDBs, logger)
+
+	guard := access.NewGuard(myDBs)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(controller.DumpRequest)
-	r.Use(controller.NoCache)
+	r.Use(xhttp.DumpRequest)
+	r.Use(xhttp.NoCache)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Use(guard.CheckToken)
@@ -168,7 +187,7 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/wx", func(r chi.Router) {
-			r.Use(controller.RequireAppID)
+			r.Use(xhttp.RequireAppID)
 			r.Post("/login", wxAuth.Login)
 			r.Post("/refresh", wxAuth.Refresh)
 		})
@@ -184,7 +203,7 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/callback", func(r chi.Router) {
-			r.Use(controller.FormParsed)
+			r.Use(xhttp.FormParsed)
 			r.Route("/wx", func(r chi.Router) {
 				r.Get("/next-user", controller.WxCallbackHandler(wxlogin.CallbackAppNextUser))
 				r.Get("/fta-reader", controller.WxCallbackHandler(wxlogin.CallbackAppFtaReader))
@@ -196,14 +215,14 @@ func StartServer(s ServerStatus) {
 		r.Use(guard.CheckToken)
 
 		// Get account by uuid.
-		r.With(controller.RequireFtcID).
+		r.With(xhttp.RequireFtcID).
 			Get("/", accountRouter.LoadAccountByFtcID)
 
-		r.With(controller.RequireFtcID).
+		r.With(xhttp.RequireFtcID).
 			Delete("/", accountRouter.DeleteFtcAccount)
 
 		r.Route("/email", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			// Update email.
 			// Possible issues when user is also a Stripe customer:
@@ -214,11 +233,11 @@ func StartServer(s ServerStatus) {
 			r.Post("/request-verification", accountRouter.RequestVerification)
 		})
 
-		r.With(controller.RequireFtcID).
+		r.With(xhttp.RequireFtcID).
 			Patch("/name", accountRouter.UpdateName)
 
 		r.Route("/password", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			// Update password.
 			r.Patch("/", accountRouter.UpdatePassword)
@@ -226,7 +245,7 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/mobile", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 			r.Post("/", accountRouter.DeleteMobile)
 			// Set/Update mobile number by verifying SMS code.
 			r.Patch("/", accountRouter.UpdateMobile)
@@ -240,19 +259,19 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/address", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 			r.Get("/", accountRouter.LoadAddress)
 			r.Patch("/", accountRouter.UpdateAddress)
 		})
 
 		r.Route("/profile", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 			r.Get("/", accountRouter.LoadProfile)
 			r.Patch("/", accountRouter.UpdateProfile)
 		})
 
 		r.Route("/wx", func(r chi.Router) {
-			r.Use(controller.RequireUnionID)
+			r.Use(xhttp.RequireUnionID)
 			r.Get("/", accountRouter.LoadAccountByWx)
 			r.Post("/signup", accountRouter.WxSignUp)
 			// Wechat logged-in user links to an existing email account,
@@ -268,40 +287,40 @@ func StartServer(s ServerStatus) {
 	// Requires user id.
 	r.Route("/wxpay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
+		r.Use(xhttp.RequireFtcOrUnionID)
 
 		// Create a new subscription for desktop browser
-		r.Post("/desktop", payRouter.WxPay(wechat.TradeTypeDesktop))
+		r.Post("/desktop", ftcSubsRouter.WxPay(wechat.TradeTypeDesktop))
 
 		// Create an order for mobile browser
-		r.Post("/mobile", payRouter.WxPay(wechat.TradeTypeMobile))
+		r.Post("/mobile", ftcSubsRouter.WxPay(wechat.TradeTypeMobile))
 
 		// Create an order for wx-embedded browser
-		r.Post("/jsapi", payRouter.WxPay(wechat.TradeTypeJSAPI))
+		r.Post("/jsapi", ftcSubsRouter.WxPay(wechat.TradeTypeJSAPI))
 
 		// Creat an order for native app
-		r.Post("/app", payRouter.WxPay(wechat.TradeTypeApp))
+		r.Post("/app", ftcSubsRouter.WxPay(wechat.TradeTypeApp))
 	})
 
 	// Require user id.
 	r.Route("/alipay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
-		r.Use(controller.FormParsed)
+		r.Use(xhttp.RequireFtcOrUnionID)
+		r.Use(xhttp.FormParsed)
 
 		// Create an order for desktop browser
-		r.Post("/desktop", payRouter.AliPay(ali.EntryDesktopWeb))
+		r.Post("/desktop", ftcSubsRouter.AliPay(ali.EntryDesktopWeb))
 
 		// Create an order for mobile browser
-		r.Post("/mobile", payRouter.AliPay(ali.EntryMobileWeb))
+		r.Post("/mobile", ftcSubsRouter.AliPay(ali.EntryMobileWeb))
 
 		// Create an order for native app.
-		r.Post("/app", payRouter.AliPay(ali.EntryApp))
+		r.Post("/app", ftcSubsRouter.AliPay(ali.EntryApp))
 	})
 
 	r.Route("/membership", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
+		r.Use(xhttp.RequireFtcOrUnionID)
 		// Get the membership of a user
 		r.Get("/", accountRouter.LoadMembership)
 		// Create a membership of a user
@@ -311,39 +330,39 @@ func StartServer(s ServerStatus) {
 		r.Delete("/", accountRouter.DeleteMembership)
 		// List the modification history of a user's membership
 		r.Get("/snapshots", accountRouter.ListMemberSnapshots)
-		r.Post("/addons", payRouter.ClaimAddOn)
-		r.Patch("/addons", payRouter.CreateAddOn)
+		r.Post("/addons", ftcSubsRouter.ClaimAddOn)
+		r.Patch("/addons", ftcSubsRouter.CreateAddOn)
 	})
 
 	r.Route("/orders", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
+		r.Use(xhttp.RequireFtcOrUnionID)
 
 		// Pagination: page=<int>&per_page=<int>
-		r.Get("/", payRouter.ListOrders)
-		r.Get("/{id}", payRouter.LoadOrder)
+		r.Get("/", ftcSubsRouter.ListOrders)
+		r.Get("/{id}", ftcSubsRouter.LoadOrder)
 
 		// Transfer order query data from ali or wx api as is.
-		r.Get("/{id}/payment-result", payRouter.RawPaymentResult)
+		r.Get("/{id}/payment-result", ftcSubsRouter.RawPaymentResult)
 		// Verify if an order is confirmed, and returns PaymentResult.
-		r.Post("/{id}/verify-payment", payRouter.VerifyPayment)
+		r.Post("/{id}/verify-payment", ftcSubsRouter.VerifyPayment)
 	})
 
 	r.Route("/invoices", func(r chi.Router) {
 		r.Use(guard.CheckToken)
-		r.Use(controller.RequireFtcOrUnionID)
+		r.Use(xhttp.RequireFtcOrUnionID)
 		// List a user's invoices. Use query parameter `kind=create|renew|upgrade|addon` to filter.
-		r.Get("/", payRouter.ListInvoices)
-		r.Put("/", payRouter.CreateInvoice)
+		r.Get("/", ftcSubsRouter.ListInvoices)
+		r.Put("/", ftcSubsRouter.CreateInvoice)
 		// Show a single invoice.
-		r.Get("/{id}", payRouter.LoadInvoice)
+		r.Get("/{id}", ftcSubsRouter.LoadInvoice)
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
 		r.Route("/prices", func(r chi.Router) {
-			r.Use(controller.FormParsed)
+			r.Use(xhttp.FormParsed)
 			// List stripe prices. If query parameter has refresh=true, no cached data will be used.
 			// ?refresh=true|false
 			r.Get("/", stripeRouter.ListPrices)
@@ -352,7 +371,7 @@ func StartServer(s ServerStatus) {
 
 		r.Route("/customers", func(r chi.Router) {
 
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			// Create a stripe customer if not exists yet, or
 			// just return the customer id if already exists.
@@ -367,18 +386,18 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/setup-intents", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 			r.Post("/", stripeRouter.CreateSetupIntent)
 		})
 
 		r.Route("/checkout", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			r.Post("/", stripeRouter.CreateCheckoutSession)
 		})
 
 		r.Route("/subs", func(r chi.Router) {
-			r.Use(controller.RequireFtcID)
+			r.Use(xhttp.RequireFtcID)
 
 			// Create a subscription
 			r.Post("/", stripeRouter.CreateSubs)
@@ -410,7 +429,7 @@ func StartServer(s ServerStatus) {
 		// Load one subscription.
 
 		// ?page=<int>&per_page<int>
-		r.With(controller.RequireFtcID).Get("/subs", iapRouter.ListSubs)
+		r.With(xhttp.RequireFtcID).Get("/subs", iapRouter.ListSubs)
 		// Load a single subscription.
 		r.Get("/subs/{id}", iapRouter.LoadSubs)
 		// Refresh an existing subscription of an original transaction id.
@@ -449,7 +468,7 @@ func StartServer(s ServerStatus) {
 		r.Route("/prices", func(r chi.Router) {
 			// Get a list of prices under a product. This does not distinguish is_active or live_mode
 			// ?product_id=<string>
-			r.With(controller.FormParsed).Get("/", paywallRouter.ListPrices)
+			r.With(xhttp.FormParsed).Get("/", paywallRouter.ListPrices)
 			// Create a price for a product. The price's live mode is determined by client.
 			r.Post("/", paywallRouter.CreatePrice)
 			r.Post("/{id}/activate", paywallRouter.ActivatePrice)
@@ -473,8 +492,8 @@ func StartServer(s ServerStatus) {
 	})
 
 	r.Route("/webhook", func(r chi.Router) {
-		r.Post("/wxpay", payRouter.WxWebHook)
-		r.Post("/alipay", payRouter.AliWebHook)
+		r.Post("/wxpay", ftcSubsRouter.WxWebHook)
+		r.Post("/alipay", ftcSubsRouter.AliWebHook)
 		// Events
 		//invoice.finalized
 		//invoice.payment_succeeded

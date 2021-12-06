@@ -16,7 +16,7 @@ import (
 func TestEnv_SavePwResetSession(t *testing.T) {
 	faker.SeedGoFake()
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		s account.PwResetSession
@@ -54,7 +54,7 @@ func TestEnv_PwResetSessionByToken(t *testing.T) {
 		SourceURL: null.String{},
 	})
 
-	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
+	env := New(test.SplitDB, zaptest.NewLogger(t))
 
 	_ = env.SavePwResetSession(sess)
 
@@ -99,7 +99,7 @@ func TestEnv_PwResetSessionByCode(t *testing.T) {
 		SourceURL: null.String{},
 	}).WithPlatform(enum.PlatformAndroid)
 
-	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
+	env := New(test.SplitDB, zaptest.NewLogger(t))
 	_ = env.SavePwResetSession(sess)
 
 	type args struct {
@@ -146,7 +146,7 @@ func TestEnv_DisablePasswordReset(t *testing.T) {
 		SourceURL: null.String{},
 	})
 
-	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
+	env := New(test.SplitDB, zaptest.NewLogger(t))
 	_ = env.SavePwResetSession(sess)
 
 	type args struct {

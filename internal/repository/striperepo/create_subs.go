@@ -2,9 +2,9 @@ package striperepo
 
 import (
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 	"net/http"
 )
 
@@ -72,7 +72,7 @@ func (env Env) CreateSubscription(
 
 	sugar.Info("Creating stripe subscription")
 	// Contact Stripe API.
-	ss, err := env.Client.NewSubs(
+	ss, err := env.client.NewSubs(
 		item.NewSubParams(ba.StripeID.String, params),
 	)
 

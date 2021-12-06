@@ -3,14 +3,10 @@ package accounts
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
-	"github.com/brianvoe/gofakeit/v5"
-	"github.com/google/uuid"
-	"github.com/guregu/null"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
@@ -23,11 +19,10 @@ func TestEnv_WxSignUp(t *testing.T) {
 
 	test.NewRepo().MustSaveWxUser(w)
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
-		unionID string
-		input   input.EmailSignUpParams
+		merged reader.Account
 	}
 	tests := []struct {
 		name    string
@@ -38,14 +33,11 @@ func TestEnv_WxSignUp(t *testing.T) {
 		{
 			name: "Wx signup",
 			args: args{
-				unionID: w.UnionID,
-				input: input.EmailSignUpParams{
-					EmailCredentials: input.EmailCredentials{
-						Email:    gofakeit.Email(),
-						Password: "12345678",
-					},
-					DeviceToken: null.StringFrom(uuid.New().String()),
-					SourceURL:   "",
+				merged: reader.Account{
+					BaseAccount: p.EmailWxAccount(),
+					LoginMethod: enum.LoginMethodWx,
+					Wechat:      p.Wechat(),
+					Membership:  p.MemberBuilder().Build(),
 				},
 			},
 			wantErr: false,
@@ -53,7 +45,12 @@ func TestEnv_WxSignUp(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := env.WxSignUp(tt.args.unionID, tt.args.input)
+			err := env.WxSignUp(reader.Account{
+				BaseAccount: account.BaseAccount{},
+				LoginMethod: 0,
+				Wechat:      account.Wechat{},
+				Membership:  reader.Membership{},
+			})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("WxSignUp() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -61,8 +58,6 @@ func TestEnv_WxSignUp(t *testing.T) {
 			//if !reflect.DeepEqual(got, tt.want) {
 			//	t.Errorf("WxSignUp() got = %v, want %v", got, tt.want)
 			//}
-
-			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
 	}
 }
@@ -104,7 +99,7 @@ func TestEnv_LinkWechat(t *testing.T) {
 		return
 	}
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		result reader.WxEmailLinkResult
@@ -144,7 +139,7 @@ func TestEnv_UnlinkWx(t *testing.T) {
 	repo := test.NewRepo()
 	repo.MustCreateFtcAccount(a)
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		acnt   reader.Account

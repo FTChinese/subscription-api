@@ -1,7 +1,7 @@
 package iaprepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 )
 
 // When a receipt is verified, or webhook is triggered,
@@ -22,7 +22,7 @@ import (
 
 // SaveDecodedReceipt saved the decoded apple.ClientReceipt from response body.
 func (env Env) SaveDecodedReceipt(v apple.VerifiedReceiptSchema) error {
-	_, err := env.DBs.Write.NamedExec(apple.StmtSaveDecodedReceipt, v)
+	_, err := env.dbs.Write.NamedExec(apple.StmtSaveDecodedReceipt, v)
 
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func (env Env) SaveDecodedReceipt(v apple.VerifiedReceiptSchema) error {
 // UnifiedReceipt.LatestReceiptInfo field.
 // Duplicate entries are ignored.
 func (env Env) SaveTransaction(r apple.TransactionSchema) error {
-	_, err := env.DBs.Write.NamedExec(apple.StmtInsertTransaction, r)
+	_, err := env.dbs.Write.NamedExec(apple.StmtInsertTransaction, r)
 
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (env Env) SaveTransaction(r apple.TransactionSchema) error {
 // SavePendingRenewal saves an item in the the UnifiedReceipt.PendingRenewalInfo array.
 // Duplicate entries are ignores.
 func (env Env) SavePendingRenewal(p apple.PendingRenewalSchema) error {
-	_, err := env.DBs.Write.NamedExec(apple.StmtSavePendingRenewal, p)
+	_, err := env.dbs.Write.NamedExec(apple.StmtSavePendingRenewal, p)
 
 	if err != nil {
 		return err

@@ -1,8 +1,8 @@
 package iaprepo
 
 import (
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -10,11 +10,7 @@ import (
 
 func TestEnv_SaveDecodedReceipt(t *testing.T) {
 
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		v apple.VerifiedReceiptSchema
@@ -42,11 +38,7 @@ func TestEnv_SaveDecodedReceipt(t *testing.T) {
 }
 
 func TestEnv_SaveTransaction(t *testing.T) {
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		r apple.TransactionSchema
@@ -74,11 +66,7 @@ func TestEnv_SaveTransaction(t *testing.T) {
 }
 
 func TestEnv_SavePendingRenewal(t *testing.T) {
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		p apple.PendingRenewalSchema

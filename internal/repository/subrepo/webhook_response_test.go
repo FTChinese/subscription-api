@@ -1,8 +1,8 @@
 package subrepo
 
 import (
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
-	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
@@ -14,10 +14,7 @@ import (
 func TestEnv_SaveAliNotification(t *testing.T) {
 	p := test.NewPersona()
 
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		n alipay.TradeNotification
@@ -53,10 +50,7 @@ func TestEnv_SavePrepayResp(t *testing.T) {
 	p := test.NewPersona()
 	or := test.NewWxOrderUnsigned()
 
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		resp wechat.OrderResp
@@ -92,10 +86,7 @@ func TestEnv_SaveWxNotification(t *testing.T) {
 	p := test.NewPersona()
 	noti := test.NewWxWHUnsigned(p.OrderBuilder().Build())
 
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		n wechat.Notification

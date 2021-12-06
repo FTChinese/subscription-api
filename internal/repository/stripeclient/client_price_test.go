@@ -2,7 +2,7 @@ package stripeclient
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )

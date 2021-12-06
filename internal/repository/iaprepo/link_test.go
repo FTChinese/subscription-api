@@ -2,8 +2,7 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/readers"
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
@@ -18,11 +17,7 @@ func TestEnv_GetSubAndSetFtcID(t *testing.T) {
 
 	test.NewRepo().MustSaveIAPSubs(s)
 
-	env := Env{
-		Env:    shared.New(db.MockMySQL(), zaptest.NewLogger(t)),
-		rdb:    nil,
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		input apple.LinkInput
@@ -60,11 +55,7 @@ func TestEnv_ArchiveLinkCheating(t *testing.T) {
 
 	p := test.NewPersona()
 
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    nil,
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		link apple.LinkInput
@@ -92,15 +83,9 @@ func TestEnv_ArchiveLinkCheating(t *testing.T) {
 }
 
 func TestEnv_Unlink(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
 	repo := test.NewRepo()
 
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: logger,
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		input apple.LinkInput
@@ -143,11 +128,7 @@ func TestEnv_ArchiveUnlink(t *testing.T) {
 
 	p := test.NewPersona()
 
-	env := Env{
-		Env:    shared.New(test.SplitDB, zaptest.NewLogger(t)),
-		rdb:    test.Redis,
-		logger: zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), nil, zaptest.NewLogger(t))
 
 	type args struct {
 		link apple.LinkInput

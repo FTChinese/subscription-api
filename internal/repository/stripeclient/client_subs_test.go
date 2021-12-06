@@ -2,7 +2,7 @@ package stripeclient
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
-	ftcStripe "github.com/FTChinese/subscription-api/pkg/stripe"
+	ftcStripe "github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/stripe/stripe-go/v72"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -42,7 +42,6 @@ func TestClient_NewSubs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Client{
-				live:   tt.fields.live,
 				sc:     tt.fields.sc,
 				logger: tt.fields.logger,
 			}

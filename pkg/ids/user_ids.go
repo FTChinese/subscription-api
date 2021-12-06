@@ -21,6 +21,7 @@ type UserIDs struct {
 	UnionID    null.String `json:"unionId" db:"union_id"`
 }
 
+// Deprecated
 func NewFtcUserID(id string) UserIDs {
 	return UserIDs{
 		CompoundID: id,

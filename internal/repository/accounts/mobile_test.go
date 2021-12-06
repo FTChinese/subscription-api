@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/account"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestEnv_SaveSMSVerifier(t *testing.T) {
-	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	faker.SeedGoFake()
 
@@ -48,7 +49,7 @@ func TestEnv_SaveSMSVerifier(t *testing.T) {
 }
 
 func TestEnv_RetrieveSMSVerifier(t *testing.T) {
-	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	faker.SeedGoFake()
 
@@ -94,7 +95,7 @@ func TestEnv_RetrieveSMSVerifier(t *testing.T) {
 }
 
 func TestEnv_SMSVerifierUsed(t *testing.T) {
-	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	v := ztsms.NewVerifier(gofakeit.Phone(), null.StringFrom(uuid.New().String()))
 
@@ -136,7 +137,7 @@ func TestEnv_UpsertMobile(t *testing.T) {
 	ftcWithoutMobile := test.NewPersona()
 	ftcWithMobile := test.NewPersona()
 
-	env := newTestEnv(test.SplitDB, zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 	repo := test.NewRepo()
 
 	type args struct {

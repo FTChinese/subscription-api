@@ -1,7 +1,7 @@
 package txrepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/jmoiron/sqlx"
 )
 

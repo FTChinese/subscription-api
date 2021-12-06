@@ -4,10 +4,11 @@
 package test
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -124,6 +124,13 @@ func (p *Persona) MobileSignUpParams() input.MobileSignUpParams {
 	return input.MobileSignUpParams{
 		Mobile:      p.Mobile,
 		DeviceToken: null.String{},
+	}
+}
+
+func (p *Persona) Wechat() account.Wechat {
+	return account.Wechat{
+		WxNickname:  null.StringFrom(p.Nickname),
+		WxAvatarURL: null.StringFrom(p.Avatar),
 	}
 }
 

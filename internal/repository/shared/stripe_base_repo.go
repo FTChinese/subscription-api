@@ -1,13 +1,20 @@
 package shared
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
 type StripeBaseRepo struct {
 	Client stripeclient.Client
 	Cache  *stripe.PriceCache
+}
+
+func NewStripeCommon(client stripeclient.Client, c *stripe.PriceCache) StripeBaseRepo {
+	return StripeBaseRepo{
+		Client: client,
+		Cache:  c,
+	}
 }
 
 func (repo StripeBaseRepo) ListPrices(live bool, bustCache bool) ([]stripe.Price, error) {
@@ -45,4 +52,28 @@ func (repo StripeBaseRepo) LoadPrice(id string, bustCache bool) (stripe.Price, e
 	repo.Cache.Upsert(p)
 
 	return p, nil
+}
+
+func (repo StripeBaseRepo) LoadCheckoutItem(params stripe.SubsParams) (stripe.CheckoutItem, error) {
+	p, err := repo.LoadPrice(params.PriceID, false)
+	if err != nil {
+		return stripe.CheckoutItem{}, err
+	}
+
+	if params.IntroductoryPriceID.IsZero() {
+		return stripe.CheckoutItem{
+			Price:        p,
+			Introductory: stripe.Price{},
+		}, nil
+	}
+
+	introPrice, err := repo.LoadPrice(params.IntroductoryPriceID.String, false)
+	if err != nil {
+		return stripe.CheckoutItem{}, err
+	}
+
+	return stripe.CheckoutItem{
+		Price:        p,
+		Introductory: introPrice,
+	}, nil
 }

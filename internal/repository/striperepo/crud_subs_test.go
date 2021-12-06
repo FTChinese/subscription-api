@@ -3,10 +3,9 @@ package striperepo
 import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
-	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	stripeSdk "github.com/stripe/stripe-go/v72"
@@ -35,10 +34,7 @@ func MustNewSubs() stripe.Subs {
 
 func TestEnv_UpsertSubs(t *testing.T) {
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		s stripe.Subs
@@ -67,10 +63,7 @@ func TestEnv_UpsertSubs(t *testing.T) {
 }
 
 func TestEnv_RetrieveSubs(t *testing.T) {
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		id string
@@ -103,10 +96,7 @@ func TestEnv_RetrieveSubs(t *testing.T) {
 }
 
 func TestEnv_SubsExists(t *testing.T) {
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		id string

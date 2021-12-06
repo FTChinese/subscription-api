@@ -2,7 +2,7 @@ package iaprepo
 
 import (
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
@@ -116,7 +116,7 @@ func (env Env) Link(result apple.LinkResult) error {
 }
 
 func (env Env) ArchiveLinkCheating(link apple.LinkInput) error {
-	_, err := env.DBs.Write.NamedExec(apple.StmtArchiveLinkCheat, link)
+	_, err := env.dbs.Write.NamedExec(apple.StmtArchiveLinkCheat, link)
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 }
 
 func (env Env) ArchiveUnlink(link apple.LinkInput) error {
-	_, err := env.DBs.Write.NamedExec(apple.StmtArchiveUnlink, link)
+	_, err := env.dbs.Write.NamedExec(apple.StmtArchiveUnlink, link)
 	if err != nil {
 		return err
 	}

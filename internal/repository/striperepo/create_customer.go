@@ -1,8 +1,8 @@
 package striperepo
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/stripe"
 )
 
 // CreateCustomer create a customer under ftc account for user with `ftcID`.
@@ -29,7 +29,7 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 	// If stripe customer id already exists, abort.
 	if baseAccount.StripeID.Valid {
 		_ = tx.Rollback()
-		cus, err := env.Client.RetrieveCustomer(baseAccount.StripeID.String)
+		cus, err := env.client.RetrieveCustomer(baseAccount.StripeID.String)
 		if err != nil {
 			return stripe.CustomerAccount{}, err
 		}
@@ -39,7 +39,7 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 
 	// Request stripe api to create customer.
 	// Return *stripe.Error if occurred.
-	cus, err := env.Client.CreateCustomer(baseAccount.Email)
+	cus, err := env.client.CreateCustomer(baseAccount.Email)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -67,7 +67,7 @@ func (env Env) CreateCustomer(ftcID string) (stripe.CustomerAccount, error) {
 // SetCustomer set stripe customer id.
 // Used when creating checkout session.
 func (env Env) SetCustomer(a account.BaseAccount) error {
-	_, err := env.DBs.Write.NamedExec(
+	_, err := env.dbs.Write.NamedExec(
 		stripe.StmtSetCustomerID,
 		a)
 

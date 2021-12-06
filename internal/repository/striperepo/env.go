@@ -1,28 +1,29 @@
 package striperepo
 
 import (
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
 )
 
 // Env wraps database connection
 type Env struct {
-	shared.ReaderBaseRepo
-	shared.StripeBaseRepo
+	dbs    db.ReadWriteMyDBs
+	client stripeclient.Client
 	logger *zap.Logger
 }
 
-func New(readerBase shared.ReaderBaseRepo, stripeBase shared.StripeBaseRepo, logger *zap.Logger) Env {
+func New(dbs db.ReadWriteMyDBs, client stripeclient.Client, logger *zap.Logger) Env {
 	return Env{
-		ReaderBaseRepo: readerBase,
-		StripeBaseRepo: stripeBase,
-		logger:         logger,
+		dbs:    dbs,
+		client: client,
+		logger: logger,
 	}
 }
 
 func (env Env) beginStripeTx() (txrepo.StripeTx, error) {
-	tx, err := env.DBs.Write.Beginx()
+	tx, err := env.dbs.Write.Beginx()
 
 	if err != nil {
 		return txrepo.StripeTx{}, err

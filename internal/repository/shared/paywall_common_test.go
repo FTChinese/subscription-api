@@ -10,8 +10,8 @@ import (
 
 func TestEnv_retrievePaywall(t *testing.T) {
 	env := PaywallCommon{
-		DBs:   db.MockMySQL(),
-		Cache: nil,
+		dbs:   db.MockMySQL(),
+		cache: nil,
 	}
 
 	type args struct {
@@ -50,8 +50,8 @@ func TestEnv_retrievePaywall(t *testing.T) {
 
 func TestEnv_retrieveActiveProducts(t *testing.T) {
 	env := PaywallCommon{
-		DBs:   db.MockMySQL(),
-		Cache: nil,
+		dbs:   db.MockMySQL(),
+		cache: nil,
 	}
 
 	type args struct {
@@ -95,8 +95,8 @@ func TestEnv_retrieveActiveProducts(t *testing.T) {
 func TestEnv_listActivePrices(t *testing.T) {
 
 	env := PaywallCommon{
-		DBs:   db.MockMySQL(),
-		Cache: nil,
+		dbs:   db.MockMySQL(),
+		cache: nil,
 	}
 
 	type args struct {
@@ -145,8 +145,8 @@ func TestEnv_listActivePrices(t *testing.T) {
 func TestEnv_LoadPaywall(t *testing.T) {
 
 	env := PaywallCommon{
-		DBs:   db.MockMySQL(),
-		Cache: nil,
+		dbs:   db.MockMySQL(),
+		cache: nil,
 	}
 
 	type args struct {
@@ -186,6 +186,40 @@ func TestEnv_LoadPaywall(t *testing.T) {
 			//if !reflect.DeepEqual(got, tt.want) {
 			//	t.Errorf("LoadPaywall() got = %v, want %v", got, tt.want)
 			//}
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
+
+func TestEnv_RetrievePaywallDoc(t *testing.T) {
+
+	env := NewPaywallCommon(db.MockMySQL(), nil)
+
+	type args struct {
+		live bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Retrieve paywall doc",
+			args: args{
+				live: false,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := env.RetrievePaywallDoc(tt.args.live)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RetrievePaywallDoc() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
 		})

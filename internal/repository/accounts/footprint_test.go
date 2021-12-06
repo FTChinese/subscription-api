@@ -9,7 +9,7 @@ import (
 
 func TestEnv_SaveFootprint(t *testing.T) {
 
-	env := newTestEnv(db.MockMySQL(), zaptest.NewLogger(t))
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
 		f footprint.Footprint

@@ -4,12 +4,12 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	subs2 "github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/subs"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
@@ -21,19 +21,19 @@ import (
 func TestEnv_ConfirmOrder(t *testing.T) {
 	repo := test.NewRepo()
 
-	aliCreateOrder := subs.NewMockOrderBuilder("").
+	aliCreateOrder := subs2.NewMockOrderBuilder("").
 		WithFtcID(uuid.New().String()).
 		WithKind(enum.OrderKindCreate).
 		WithPayMethod(enum.PayMethodAli).
 		Build()
 
-	wxCreateOrder := subs.NewMockOrderBuilder("").
+	wxCreateOrder := subs2.NewMockOrderBuilder("").
 		WithFtcID(uuid.New().String()).
 		WithKind(enum.OrderKindCreate).
 		WithPayMethod(enum.PayMethodWx).
 		Build()
 
-	linkedAccountOrder := subs.NewMockOrderBuilder("").
+	linkedAccountOrder := subs2.NewMockOrderBuilder("").
 		WithFtcID(uuid.New().String()).
 		WithUnionID(faker.GenWxID()).
 		WithKind(enum.OrderKindCreate).
@@ -41,7 +41,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		Build()
 
 	// Order confirmed but not synced to membership
-	outOfSyncOrder := subs.NewMockOrderBuilder("").
+	outOfSyncOrder := subs2.NewMockOrderBuilder("").
 		WithFtcID(uuid.New().String()).
 		WithPrice(price.MockPriceStdYear).
 		WithKind(enum.OrderKindRenew).
@@ -50,14 +50,11 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		WithStartTime(time.Now()).
 		Build()
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
-		result subs.PaymentResult
-		order  subs.Order
+		result subs2.PaymentResult
+		order  subs2.Order
 	}
 	tests := []struct {
 		name    string
@@ -67,7 +64,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		{
 			name: "confirm new ali order",
 			args: args{
-				result: subs.MockNewPaymentResult(aliCreateOrder),
+				result: subs2.MockNewPaymentResult(aliCreateOrder),
 				order:  aliCreateOrder,
 			},
 			wantErr: false,
@@ -75,7 +72,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		{
 			name: "confirm new wx order",
 			args: args{
-				result: subs.MockNewPaymentResult(wxCreateOrder),
+				result: subs2.MockNewPaymentResult(wxCreateOrder),
 				order:  wxCreateOrder,
 			},
 			wantErr: false,
@@ -83,7 +80,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		{
 			name: "Confirmed new linked account order",
 			args: args{
-				result: subs.MockNewPaymentResult(linkedAccountOrder),
+				result: subs2.MockNewPaymentResult(linkedAccountOrder),
 				order:  linkedAccountOrder,
 			},
 			wantErr: false,
@@ -91,7 +88,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 		{
 			name: "Confirmed out of sync order",
 			args: args{
-				result: subs.MockNewPaymentResult(outOfSyncOrder),
+				result: subs2.MockNewPaymentResult(outOfSyncOrder),
 				order:  outOfSyncOrder,
 			},
 			wantErr: false,
@@ -122,19 +119,16 @@ func TestEnv_ConfirmOrder_Renewal(t *testing.T) {
 
 	repo.MustSaveMembership(memberPriorRenewal)
 
-	order := subs.NewMockOrderBuilder("").
+	order := subs2.NewMockOrderBuilder("").
 		WithFtcID(memberPriorRenewal.FtcID.String).
 		WithKind(enum.OrderKindRenew).
 		Build()
 
 	repo.MustSaveOrder(order)
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
-	paymentResult := subs.MockNewPaymentResult(order)
+	paymentResult := subs2.MockNewPaymentResult(order)
 
 	result, err := env.ConfirmOrder(paymentResult, order)
 	if err != nil {
@@ -156,7 +150,7 @@ func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
 	repo.MustSaveMembership(stdMmb)
 
 	// New order is u
-	order := subs.NewMockOrderBuilder("").
+	order := subs2.NewMockOrderBuilder("").
 		WithFtcID(stdMmb.FtcID.String).
 		WithKind(enum.OrderKindUpgrade).
 		WithPrice(price.MockPricePrm).
@@ -164,12 +158,9 @@ func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
 
 	repo.MustSaveOrder(order)
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
-	paymentResult := subs.MockNewPaymentResult(order)
+	paymentResult := subs2.MockNewPaymentResult(order)
 
 	result, err := env.ConfirmOrder(paymentResult, order)
 	if err != nil {
@@ -196,7 +187,7 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 		Build()
 	repo.MustSaveMembership(iapMmb)
 
-	order := subs.NewMockOrderBuilder("").
+	order := subs2.NewMockOrderBuilder("").
 		WithFtcID(iapMmb.FtcID.String).
 		WithKind(enum.OrderKindAddOn).
 		WithPayMethod(enum.PayMethodAli).
@@ -204,12 +195,9 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 
 	repo.MustSaveOrder(order)
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
-	paymentResult := subs.MockNewPaymentResult(order)
+	paymentResult := subs2.MockNewPaymentResult(order)
 
 	result, err := env.ConfirmOrder(paymentResult, order)
 	if err != nil {
@@ -222,13 +210,10 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 
 func TestEnv_SaveConfirmationErr(t *testing.T) {
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
-		e *subs.ConfirmError
+		e *subs2.ConfirmError
 	}
 	tests := []struct {
 		name    string
@@ -238,7 +223,7 @@ func TestEnv_SaveConfirmationErr(t *testing.T) {
 		{
 			name: "Confirmation error",
 			args: args{
-				e: &subs.ConfirmError{
+				e: &subs2.ConfirmError{
 					OrderID: ids.MustOrderID(),
 					Message: "Test error",
 					Retry:   false,
@@ -258,13 +243,10 @@ func TestEnv_SaveConfirmationErr(t *testing.T) {
 
 func TestEnv_SavePayResult(t *testing.T) {
 
-	env := Env{
-		ReaderBaseRepo: shared.NewReaderBaseRepo(test.SplitDB),
-		logger:         zaptest.NewLogger(t),
-	}
+	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
-		result subs.PaymentResult
+		result subs2.PaymentResult
 	}
 	tests := []struct {
 		name    string
@@ -274,7 +256,7 @@ func TestEnv_SavePayResult(t *testing.T) {
 		{
 			name: "Save payment result",
 			args: args{
-				result: subs.PaymentResult{
+				result: subs2.PaymentResult{
 					PaymentState:     ali.TradeStatusSuccess,
 					PaymentStateDesc: "",
 					Amount:           null.IntFrom(28000),
