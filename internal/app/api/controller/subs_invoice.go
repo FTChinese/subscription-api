@@ -3,7 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -14,7 +14,7 @@ func (router SubsRouter) ListInvoices(w http.ResponseWriter, req *http.Request) 
 	}
 
 	p := gorest.GetPagination(req)
-	userIDs := ids.NewUserIDs(req.Header)
+	userIDs := xhttp.GetUserIDs(req.Header)
 
 	list, err := router.AddOnRepo.ListInvoices(
 		userIDs,
@@ -33,9 +33,9 @@ func (router SubsRouter) CreateInvoice(w http.ResponseWriter, req *http.Request)
 }
 
 func (router SubsRouter) LoadInvoice(w http.ResponseWriter, req *http.Request) {
-	userIDs := ids.NewUserIDs(req.Header)
+	userIDs := xhttp.GetUserIDs(req.Header)
 
-	invID, err := getURLParam(req, "id").ToString()
+	invID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return

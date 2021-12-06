@@ -2,12 +2,12 @@ package controller
 
 import (
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
 func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Request) {
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	acnt, err := router.ReaderRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
@@ -21,7 +21,7 @@ func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Re
 
 	si, err := router.Client.NewSetupCheckout(acnt.StripeID.String)
 	if err != nil {
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}

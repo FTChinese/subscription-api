@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -19,7 +19,7 @@ func (router AccountRouter) UpdateEmail(w http.ResponseWriter, req *http.Request
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	var params input.EmailUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -94,7 +94,7 @@ func (router AccountRouter) RequestVerification(w http.ResponseWriter, req *http
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	var params input.ReqEmailVrfParams
 

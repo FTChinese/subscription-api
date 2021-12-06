@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -52,7 +53,7 @@ func (router PaywallRouter) LoadProduct(w http.ResponseWriter, req *http.Request
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	id, _ := getURLParam(req, "id").ToString()
+	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
 	sugar.Infof("Retrieving product %s", id)
 
@@ -75,7 +76,7 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	id, _ := getURLParam(req, "id").ToString()
+	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
 	var params pw.ProductParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -113,7 +114,7 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 }
 
 func (router PaywallRouter) ActivateProduct(w http.ResponseWriter, req *http.Request) {
-	id, err := getURLParam(req, "id").ToString()
+	id, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return

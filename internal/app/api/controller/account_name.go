@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -16,7 +16,7 @@ import (
 // Input
 // userName: string
 func (router AccountRouter) UpdateName(w http.ResponseWriter, req *http.Request) {
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	var params input.NameUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {

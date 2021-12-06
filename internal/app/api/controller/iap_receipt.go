@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/apple"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -13,7 +14,7 @@ func (router IAPRouter) LoadReceipt(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	origTxID, err := getURLParam(req, "id").ToString()
+	origTxID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())

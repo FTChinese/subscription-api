@@ -5,13 +5,13 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
 func (router AccountRouter) LoadMembership(w http.ResponseWriter, req *http.Request) {
-	userIDs := ids.NewUserIDs(req.Header)
+	userIDs := xhttp.GetUserIDs(req.Header)
 
 	m, err := router.ReaderRepo.RetrieveMember(userIDs.CompoundID)
 	if err != nil {
@@ -31,7 +31,7 @@ func (router AccountRouter) LoadMembership(w http.ResponseWriter, req *http.Requ
 // - expireDate: string;
 // - payMethod: string;
 func (router AccountRouter) CreateMembership(w http.ResponseWriter, req *http.Request) {
-	userIDs := ids.NewUserIDs(req.Header)
+	userIDs := xhttp.GetUserIDs(req.Header)
 
 	var params input.MemberParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -68,7 +68,7 @@ func (router AccountRouter) CreateMembership(w http.ResponseWriter, req *http.Re
 }
 
 func (router AccountRouter) UpdateMembership(w http.ResponseWriter, req *http.Request) {
-	userIDs := ids.NewUserIDs(req.Header)
+	userIDs := xhttp.GetUserIDs(req.Header)
 
 	var params input.MemberParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -107,7 +107,7 @@ func (router AccountRouter) UpdateMembership(w http.ResponseWriter, req *http.Re
 // DeleteMembership manually.
 // Request body:
 func (router AccountRouter) DeleteMembership(w http.ResponseWriter, req *http.Request) {
-	userIDs := ids.NewUserIDs(req.Header)
+	userIDs := xhttp.GetUserIDs(req.Header)
 
 	var params input.MemberParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -143,7 +143,7 @@ func (router AccountRouter) ListMemberSnapshots(w http.ResponseWriter, req *http
 	}
 
 	p := gorest.GetPagination(req)
-	userIDs := ids.NewUserIDs(req.Header)
+	userIDs := xhttp.GetUserIDs(req.Header)
 
 	list, err := router.Repo.ListSnapshot(userIDs, p)
 	if err != nil {

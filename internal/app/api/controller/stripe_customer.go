@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -12,12 +12,12 @@ import (
 // POST /stripe/customers
 // Response: reader.FtcAccount
 func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	cusAccount, err := router.StripeRepo.CreateCustomer(ftcID)
 
 	if err != nil {
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}
@@ -30,8 +30,8 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 }
 
 func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request) {
-	ftcID := ids.GetFtcID(req.Header)
-	cusID, err := getURLParam(req, "id").ToString()
+	ftcID := xhttp.GetFtcID(req.Header)
+	cusID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -52,7 +52,7 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 
 	cus, err := router.Client.RetrieveCustomer(account.StripeID.String)
 	if err != nil {
-		err := handleErrResp(w, err)
+		err := xhttp.HandleStripeErr(w, err)
 		if err == nil {
 			return
 		}
@@ -65,8 +65,8 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 }
 
 func (router StripeRouter) ChangeDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
-	ftcID := ids.GetFtcID(req.Header)
-	cusID, err := getURLParam(req, "id").ToString()
+	ftcID := xhttp.GetFtcID(req.Header)
+	cusID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -99,7 +99,7 @@ func (router StripeRouter) ChangeDefaultPaymentMethod(w http.ResponseWriter, req
 
 	cus, err := router.Client.SetDefaultPaymentMethod(pm)
 	if err != nil {
-		err = handleErrResp(w, err)
+		err = xhttp.HandleStripeErr(w, err)
 		if err != nil {
 			_ = render.New(w).BadRequest(err.Error())
 		}
