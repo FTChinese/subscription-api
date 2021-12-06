@@ -4,7 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -12,7 +12,7 @@ import (
 //
 //	GET /user/address
 func (router AccountRouter) LoadAddress(w http.ResponseWriter, req *http.Request) {
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	addr, err := router.Repo.LoadAddress(ftcID)
 
@@ -36,7 +36,7 @@ func (router AccountRouter) LoadAddress(w http.ResponseWriter, req *http.Request
 // street?: string;
 // postcode?: string
 func (router AccountRouter) UpdateAddress(w http.ResponseWriter, req *http.Request) {
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	var addr account.Address
 

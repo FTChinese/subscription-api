@@ -4,7 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -13,7 +13,7 @@ import (
 //
 //	 GET `/user/profile`
 func (router AccountRouter) LoadProfile(w http.ResponseWriter, req *http.Request) {
-	userID := ids.GetFtcID(req.Header)
+	userID := xhttp.GetFtcID(req.Header)
 
 	p, err := router.Repo.LoadProfile(userID)
 
@@ -37,7 +37,7 @@ func (router AccountRouter) LoadProfile(w http.ResponseWriter, req *http.Request
 // birthday?: string;
 // gender?: M | F;
 func (router AccountRouter) UpdateProfile(w http.ResponseWriter, req *http.Request) {
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	var input account.BaseProfile
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {

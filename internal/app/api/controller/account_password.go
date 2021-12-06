@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -19,7 +19,7 @@ import (
 // * currentPassword: string;
 // * newPassword: string.
 func (router AccountRouter) UpdatePassword(w http.ResponseWriter, req *http.Request) {
-	ftcID := ids.GetFtcID(req.Header)
+	ftcID := xhttp.GetFtcID(req.Header)
 
 	var params input.PasswordUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {

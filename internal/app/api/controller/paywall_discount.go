@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -64,7 +65,7 @@ func (router PaywallRouter) ListDiscounts(w http.ResponseWriter, req *http.Reque
 }
 
 func (router PaywallRouter) DropDiscount(w http.ResponseWriter, req *http.Request) {
-	id, err := getURLParam(req, "id").ToString()
+	id, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return

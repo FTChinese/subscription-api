@@ -8,8 +8,8 @@ import (
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"net/http"
@@ -41,7 +41,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		sugar.Info("Start creating a wechat order")
 
 		clientApp := footprint.NewClient(req)
-		readerIDs := ids.NewUserIDs(req.Header)
+		readerIDs := xhttp.GetUserIDs(req.Header)
 
 		// Find user account.
 		acnt, err := router.ReaderRepo.FindBaseAccount(readerIDs)

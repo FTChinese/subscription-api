@@ -4,6 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -64,7 +65,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 // - nickname?: string;
 // - stripePriceId: string;
 func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request) {
-	id, _ := getURLParam(req, "id").ToString()
+	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
 	var params price.FtcPriceUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -91,7 +92,7 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 // RefreshPriceOffers attaches all valid discounts to
 // a price row as json column.
 func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.Request) {
-	priceID, err := getURLParam(req, "id").ToString()
+	priceID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -115,7 +116,7 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 }
 
 func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Request) {
-	priceID, err := getURLParam(req, "id").ToString()
+	priceID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -139,7 +140,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 }
 
 func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Request) {
-	priceID, err := getURLParam(req, "id").ToString()
+	priceID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return

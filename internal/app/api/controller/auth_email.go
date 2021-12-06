@@ -10,6 +10,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
@@ -219,7 +220,7 @@ func (router AuthRouter) VerifyEmail(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	token, err := getURLParam(req, "token").ToString()
+	token, err := xhttp.GetURLParam(req, "token").ToString()
 	// `400 Bad Request`
 	if err != nil {
 		sugar.Error(err)
