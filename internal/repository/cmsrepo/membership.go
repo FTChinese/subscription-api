@@ -121,16 +121,19 @@ func (env Env) DeleteMembership(compoundID string) (reader.Membership, error) {
 	}
 
 	if m.IsZero() {
+		_ = tx.Rollback()
 		return m, nil
 	}
 
 	if !m.IsOneTime() {
+		_ = tx.Rollback()
 		return reader.Membership{}, errors.New("only one-time purchase membership could be deleted directly")
 	}
 
 	err = tx.DeleteMember(m.UserIDs)
 
 	if err != nil {
+		_ = tx.Rollback()
 		return reader.Membership{}, err
 	}
 
