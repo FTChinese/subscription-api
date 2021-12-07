@@ -1,6 +1,7 @@
 package pw
 
 import (
+	"database/sql"
 	"errors"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
@@ -28,6 +29,18 @@ func (w Paywall) findFtcPrice(id string) (price.FtcPrice, error) {
 	}
 
 	return price.FtcPrice{}, errors.New("the requested price is not found")
+}
+
+func (w Paywall) FindPriceByEdition(e price.Edition) (price.FtcPrice, error) {
+	for _, prod := range w.Products {
+		for _, p := range prod.Prices {
+			if p.Edition == e {
+				return p, nil
+			}
+		}
+	}
+
+	return price.FtcPrice{}, sql.ErrNoRows
 }
 
 func (w Paywall) FindCheckoutItem(priceID string, offerID null.String) (price.CheckoutItem, error) {
