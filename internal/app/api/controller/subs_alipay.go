@@ -36,7 +36,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		sugar := router.Logger.Sugar()
 
 		clientApp := footprint.NewClient(req)
-		readerIDs := xhttp.GetUserIDs(req.Header)
+		readerIDs := xhttp.UserIDsFromHeader(req.Header)
 
 		// Find user account.
 		acnt, err := router.ReaderRepo.FindBaseAccount(readerIDs)

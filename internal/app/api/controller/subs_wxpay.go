@@ -41,7 +41,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		sugar.Info("Start creating a wechat order")
 
 		clientApp := footprint.NewClient(req)
-		readerIDs := xhttp.GetUserIDs(req.Header)
+		readerIDs := xhttp.UserIDsFromHeader(req.Header)
 
 		// Find user account.
 		acnt, err := router.ReaderRepo.FindBaseAccount(readerIDs)

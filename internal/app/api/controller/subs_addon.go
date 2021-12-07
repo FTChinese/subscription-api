@@ -10,7 +10,7 @@ import (
 // This could be done either by client automatically, or by
 // ftc staff manually.
 func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
-	readerIDs := xhttp.GetUserIDs(req.Header)
+	readerIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	result, err := router.AddOnRepo.ClaimAddOn(readerIDs)
 	if err != nil {
