@@ -54,7 +54,7 @@ func (env Env) CreateMembership(ba account.BaseAccount, params input.MemberParam
 	return mmb, nil
 }
 
-func (env Env) UpdateMembership(compoundID string, params input.MemberParams) (reader.MembershipVersioned, error) {
+func (env Env) UpdateMembership(compoundID string, params input.MemberParams, by string) (reader.MembershipVersioned, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -99,7 +99,7 @@ func (env Env) UpdateMembership(compoundID string, params input.MemberParams) (r
 	}
 
 	return updated.Version(reader.Archiver{
-		Name:   reader.ArchiveName(params.CreatedBy),
+		Name:   reader.ArchiveName(by),
 		Action: reader.ArchiveActionUpdate,
 	}).WithPriorVersion(current), nil
 }

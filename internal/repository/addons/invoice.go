@@ -9,6 +9,14 @@ import (
 // InvoicesCarriedOver flags a user's consumed
 // but not ended invoices as being carried over
 // into a new invoice.
+// This happens in such a situation:
+// A standard user's  addons were already transferred
+// to membership, and then upgrade to premium.
+// Obviously the addon invoices are not yet consumed completely.
+// The remaining times of transferred to a new addon
+// invoice. Add a timestamp to those invoices indicating
+// that then are again carried over.
+// Not much usefulness.
 func (env Env) InvoicesCarriedOver(userID ids.UserIDs) error {
 	_, err := env.dbs.Write.Exec(
 		invoice.StmtCarriedOver,
