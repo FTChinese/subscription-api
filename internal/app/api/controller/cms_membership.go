@@ -21,6 +21,8 @@ import (
 // - expireDate: string;
 // - payMethod: string;
 func (router CMSRouter) CreateMembership(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
 
 	var params input.MemberParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -42,10 +44,16 @@ func (router CMSRouter) CreateMembership(w http.ResponseWriter, req *http.Reques
 	// TODO: in the future client should present a drag-drop ui
 	// so that user could directly select a price.
 	paywall, err := router.PaywallRepo.LoadPaywall(router.Live)
-	ftcPrice, _ := paywall.FindPriceByEdition(price.Edition{
+	if err != nil {
+		sugar.Error(err)
+	}
+	ftcPrice, err := paywall.FindPriceByEdition(price.Edition{
 		Tier:  params.Tier,
 		Cycle: params.Cycle,
 	})
+	if err != nil {
+		sugar.Error(err)
+	}
 
 	params.PriceID = ftcPrice.ID
 
@@ -71,6 +79,14 @@ func (router CMSRouter) CreateMembership(w http.ResponseWriter, req *http.Reques
 	_ = render.New(w).OK(mmb)
 }
 
+// UpdateMembership changes membership fields.
+// Request body:
+// - ftcId?: string;
+// - unionId?: string;
+// - tier: string;
+// - cycle: string;
+// - expireDate: string;
+// - payMethod: string;
 func (router CMSRouter) UpdateMembership(w http.ResponseWriter, req *http.Request) {
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 	staffName := xhttp.GetStaffName(req.Header)
@@ -122,7 +138,7 @@ func (router CMSRouter) UpdateMembership(w http.ResponseWriter, req *http.Reques
 }
 
 // DeleteMembership manually.
-// Request body:
+// Request body: NO.
 func (router CMSRouter) DeleteMembership(w http.ResponseWriter, req *http.Request) {
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 	staffName := xhttp.GetStaffName(req.Header)
@@ -150,22 +166,11 @@ func (router CMSRouter) DeleteMembership(w http.ResponseWriter, req *http.Reques
 // page=<int>&per_page=<int>
 func (router CMSRouter) ListMemberSnapshots(w http.ResponseWriter, req *http.Request) {
 
-	id, _ := xhttp.GetURLParam(req, "id").ToString()
-
-	ba, err := router.ReaderRepo.SearchUserByFtcOrWxID(id)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	if err := req.ParseForm(); err != nil {
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
+	userIDs := xhttp.UserIDsFromQuery(req.Form)
 
 	p := gorest.GetPagination(req)
 
-	list, err := router.Repo.ListSnapshot(ba.CompoundIDs(), p)
+	list, err := router.Repo.ListSnapshot(userIDs, p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
