@@ -5,6 +5,8 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
+	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
@@ -12,12 +14,13 @@ import (
 
 // CreateMembership creates a membership purchased via ali or wx.
 // Request body:
+// - ftcId?: string;
+// - unionId?: string;
 // - tier: string;
 // - cycle: string;
 // - expireDate: string;
 // - payMethod: string;
 func (router CMSRouter) CreateMembership(w http.ResponseWriter, req *http.Request) {
-	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
 	var params input.MemberParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -25,12 +28,27 @@ func (router CMSRouter) CreateMembership(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	if ve := params.Validate(); ve != nil {
+	if ve := params.Validate(true); ve != nil {
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
-	ba, err := router.ReaderRepo.SearchUserByFtcOrWxID(id)
+	ba, err := router.ReaderRepo.FindBaseAccount(ids.UserIDs{
+		CompoundID: "",
+		FtcID:      params.FtcID,
+		UnionID:    params.UnionID,
+	}.MustNormalize())
+
+	// TODO: in the future client should present a drag-drop ui
+	// so that user could directly select a price.
+	paywall, err := router.PaywallRepo.LoadPaywall(router.Live)
+	ftcPrice, _ := paywall.FindPriceByEdition(price.Edition{
+		Tier:  params.Tier,
+		Cycle: params.Cycle,
+	})
+
+	params.PriceID = ftcPrice.ID
+
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -55,6 +73,7 @@ func (router CMSRouter) CreateMembership(w http.ResponseWriter, req *http.Reques
 
 func (router CMSRouter) UpdateMembership(w http.ResponseWriter, req *http.Request) {
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
+	staffName := xhttp.GetStaffName(req.Header)
 
 	var params input.MemberParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -62,14 +81,25 @@ func (router CMSRouter) UpdateMembership(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	if ve := params.Validate(); ve != nil {
+	if ve := params.Validate(false); ve != nil {
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
+	// TODO: in the future client should present a drag-drop ui
+	// so that user could directly select a price.
+	paywall, err := router.PaywallRepo.LoadPaywall(router.Live)
+	ftcPrice, _ := paywall.FindPriceByEdition(price.Edition{
+		Tier:  params.Tier,
+		Cycle: params.Cycle,
+	})
+
+	params.PriceID = ftcPrice.ID
+
 	v, err := router.Repo.UpdateMembership(
 		id,
-		params)
+		params,
+		staffName)
 
 	if err != nil {
 		var ve *render.ValidationError
@@ -82,6 +112,7 @@ func (router CMSRouter) UpdateMembership(w http.ResponseWriter, req *http.Reques
 		return
 	}
 	go func() {
+		// TODO: versioned by
 		err := router.ReaderRepo.VersionMembership(v)
 		if err != nil {
 
@@ -94,12 +125,7 @@ func (router CMSRouter) UpdateMembership(w http.ResponseWriter, req *http.Reques
 // Request body:
 func (router CMSRouter) DeleteMembership(w http.ResponseWriter, req *http.Request) {
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
-
-	var params input.MemberParams
-	if err := gorest.ParseJSON(req.Body, &params); err != nil {
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
+	staffName := xhttp.GetStaffName(req.Header)
 
 	m, err := router.Repo.DeleteMembership(id)
 	if err != nil {
@@ -110,7 +136,7 @@ func (router CMSRouter) DeleteMembership(w http.ResponseWriter, req *http.Reques
 	if !m.IsZero() {
 		go func() {
 			_ = router.ReaderRepo.VersionMembership(m.Deleted(reader.Archiver{
-				Name:   reader.ArchiveName(params.CreatedBy),
+				Name:   reader.ArchiveName(staffName),
 				Action: reader.ArchiveActionDelete,
 			}))
 		}()
