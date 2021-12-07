@@ -347,9 +347,12 @@ func StartServer(s ServerStatus) {
 			// Update the membership of a user
 			r.Patch("/{id}", cmsRouter.UpdateMembership)
 			r.Delete("/{id}", cmsRouter.DeleteMembership)
-			// List the modification history of a user's membership
-			r.Get("/{id}/snapshots", cmsRouter.ListMemberSnapshots)
 		})
+
+		// ?ftc_id=<uuid>&union_id=<union_id>&page=<int>&per_page=<int>
+		r.With(xhttp.FormParsed).
+			With(xhttp.RequireUserIDsQuery).
+			Get("/snapshots", cmsRouter.ListMemberSnapshots)
 
 		r.Route("/addons", func(r chi.Router) {
 			// Add an invoice to a user.
