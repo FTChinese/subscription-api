@@ -26,3 +26,13 @@ func (env Env) beginMemberTx() (txrepo.SharedTx, error) {
 
 	return txrepo.NewSharedTx(tx), nil
 }
+
+func (env Env) beginAddOnTx() (txrepo.AddOnTx, error) {
+	tx, err := env.dbs.Write.Beginx()
+
+	if err != nil {
+		return txrepo.AddOnTx{}, err
+	}
+
+	return txrepo.NewAddOnTx(tx), nil
+}
