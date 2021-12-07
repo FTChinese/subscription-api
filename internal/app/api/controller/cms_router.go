@@ -10,6 +10,8 @@ import (
 type CMSRouter struct {
 	Repo         cmsrepo.Env
 	ReaderRepo   shared.ReaderCommon
+	PaywallRepo  shared.PaywallCommon
 	Logger       *zap.Logger
 	EmailService letter.Service
+	Live         bool
 }
