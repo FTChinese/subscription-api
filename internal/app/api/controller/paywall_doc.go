@@ -30,7 +30,7 @@ func (router PaywallRouter) SaveBanner(w http.ResponseWriter, req *http.Request)
 
 	banner := params.WithID(pw.BannerKindDaily)
 
-	pwb, err := router.ReadRepo.RetrievePaywallDoc(router.Live)
+	pwb, err := router.PaywallRepo.RetrievePaywallDoc(router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -42,7 +42,7 @@ func (router PaywallRouter) SaveBanner(w http.ResponseWriter, req *http.Request)
 
 	pwb = pwb.WithBanner(banner)
 
-	id, err := router.WriteRepo.CreatePaywallDoc(pwb)
+	id, err := router.ProductRepo.CreatePaywallDoc(pwb)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -76,7 +76,7 @@ func (router PaywallRouter) SavePromo(w http.ResponseWriter, req *http.Request) 
 
 	promo := params.WithID(pw.BannerKindPromo)
 
-	pwb, err := router.ReadRepo.RetrievePaywallDoc(router.Live)
+	pwb, err := router.PaywallRepo.RetrievePaywallDoc(router.Live)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			_ = render.New(w).DBError(err)
@@ -86,7 +86,7 @@ func (router PaywallRouter) SavePromo(w http.ResponseWriter, req *http.Request) 
 
 	pwb = pwb.WithPromo(promo)
 
-	id, err := router.WriteRepo.CreatePaywallDoc(pwb)
+	id, err := router.ProductRepo.CreatePaywallDoc(pwb)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -98,7 +98,7 @@ func (router PaywallRouter) SavePromo(w http.ResponseWriter, req *http.Request) 
 }
 
 func (router PaywallRouter) DropPromo(w http.ResponseWriter, req *http.Request) {
-	pwb, err := router.ReadRepo.RetrievePaywallDoc(router.Live)
+	pwb, err := router.PaywallRepo.RetrievePaywallDoc(router.Live)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			_ = render.New(w).DBError(err)
@@ -109,7 +109,7 @@ func (router PaywallRouter) DropPromo(w http.ResponseWriter, req *http.Request) 
 	pwb = pwb.DropPromo()
 
 	// Save a new version
-	id, err := router.WriteRepo.CreatePaywallDoc(pwb)
+	id, err := router.ProductRepo.CreatePaywallDoc(pwb)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
