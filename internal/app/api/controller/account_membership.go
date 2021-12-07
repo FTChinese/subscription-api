@@ -7,7 +7,7 @@ import (
 )
 
 func (router AccountRouter) LoadMembership(w http.ResponseWriter, req *http.Request) {
-	userIDs := xhttp.GetUserIDs(req.Header)
+	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	m, err := router.ReaderRepo.RetrieveMember(userIDs.CompoundID)
 	if err != nil {

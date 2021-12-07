@@ -20,7 +20,7 @@ func (router SubsRouter) ListOrders(w http.ResponseWriter, req *http.Request) {
 	}
 
 	p := gorest.GetPagination(req)
-	userIDs := xhttp.GetUserIDs(req.Header)
+	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	list, err := router.SubsRepo.ListOrders(userIDs, p)
 	if err != nil {
@@ -32,7 +32,7 @@ func (router SubsRouter) ListOrders(w http.ResponseWriter, req *http.Request) {
 }
 
 func (router SubsRouter) LoadOrder(w http.ResponseWriter, req *http.Request) {
-	userIDs := xhttp.GetUserIDs(req.Header)
+	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	orderID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
