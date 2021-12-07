@@ -28,10 +28,6 @@ func (router SubsRouter) ListInvoices(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(list)
 }
 
-func (router SubsRouter) CreateInvoice(w http.ResponseWriter, req *http.Request) {
-	_ = render.New(w).BadRequest("Not implemented")
-}
-
 func (router SubsRouter) LoadInvoice(w http.ResponseWriter, req *http.Request) {
 	userIDs := xhttp.GetUserIDs(req.Header)
 
