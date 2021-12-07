@@ -12,8 +12,8 @@ import (
 
 // PaywallRouter handles pricing plans.
 type PaywallRouter struct {
-	WriteRepo       products.Env
-	ReadRepo        shared.PaywallCommon
+	ProductRepo     products.Env
+	PaywallRepo     shared.PaywallCommon
 	StripePriceRepo shared.StripeBaseRepo
 	Logger          *zap.Logger
 	Live            bool
@@ -28,9 +28,9 @@ func NewPaywallRouter(
 	live bool,
 ) PaywallRouter {
 	return PaywallRouter{
-		WriteRepo:       prodRepo,
+		ProductRepo:     prodRepo,
 		StripePriceRepo: stripeBaseRepo,
-		ReadRepo:        paywallBaseRepo,
+		PaywallRepo:     paywallBaseRepo,
 		Logger:          logger,
 		Live:            live,
 	}
@@ -39,7 +39,7 @@ func NewPaywallRouter(
 // LoadPaywall loads paywall data from db or cache.
 func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request) {
 
-	paywall, err := router.ReadRepo.LoadPaywall(router.Live)
+	paywall, err := router.PaywallRepo.LoadPaywall(router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -53,9 +53,9 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	router.ReadRepo.ClearCache()
+	router.PaywallRepo.ClearCache()
 
-	paywall, err := router.ReadRepo.LoadPaywall(router.Live)
+	paywall, err := router.PaywallRepo.LoadPaywall(router.Live)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -97,7 +97,7 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, req *http.Request) 
 }
 
 func (router PaywallRouter) LoadPricing(w http.ResponseWriter, req *http.Request) {
-	p, err := router.ReadRepo.ListActivePrices(router.Live)
+	p, err := router.PaywallRepo.ListActivePrices(router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

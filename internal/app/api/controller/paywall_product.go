@@ -9,7 +9,7 @@ import (
 )
 
 func (router PaywallRouter) ListProducts(w http.ResponseWriter, req *http.Request) {
-	products, err := router.WriteRepo.ListProducts(router.Live)
+	products, err := router.ProductRepo.ListProducts(router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -39,7 +39,7 @@ func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Reque
 
 	p := pw.NewProduct(params, router.Live)
 
-	err := router.WriteRepo.CreateProduct(p)
+	err := router.ProductRepo.CreateProduct(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -57,7 +57,7 @@ func (router PaywallRouter) LoadProduct(w http.ResponseWriter, req *http.Request
 
 	sugar.Infof("Retrieving product %s", id)
 
-	prod, err := router.WriteRepo.RetrieveProduct(id, router.Live)
+	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -93,7 +93,7 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 
 	sugar.Infof("Retrieving product %s", id)
 
-	prod, err := router.WriteRepo.RetrieveProduct(id, router.Live)
+	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -103,7 +103,7 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 	sugar.Infof("Product retrieved %v", prod)
 
 	updated := prod.Update(params)
-	err = router.WriteRepo.UpdateProduct(updated)
+	err = router.ProductRepo.UpdateProduct(updated)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -120,14 +120,14 @@ func (router PaywallRouter) ActivateProduct(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	prod, err := router.WriteRepo.RetrieveProduct(id, router.Live)
+	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	prod = prod.Activate()
-	err = router.WriteRepo.SetProductOnPaywall(prod)
+	err = router.ProductRepo.SetProductOnPaywall(prod)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
