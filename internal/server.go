@@ -101,8 +101,8 @@ func StartServer(s ServerStatus) {
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := controller.PaywallRouter{
-		WriteRepo:       products.New(myDBs),
-		ReadRepo:        paywallBaseRepo,
+		ProductRepo:     products.New(myDBs),
+		PaywallRepo:     paywallBaseRepo,
 		StripePriceRepo: stripeBaseRepo,
 		Logger:          logger,
 		Live:            s.LiveMode,
@@ -111,8 +111,10 @@ func StartServer(s ServerStatus) {
 	cmsRouter := controller.CMSRouter{
 		Repo:         cmsrepo.New(myDBs, logger),
 		ReaderRepo:   readerBaseRepo,
+		PaywallRepo:  paywallBaseRepo,
 		Logger:       logger,
 		EmailService: emailService,
+		Live:         s.LiveMode,
 	}
 
 	wxAuth := controller.NewWxAuth(myDBs, logger)
@@ -334,13 +336,14 @@ func StartServer(s ServerStatus) {
 		r.Post("/addons", ftcSubsRouter.ClaimAddOn)
 	})
 
+	// Isolate dangerous operations from user-facing features.
 	r.Route("/cms", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(xhttp.RequireStaffName)
 
 		r.Route("/memberships", func(r chi.Router) {
-			// Create a membership of a user
-			r.Put("/{id}", cmsRouter.CreateMembership)
+			// Create a membership for a user
+			r.Post("/", cmsRouter.CreateMembership)
 			// Update the membership of a user
 			r.Patch("/{id}", cmsRouter.UpdateMembership)
 			r.Delete("/{id}", cmsRouter.DeleteMembership)
@@ -348,6 +351,12 @@ func StartServer(s ServerStatus) {
 			r.Get("/{id}/snapshots", cmsRouter.ListMemberSnapshots)
 		})
 
+		r.Route("/addons", func(r chi.Router) {
+			// Add an invoice to a user.
+			// If the invoice is targeting addon, then
+			// membership should be updated accordingly.
+			r.Post("/", cmsRouter.CreateAddOn)
+		})
 	})
 
 	r.Route("/orders", func(r chi.Router) {
@@ -369,7 +378,6 @@ func StartServer(s ServerStatus) {
 		r.Use(xhttp.RequireFtcOrUnionID)
 		// List a user's invoices. Use query parameter `kind=create|renew|upgrade|addon` to filter.
 		r.Get("/", ftcSubsRouter.ListInvoices)
-		r.Put("/", ftcSubsRouter.CreateInvoice)
 		// Show a single invoice.
 		r.Get("/{id}", ftcSubsRouter.LoadInvoice)
 	})
