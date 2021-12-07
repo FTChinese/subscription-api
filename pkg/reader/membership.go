@@ -78,7 +78,7 @@ func NewMembership(ba account.BaseAccount, params input.MemberParams) Membership
 		LegacyExpire:  null.Int{},
 		ExpireDate:    params.ExpireDate,
 		PaymentMethod: params.PayMethod,
-		FtcPlanID:     null.String{},
+		FtcPlanID:     null.StringFrom(params.PriceID),
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
