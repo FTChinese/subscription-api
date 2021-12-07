@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
@@ -15,7 +16,7 @@ import (
 // order id must not exist,
 // and Edition, YearMonthDay should be provided.
 type AddOnParams struct {
-	CompoundID  string       `json:"-"`
+	CompoundID  string       `json:"compoundId"`
 	AddOnSource addon.Source `json:"source"`
 	price.Edition
 	dt.YearMonthDay
@@ -26,7 +27,12 @@ type AddOnParams struct {
 }
 
 func (p *AddOnParams) Validate() *render.ValidationError {
-	ve := p.validateCommonField()
+	ve := validator.New("compoundId").Required().Validate(p.CompoundID)
+	if ve != nil {
+		return ve
+	}
+
+	ve = p.validateCommonField()
 	if ve != nil {
 		return ve
 	}
