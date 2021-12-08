@@ -25,28 +25,31 @@ LIMIT 1
 `
 
 const colProduct = `
-SELECT id AS product_id,
-	description,
-	heading,
-	is_active,
-	live_mode,
-	small_print,
-	tier,
-	introductory,
-	created_by,
-	created_utc,
-	updated_utc
-FROM subs_product.product
+SELECT prod.id AS product_id,
+	prod.description,
+	prod.heading,
+	prod.is_active,
+	prod.live_mode,
+	prod.small_print,
+	prod.tier,
+	prod.introductory,
+	prod.created_by AS created_by,
+    prod.created_utc AS created_utc,
+    prod.updated_utc AS updated_utc
+`
+
+const fromTableProduct = `
+FROM subs_product.product AS prod
 `
 
 // StmtRetrieveProduct refer to paywall_product table.
-const StmtRetrieveProduct = colProduct + `
+const StmtRetrieveProduct = colProduct + fromTableProduct + `
 WHERE id = ?
 	AND live_mode = ?
 LIMIT 1
 `
 
-const StmtListProducts = colProduct + `
+const StmtListProducts = colProduct + fromTableProduct + `
 WHERE live_mode = ?
 ORDER BY is_active DESC, tier ASC, created_utc DESC
 `
