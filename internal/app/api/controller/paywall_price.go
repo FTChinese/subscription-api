@@ -116,15 +116,27 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 }
 
 func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
 	priceID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
+		sugar.Error(err)
 		return
 	}
 
 	ftcPrice, err := router.PaywallRepo.RetrieveFtcPrice(priceID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
+		sugar.Error(err)
+		return
+	}
+
+	_, err = router.StripePriceRepo.LoadPrice(ftcPrice.StripePriceID, router.Live)
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		sugar.Error(err)
 		return
 	}
 
