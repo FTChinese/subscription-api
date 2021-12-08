@@ -26,18 +26,36 @@ func (router PaywallRouter) ListProducts(w http.ResponseWriter, req *http.Reques
 // - smallPrint?: string;
 // - tier: standard | premium;
 func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
 	var params pw.ProductParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
+		sugar.Error(err)
 		return
 	}
 
 	if ve := params.Validate(false); ve != nil {
+		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
 	p := pw.NewProduct(params, router.Live)
+
+	if p.Introductory.StripePriceID.Valid {
+		_, err := router.StripePriceRepo.LoadPrice(p.Introductory.StripePriceID.String, router.Live)
+		if err != nil {
+			sugar.Error(err)
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: err.Error(),
+				Field:   "introductory.stripePriceId",
+				Code:    render.CodeInvalid,
+			})
+			return
+		}
+	}
 
 	err := router.ProductRepo.CreateProduct(p)
 	if err != nil {
@@ -89,6 +107,19 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 		return
+	}
+
+	if params.Introductory.StripePriceID.Valid {
+		_, err := router.StripePriceRepo.LoadPrice(params.Introductory.StripePriceID.String, router.Live)
+		if err != nil {
+			sugar.Error(err)
+			_ = render.New(w).Unprocessable(&render.ValidationError{
+				Message: err.Error(),
+				Field:   "introductory.stripePriceId",
+				Code:    render.CodeInvalid,
+			})
+			return
+		}
 	}
 
 	sugar.Infof("Retrieving product %s", id)
