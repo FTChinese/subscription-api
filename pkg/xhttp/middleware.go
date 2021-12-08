@@ -56,6 +56,22 @@ func RequireFtcOrUnionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
+func RequireUserIDsQuery(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, req *http.Request) {
+		ftcID := strings.TrimSpace(req.Form.Get("ftc_id"))
+		unionID := strings.TrimSpace(req.Form.Get("union_id"))
+
+		if ftcID == "" && unionID == "" {
+			_ = render.New(w).Unauthorized("Missing ftc_id or union_id in query parameters")
+			return
+		}
+
+		next.ServeHTTP(w, req)
+	}
+
+	return http.HandlerFunc(fn)
+}
+
 // RequireFtcID middleware makes sure all request header contains `X-User-Id` field.
 //
 // - 401 Unauthorized if request header does not have `X-User-Name`,
@@ -154,4 +170,25 @@ func FormParsed(next http.Handler) http.Handler {
 
 		next.ServeHTTP(writer, request)
 	})
+}
+
+func RequireStaffName(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, req *http.Request) {
+		staffname := GetStaffName(req.Header)
+
+		staffname = strings.TrimSpace(staffname)
+		if staffname == "" {
+			log.Print("Missing X-Staff-Name header")
+
+			_ = render.New(w).Unauthorized("Missing X-Staff-Name header")
+
+			return
+		}
+
+		req.Header.Set(XStaffName, staffname)
+
+		next.ServeHTTP(w, req)
+	}
+
+	return http.HandlerFunc(fn)
 }

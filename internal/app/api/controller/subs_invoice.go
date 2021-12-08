@@ -14,7 +14,7 @@ func (router SubsRouter) ListInvoices(w http.ResponseWriter, req *http.Request) 
 	}
 
 	p := gorest.GetPagination(req)
-	userIDs := xhttp.GetUserIDs(req.Header)
+	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	list, err := router.AddOnRepo.ListInvoices(
 		userIDs,
@@ -28,12 +28,8 @@ func (router SubsRouter) ListInvoices(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(list)
 }
 
-func (router SubsRouter) CreateInvoice(w http.ResponseWriter, req *http.Request) {
-	_ = render.New(w).BadRequest("Not implemented")
-}
-
 func (router SubsRouter) LoadInvoice(w http.ResponseWriter, req *http.Request) {
-	userIDs := xhttp.GetUserIDs(req.Header)
+	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	invID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {

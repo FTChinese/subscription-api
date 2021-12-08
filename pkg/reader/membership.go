@@ -65,7 +65,7 @@ type Membership struct {
 	VIP bool `json:"vip" db:"is_vip"`
 }
 
-// NewMembership creates attaches membership directly to a user,
+// NewMembership attaches membership directly to a user,
 // without any means of payment.
 func NewMembership(ba account.BaseAccount, params input.MemberParams) Membership {
 	return Membership{
@@ -78,7 +78,7 @@ func NewMembership(ba account.BaseAccount, params input.MemberParams) Membership
 		LegacyExpire:  null.Int{},
 		ExpireDate:    params.ExpireDate,
 		PaymentMethod: params.PayMethod,
-		FtcPlanID:     null.String{},
+		FtcPlanID:     null.StringFrom(params.PriceID),
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
