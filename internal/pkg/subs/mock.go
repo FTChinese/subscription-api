@@ -12,6 +12,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
 	"time"
@@ -21,7 +22,7 @@ type MockOrderBuilder struct {
 	id         string
 	ftcID      string
 	unionID    string
-	price      price.PaywallPrice
+	price      pw.PaywallPrice
 	kind       enum.OrderKind
 	payMethod  enum.PayMethod
 	wxAppId    null.String
@@ -36,7 +37,7 @@ func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
 		id:        ids.MustOrderID(),
 		ftcID:     ftcID,
 		unionID:   "",
-		price:     price.MockPriceStdYear,
+		price:     pw.MockPwPriceStdYear,
 		kind:      enum.OrderKindCreate,
 		payMethod: enum.PayMethodAli,
 		confirmed: false,
@@ -56,21 +57,21 @@ func (b MockOrderBuilder) WithUnionID(id string) MockOrderBuilder {
 	return b
 }
 
-func (b MockOrderBuilder) WithPrice(p price.PaywallPrice) MockOrderBuilder {
+func (b MockOrderBuilder) WithPrice(p pw.PaywallPrice) MockOrderBuilder {
 	b.price = p
 	return b
 }
 
 func (b MockOrderBuilder) WithStdYear() MockOrderBuilder {
-	return b.WithPrice(price.MockPriceStdYear)
+	return b.WithPrice(pw.MockPwPriceStdYear)
 }
 
 func (b MockOrderBuilder) WithStdMonth() MockOrderBuilder {
-	return b.WithPrice(price.MockPriceStdMonth)
+	return b.WithPrice(pw.MockPwPriceStdMonth)
 }
 
 func (b MockOrderBuilder) WithPrm() MockOrderBuilder {
-	return b.WithPrice(price.MockPricePrm)
+	return b.WithPrice(pw.MockPwPricePrm)
 }
 
 func (b MockOrderBuilder) WithKind(k enum.OrderKind) MockOrderBuilder {

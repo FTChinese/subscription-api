@@ -7,7 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
@@ -39,7 +39,7 @@ func TestEnv_CreateMembership(t *testing.T) {
 					Cycle:      enum.CycleYear,
 					ExpireDate: chrono.DateFrom(time.Now().AddDate(0, 6, 0)),
 					PayMethod:  enum.PayMethodAli,
-					PriceID:    price.MockPriceStdYear.ID,
+					PriceID:    pw.MockPwPriceStdYear.ID,
 				},
 			},
 			want:    reader.Membership{},
@@ -92,7 +92,7 @@ func TestEnv_UpdateMembership(t *testing.T) {
 					Cycle:      enum.CycleYear,
 					ExpireDate: chrono.DateFrom(time.Now().AddDate(0, 0, 7)),
 					PayMethod:  enum.PayMethodWx,
-					PriceID:    price.MockPriceStdYear.ID,
+					PriceID:    pw.MockPwPriceStdYear.ID,
 				},
 				by: "test",
 			},

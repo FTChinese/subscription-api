@@ -1,6 +1,6 @@
 package price
 
-const colFtcPrice = `
+const colPwPrice = `
 SELECT p.id AS price_id,
 	p.tier,
 	p.cycle,
@@ -19,8 +19,8 @@ SELECT p.id AS price_id,
 FROM subs_product.plan AS p
 `
 
-// StmtFtcPrice retrieves a row from plan table that is not archived.
-const StmtFtcPrice = colFtcPrice + `
+// StmtPwPrice retrieves a row from plan table that is not archived.
+const StmtPwPrice = colPwPrice + `
 WHERE p.id = ?
 	AND live_mode = ?
 LIMIT 1
@@ -32,7 +32,7 @@ LIMIT 1
 // table and filter out those nullable product id.
 // NOTE we don't need an extra table to record which prices
 // are put on paywall.
-const StmtListPaywallPrice = colFtcPrice + `
+const StmtListPaywallPrice = colPwPrice + `
 LEFT JOIN subs_product.paywall_product_v4 AS active_prod
 	ON p.product_id = active_prod.product_id
 WHERE p.is_active = 1
@@ -41,7 +41,7 @@ WHERE p.is_active = 1
 ORDER BY p.cycle DESC
 `
 
-const StmtListPricesOfProduct = colFtcPrice + `
+const StmtListPricesOfProduct = colPwPrice + `
 WHERE p.product_id = ? 
 	AND live_mode = ?
 	AND p.archived = FALSE
