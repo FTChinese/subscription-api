@@ -1,16 +1,14 @@
 package pw
 
-import "github.com/FTChinese/subscription-api/pkg/price"
-
 // PaywallProduct describes the data used to present to user on paywall.
 type PaywallProduct struct {
 	Product
-	Prices []price.PaywallPrice `json:"prices"`
+	Prices []PaywallPrice `json:"prices"`
 }
 
 // NewPaywallProducts zips price body with its prices.
 // Currently, we have two Product, and three price.PaywallPrice.
-func NewPaywallProducts(prods []Product, prices []price.PaywallPrice) []PaywallProduct {
+func NewPaywallProducts(prods []Product, prices []PaywallPrice) []PaywallProduct {
 	groupedPrices := groupProductPrices(prices)
 
 	var result = make([]PaywallProduct, 0)
@@ -21,7 +19,7 @@ func NewPaywallProducts(prods []Product, prices []price.PaywallPrice) []PaywallP
 
 		// If nothing found, assign it an empty array.
 		if !ok {
-			prodPrices = []price.PaywallPrice{}
+			prodPrices = []PaywallPrice{}
 		}
 
 		// Calculate daily price.
@@ -42,15 +40,15 @@ func NewPaywallProducts(prods []Product, prices []price.PaywallPrice) []PaywallP
 }
 
 // GroupProductPrices put prices with the same price id into the same group
-func groupProductPrices(prices []price.PaywallPrice) map[string][]price.PaywallPrice {
-	var g = make(map[string][]price.PaywallPrice)
+func groupProductPrices(prices []PaywallPrice) map[string][]PaywallPrice {
+	var g = make(map[string][]PaywallPrice)
 
 	for _, p := range prices {
 		found, ok := g[p.ProductID]
 		if ok {
 			found = append(found, p)
 		} else {
-			found = []price.PaywallPrice{p}
+			found = []PaywallPrice{p}
 		}
 		// Put price of the same price into the same group.
 		g[p.ProductID] = found

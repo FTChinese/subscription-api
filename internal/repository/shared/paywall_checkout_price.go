@@ -2,27 +2,28 @@ package shared
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/guregu/null"
 )
 
 // RetrieveFtcPrice retrieves a single row by plan id.
-func (env PaywallCommon) RetrieveFtcPrice(id string, live bool) (price.PaywallPrice, error) {
-	var p price.PaywallPrice
+func (env PaywallCommon) RetrieveFtcPrice(id string, live bool) (pw.PaywallPrice, error) {
+	var p pw.PaywallPrice
 	err := env.dbs.Read.Get(
 		&p,
-		price.StmtFtcPrice,
+		price.StmtPwPrice,
 		id,
 		live)
 
 	if err != nil {
-		return price.PaywallPrice{}, err
+		return pw.PaywallPrice{}, err
 	}
 
 	return p, nil
 }
 
 type asyncPriceResult struct {
-	value price.PaywallPrice
+	value pw.PaywallPrice
 	error error
 }
 

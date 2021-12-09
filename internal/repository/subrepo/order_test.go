@@ -11,6 +11,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
@@ -48,7 +49,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				counter: subs2.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
-						Price: price.MockPriceStdYear.Price,
+						Price: pw.MockPwPriceStdYear.Price,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodAli,
@@ -58,12 +59,12 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs2.Order{
 				ID:         "",
 				UserIDs:    newPersona.UserIDs(),
-				PlanID:     price.MockPriceStdYear.ID,
+				PlanID:     pw.MockPwPriceStdYear.ID,
 				DiscountID: null.String{},
-				Price:      price.MockPriceStdYear.UnitAmount,
-				Edition:    price.MockPriceStdYear.Edition,
+				Price:      pw.MockPwPriceStdYear.UnitAmount,
+				Edition:    pw.MockPwPriceStdYear.Edition,
 				Charge: price.Charge{
-					Amount:   price.MockPriceStdYear.UnitAmount,
+					Amount:   pw.MockPwPriceStdYear.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindCreate,
@@ -82,7 +83,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				counter: subs2.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
-						Price: price.MockPriceStdYear.Price,
+						Price: pw.MockPwPriceStdYear.Price,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodWx,
@@ -93,12 +94,12 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs2.Order{
 				ID:         "",
 				UserIDs:    renewalPerson.UserIDs(),
-				PlanID:     price.MockPriceStdYear.ID,
+				PlanID:     pw.MockPwPriceStdYear.ID,
 				DiscountID: null.String{},
-				Price:      price.MockPriceStdYear.UnitAmount,
-				Edition:    price.MockPriceStdYear.Edition,
+				Price:      pw.MockPwPriceStdYear.UnitAmount,
+				Edition:    pw.MockPwPriceStdYear.Edition,
 				Charge: price.Charge{
-					Amount:   price.MockPriceStdYear.UnitAmount,
+					Amount:   pw.MockPwPriceStdYear.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindRenew,
@@ -117,7 +118,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				counter: subs2.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
-						Price: price.MockPricePrm.Price,
+						Price: pw.MockPwPricePrm.Price,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodWx,
@@ -128,12 +129,12 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs2.Order{
 				ID:         "",
 				UserIDs:    upgradePerson.UserIDs(),
-				PlanID:     price.MockPricePrm.ID,
+				PlanID:     pw.MockPwPricePrm.ID,
 				DiscountID: null.String{},
-				Price:      price.MockPricePrm.UnitAmount,
-				Edition:    price.MockPricePrm.Edition,
+				Price:      pw.MockPwPricePrm.UnitAmount,
+				Edition:    pw.MockPwPricePrm.Edition,
 				Charge: price.Charge{
-					Amount:   price.MockPricePrm.UnitAmount,
+					Amount:   pw.MockPwPricePrm.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindUpgrade,
@@ -152,7 +153,7 @@ func TestEnv_CreateOrder(t *testing.T) {
 				counter: subs2.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
-						Price: price.MockPriceStdYear.Price,
+						Price: pw.MockPwPriceStdYear.Price,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodWx,
@@ -163,12 +164,12 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs2.Order{
 				ID:         "",
 				UserIDs:    addOnPerson.UserIDs(),
-				PlanID:     price.MockPriceStdYear.ID,
+				PlanID:     pw.MockPwPriceStdYear.ID,
 				DiscountID: null.String{},
-				Price:      price.MockPriceStdYear.UnitAmount,
-				Edition:    price.MockPriceStdYear.Edition,
+				Price:      pw.MockPwPriceStdYear.UnitAmount,
+				Edition:    pw.MockPwPriceStdYear.Edition,
 				Charge: price.Charge{
-					Amount:   price.MockPriceStdYear.UnitAmount,
+					Amount:   pw.MockPwPriceStdYear.UnitAmount,
 					Currency: "cny",
 				},
 				Kind:          enum.OrderKindAddOn,

@@ -8,7 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
@@ -43,7 +43,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 	// Order confirmed but not synced to membership
 	outOfSyncOrder := subs2.NewMockOrderBuilder("").
 		WithFtcID(uuid.New().String()).
-		WithPrice(price.MockPriceStdYear).
+		WithPrice(pw.MockPwPriceStdYear).
 		WithKind(enum.OrderKindRenew).
 		WithPayMethod(enum.PayMethodAli).
 		WithConfirmed().
@@ -114,7 +114,7 @@ func TestEnv_ConfirmOrder_Renewal(t *testing.T) {
 	repo := test.NewRepo()
 
 	memberPriorRenewal := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithPrice(price.MockPriceStdYear.Price).
+		WithPrice(pw.MockPwPriceStdYear.Price).
 		Build()
 
 	repo.MustSaveMembership(memberPriorRenewal)
@@ -145,7 +145,7 @@ func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
 
 	// Existing membership is standard
 	stdMmb := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithPrice(price.MockPriceStdYear.Price).
+		WithPrice(pw.MockPwPriceStdYear.Price).
 		Build()
 	repo.MustSaveMembership(stdMmb)
 
@@ -153,7 +153,7 @@ func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
 	order := subs2.NewMockOrderBuilder("").
 		WithFtcID(stdMmb.FtcID.String).
 		WithKind(enum.OrderKindUpgrade).
-		WithPrice(price.MockPricePrm).
+		WithPrice(pw.MockPwPricePrm).
 		Build()
 
 	repo.MustSaveOrder(order)
@@ -182,7 +182,7 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 
 	// Current membership comes from IAP.
 	iapMmb := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithPrice(price.MockPriceStdYear.Price).
+		WithPrice(pw.MockPwPriceStdYear.Price).
 		WithPayMethod(enum.PayMethodApple).
 		Build()
 	repo.MustSaveMembership(iapMmb)
