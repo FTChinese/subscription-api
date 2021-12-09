@@ -21,7 +21,7 @@ type MockOrderBuilder struct {
 	id         string
 	ftcID      string
 	unionID    string
-	price      price.FtcPrice
+	price      price.PaywallPrice
 	kind       enum.OrderKind
 	payMethod  enum.PayMethod
 	wxAppId    null.String
@@ -56,7 +56,7 @@ func (b MockOrderBuilder) WithUnionID(id string) MockOrderBuilder {
 	return b
 }
 
-func (b MockOrderBuilder) WithPrice(p price.FtcPrice) MockOrderBuilder {
+func (b MockOrderBuilder) WithPrice(p price.PaywallPrice) MockOrderBuilder {
 	b.price = p
 	return b
 }

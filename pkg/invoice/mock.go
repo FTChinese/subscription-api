@@ -1,3 +1,4 @@
+//go:build !production
 // +build !production
 
 package invoice
@@ -18,7 +19,7 @@ type MockInvoiceBuilder struct {
 	id          string
 	userID      string
 	orderID     string
-	price       price.FtcPrice
+	price       price.PaywallPrice
 	orderKind   enum.OrderKind
 	payMethod   enum.PayMethod
 	addOnSource addon.Source
@@ -57,7 +58,7 @@ func (b MockInvoiceBuilder) WithOrderID(id string) MockInvoiceBuilder {
 	return b
 }
 
-func (b MockInvoiceBuilder) WithPrice(p price.FtcPrice) MockInvoiceBuilder {
+func (b MockInvoiceBuilder) WithPrice(p price.PaywallPrice) MockInvoiceBuilder {
 	b.price = p
 	return b
 }

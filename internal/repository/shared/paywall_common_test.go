@@ -105,7 +105,7 @@ func TestEnv_listActivePrices(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []price.FtcPrice
+		want    []price.PaywallPrice
 		wantErr bool
 	}{
 		{

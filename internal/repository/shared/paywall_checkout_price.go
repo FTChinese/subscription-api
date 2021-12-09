@@ -6,8 +6,8 @@ import (
 )
 
 // RetrieveFtcPrice retrieves a single row by plan id.
-func (env PaywallCommon) RetrieveFtcPrice(id string, live bool) (price.FtcPrice, error) {
-	var p price.FtcPrice
+func (env PaywallCommon) RetrieveFtcPrice(id string, live bool) (price.PaywallPrice, error) {
+	var p price.PaywallPrice
 	err := env.dbs.Read.Get(
 		&p,
 		price.StmtFtcPrice,
@@ -15,14 +15,14 @@ func (env PaywallCommon) RetrieveFtcPrice(id string, live bool) (price.FtcPrice,
 		live)
 
 	if err != nil {
-		return price.FtcPrice{}, err
+		return price.PaywallPrice{}, err
 	}
 
 	return p, nil
 }
 
 type asyncPriceResult struct {
-	value price.FtcPrice
+	value price.PaywallPrice
 	error error
 }
 

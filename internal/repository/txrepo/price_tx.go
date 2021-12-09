@@ -19,7 +19,7 @@ func NewPriceTx(tx *sqlx.Tx) PriceTx {
 // all prices' under a product of the same edition
 // to ensure there won't be multiple editions being in active
 // state simultaneously.
-// The passed-in FtcPrice is the one that should be excluded
+// The passed-in PaywallPrice is the one that should be excluded
 // from deactivating.s
 func (tx PriceTx) DeactivateSiblingPrice(p price.Price) error {
 	_, err := tx.NamedExec(

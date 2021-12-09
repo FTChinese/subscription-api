@@ -19,7 +19,7 @@ func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
 	}
 }
 
-func (w Paywall) findFtcPrice(id string) (price.FtcPrice, error) {
+func (w Paywall) findFtcPrice(id string) (price.PaywallPrice, error) {
 	for _, prod := range w.Products {
 		for _, v := range prod.Prices {
 			if v.ID == id {
@@ -28,10 +28,10 @@ func (w Paywall) findFtcPrice(id string) (price.FtcPrice, error) {
 		}
 	}
 
-	return price.FtcPrice{}, errors.New("the requested price is not found")
+	return price.PaywallPrice{}, errors.New("the requested price is not found")
 }
 
-func (w Paywall) FindPriceByEdition(e price.Edition) (price.FtcPrice, error) {
+func (w Paywall) FindPriceByEdition(e price.Edition) (price.PaywallPrice, error) {
 	for _, prod := range w.Products {
 		for _, p := range prod.Prices {
 			if p.Edition == e {
@@ -40,7 +40,7 @@ func (w Paywall) FindPriceByEdition(e price.Edition) (price.FtcPrice, error) {
 		}
 	}
 
-	return price.FtcPrice{}, sql.ErrNoRows
+	return price.PaywallPrice{}, sql.ErrNoRows
 }
 
 func (w Paywall) FindCheckoutItem(priceID string, offerID null.String) (price.CheckoutItem, error) {

@@ -86,7 +86,7 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	_ = render.New(w).OK(price.FtcPrice{
+	_ = render.New(w).OK(price.PaywallPrice{
 		Price:  updated,
 		Offers: ftcPrice.Offers,
 	})
@@ -151,7 +151,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	_ = render.New(w).OK(price.FtcPrice{
+	_ = render.New(w).OK(price.PaywallPrice{
 		Price:  activated,
 		Offers: ftcPrice.Offers,
 	})
@@ -184,7 +184,7 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	_ = render.New(w).OK(price.FtcPrice{
+	_ = render.New(w).OK(price.PaywallPrice{
 		Price:  archived,
 		Offers: p.Offers,
 	})
