@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/stretchr/testify/assert"
@@ -410,12 +411,12 @@ func TestMembership_WithInvoice(t *testing.T) {
 			},
 			want: Membership{
 				UserIDs:       ids.NewFtcUserID(userID),
-				Edition:       price.MockPriceStdYear.Edition,
+				Edition:       pw.MockPwPriceStdYear.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
 				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(price.MockPriceStdYear.ID),
+				FtcPlanID:     null.StringFrom(pw.MockPwPriceStdYear.ID),
 				StripeSubsID:  null.String{},
 				StripePlanID:  null.String{},
 				AutoRenewal:   false,
@@ -439,12 +440,12 @@ func TestMembership_WithInvoice(t *testing.T) {
 			},
 			want: Membership{
 				UserIDs:       ids.NewFtcUserID(userID),
-				Edition:       price.MockPriceStdYear.Edition,
+				Edition:       pw.MockPwPriceStdYear.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
 				ExpireDate:    chrono.DateFrom(current.ExpireDate.AddDate(1, 0, 1)),
 				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(price.MockPriceStdYear.ID),
+				FtcPlanID:     null.StringFrom(pw.MockPwPriceStdYear.ID),
 				StripeSubsID:  null.String{},
 				StripePlanID:  null.String{},
 				AutoRenewal:   false,
@@ -462,19 +463,19 @@ func TestMembership_WithInvoice(t *testing.T) {
 				userID: ids.NewFtcUserID(userID),
 				inv: invoice.NewMockInvoiceBuilder().
 					WithFtcID(userID).
-					WithPrice(price.MockPricePrm).
+					WithPrice(pw.MockPwPricePrm).
 					WithOrderKind(enum.OrderKindUpgrade).
 					SetPeriodStart(time.Now()).
 					Build(),
 			},
 			want: Membership{
 				UserIDs:       ids.NewFtcUserID(userID),
-				Edition:       price.MockPricePrm.Edition,
+				Edition:       pw.MockPwPricePrm.Edition,
 				LegacyTier:    null.Int{},
 				LegacyExpire:  null.Int{},
 				ExpireDate:    chrono.DateFrom(time.Now().AddDate(1, 0, 1)),
 				PaymentMethod: enum.PayMethodAli,
-				FtcPlanID:     null.StringFrom(price.MockPricePrm.ID),
+				FtcPlanID:     null.StringFrom(pw.MockPwPricePrm.ID),
 				StripeSubsID:  null.String{},
 				StripePlanID:  null.String{},
 				AutoRenewal:   false,
@@ -569,7 +570,7 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 		{
 			name: "Standard add-on for premium",
 			fields: NewMockMemberBuilder(userID).
-				WithPrice(price.MockPricePrm.Price).
+				WithPrice(pw.MockPwPricePrm.Price).
 				Build(),
 			args: args{
 				e: price.StdYearEdition,
@@ -601,7 +602,7 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 			name: "Stripe premium purchase standard add-on",
 			fields: NewMockMemberBuilder(userID).
 				WithPayMethod(enum.PayMethodStripe).
-				WithPrice(price.MockPricePrm.Price).
+				WithPrice(pw.MockPwPricePrm.Price).
 				Build(),
 			args: args{
 				e: price.StdYearEdition,
@@ -613,7 +614,7 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 			name: "Stripe premium purchase premium add-on",
 			fields: NewMockMemberBuilder(userID).
 				WithPayMethod(enum.PayMethodStripe).
-				WithPrice(price.MockPricePrm.Price).
+				WithPrice(pw.MockPwPricePrm.Price).
 				Build(),
 			args: args{
 				e: price.PremiumEdition,
@@ -672,7 +673,7 @@ func TestMembership_SubsKindByStripe(t *testing.T) {
 			name: "Already Stripe Premium",
 			fields: NewMockMemberBuilder(userID).
 				WithPayMethod(enum.PayMethodStripe).
-				WithPrice(price.MockPricePrm.Price).
+				WithPrice(pw.MockPwPricePrm.Price).
 				Build(),
 			args: args{
 				e: price.StdYearEdition,

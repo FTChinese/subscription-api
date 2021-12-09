@@ -1,7 +1,8 @@
-package price
+package pw
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"reflect"
 	"testing"
 )
@@ -9,45 +10,45 @@ import (
 func TestFtcPrice_ApplicableOffer(t *testing.T) {
 
 	type args struct {
-		enjoys []OfferKind
+		enjoys []price.OfferKind
 	}
 	tests := []struct {
 		name   string
 		fields PaywallPrice
 		args   args
-		want   Discount
+		want   price.Discount
 	}{
 		{
 			name:   "New member no offer",
-			fields: MockPriceStdYear,
+			fields: MockPwPriceStdYear,
 			args: args{
-				enjoys: []OfferKind{
-					OfferKindPromotion,
+				enjoys: []price.OfferKind{
+					price.OfferKindPromotion,
 				},
 			},
-			want: Discount{},
+			want: price.Discount{},
 		},
 		{
 			name:   "Existing member enjoys retention offer",
-			fields: MockPriceStdYear,
+			fields: MockPwPriceStdYear,
 			args: args{
-				enjoys: []OfferKind{
-					OfferKindPromotion,
-					OfferKindRetention,
+				enjoys: []price.OfferKind{
+					price.OfferKindPromotion,
+					price.OfferKindRetention,
 				},
 			},
-			want: MockPriceStdYear.Offers[1],
+			want: MockPwPriceStdYear.Offers[1],
 		},
 		{
 			name:   "Expired member enjoys win-back offer",
-			fields: MockPriceStdYear,
+			fields: MockPwPriceStdYear,
 			args: args{
-				enjoys: []OfferKind{
-					OfferKindPromotion,
-					OfferKindWinBack,
+				enjoys: []price.OfferKind{
+					price.OfferKindPromotion,
+					price.OfferKindWinBack,
 				},
 			},
-			want: MockPriceStdYear.Offers[2],
+			want: MockPwPriceStdYear.Offers[2],
 		},
 	}
 	for _, tt := range tests {

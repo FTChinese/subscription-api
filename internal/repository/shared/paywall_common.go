@@ -170,13 +170,13 @@ func (env PaywallCommon) asyncRetrieveActiveProducts(live bool) <-chan productsR
 
 // activePricesResult contains a list of pricing plans and error occurred.
 type activePricesResult struct {
-	value []price.PaywallPrice
+	value []pw.PaywallPrice
 	error error
 }
 
 // ListActivePrices lists active prices of products on paywall, directly from DB.
-func (env PaywallCommon) ListActivePrices(live bool) ([]price.PaywallPrice, error) {
-	var prices = make([]price.PaywallPrice, 0)
+func (env PaywallCommon) ListActivePrices(live bool) ([]pw.PaywallPrice, error) {
+	var prices = make([]pw.PaywallPrice, 0)
 
 	err := env.dbs.Read.Select(
 		&prices,

@@ -3,7 +3,6 @@ package shared
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/pw"
 	"testing"
 )
@@ -105,7 +104,7 @@ func TestEnv_listActivePrices(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []price.PaywallPrice
+		want    []pw.PaywallPrice
 		wantErr bool
 	}{
 		{

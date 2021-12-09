@@ -10,6 +10,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"time"
@@ -19,7 +20,7 @@ type MockInvoiceBuilder struct {
 	id          string
 	userID      string
 	orderID     string
-	price       price.PaywallPrice
+	price       pw.PaywallPrice
 	orderKind   enum.OrderKind
 	payMethod   enum.PayMethod
 	addOnSource addon.Source
@@ -33,7 +34,7 @@ func NewMockInvoiceBuilder() MockInvoiceBuilder {
 		id:          ids.InvoiceID(),
 		userID:      uuid.New().String(),
 		orderID:     ids.MustOrderID(),
-		price:       price.MockPriceStdYear,
+		price:       pw.MockPwPriceStdYear,
 		orderKind:   enum.OrderKindCreate,
 		payMethod:   enum.PayMethodAli,
 		addOnSource: "",
@@ -58,7 +59,7 @@ func (b MockInvoiceBuilder) WithOrderID(id string) MockInvoiceBuilder {
 	return b
 }
 
-func (b MockInvoiceBuilder) WithPrice(p price.PaywallPrice) MockInvoiceBuilder {
+func (b MockInvoiceBuilder) WithPrice(p pw.PaywallPrice) MockInvoiceBuilder {
 	b.price = p
 	return b
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"time"
 
@@ -210,7 +210,7 @@ func (p *Persona) MemberBuilder() MemberBuilder {
 		accountKind:  p.kind,
 		ftcID:        p.FtcID,
 		unionID:      p.UnionID,
-		price:        price.MockPriceStdYear.Price,
+		price:        pw.MockPwPriceStdYear.Price,
 		payMethod:    enum.PayMethodAli,
 		expiration:   time.Now().AddDate(1, 0, 0),
 		subsStatus:   0,

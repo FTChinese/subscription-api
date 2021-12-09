@@ -10,6 +10,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"time"
@@ -41,7 +42,7 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 		accountKind: enum.AccountKindFtc,
 		ftcID:       ftcID,
 		unionID:     faker.GenWxID(),
-		price:       price.MockPriceStdYear.Price,
+		price:       pw.MockPwPriceStdYear.Price,
 		payMethod:   enum.PayMethodAli,
 		expiration:  time.Now().AddDate(0, 1, 0),
 	}
@@ -52,7 +53,7 @@ func NewMockMemberBuilderV2(k enum.AccountKind) MockMemberBuilder {
 		accountKind:  k,
 		ftcID:        uuid.New().String(),
 		unionID:      faker.GenWxID(),
-		price:        price.MockPriceStdYear.Price,
+		price:        pw.MockPwPriceStdYear.Price,
 		payMethod:    enum.PayMethodAli,
 		expiration:   time.Now().AddDate(0, 1, 0),
 		subsStatus:   0,

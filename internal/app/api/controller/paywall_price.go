@@ -4,6 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
@@ -86,7 +87,7 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	_ = render.New(w).OK(price.PaywallPrice{
+	_ = render.New(w).OK(pw.PaywallPrice{
 		Price:  updated,
 		Offers: ftcPrice.Offers,
 	})
@@ -151,7 +152,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	_ = render.New(w).OK(price.PaywallPrice{
+	_ = render.New(w).OK(pw.PaywallPrice{
 		Price:  activated,
 		Offers: ftcPrice.Offers,
 	})
@@ -184,7 +185,7 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	_ = render.New(w).OK(price.PaywallPrice{
+	_ = render.New(w).OK(pw.PaywallPrice{
 		Price:  archived,
 		Offers: p.Offers,
 	})

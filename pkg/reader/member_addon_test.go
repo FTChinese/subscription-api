@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"reflect"
@@ -251,7 +252,7 @@ func TestMembership_ClaimAddOns(t *testing.T) {
 						Build(),
 					invoice.NewMockInvoiceBuilder().
 						WithFtcID(userID).
-						WithPrice(price.MockPricePrm).
+						WithPrice(pw.MockPwPricePrm).
 						WithOrderKind(enum.OrderKindAddOn).
 						Build(),
 				},

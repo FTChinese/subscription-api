@@ -3,7 +3,7 @@ package test
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"testing"
 )
@@ -11,7 +11,7 @@ import (
 func TestRepo_SaveMembership(t *testing.T) {
 	p := NewPersona()
 
-	err := NewRepo().SaveMembership(p.MemberBuilder().WithPrice(price.MockPriceStdYear.Price).Build())
+	err := NewRepo().SaveMembership(p.MemberBuilder().WithPrice(pw.MockPwPriceStdYear.Price).Build())
 
 	if err != nil {
 		t.Error(err)
