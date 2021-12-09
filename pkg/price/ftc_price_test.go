@@ -13,7 +13,7 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 	}
 	tests := []struct {
 		name   string
-		fields FtcPrice
+		fields PaywallPrice
 		args   args
 		want   Discount
 	}{
@@ -52,7 +52,7 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := FtcPrice{
+			f := PaywallPrice{
 				Price:  tt.fields.Price,
 				Offers: tt.fields.Offers,
 			}

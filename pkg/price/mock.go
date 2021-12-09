@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var MockPriceStdYear = FtcPrice{
+var MockPriceStdYear = PaywallPrice{
 	Price: Price{
 		ID: "plan_MynUQDQY1TSQ",
 		Edition: Edition{
@@ -73,7 +73,7 @@ var MockPriceStdYear = FtcPrice{
 	},
 }
 
-var MockPriceStdMonth = FtcPrice{
+var MockPriceStdMonth = PaywallPrice{
 	Price: Price{
 		ID: "plan_1Uz4hrLy3Mzy",
 		Edition: Edition{
@@ -106,7 +106,7 @@ var MockPriceStdMonth = FtcPrice{
 	},
 }
 
-var MockPricePrm = FtcPrice{
+var MockPricePrm = PaywallPrice{
 	Price: Price{
 		ID: "plan_vRUzRQ3aglea",
 		Edition: Edition{
