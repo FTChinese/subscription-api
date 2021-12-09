@@ -71,7 +71,7 @@ func (env Env) ActivatePrice(ftcPrice price.Price) error {
 }
 
 // UpdateFtcPriceOffers after a new discount is created/paused/cancelled under this price.
-func (env Env) UpdateFtcPriceOffers(f price.FtcPrice) error {
+func (env Env) UpdateFtcPriceOffers(f price.PaywallPrice) error {
 	_, err := env.dbs.Write.NamedExec(price.StmtSetPriceOffers, f)
 
 	if err != nil {
@@ -83,16 +83,16 @@ func (env Env) UpdateFtcPriceOffers(f price.FtcPrice) error {
 
 // RefreshFtcPriceOffers retrieves all discounts of a price
 // and save them as JSON in the price's row.
-func (env Env) RefreshFtcPriceOffers(f price.FtcPrice) (price.FtcPrice, error) {
+func (env Env) RefreshFtcPriceOffers(f price.PaywallPrice) (price.PaywallPrice, error) {
 	offers, err := env.ListActiveDiscounts(f.ID, f.LiveMode)
 	if err != nil {
-		return price.FtcPrice{}, err
+		return price.PaywallPrice{}, err
 	}
 
 	updated := f.SetOffers(offers)
 	err = env.UpdateFtcPriceOffers(updated)
 	if err != nil {
-		return price.FtcPrice{}, err
+		return price.PaywallPrice{}, err
 	}
 
 	return updated, nil
@@ -101,8 +101,8 @@ func (env Env) RefreshFtcPriceOffers(f price.FtcPrice) (price.FtcPrice, error) {
 // ListPrices retrieves all prices of a product, regardless whether they are live or not.
 // This is used by CMS to list a product's prices so that
 // user should be able to activate an inactive one.
-func (env Env) ListPrices(prodID string, live bool) ([]price.FtcPrice, error) {
-	var list = make([]price.FtcPrice, 0)
+func (env Env) ListPrices(prodID string, live bool) ([]price.PaywallPrice, error) {
+	var list = make([]price.PaywallPrice, 0)
 	err := env.dbs.Read.Select(
 		&list,
 		price.StmtListPricesOfProduct,
@@ -127,7 +127,7 @@ func (env Env) ArchivePrice(p price.Price) error {
 
 // ArchivePriceDiscounts turns all discount under a price into
 // cancelled mode.
-func (env Env) ArchivePriceDiscounts(p price.FtcPrice) error {
+func (env Env) ArchivePriceDiscounts(p price.PaywallPrice) error {
 	_, err := env.dbs.Write.NamedExec(price.StmtArchivePriceDiscounts, p)
 	if err != nil {
 		return err
