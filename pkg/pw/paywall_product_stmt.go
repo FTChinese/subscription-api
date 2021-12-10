@@ -4,7 +4,7 @@ package pw
 // Current active products under paywall is specified by
 // paywall_product table. By joining it with product table
 // you will retrieve only those put on paywall.
-const StmtPaywallProducts = colProduct + `
+const StmtPaywallProducts = colSelectProduct + `
 FROM subs_product.paywall_product_v4 AS pp
 	LEFT JOIN subs_product.product AS prod
 		ON pp.product_id = prod.id
