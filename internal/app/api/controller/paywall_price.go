@@ -10,6 +10,7 @@ import (
 )
 
 // ListPrices retrieves all prices under a product.
+// The price's discounts column will be included.
 func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request) {
 	productID, err := gorest.GetQueryParam(req, "product_id").ToString()
 	if err != nil {
@@ -37,6 +38,7 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 // - productId: string
 // - stripePriceId: string
 // - unitAmount: number
+// The returned has no offers set yet.
 func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request) {
 	var params price.CreationParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -135,21 +137,21 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	ftcPrice, err := router.PaywallRepo.RetrievePaywallPrice(priceID, router.Live)
+	pwPrice, err := router.PaywallRepo.RetrievePaywallPrice(priceID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
 		return
 	}
 
-	_, err = router.StripePriceRepo.LoadPrice(ftcPrice.StripePriceID, router.Live)
+	_, err = router.StripePriceRepo.LoadPrice(pwPrice.StripePriceID, router.Live)
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		sugar.Error(err)
 		return
 	}
 
-	activated := ftcPrice.Price.Activate()
+	activated := pwPrice.Price.Activate()
 
 	err = router.ProductRepo.ActivatePrice(activated)
 	if err != nil {
@@ -157,12 +159,17 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	// If the price is a one_time price,
 	_ = render.New(w).OK(pw.PaywallPrice{
 		Price:  activated,
-		Offers: ftcPrice.Offers,
+		Offers: pwPrice.Offers,
 	})
 }
 
+// ArchivePrice flags a price as deleted.
+// It should never be touched after this operation.
+// The returned price has no offers attached since they are
+// all removed.
 func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Request) {
 	priceID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -196,8 +203,7 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	_ = render.New(w).OK(pw.PaywallPrice{
-		Price:  archived,
-		Offers: p.Offers,
-	})
+	// The offers are already removed from price.
+	// Simply return the price without offers.
+	_ = render.New(w).OK(archived)
 }
