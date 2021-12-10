@@ -1,7 +1,5 @@
 package pw
 
-import "github.com/FTChinese/subscription-api/pkg/price"
-
 // StmtSetPriceOffers updates price's discount list column.
 const StmtSetPriceOffers = `
 UPDATE subs_product.price
@@ -10,11 +8,42 @@ WHERE id = :price_id
 LIMIT 1
 `
 
+const colPriceWithOffers = `
+SELECT p.id AS price_id,
+	p.tier,
+	p.cycle,
+	p.is_active AS is_active,
+	p.archived AS archived,
+	p.currency AS currency,
+	p.kind AS kind,
+	p.live_mode AS live_mode,
+	p.nickname AS nickname,
+	p.period_count AS period_count,
+	p.product_id AS product_id,
+	IFNULL(stripe_price_id, '') AS stripe_price_id,
+	p.title AS title,
+	p.unit_amount AS unit_amount,
+	p.discount_list AS discount_list,
+	p.start_utc,
+	p.end_utc,
+	p.created_utc
+FROM subs_product.price AS p
+`
+
 // StmtSelectPaywallPrice retrieves a row from plan table, regardless of archived or not.
-const StmtSelectPaywallPrice = price.ColPaywallPrice + `
+const StmtSelectPaywallPrice = colPriceWithOffers + `
 WHERE p.id = ?
 	AND live_mode = ?
 LIMIT 1
+`
+
+// StmtListProductPrices retrieves all prices under a product,
+// whether they are active or not, as long as not archived.
+const StmtListProductPrices = colPriceWithOffers + `
+WHERE p.product_id = ?
+	AND p.live_mode = ?
+	AND p.archived = FALSE
+ORDER BY p.is_active DESC, p.cycle DESC, p.created_utc DESC
 `
 
 // StmtListPaywallPrice retrieves all active recurring prices
@@ -23,13 +52,13 @@ LIMIT 1
 // table and filter out those nullable product id.
 // NOTE we don't need an extra table to record which prices
 // are put on paywall.
-const StmtListPaywallPrice = price.ColPaywallPrice + `
+const StmtListPaywallPrice = colPriceWithOffers + `
 LEFT JOIN subs_product.paywall_product_v4 AS active_prod
 	ON p.product_id = active_prod.product_id
 WHERE active_prod.product_id IS NOT NULL
 	AND p.is_active = TRUE
 	AND p.archived = FALSE
 	AND p.kind = 'recurring'
-	AND p.live_mode = ? 
+	AND p.live_mode = ?
 ORDER BY p.cycle DESC
 `
