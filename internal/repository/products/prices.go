@@ -105,7 +105,9 @@ func (env Env) ListPrices(prodID string, live bool) ([]pw.PaywallPrice, error) {
 }
 
 func (env Env) ArchivePrice(p price.Price) error {
-	_, err := env.dbs.Write.NamedExec(price.StmtArchivePrice, p)
+	_, err := env.dbs.Write.NamedExec(
+		price.StmtArchivePrice,
+		p)
 	if err != nil {
 		return err
 	}

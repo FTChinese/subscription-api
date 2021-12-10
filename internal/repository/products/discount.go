@@ -64,7 +64,9 @@ func (env Env) ListDiscounts(priceID string, live bool) ([]price.Discount, error
 // ArchivePriceDiscounts turns all discount under a price into
 // cancelled mode.
 func (env Env) ArchivePriceDiscounts(p pw.PaywallPrice) error {
-	_, err := env.dbs.Write.NamedExec(price.StmtArchivePriceDiscounts, p)
+	_, err := env.dbs.Write.NamedExec(
+		price.StmtArchivePriceDiscounts,
+		p)
 	if err != nil {
 		return err
 	}
