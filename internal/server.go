@@ -489,13 +489,16 @@ func StartServer(s ServerStatus) {
 			r.Get("/{id}", paywallRouter.LoadProduct)
 			r.Patch("/{id}", paywallRouter.UpdateProduct)
 			r.Post("/{id}/activate", paywallRouter.ActivateProduct)
+			r.Post("/{id}/intro", paywallRouter.SetIntroPrice)
+			r.Delete("/{id}/intro", paywallRouter.DropIntroPrice)
 		})
 
 		// The following are used by CMS to create/update prices and discounts.
 		r.Route("/prices", func(r chi.Router) {
 			// Get a list of prices under a product. This does not distinguish is_active or live_mode
 			// ?product_id=<string>
-			r.With(xhttp.FormParsed).Get("/", paywallRouter.ListPrices)
+			r.With(xhttp.FormParsed).
+				Get("/", paywallRouter.ListPrices)
 			// Create a price for a product. The price's live mode is determined by client.
 			r.Post("/", paywallRouter.CreatePrice)
 			r.Post("/{id}/activate", paywallRouter.ActivatePrice)
