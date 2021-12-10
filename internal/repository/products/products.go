@@ -1,6 +1,8 @@
 package products
 
-import "github.com/FTChinese/subscription-api/pkg/pw"
+import (
+	"github.com/FTChinese/subscription-api/pkg/pw"
+)
 
 func (env Env) ListProducts(live bool) ([]pw.Product, error) {
 	var list = make([]pw.Product, 0)
@@ -90,6 +92,18 @@ func (env Env) SetProductOnPaywall(p pw.Product) error {
 	}
 
 	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (env Env) SetProductIntro(p pw.Product) error {
+	_, err := env.dbs.Write.NamedExec(
+		pw.StmtSetProductIntro,
+		p)
+
+	if err != nil {
 		return err
 	}
 
