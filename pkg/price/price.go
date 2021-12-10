@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
@@ -11,7 +12,7 @@ import (
 )
 
 type UpdateParams struct {
-	Description   null.String `json:"description"`
+	Title         null.String `json:"title"`
 	Nickname      null.String `json:"nickname"`
 	StripePriceID string      `json:"stripePriceId"`
 }
@@ -24,28 +25,20 @@ func (p UpdateParams) Validate() *render.ValidationError {
 // A new plan is always created under a certain product.
 // Therefore, the input data does not have tier field.
 type CreationParams struct {
-	CreatedBy string `json:"createdBy"`
-	Kind      Kind   `json:"kind"`
+	Kind Kind `json:"kind"`
 	Edition
 	UpdateParams
-	ProductID  string  `json:"productId"`
-	UnitAmount float64 `json:"unitAmount"`
+	PeriodCount dt.YearMonthDayJSON `json:"periodCount"`
+	ProductID   string              `json:"productId"`
+	StartUTC    chrono.Time         `json:"startUtc"`
+	EndUTC      chrono.Time         `json:"endUtc"`
+	UnitAmount  float64             `json:"unitAmount"`
 }
 
 // Validate checks whether the input data to create a new plan is valid.
 // `productTier` is used to specify for which edition of product this plan is created.
 // Premium product is not allowed to have a monthly pricing plan.
 func (p *CreationParams) Validate() *render.ValidationError {
-
-	p.Description.String = strings.TrimSpace(p.Description.String)
-
-	if p.Cycle == enum.CycleNull {
-		return &render.ValidationError{
-			Message: "Invalid cycle",
-			Field:   "cycle",
-			Code:    render.CodeInvalid,
-		}
-	}
 
 	if p.UnitAmount <= 0 {
 		return &render.ValidationError{
@@ -54,6 +47,60 @@ func (p *CreationParams) Validate() *render.ValidationError {
 			Code:    render.CodeInvalid,
 		}
 	}
+
+	if p.PeriodCount.IsZero() {
+		return &render.ValidationError{
+			Message: "Purchase period is required",
+			Field:   "periodCount",
+			Code:    render.CodeMissingField,
+		}
+	}
+
+	if p.Kind == KindRecurring {
+		if p.Cycle == enum.CycleNull {
+			return &render.ValidationError{
+				Message: "Invalid cycle",
+				Field:   "cycle",
+				Code:    render.CodeInvalid,
+			}
+		}
+
+		if !p.StartUTC.IsZero() {
+			return &render.ValidationError{
+				Message: "Recurring price should not set effective time",
+				Field:   "startUtc",
+				Code:    render.CodeInvalid,
+			}
+		}
+
+		if !p.EndUTC.IsZero() {
+			return &render.ValidationError{
+				Message: "Recurring price should not set effective time",
+				Field:   "endUtc",
+				Code:    render.CodeInvalid,
+			}
+		}
+	}
+
+	if p.Kind == KindOneTime {
+		if p.StartUTC.IsZero() {
+			return &render.ValidationError{
+				Message: "Recurring price should not set effective time",
+				Field:   "startUtc",
+				Code:    render.CodeMissingField,
+			}
+		}
+
+		if p.EndUTC.IsZero() {
+			return &render.ValidationError{
+				Message: "Recurring price should not set effective time",
+				Field:   "endUtc",
+				Code:    render.CodeMissingField,
+			}
+		}
+	}
+
+	p.Title.String = strings.TrimSpace(p.Title.String)
 
 	ve := validator.New("productId").Required().Validate(p.ProductID)
 	if ve != nil {
@@ -66,20 +113,22 @@ func (p *CreationParams) Validate() *render.ValidationError {
 // Price presents the price of a price. It unified prices coming
 // from various source, e.g., FTC in-house or Stripe API.
 type Price struct {
-	ID string `json:"id" db:"price_id"`
-	Edition
-	Active        bool        `json:"active" db:"is_active"`
-	Archived      bool        `json:"archived" db:"archived"`
-	Currency      Currency    `json:"currency" db:"currency"`
-	Description   null.String `json:"description" db:"description"`
-	Kind          Kind        `json:"kind" db:"kind"`
-	LiveMode      bool        `json:"liveMode" db:"live_mode"`
-	Nickname      null.String `json:"nickname" db:"nickname"`
-	ProductID     string      `json:"productId" db:"product_id"`
-	StripePriceID string      `json:"stripePriceId" db:"stripe_price_id"`
-	UnitAmount    float64     `json:"unitAmount" db:"unit_amount"`
-	CreatedUTC    chrono.Time `json:"createdUtc" db:"created_utc"`
-	CreatedBy     string      `json:"createdBy" db:"created_by"` // Use-facing client should ignore this field.
+	ID            string              `json:"id" db:"price_id"`
+	Edition                           // Sibling requirement
+	Active        bool                `json:"active" db:"is_active"`
+	Archived      bool                `json:"archived" db:"archived"` // Once archived, it should never be touched.
+	Currency      Currency            `json:"currency" db:"currency"`
+	Kind          Kind                `json:"kind" db:"kind"`          // Sibling requirement
+	LiveMode      bool                `json:"liveMode" db:"live_mode"` // Sibling requirement
+	Nickname      null.String         `json:"nickname" db:"nickname"`
+	PeriodCount   dt.YearMonthDayJSON `json:"periodCount" db:"period_count"`
+	ProductID     string              `json:"productId" db:"product_id"` // Sibling requirement. Price's parent.
+	StripePriceID string              `json:"stripePriceId" db:"stripe_price_id"`
+	Title         null.String         `json:"title" db:"title"`
+	UnitAmount    float64             `json:"unitAmount" db:"unit_amount"`
+	StartUTC      chrono.Time         `json:"startUtc" db:"start_utc"`
+	EndUTC        chrono.Time         `json:"endUtc" db:"end_utc"`
+	CreatedUTC    chrono.Time         `json:"createdUtc" db:"created_utc"`
 }
 
 func New(p CreationParams, live bool) Price {
@@ -89,26 +138,31 @@ func New(p CreationParams, live bool) Price {
 		Active:        false,
 		Archived:      false,
 		Currency:      "cny",
-		Description:   p.Description,
+		Title:         p.Title,
 		Kind:          p.Kind,
 		LiveMode:      live,
 		Nickname:      p.Nickname,
+		PeriodCount:   p.PeriodCount,
 		ProductID:     p.ProductID,
 		StripePriceID: p.StripePriceID,
 		UnitAmount:    p.UnitAmount,
+		StartUTC:      p.StartUTC,
+		EndUTC:        p.EndUTC,
 		CreatedUTC:    chrono.TimeNow(),
-		CreatedBy:     p.CreatedBy,
 	}
 }
 
+// Update modifies an existing price.
+// Only the field listed here is modifiable.
 func (p Price) Update(params UpdateParams) Price {
-	p.Description = params.Description
+	p.Title = params.Title
 	p.Nickname = params.Nickname
 	p.StripePriceID = params.StripePriceID
 
 	return p
 }
 
+// Activate put a price on paywall.
 func (p Price) Activate() Price {
 	p.Active = true
 
@@ -119,6 +173,8 @@ func (p Price) Activate() Price {
 // No idea why I created this.
 func (p Price) Archive() Price {
 	p.Archived = true
+	p.Active = false
+
 	return p
 }
 
