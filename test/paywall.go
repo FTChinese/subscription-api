@@ -1,3 +1,6 @@
+//go:build !production
+// +build !production
+
 package test
 
 import (
@@ -98,8 +101,9 @@ func (b ProductBuilder) NewPriceBuilder(c enum.Cycle) PriceBuilder {
 			Tier:  b.tier,
 			Cycle: c,
 		},
-		live:   true,
+		live:   false,
 		active: false,
+		kind:   price.KindRecurring,
 	}
 }
 
@@ -117,6 +121,7 @@ type PriceBuilder struct {
 	edition   price.Edition
 	live      bool
 	active    bool
+	kind      price.Kind
 }
 
 func (b PriceBuilder) WithLive() PriceBuilder {
@@ -134,6 +139,16 @@ func (b PriceBuilder) WithActive() PriceBuilder {
 	return b
 }
 
+func (b PriceBuilder) WithOneTime() PriceBuilder {
+	b.kind = price.KindOneTime
+	return b
+}
+
+func (b PriceBuilder) WithRecurring() PriceBuilder {
+	b.kind = price.KindRecurring
+	return b
+}
+
 func (b PriceBuilder) Build() price.Price {
 	var amount float64
 	if b.edition == price.StdMonthEdition {
@@ -144,19 +159,26 @@ func (b PriceBuilder) Build() price.Price {
 		amount = 1998
 	}
 
-	return price.Price{
-		ID:          b.priceID,
-		Edition:     b.edition,
-		Active:      b.active,
-		Currency:    "cny",
-		Description: null.String{},
-		LiveMode:    b.live,
-		Nickname:    null.String{},
-		ProductID:   b.productID,
-		UnitAmount:  amount,
-		CreatedUTC:  chrono.TimeNow(),
-		CreatedBy:   gofakeit.Username(),
+	p := price.New(price.CreationParams{
+		Kind:    b.kind,
+		Edition: b.edition,
+		UpdateParams: price.UpdateParams{
+			Title:         null.StringFrom(gofakeit.Sentence(3)),
+			Nickname:      null.StringFrom(gofakeit.Sentence(2)),
+			StripePriceID: faker.GenStripePriceID(),
+		},
+		PeriodCount: dt.YearMonthDayJSON{
+			YearMonthDay: dt.NewYearMonthDay(b.edition.Cycle),
+		},
+		ProductID:  b.productID,
+		UnitAmount: amount,
+	}, b.live)
+
+	if b.active {
+		return p.Activate()
 	}
+
+	return p
 }
 
 func (b PriceBuilder) NewDiscountBuilder() DiscountBuilder {
