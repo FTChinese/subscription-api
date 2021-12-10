@@ -4,6 +4,6 @@ package price
 type Kind string
 
 const (
-	KindRegular Kind = "regular"
-	KindIntro   Kind = "introductory"
+	KindRecurring Kind = "recurring"
+	KindOneTime   Kind = "one_time"
 )
