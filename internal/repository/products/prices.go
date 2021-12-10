@@ -15,11 +15,11 @@ func (env Env) CreatePrice(p price.Price) error {
 	return nil
 }
 
-// UpdateFtcPrice updates a price's description and stripe price id.
-func (env Env) UpdateFtcPrice(f price.Price) error {
+// UpdatePrice updates a price's description and stripe price id.
+func (env Env) UpdatePrice(p price.Price) error {
 	_, err := env.dbs.Write.NamedExec(
 		price.StmtUpdatePrice,
-		f)
+		p)
 
 	if err != nil {
 		return err
@@ -31,37 +31,24 @@ func (env Env) UpdateFtcPrice(f price.Price) error {
 // ActivatePrice flags a price as active while all other
 // prices of the same edition and same live mode under the same product id
 // is turned to inactive.
-func (env Env) ActivatePrice(ftcPrice price.Price) error {
+func (env Env) ActivatePrice(p price.Price) error {
 	tx, err := env.beginPriceTx()
 	if err != nil {
 		return err
 	}
 
 	// Deactivate all other prices.
-	err = tx.DeactivateSiblingPrice(ftcPrice)
+	err = tx.DeactivateSiblingPrice(p)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
 	}
-
-	ftcPrice = ftcPrice.Activate()
 
 	// Activate the price
-	err = tx.ActivatePrice(ftcPrice)
+	err = tx.ActivatePrice(p)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
-	}
-
-	// Handle legacy activation approach.
-	// Due to table's unique constraint design, product_id and cycle combined must be unique,
-	// we cannot insert multiple price of the same cycle under the same product.
-	if ftcPrice.LiveMode {
-		err = tx.ActivatePriceLegacy(ftcPrice)
-		if err != nil {
-			_ = tx.Rollback()
-			return err
-		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -71,9 +58,9 @@ func (env Env) ActivatePrice(ftcPrice price.Price) error {
 	return nil
 }
 
-// UpdateFtcPriceOffers after a new discount is created/paused/cancelled under this price.
-func (env Env) UpdateFtcPriceOffers(f pw.PaywallPrice) error {
-	_, err := env.dbs.Write.NamedExec(price.StmtSetPriceOffers, f)
+// UpdatePriceOffers after a new discount is created/paused/cancelled under this price.
+func (env Env) UpdatePriceOffers(pwp pw.PaywallPrice) error {
+	_, err := env.dbs.Write.NamedExec(pw.StmtSetPriceOffers, pwp)
 
 	if err != nil {
 		return err
@@ -82,16 +69,16 @@ func (env Env) UpdateFtcPriceOffers(f pw.PaywallPrice) error {
 	return nil
 }
 
-// RefreshFtcPriceOffers retrieves all discounts of a price
+// RefreshPriceOffers retrieves all discounts of a price
 // and save them as JSON in the price's row.
-func (env Env) RefreshFtcPriceOffers(f pw.PaywallPrice) (pw.PaywallPrice, error) {
-	offers, err := env.ListActiveDiscounts(f.ID, f.LiveMode)
+func (env Env) RefreshPriceOffers(p pw.PaywallPrice) (pw.PaywallPrice, error) {
+	offers, err := env.ListActiveDiscounts(p.ID, p.LiveMode)
 	if err != nil {
 		return pw.PaywallPrice{}, err
 	}
 
-	updated := f.SetOffers(offers)
-	err = env.UpdateFtcPriceOffers(updated)
+	updated := p.SetOffers(offers)
+	err = env.UpdatePriceOffers(updated)
 	if err != nil {
 		return pw.PaywallPrice{}, err
 	}
@@ -119,17 +106,6 @@ func (env Env) ListPrices(prodID string, live bool) ([]pw.PaywallPrice, error) {
 
 func (env Env) ArchivePrice(p price.Price) error {
 	_, err := env.dbs.Write.NamedExec(price.StmtArchivePrice, p)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ArchivePriceDiscounts turns all discount under a price into
-// cancelled mode.
-func (env Env) ArchivePriceDiscounts(p pw.PaywallPrice) error {
-	_, err := env.dbs.Write.NamedExec(price.StmtArchivePriceDiscounts, p)
 	if err != nil {
 		return err
 	}
