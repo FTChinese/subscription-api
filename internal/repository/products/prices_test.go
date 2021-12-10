@@ -260,13 +260,13 @@ func TestEnv_ListPrices(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := env.ListPrices(tt.args.prodID, tt.args.live)
+			got, err := env.ListProductPrices(tt.args.prodID, tt.args.live)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListPrices() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListProductPrices() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("ListPrices() got = %v, want %v", got, tt.want)
+			//	t.Errorf("ListProductPrices() got = %v, want %v", got, tt.want)
 			//}
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
