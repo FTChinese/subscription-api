@@ -22,14 +22,6 @@ func NewPaywallProducts(prods []Product, prices []PaywallPrice) []PaywallProduct
 			prodPrices = []PaywallPrice{}
 		}
 
-		// Calculate daily price.
-		//for _, pp := range prodPrices {
-		//	dailyCost := pp.DailyCost()
-		//	// Replace daily price placeholder in price body.
-		//	desc := strings.Replace(prod.Description.String, dailyCost.Holder, dailyCost.Replacer, 1)
-		//	prod.Description = null.NewString(desc, desc != "")
-		//}
-
 		result = append(result, PaywallProduct{
 			Product: prod,
 			Prices:  prodPrices,
