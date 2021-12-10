@@ -234,7 +234,7 @@ func (b MockMemberBuilder) Build() Membership {
 
 	case enum.PayMethodStripe:
 		m.StripeSubsID = null.StringFrom(b.stripeSubsID)
-		m.StripePlanID = null.StringFrom(faker.GenStripePlanID())
+		m.StripePlanID = null.StringFrom(faker.GenStripePriceID())
 
 	case enum.PayMethodApple:
 		m.AppleSubsID = null.StringFrom(b.iapTxID)
