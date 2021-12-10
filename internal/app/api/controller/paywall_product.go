@@ -44,19 +44,6 @@ func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Reque
 
 	p := pw.NewProduct(params, router.Live)
 
-	if p.Introductory.StripePriceID.Valid {
-		_, err := router.StripePriceRepo.LoadPrice(p.Introductory.StripePriceID.String, router.Live)
-		if err != nil {
-			sugar.Error(err)
-			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: err.Error(),
-				Field:   "introductory.stripePriceId",
-				Code:    render.CodeInvalid,
-			})
-			return
-		}
-	}
-
 	err := router.ProductRepo.CreateProduct(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
@@ -109,19 +96,6 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	if params.Introductory.StripePriceID.Valid {
-		_, err := router.StripePriceRepo.LoadPrice(params.Introductory.StripePriceID.String, router.Live)
-		if err != nil {
-			sugar.Error(err)
-			_ = render.New(w).Unprocessable(&render.ValidationError{
-				Message: err.Error(),
-				Field:   "introductory.stripePriceId",
-				Code:    render.CodeInvalid,
-			})
-			return
-		}
-	}
-
 	sugar.Infof("Retrieving product %s", id)
 
 	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
@@ -161,6 +135,106 @@ func (router PaywallRouter) ActivateProduct(w http.ResponseWriter, req *http.Req
 	err = router.ProductRepo.SetProductOnPaywall(prod)
 	if err != nil {
 		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(prod)
+}
+
+// SetIntroPrice activate an existing one_time price as
+// introductory price for this product
+// Request body:
+// - priceId: string;
+func (router PaywallRouter) SetIntroPrice(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
+	id, err := xhttp.GetURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		sugar.Error(err)
+		return
+	}
+
+	var params pw.ProductIntroParams
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		sugar.Error(err)
+		return
+	}
+
+	pwPrice, err := router.PaywallRepo.RetrievePaywallPrice(
+		params.PriceID,
+		router.Live)
+
+	if !pwPrice.IsOneTime() {
+		_ = render.New(w).Unprocessable(&render.ValidationError{
+			Message: "Only one_time price could be used for introductory",
+			Field:   "priceId",
+			Code:    render.CodeInvalid,
+		})
+		return
+	}
+
+	activated := pwPrice.Activate()
+	if !pwPrice.Active {
+		err = router.ProductRepo.ActivatePrice(activated)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			sugar.Error(err)
+			return
+		}
+	}
+
+	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		sugar.Error(err)
+		return
+	}
+
+	prod = prod.SetIntroPrice(activated)
+
+	err = router.ProductRepo.SetProductIntro(prod)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		sugar.Error(err)
+		return
+	}
+
+	_ = render.New(w).OK(prod)
+}
+
+func (router PaywallRouter) DropIntroPrice(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
+	id, err := xhttp.GetURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		sugar.Error(err)
+		return
+	}
+
+	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		sugar.Error(err)
+		return
+	}
+
+	err = router.ProductRepo.DeactivatePrice(prod.Introductory.Deactivate())
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		sugar.Error(err)
+		return
+	}
+
+	prod = prod.DropIntroPrice()
+	err = router.ProductRepo.SetProductIntro(prod)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		sugar.Error(err)
 		return
 	}
 
