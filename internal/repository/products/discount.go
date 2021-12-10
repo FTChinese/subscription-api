@@ -1,6 +1,9 @@
 package products
 
-import "github.com/FTChinese/subscription-api/pkg/price"
+import (
+	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
+)
 
 func (env Env) CreateDiscount(d price.Discount) error {
 
@@ -42,15 +45,29 @@ func (env Env) ListActiveDiscounts(priceID string, live bool) ([]price.Discount,
 	return list, nil
 }
 
-func (env Env) ListDiscounts(priceID string) ([]price.Discount, error) {
+// ListDiscounts retrieves all discounts under a price.
+// It seems this is not of much use.
+func (env Env) ListDiscounts(priceID string, live bool) ([]price.Discount, error) {
 	var list = make([]price.Discount, 0)
 	err := env.dbs.Read.Select(
 		&list,
 		price.StmtListDiscountsOfPrice,
-		priceID)
+		priceID,
+		live)
 	if err != nil {
 		return nil, err
 	}
 
 	return list, nil
+}
+
+// ArchivePriceDiscounts turns all discount under a price into
+// cancelled mode.
+func (env Env) ArchivePriceDiscounts(p pw.PaywallPrice) error {
+	_, err := env.dbs.Write.NamedExec(price.StmtArchivePriceDiscounts, p)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
