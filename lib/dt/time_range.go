@@ -25,27 +25,12 @@ func (r TimeRange) WithDate(d YearMonthDay) TimeRange {
 }
 
 func (r TimeRange) WithCycle(cycle enum.Cycle) TimeRange {
-	switch cycle {
-	case enum.CycleYear:
-		r.End = r.End.AddDate(1, 0, 0)
-
-	case enum.CycleMonth:
-		r.End = r.End.AddDate(0, 1, 0)
-	}
-
-	return r
+	return r.WithDate(NewYearMonthDay(cycle))
 }
 
 // WithCycleN adds n cycles to end date.
 func (r TimeRange) WithCycleN(cycle enum.Cycle, n int) TimeRange {
-	switch cycle {
-	case enum.CycleYear:
-		r.End = r.End.AddDate(n, 0, 0)
-	case enum.CycleMonth:
-		r.End = r.End.AddDate(0, n, 0)
-	}
-
-	return r
+	return r.WithDate(NewYearMonthDayN(cycle, n))
 }
 
 func (r TimeRange) AddYears(years int) TimeRange {
