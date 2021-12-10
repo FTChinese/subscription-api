@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/patrickmn/go-cache"
 )
@@ -180,7 +179,7 @@ func (env PaywallCommon) ListActivePrices(live bool) ([]pw.PaywallPrice, error) 
 
 	err := env.dbs.Read.Select(
 		&prices,
-		price.StmtListPaywallPrice,
+		pw.StmtListPaywallPrice,
 		live)
 	if err != nil {
 		return nil, err
