@@ -6,8 +6,8 @@ import (
 	"github.com/guregu/null"
 )
 
-// RetrieveFtcPrice retrieves a single row by plan id.
-func (env PaywallCommon) RetrieveFtcPrice(id string, live bool) (pw.PaywallPrice, error) {
+// RetrievePaywallPrice retrieves a single row by plan id.
+func (env PaywallCommon) RetrievePaywallPrice(id string, live bool) (pw.PaywallPrice, error) {
 	var p pw.PaywallPrice
 	err := env.dbs.Read.Get(
 		&p,
@@ -33,7 +33,7 @@ func (env PaywallCommon) asyncLoadPrice(id string, live bool) <-chan asyncPriceR
 	go func() {
 		defer close(c)
 
-		p, err := env.RetrieveFtcPrice(id, live)
+		p, err := env.RetrievePaywallPrice(id, live)
 
 		c <- asyncPriceResult{
 			value: p,
