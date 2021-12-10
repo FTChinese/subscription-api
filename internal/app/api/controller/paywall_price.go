@@ -18,7 +18,7 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	prices, err := router.ProductRepo.ListPrices(productID, router.Live)
+	prices, err := router.ProductRepo.ListProductPrices(productID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -137,6 +137,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	// Load this price.
 	pwPrice, err := router.PaywallRepo.RetrievePaywallPrice(priceID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
@@ -144,6 +145,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	// Check if stripe price present.
 	_, err = router.StripePriceRepo.LoadPrice(pwPrice.StripePriceID, router.Live)
 	if err != nil {
 		_ = render.New(w).BadRequest(err.Error())
