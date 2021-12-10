@@ -169,6 +169,12 @@ func (p Price) Activate() Price {
 	return p
 }
 
+func (p Price) Deactivate() Price {
+	p.Active = false
+
+	return p
+}
+
 // Archive put a price into archive and no longer usable.
 // No idea why I created this.
 func (p Price) Archive() Price {
@@ -190,4 +196,8 @@ func (p Price) DailyCost() DailyCost {
 	}
 
 	return DailyCost{}
+}
+
+func (p Price) IsOneTime() bool {
+	return p.Kind == KindOneTime
 }
