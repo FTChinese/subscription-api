@@ -15,6 +15,7 @@ type PaywallPrice struct {
 
 func (p PaywallPrice) SetOffers(o []price.Discount) PaywallPrice {
 	p.Offers = o
+
 	return p
 }
 
