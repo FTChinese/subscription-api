@@ -109,6 +109,11 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 		return
 	}
 
+	if ftcPrice.Kind == price.KindOneTime {
+		_ = render.New(w).NotFound("Only recurring price has discounts")
+		return
+	}
+
 	// Update offers
 	ftcPrice, err = router.ProductRepo.RefreshPriceOffers(ftcPrice)
 	if err != nil {
