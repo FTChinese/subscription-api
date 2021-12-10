@@ -60,7 +60,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 	_ = render.New(w).OK(p)
 }
 
-// UpdatePrice changes a price's Description, Nickname, or StripePriceID fields
+// UpdatePrice changes a price's Title, Nickname, or StripePriceID fields
 // Input body:
 // - description?: string;
 // - nickname?: string;
@@ -81,7 +81,7 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 	}
 
 	updated := ftcPrice.Price.Update(params)
-	err = router.ProductRepo.UpdateFtcPrice(updated)
+	err = router.ProductRepo.UpdatePrice(updated)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -110,7 +110,7 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 	}
 
 	// Update offers
-	ftcPrice, err = router.ProductRepo.RefreshFtcPriceOffers(ftcPrice)
+	ftcPrice, err = router.ProductRepo.RefreshPriceOffers(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
