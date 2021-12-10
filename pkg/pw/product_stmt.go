@@ -3,7 +3,6 @@ package pw
 const colUpsertProduct = `
 description = :description,
 heading = :heading,
-introductory = :introductory,
 small_print = :small_print
 `
 
@@ -24,7 +23,7 @@ WHERE id = :product_id
 LIMIT 1
 `
 
-const colProduct = `
+const colSelectProduct = `
 SELECT prod.id AS product_id,
 	prod.description,
 	prod.heading,
@@ -43,17 +42,34 @@ FROM subs_product.product AS prod
 `
 
 // StmtRetrieveProduct refer to paywall_product table.
-const StmtRetrieveProduct = colProduct + fromTableProduct + `
+const StmtRetrieveProduct = colSelectProduct + fromTableProduct + `
 WHERE id = ?
 	AND live_mode = ?
 LIMIT 1
 `
 
-const StmtListProducts = colProduct + fromTableProduct + `
+const StmtListProducts = colSelectProduct + fromTableProduct + `
 WHERE live_mode = ?
 ORDER BY is_active DESC, tier ASC, created_utc DESC
 `
 
+// StmtSetProductIntro sets the introductory column of product.
+// This happens when:
+// * Activating a one_time price;
+// * Updating a one_time price which was set on a product.
+const StmtSetProductIntro = `
+UPDATE subs_products.product
+SET introductory = :introductory
+WHERE id = :product_id,
+	updated_utc = :updated_utc
+LIMIT 1
+`
+
+// StmtDeactivateSiblingProducts deactivate sibling products of
+// the specified product.
+// By sibling, we mean:
+// * Product of same tier;
+// * in same mode
 const StmtDeactivateSiblingProducts = `
 UPDATE subs_product.product
 SET is_active = FALSE
