@@ -11,12 +11,24 @@ import (
 	"time"
 )
 
+var MockEditionStdYear = Edition{
+	Tier:  enum.TierStandard,
+	Cycle: enum.CycleYear,
+}
+
+var MockEditionStdMonth = Edition{
+	Tier:  enum.TierStandard,
+	Cycle: enum.CycleMonth,
+}
+
+var MockEditionPrm = Edition{
+	Tier:  enum.TierPremium,
+	Cycle: enum.CycleYear,
+}
+
 var MockPriceStdYear = Price{
-	ID: "plan_MynUQDQY1TSQ",
-	Edition: Edition{
-		Tier:  enum.TierStandard,
-		Cycle: enum.CycleYear,
-	},
+	ID:         "plan_MynUQDQY1TSQ",
+	Edition:    MockEditionStdYear,
 	Active:     true,
 	Currency:   CurrencyCNY,
 	LiveMode:   true,
@@ -73,11 +85,8 @@ var MockStdYearOffers = []Discount{
 }
 
 var MockPriceStdMonth = Price{
-	ID: "plan_1Uz4hrLy3Mzy",
-	Edition: Edition{
-		Tier:  enum.TierStandard,
-		Cycle: enum.CycleMonth,
-	},
+	ID:         "plan_1Uz4hrLy3Mzy",
+	Edition:    MockEditionStdMonth,
 	Active:     true,
 	Currency:   CurrencyCNY,
 	LiveMode:   true,
@@ -105,11 +114,8 @@ var MockStdMonthOffers = []Discount{
 }
 
 var MockPricePrm = Price{
-	ID: "plan_vRUzRQ3aglea",
-	Edition: Edition{
-		Tier:  enum.TierPremium,
-		Cycle: enum.CycleYear,
-	},
+	ID:         "plan_vRUzRQ3aglea",
+	Edition:    MockEditionPrm,
 	Active:     true,
 	Currency:   CurrencyCNY,
 	LiveMode:   true,
