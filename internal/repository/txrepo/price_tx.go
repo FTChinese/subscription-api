@@ -23,7 +23,7 @@ func NewPriceTx(tx *sqlx.Tx) PriceTx {
 // from deactivating.s
 func (tx PriceTx) DeactivateSiblingPrice(p price.Price) error {
 	_, err := tx.NamedExec(
-		price.StmtDeactivatePricesOfSameEdition,
+		price.StmtDeactivateSiblingPrices,
 		p)
 
 	if err != nil {
@@ -38,15 +38,6 @@ func (tx PriceTx) DeactivateSiblingPrice(p price.Price) error {
 // It should be called immediately following the above one.
 func (tx PriceTx) ActivatePrice(p price.Price) error {
 	_, err := tx.NamedExec(price.StmtActivatePrice, p)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (tx PriceTx) ActivatePriceLegacy(p price.Price) error {
-	_, err := tx.NamedExec(price.StmtActivatePriceUnderProduct, p)
 	if err != nil {
 		return err
 	}
