@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"strings"
 )
@@ -13,12 +14,11 @@ import (
 // ProductParams defines the request data to create a new
 // product.
 type ProductParams struct {
-	CreatedBy    string           `json:"createdBy" db:"created_by"` // Only present in creation. Omit it in update.
-	Description  null.String      `json:"description" db:"description"`
-	Heading      string           `json:"heading" db:"heading"`
-	SmallPrint   null.String      `json:"smallPrint" db:"small_print"`
-	Tier         enum.Tier        `json:"tier" db:"tier"` // Immutable once a product is created
-	Introductory IntroductoryJSON `json:"introductory" db:"introductory"`
+	CreatedBy   string      `json:"createdBy" db:"created_by"` // Only present in creation. Omit it in update.
+	Description null.String `json:"description" db:"description"`
+	Heading     string      `json:"heading" db:"heading"`
+	SmallPrint  null.String `json:"smallPrint" db:"small_print"`
+	Tier        enum.Tier   `json:"tier" db:"tier"` // Immutable once a product is created
 }
 
 // Validate checks fields to create or update a product.
@@ -42,22 +42,28 @@ func (p *ProductParams) Validate(isUpdate bool) *render.ValidationError {
 		Validate(p.Heading)
 }
 
+type ProductIntroParams struct {
+	PriceID string `json:"priceId"`
+}
+
 // Product defines a price without plans.
 type Product struct {
 	ID       string `json:"id" db:"product_id"`
 	Active   bool   `json:"active" db:"is_active"` // Indicates whether is product is on paywall
 	LiveMode bool   `json:"liveMode" db:"live_mode"`
 	ProductParams
-	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
-	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
+	Introductory price.IntroductoryJSON `json:"introductory" db:"introductory_price"`
+	CreatedUTC   chrono.Time            `json:"createdUtc" db:"created_utc"`
+	UpdatedUTC   chrono.Time            `json:"updatedUtc" db:"updated_utc"`
 }
 
 func NewProduct(params ProductParams, live bool) Product {
 	return Product{
 		ID:            ids.ProductID(),
-		ProductParams: params,
 		Active:        false,
 		LiveMode:      live,
+		ProductParams: params,
+		Introductory:  price.IntroductoryJSON{},
 		CreatedUTC:    chrono.TimeNow(),
 		UpdatedUTC:    chrono.Time{},
 	}
@@ -68,13 +74,28 @@ func (p Product) Update(input ProductParams) Product {
 	p.Heading = input.Heading
 	p.Description = input.Description
 	p.SmallPrint = input.SmallPrint
-	p.Introductory = input.Introductory
 
 	return p
 }
 
 func (p Product) Activate() Product {
 	p.Active = true
+
+	return p
+}
+
+// SetIntroPrice set an introductory price on product.
+func (p Product) SetIntroPrice(pri price.Price) Product {
+	p.Introductory = price.IntroductoryJSON{
+		Price: pri,
+	}
+
+	return p
+}
+
+// DropIntroPrice removed an introductory price from product.
+func (p Product) DropIntroPrice() Product {
+	p.Introductory = price.IntroductoryJSON{}
 
 	return p
 }
