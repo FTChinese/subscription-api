@@ -74,7 +74,7 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	ftcPrice, err := router.PaywallRepo.RetrieveFtcPrice(id, router.Live)
+	ftcPrice, err := router.PaywallRepo.RetrievePaywallPrice(id, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -103,7 +103,7 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 	}
 
 	// Find the price for this discount first.
-	ftcPrice, err := router.PaywallRepo.RetrieveFtcPrice(priceID, router.Live)
+	ftcPrice, err := router.PaywallRepo.RetrievePaywallPrice(priceID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -130,7 +130,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	ftcPrice, err := router.PaywallRepo.RetrieveFtcPrice(priceID, router.Live)
+	ftcPrice, err := router.PaywallRepo.RetrievePaywallPrice(priceID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
@@ -165,7 +165,7 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	p, err := router.PaywallRepo.RetrieveFtcPrice(priceID, router.Live)
+	p, err := router.PaywallRepo.RetrievePaywallPrice(priceID, router.Live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
