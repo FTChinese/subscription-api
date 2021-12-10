@@ -34,7 +34,7 @@ func GenStripeSubID() string {
 	return "sub_" + id
 }
 
-func GenStripePlanID() string {
+func GenStripePriceID() string {
 	return "plan_" + rand.String(14)
 }
 
