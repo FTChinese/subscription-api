@@ -25,6 +25,12 @@ SET current_status = :current_status
 WHERE id = :discount_id
 LIMIT 1`
 
+const StmtArchivePriceDiscounts = `
+UPDATE subs_product.discount
+SET current_status = 'cancelled'
+WHERE plan_id = :price_id
+`
+
 const colDiscount = `
 SELECT id AS discount_id,
 	live_mode,
@@ -49,7 +55,6 @@ WHERE id = ?
 
 // StmtListPriceActiveDiscounts loads a list of active discount
 // under a price whose end_utc is not past yet.
-// TODO: filter expired ones.
 const StmtListPriceActiveDiscounts = colDiscount + `
 WHERE plan_id = ?
 	AND current_status = 'active'
@@ -60,4 +65,5 @@ ORDER BY price_off DESC`
 // StmtListDiscountsOfPrice retrieves all discount under a price.
 const StmtListDiscountsOfPrice = colDiscount + `
 WHERE plan_id = ?
+	AND live_mode = ?
 ORDER BY created_utc DESC`
