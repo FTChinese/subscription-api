@@ -11,7 +11,7 @@ func (env PaywallCommon) RetrieveFtcPrice(id string, live bool) (pw.PaywallPrice
 	var p pw.PaywallPrice
 	err := env.dbs.Read.Get(
 		&p,
-		price.StmtPwPrice,
+		pw.StmtSelectPaywallPrice,
 		id,
 		live)
 
