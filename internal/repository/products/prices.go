@@ -58,6 +58,18 @@ func (env Env) ActivatePrice(p price.Price) error {
 	return nil
 }
 
+func (env Env) DeactivatePrice(p price.Price) error {
+	_, err := env.dbs.Write.NamedExec(
+		price.StmtActivatePrice,
+		p)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // UpdatePriceOffers after a new discount is created/paused/cancelled under this price.
 func (env Env) UpdatePriceOffers(pwp pw.PaywallPrice) error {
 	_, err := env.dbs.Write.NamedExec(pw.StmtSetPriceOffers, pwp)
@@ -86,14 +98,14 @@ func (env Env) RefreshPriceOffers(p pw.PaywallPrice) (pw.PaywallPrice, error) {
 	return updated, nil
 }
 
-// ListPrices retrieves all prices of a product, regardless whether they are live or not.
+// ListProductPrices retrieves all prices of a product, regardless whether they are live or not.
 // This is used by CMS to list a product's prices so that
 // user should be able to activate an inactive one.
-func (env Env) ListPrices(prodID string, live bool) ([]pw.PaywallPrice, error) {
+func (env Env) ListProductPrices(prodID string, live bool) ([]pw.PaywallPrice, error) {
 	var list = make([]pw.PaywallPrice, 0)
 	err := env.dbs.Read.Select(
 		&list,
-		price.StmtListPricesOfProduct,
+		pw.StmtListProductPrices,
 		prodID,
 		live)
 
