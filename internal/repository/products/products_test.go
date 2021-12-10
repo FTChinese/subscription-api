@@ -13,7 +13,7 @@ import (
 
 func TestEnv_ListProducts(t *testing.T) {
 
-	env := newTestEnv(db.MockMySQL(), nil)
+	env := New(db.MockMySQL())
 
 	type args struct {
 		live bool
@@ -52,7 +52,7 @@ func TestEnv_ListProducts(t *testing.T) {
 
 func TestEnv_CreateProduct(t *testing.T) {
 
-	env := newTestEnv(db.MockMySQL(), nil)
+	env := New(db.MockMySQL())
 
 	type args struct {
 		p pw.Product
@@ -87,7 +87,7 @@ func TestEnv_CreateProduct(t *testing.T) {
 }
 
 func TestEnv_RetrieveProduct(t *testing.T) {
-	env := newTestEnv(db.MockMySQL(), nil)
+	env := New(db.MockMySQL())
 
 	type args struct {
 		id   string
@@ -127,7 +127,7 @@ func TestEnv_RetrieveProduct(t *testing.T) {
 }
 
 func TestEnv_UpdateProduct(t *testing.T) {
-	env := newTestEnv(db.MockMySQL(), nil)
+	env := New(db.MockMySQL())
 
 	type args struct {
 		p pw.Product
@@ -173,7 +173,7 @@ func TestEnv_SetProductOnPaywall(t *testing.T) {
 	prod := test.NewStdProdBuilder().WithLive().Build()
 	test.NewRepo().CreateProduct(prod)
 
-	env := newTestEnv(db.MockMySQL(), nil)
+	env := New(db.MockMySQL())
 
 	type args struct {
 		p pw.Product
