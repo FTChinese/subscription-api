@@ -15,18 +15,17 @@ func TestFloat(t *testing.T) {
 
 func TestNewCharge(t *testing.T) {
 	charge := NewCharge(Price{
-		ID:          "",
-		Edition:     Edition{},
-		Active:      false,
-		Archived:    false,
-		Currency:    "cny",
-		Description: null.String{},
-		LiveMode:    false,
-		Nickname:    null.String{},
-		ProductID:   "",
-		UnitAmount:  35,
-		CreatedUTC:  chrono.Time{},
-		CreatedBy:   "",
+		ID:         "",
+		Edition:    Edition{},
+		Active:     false,
+		Archived:   false,
+		Currency:   "cny",
+		Title:      null.String{},
+		LiveMode:   false,
+		Nickname:   null.String{},
+		ProductID:  "",
+		UnitAmount: 35,
+		CreatedUTC: chrono.Time{},
 	}, Discount{
 		ID: "",
 		DiscountParams: DiscountParams{
