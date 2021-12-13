@@ -336,32 +336,6 @@ func StartServer(s ServerStatus) {
 		r.Post("/addons", ftcSubsRouter.ClaimAddOn)
 	})
 
-	// Isolate dangerous operations from user-facing features.
-	r.Route("/cms", func(r chi.Router) {
-		r.Use(guard.CheckToken)
-		r.Use(xhttp.RequireStaffName)
-
-		r.Route("/memberships", func(r chi.Router) {
-			// Create a membership for a user
-			r.Post("/", cmsRouter.CreateMembership)
-			// Update the membership of a user
-			r.Patch("/{id}", cmsRouter.UpdateMembership)
-			r.Delete("/{id}", cmsRouter.DeleteMembership)
-		})
-
-		// ?ftc_id=<uuid>&union_id=<union_id>&page=<int>&per_page=<int>
-		r.With(xhttp.FormParsed).
-			With(xhttp.RequireUserIDsQuery).
-			Get("/snapshots", cmsRouter.ListMemberSnapshots)
-
-		r.Route("/addons", func(r chi.Router) {
-			// Add an invoice to a user.
-			// If the invoice is targeting addon, then
-			// membership should be updated accordingly.
-			r.Post("/", cmsRouter.CreateAddOn)
-		})
-	})
-
 	r.Route("/orders", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(xhttp.RequireFtcOrUnionID)
@@ -489,7 +463,11 @@ func StartServer(s ServerStatus) {
 			r.Get("/{id}", paywallRouter.LoadProduct)
 			r.Patch("/{id}", paywallRouter.UpdateProduct)
 			r.Post("/{id}/activate", paywallRouter.ActivateProduct)
-			r.Post("/{id}/intro", paywallRouter.SetIntroPrice)
+			// Update the introductory price of a product.
+			// The price will be set/overridden/refreshed on  the product
+			// regardless of whether the product has one set or not.
+			r.Patch("/{id}/intro", paywallRouter.AttachIntroPrice)
+			// Delete intro price attached to a product.
 			r.Delete("/{id}/intro", paywallRouter.DropIntroPrice)
 		})
 
@@ -519,6 +497,32 @@ func StartServer(s ServerStatus) {
 
 		// Bust cache, regardless of live mode or not.
 		r.Get("/__refresh", paywallRouter.BustCache)
+	})
+
+	// Isolate dangerous operations from user-facing features.
+	r.Route("/cms", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+		r.Use(xhttp.RequireStaffName)
+
+		r.Route("/memberships", func(r chi.Router) {
+			// Create a membership for a user
+			r.Post("/", cmsRouter.CreateMembership)
+			// Update the membership of a user
+			r.Patch("/{id}", cmsRouter.UpdateMembership)
+			r.Delete("/{id}", cmsRouter.DeleteMembership)
+		})
+
+		// ?ftc_id=<uuid>&union_id=<union_id>&page=<int>&per_page=<int>
+		r.With(xhttp.FormParsed).
+			With(xhttp.RequireUserIDsQuery).
+			Get("/snapshots", cmsRouter.ListMemberSnapshots)
+
+		r.Route("/addons", func(r chi.Router) {
+			// Add an invoice to a user.
+			// If the invoice is targeting addon, then
+			// membership should be updated accordingly.
+			r.Post("/", cmsRouter.CreateAddOn)
+		})
 	})
 
 	r.Route("/webhook", func(r chi.Router) {
