@@ -52,7 +52,7 @@ type Product struct {
 	Active   bool   `json:"active" db:"is_active"` // Indicates whether is product is on paywall
 	LiveMode bool   `json:"liveMode" db:"live_mode"`
 	ProductParams
-	Introductory price.IntroductoryJSON `json:"introductory" db:"introductory_price"`
+	Introductory price.IntroductoryJSON `json:"introductory" db:"introductory"`
 	CreatedUTC   chrono.Time            `json:"createdUtc" db:"created_utc"`
 	UpdatedUTC   chrono.Time            `json:"updatedUtc" db:"updated_utc"`
 }
