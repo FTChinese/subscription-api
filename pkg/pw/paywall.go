@@ -69,8 +69,8 @@ func (w Paywall) StripePriceIDs() []string {
 	var ids = make([]string, 0)
 
 	for _, pwProd := range w.Products {
-		if pwProd.Introductory.StripePriceID.Valid {
-			ids = append(ids, pwProd.Introductory.StripePriceID.String)
+		if pwProd.Introductory.StripePriceID != "" {
+			ids = append(ids, pwProd.Introductory.StripePriceID)
 		}
 
 		for _, pwPrice := range pwProd.Prices {
