@@ -141,11 +141,12 @@ func (router PaywallRouter) ActivateProduct(w http.ResponseWriter, req *http.Req
 	_ = render.New(w).OK(prod)
 }
 
-// SetIntroPrice activate an existing one_time price as
-// introductory price for this product
+// AttachIntroPrice activate an existing one_time price
+// and attaches it to the product it belongs to if not attached yet,
+// or override existing introductory price of a product.
 // Request body:
 // - priceId: string;
-func (router PaywallRouter) SetIntroPrice(w http.ResponseWriter, req *http.Request) {
+func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
@@ -177,6 +178,7 @@ func (router PaywallRouter) SetIntroPrice(w http.ResponseWriter, req *http.Reque
 	}
 
 	activated := pwPrice.Activate()
+	// If the price is activated yet.
 	if !pwPrice.Active {
 		err = router.ProductRepo.ActivatePrice(activated)
 		if err != nil {
