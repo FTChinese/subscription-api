@@ -25,9 +25,9 @@ func (p UpdateParams) Validate() *render.ValidationError {
 // A new plan is always created under a certain product.
 // Therefore, the input data does not have tier field.
 type CreationParams struct {
-	Kind Kind `json:"kind"`
 	Edition
 	UpdateParams
+	Kind        Kind                `json:"kind"`
 	PeriodCount dt.YearMonthDayJSON `json:"periodCount"`
 	ProductID   string              `json:"productId"`
 	StartUTC    chrono.Time         `json:"startUtc"`
