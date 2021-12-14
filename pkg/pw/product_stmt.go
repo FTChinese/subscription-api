@@ -58,10 +58,10 @@ ORDER BY is_active DESC, tier ASC, created_utc DESC
 // * Activating a one_time price;
 // * Updating a one_time price which was set on a product.
 const StmtSetProductIntro = `
-UPDATE subs_products.product
-SET introductory = :introductory
-WHERE id = :product_id,
+UPDATE subs_product.product
+SET introductory = :introductory,
 	updated_utc = :updated_utc
+WHERE id = :product_id
 LIMIT 1
 `
 
