@@ -12,6 +12,32 @@ type IntroductoryJSON struct {
 	Price
 }
 
+// MarshalJSON encodes an optional price to nullable result.
+func (p IntroductoryJSON) MarshalJSON() ([]byte, error) {
+	if p.ID == "" {
+		return []byte("null"), nil
+	}
+
+	return json.Marshal(p.Price)
+}
+
+// UnmarshalJSON parses a nullable value to price.
+func (p *IntroductoryJSON) UnmarshalJSON(b []byte) error {
+	var v Price
+	if b == nil {
+		*p = IntroductoryJSON{}
+		return nil
+	}
+
+	err := json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+
+	*p = IntroductoryJSON{Price: v}
+	return nil
+}
+
 // Value implements Valuer interface by serializing an Invitation into
 // JSON data.
 func (p IntroductoryJSON) Value() (driver.Value, error) {
