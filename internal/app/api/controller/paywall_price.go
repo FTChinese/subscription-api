@@ -4,13 +4,13 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
 // ListPrices retrieves all prices under a product.
 // The price's discounts column will be included.
+// Returns []pw.PaywallPrice.
 func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request) {
 	productID, err := gorest.GetQueryParam(req, "product_id").ToString()
 	if err != nil {
@@ -38,7 +38,7 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 // - productId: string
 // - stripePriceId: string
 // - unitAmount: number
-// The returned has no offers set yet.
+// Returns price.Price.
 func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request) {
 	var params price.CreationParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -67,6 +67,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 // - description?: string;
 // - nickname?: string;
 // - stripePriceId: string;
+// Return price.Price.
 func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request) {
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
@@ -89,14 +90,12 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	_ = render.New(w).OK(pw.PaywallPrice{
-		Price:  updated,
-		Offers: ftcPrice.Offers,
-	})
+	_ = render.New(w).OK(updated)
 }
 
 // RefreshPriceOffers attaches all valid discounts to
 // a price row as json column.
+// Returns pw.PaywallPrice
 func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.Request) {
 	priceID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -126,6 +125,8 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 	_ = render.New(w).OK(ftcPrice)
 }
 
+// ActivatePrice flags a price to active state.
+// Returns price.Price.
 func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
@@ -162,16 +163,14 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 	}
 
 	// If the price is a one_time price,
-	_ = render.New(w).OK(pw.PaywallPrice{
-		Price:  activated,
-		Offers: pwPrice.Offers,
-	})
+	_ = render.New(w).OK(activated)
 }
 
 // ArchivePrice flags a price as deleted.
 // It should never be touched after this operation.
 // The returned price has no offers attached since they are
 // all removed.
+// Returns price.Price.
 func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Request) {
 	priceID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
