@@ -195,7 +195,7 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 
 	// If this price has not discount, stop.
 	if len(p.Offers) == 0 {
-		_ = render.New(w).DBError(err)
+		_ = render.New(w).OK(archived)
 		return
 	}
 
