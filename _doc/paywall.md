@@ -13,8 +13,23 @@
 * DELETE `/paywall/discounts/{id}` Drop a discount.
 * GET `/paywall/__refresh` Bust cache.
 
+## Database change log
 
+### v5.3.0
 
+Tables in use
 
+* subs_product.product
+* subs_product.price. Replaces subs_product.plan. Cycle column might be null as introductory prices does not have it.
+* subs_product.discount 
+* subs_product.paywall_doc. Replaces paywall_promo and paywall_banner which became JSON columns of this table.
+* ubs_product.paywall_product_v4. Replaces paywall_product. Added live_mode support.
 
+Tables deprecated, kept only for backward compatibility:
+
+* subs_product.paywall_product.
+* subs_product.product_active_plans
+* subs_product.paywall_promo
+* subs_product.paywall_banner
+* subs_product.plan
 
