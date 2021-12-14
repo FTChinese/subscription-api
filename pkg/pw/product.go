@@ -74,12 +74,14 @@ func (p Product) Update(input ProductParams) Product {
 	p.Heading = input.Heading
 	p.Description = input.Description
 	p.SmallPrint = input.SmallPrint
+	p.UpdatedUTC = chrono.TimeNow()
 
 	return p
 }
 
 func (p Product) Activate() Product {
 	p.Active = true
+	p.UpdatedUTC = chrono.TimeNow()
 
 	return p
 }
@@ -90,12 +92,15 @@ func (p Product) SetIntroPrice(pri price.Price) Product {
 		Price: pri,
 	}
 
+	p.UpdatedUTC = chrono.TimeNow()
+
 	return p
 }
 
 // DropIntroPrice removed an introductory price from product.
 func (p Product) DropIntroPrice() Product {
 	p.Introductory = price.IntroductoryJSON{}
+	p.UpdatedUTC = chrono.TimeNow()
 
 	return p
 }
