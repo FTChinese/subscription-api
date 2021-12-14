@@ -76,9 +76,8 @@ func (b ProductBuilder) WithSandbox() ProductBuilder {
 func (b ProductBuilder) Build() pw.Product {
 	faker.SeedGoFake()
 
-	return pw.Product{
-		ID: ids.ProductID(),
-		ProductParams: pw.ProductParams{
+	return pw.NewProduct(
+		pw.ProductParams{
 			CreatedBy: gofakeit.Username(),
 			Description: null.StringFrom(gofakeit.Paragraph(
 				4, 1, 10, "\n")),
@@ -86,11 +85,8 @@ func (b ProductBuilder) Build() pw.Product {
 			SmallPrint: null.String{},
 			Tier:       b.tier,
 		},
-		Active:     false,
-		LiveMode:   b.live,
-		CreatedUTC: chrono.TimeNow(),
-		UpdatedUTC: chrono.Time{},
-	}
+		b.live,
+	)
 }
 
 func (b ProductBuilder) NewPriceBuilder(c enum.Cycle) PriceBuilder {

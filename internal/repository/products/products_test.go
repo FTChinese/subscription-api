@@ -202,3 +202,42 @@ func TestEnv_SetProductOnPaywall(t *testing.T) {
 		})
 	}
 }
+
+func TestEnv_SetProductIntro(t *testing.T) {
+	env := New(db.MockMySQL())
+
+	pb := test.NewStdProdBuilder()
+
+	prod := pb.Build()
+
+	test.NewRepo().CreateProduct(prod)
+
+	type args struct {
+		p pw.Product
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Set intro",
+			args: args{
+				p: prod.SetIntroPrice(
+					pb.
+						NewYearPriceBuilder().
+						WithOneTime().
+						Build()),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := env.SetProductIntro(tt.args.p); (err != nil) != tt.wantErr {
+				t.Errorf("SetProductIntro() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
