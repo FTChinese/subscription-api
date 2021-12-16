@@ -24,7 +24,6 @@ var MockPriceStdIntro = Price{
 	LiveMode: false,
 	Metadata: PriceMetadata{
 		Tier:         enum.TierStandard,
-		PeriodDays:   30,
 		Introductory: true,
 	},
 	Nickname:   "Introductory Offer",
@@ -32,6 +31,17 @@ var MockPriceStdIntro = Price{
 	Recurring:  PriceRecurring{},
 	Type:       stripe.PriceTypeOneTime,
 	UnitAmount: 10,
+	PriceMetadata: PriceMetadata{
+		Introductory: true,
+		PeriodCount: dt.YearMonthDay{
+			Years:  0,
+			Months: 1,
+			Days:   0,
+		},
+		Tier:     enum.TierStandard,
+		StartUTC: null.String{},
+		EndUTC:   null.String{},
+	},
 }
 
 var MockPriceStdYear = Price{
@@ -42,7 +52,6 @@ var MockPriceStdYear = Price{
 	LiveMode: false,
 	Metadata: PriceMetadata{
 		Tier:         enum.TierStandard,
-		PeriodDays:   365,
 		Introductory: false,
 	},
 	Nickname: "Annual Price",
@@ -54,6 +63,17 @@ var MockPriceStdYear = Price{
 	},
 	Type:       stripe.PriceTypeRecurring,
 	UnitAmount: 3999,
+	PriceMetadata: PriceMetadata{
+		Introductory: false,
+		PeriodCount: dt.YearMonthDay{
+			Years:  1,
+			Months: 0,
+			Days:   0,
+		},
+		Tier:     enum.TierStandard,
+		StartUTC: null.String{},
+		EndUTC:   null.String{},
+	},
 }
 
 var MockPriceStdMonth = Price{
@@ -64,7 +84,6 @@ var MockPriceStdMonth = Price{
 	LiveMode: false,
 	Metadata: PriceMetadata{
 		Tier:         enum.TierStandard,
-		PeriodDays:   30,
 		Introductory: false,
 	},
 	Nickname: "Monthly Price",
@@ -76,6 +95,17 @@ var MockPriceStdMonth = Price{
 	},
 	Type:       stripe.PriceTypeRecurring,
 	UnitAmount: 499,
+	PriceMetadata: PriceMetadata{
+		Introductory: false,
+		PeriodCount: dt.YearMonthDay{
+			Years:  0,
+			Months: 1,
+			Days:   0,
+		},
+		Tier:     enum.TierStandard,
+		StartUTC: null.String{},
+		EndUTC:   null.String{},
+	},
 }
 
 var MockPricePrmYear = Price{
@@ -86,7 +116,6 @@ var MockPricePrmYear = Price{
 	LiveMode: false,
 	Metadata: PriceMetadata{
 		Tier:         enum.TierPremium,
-		PeriodDays:   365,
 		Introductory: false,
 	},
 	Nickname: "Premium Yearly Price",
@@ -98,6 +127,17 @@ var MockPricePrmYear = Price{
 	},
 	Type:       stripe.PriceTypeRecurring,
 	UnitAmount: 23800,
+	PriceMetadata: PriceMetadata{
+		Introductory: false,
+		PeriodCount: dt.YearMonthDay{
+			Years:  1,
+			Months: 0,
+			Days:   0,
+		},
+		Tier:     enum.TierPremium,
+		StartUTC: null.String{},
+		EndUTC:   null.String{},
+	},
 }
 
 func MockNewSubs() Subs {
