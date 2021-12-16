@@ -5,19 +5,19 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
 )
 
-type StripeBaseRepo struct {
+type StripeCommon struct {
 	Client stripeclient.Client
 	Cache  *stripe.PriceCache
 }
 
-func NewStripeCommon(client stripeclient.Client, c *stripe.PriceCache) StripeBaseRepo {
-	return StripeBaseRepo{
+func NewStripeCommon(client stripeclient.Client, c *stripe.PriceCache) StripeCommon {
+	return StripeCommon{
 		Client: client,
 		Cache:  c,
 	}
 }
 
-func (repo StripeBaseRepo) ListPrices(live bool, bustCache bool) ([]stripe.Price, error) {
+func (repo StripeCommon) ListPrices(live bool, bustCache bool) ([]stripe.Price, error) {
 	if !bustCache && repo.Cache.Len() != 0 {
 		return repo.Cache.
 			List(live), nil
@@ -34,7 +34,7 @@ func (repo StripeBaseRepo) ListPrices(live bool, bustCache bool) ([]stripe.Price
 		List(live), nil
 }
 
-func (repo StripeBaseRepo) LoadPrice(id string, bustCache bool) (stripe.Price, error) {
+func (repo StripeCommon) LoadPrice(id string, bustCache bool) (stripe.Price, error) {
 	if !bustCache {
 		p, ok := repo.Cache.Find(id)
 		if ok {
@@ -54,7 +54,7 @@ func (repo StripeBaseRepo) LoadPrice(id string, bustCache bool) (stripe.Price, e
 	return p, nil
 }
 
-func (repo StripeBaseRepo) LoadCheckoutItem(params stripe.SubsParams) (stripe.CheckoutItem, error) {
+func (repo StripeCommon) LoadCheckoutItem(params stripe.SubsParams) (stripe.CheckoutItem, error) {
 	p, err := repo.LoadPrice(params.PriceID, false)
 	if err != nil {
 		return stripe.CheckoutItem{}, err
@@ -76,4 +76,13 @@ func (repo StripeBaseRepo) LoadCheckoutItem(params stripe.SubsParams) (stripe.Ch
 		Price:        p,
 		Introductory: introPrice,
 	}, nil
+}
+
+func (repo StripeCommon) UpdatePriceMeta(id string, m map[string]string) (stripe.Price, error) {
+	p, err := repo.Client.SetPriceMeta(id, m)
+	if err != nil {
+		return stripe.Price{}, err
+	}
+
+	return stripe.NewPrice(p), nil
 }
