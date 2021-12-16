@@ -14,7 +14,7 @@ import (
 type StripeRouter struct {
 	SigningKey      string
 	StripeRepo      striperepo.Env
-	StripePriceRepo shared.StripeBaseRepo
+	StripePriceRepo shared.StripeCommon
 	ReaderRepo      shared.ReaderCommon
 	Client          stripeclient.Client
 	Logger          *zap.Logger
