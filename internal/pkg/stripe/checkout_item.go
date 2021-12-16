@@ -83,7 +83,8 @@ func (ci CheckoutItem) NewSubParams(cusID string, other SubSharedParams) *stripe
 			},
 		}
 
-		params.TrialPeriodDays = stripe.Int64(ci.Introductory.Metadata.PeriodDays)
+		params.TrialPeriodDays = stripe.Int64(
+			ci.Introductory.PeriodCount.TotalDays())
 	}
 
 	addExtraSubParams(params, other)
