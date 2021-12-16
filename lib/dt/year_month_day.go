@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/FTChinese/go-rest/enum"
+	"time"
 )
 
 const (
@@ -19,21 +20,21 @@ type YearMonthDay struct {
 	Days   int64 `json:"days" db:"days"`
 }
 
-// NewYearMonthDay creates a new instance for a enum.Cycle.
+// NewYearMonthDay creates a new instance for an enum.Cycle.
 func NewYearMonthDay(cycle enum.Cycle) YearMonthDay {
 	switch cycle {
 	case enum.CycleYear:
 		return YearMonthDay{
 			Years:  1,
 			Months: 0,
-			Days:   1,
+			Days:   0,
 		}
 
 	case enum.CycleMonth:
 		return YearMonthDay{
 			Years:  0,
 			Months: 1,
-			Days:   1,
+			Days:   0,
 		}
 
 	default:
@@ -48,14 +49,14 @@ func NewYearMonthDayN(cycle enum.Cycle, n int) YearMonthDay {
 		return YearMonthDay{
 			Years:  int64(n),
 			Months: 0,
-			Days:   int64(n),
+			Days:   0,
 		}
 
 	case enum.CycleMonth:
 		return YearMonthDay{
 			Years:  0,
 			Months: int64(n),
-			Days:   int64(n),
+			Days:   0,
 		}
 
 	default:
@@ -66,6 +67,22 @@ func NewYearMonthDayN(cycle enum.Cycle, n int) YearMonthDay {
 // TotalDays calculates the number of days of by adding the days of the year, month and days.
 func (y YearMonthDay) TotalDays() int64 {
 	return y.Years*daysOfYear + y.Months*daysOfMonth + y.Days
+}
+
+func (y YearMonthDay) EndTime() time.Time {
+	return time.Now().AddDate(int(y.Years), int(y.Months), int(y.Days))
+}
+
+func (y YearMonthDay) EqCycle() enum.Cycle {
+	if y.Years > 0 {
+		return enum.CycleYear
+	}
+
+	if y.Months > 0 {
+		return enum.CycleMonth
+	}
+
+	return enum.CycleMonth
 }
 
 // Add adds two instances.
