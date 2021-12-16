@@ -1,8 +1,9 @@
 package controller
 
 import (
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
@@ -40,13 +41,18 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 // - unitAmount: number
 // Returns price.Price.
 func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
 	var params price.CreationParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
 	if ve := params.Validate(); ve != nil {
+		sugar.Error(ve)
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
@@ -55,8 +61,25 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 
 	err := router.ProductRepo.CreatePrice(p)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
+	}
+
+	if params.StripePriceID != "" {
+		go func() {
+			sp, err := router.StripePriceRepo.
+				UpdatePriceMeta(
+					params.StripePriceID,
+					stripe.PriceMetaParams(p))
+
+			if err != nil {
+				sugar.Error(err)
+				return
+			}
+
+			sugar.Infof("Stripe price meta set %v", sp)
+		}()
 	}
 
 	_ = render.New(w).OK(p)
@@ -69,6 +92,9 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 // - stripePriceId: string;
 // Return price.Price.
 func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
 	var params price.UpdateParams
@@ -88,6 +114,22 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
+	}
+
+	if params.StripePriceID != "" {
+		go func() {
+			sp, err := router.StripePriceRepo.
+				UpdatePriceMeta(
+					params.StripePriceID,
+					stripe.PriceMetaParams(updated))
+
+			if err != nil {
+				sugar.Error(err)
+				return
+			}
+
+			sugar.Infof("Stripe price meta set %v", sp)
+		}()
 	}
 
 	_ = render.New(w).OK(updated)
