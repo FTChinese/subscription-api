@@ -14,7 +14,7 @@ import (
 type PaywallRouter struct {
 	ProductRepo     products.Env
 	PaywallRepo     shared.PaywallCommon
-	StripePriceRepo shared.StripeBaseRepo
+	StripePriceRepo shared.StripeCommon
 	Logger          *zap.Logger
 	Live            bool
 }
@@ -23,7 +23,7 @@ type PaywallRouter struct {
 func NewPaywallRouter(
 	prodRepo products.Env,
 	paywallBaseRepo shared.PaywallCommon,
-	stripeBaseRepo shared.StripeBaseRepo,
+	stripeBaseRepo shared.StripeCommon,
 	logger *zap.Logger,
 	live bool,
 ) PaywallRouter {
