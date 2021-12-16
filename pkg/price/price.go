@@ -12,9 +12,10 @@ import (
 )
 
 type UpdateParams struct {
-	Title         null.String `json:"title"`
-	Nickname      null.String `json:"nickname"`
-	StripePriceID string      `json:"stripePriceId"`
+	Title         null.String         `json:"title"`
+	Nickname      null.String         `json:"nickname"`
+	PeriodCount   dt.YearMonthDayJSON `json:"periodCount"`
+	StripePriceID string              `json:"stripePriceId"`
 }
 
 func (p UpdateParams) Validate() *render.ValidationError {
@@ -26,13 +27,12 @@ func (p UpdateParams) Validate() *render.ValidationError {
 // Therefore, the input data does not have tier field.
 type CreationParams struct {
 	Edition
+	Kind Kind `json:"kind"`
 	UpdateParams
-	Kind        Kind                `json:"kind"`
-	PeriodCount dt.YearMonthDayJSON `json:"periodCount"`
-	ProductID   string              `json:"productId"`
-	StartUTC    chrono.Time         `json:"startUtc"`
-	EndUTC      chrono.Time         `json:"endUtc"`
-	UnitAmount  float64             `json:"unitAmount"`
+	ProductID  string      `json:"productId"`
+	StartUTC   chrono.Time `json:"startUtc"`
+	EndUTC     chrono.Time `json:"endUtc"`
+	UnitAmount float64     `json:"unitAmount"`
 }
 
 // Validate checks whether the input data to create a new plan is valid.
@@ -158,6 +158,7 @@ func (p Price) Update(params UpdateParams) Price {
 	p.Title = params.Title
 	p.Nickname = params.Nickname
 	p.StripePriceID = params.StripePriceID
+	p.PeriodCount = params.PeriodCount
 
 	return p
 }
