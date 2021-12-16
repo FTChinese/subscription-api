@@ -27,3 +27,11 @@ func (c Client) ListPrices() ([]*stripeSdk.Price, error) {
 func (c Client) RetrievePrice(id string) (*stripeSdk.Price, error) {
 	return c.sc.Prices.Get(id, nil)
 }
+
+func (c Client) SetPriceMeta(id string, meta map[string]string) (*stripeSdk.Price, error) {
+	return c.sc.Prices.Update(id, &stripeSdk.PriceParams{
+		Params: stripeSdk.Params{
+			Metadata: meta,
+		},
+	})
+}
