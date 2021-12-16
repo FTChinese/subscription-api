@@ -25,6 +25,7 @@ const StmtUpdatePrice = `
 UPDATE subs_product.price
 SET nickname = :nickname,
 	stripe_price_id = :stripe_price_id,
+	period_count = :period_count,
 	title = :title
 WHERE id =:price_id
 LIMIT 1
