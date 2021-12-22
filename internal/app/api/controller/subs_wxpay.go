@@ -64,7 +64,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 			return
 		}
 
-		item, re := router.loadCheckoutItem(input.OrderParams, !acnt.IsTest())
+		item, re := router.loadCheckoutItem(input.CartParams, router.Live)
 		if re != nil {
 			sugar.Error(re)
 			_ = render.New(w).JSON(re.StatusCode, re)
