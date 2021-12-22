@@ -34,17 +34,18 @@ func TestEnv_CreatePrice(t *testing.T) {
 					Kind:    price.KindRecurring,
 					Edition: price.MockEditionStdYear,
 					UpdateParams: price.UpdateParams{
-						Title:         null.StringFrom(gofakeit.Sentence(20)),
-						Nickname:      null.StringFrom(gofakeit.Word()),
+						Title:    null.StringFrom(gofakeit.Sentence(20)),
+						Nickname: null.StringFrom(gofakeit.Word()),
+						PeriodCount: dt.YearMonthDayJSON{
+							YearMonthDay: dt.YearMonthDay{
+								Years:  1,
+								Months: 0,
+								Days:   0,
+							},
+						},
 						StripePriceID: faker.GenStripePriceID(),
 					},
-					PeriodCount: dt.YearMonthDayJSON{
-						YearMonthDay: dt.YearMonthDay{
-							Years:  1,
-							Months: 0,
-							Days:   0,
-						},
-					},
+
 					ProductID:  ids.ProductID(),
 					UnitAmount: 298,
 				}, false),
@@ -61,16 +62,16 @@ func TestEnv_CreatePrice(t *testing.T) {
 						Cycle: enum.CycleNull,
 					},
 					UpdateParams: price.UpdateParams{
-						Title:         null.StringFrom(gofakeit.Sentence(2)),
-						Nickname:      null.StringFrom(gofakeit.Word()),
-						StripePriceID: faker.GenStripePriceID(),
-					},
-					PeriodCount: dt.YearMonthDayJSON{
-						YearMonthDay: dt.YearMonthDay{
-							Years:  0,
-							Months: 0,
-							Days:   7,
+						Title:    null.StringFrom(gofakeit.Sentence(2)),
+						Nickname: null.StringFrom(gofakeit.Word()),
+						PeriodCount: dt.YearMonthDayJSON{
+							YearMonthDay: dt.YearMonthDay{
+								Years:  0,
+								Months: 0,
+								Days:   7,
+							},
 						},
+						StripePriceID: faker.GenStripePriceID(),
 					},
 					ProductID:  ids.ProductID(),
 					UnitAmount: 1,
@@ -306,6 +307,36 @@ func TestEnv_ArchivePrice(t *testing.T) {
 
 			if err := env.ArchivePrice(tt.args.p); (err != nil) != tt.wantErr {
 				t.Errorf("ArchivePrice() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnv_CreatePlan(t *testing.T) {
+
+	env := New(db.MockMySQL())
+
+	type args struct {
+		p price.Plan
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Create plan",
+			args: args{
+				p: price.NewPlan(test.NewStdProdBuilder().NewMonthPriceBuilder().Build()),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := env.CreatePlan(tt.args.p); (err != nil) != tt.wantErr {
+				t.Errorf("CreatePlan() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
