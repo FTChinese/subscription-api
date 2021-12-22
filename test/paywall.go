@@ -159,13 +159,14 @@ func (b PriceBuilder) Build() price.Price {
 		Kind:    b.kind,
 		Edition: b.edition,
 		UpdateParams: price.UpdateParams{
-			Title:         null.StringFrom(gofakeit.Sentence(3)),
-			Nickname:      null.StringFrom(gofakeit.Sentence(2)),
+			Title:    null.StringFrom(gofakeit.Sentence(3)),
+			Nickname: null.StringFrom(gofakeit.Sentence(2)),
+			PeriodCount: dt.YearMonthDayJSON{
+				YearMonthDay: dt.NewYearMonthDay(b.edition.Cycle),
+			},
 			StripePriceID: faker.GenStripePriceID(),
 		},
-		PeriodCount: dt.YearMonthDayJSON{
-			YearMonthDay: dt.NewYearMonthDay(b.edition.Cycle),
-		},
+
 		ProductID:  b.productID,
 		UnitAmount: amount,
 	}, b.live)
