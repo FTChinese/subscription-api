@@ -70,6 +70,16 @@ func (router StripeRouter) onSubscription(ss *stripeSdk.Subscription) error {
 	return err
 }
 
+// WebHook to listen to those events:
+// - customer.subscription.created
+// - customer.subscription.updated
+// - customer.subscription.deleted
+// - invoice.created
+// - invoice.finalized
+// - invoice.payment_action_required
+// - invoice.payment_failed
+// - invoice.payment_succeeded
+// - invoice.upcoming
 func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sugar()
 	sugar := router.Logger.Sugar()
@@ -95,7 +105,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 
 	// create occurs whenever a customer is signed up for a new plan.
 	// update occurs whenever a subscription changes (e.g., switching from one plan to another, or changing the status from trial to active).
-	case "customer.subscription.created", "customer.subscription.updated":
+	case "customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted":
 		s := stripeSdk.Subscription{}
 		if err := json.Unmarshal(event.Data.Raw, &s); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
