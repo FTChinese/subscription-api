@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/guregu/null"
 )
 
 type Paywall struct {
@@ -19,8 +18,18 @@ func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
 	}
 }
 
-func (w Paywall) findFtcPrice(id string) (PaywallPrice, error) {
+func (w Paywall) findPrice(id string) (PaywallPrice, error) {
+
 	for _, prod := range w.Products {
+		if !prod.Introductory.IsZero() {
+			if prod.Introductory.ID == id {
+				return PaywallPrice{
+					Price:  prod.Introductory.Price,
+					Offers: nil,
+				}, nil
+			}
+		}
+
 		for _, v := range prod.Prices {
 			if v.ID == id {
 				return v, nil
@@ -43,23 +52,24 @@ func (w Paywall) FindPriceByEdition(e price.Edition) (PaywallPrice, error) {
 	return PaywallPrice{}, sql.ErrNoRows
 }
 
-func (w Paywall) FindCheckoutItem(priceID string, offerID null.String) (price.CheckoutItem, error) {
-	ftcPrice, err := w.findFtcPrice(priceID)
+func (w Paywall) FindCheckoutItem(params CartParams) (price.CheckoutItem, error) {
+	pwPrice, err := w.findPrice(params.PriceID)
 	if err != nil {
 		return price.CheckoutItem{}, err
 	}
 
-	if offerID.IsZero() {
+	// For introductory price, ignore discount.
+	if pwPrice.IsOneTime() || params.DiscountID.IsZero() {
 		return price.CheckoutItem{
-			Price: ftcPrice.Price,
+			Price: pwPrice.Price,
 			Offer: price.Discount{},
 		}, nil
 	}
 
-	offer, _ := ftcPrice.Offers.FindValid(offerID.String)
+	offer, _ := pwPrice.Offers.FindValid(params.DiscountID.String)
 
 	return price.CheckoutItem{
-		Price: ftcPrice.Price,
+		Price: pwPrice.Price,
 		Offer: offer,
 	}, nil
 }
