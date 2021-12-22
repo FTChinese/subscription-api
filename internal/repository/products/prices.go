@@ -15,6 +15,15 @@ func (env Env) CreatePrice(p price.Price) error {
 	return nil
 }
 
+func (env Env) CreatePlan(p price.Plan) error {
+	_, err := env.dbs.Write.NamedExec(price.StmtCreatePlan, p)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // UpdatePrice updates a price's description and stripe price id.
 func (env Env) UpdatePrice(p price.Price) error {
 	_, err := env.dbs.Write.NamedExec(
