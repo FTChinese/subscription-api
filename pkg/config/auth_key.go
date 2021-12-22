@@ -71,6 +71,7 @@ func MustLoadPollingKey() AuthKeys {
 }
 
 // MustSubsAPIv1BaseURL is kept for backward compatible for polling service.
+// Deprecated
 func MustSubsAPIv1BaseURL() AuthKeys {
 	return MustLoadAuthKeys("api_urls.subs_v1")
 }
