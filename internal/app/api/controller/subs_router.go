@@ -9,6 +9,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"net/http"
 )
 
@@ -79,23 +80,37 @@ func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.C
 	return router.ConfirmOrder(result, order)
 }
 
-func (router SubsRouter) loadCheckoutItem(params subs.OrderParams, live bool) (price.CheckoutItem, *render.ResponseError) {
+func (router SubsRouter) loadCheckoutItem(params pw.CartParams, live bool) (price.CheckoutItem, *render.ResponseError) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
+	sugar.Infof("Load checkout item. Live %t", live)
+
 	paywall, err := router.PaywallRepo.LoadPaywall(live)
 	// If price and discount could be found in paywall.
 	if err == nil {
-		item, err := paywall.FindCheckoutItem(params.PriceID, params.DiscountID)
+		sugar.Infof("Paywall Cache found. Search checkout item.")
+		item, err := paywall.FindCheckoutItem(params)
 		if err == nil {
+			sugar.Infof("Checkout item found in cache")
 			return item, nil
+		} else {
+			sugar.Infof("Checkout item not found in cache. Search db directly.")
 		}
 	}
 
 	// Otherwise, retrieve from db.
-	ci, err := router.PaywallRepo.LoadCheckoutItem(params.PriceID, params.DiscountID, router.Live)
+	ci, err := router.PaywallRepo.LoadCheckoutItem(
+		params,
+		router.Live)
+
 	if err != nil {
+		sugar.Error(err)
 		return price.CheckoutItem{}, render.NewDBError(err)
 	}
 
 	if err := ci.Verify(live); err != nil {
+		sugar.Error(err)
 		return price.CheckoutItem{}, render.NewBadRequest(err.Error())
 	}
 
