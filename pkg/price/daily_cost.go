@@ -1,5 +1,7 @@
 package price
 
+import "github.com/FTChinese/subscription-api/pkg/conv"
+
 type DailyCost struct {
 	Holder   string
 	Replacer string
@@ -8,13 +10,13 @@ type DailyCost struct {
 func NewDailyCostOfYear(price float64) DailyCost {
 	return DailyCost{
 		Holder:   "{{dailyAverageOfYear}}",
-		Replacer: FormatMoney(price / 365),
+		Replacer: conv.FormatMoney(price / 365),
 	}
 }
 
 func NewDailyCostOfMonth(price float64) DailyCost {
 	return DailyCost{
 		Holder:   "{{dailyAverageOfMonth}}",
-		Replacer: FormatMoney(price / 30),
+		Replacer: conv.FormatMoney(price / 30),
 	}
 }
