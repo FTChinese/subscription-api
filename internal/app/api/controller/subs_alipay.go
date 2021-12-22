@@ -38,6 +38,8 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		clientApp := footprint.NewClient(req)
 		readerIDs := xhttp.UserIDsFromHeader(req.Header)
 
+		sugar.Infof("Alipay from app for %v", readerIDs)
+
 		// Find user account.
 		acnt, err := router.ReaderRepo.FindBaseAccount(readerIDs)
 		if err != nil {
@@ -46,12 +48,16 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
+		sugar.Infof("Base account found %v", acnt)
+
 		var input subs.AliPayReq
 		if err := gorest.ParseJSON(req.Body, &input); err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
+
+		sugar.Infof("Request body parsed %v", input)
 
 		// TODO: ensure return url is set.
 		if ve := input.Validate(); ve != nil {
@@ -60,12 +66,16 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		item, re := router.loadCheckoutItem(input.OrderParams, !acnt.IsTest())
+		sugar.Infof("Start loading checkout item...")
+
+		item, re := router.loadCheckoutItem(input.CartParams, router.Live)
 		if re != nil {
 			sugar.Error(re)
 			_ = render.New(w).JSON(re.StatusCode, re)
 			return
 		}
+
+		sugar.Infof("Checkout item loaded %v", item)
 
 		counter := subs.Counter{
 			BaseAccount:  acnt,
@@ -74,8 +84,10 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			WxAppID:      null.String{},
 		}
 
+		sugar.Infof("Creating order...")
 		pi, err := router.SubsRepo.CreateOrder(counter)
 		if err != nil {
+			sugar.Error(err)
 			_ = render.New(w).InternalServerError(err.Error())
 			return
 		}
