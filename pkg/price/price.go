@@ -206,3 +206,7 @@ func (p Price) DailyCost() DailyCost {
 func (p Price) IsOneTime() bool {
 	return p.Kind == KindOneTime
 }
+
+func (p Price) IsRecurring() bool {
+	return p.Kind == KindRecurring
+}
