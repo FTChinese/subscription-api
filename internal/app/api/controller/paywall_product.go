@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
@@ -202,6 +203,23 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
 		return
+	}
+
+	// Sync stripe price metadata
+	if activated.StripePriceID != "" {
+		go func() {
+			sp, err := router.StripePriceRepo.
+				UpdatePriceMeta(
+					activated.ID,
+					stripe.PriceMetaParams(activated, true))
+
+			if err != nil {
+				sugar.Error(err)
+				return
+			}
+
+			sugar.Infof("Stripe price meta updated %v", sp)
+		}()
 	}
 
 	_ = render.New(w).OK(prod)
