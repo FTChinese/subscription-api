@@ -3,7 +3,6 @@ package shared
 import (
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/pw"
-	"github.com/guregu/null"
 )
 
 // RetrievePaywallPrice retrieves a single row by plan id.
@@ -89,8 +88,21 @@ func (env PaywallCommon) asyncLoadDiscount(id string) <-chan asyncDiscountResult
 }
 
 // LoadCheckoutItem loads a price and a discount from db.
-func (env PaywallCommon) LoadCheckoutItem(priceID string, discountID null.String, live bool) (price.CheckoutItem, error) {
-	priceCh, discCh := env.asyncLoadPrice(priceID, live), env.asyncLoadDiscount(discountID.String)
+func (env PaywallCommon) LoadCheckoutItem(params pw.CartParams, live bool) (price.CheckoutItem, error) {
+
+	if params.DiscountID.IsZero() {
+		pwp, err := env.RetrievePaywallPrice(params.PriceID, live)
+		if err != nil {
+			return price.CheckoutItem{}, err
+		}
+
+		return price.CheckoutItem{
+			Price: pwp.Price,
+			Offer: price.Discount{},
+		}, nil
+	}
+
+	priceCh, discCh := env.asyncLoadPrice(params.PriceID, live), env.asyncLoadDiscount(params.DiscountID.String)
 
 	priceResult, discResult := <-priceCh, <-discCh
 	if priceResult.error != nil {
