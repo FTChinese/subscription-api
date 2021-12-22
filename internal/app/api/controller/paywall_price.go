@@ -67,7 +67,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 	}
 
 	// Sync stripe price metadata
-	if params.StripePriceID != "" {
+	if p.StripePriceID != "" {
 		go func() {
 			sp, err := router.StripePriceRepo.
 				UpdatePriceMeta(
@@ -80,6 +80,16 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 			}
 
 			sugar.Infof("Stripe price meta set %v", sp)
+		}()
+	}
+
+	// Sync legacy table.
+	if p.IsRecurring() {
+		go func() {
+			err := router.ProductRepo.CreatePlan(price.NewPlan(p))
+			if err != nil {
+				sugar.Error(err)
+			}
 		}()
 	}
 
