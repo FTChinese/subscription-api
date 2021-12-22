@@ -1,7 +1,7 @@
 package price
 
 import (
-	"strconv"
+	"github.com/FTChinese/subscription-api/pkg/conv"
 )
 
 // Charge represents how much we should ask user to pay in what currency with which discount.
@@ -21,15 +21,13 @@ func NewCharge(price Price, offer Discount) Charge {
 }
 
 // AliPrice converts Charged price to ailpay format
+// Deprecated.
 func (c Charge) AliPrice() string {
-	return strconv.FormatFloat(c.Amount, 'f', 2, 32)
+	return conv.FormatMoney(c.Amount)
 }
 
 // AmountInCent converts Charged price to int64 in cent for comparison with wx notification.
+// Deprecated
 func (c Charge) AmountInCent() int64 {
 	return int64(c.Amount * 100)
-}
-
-func FormatMoney(n float64) string {
-	return strconv.FormatFloat(n, 'f', 2, 32)
 }
