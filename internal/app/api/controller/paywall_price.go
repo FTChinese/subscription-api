@@ -66,12 +66,13 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	// Sync stripe price metadata
 	if params.StripePriceID != "" {
 		go func() {
 			sp, err := router.StripePriceRepo.
 				UpdatePriceMeta(
 					params.StripePriceID,
-					stripe.PriceMetaParams(p))
+					stripe.PriceMetaParams(p, false))
 
 			if err != nil {
 				sugar.Error(err)
@@ -121,14 +122,16 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 			sp, err := router.StripePriceRepo.
 				UpdatePriceMeta(
 					params.StripePriceID,
-					stripe.PriceMetaParams(updated))
+					stripe.PriceMetaParams(
+						updated,
+						updated.IsOneTime() && updated.Active))
 
 			if err != nil {
 				sugar.Error(err)
 				return
 			}
 
-			sugar.Infof("Stripe price meta set %v", sp)
+			sugar.Infof("Stripe price meta updated %v", sp)
 		}()
 	}
 
