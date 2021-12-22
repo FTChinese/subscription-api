@@ -31,13 +31,15 @@ func (p *PaymentInput) Validate() *render.ValidationError {
 
 // Customer contains the minimal data of a stripe.Customer.
 type Customer struct {
-	ID                   string      `json:"id"`
-	FtcID                string      `json:"ftcId"`
-	DefaultSource        null.String `json:"defaultSource"`
-	DefaultPaymentMethod null.String `json:"defaultPaymentMethod"`
-	Email                string      `json:"email"`
-	LiveMode             bool        `json:"liveMode"`
-	CreatedUTC           chrono.Time `json:"createdUtc"`
+	ID                   string          `json:"id"`
+	FtcID                string          `json:"ftcId"`
+	Currency             stripe.Currency `json:"currency"`
+	Created              int64           `json:"created"`
+	DefaultSource        null.String     `json:"defaultSource"`
+	DefaultPaymentMethod null.String     `json:"defaultPaymentMethod"`
+	Email                string          `json:"email"`
+	LiveMode             bool            `json:"liveMode"`
+	CreatedUTC           chrono.Time     `json:"createdUtc"` // Deprecated
 }
 
 func NewCustomer(a account.BaseAccount, c *stripe.Customer) Customer {
@@ -54,6 +56,8 @@ func NewCustomer(a account.BaseAccount, c *stripe.Customer) Customer {
 	return Customer{
 		ID:                   c.ID,
 		FtcID:                a.FtcID,
+		Currency:             c.Currency,
+		Created:              c.Created,
 		DefaultSource:        null.NewString(srcID, srcID != ""),
 		DefaultPaymentMethod: null.NewString(pmID, pmID != ""),
 		Email:                a.Email,
