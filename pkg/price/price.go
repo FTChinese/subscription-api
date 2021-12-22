@@ -152,6 +152,10 @@ func New(p CreationParams, live bool) Price {
 	}
 }
 
+func (p Price) IsZero() bool {
+	return p.ID == ""
+}
+
 // Update modifies an existing price.
 // Only the field listed here is modifiable.
 func (p Price) Update(params UpdateParams) Price {
