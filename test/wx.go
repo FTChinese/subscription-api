@@ -4,70 +4,113 @@
 package test
 
 import (
-	"github.com/FTChinese/go-rest"
+	"encoding/json"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
-	"github.com/FTChinese/subscription-api/pkg/wxlogin"
-	"github.com/brianvoe/gofakeit/v5"
-	"github.com/guregu/null"
+	"github.com/objcoding/wxpay"
+	"strconv"
 )
 
-func NewWxWHUnsigned(order subs.Order) wechat.Notification {
-	nonce, _ := gorest.RandomHex(16)
+type WxWebhookPayload struct {
+	ReturnCode string `json:"return_code"` // SUCCESS/FAIL
+	ReturnMsg  string `json:"return_msg,omitempty"`
 
-	noti := wechat.Notification{
-		OpenID:        null.StringFrom(faker.GenWxID()),
-		IsSubscribed:  false,
-		TradeType:     null.StringFrom("APP"),
-		BankType:      null.StringFrom("CMC"),
-		TotalFee:      null.IntFrom(order.AmountInCent()),
-		TransactionID: null.StringFrom(rand.String(28)),
-		FTCOrderID:    null.StringFrom(order.ID),
-		TimeEnd:       null.StringFrom("20060102150405"),
-	}
-
-	noti.ReturnCode = "SUCCESS"
-	noti.ReturnMessage = "OK"
-	noti.AppID = null.StringFrom(WxPayApp.AppID)
-	noti.MID = null.StringFrom(WxPayApp.MchID)
-	noti.Nonce = null.StringFrom(nonce)
-	noti.ResultCode = null.StringFrom("SUCCESS")
-
-	return noti
+	// 以下字段在return_code为SUCCESS的时候有返回
+	AppID              string `json:"appid" xml:"appid"`
+	MchID              string `json:"mch_id" xml:"mch_id"`
+	DeviceInfo         string `json:"device_info,omitempty" xml:"device_info,omitempty"`
+	Nonce              string `json:"nonce_str" xml:"nonce_str"`
+	Sign               string `json:"sign" xml:"sign"`
+	SignType           string `json:"sign_type" xml:"sign_type"`
+	ResultCode         string `json:"result_code" xml:"result_code"`
+	ErrCode            string `json:"err_code,omitempty" xml:"err_code,omitempty"`
+	ErrCodeDes         string `json:"err_code_des,omitempty" xml:"err_code_des,omitempty"`
+	OpenID             string `json:"openid" xml:"openid"`
+	IsSubscribed       string `json:"is_subscribe" xml:"is_subscribe"` // 用户是否关注公众账号，Y-关注，N-未关注
+	TradeType          string `json:"trade_type" xml:"trade_type"`
+	BankType           string `json:"bank_type" xml:"bank_type"`
+	TotalFee           string `json:"total_fee" xml:"total_fee"`
+	SettlementTotalFee string `json:"settlement_total_fee,omitempty" xml:"settlement_total_fee,omitempty"`
+	FeeType            string `json:"fee_type" xml:"fee_type"`
+	CashFee            string `json:"cash_fee" xml:"cash_fee"`
+	CashFeeType        string `json:"cash_fee_type,omitempty" xml:"cash_fee_type,omitempty"`
+	CouponFee          string `json:"coupon_fee,omitempty" xml:"coupon_fee,omitempty"`
+	CouponCount        string `json:"coupon_count,omitempty" xml:"coupon_count,omitempty"`
+	CouponType         string `json:"coupon_type,omitempty" xml:"coupon_type,omitempty"`
+	CouponID           string `json:"coupon_id_$n,omitempty" xml:"coupon_id,omitempty"`
+	CouponFeeN         string `json:"coupon_fee_$n,omitempty" xml:"coupon_fee_$n,omitempty"`
+	TransactionID      string `json:"transaction_id" xml:"transaction_id"`
+	OutTradeNo         string `json:"out_trade_no,omitempty" xml:"out_trade_no,omitempty"`
+	Attach             string `json:"attach,omitempty" xml:"attach,omitempty"`
+	TimeEnd            string `json:"time_end" xml:"time_end"`
 }
 
-func NewWxOrderUnsigned() wechat.OrderResp {
-	nonce, _ := gorest.RandomHex(16)
-
-	or := wechat.OrderResp{
-		PrepayID: null.StringFrom(rand.String(36)),
+func NewWxWebhookPayload(o subs.Order) WxWebhookPayload {
+	return WxWebhookPayload{
+		ReturnCode:         wechat.Success,
+		ReturnMsg:          "",
+		AppID:              WxPayApp.AppID,
+		MchID:              WxPayApp.MchID,
+		DeviceInfo:         "",
+		Nonce:              wechat.GenerateNonce(),
+		Sign:               "",
+		SignType:           wechat.SignTypeMD5,
+		ResultCode:         wechat.Success,
+		ErrCode:            "",
+		ErrCodeDes:         "",
+		OpenID:             faker.GenWxID(),
+		IsSubscribed:       "N",
+		TradeType:          string(wechat.TradeTypeApp),
+		BankType:           "",
+		TotalFee:           strconv.FormatInt(o.WxPayable(), 10),
+		SettlementTotalFee: "",
+		FeeType:            "",
+		CashFee:            strconv.FormatInt(o.WxPayable(), 10),
+		CashFeeType:        "",
+		CouponFee:          "",
+		CouponCount:        "",
+		CouponType:         "",
+		CouponID:           "",
+		CouponFeeN:         "",
+		TransactionID:      rand.StringWithCharset(32, "1234567890"),
+		OutTradeNo:         o.ID,
+		Attach:             "",
+		TimeEnd:            wechat.GenerateTimestamp(),
 	}
-
-	or.ReturnCode = "SUCCESS"
-	or.ReturnMessage = "OK"
-	or.AppID = null.StringFrom(WxPayApp.AppID)
-	or.MID = null.StringFrom(WxPayApp.MchID)
-	or.Nonce = null.StringFrom(nonce)
-	or.ResultCode = null.StringFrom("SUCCESS")
-
-	return or
 }
 
-func (p *Persona) WxUser() wxlogin.UserInfoSchema {
-	faker.SeedGoFake()
-	return wxlogin.UserInfoSchema{
-		UserInfoShared: wxlogin.UserInfoShared{
-			UnionID:   p.UnionID,
-			OpenID:    "",
-			NickName:  null.StringFrom(gofakeit.Username()),
-			AvatarURL: null.StringFrom(faker.GenAvatar()),
-			Country:   null.StringFrom(gofakeit.Country()),
-			Province:  null.StringFrom(gofakeit.State()),
-			City:      null.StringFrom(gofakeit.City()),
-		},
-		Gender:    faker.RandomGender(),
-		Privilege: null.String{},
+func (p WxWebhookPayload) WithSign() WxWebhookPayload {
+	b, err := json.Marshal(p)
+	if err != nil {
+		panic(err)
 	}
+
+	params := make(wxpay.Params)
+	err = json.Unmarshal(b, &params)
+	if err != nil {
+		panic(err)
+	}
+
+	p.Sign = WxPayClient.Sign(params)
+
+	return p
+}
+
+func (p WxWebhookPayload) ToMap() wxpay.Params {
+	b, err := json.Marshal(p)
+	if err != nil {
+		panic(err)
+	}
+
+	params := make(wxpay.Params)
+	err = json.Unmarshal(b, &params)
+	if err != nil {
+		panic(err)
+	}
+
+	params["sign"] = WxPayClient.Sign(params)
+
+	return params
 }
