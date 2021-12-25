@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
@@ -29,7 +28,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		enum.PayMethodWx)
 
 	// Find the client to use for wxpay
-	payClient, err := router.WxPayClients.ClientByPlatform(tradeType)
+	payClient, err := router.WxPayClients.FindByPlatform(tradeType)
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +39,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 		sugar.Info("Start creating a wechat order")
 
-		clientApp := footprint.NewClient(req)
+		clientMeta := footprint.NewClient(req)
 		readerIDs := xhttp.UserIDsFromHeader(req.Header)
 
 		// Find user account.
@@ -87,30 +86,38 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 		sugar.Infof("Created order: %+v", pi.Order)
 
-		err = router.postOrderCreation(pi.Order, clientApp)
+		err = router.postOrderCreation(pi.Order, clientMeta)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 			return
 		}
 
-		// Send order to wx
+		// 商户后台收到用户支付单，调用微信支付统一下单接口
+		// See https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=8_3
 		// UnifiedOrder checks if `return_code` is SUCCESS/FAIL,
 		// validate the signature
 		// You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
-		wxOrder, err := payClient.CreateOrder(wechat.OrderReq{
-			Body:          subs.PaymentTitle(pi.Order.Kind, pi.Order.Edition),
-			SellerOrderID: pi.Order.ID,
-			TotalAmount:   pi.Order.AmountInCent(),
-			WebhookURL:    webhookURL,
-			ProductID:     pi.Pricing.ID,
-			TxKind:        tradeType,
-			UserIP:        clientApp.UserIP.String,
-			OpenID:        input.OpenID,
+
+		orderReq := wechat.NewOrderReq(wechat.UnifiedOrderParams{
+			Body:        pi.Order.PaymentTitle(),
+			OutTradeNo:  pi.Order.ID,
+			TotalAmount: pi.Order.WxPayable(),
+			UserIP:      clientMeta.UserIP.String,
+			WebhookURL:  webhookURL,
+			TradeType:   string(tradeType),
+			OpenID:      input.OpenID,
 		})
+
+		orderPayload, err := payClient.CreateOrder(orderReq)
 
 		// Save raw response.
 		go func() {
-			err := router.SubsRepo.SavePrepayResp(wxOrder)
+			err := router.SubsRepo.SaveWxPayload(
+				wechat.NewPayloadSchema(
+					pi.Order.ID,
+					orderPayload,
+				).WithKind(wechat.RowKindCreateOrder),
+			)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -122,41 +129,33 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 			return
 		}
 
-		// Validate wechat response.
-		err = wxOrder.Validate(payClient.GetApp())
+		err = payClient.GetApp().ValidateOrderPayload(orderPayload)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).InternalServerError(err.Error())
 			return
 		}
 
-		switch tradeType {
-		// Desktop returns a url that can be turned to QR code
-		case wechat.TradeTypeDesktop:
-			_ = render.New(w).OK(subs.NewWxPayDesktopIntent(pi, wxOrder))
-
-		// Mobile returns a url which is redirect in browser
-		case wechat.TradeTypeMobile:
-			_ = render.New(w).OK(subs.NewWxPayMobileIntent(pi, wxOrder))
-
-		// Create the json data used by js api
-		case wechat.TradeTypeJSAPI:
-			_ = render.New(w).OK(
-				subs.NewWxPayJSApiIntent(
-					pi,
-					payClient.SignJSApiParams(wxOrder),
-				),
-			)
-
-		// Create the json data used by native app.
-		case wechat.TradeTypeApp:
-			_ = render.New(w).OK(
-				subs.NewWxNativeAppIntent(
-					pi,
-					payClient.SignAppParams(wxOrder),
-				),
-			)
+		// 统一下单接口返回正常的prepay_id，再按签名规范重新生成签名后，将数据传输给APP。
+		// 参与签名的字段名为appid，partnerid，prepayid，noncestr，timestamp，package。注意：package的值格式为Sign=WXPay
+		payParams, err := payClient.SDKParams(
+			wechat.NewOrderResp(orderPayload),
+			tradeType)
+		if err != nil {
+			_ = render.NewBadRequest(err.Error())
+			return
 		}
+
+		payIntent := subs.NewWxPaymentIntent(pi, payParams)
+
+		go func() {
+			err := router.SubsRepo.SavePaymentIntent(payIntent.Schema())
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+
+		_ = render.New(w).OK(payIntent)
 	}
 }
 
@@ -183,43 +182,52 @@ func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	defer req.Body.Close()
+
 	// Decode Wechat XML request body.
 	// If it cannot be decoded, tell wechat to resend it.
-	sugar.Info("Getting webhook payload")
-	payload, err := router.WxPayClients.GetWebhookPayload(req)
-	//params, err := wechat.DecodeXML(req.Body)
+	rawPayload, err := wechat.DecodeXML(req.Body)
 	if err != nil {
 		sugar.Error(err)
 		send(err)
 		return
 	}
 
-	// Turn the map to struct
-	//payload := wechat.NewNotification(params)
-	// Log the response, regardless of whether it is an error
-	// or not.
+	if err := wechat.ValidateWebhookPayload(rawPayload); err != nil {
+		sugar.Error(err)
+		send(err)
+		return
+	}
+
+	// Verify signature.
+	client, err := router.WxPayClients.FindByAppID(wechat.GetAppID(rawPayload))
+	if err != nil {
+		sugar.Error(err)
+		send(err)
+		return
+	}
+
+	err = client.VerifySignature(rawPayload)
+	if err != nil {
+		sugar.Error(err)
+		send(err)
+		return
+	}
+
 	go func() {
 		sugar.Info("Saving wxpay webhook raw payload")
-		if err := router.SubsRepo.SaveWxNotification(payload); err != nil {
+		err := router.SubsRepo.SaveWxPayload(
+			wechat.NewPayloadSchema(
+				wechat.GetOrderID(rawPayload),
+				rawPayload,
+			).WithKind(wechat.RowKindWebhook),
+		)
+		if err != nil {
 			sugar.Error(err)
 		}
 	}()
 
-	sugar.Info("Checking payload unprocessable")
-	if payload.IsUnprocessable() {
-		sugar.Error(payload.UnprocessableMsg())
-		send(errors.New(payload.ErrorMessage.String))
-		return
-	}
-
-	// Should check this?
-	//if err := payload.EnsureSuccess(); err != nil {
-	//	sugar.Error(err)
-	//	_, _ = w.Write([]byte(resp.OK()))
-	//	return
-	//}
-
-	payResult := subs.NewWxWebhookResult(payload)
+	payResult := subs.NewWxWebhookResult(wechat.NewWebhookParams(rawPayload))
 
 	sugar.Info("Start processing wx webhook")
 	_, cfmErr := router.processWebhookResult(payResult)
