@@ -10,7 +10,6 @@ import (
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 	"testing"
 	"time"
@@ -145,12 +144,11 @@ func TestEnv_LoadSubs(t *testing.T) {
 
 			got, err := env.LoadSubs(tt.args.originalID)
 
-			if tt.wantErr {
-				assert.Error(t, err)
+			if err != nil {
+				t.Error(err)
 				return
 			}
 
-			assert.NoError(t, err)
 			t.Logf("%s", got.Environment)
 		})
 	}
@@ -186,12 +184,6 @@ func TestEnv_countSubs(t *testing.T) {
 				t.Errorf("countSubs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NoError(t, err)
 
 			t.Logf("Total rows %d", got)
 		})
@@ -230,12 +222,6 @@ func TestEnv_listSubs(t *testing.T) {
 				t.Errorf("listSubs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NoError(t, err)
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
@@ -275,8 +261,6 @@ func TestEnv_ListSubs(t *testing.T) {
 				t.Errorf("ListSubs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
-			assert.NoError(t, err)
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
 		})
