@@ -98,7 +98,7 @@ func TestPurchasedTimeParams_Build(t *testing.T) {
 			b := PurchasedTimeParams{
 				ConfirmedAt:    tt.fields.ConfirmedAt,
 				ExpirationDate: tt.fields.ExpirationDate,
-				Date:           tt.fields.Date,
+				PeriodCount:    tt.fields.Date,
 				OrderKind:      tt.fields.OrderKind,
 			}
 			got, err := b.Build()

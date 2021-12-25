@@ -19,16 +19,16 @@ import (
 )
 
 type MockOrderBuilder struct {
-	id         string
-	ftcID      string
-	unionID    string
-	price      pw.PaywallPrice
-	kind       enum.OrderKind
-	payMethod  enum.PayMethod
-	wxAppId    null.String
-	confirmed  bool
-	period     dt.DatePeriod
-	offerKinds []price.OfferKind
+	id        string
+	ftcID     string
+	unionID   string
+	price     pw.PaywallPrice
+	kind      enum.OrderKind
+	payMethod enum.PayMethod
+	wxAppId   null.String
+	confirmed bool
+	period    dt.DatePeriod
+	offerKind price.OfferKind
 }
 
 func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
@@ -41,9 +41,7 @@ func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
 		kind:      enum.OrderKindCreate,
 		payMethod: enum.PayMethodAli,
 		confirmed: false,
-		offerKinds: []price.OfferKind{
-			price.OfferKindPromotion,
-		},
+		offerKind: price.OfferKindNull,
 	}
 }
 
@@ -95,8 +93,8 @@ func (b MockOrderBuilder) WithUpgrade() MockOrderBuilder {
 	return b.WithKind(enum.OrderKindUpgrade)
 }
 
-func (b MockOrderBuilder) WithOfferKinds(k []price.OfferKind) MockOrderBuilder {
-	b.offerKinds = k
+func (b MockOrderBuilder) WithOfferKinds(k price.OfferKind) MockOrderBuilder {
+	b.offerKind = k
 	return b
 }
 
@@ -131,10 +129,23 @@ func (b MockOrderBuilder) WithStartTime(from time.Time) MockOrderBuilder {
 	return b
 }
 
+func (b MockOrderBuilder) findDiscount() price.Discount {
+	for _, v := range b.price.Offers {
+		if v.Kind == b.offerKind {
+			return v
+		}
+	}
+
+	return price.Discount{}
+}
 func (b MockOrderBuilder) Build() Order {
 
-	discount := b.price.Offers.FindApplicable(b.offerKinds)
-	charge := price.NewCharge(b.price.Price, discount)
+	item := price.CheckoutItem{
+		Price: b.price.Price,
+		Offer: b.findDiscount(),
+	}
+
+	ymd := item.PeriodCount()
 
 	var confirmed time.Time
 	if b.confirmed {
@@ -148,18 +159,18 @@ func (b MockOrderBuilder) Build() Order {
 			FtcID:      null.StringFrom(b.ftcID),
 			UnionID:    null.NewString(b.unionID, b.unionID != ""),
 		}.MustNormalize(),
-		PlanID:        b.price.ID,
-		DiscountID:    null.NewString(discount.ID, discount.ID != ""),
-		Price:         b.price.UnitAmount,
 		Edition:       b.price.Edition,
-		Charge:        charge,
 		Kind:          b.kind,
+		OriginalPrice: b.price.UnitAmount,
+		PayableAmount: item.PayableAmount(),
 		PaymentMethod: b.payMethod,
+		YearsCount:    ymd.Years,
+		MonthsCount:   ymd.Months,
+		DaysCount:     ymd.Days,
 		WxAppID:       b.wxAppId,
-		CreatedAt:     chrono.TimeNow(),
 		ConfirmedAt:   chrono.TimeFrom(confirmed),
 		DatePeriod:    b.period,
-		LiveMode:      true,
+		CreatedAt:     chrono.TimeNow(),
 	}
 }
 
@@ -169,7 +180,7 @@ func MockNewPaymentResult(o Order) PaymentResult {
 		result := PaymentResult{
 			PaymentState:     "SUCCESS",
 			PaymentStateDesc: "",
-			Amount:           null.IntFrom(o.AmountInCent()),
+			Amount:           null.IntFrom(o.WxPayable()),
 			TransactionID:    rand.String(28),
 			OrderID:          o.ID,
 			PaidAt:           chrono.TimeNow(),
@@ -182,7 +193,7 @@ func MockNewPaymentResult(o Order) PaymentResult {
 		return PaymentResult{
 			PaymentState:     "TRADE_SUCCESS",
 			PaymentStateDesc: "",
-			Amount:           null.IntFrom(o.AmountInCent()),
+			Amount:           null.IntFrom(o.WxPayable()),
 			TransactionID:    rand.String(28),
 			OrderID:          o.ID,
 			PaidAt:           chrono.TimeNow(),
@@ -195,8 +206,8 @@ func MockNewPaymentResult(o Order) PaymentResult {
 	}
 }
 
-func MockAliNoti(order Order) alipay.TradeNotification {
-	return alipay.TradeNotification{
+func MockAliNoti(order Order) *alipay.TradeNotification {
+	return &alipay.TradeNotification{
 		AuthAppId:         "",
 		NotifyTime:        time.Now().In(time.UTC).Format(chrono.SQLDateTime),
 		NotifyType:        "trade_status_sync",
@@ -214,10 +225,10 @@ func MockAliNoti(order Order) alipay.TradeNotification {
 		SellerId:          "",
 		SellerEmail:       "",
 		TradeStatus:       "TRADE_SUCCESS",
-		TotalAmount:       order.AliPrice(),
-		ReceiptAmount:     order.AliPrice(),
-		InvoiceAmount:     order.AliPrice(),
-		BuyerPayAmount:    order.AliPrice(),
+		TotalAmount:       order.AliPayable(),
+		ReceiptAmount:     order.AliPayable(),
+		InvoiceAmount:     order.AliPayable(),
+		BuyerPayAmount:    order.AliPayable(),
 		PointAmount:       "",
 		RefundFee:         "",
 		Subject:           "",

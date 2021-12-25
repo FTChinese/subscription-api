@@ -11,7 +11,7 @@ import (
 type PurchasedTimeParams struct {
 	ConfirmedAt    chrono.Time     // When the order is confirmed
 	ExpirationDate chrono.Date     // When the current membership will expire.
-	Date           dt.YearMonthDay // Purchased period.
+	PeriodCount    dt.YearMonthDay // Purchased period.
 	OrderKind      enum.OrderKind
 }
 
@@ -25,12 +25,12 @@ func (b PurchasedTimeParams) Build() (dt.TimeRange, error) {
 	case enum.OrderKindCreate, enum.OrderKindRenew:
 		startTime := dt.PickLater(b.ConfirmedAt.Time, b.ExpirationDate.Time)
 		return dt.NewTimeRange(startTime).
-			WithDate(b.Date), nil
+			WithPeriod(b.PeriodCount), nil
 
 	// Why use confirmation time here?
 	case enum.OrderKindUpgrade:
 		return dt.NewTimeRange(b.ConfirmedAt.Time).
-			WithDate(b.Date), nil
+			WithPeriod(b.PeriodCount), nil
 
 	case enum.OrderKindAddOn:
 		return dt.TimeRange{}, nil

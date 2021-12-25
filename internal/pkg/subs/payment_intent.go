@@ -1,127 +1,109 @@
 package subs
 
 import (
-	"fmt"
-	"github.com/FTChinese/go-rest/enum"
+	"errors"
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
+	"github.com/guregu/null"
 )
 
-// PaymentTitle is used as the value of `subject` for alipay,
-// and `body` for wechat pay.
-// * 订阅FT中文网标准会员/年
-// * 订阅FT中文网高端会员/年
-// * 购买FT中文网标准会员/年
-// * 购买FT中文网高端会员/年
-func PaymentTitle(k enum.OrderKind, e price.Edition) string {
-	var prefix string
-
-	switch k {
-	case enum.OrderKindCreate:
-	case enum.OrderKindRenew:
-	case enum.OrderKindUpgrade:
-		prefix = "订阅"
-
-	case enum.OrderKindAddOn:
-		prefix = "购买"
-
-	default:
-	}
-
-	return fmt.Sprintf("%sFT中文网%s", prefix, e.StringCN())
-}
-
 type PaymentIntent struct {
-	Pricing    price.Price       `json:"pricing"`
+	Price      price.Price       `json:"price"`
 	Offer      price.Discount    `json:"offer"`
 	Order      Order             `json:"order"`
 	Membership reader.Membership `json:"membership"`
 }
 
-// WxPayNativeAppIntent creates an order used by native apps.
-type WxPayNativeAppIntent struct {
-	PaymentIntent
-	Params wechat.NativeAppParams `json:"params"`
+type PaymentIntentSchema struct {
+	OrderID      string                  `db:"order_id"`
+	Price        price.JSONPrice         `db:"price"`
+	Offer        price.ColumnDiscount    `db:"offer"`
+	Membership   reader.ColumnMembership `db:"membership"`
+	WxPayParams  wechat.ColumnSDKParams  `db:"wxpay_params"`
+	AliPayParams ali.ColumnSDKParams     `db:"alipay_params"`
+	CreatedUTC   chrono.Time             `db:"created_utc"`
 }
 
-func NewWxNativeAppIntent(pi PaymentIntent, p wechat.NativeAppParams) WxPayNativeAppIntent {
-	return WxPayNativeAppIntent{
+type WxPaymentIntent struct {
+	PaymentIntent
+	Params wechat.SDKParams `json:"params" db:"wxpay_params"`
+}
+
+func NewWxPaymentIntent(pi PaymentIntent, params wechat.SDKParams) WxPaymentIntent {
+	return WxPaymentIntent{
 		PaymentIntent: pi,
-		Params:        p,
+		Params:        params,
 	}
 }
 
-// WepayEmbedBrowserOrder responds to purchase made in wechat
-// embedded browser.
-// This is actually similar to AppOrder since they are all
-// perform actions inside wechat app.
-// It's a shame wechat cannot even use the same data structure
-// for such insignificant differences.
-type WxPayJSApiIntent struct {
-	PaymentIntent
-	Params wechat.JSApiParams `json:"params"`
-}
-
-func NewWxPayJSApiIntent(pi PaymentIntent, p wechat.JSApiParams) WxPayJSApiIntent {
-	return WxPayJSApiIntent{
-		PaymentIntent: pi,
-		Params:        p,
+func (p WxPaymentIntent) Schema() PaymentIntentSchema {
+	return PaymentIntentSchema{
+		OrderID: p.Order.ID,
+		Price: price.JSONPrice{
+			Price: p.Price,
+		},
+		Offer: price.ColumnDiscount{
+			Discount: p.Offer,
+		},
+		Membership: reader.ColumnMembership{
+			Membership: p.Membership,
+		},
+		WxPayParams: wechat.ColumnSDKParams{
+			SDKParams: p.Params,
+		},
+		AliPayParams: ali.ColumnSDKParams{},
+		CreatedUTC:   chrono.TimeNow(),
 	}
 }
 
-// WxPayBrowserIntent creates order for payment via wechat
-// made in browsers.
-// For desktop browser, wechat send back a custom url
-// for the client to generate a QR image;
-// For mobile browser, wechat sends back a canonical url
-// that can be redirected to.
-// and MobileOrder into a single data structure.
-type WxPayBrowserIntent struct {
+type AliPaymentIntent struct {
 	PaymentIntent
-	QRCode  string `json:"qrCodeUrl,omitempty"`         // Used by desktop browser. It is a custom url like wexin://wxpay/bizpayurl
-	MWebURL string `json:"mobileRedirectUrl,omitempty"` // This is a standard url that can be redirected to.
+	Params ali.SDKParams `json:"params" db:"alipay_params"`
 }
 
-func NewWxPayDesktopIntent(pi PaymentIntent, wxOrder wechat.OrderResp) WxPayBrowserIntent {
-	return WxPayBrowserIntent{
-		PaymentIntent: pi,
-		QRCode:        wxOrder.QRCode.String,
-		MWebURL:       "",
+func NewAliPaymentIntent(pi PaymentIntent, param string, kind ali.EntryKind) (AliPaymentIntent, error) {
+	switch kind {
+	case ali.EntryApp:
+		return AliPaymentIntent{
+			PaymentIntent: pi,
+			Params: ali.SDKParams{
+				BrowserRedirect: null.String{},
+				AppSDK:          null.StringFrom(param),
+			},
+		}, nil
+
+	case ali.EntryDesktopWeb, ali.EntryMobileWeb:
+		return AliPaymentIntent{
+			PaymentIntent: pi,
+			Params: ali.SDKParams{
+				BrowserRedirect: null.StringFrom(param),
+				AppSDK:          null.String{},
+			},
+		}, nil
 	}
+
+	return AliPaymentIntent{}, errors.New("unknown alipay platform")
 }
 
-func NewWxPayMobileIntent(pi PaymentIntent, wxOrder wechat.OrderResp) WxPayBrowserIntent {
-	return WxPayBrowserIntent{
-		PaymentIntent: pi,
-		QRCode:        "",
-		MWebURL:       wxOrder.MWebURL.String,
-	}
-}
-
-// AlipayBrowserIntent represents an order creates for alipay inside
-// browsers
-type AlipayBrowserIntent struct {
-	PaymentIntent
-	RedirectURL string `json:"redirectUrl"`
-}
-
-func NewAliPayBrowserIntent(pi PaymentIntent, redirectURL string) AlipayBrowserIntent {
-	return AlipayBrowserIntent{
-		PaymentIntent: pi,
-		RedirectURL:   redirectURL,
-	}
-}
-
-// AlipayNativeIntent is an order created inside a native app.
-type AlipayNativeIntent struct {
-	PaymentIntent
-	Param string `json:"param"`
-}
-
-func NewAliAppPayIntent(pi PaymentIntent, param string) AlipayNativeIntent {
-	return AlipayNativeIntent{
-		PaymentIntent: pi,
-		Param:         param,
+func (p AliPaymentIntent) Schema() PaymentIntentSchema {
+	return PaymentIntentSchema{
+		OrderID: p.Order.ID,
+		Price: price.JSONPrice{
+			Price: p.Price,
+		},
+		Offer: price.ColumnDiscount{
+			Discount: p.Offer,
+		},
+		Membership: reader.ColumnMembership{
+			Membership: p.Membership,
+		},
+		WxPayParams: wechat.ColumnSDKParams{},
+		AliPayParams: ali.ColumnSDKParams{
+			SDKParams: p.Params,
+		},
+		CreatedUTC: chrono.TimeNow(),
 	}
 }
