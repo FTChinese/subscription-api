@@ -11,6 +11,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"time"
 
@@ -236,4 +237,21 @@ func (p *Persona) IAPBuilder() IAPBuilder {
 
 func (p *Persona) OrderBuilder() subs.MockOrderBuilder {
 	return subs.NewMockOrderBuilder(p.FtcID)
+}
+
+func (p *Persona) WxUser() wxlogin.UserInfoSchema {
+	faker.SeedGoFake()
+	return wxlogin.UserInfoSchema{
+		UserInfoShared: wxlogin.UserInfoShared{
+			UnionID:   p.UnionID,
+			OpenID:    "",
+			NickName:  null.StringFrom(gofakeit.Username()),
+			AvatarURL: null.StringFrom(faker.GenAvatar()),
+			Country:   null.StringFrom(gofakeit.Country()),
+			Province:  null.StringFrom(gofakeit.State()),
+			City:      null.StringFrom(gofakeit.City()),
+		},
+		Gender:    faker.RandomGender(),
+		Privilege: null.String{},
+	}
 }

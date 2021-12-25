@@ -161,7 +161,7 @@ func (b PriceBuilder) Build() price.Price {
 		UpdateParams: price.UpdateParams{
 			Title:    null.StringFrom(gofakeit.Sentence(3)),
 			Nickname: null.StringFrom(gofakeit.Sentence(2)),
-			PeriodCount: dt.YearMonthDayJSON{
+			PeriodCount: price.ColumnYearMonthDay{
 				YearMonthDay: dt.NewYearMonthDay(b.edition.Cycle),
 			},
 			StripePriceID: faker.GenStripePriceID(),
@@ -235,7 +235,7 @@ func (b DiscountBuilder) Build(k price.OfferKind) price.Discount {
 		DiscountParams: price.DiscountParams{
 			Description: null.StringFrom(gofakeit.Sentence(10)),
 			Kind:        k,
-			OverridePeriod: dt.YearMonthDayJSON{
+			OverridePeriod: price.ColumnYearMonthDay{
 				YearMonthDay: b.period,
 			},
 			Percent:   null.Int{},

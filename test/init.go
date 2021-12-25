@@ -12,17 +12,19 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
+	"github.com/objcoding/wxpay"
 	"github.com/patrickmn/go-cache"
 )
 
 var (
-	DB       *sqlx.DB
-	SplitDB  db.ReadWriteMyDBs
-	Postman  postman.Postman
-	Redis    *redis.Client
-	Cache    *cache.Cache
-	WxPayApp wechat.PayApp
-	AliApp   ali.App
+	DB          *sqlx.DB
+	SplitDB     db.ReadWriteMyDBs
+	Postman     postman.Postman
+	Redis       *redis.Client
+	Cache       *cache.Cache
+	WxPayApp    wechat.PayApp
+	WxPayClient *wxpay.Client
+	AliApp      ali.App
 )
 
 func init() {
@@ -33,6 +35,7 @@ func init() {
 	Postman = postman.New(config.MustGetHanqiConn())
 	Redis = db.NewRedis(config.MustRedisAddress().Pick(false))
 	Cache = cache.New(cache.DefaultExpiration, 0)
-	WxPayApp = wechat.MustNewPayApp("wxapp.native_app")
+	WxPayApp = wechat.MustNewPayApp("wxapp.app_pay")
+	WxPayClient = wxpay.NewClient(wxpay.NewAccount(WxPayApp.AppID, WxPayApp.MchID, WxPayApp.APIKey, false))
 	AliApp = ali.MustInitApp()
 }

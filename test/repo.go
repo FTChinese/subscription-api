@@ -194,7 +194,7 @@ func (r Repo) MustSaveMembership(m reader.Membership) {
 
 func (r Repo) SaveOrder(order subs.Order) error {
 
-	var stmt = subs.StmtInsertOrder + `,
+	var stmt = subs.StmtCreateOrder + `,
 		confirmed_utc = :confirmed_utc,
 		start_date = :start_date,
 		end_date = :end_date`
