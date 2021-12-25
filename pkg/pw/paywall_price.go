@@ -1,8 +1,8 @@
 package pw
 
 import (
-	"errors"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/guregu/null"
 )
 
 // PaywallPrice contains a price's original price and promotion.
@@ -13,18 +13,52 @@ type PaywallPrice struct {
 	Offers price.DiscountListJSON `json:"offers" db:"discount_list"`
 }
 
+// SetOffers refreshes offers saved under a price.
 func (p PaywallPrice) SetOffers(o []price.Discount) PaywallPrice {
 	p.Offers = o
 
 	return p
 }
 
-func (p PaywallPrice) VerifyOffer(o price.Discount) error {
+func (p PaywallPrice) FindValidOffer(id string) (price.Discount, error) {
+	if len(p.Offers) == 0 {
+		return price.Discount{}, price.ErrDiscountNotFound
+	}
+
 	for _, v := range p.Offers {
-		if v.ID == o.ID {
-			return nil
+		if v.ID == id {
+			if v.IsValid() {
+				return v, nil
+			}
 		}
 	}
 
-	return errors.New("the requested offer is not found")
+	return price.Discount{}, price.ErrDiscountNotFound
+}
+
+func (p PaywallPrice) CheckoutItem(offerID null.String) (price.CheckoutItem, error) {
+	// For introductory price, ignore discount.
+	if p.IsOneTime() {
+		return price.CheckoutItem{
+			Price: p.Price,
+			Offer: price.Discount{},
+		}, nil
+	}
+
+	if offerID.IsZero() {
+		return price.CheckoutItem{
+			Price: p.Price,
+			Offer: price.Discount{},
+		}, nil
+	}
+
+	offer, err := p.FindValidOffer(offerID.String)
+	if err != nil {
+		return price.CheckoutItem{}, err
+	}
+
+	return price.CheckoutItem{
+		Price: p.Price,
+		Offer: offer,
+	}, nil
 }
