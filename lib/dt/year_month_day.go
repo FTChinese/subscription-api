@@ -1,9 +1,6 @@
 package dt
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"github.com/FTChinese/go-rest/enum"
 	"time"
 )
@@ -98,43 +95,25 @@ func (y YearMonthDay) IsZero() bool {
 	return y.Years == 0 && y.Months == 0 && y.Days == 0
 }
 
-type YearMonthDayJSON struct {
-	YearMonthDay
-}
-
-// Value implements Valuer interface by serializing an Invitation into
-// JSON data.
-func (j YearMonthDayJSON) Value() (driver.Value, error) {
-	if j.IsZero() {
-		return nil, nil
+// IsSingular checks to see if there's only
+// Years or Months field having value set.
+// This is mostly useful when you want to format
+// a human-readable string.
+// If there's only one year or one month set,
+// you can format string like:
+// - Standard/Month
+// - Standard/Year
+// otherwise you should explicitly tell user
+// the period they are purchasing:
+// - Standard/2 years 3 months 7 days
+func (y YearMonthDay) IsSingular() bool {
+	if y.Years == 1 && y.Months == 0 && y.Days == 0 {
+		return true
 	}
 
-	b, err := json.Marshal(j)
-	if err != nil {
-		return nil, err
+	if y.Years == 0 && y.Months == 1 && y.Days == 0 {
+		return true
 	}
 
-	return string(b), nil
-}
-
-// Scan implements Valuer interface by deserializing an invitation field.
-func (j *YearMonthDayJSON) Scan(src interface{}) error {
-	if src == nil {
-		*j = YearMonthDayJSON{}
-		return nil
-	}
-
-	switch s := src.(type) {
-	case []byte:
-		var tmp YearMonthDayJSON
-		err := json.Unmarshal(s, &tmp)
-		if err != nil {
-			return err
-		}
-		*j = tmp
-		return nil
-
-	default:
-		return errors.New("incompatible type to scan to YearMonthDayJSON")
-	}
+	return false
 }
