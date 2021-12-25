@@ -3,6 +3,7 @@ package price
 import (
 	"errors"
 	"fmt"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 )
 
@@ -11,6 +12,23 @@ import (
 type CheckoutItem struct {
 	Price Price    `json:"price"`
 	Offer Discount `json:"offer"` // Optional
+}
+
+func (i CheckoutItem) PayableAmount() float64 {
+	return i.Price.UnitAmount - i.Offer.PriceOff.Float64
+}
+
+// PeriodCount selects appropriate period for this purchase.
+func (i CheckoutItem) PeriodCount() dt.YearMonthDay {
+	if i.Offer.IsZero() {
+		return i.Price.PeriodCount.YearMonthDay
+	}
+
+	if i.Offer.OverridePeriod.IsZero() {
+		return i.Price.PeriodCount.YearMonthDay
+	}
+
+	return i.Offer.OverridePeriod.YearMonthDay
 }
 
 // Verify checks if the price and offer match after retrieved from
