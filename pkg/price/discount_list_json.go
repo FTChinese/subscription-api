@@ -49,6 +49,7 @@ func (l *DiscountListJSON) Scan(src interface{}) error {
 // filters - all possible offers a membership currently enjoys, used to narrow down
 // offers provided.
 // If more than one offer is applicable, use the one with the largest price off.
+// Deprecated. Implemented on client-side only.
 func (l DiscountListJSON) FindApplicable(filters []OfferKind) Discount {
 	// Filter all valid discount offers.
 	var filtered = make([]Discount, 0)
@@ -70,18 +71,4 @@ func (l DiscountListJSON) FindApplicable(filters []OfferKind) Discount {
 
 		return filtered[0]
 	}
-}
-
-func (l DiscountListJSON) FindValid(id string) (Discount, error) {
-	for _, v := range l {
-		if v.ID == id {
-			if v.IsValid() {
-				return v, nil
-			} else {
-				return Discount{}, errors.New("invalid offer selected")
-			}
-		}
-	}
-
-	return Discount{}, errors.New("the requested offer is not found")
 }
