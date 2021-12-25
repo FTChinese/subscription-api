@@ -1,14 +1,21 @@
 package stripe
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func Test_newPlanStore(t *testing.T) {
 	store := newPriceEditionStore()
 
-	assert.Len(t, store.editions, 6)
-	assert.Len(t, store.indexEdition, 6)
-	assert.Len(t, store.indexID, 6)
+	if len(store.editions) != 6 {
+		t.Error("not 6")
+	}
+
+	if len(store.indexEdition) != 6 {
+		t.Error("not 6")
+	}
+
+	if len(store.indexID) != 6 {
+		t.Error("not 6")
+	}
 }
