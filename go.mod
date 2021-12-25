@@ -6,7 +6,8 @@ require (
 	github.com/brianvoe/gofakeit/v5 v5.11.2
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-co-op/gocron v0.3.3
-	github.com/go-mail/mail v2.3.1+incompatible // indirect
+	github.com/go-mail/mail v2.3.1+incompatible
+	github.com/go-pay/gopay v1.5.67 // indirect
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.3.0
@@ -18,14 +19,12 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/smartwalle/alipay v1.0.2
 	github.com/spf13/viper v1.9.0
-	github.com/stretchr/testify v1.7.0
 	github.com/stripe/stripe-go/v72 v72.70.0
 	github.com/tidwall/gjson v1.9.4
 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 	golang.org/x/text v0.3.7 // indirect
