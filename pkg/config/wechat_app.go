@@ -43,9 +43,9 @@ func MustLoadWechatApp(key string) WechatApp {
 
 var wechatAppKeys = []string{
 	// 移动应用 -> FT中文网会员订阅. This is used for Android subscription
-	"wxapp.native_app",
+	"wxapp.app_pay",
 	// 移动应用 -> FT中文网. This is for iOS subscription and legacy Android subscription.
-	"wxapp.web_pay",
+	"wxapp.browser_pay",
 	// 网站应用 -> FT中文网. This is used for web login
 	"wxapp.web_oauth",
 }
