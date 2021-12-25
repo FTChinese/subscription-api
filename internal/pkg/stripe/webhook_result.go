@@ -21,13 +21,13 @@ SET id = :id,
 `
 
 type WebhookError struct {
-	ID                      string                `db:"id"`
-	EventType               string                `db:"event_type"`
-	Message                 string                `db:"message"`
-	CurrentStripeMembership reader.MembershipJSON `db:"current_stripe_membership"`
-	CurrentDestMembership   reader.MembershipJSON `db:"current_dest_membership"`
-	TargetUserID            string                `db:"target_user_id"`
-	CreatedUTC              chrono.Time           `db:"created_utc"`
+	ID                      string                  `db:"id"`
+	EventType               string                  `db:"event_type"`
+	Message                 string                  `db:"message"`
+	CurrentStripeMembership reader.ColumnMembership `db:"current_stripe_membership"`
+	CurrentDestMembership   reader.ColumnMembership `db:"current_dest_membership"`
+	TargetUserID            string                  `db:"target_user_id"`
+	CreatedUTC              chrono.Time             `db:"created_utc"`
 }
 
 func (e WebhookError) Error() string {
