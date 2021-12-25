@@ -2,29 +2,9 @@ package wechat
 
 import (
 	"errors"
+	"fmt"
 	"github.com/spf13/viper"
-	"log"
 )
-
-type appConfig struct {
-	Platform TradeType
-	Key      string
-}
-
-var appCfgs = []appConfig{
-	{
-		Platform: TradeTypeApp,
-		Key:      "wxapp.native_app",
-	},
-	{
-		Platform: TradeTypeJSAPI,
-		Key:      "wxapp.webrowser_pay",
-	},
-	{
-		Platform: TradeTypeDesktop,
-		Key:      "wxapp.web_pay",
-	},
-}
 
 type PayApp struct {
 	Platform TradeType
@@ -34,6 +14,7 @@ type PayApp struct {
 }
 
 func NewPayApp(key string) (PayApp, error) {
+	fmt.Printf("Initializing wx app %s\n", key)
 	var app PayApp
 	err := viper.UnmarshalKey(key, &app)
 	if err != nil {
@@ -50,14 +31,14 @@ func NewPayApp(key string) (PayApp, error) {
 func MustNewPayApp(key string) PayApp {
 	app, err := NewPayApp(key)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	return app
 }
 
-func (a PayApp) Validate() error {
-	if a.AppID == "" || a.MchID == "" || a.APIKey == "" {
+func (app PayApp) Validate() error {
+	if app.AppID == "" || app.MchID == "" || app.APIKey == "" {
 		return errors.New("wechat pay app_id, mch_id or secret cannot be empty")
 	}
 
@@ -66,9 +47,9 @@ func (a PayApp) Validate() error {
 
 func MustGetPayApps() []PayApp {
 	keys := map[string]TradeType{
-		"wxapp.native_app":    TradeTypeApp,
-		"wxapp.webrowser_pay": TradeTypeJSAPI,
-		"wxapp.web_pay":       TradeTypeDesktop, // Also used as TradeTypeMobile
+		"wxapp.app_pay":     TradeTypeApp,
+		"wxapp.jsapi_pay":   TradeTypeJSAPI,
+		"wxapp.browser_pay": TradeTypeDesktop, // Also used as TradeTypeMobile
 	}
 
 	var apps []PayApp
