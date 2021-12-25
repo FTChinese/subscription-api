@@ -12,6 +12,7 @@ import (
 	"github.com/guregu/null"
 )
 
+// Counter collects all information to create a one-time purchase.
 type Counter struct {
 	BaseAccount account.BaseAccount
 	price.CheckoutItem
@@ -25,21 +26,23 @@ func (c Counter) buildOrder(k enum.OrderKind) (Order, error) {
 		return Order{}, err
 	}
 
+	ymd := c.PeriodCount()
+
 	return Order{
 		ID:            orderID,
 		UserIDs:       c.BaseAccount.CompoundIDs(),
-		PlanID:        c.Price.ID,
-		DiscountID:    null.NewString(c.Offer.ID, c.Offer.ID != ""),
-		Price:         c.Price.UnitAmount,
+		OriginalPrice: c.Price.UnitAmount,
 		Edition:       c.Price.Edition,
-		Charge:        price.NewCharge(c.Price, c.Offer),
+		PayableAmount: c.PayableAmount(),
 		Kind:          k,
 		PaymentMethod: c.PayMethod,
+		YearsCount:    ymd.Years,
+		MonthsCount:   ymd.Months,
+		DaysCount:     ymd.Months,
 		WxAppID:       c.WxAppID,
+		ConfirmedAt:   chrono.Time{},
 		DatePeriod:    dt.DatePeriod{},
 		CreatedAt:     chrono.TimeNow(),
-		ConfirmedAt:   chrono.Time{},
-		LiveMode:      c.Price.LiveMode,
 	}, nil
 }
 
@@ -60,7 +63,7 @@ func (c Counter) PaymentIntent(m reader.Membership) (PaymentIntent, error) {
 	}
 
 	return PaymentIntent{
-		Pricing:    c.Price,
+		Price:      c.Price,
 		Offer:      c.Offer,
 		Order:      order,
 		Membership: m,
