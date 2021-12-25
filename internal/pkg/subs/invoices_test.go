@@ -26,6 +26,7 @@ func TestNewOrderInvoice(t *testing.T) {
 	type args struct {
 		timeParams PurchasedTimeParams
 		o          Order
+		p          price.Price
 	}
 	tests := []struct {
 		name    string
@@ -39,7 +40,7 @@ func TestNewOrderInvoice(t *testing.T) {
 				timeParams: PurchasedTimeParams{
 					ConfirmedAt:    chrono.TimeFrom(now),
 					ExpirationDate: chrono.Date{},
-					Date: dt.YearMonthDay{
+					PeriodCount: dt.YearMonthDay{
 						Years:  1,
 						Months: 0,
 						Days:   1,
@@ -60,9 +61,8 @@ func TestNewOrderInvoice(t *testing.T) {
 				AddOnSource:   "",
 				OrderID:       null.StringFrom(order.ID),
 				OrderKind:     enum.OrderKindCreate,
-				PaidAmount:    order.Amount,
+				PaidAmount:    order.PayableAmount,
 				PaymentMethod: order.PaymentMethod,
-				PriceID:       null.StringFrom(order.PlanID),
 				CreatedUTC:    chrono.TimeNow(),
 				ConsumedUTC:   chrono.TimeNow(),
 				DateTimePeriod: dt.DateTimePeriod{
@@ -76,7 +76,7 @@ func TestNewOrderInvoice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newOrderInvoice(tt.args.timeParams, tt.args.o)
+			got, err := newOrderInvoice(tt.args.timeParams, tt.args.o, tt.args.p)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("newOrderInvoice() error = %v, wantErr %v", err, tt.wantErr)
 				return
