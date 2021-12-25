@@ -58,20 +58,7 @@ func (w Paywall) FindCheckoutItem(params CartParams) (price.CheckoutItem, error)
 		return price.CheckoutItem{}, err
 	}
 
-	// For introductory price, ignore discount.
-	if pwPrice.IsOneTime() || params.DiscountID.IsZero() {
-		return price.CheckoutItem{
-			Price: pwPrice.Price,
-			Offer: price.Discount{},
-		}, nil
-	}
-
-	offer, _ := pwPrice.Offers.FindValid(params.DiscountID.String)
-
-	return price.CheckoutItem{
-		Price: pwPrice.Price,
-		Offer: offer,
-	}, nil
+	return pwPrice.CheckoutItem(params.DiscountID)
 }
 
 // StripePriceIDs collect all stripe price id present on paywall.
