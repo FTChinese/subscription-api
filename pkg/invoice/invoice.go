@@ -76,7 +76,7 @@ func (i Invoice) SetPeriod(start time.Time) Invoice {
 	}
 
 	period := dt.NewTimeRange(start).
-		WithDate(i.YearMonthDay).
+		WithPeriod(i.YearMonthDay).
 		ToDateTimePeriod()
 
 	i.ConsumedUTC = chrono.TimeNow()
