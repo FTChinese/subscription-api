@@ -66,11 +66,11 @@ type PaymentResult struct {
 	// 交易的订单金额，单位为元，两位小数。该参数的值为支付时传入的total_amount.
 	// For our purpose, that is the amount we actually charged user.
 	Amount        null.Int       `json:"totalFee" db:"paid_amount"` // In cent
-	TransactionID string         `json:"transactionId" db:"tx_id"`
+	ConfirmedUTC  chrono.Time    `json:"-"`                         // Use this an order's confirmation time. For webhook this is the same as PaidAt. For order query, they are different.
 	OrderID       string         `json:"ftcOrderId" db:"order_id"`
 	PaidAt        chrono.Time    `json:"paidAt" db:"paid_at"`
-	ConfirmedUTC  chrono.Time    `json:"-"` // Use this an order's confirmation time. For webhook this is the same as PaidAt. For order query, they are different.
 	PayMethod     enum.PayMethod `json:"payMethod"`
+	TransactionID string         `json:"transactionId" db:"tx_id"`
 }
 
 // ShouldRetry checks if we should tell webhook should resend notification.
@@ -104,18 +104,18 @@ func (r PaymentResult) ConfirmError(msg string, retry bool) *ConfirmError {
 }
 
 // NewWxWebhookResult builds PaymentResult from wechat pay webhook notification.
-func NewWxWebhookResult(payload wechat.Notification) PaymentResult {
-	paidAt := chrono.TimeFrom(dt.MustParseWxTime(payload.TimeEnd.String))
+func NewWxWebhookResult(payload wechat.WebhookResult) PaymentResult {
+	paidAt := chrono.TimeFrom(dt.MustParseWxTime(payload.TimeEnd))
 
 	return PaymentResult{
-		PaymentState:     payload.ResultCode.String,
-		PaymentStateDesc: payload.ErrorMessage.String,
-		Amount:           payload.TotalFee,
-		TransactionID:    payload.TransactionID.String,
-		OrderID:          payload.FTCOrderID.String,
-		PaidAt:           paidAt,
+		PaymentState:     payload.ResultCode,
+		PaymentStateDesc: payload.ErrorMessage,
+		Amount:           null.IntFrom(payload.TotalFee),
 		ConfirmedUTC:     paidAt,
+		OrderID:          payload.FTCOrderID,
+		PaidAt:           paidAt,
 		PayMethod:        enum.PayMethodWx,
+		TransactionID:    payload.TransactionID,
 	}
 }
 
@@ -123,14 +123,14 @@ func NewWxWebhookResult(payload wechat.Notification) PaymentResult {
 // The payment status should be returned to client as is, whether it is paid or not.
 func NewWxPayResult(r wechat.OrderQueryResp) PaymentResult {
 
-	paidAt, _ := dt.ParseWxTime(r.TimeEnd.String)
+	paidAt, _ := dt.ParseWxTime(r.TimeEnd)
 
 	pr := PaymentResult{
-		PaymentState:     r.TradeState.String,
-		PaymentStateDesc: r.TradeStateDesc.String,
-		Amount:           null.IntFrom(r.TotalFee.Int64),
-		TransactionID:    r.TransactionID.String,
-		OrderID:          r.FTCOrderID.String,
+		PaymentState:     r.TradeState,
+		PaymentStateDesc: r.TradeStateDesc,
+		Amount:           null.IntFrom(r.TotalFee),
+		TransactionID:    r.TransactionID,
+		OrderID:          r.FTCOrderID,
 		PaidAt:           chrono.TimeFrom(paidAt),
 		PayMethod:        enum.PayMethodWx,
 	}
