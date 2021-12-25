@@ -23,7 +23,7 @@ func NewOrderTx(tx *sqlx.Tx) OrderTx {
 func (tx OrderTx) SaveOrder(order subs.Order) error {
 
 	_, err := tx.NamedExec(
-		subs.StmtInsertOrder,
+		subs.StmtCreateOrder,
 		order)
 
 	if err != nil {
