@@ -1,9 +1,9 @@
 package subrepo
 
 import (
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
-	subs2 "github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
@@ -18,14 +18,14 @@ const wxAppNativeApp = "wxacddf1c20516eb69" // Used by native app to pay and log
 // For upgrading to premium with valid standard subscription,
 // the remaining days is converted to add-on.
 // For Stripe and IAP, the purchase is taken as add-on directly.
-func (env Env) CreateOrder(counter subs2.Counter) (subs2.PaymentIntent, error) {
+func (env Env) CreateOrder(counter subs.Counter) (subs.PaymentIntent, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	otx, err := env.BeginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return subs2.PaymentIntent{}, err
+		return subs.PaymentIntent{}, err
 	}
 
 	// Step 1: Retrieve membership for this user.
@@ -36,7 +36,7 @@ func (env Env) CreateOrder(counter subs2.Counter) (subs2.PaymentIntent, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs2.PaymentIntent{}, err
+		return subs.PaymentIntent{}, err
 	}
 	sugar.Infof("Membership retrieved %+v", member)
 
@@ -51,20 +51,20 @@ func (env Env) CreateOrder(counter subs2.Counter) (subs2.PaymentIntent, error) {
 	if err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs2.PaymentIntent{}, err
+		return subs.PaymentIntent{}, err
 	}
 
 	// Step 4: Save this order.
 	if err := otx.SaveOrder(pi.Order); err != nil {
 		sugar.Error(err)
 		_ = otx.Rollback()
-		return subs2.PaymentIntent{}, err
+		return subs.PaymentIntent{}, err
 	}
 	sugar.Infof("Order saved %s", pi.Order.ID)
 
 	if err := otx.Commit(); err != nil {
 		sugar.Error(err)
-		return subs2.PaymentIntent{}, err
+		return subs.PaymentIntent{}, err
 	}
 
 	return pi, nil
@@ -84,16 +84,16 @@ func (env Env) SaveOrderMeta(c footprint.OrderClient) error {
 }
 
 // RetrieveOrder loads an order by its id.
-func (env Env) RetrieveOrder(orderID string) (subs2.Order, error) {
-	var order subs2.Order
+func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
+	var order subs.Order
 
 	err := env.dbs.Read.Get(
 		&order,
-		subs2.StmtSelectOrder,
+		subs.StmtSelectOrder,
 		orderID)
 
 	if err != nil {
-		return subs2.Order{}, err
+		return subs.Order{}, err
 	}
 
 	// Set wx app id to the one used by native app pay if missing.
@@ -108,7 +108,7 @@ func (env Env) countOrders(ids ids.UserIDs) (int64, error) {
 	var count int64
 	err := env.dbs.Read.Get(
 		&count,
-		subs2.StmtCountOrders,
+		subs.StmtCountOrders,
 		ids.BuildFindInSet(),
 	)
 
@@ -119,11 +119,11 @@ func (env Env) countOrders(ids ids.UserIDs) (int64, error) {
 	return count, nil
 }
 
-func (env Env) listOrders(ids ids.UserIDs, p gorest.Pagination) ([]subs2.Order, error) {
-	var orders = make([]subs2.Order, 0)
+func (env Env) listOrders(ids ids.UserIDs, p gorest.Pagination) ([]subs.Order, error) {
+	var orders = make([]subs.Order, 0)
 	err := env.dbs.Read.Select(
 		&orders,
-		subs2.StmtListOrders,
+		subs.StmtListOrders,
 		ids.BuildFindInSet(),
 		p.Limit,
 		p.Offset(),
@@ -135,12 +135,12 @@ func (env Env) listOrders(ids ids.UserIDs, p gorest.Pagination) ([]subs2.Order, 
 	return orders, nil
 }
 
-func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs2.OrderList, error) {
+func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs.OrderList, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
 	countCh := make(chan int64)
-	listCh := make(chan subs2.OrderList)
+	listCh := make(chan subs.OrderList)
 
 	go func() {
 		defer close(countCh)
@@ -158,7 +158,7 @@ func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs2.OrderList
 		if err != nil {
 			sugar.Error(err)
 		}
-		listCh <- subs2.OrderList{
+		listCh <- subs.OrderList{
 			Total:      0,
 			Pagination: gorest.Pagination{},
 			Data:       o,
@@ -169,55 +169,55 @@ func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (subs2.OrderList
 	count, listResult := <-countCh, <-listCh
 
 	if listResult.Err != nil {
-		return subs2.OrderList{}, listResult.Err
+		return subs.OrderList{}, listResult.Err
 	}
 
-	return subs2.OrderList{
+	return subs.OrderList{
 		Total:      count,
 		Pagination: p,
 		Data:       listResult.Data,
 	}, nil
 }
 
-func (env Env) orderHeader(orderID string) (subs2.Order, error) {
-	var order subs2.Order
+func (env Env) orderHeader(orderID string) (subs.Order, error) {
+	var order subs.Order
 
 	err := env.dbs.Read.Get(
 		&order,
-		subs2.StmtOrderHeader,
+		subs.StmtOrderHeader,
 		orderID)
 
 	if err != nil {
-		return subs2.Order{}, nil
+		return subs.Order{}, nil
 	}
 
 	return order, nil
 }
 
-func (env Env) orderTail(orderID string) (subs2.Order, error) {
-	var order subs2.Order
+func (env Env) orderTail(orderID string) (subs.Order, error) {
+	var order subs.Order
 
 	err := env.dbs.Read.Get(
 		&order,
-		subs2.StmtOrderTail,
+		subs.StmtOrderTail,
 		orderID)
 
 	if err != nil {
-		return subs2.Order{}, nil
+		return subs.Order{}, nil
 	}
 
 	return order, nil
 }
 
 type orderResult struct {
-	order subs2.Order
+	order subs.Order
 	err   error
 }
 
 // LoadFullOrder retrieves an order by splitting a single row into two
 // concurrent retrieval since for unknown reasons the DB does not
 // respond if a row has two much columns.
-func (env Env) LoadFullOrder(orderID string) (subs2.Order, error) {
+func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 	headerCh := make(chan orderResult)
 	tailCh := make(chan orderResult)
 
@@ -243,27 +243,27 @@ func (env Env) LoadFullOrder(orderID string) (subs2.Order, error) {
 
 	headerRes, tailRes := <-headerCh, <-tailCh
 	if headerRes.err != nil {
-		return subs2.Order{}, headerRes.err
+		return subs.Order{}, headerRes.err
 	}
 
 	if tailRes.err != nil {
-		return subs2.Order{}, tailRes.err
+		return subs.Order{}, tailRes.err
 	}
 
-	return subs2.Order{
+	return subs.Order{
 		ID:            headerRes.order.ID,
 		UserIDs:       headerRes.order.UserIDs,
-		PlanID:        headerRes.order.PlanID,
-		DiscountID:    headerRes.order.DiscountID,
-		Price:         headerRes.order.Price,
+		OriginalPrice: headerRes.order.OriginalPrice,
 		Edition:       headerRes.order.Edition,
-		Charge:        headerRes.order.Charge,
+		PayableAmount: headerRes.order.PayableAmount,
 		Kind:          tailRes.order.Kind,
 		PaymentMethod: tailRes.order.PaymentMethod,
+		YearsCount:    0,
+		MonthsCount:   0,
+		DaysCount:     0,
 		WxAppID:       tailRes.order.WxAppID,
-		CreatedAt:     tailRes.order.CreatedAt,
 		ConfirmedAt:   tailRes.order.ConfirmedAt,
 		DatePeriod:    tailRes.order.DatePeriod,
-		LiveMode:      true,
+		CreatedAt:     tailRes.order.CreatedAt,
 	}, nil
 }
