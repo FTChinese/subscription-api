@@ -2,11 +2,12 @@ package paybase
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/internal/pkg/letter"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
-	"github.com/FTChinese/subscription-api/pkg/letter"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"go.uber.org/zap"
 )
 
@@ -16,7 +17,7 @@ type FtcPayBase struct {
 	ReaderRepo   shared.ReaderCommon
 	AddOnRepo    addons.Env
 	AliPayClient subrepo.AliPayClient
-	WxPayClients subrepo.WxPayClientStore
+	WxPayClients wechat.WxPayClientStore
 	EmailService letter.Service
 	Logger       *zap.Logger
 }
@@ -60,7 +61,9 @@ func (pay FtcPayBase) ConfirmOrder(result subs.PaymentResult, order subs.Order) 
 		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
 	}
 
-	confirmed, cfmErr := pay.SubsRepo.ConfirmOrder(result, order)
+	jsonPrice, _ := pay.SubsRepo.RetrieveOrderPrice(result.OrderID)
+
+	confirmed, cfmErr := pay.SubsRepo.ConfirmOrder(result, order, jsonPrice.Price)
 	if cfmErr != nil {
 		go func() {
 			err := pay.SubsRepo.SaveConfirmErr(cfmErr)
@@ -107,7 +110,7 @@ func (pay FtcPayBase) VerifyOrder(order subs.Order) (subs.PaymentResult, error) 
 
 	switch order.PaymentMethod {
 	case enum.PayMethodWx:
-		payResult, err = pay.WxPayClients.VerifyPayment(order)
+		payResult, err = pay.verifyWxOrder(order)
 
 	case enum.PayMethodAli:
 		payResult, err = pay.AliPayClient.VerifyPayment(order)
@@ -119,4 +122,35 @@ func (pay FtcPayBase) VerifyOrder(order subs.Order) (subs.PaymentResult, error) 
 	}
 
 	return payResult, nil
+}
+
+func (pay FtcPayBase) verifyWxOrder(order subs.Order) (subs.PaymentResult, error) {
+	defer pay.Logger.Sync()
+	sugar := pay.Logger.Sugar()
+
+	client, err := pay.WxPayClients.FindByAppID(order.WxAppID.String)
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, err
+	}
+
+	payload, err := client.QueryOrder(wechat.NewOrderQueryParams(order.ID))
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, err
+	}
+
+	go func() {
+		err := pay.SubsRepo.SaveWxPayload(
+			wechat.NewPayloadSchema(
+				order.ID,
+				payload,
+			).WithKind(wechat.RowKindQueryOrder),
+		)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
+	return subs.NewWxPayResult(wechat.NewOrderQueryResp(payload)), nil
 }
