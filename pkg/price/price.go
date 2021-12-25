@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
@@ -12,10 +11,10 @@ import (
 )
 
 type UpdateParams struct {
-	Title         null.String         `json:"title"`
-	Nickname      null.String         `json:"nickname"`
-	PeriodCount   dt.YearMonthDayJSON `json:"periodCount"`
-	StripePriceID string              `json:"stripePriceId"`
+	Title         null.String        `json:"title"`
+	Nickname      null.String        `json:"nickname"`
+	PeriodCount   ColumnYearMonthDay `json:"periodCount"`
+	StripePriceID string             `json:"stripePriceId"`
 }
 
 func (p UpdateParams) Validate() *render.ValidationError {
@@ -113,22 +112,22 @@ func (p *CreationParams) Validate() *render.ValidationError {
 // Price presents the price of a price. It unified prices coming
 // from various source, e.g., FTC in-house or Stripe API.
 type Price struct {
-	ID            string              `json:"id" db:"price_id"`
-	Edition                           // Sibling requirement
-	Active        bool                `json:"active" db:"is_active"`
-	Archived      bool                `json:"archived" db:"archived"` // Once archived, it should never be touched.
-	Currency      Currency            `json:"currency" db:"currency"`
-	Kind          Kind                `json:"kind" db:"kind"`          // Sibling requirement
-	LiveMode      bool                `json:"liveMode" db:"live_mode"` // Sibling requirement
-	Nickname      null.String         `json:"nickname" db:"nickname"`
-	PeriodCount   dt.YearMonthDayJSON `json:"periodCount" db:"period_count"`
-	ProductID     string              `json:"productId" db:"product_id"` // Sibling requirement. Price's parent.
-	StripePriceID string              `json:"stripePriceId" db:"stripe_price_id"`
-	Title         null.String         `json:"title" db:"title"`
-	UnitAmount    float64             `json:"unitAmount" db:"unit_amount"`
-	StartUTC      chrono.Time         `json:"startUtc" db:"start_utc"`
-	EndUTC        chrono.Time         `json:"endUtc" db:"end_utc"`
-	CreatedUTC    chrono.Time         `json:"createdUtc" db:"created_utc"`
+	ID            string             `json:"id" db:"price_id"`
+	Edition                          // Sibling requirement
+	Active        bool               `json:"active" db:"is_active"`
+	Archived      bool               `json:"archived" db:"archived"` // Once archived, it should never be touched.
+	Currency      Currency           `json:"currency" db:"currency"`
+	Kind          Kind               `json:"kind" db:"kind"`          // Sibling requirement
+	LiveMode      bool               `json:"liveMode" db:"live_mode"` // Sibling requirement
+	Nickname      null.String        `json:"nickname" db:"nickname"`
+	PeriodCount   ColumnYearMonthDay `json:"periodCount" db:"period_count"`
+	ProductID     string             `json:"productId" db:"product_id"` // Sibling requirement. Price's parent.
+	StripePriceID string             `json:"stripePriceId" db:"stripe_price_id"`
+	Title         null.String        `json:"title" db:"title"`
+	UnitAmount    float64            `json:"unitAmount" db:"unit_amount"`
+	StartUTC      chrono.Time        `json:"startUtc" db:"start_utc"`
+	EndUTC        chrono.Time        `json:"endUtc" db:"end_utc"`
+	CreatedUTC    chrono.Time        `json:"createdUtc" db:"created_utc"`
 }
 
 func New(p CreationParams, live bool) Price {
