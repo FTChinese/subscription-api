@@ -1,10 +1,10 @@
 package controller
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/letter"
 	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"go.uber.org/zap"
 )
