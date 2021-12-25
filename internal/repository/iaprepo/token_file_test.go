@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/subscription-api/internal/pkg/apple"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/test"
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
@@ -65,8 +64,6 @@ func TestLoadReceiptFromDisk(t *testing.T) {
 				t.Errorf("LoadReceiptFromDisk() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
-			assert.NotNil(t, got)
 
 			t.Logf("Token: %s", got)
 		})
