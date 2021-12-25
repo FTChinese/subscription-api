@@ -4,13 +4,13 @@ import (
 	"context"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/internal/app/paybase"
+	"github.com/FTChinese/subscription-api/internal/pkg/letter"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/poller"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/jmoiron/sqlx"
@@ -48,7 +48,7 @@ func NewOrderPoller(myDBs db.ReadWriteMyDBs, logger *zap.Logger) OrderPoller {
 			ReaderRepo:   shared.NewReaderCommon(myDBs),
 			AddOnRepo:    addons.New(myDBs, logger),
 			AliPayClient: subrepo.NewAliPayClient(ali.MustInitApp(), logger),
-			WxPayClients: subrepo.NewWxClientStore(wechat.MustGetPayApps(), logger),
+			WxPayClients: wechat.NewWxClientStore(wechat.MustGetPayApps(), logger),
 			EmailService: letter.NewService(logger),
 			Logger:       logger,
 		},
