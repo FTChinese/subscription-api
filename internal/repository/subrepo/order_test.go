@@ -1,11 +1,11 @@
 package subrepo
 
 import (
-	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	subs2 "github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
@@ -16,7 +16,6 @@ import (
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 	"reflect"
 	"testing"
@@ -34,19 +33,19 @@ func TestEnv_CreateOrder(t *testing.T) {
 	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
-		counter subs2.Counter
+		counter subs.Counter
 		p       *test.Persona
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    subs2.Order
+		want    subs.Order
 		wantErr bool
 	}{
 		{
 			name: "New order",
 			args: args{
-				counter: subs2.Counter{
+				counter: subs.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: pw.MockPwPriceStdYear.Price,
@@ -56,31 +55,25 @@ func TestEnv_CreateOrder(t *testing.T) {
 					WxAppID:   null.String{},
 				},
 			},
-			want: subs2.Order{
-				ID:         "",
-				UserIDs:    newPersona.UserIDs(),
-				PlanID:     pw.MockPwPriceStdYear.ID,
-				DiscountID: null.String{},
-				Price:      pw.MockPwPriceStdYear.UnitAmount,
-				Edition:    pw.MockPwPriceStdYear.Edition,
-				Charge: price.Charge{
-					Amount:   pw.MockPwPriceStdYear.UnitAmount,
-					Currency: "cny",
-				},
+			want: subs.Order{
+				ID:            "",
+				UserIDs:       newPersona.UserIDs(),
+				OriginalPrice: pw.MockPwPriceStdYear.UnitAmount,
+				Edition:       pw.MockPwPriceStdYear.Edition,
+				PayableAmount: pw.MockPwPriceStdYear.UnitAmount,
 				Kind:          enum.OrderKindCreate,
 				PaymentMethod: enum.PayMethodAli,
 				WxAppID:       null.String{},
 				CreatedAt:     chrono.Time{},
 				ConfirmedAt:   chrono.Time{},
 				DatePeriod:    dt.DatePeriod{},
-				LiveMode:      true,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Renewal order",
 			args: args{
-				counter: subs2.Counter{
+				counter: subs.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: pw.MockPwPriceStdYear.Price,
@@ -91,31 +84,25 @@ func TestEnv_CreateOrder(t *testing.T) {
 				},
 				p: renewalPerson,
 			},
-			want: subs2.Order{
-				ID:         "",
-				UserIDs:    renewalPerson.UserIDs(),
-				PlanID:     pw.MockPwPriceStdYear.ID,
-				DiscountID: null.String{},
-				Price:      pw.MockPwPriceStdYear.UnitAmount,
-				Edition:    pw.MockPwPriceStdYear.Edition,
-				Charge: price.Charge{
-					Amount:   pw.MockPwPriceStdYear.UnitAmount,
-					Currency: "cny",
-				},
+			want: subs.Order{
+				ID:            "",
+				UserIDs:       renewalPerson.UserIDs(),
+				OriginalPrice: pw.MockPwPriceStdYear.UnitAmount,
+				Edition:       pw.MockPwPriceStdYear.Edition,
+				PayableAmount: pw.MockPwPriceStdYear.UnitAmount,
 				Kind:          enum.OrderKindRenew,
 				PaymentMethod: enum.PayMethodWx,
 				WxAppID:       null.StringFrom(wxID),
 				CreatedAt:     chrono.Time{},
 				ConfirmedAt:   chrono.Time{},
 				DatePeriod:    dt.DatePeriod{},
-				LiveMode:      true,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Upgrade order",
 			args: args{
-				counter: subs2.Counter{
+				counter: subs.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: pw.MockPwPricePrm.Price,
@@ -126,31 +113,25 @@ func TestEnv_CreateOrder(t *testing.T) {
 				},
 				p: upgradePerson,
 			},
-			want: subs2.Order{
-				ID:         "",
-				UserIDs:    upgradePerson.UserIDs(),
-				PlanID:     pw.MockPwPricePrm.ID,
-				DiscountID: null.String{},
-				Price:      pw.MockPwPricePrm.UnitAmount,
-				Edition:    pw.MockPwPricePrm.Edition,
-				Charge: price.Charge{
-					Amount:   pw.MockPwPricePrm.UnitAmount,
-					Currency: "cny",
-				},
+			want: subs.Order{
+				ID:            "",
+				UserIDs:       upgradePerson.UserIDs(),
+				OriginalPrice: pw.MockPwPricePrm.UnitAmount,
+				Edition:       pw.MockPwPricePrm.Edition,
+				PayableAmount: pw.MockPwPricePrm.UnitAmount,
 				Kind:          enum.OrderKindUpgrade,
 				PaymentMethod: enum.PayMethodWx,
 				WxAppID:       null.StringFrom(wxID),
 				CreatedAt:     chrono.Time{},
 				ConfirmedAt:   chrono.Time{},
 				DatePeriod:    dt.DatePeriod{},
-				LiveMode:      true,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Add-on order",
 			args: args{
-				counter: subs2.Counter{
+				counter: subs.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
 					CheckoutItem: price.CheckoutItem{
 						Price: pw.MockPwPriceStdYear.Price,
@@ -161,24 +142,18 @@ func TestEnv_CreateOrder(t *testing.T) {
 				},
 				p: addOnPerson,
 			},
-			want: subs2.Order{
-				ID:         "",
-				UserIDs:    addOnPerson.UserIDs(),
-				PlanID:     pw.MockPwPriceStdYear.ID,
-				DiscountID: null.String{},
-				Price:      pw.MockPwPriceStdYear.UnitAmount,
-				Edition:    pw.MockPwPriceStdYear.Edition,
-				Charge: price.Charge{
-					Amount:   pw.MockPwPriceStdYear.UnitAmount,
-					Currency: "cny",
-				},
+			want: subs.Order{
+				ID:            "",
+				UserIDs:       addOnPerson.UserIDs(),
+				OriginalPrice: pw.MockPwPriceStdYear.UnitAmount,
+				Edition:       pw.MockPwPriceStdYear.Edition,
+				PayableAmount: pw.MockPwPriceStdYear.UnitAmount,
 				Kind:          enum.OrderKindAddOn,
 				PaymentMethod: enum.PayMethodWx,
 				WxAppID:       null.StringFrom(wxID),
 				CreatedAt:     chrono.Time{},
 				ConfirmedAt:   chrono.Time{},
 				DatePeriod:    dt.DatePeriod{},
-				LiveMode:      true,
 			},
 			wantErr: false,
 		},
@@ -258,7 +233,7 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 	ftcID := uuid.New().String()
 
 	repo := test.NewRepo()
-	order := repo.MustSaveOrder(subs2.NewMockOrderBuilder("").
+	order := repo.MustSaveOrder(subs.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
@@ -336,7 +311,6 @@ func TestEnv_LoadFullOrder(t *testing.T) {
 
 			t.Logf("%v", got)
 
-			assert.NotZero(t, got.ID, order.ID)
 		})
 	}
 }
@@ -345,15 +319,15 @@ func TestEnv_ListOrders(t *testing.T) {
 	ftcID := uuid.New().String()
 
 	repo := test.NewRepo()
-	repo.MustSaveOrder(subs2.NewMockOrderBuilder("").
+	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
-	repo.MustSaveOrder(subs2.NewMockOrderBuilder("").
+	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
-	repo.MustSaveOrder(subs2.NewMockOrderBuilder("").
+	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
