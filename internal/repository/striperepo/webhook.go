@@ -53,10 +53,10 @@ func (env Env) OnWebhookSubs(subs stripe.Subs, userIDs ids.UserIDs) (stripe.Webh
 			ID:        subs.ID,
 			EventType: "",
 			Message:   err.Error(),
-			CurrentStripeMembership: reader.MembershipJSON{
+			CurrentStripeMembership: reader.ColumnMembership{
 				Membership: stripeMmb,
 			},
-			CurrentDestMembership: reader.MembershipJSON{
+			CurrentDestMembership: reader.ColumnMembership{
 				Membership: ftcMmb,
 			},
 			TargetUserID: userIDs.CompoundID,
