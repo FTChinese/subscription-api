@@ -6,14 +6,15 @@ import (
 	"errors"
 )
 
-// IntroductoryJSON wrap Price so that it could be saved
-// as a JSON column in sql.
-type IntroductoryJSON struct {
+// JSONPrice wrap Price so that it could be saved
+// as a JSON column in sql, and marshalled into null for
+// empty value when used as introductory.
+type JSONPrice struct {
 	Price
 }
 
 // MarshalJSON encodes an optional price to nullable result.
-func (p IntroductoryJSON) MarshalJSON() ([]byte, error) {
+func (p JSONPrice) MarshalJSON() ([]byte, error) {
 	if p.ID == "" {
 		return []byte("null"), nil
 	}
@@ -22,10 +23,10 @@ func (p IntroductoryJSON) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON parses a nullable value to price.
-func (p *IntroductoryJSON) UnmarshalJSON(b []byte) error {
+func (p *JSONPrice) UnmarshalJSON(b []byte) error {
 	var v Price
 	if b == nil {
-		*p = IntroductoryJSON{}
+		*p = JSONPrice{}
 		return nil
 	}
 
@@ -34,13 +35,13 @@ func (p *IntroductoryJSON) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*p = IntroductoryJSON{Price: v}
+	*p = JSONPrice{Price: v}
 	return nil
 }
 
 // Value implements Valuer interface by serializing an Invitation into
 // JSON data.
-func (p IntroductoryJSON) Value() (driver.Value, error) {
+func (p JSONPrice) Value() (driver.Value, error) {
 	if p.ID == "" {
 		return nil, nil
 	}
@@ -54,15 +55,15 @@ func (p IntroductoryJSON) Value() (driver.Value, error) {
 }
 
 // Scan implements Valuer interface by deserializing an invitation field.
-func (p *IntroductoryJSON) Scan(src interface{}) error {
+func (p *JSONPrice) Scan(src interface{}) error {
 	if src == nil {
-		*p = IntroductoryJSON{}
+		*p = JSONPrice{}
 		return nil
 	}
 
 	switch s := src.(type) {
 	case []byte:
-		var tmp IntroductoryJSON
+		var tmp JSONPrice
 		err := json.Unmarshal(s, &tmp)
 		if err != nil {
 			return err
@@ -71,6 +72,6 @@ func (p *IntroductoryJSON) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan to IntroductoryJSON")
+		return errors.New("incompatible type to scan to JSONPrice")
 	}
 }
