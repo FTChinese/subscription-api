@@ -1,14 +1,16 @@
 package subrepo
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/smartwalle/alipay"
 )
 
 // SaveAliNotification logs everything Alipay sends.
+// Deprecated. Use SaveAliWebhookPayload
 func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
 
-	_, err := env.dbs.Write.Exec(InsertAliPayLoad,
+	_, err := env.dbs.Write.Exec(ali.StmtInsertAliPayLoad,
 		n.NotifyTime,
 		n.NotifyType,
 		n.NotifyId,
@@ -47,13 +49,10 @@ func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
 	return nil
 }
 
-// SavePrepayResp saves Wechat prepay response for future analysis.
-func (env Env) SavePrepayResp(resp wechat.OrderResp) error {
-
+func (env Env) SaveAliWebhookPayload(p ali.WebhookPayload) error {
 	_, err := env.dbs.Write.NamedExec(
-		InsertWxPrepay,
-		resp,
-	)
+		ali.StmtSavePayload,
+		p)
 
 	if err != nil {
 		return err
@@ -62,28 +61,10 @@ func (env Env) SavePrepayResp(resp wechat.OrderResp) error {
 	return nil
 }
 
-// SaveWxNotification saves a wechat notification for logging purpose.
-func (env Env) SaveWxNotification(n wechat.Notification) error {
-
+func (env Env) SaveWxPayload(schema wechat.PayloadSchema) error {
 	_, err := env.dbs.Write.NamedExec(
-		InsertWxPayLoad,
-		n,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// SaveWxQueryResp stores wechat pay query result to DB.
-func (env Env) SaveWxQueryResp(resp wechat.OrderQueryResp) error {
-
-	_, err := env.dbs.Write.NamedExec(
-		InsertWxQueryPayLoad,
-		resp,
-	)
+		wechat.StmtSavePayload,
+		schema)
 
 	if err != nil {
 		return err
