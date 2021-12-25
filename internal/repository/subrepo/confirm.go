@@ -2,23 +2,26 @@ package subrepo
 
 import (
 	"database/sql"
-	subs2 "github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // ConfirmOrder updates the order received from webhook,
 // create or update membership, and optionally flag prorated orders as consumed.
 // @param order - the order loaded outside a transaction. You have to retrieve and lock it again here.
-func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.ConfirmationResult, *subs2.ConfirmError) {
+func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order, p price.Price) (subs.ConfirmationResult, *subs.ConfirmError) {
 
 	defer env.logger.Sync()
-	sugar := env.logger.Sugar().With("orderId", pr.OrderID).With("name", "ConfirmOrder")
+	sugar := env.logger.Sugar().
+		With("orderId", pr.OrderID).
+		With("name", "ConfirmOrder")
 
 	sugar.Info("Start confirming order")
 	tx, err := env.BeginOrderTx()
 	if err != nil {
 		sugar.Error(err)
-		return subs2.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
 	}
 
 	// Lock  this order and only retrieves the purchase period.
@@ -30,7 +33,7 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs2.ConfirmationResult{}, pr.ConfirmError(err.Error(), err != sql.ErrNoRows)
+		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), err != sql.ErrNoRows)
 	}
 
 	// This step is important to prevent concurrent webhook modification
@@ -44,7 +47,7 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs2.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
 	}
 
 	sugar.Infof("Existing membership retrieved %v", member)
@@ -57,10 +60,10 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 		if order.IsExpireDateSynced(member) {
 			sugar.Infof("Order %s already synced to membership", order.ID)
 			_ = tx.Rollback()
-			return subs2.ConfirmationResult{
+			return subs.ConfirmationResult{
 				Payment:    pr,
 				Order:      order,
-				Invoices:   subs2.Invoices{},
+				Invoices:   subs.Invoices{},
 				Membership: member,
 				Snapshot:   reader.MemberSnapshot{},
 				Notify:     false,
@@ -72,8 +75,9 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 	// Populate the ConfirmedAt, StartDate and EndDate.
 	// If there are calculation errors, allow retry.
 	sugar.Info("confirm order")
-	confirmed, err := subs2.NewConfirmationResult(subs2.ConfirmationParams{
+	confirmed, err := subs.NewConfirmationResult(subs.ConfirmationParams{
 		Payment: pr,
+		Price:   p,
 		Order:   order,
 		Member:  member,
 	})
@@ -81,7 +85,7 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs2.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
 	}
 
 	// Update original order's confirmation time, and optional start
@@ -93,7 +97,7 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 		if err := tx.ConfirmOrder(confirmed.Order); err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return subs2.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+			return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
 		}
 	}
 
@@ -104,7 +108,7 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs2.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
 	}
 	if !confirmed.Invoices.CarriedOver.IsZero() {
 		sugar.Infof("Saving carry-over invoice %s", confirmed.Invoices.CarriedOver.ID)
@@ -112,7 +116,7 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return subs2.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+			return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
 		}
 	}
 
@@ -140,12 +144,12 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return subs2.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return subs2.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
+		return subs.ConfirmationResult{}, pr.ConfirmError(err.Error(), true)
 	}
 
 	sugar.Info("Order confirmation finished")
@@ -153,9 +157,9 @@ func (env Env) ConfirmOrder(pr subs2.PaymentResult, order subs2.Order) (subs2.Co
 	return confirmed, nil
 }
 
-func (env Env) SaveConfirmErr(e *subs2.ConfirmError) error {
+func (env Env) SaveConfirmErr(e *subs.ConfirmError) error {
 	_, err := env.dbs.Write.NamedExec(
-		subs2.StmtSaveConfirmResult,
+		subs.StmtSaveConfirmResult,
 		e)
 
 	if err != nil {
@@ -165,12 +169,12 @@ func (env Env) SaveConfirmErr(e *subs2.ConfirmError) error {
 	return nil
 }
 
-func (env Env) SavePayResult(result subs2.PaymentResult) error {
+func (env Env) SavePayResult(result subs.PaymentResult) error {
 	if result.OrderID == "" {
 		return nil
 	}
 
-	_, err := env.dbs.Write.NamedExec(subs2.StmtSavePayResult, result)
+	_, err := env.dbs.Write.NamedExec(subs.StmtSavePayResult, result)
 	if err != nil {
 		return err
 	}
