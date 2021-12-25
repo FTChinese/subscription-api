@@ -3,7 +3,6 @@ package apple
 import (
 	"encoding/json"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -27,9 +26,6 @@ func TestVerificationResp_ReceiptSchema(t *testing.T) {
 	resp := mustParsedReceiptResponse()
 
 	rs := resp.ReceiptSchema()
-
-	assert.NotEmpty(t, rs.OriginalTransactionID)
-	assert.NotEmpty(t, rs.TransactionID)
 
 	t.Logf("%+v", rs)
 }
