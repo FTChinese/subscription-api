@@ -32,8 +32,8 @@ func TestEnv_SaveWebhookError(t *testing.T) {
 					ID:                      faker.GenStripeSubID(),
 					EventType:               "customer.subscription.created",
 					Message:                 "cannot override valid non-stripe membership",
-					CurrentStripeMembership: reader.MembershipJSON{},
-					CurrentDestMembership: reader.MembershipJSON{
+					CurrentStripeMembership: reader.ColumnMembership{},
+					CurrentDestMembership: reader.ColumnMembership{
 						Membership: p.MemberBuilder().Build(),
 					},
 					TargetUserID: p.FtcID,
