@@ -26,140 +26,182 @@ var MockEditionPrm = Edition{
 	Cycle: enum.CycleYear,
 }
 
+var MockIntroPrice = Price{
+	ID: "price_x6rCUXxPC8tB",
+	Edition: Edition{
+		Tier:  enum.TierStandard,
+		Cycle: enum.CycleNull,
+	},
+	Active:   true,
+	Archived: false,
+	Currency: "cny",
+	Kind:     KindOneTime,
+	LiveMode: false,
+	Nickname: null.String{},
+	PeriodCount: ColumnYearMonthDay{
+		YearMonthDay: dt.YearMonthDay{
+			Years:  0,
+			Months: 1,
+			Days:   0,
+		},
+	},
+	ProductID:     "prod_9xrJdHFq0wmq",
+	StripePriceID: "price_1Juuu2BzTK0hABgJTXiK4NTt",
+	Title:         null.StringFrom("新会员首次订阅1元/月"),
+	UnitAmount:    1,
+	StartUTC:      chrono.TimeNow(),
+	EndUTC:        chrono.TimeFrom(time.Now().AddDate(0, 0, 7)),
+	CreatedUTC:    chrono.TimeNow(),
+}
+
 var MockPriceStdYear = Price{
-	ID:         "plan_MynUQDQY1TSQ",
-	Edition:    MockEditionStdYear,
-	Active:     true,
-	Currency:   CurrencyCNY,
-	LiveMode:   true,
-	Nickname:   null.String{},
-	ProductID:  "prod_zjWdiTUpDN8l",
-	UnitAmount: 298,
+	ID:       "price_WHc5ssjh6pqw",
+	Edition:  MockEditionStdYear,
+	Active:   true,
+	Archived: false,
+	Currency: CurrencyCNY,
+	Kind:     KindRecurring,
+	LiveMode: false,
+	Nickname: null.String{},
+	PeriodCount: ColumnYearMonthDay{
+		YearMonthDay: dt.YearMonthDay{
+			Years:  1,
+			Months: 0,
+			Days:   0,
+		},
+	},
+	ProductID:     "prod_9xrJdHFq0wmq",
+	StripePriceID: "price_1IM2nFBzTK0hABgJiIDeDIox",
+	Title:         null.StringFrom("Standard Annual Edition"),
+	UnitAmount:    298,
+	StartUTC:      chrono.Time{},
+	EndUTC:        chrono.Time{},
+	CreatedUTC:    chrono.TimeNow(),
 }
 
 var MockStdYearOffers = []Discount{
 	{
-		ID: "dsc_F7gEwjaF3OsR",
+		ID:       "dsc_iirQArMFjBfs",
+		LiveMode: false,
+		Status:   DiscountStatusActive,
 		DiscountParams: DiscountParams{
-			CreatedBy:   "anonymous",
-			Description: null.String{},
-			Kind:        "",
-			Percent:     null.Int{},
-			DateTimePeriod: dt.DateTimePeriod{
-				StartUTC: chrono.TimeFrom(time.Date(2021, 2, 1, 4, 0, 0, 0, time.UTC)),
-				EndUTC:   chrono.TimeFrom(time.Date(2021, 2, 7, 16, 0, 0, 0, time.UTC)),
+			Description: null.StringFrom("到期前续订享75折"),
+			Kind:        OfferKindRetention,
+			OverridePeriod: ColumnYearMonthDay{
+				YearMonthDay: dt.YearMonthDay{
+					Years:  0,
+					Months: 0,
+					Days:   0,
+				},
 			},
-			PriceOff:  null.FloatFrom(130),
-			PriceID:   "plan_MynUQDQY1TSQ",
-			Recurring: false,
-		},
-		LiveMode:   false,
-		Status:     "",
-		CreatedUTC: chrono.Time{},
-	},
-	{
-		ID: "retention-offer-standard-year",
-		DiscountParams: DiscountParams{
+			Percent:        null.Int{},
 			PriceOff:       null.FloatFrom(80),
-			Percent:        null.IntFrom(75),
+			PriceID:        "price_WHc5ssjh6pqw",
+			Recurring:      true,
 			DateTimePeriod: dt.DateTimePeriod{},
-			Description:    null.StringFrom("现在续订享75折优惠"),
-			Kind:           OfferKindRetention,
+			CreatedBy:      "",
 		},
-		Status:     "DiscountStatusActive",
 		CreatedUTC: chrono.Time{},
 	},
-	// Winback that is in effect forever.
 	{
-		ID: "win-back-offer-standard-year",
+		ID:       "dsc_Vn7686x357KY",
+		LiveMode: false,
+		Status:   DiscountStatusActive,
 		DiscountParams: DiscountParams{
+			Description: null.StringFrom("再次购买享八五折优惠"),
+			Kind:        OfferKindWinBack,
+			OverridePeriod: ColumnYearMonthDay{
+				YearMonthDay: dt.YearMonthDay{
+					Years:  0,
+					Months: 0,
+					Days:   0,
+				},
+			},
+			Percent:        null.Int{},
 			PriceOff:       null.FloatFrom(40),
-			Percent:        null.IntFrom(85),
+			PriceID:        "price_WHc5ssjh6pqw",
+			Recurring:      true,
 			DateTimePeriod: dt.DateTimePeriod{},
-			Description:    null.StringFrom("重新购买会员享85折优惠"),
-			Kind:           OfferKindWinBack,
+			CreatedBy:      "",
 		},
-		Status:     DiscountStatusActive,
 		CreatedUTC: chrono.Time{},
 	},
 }
 
 var MockPriceStdMonth = Price{
-	ID:         "plan_1Uz4hrLy3Mzy",
-	Edition:    MockEditionStdMonth,
-	Active:     true,
-	Currency:   CurrencyCNY,
-	LiveMode:   true,
-	Nickname:   null.String{},
-	ProductID:  "prod_zjWdiTUpDN8l",
-	UnitAmount: 28,
+	ID:       "price_v5E2WSqJymxe",
+	Edition:  MockEditionStdMonth,
+	Active:   true,
+	Archived: false,
+	Currency: CurrencyCNY,
+	Kind:     KindRecurring,
+	LiveMode: false,
+	Nickname: null.String{},
+	PeriodCount: ColumnYearMonthDay{
+		YearMonthDay: dt.YearMonthDay{
+			Years:  0,
+			Months: 1,
+			Days:   0,
+		},
+	},
+	ProductID:     "prod_9xrJdHFq0wmq",
+	StripePriceID: "price_1IM2mgBzTK0hABgJVH8o9Sjm",
+	Title:         null.StringFrom("Standard Monthly Edition"),
+	UnitAmount:    28,
+	StartUTC:      chrono.Time{},
+	EndUTC:        chrono.Time{},
+	CreatedUTC:    chrono.TimeNow(),
 }
 
-var MockStdMonthOffers = []Discount{
-	{
-		ID: "intro-offer-std-month",
-		DiscountParams: DiscountParams{
-			PriceOff: null.FloatFrom(34),
-			Percent:  null.Int{},
-			DateTimePeriod: dt.DateTimePeriod{
-				StartUTC: chrono.TimeNow(),
-				EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 7)),
-			},
-			Description: null.StringFrom("新会员订阅仅需1元"),
-			Kind:        OfferKindIntroductory,
-		},
-		Status:     DiscountStatusActive,
-		CreatedUTC: chrono.TimeNow(),
-	},
-}
+var MockStdMonthOffers []Discount
 
 var MockPricePrm = Price{
-	ID:         "plan_vRUzRQ3aglea",
-	Edition:    MockEditionPrm,
-	Active:     true,
-	Currency:   CurrencyCNY,
-	LiveMode:   true,
-	Nickname:   null.String{},
-	ProductID:  "prod_IaoK5SbK79g8",
-	UnitAmount: 1998,
+	ID:       "price_zsTj2TQ1h3jB",
+	Edition:  MockEditionPrm,
+	Active:   true,
+	Archived: false,
+	Currency: CurrencyCNY,
+	Kind:     KindRecurring,
+	LiveMode: false,
+	Nickname: null.String{},
+	PeriodCount: ColumnYearMonthDay{
+		YearMonthDay: dt.YearMonthDay{
+			Years:  1,
+			Months: 0,
+			Days:   0,
+		},
+	},
+	ProductID:     "prod_zSgOTS6DWLmu",
+	StripePriceID: "plan_FOde0uAr0V4WmT",
+	Title:         null.StringFrom("Premium Annual Edition"),
+	UnitAmount:    1998,
+	StartUTC:      chrono.Time{},
+	EndUTC:        chrono.Time{},
+	CreatedUTC:    chrono.TimeNow(),
 }
 
 var MockPrmOffers = []Discount{
 	{
-		ID: "dsc_7VQy0Zvifacq",
+		ID:       "dsc_m7f0nlLHdOoB",
+		LiveMode: false,
+		Status:   DiscountStatusActive,
 		DiscountParams: DiscountParams{
-			PriceOff: null.FloatFrom(300),
-			Percent:  null.Int{},
-			DateTimePeriod: dt.DateTimePeriod{
-				StartUTC: chrono.TimeFrom(time.Date(2021, 2, 1, 4, 0, 0, 0, time.UTC)),
-				EndUTC:   chrono.TimeFrom(time.Date(2021, 2, 7, 16, 0, 0, 0, time.UTC)),
+			Description: null.StringFrom("现在续订享75折优惠"),
+			Kind:        OfferKindRetention,
+			OverridePeriod: ColumnYearMonthDay{
+				YearMonthDay: dt.YearMonthDay{
+					Years:  0,
+					Months: 0,
+					Days:   0,
+				},
 			},
-			Description: null.StringFrom("限时促销"),
-			Kind:        OfferKindPromotion,
-		},
-	},
-	{
-		ID: "retention-offer-premium-year",
-		DiscountParams: DiscountParams{
+			Percent:        null.Int{},
 			PriceOff:       null.FloatFrom(500),
-			Percent:        null.IntFrom(75),
+			PriceID:        "price_zsTj2TQ1h3jB",
+			Recurring:      true,
 			DateTimePeriod: dt.DateTimePeriod{},
-			Description:    null.StringFrom("现在续订享75折优惠"),
-			Kind:           OfferKindRetention,
+			CreatedBy:      "",
 		},
-		Status:     DiscountStatusActive,
-		CreatedUTC: chrono.Time{},
-	},
-	{
-		ID: "win-back-offer-premium-year",
-		DiscountParams: DiscountParams{
-			PriceOff:       null.FloatFrom(300),
-			Percent:        null.IntFrom(85),
-			DateTimePeriod: dt.DateTimePeriod{},
-			Description:    null.StringFrom("重新购买会员享85折优惠"),
-			Kind:           OfferKindWinBack,
-		},
-		Status:     DiscountStatusActive,
 		CreatedUTC: chrono.Time{},
 	},
 }
