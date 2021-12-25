@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/app/api/controller"
 	"github.com/FTChinese/subscription-api/internal/app/paybase"
+	"github.com/FTChinese/subscription-api/internal/pkg/letter"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
@@ -18,7 +19,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
@@ -67,7 +67,7 @@ func StartServer(s ServerStatus) {
 		ReaderRepo:   readerBaseRepo,
 		AddOnRepo:    addons.New(myDBs, logger),
 		AliPayClient: subrepo.NewAliPayClient(ali.MustInitApp(), logger),
-		WxPayClients: subrepo.NewWxClientStore(wechat.MustGetPayApps(), logger),
+		WxPayClients: wechat.NewWxClientStore(wechat.MustGetPayApps(), logger),
 		Logger:       logger,
 		EmailService: emailService,
 	}
