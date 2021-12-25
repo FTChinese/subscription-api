@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
@@ -83,7 +84,13 @@ func (router SubsRouter) RawPaymentResult(w http.ResponseWriter, req *http.Reque
 
 	switch order.PaymentMethod {
 	case enum.PayMethodWx:
-		wxParam, err := router.WxPayClients.QueryOrderRaw(order)
+		client, err := router.WxPayClients.FindByAppID(order.ID)
+		if err != nil {
+			_ = render.New(w).InternalServerError(err.Error())
+			return
+		}
+
+		wxParam, err := client.QueryOrder(wechat.NewOrderQueryParams(order.ID))
 		if err != nil {
 			_ = render.New(w).InternalServerError(err.Error())
 			return
