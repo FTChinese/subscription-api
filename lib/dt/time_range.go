@@ -18,19 +18,19 @@ func NewTimeRange(start time.Time) TimeRange {
 	}
 }
 
-func (r TimeRange) WithDate(d YearMonthDay) TimeRange {
+func (r TimeRange) WithPeriod(d YearMonthDay) TimeRange {
 	r.End = r.End.AddDate(int(d.Years), int(d.Months), int(d.Days))
 
 	return r
 }
 
 func (r TimeRange) WithCycle(cycle enum.Cycle) TimeRange {
-	return r.WithDate(NewYearMonthDay(cycle))
+	return r.WithPeriod(NewYearMonthDay(cycle))
 }
 
 // WithCycleN adds n cycles to end date.
 func (r TimeRange) WithCycleN(cycle enum.Cycle, n int) TimeRange {
-	return r.WithDate(NewYearMonthDayN(cycle, n))
+	return r.WithPeriod(NewYearMonthDayN(cycle, n))
 }
 
 func (r TimeRange) AddYears(years int) TimeRange {
@@ -45,14 +45,6 @@ func (r TimeRange) AddMonths(months int) TimeRange {
 
 func (r TimeRange) AddDays(days int) TimeRange {
 	r.End = r.End.AddDate(0, 0, days)
-
-	return r
-}
-
-// AddDate adds the specified years, months, days to end date.
-// This is a simple wrapper of Time.AddDate.
-func (r TimeRange) AddDate(years, months, days int) TimeRange {
-	r.End = r.End.AddDate(years, months, days)
 
 	return r
 }
