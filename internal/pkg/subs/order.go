@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/conv"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -43,23 +44,34 @@ func (lo LockedOrder) Merge(o Order) Order {
 // A user could choose between 2 payment methods;
 // An order could create, renew or upgrade a member.
 // And tier + cycle have 3 combination.
-// All those combination add up to 3 * 2 * 3 * 3 = 54
+// All those combinations add up to 3 * 2 * 3 * 3 = 54
 type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
 	ids.UserIDs
-	PlanID     string      `json:"priceId" db:"plan_id"`        // Deprecated
-	DiscountID null.String `json:"discountId" db:"discount_id"` // Deprecated
-	Price      float64     `json:"price" db:"price"`            // Price of a plan, prior to discount.
-	price.Edition
-	price.Charge
-	Kind          enum.OrderKind `json:"kind" db:"kind"` // The usage of this order: creat new, renew, or upgrade?
+	price.Edition                // Deprecated
+	Kind          enum.OrderKind `json:"kind" db:"kind"`
+	OriginalPrice float64        `json:"originalPrice" db:"original_price"` // The original price.
+	PayableAmount float64        `json:"payableAmount" db:"payable_amount"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
-	WxAppID       null.String    `json:"-" db:"wx_app_id"` // Deprecated. Wechat specific. Used by webhook to verify notification.
-	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
+	YearsCount    int64          `json:"yearsCount" db:"years_count"`
+	MonthsCount   int64          `json:"monthsCount" db:"months_count"`
+	DaysCount     int64          `json:"daysCount" db:"days_count"`
+	WxAppID       null.String    `json:"-" db:"wx_app_id"`
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
 	dt.DatePeriod
-	LiveMode bool `json:"liveMode"`
+	CreatedAt chrono.Time `json:"createdAt" db:"created_utc"`
+}
+
+func (o Order) PaymentTitle() string {
+	return price.BuildPaymentTitle(
+		o.Kind,
+		o.Tier,
+		dt.YearMonthDay{
+			Years:  o.YearsCount,
+			Months: o.MonthsCount,
+			Days:   o.DaysCount,
+		})
 }
 
 func (o Order) IsZero() bool {
@@ -72,6 +84,14 @@ func (o Order) IsConfirmed() bool {
 
 func (o Order) IsAliWxPay() bool {
 	return o.PaymentMethod == enum.PayMethodAli || o.PaymentMethod == enum.PayMethodWx
+}
+
+func (o Order) AliPayable() string {
+	return conv.FormatMoney(o.PayableAmount)
+}
+
+func (o Order) WxPayable() int64 {
+	return conv.MoneyCent(o.PayableAmount)
 }
 
 // IsExpireDateSynced tests whether a confirmed order and the end date is
@@ -107,8 +127,8 @@ func (o Order) IsExpireDateSynced(m reader.Membership) bool {
 }
 
 func (o Order) ValidatePayment(result PaymentResult) error {
-	if o.AmountInCent() != result.Amount.Int64 {
-		return fmt.Errorf("amount mismatched: expected: %d, actual: %d", o.AmountInCent(), result.Amount.Int64)
+	if conv.MoneyCent(o.PayableAmount) != result.Amount.Int64 {
+		return fmt.Errorf("amount mismatched: expected: %d, actual: %d", o.WxPayable(), result.Amount.Int64)
 	}
 
 	return nil
