@@ -3,8 +3,8 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"github.com/FTChinese/subscription-api/internal/pkg/letter"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
-	"github.com/FTChinese/subscription-api/pkg/letter"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"go.uber.org/zap"
 	"io/ioutil"
