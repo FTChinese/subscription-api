@@ -21,13 +21,13 @@ SET id = :snapshot_id,
 // Since membership is constantly changing, we keep all
 // versions of modification in a dedicated table.
 type MembershipVersioned struct {
-	ID               string         `json:"id" db:"snapshot_id"`
-	AnteChange       MembershipJSON `json:"anteChange" db:"ante_change"` // Membership before being changed
-	CreatedBy        null.String    `json:"createdBy" db:"created_by"`
-	CreatedUTC       chrono.Time    `json:"createdUtc" db:"created_utc"`
-	B2BTransactionID null.String    `json:"b2bTransactionId" db:"b2b_transaction_id"`
-	PostChange       MembershipJSON `json:"postChange" db:"post_change"`       // Membership after being changed.
-	RetailOrderID    null.String    `json:"retailOderId" db:"retail_order_id"` // Only exists when user is performing renewal or upgrading.
+	ID               string           `json:"id" db:"snapshot_id"`
+	AnteChange       ColumnMembership `json:"anteChange" db:"ante_change"` // Membership before being changed
+	CreatedBy        null.String      `json:"createdBy" db:"created_by"`
+	CreatedUTC       chrono.Time      `json:"createdUtc" db:"created_utc"`
+	B2BTransactionID null.String      `json:"b2bTransactionId" db:"b2b_transaction_id"`
+	PostChange       ColumnMembership `json:"postChange" db:"post_change"`       // Membership after being changed.
+	RetailOrderID    null.String      `json:"retailOderId" db:"retail_order_id"` // Only exists when user is performing renewal or upgrading.
 }
 
 func (v MembershipVersioned) WithCreator(name string) MembershipVersioned {
@@ -60,7 +60,7 @@ func (v MembershipVersioned) WithPriorVersion(m Membership) MembershipVersioned 
 		return v
 	}
 
-	v.AnteChange = MembershipJSON{m}
+	v.AnteChange = ColumnMembership{m}
 
 	return v
 }
@@ -75,11 +75,11 @@ func (m Membership) Version(by Archiver) MembershipVersioned {
 
 	return MembershipVersioned{
 		ID:               ids.SnapshotID(),
-		AnteChange:       MembershipJSON{}, // Optional. Only exists if a previous version existed.
+		AnteChange:       ColumnMembership{}, // Optional. Only exists if a previous version existed.
 		CreatedBy:        null.StringFrom(by.String()),
 		CreatedUTC:       chrono.TimeNow(),
 		B2BTransactionID: null.String{},
-		PostChange:       MembershipJSON{m},
+		PostChange:       ColumnMembership{m},
 		RetailOrderID:    null.String{},
 	}
 }
@@ -87,11 +87,11 @@ func (m Membership) Version(by Archiver) MembershipVersioned {
 func (m Membership) Deleted(by Archiver) MembershipVersioned {
 	return MembershipVersioned{
 		ID:               ids.SnapshotID(),
-		AnteChange:       MembershipJSON{m},
+		AnteChange:       ColumnMembership{m},
 		CreatedBy:        null.StringFrom(by.String()),
 		CreatedUTC:       chrono.TimeNow(),
 		B2BTransactionID: null.String{},
-		PostChange:       MembershipJSON{},
+		PostChange:       ColumnMembership{},
 		RetailOrderID:    null.String{},
 	}
 }
