@@ -35,7 +35,9 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		defer router.Logger.Sync()
 		sugar := router.Logger.Sugar()
 
+		// Collect client metadata from header.
 		clientApp := footprint.NewClient(req)
+		// Get user compound ids from header.
 		readerIDs := xhttp.UserIDsFromHeader(req.Header)
 
 		sugar.Infof("Alipay from app for %v", readerIDs)
@@ -50,17 +52,17 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 
 		sugar.Infof("Base account found %v", acnt)
 
-		var input subs.AliPayReq
-		if err := gorest.ParseJSON(req.Body, &input); err != nil {
+		var params subs.AliPayReq
+		if err := gorest.ParseJSON(req.Body, &params); err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
 			return
 		}
 
-		sugar.Infof("Request body parsed %v", input)
+		sugar.Infof("Request body parsed %v", params)
 
 		// TODO: ensure return url is set.
-		if ve := input.Validate(); ve != nil {
+		if ve := params.Validate(); ve != nil {
 			sugar.Error(err)
 			_ = render.New(w).Unprocessable(ve)
 			return
@@ -68,7 +70,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 
 		sugar.Infof("Start loading checkout item...")
 
-		item, re := router.loadCheckoutItem(input.CartParams, router.Live)
+		item, re := router.loadCheckoutItem(params.CartParams, router.Live)
 		if re != nil {
 			sugar.Error(re)
 			_ = render.New(w).JSON(re.StatusCode, re)
@@ -92,6 +94,8 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
+		// TODO: save payment intent
+
 		sugar.Infof("Created order: %+v", pi.Order)
 
 		err = router.postOrderCreation(pi.Order, clientApp)
@@ -100,13 +104,14 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
+		// TODO: described title in terms of year month days.
 		or := ali.OrderReq{
-			Title:       subs.PaymentTitle(pi.Order.Kind, pi.Order.Edition),
+			Title:       pi.Order.PaymentTitle(),
 			FtcOrderID:  pi.Order.ID,
-			TotalAmount: pi.Order.AliPrice(),
+			TotalAmount: pi.Order.AliPayable(),
 			WebhookURL:  webhookURL,
 			TxKind:      kind,
-			ReturnURL:   input.ReturnURL,
+			ReturnURL:   params.ReturnURL,
 		}
 
 		param, err := router.AliPayClient.CreateOrder(or)
@@ -117,14 +122,23 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		}
 		sugar.Infof("Alipay signed order param: %s", param)
 
-		switch kind {
-		case ali.EntryApp:
-			_ = render.New(w).OK(subs.NewAliAppPayIntent(pi, param))
+		alipayIntent, err := subs.NewAliPaymentIntent(
+			pi,
+			param,
+			kind)
+		if err != nil {
+			_ = render.New(w).InternalServerError(err.Error())
 			return
-
-		case ali.EntryDesktopWeb, ali.EntryMobileWeb:
-			_ = render.New(w).OK(subs.NewAliPayBrowserIntent(pi, param))
 		}
+
+		go func() {
+			err := router.SubsRepo.SavePaymentIntent(alipayIntent.Schema())
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+
+		_ = render.New(w).OK(alipayIntent)
 	}
 }
 
@@ -164,6 +178,13 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
+		err := router.SubsRepo.SaveAliWebhookPayload(
+			ali.NewWebhookPayload(payload))
+		if err != nil {
+			sugar.Error(err)
+		}
+
+		// TODO: should be removed in the future.
 		if err := router.SubsRepo.SaveAliNotification(*payload); err != nil {
 			sugar.Error(err)
 		}
