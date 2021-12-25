@@ -5,8 +5,9 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/test"
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"testing"
 	"time"
@@ -14,7 +15,7 @@ import (
 
 func TestMemberTx_SaveOrder(t *testing.T) {
 
-	id := uuid.New().String()
+	p := test.NewPersona()
 
 	type fields struct {
 		Tx *sqlx.Tx
@@ -34,7 +35,7 @@ func TestMemberTx_SaveOrder(t *testing.T) {
 				Tx: test.SplitDB.Read.MustBegin(),
 			},
 			args: args{
-				order: subs.NewMockOrderBuilder(id).Build(),
+				order: p.OrderBuilder().Build(),
 			},
 			wantErr: false,
 		},
@@ -44,7 +45,7 @@ func TestMemberTx_SaveOrder(t *testing.T) {
 				Tx: test.SplitDB.Read.MustBegin(),
 			},
 			args: args{
-				order: subs.NewMockOrderBuilder(id).
+				order: p.OrderBuilder().
 					WithPayMethod(enum.PayMethodWx).
 					Build(),
 			},
@@ -55,7 +56,7 @@ func TestMemberTx_SaveOrder(t *testing.T) {
 				Tx: test.SplitDB.Read.MustBegin(),
 			},
 			args: args{
-				order: subs.NewMockOrderBuilder(id).
+				order: p.OrderBuilder().
 					WithKind(enum.OrderKindRenew).
 					Build(),
 			},
@@ -66,10 +67,25 @@ func TestMemberTx_SaveOrder(t *testing.T) {
 				Tx: test.SplitDB.Read.MustBegin(),
 			},
 			args: args{
-				order: subs.NewMockOrderBuilder(id).
+				order: p.OrderBuilder().
 					WithKind(enum.OrderKindAddOn).
 					Build(),
 			},
+		},
+		{
+			name: "Introductory price",
+			fields: fields{
+				Tx: test.SplitDB.Read.MustBegin(),
+			},
+			args: args{
+				order: p.OrderBuilder().
+					WithPrice(pw.PaywallPrice{
+						Price:  price.MockIntroPrice,
+						Offers: nil,
+					}).
+					Build(),
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -91,7 +107,7 @@ func TestMemberTx_SaveOrder(t *testing.T) {
 
 func TestMemberTx_LockOrder(t *testing.T) {
 
-	orderAli := subs.NewMockOrderBuilder(uuid.New().String()).Build()
+	orderAli := test.NewPersona().OrderBuilder().Build()
 
 	test.NewRepo().MustSaveOrder(orderAli)
 
