@@ -36,7 +36,7 @@ func TestEnv_CreatePrice(t *testing.T) {
 					UpdateParams: price.UpdateParams{
 						Title:    null.StringFrom(gofakeit.Sentence(20)),
 						Nickname: null.StringFrom(gofakeit.Word()),
-						PeriodCount: dt.YearMonthDayJSON{
+						PeriodCount: price.ColumnYearMonthDay{
 							YearMonthDay: dt.YearMonthDay{
 								Years:  1,
 								Months: 0,
@@ -64,7 +64,7 @@ func TestEnv_CreatePrice(t *testing.T) {
 					UpdateParams: price.UpdateParams{
 						Title:    null.StringFrom(gofakeit.Sentence(2)),
 						Nickname: null.StringFrom(gofakeit.Word()),
-						PeriodCount: dt.YearMonthDayJSON{
+						PeriodCount: price.ColumnYearMonthDay{
 							YearMonthDay: dt.YearMonthDay{
 								Years:  0,
 								Months: 0,
