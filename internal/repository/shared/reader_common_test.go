@@ -325,13 +325,13 @@ func TestEnv_VersionMembership(t *testing.T) {
 			args: args{
 				v: reader.MembershipVersioned{
 					ID: ids.SnapshotID(),
-					AnteChange: reader.MembershipJSON{
+					AnteChange: reader.ColumnMembership{
 						Membership: p.MemberBuilder().Build(),
 					},
 					CreatedBy:        null.StringFrom(reader.NewStripeArchiver(reader.ArchiveActionWebhook).String()),
 					CreatedUTC:       chrono.TimeNow(),
 					B2BTransactionID: null.String{},
-					PostChange: reader.MembershipJSON{
+					PostChange: reader.ColumnMembership{
 						Membership: p.MemberBuilder().Build(),
 					},
 					RetailOrderID: null.String{},
