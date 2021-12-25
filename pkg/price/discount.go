@@ -13,15 +13,15 @@ import (
 // DiscountParams contains fields submitted by client
 // when creating a discount.
 type DiscountParams struct {
-	Description       null.String         `json:"description" db:"discount_desc"`
-	Kind              OfferKind           `json:"kind" db:"kind"`
-	OverridePeriod    dt.YearMonthDayJSON `json:"overridePeriod" db:"override_period"`
-	Percent           null.Int            `json:"percent" db:"percent"`
-	PriceOff          null.Float          `json:"priceOff" db:"price_off"`
-	PriceID           string              `json:"priceId" db:"price_id"`
-	Recurring         bool                `json:"recurring" db:"recurring"`
-	dt.DateTimePeriod                     // Optional. Zero value indicates permanent discount.
-	CreatedBy         string              `json:"createdBy" db:"created_by"`
+	Description       null.String        `json:"description" db:"discount_desc"`
+	Kind              OfferKind          `json:"kind" db:"kind"`
+	OverridePeriod    ColumnYearMonthDay `json:"overridePeriod" db:"override_period"`
+	Percent           null.Int           `json:"percent" db:"percent"`
+	PriceOff          null.Float         `json:"priceOff" db:"price_off"`
+	PriceID           string             `json:"priceId" db:"price_id"`
+	Recurring         bool               `json:"recurring" db:"recurring"`
+	dt.DateTimePeriod                    // Optional. Zero value indicates permanent discount.
+	CreatedBy         string             `json:"createdBy" db:"created_by"`
 }
 
 func (p DiscountParams) Validate() *render.ValidationError {
