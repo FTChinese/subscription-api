@@ -51,7 +51,7 @@ func (e Edition) NamedKey() string {
 	return e.Tier.String() + "_" + e.Cycle.String()
 }
 
-// StringCN produces a human readable string of this edition.
+// StringCN produces a human-readable string of this edition.
 // * 标准会员/年
 // * 标准会员/月
 // * 高端会员/年
