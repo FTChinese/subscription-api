@@ -2,7 +2,6 @@ package price
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
 	"testing"
@@ -38,7 +37,7 @@ func TestIntroductoryJSON_MarshalJSON(t *testing.T) {
 					Kind:          "",
 					LiveMode:      false,
 					Nickname:      null.String{},
-					PeriodCount:   dt.YearMonthDayJSON{},
+					PeriodCount:   ColumnYearMonthDay{},
 					ProductID:     "",
 					StripePriceID: "",
 					Title:         null.String{},
@@ -54,7 +53,7 @@ func TestIntroductoryJSON_MarshalJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := IntroductoryJSON{
+			p := JSONPrice{
 				Price: tt.fields.Price,
 			}
 			got, err := p.MarshalJSON()
@@ -74,7 +73,7 @@ func TestIntroductoryJSON_MarshalJSON(t *testing.T) {
 func TestIntroductoryJSON_UnmarshalJSON(t *testing.T) {
 	null := []byte("null")
 
-	var p IntroductoryJSON
+	var p JSONPrice
 	err := p.UnmarshalJSON(null)
 	if err != nil {
 		t.Error(err)
