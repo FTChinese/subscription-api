@@ -3,11 +3,9 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
@@ -15,7 +13,6 @@ import (
 // ConfirmationParams contains data used to invoice an order.
 type ConfirmationParams struct {
 	Payment PaymentResult
-	Price   price.Price
 	Order   Order // The order not confirmed yet.
 	Member  reader.Membership
 }
@@ -26,23 +23,20 @@ func (p ConfirmationParams) purchasedTimeParams() PurchasedTimeParams {
 	return PurchasedTimeParams{
 		ConfirmedAt:    p.Payment.ConfirmedUTC,
 		ExpirationDate: p.Member.ExpireDate,
-		PeriodCount: dt.YearMonthDay{
-			Years:  p.Order.YearsCount,
-			Months: p.Order.MonthsCount,
-			Days:   p.Order.DaysCount,
-		},
-		OrderKind: p.Order.CalibratedKind(p.Member),
+		PeriodCount:    p.Order.PeriodCount(),
+		OrderKind:      p.Order.CalibratedKind(p.Member),
 	}
 }
 
 // purchaseInvoice creates an invoice from an order.
 func (p ConfirmationParams) purchaseInvoice() (invoice.Invoice, error) {
-	return newOrderInvoice(p.purchasedTimeParams(), p.Order, p.Price)
+	return newOrderInvoice(p.purchasedTimeParams(), p.Order)
 }
 
 // newOrderInvoice creates a new invoice from a unconfirmed order.
 // For addon order, the invoice do not have starting and ending time.
-func newOrderInvoice(timeParams PurchasedTimeParams, o Order, p price.Price) (invoice.Invoice, error) {
+func newOrderInvoice(timeParams PurchasedTimeParams, o Order) (invoice.Invoice, error) {
+	// Calculate purchased period.
 	timeRange, err := timeParams.Build()
 	if err != nil {
 		return invoice.Invoice{}, err
@@ -65,7 +59,6 @@ func newOrderInvoice(timeParams PurchasedTimeParams, o Order, p price.Price) (in
 		OrderKind:      timeParams.OrderKind, // Note: use the calibrated order kind.
 		PaidAmount:     o.PayableAmount,
 		PaymentMethod:  o.PaymentMethod,
-		PriceID:        null.StringFrom(p.ID),
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    confirmedAt,
 		DateTimePeriod: timeRange.ToDateTimePeriod(),

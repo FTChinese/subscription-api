@@ -61,9 +61,7 @@ func (pay FtcPayBase) ConfirmOrder(result subs.PaymentResult, order subs.Order) 
 		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
 	}
 
-	jsonPrice, _ := pay.SubsRepo.RetrieveOrderPrice(result.OrderID)
-
-	confirmed, cfmErr := pay.SubsRepo.ConfirmOrder(result, order, jsonPrice.Price)
+	confirmed, cfmErr := pay.SubsRepo.ConfirmOrder(result, order)
 	if cfmErr != nil {
 		go func() {
 			err := pay.SubsRepo.SaveConfirmErr(cfmErr)
