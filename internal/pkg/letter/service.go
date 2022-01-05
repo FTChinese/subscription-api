@@ -228,15 +228,13 @@ func (s Service) SendWxEmailUnlink(a reader.Account, anchor enum.AccountKind) er
 
 // SendOneTimePurchase sends an email after user made a
 // successful one-time purchase.
-func (s Service) SendOneTimePurchase(a account.BaseAccount, result subs.ConfirmationResult) error {
+func (s Service) SendOneTimePurchase(a account.BaseAccount, invs subs.Invoices) error {
 	defer s.logger.Sync()
 	sugar := s.logger.Sugar()
 
 	body, err := CtxSubs{
 		UserName: a.NormalizeName(),
-		Order:    result.Order,
-		Invoices: result.Invoices,
-		Snapshot: result.Snapshot,
+		Invoices: invs,
 	}.Render()
 
 	if err != nil {
@@ -249,7 +247,7 @@ func (s Service) SendOneTimePurchase(a account.BaseAccount, result subs.Confirma
 		FromName:    "FT中文网会员订阅",
 		ToAddress:   a.Email,
 		ToName:      a.NormalizeName(),
-		Subject:     subjects[result.Order.Kind],
+		Subject:     subjects[invs.Purchased.OrderKind],
 		Body:        body,
 	}
 

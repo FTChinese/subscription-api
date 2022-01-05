@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -41,7 +40,6 @@ func (c Counter) buildOrder(k enum.OrderKind) (Order, error) {
 		DaysCount:     ymd.Months,
 		WxAppID:       c.WxAppID,
 		ConfirmedAt:   chrono.Time{},
-		DatePeriod:    dt.DatePeriod{},
 		CreatedAt:     chrono.TimeNow(),
 	}, nil
 }

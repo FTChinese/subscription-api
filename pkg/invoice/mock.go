@@ -116,7 +116,7 @@ func (b MockInvoiceBuilder) Build() Invoice {
 		StripeSubsID:   null.String{},
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    chrono.Time{},
-		DateTimePeriod: dt.DateTimePeriod{},
+		ChronoPeriod:   dt.ChronoPeriod{},
 		CarriedOverUtc: chrono.Time{},
 	}.SetPeriod(b.startTime)
 }

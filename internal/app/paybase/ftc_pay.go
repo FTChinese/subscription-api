@@ -41,7 +41,7 @@ func (pay FtcPayBase) SendConfirmEmail(result subs.ConfirmationResult) error {
 		return err
 	}
 
-	err = pay.EmailService.SendOneTimePurchase(account, result)
+	err = pay.EmailService.SendOneTimePurchase(account, result.Invoices)
 	if err != nil {
 		sugar.Error(err)
 		return err

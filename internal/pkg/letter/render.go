@@ -6,7 +6,6 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
-	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"strconv"
 	"strings"
@@ -72,21 +71,11 @@ func Render(name string, ctx interface{}) (string, error) {
 
 type CtxSubs struct {
 	UserName string
-	Order    subs.Order
 	subs.Invoices
-	Snapshot reader.MemberSnapshot
-}
-
-func (ctx CtxSubs) IsPremiumAddOn() bool {
-	return ctx.Purchased.AddOnSource == addon.SourceUserPurchase && ctx.Snapshot.Tier == enum.TierPremium
-}
-
-func (ctx CtxSubs) IsSubsAddOn() bool {
-	return ctx.Purchased.AddOnSource == addon.SourceUserPurchase && (ctx.Snapshot.PaymentMethod == enum.PayMethodStripe || ctx.Snapshot.PaymentMethod == enum.PayMethodApple)
 }
 
 func (ctx CtxSubs) Render() (string, error) {
-	switch ctx.Order.Kind {
+	switch ctx.Purchased.OrderKind {
 	case enum.OrderKindCreate:
 		return Render(keyNewSubs, ctx)
 

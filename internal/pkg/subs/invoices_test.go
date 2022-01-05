@@ -65,7 +65,7 @@ func TestNewOrderInvoice(t *testing.T) {
 				PaymentMethod: order.PaymentMethod,
 				CreatedUTC:    chrono.TimeNow(),
 				ConsumedUTC:   chrono.TimeNow(),
-				DateTimePeriod: dt.DateTimePeriod{
+				ChronoPeriod: dt.ChronoPeriod{
 					StartUTC: chrono.TimeFrom(now),
 					EndUTC:   chrono.TimeFrom(now.AddDate(1, 0, 1)),
 				},
