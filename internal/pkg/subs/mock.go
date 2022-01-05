@@ -27,7 +27,7 @@ type MockOrderBuilder struct {
 	payMethod enum.PayMethod
 	wxAppId   null.String
 	confirmed bool
-	period    dt.DatePeriod
+	period    dt.TimeRange
 	offerKind price.OfferKind
 }
 
@@ -124,8 +124,8 @@ func (b MockOrderBuilder) WithStartTime(from time.Time) MockOrderBuilder {
 		b.confirmed = true
 	}
 	b.period = dt.NewTimeRange(from).
-		WithCycle(b.price.Cycle).
-		ToDatePeriod()
+		WithCycle(b.price.Cycle)
+
 	return b
 }
 
@@ -169,7 +169,8 @@ func (b MockOrderBuilder) Build() Order {
 		DaysCount:     ymd.Days,
 		WxAppID:       b.wxAppId,
 		ConfirmedAt:   chrono.TimeFrom(confirmed),
-		DatePeriod:    b.period,
+		StartDate:     b.period.StartDate(),
+		EndDate:       b.period.EndDate(),
 		CreatedAt:     chrono.TimeNow(),
 	}
 }

@@ -74,7 +74,7 @@ func (m Membership) CarryOverInvoice() invoice.Invoice {
 		StripeSubsID:   null.String{},
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    chrono.Time{}, // Will be consumed in the future.
-		DateTimePeriod: dt.DateTimePeriod{},
+		ChronoPeriod:   dt.ChronoPeriod{},
 		CarriedOverUtc: chrono.Time{},
 	}
 }
@@ -168,7 +168,7 @@ func (m Membership) addonToInvoice() invoice.Invoice {
 		PaymentMethod: payMethod,
 		CreatedUTC:    chrono.TimeNow(),
 		ConsumedUTC:   chrono.TimeNow(),
-		DateTimePeriod: dt.DateTimePeriod{
+		ChronoPeriod: dt.ChronoPeriod{
 			StartUTC: chrono.TimeFrom(startTime),
 			EndUTC:   chrono.TimeFrom(endTime),
 		},

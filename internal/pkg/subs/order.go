@@ -20,7 +20,8 @@ import (
 type LockedOrder struct {
 	ID          string      `db:"order_id"`
 	ConfirmedAt chrono.Time `db:"confirmed_utc"`
-	dt.DatePeriod
+	StartDate   chrono.Date `db:"start_date"`
+	EndDate     chrono.Date `db:"end_date"`
 }
 
 func (lo LockedOrder) IsConfirmed() bool {
@@ -49,8 +50,11 @@ type Order struct {
 	DaysCount     int64          `json:"daysCount" db:"days_count"`
 	WxAppID       null.String    `json:"-" db:"wx_app_id"`
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
-	dt.DatePeriod
-	CreatedAt chrono.Time `json:"createdAt" db:"created_utc"`
+	CreatedAt     chrono.Time    `json:"createdAt" db:"created_utc"`
+	// Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
+	StartDate chrono.Date `json:"startDate" db:"start_date"`
+	// Membership end date for this order. Depends on start date.
+	EndDate chrono.Date `json:"endDate" db:"end_date"`
 }
 
 // MergeTail merges two orders.
@@ -72,7 +76,8 @@ func (o Order) MergeTail(t Order) Order {
 
 func (o Order) MergeLocked(l LockedOrder) Order {
 	o.ConfirmedAt = l.ConfirmedAt
-	o.DatePeriod = l.DatePeriod
+	o.StartDate = l.StartDate
+	o.EndDate = l.EndDate
 
 	return o
 }
@@ -212,9 +217,10 @@ func calibrateOrderKind(m reader.Membership, e price.Edition) enum.OrderKind {
 
 // Confirmed updates this order's ConfirmedAt field and set its starting and ending time.
 // For addon order, the starting and ending time will be null since it is not used yet.
-func (o Order) Confirmed(at chrono.Time, period dt.DateTimePeriod) Order {
+func (o Order) Confirmed(at chrono.Time, p dt.ChronoPeriod) Order {
 	o.ConfirmedAt = at
-	o.DatePeriod = period.ToDatePeriod()
+	o.StartDate = chrono.DateFrom(p.StartUTC.Time)
+	o.EndDate = chrono.DateFrom(p.EndUTC.Time)
 
 	return o
 }

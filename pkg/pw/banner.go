@@ -20,13 +20,13 @@ const (
 )
 
 type BannerJSON struct {
-	ID                string      `json:"id"`
-	Heading           string      `json:"heading"`
-	SubHeading        null.String `json:"subHeading"`
-	CoverURL          null.String `json:"coverUrl"`
-	Content           null.String `json:"content"`
-	Terms             null.String `json:"terms"`
-	dt.DateTimePeriod             // Only exists for promo.
+	ID              string      `json:"id"`
+	Heading         string      `json:"heading"`
+	SubHeading      null.String `json:"subHeading"`
+	CoverURL        null.String `json:"coverUrl"`
+	Content         null.String `json:"content"`
+	Terms           null.String `json:"terms"`
+	dt.ChronoPeriod             // Only exists for promo.
 }
 
 func (j *BannerJSON) Validate(k BannerKind) *render.ValidationError {

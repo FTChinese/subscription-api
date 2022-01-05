@@ -140,6 +140,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 }
 
 // AliWebHook handles alipay server-side notification.
+// See https://opendocs.alipay.com/open/204/105301
 // POST /webhook/alipay
 func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()

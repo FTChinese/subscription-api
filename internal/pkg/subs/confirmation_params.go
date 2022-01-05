@@ -3,6 +3,7 @@ package subs
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
@@ -50,18 +51,21 @@ func newOrderInvoice(timeParams PurchasedTimeParams, o Order) (invoice.Invoice, 
 	}
 
 	return invoice.Invoice{
-		ID:             ids.InvoiceID(),
-		CompoundID:     o.CompoundID,
-		Edition:        o.Edition,
-		YearMonthDay:   timeParams.PeriodCount,
-		AddOnSource:    addOnSource,
-		OrderID:        null.StringFrom(o.ID),
-		OrderKind:      timeParams.OrderKind, // Note: use the calibrated order kind.
-		PaidAmount:     o.PayableAmount,
-		PaymentMethod:  o.PaymentMethod,
-		CreatedUTC:     chrono.TimeNow(),
-		ConsumedUTC:    confirmedAt,
-		DateTimePeriod: timeRange.ToDateTimePeriod(),
+		ID:            ids.InvoiceID(),
+		CompoundID:    o.CompoundID,
+		Edition:       o.Edition,
+		YearMonthDay:  timeParams.PeriodCount,
+		AddOnSource:   addOnSource,
+		OrderID:       null.StringFrom(o.ID),
+		OrderKind:     timeParams.OrderKind, // Note: use the calibrated order kind.
+		PaidAmount:    o.PayableAmount,
+		PaymentMethod: o.PaymentMethod,
+		CreatedUTC:    chrono.TimeNow(),
+		ConsumedUTC:   confirmedAt,
+		ChronoPeriod: dt.ChronoPeriod{
+			StartUTC: timeRange.StartTime(),
+			EndUTC:   timeRange.EndTime(),
+		},
 		CarriedOverUtc: chrono.Time{},
 	}, nil
 }
