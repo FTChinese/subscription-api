@@ -47,7 +47,7 @@ func NewOrderPoller(myDBs db.ReadWriteMyDBs, logger *zap.Logger) OrderPoller {
 			SubsRepo:     subrepo.New(myDBs, logger),
 			ReaderRepo:   shared.NewReaderCommon(myDBs),
 			AddOnRepo:    addons.New(myDBs, logger),
-			AliPayClient: subrepo.NewAliPayClient(ali.MustInitApp(), logger),
+			AliPayClient: ali.NewPayClient(ali.MustInitApp(), logger),
 			WxPayClients: wechat.NewWxClientStore(wechat.MustGetPayApps(), logger),
 			EmailService: letter.NewService(logger),
 			Logger:       logger,
