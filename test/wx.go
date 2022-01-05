@@ -5,6 +5,7 @@ package test
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
@@ -14,8 +15,9 @@ import (
 )
 
 type WxWebhookPayload struct {
-	ReturnCode string `json:"return_code"` // SUCCESS/FAIL
-	ReturnMsg  string `json:"return_msg,omitempty"`
+	XMLName    xml.Name `json:"-" xml:"xml"`
+	ReturnCode string   `json:"return_code" xml:"return_code,omitempty"` // SUCCESS/FAIL
+	ReturnMsg  string   `json:"return_msg,omitempty" xml:"return_msg,omitempty"`
 
 	// 以下字段在return_code为SUCCESS的时候有返回
 	AppID              string `json:"appid" xml:"appid"`
@@ -33,7 +35,7 @@ type WxWebhookPayload struct {
 	BankType           string `json:"bank_type" xml:"bank_type"`
 	TotalFee           string `json:"total_fee" xml:"total_fee"`
 	SettlementTotalFee string `json:"settlement_total_fee,omitempty" xml:"settlement_total_fee,omitempty"`
-	FeeType            string `json:"fee_type" xml:"fee_type"`
+	FeeType            string `json:"fee_type,omitempty" xml:"fee_type,omitempty"`
 	CashFee            string `json:"cash_fee" xml:"cash_fee"`
 	CashFeeType        string `json:"cash_fee_type,omitempty" xml:"cash_fee_type,omitempty"`
 	CouponFee          string `json:"coupon_fee,omitempty" xml:"coupon_fee,omitempty"`
@@ -63,7 +65,7 @@ func NewWxWebhookPayload(o subs.Order) WxWebhookPayload {
 		OpenID:             faker.GenWxID(),
 		IsSubscribed:       "N",
 		TradeType:          string(wechat.TradeTypeApp),
-		BankType:           "",
+		BankType:           "ICBC_DEBIT",
 		TotalFee:           strconv.FormatInt(o.WxPayable(), 10),
 		SettlementTotalFee: "",
 		FeeType:            "",
@@ -113,4 +115,14 @@ func (p WxWebhookPayload) ToMap() wxpay.Params {
 	params["sign"] = WxPayClient.Sign(params)
 
 	return params
+}
+
+func (p WxWebhookPayload) ToXML() string {
+	b, err := xml.MarshalIndent(p.WithSign(), "", "\t")
+
+	if err != nil {
+		panic(err)
+	}
+
+	return string(b)
 }
