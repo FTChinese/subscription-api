@@ -27,16 +27,6 @@ func (lo LockedOrder) IsConfirmed() bool {
 	return !lo.ConfirmedAt.IsZero()
 }
 
-// Merge updates an order retrieved outside a transaction in case
-// the full order is not confirmed but the locked version is changed.
-// This is used to solved concurrency issue.
-func (lo LockedOrder) Merge(o Order) Order {
-	o.ConfirmedAt = lo.ConfirmedAt
-	o.DatePeriod = lo.DatePeriod
-
-	return o
-}
-
 // Order contains the details of a user's action to place an order.
 // This is the centrum of the whole subscription process.
 // An order could represents 12 status of user:
@@ -61,6 +51,30 @@ type Order struct {
 	ConfirmedAt   chrono.Time    `json:"confirmedAt" db:"confirmed_utc"` // When the payment is confirmed.
 	dt.DatePeriod
 	CreatedAt chrono.Time `json:"createdAt" db:"created_utc"`
+}
+
+// MergeTail merges two orders.
+// This is a hack due to previously MySQL refuse to retrieve
+// the ftc_trade table exceeding a dozen columns.
+func (o Order) MergeTail(t Order) Order {
+	o.PaymentMethod = t.PaymentMethod
+	o.YearsCount = t.YearsCount
+	o.MonthsCount = t.MonthsCount
+	o.DaysCount = t.DaysCount
+	o.WxAppID = t.WxAppID
+	o.CreatedAt = t.CreatedAt
+	o.ConfirmedAt = t.ConfirmedAt
+	o.StartDate = t.StartDate
+	o.EndDate = t.EndDate
+
+	return o
+}
+
+func (o Order) MergeLocked(l LockedOrder) Order {
+	o.ConfirmedAt = l.ConfirmedAt
+	o.DatePeriod = l.DatePeriod
+
+	return o
 }
 
 // PeriodCount produces a dt.YearMonthDay instance for easy calculation.
