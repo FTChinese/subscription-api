@@ -94,8 +94,6 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		// TODO: save payment intent
-
 		sugar.Infof("Created order: %+v", pi.Order)
 
 		err = router.postOrderCreation(pi.Order, clientApp)
@@ -104,7 +102,6 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			return
 		}
 
-		// TODO: described title in terms of year month days.
 		or := ali.OrderReq{
 			Title:       pi.Order.PaymentTitle(),
 			FtcOrderID:  pi.Order.ID,
@@ -181,11 +178,6 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 		err := router.SubsRepo.SaveAliWebhookPayload(
 			ali.NewWebhookPayload(payload))
 		if err != nil {
-			sugar.Error(err)
-		}
-
-		// TODO: should be removed in the future.
-		if err := router.SubsRepo.SaveAliNotification(*payload); err != nil {
 			sugar.Error(err)
 		}
 	}()
