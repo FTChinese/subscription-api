@@ -66,7 +66,7 @@ func StartServer(s ServerStatus) {
 		SubsRepo:     subrepo.New(myDBs, logger),
 		ReaderRepo:   readerBaseRepo,
 		AddOnRepo:    addons.New(myDBs, logger),
-		AliPayClient: subrepo.NewAliPayClient(ali.MustInitApp(), logger),
+		AliPayClient: ali.NewPayClient(ali.MustInitApp(), logger),
 		WxPayClients: wechat.NewWxClientStore(wechat.MustGetPayApps(), logger),
 		Logger:       logger,
 		EmailService: emailService,
