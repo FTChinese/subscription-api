@@ -462,7 +462,6 @@ func (m Membership) WithInvoice(userID ids.UserIDs, inv invoice.Invoice) (Member
 		LegacyExpire:  null.Int{},
 		ExpireDate:    chrono.DateFrom(inv.EndUTC.Time),
 		PaymentMethod: inv.PaymentMethod,
-		FtcPlanID:     inv.PriceID,
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
