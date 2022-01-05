@@ -2,7 +2,6 @@ package dt
 
 import (
 	"github.com/FTChinese/go-rest/enum"
-	"time"
 )
 
 const (
@@ -66,10 +65,6 @@ func (y YearMonthDay) TotalDays() int64 {
 	return y.Years*daysOfYear + y.Months*daysOfMonth + y.Days
 }
 
-func (y YearMonthDay) EndTime() time.Time {
-	return time.Now().AddDate(int(y.Years), int(y.Months), int(y.Days))
-}
-
 func (y YearMonthDay) EqCycle() enum.Cycle {
 	if y.Years > 0 {
 		return enum.CycleYear
@@ -82,11 +77,29 @@ func (y YearMonthDay) EqCycle() enum.Cycle {
 	return enum.CycleMonth
 }
 
-// Add adds two instances.
-func (y YearMonthDay) Add(other YearMonthDay) YearMonthDay {
+// Plus adds two instances.
+func (y YearMonthDay) Plus(other YearMonthDay) YearMonthDay {
 	y.Years = y.Years + other.Years
 	y.Months = y.Months + other.Months
 	y.Days = y.Days + other.Days
+
+	return y
+}
+
+func (y YearMonthDay) AddDays(n int64) YearMonthDay {
+	y.Days += n
+
+	return y
+}
+
+func (y YearMonthDay) AddMonths(n int64) YearMonthDay {
+	y.Months += n
+
+	return y
+}
+
+func (y YearMonthDay) AddYears(n int64) YearMonthDay {
+	y.Years += n
 
 	return y
 }
