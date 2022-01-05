@@ -7,6 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
+	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"go.uber.org/zap"
 )
@@ -16,7 +17,7 @@ type FtcPayBase struct {
 	SubsRepo     subrepo.Env
 	ReaderRepo   shared.ReaderCommon
 	AddOnRepo    addons.Env
-	AliPayClient subrepo.AliPayClient
+	AliPayClient ali.PayClient
 	WxPayClients wechat.WxPayClientStore
 	EmailService letter.Service
 	Logger       *zap.Logger
@@ -111,7 +112,7 @@ func (pay FtcPayBase) VerifyOrder(order subs.Order) (subs.PaymentResult, error) 
 		payResult, err = pay.verifyWxOrder(order)
 
 	case enum.PayMethodAli:
-		payResult, err = pay.AliPayClient.VerifyPayment(order)
+		payResult, err = pay.verifyAliOrder(order)
 	}
 
 	if err != nil {
@@ -120,6 +121,30 @@ func (pay FtcPayBase) VerifyOrder(order subs.Order) (subs.PaymentResult, error) 
 	}
 
 	return payResult, nil
+}
+
+func (pay FtcPayBase) verifyAliOrder(order subs.Order) (subs.PaymentResult, error) {
+	defer pay.Logger.Sync()
+	sugar := pay.Logger.Sugar()
+
+	aliOrder, err := pay.AliPayClient.QueryOrder(order.ID)
+	if err != nil {
+		sugar.Error(err)
+		return subs.PaymentResult{}, err
+	}
+
+	sugar.Infof("Alipay raw order: %+v", aliOrder)
+
+	go func() {
+		err := pay.SubsRepo.SaveAliOrderQueryPayload(
+			ali.NewOrderQueryPayload(aliOrder))
+
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
+	return subs.NewAliPayResult(aliOrder), nil
 }
 
 func (pay FtcPayBase) verifyWxOrder(order subs.Order) (subs.PaymentResult, error) {
@@ -137,6 +162,8 @@ func (pay FtcPayBase) verifyWxOrder(order subs.Order) (subs.PaymentResult, error
 		sugar.Error(err)
 		return subs.PaymentResult{}, err
 	}
+
+	sugar.Infof("Wxpay raw order %+v", payload)
 
 	go func() {
 		err := pay.SubsRepo.SaveWxPayload(
