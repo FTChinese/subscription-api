@@ -113,7 +113,6 @@ func (b MockInvoiceBuilder) Build() Invoice {
 		OrderKind:      b.orderKind,
 		PaidAmount:     charge.Amount,
 		PaymentMethod:  b.payMethod,
-		PriceID:        null.StringFrom(b.price.ID),
 		StripeSubsID:   null.String{},
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    chrono.Time{},
