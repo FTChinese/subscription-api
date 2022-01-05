@@ -50,7 +50,7 @@ func reduceInvoices(invs []Invoice) int64 {
 	var sum dt.YearMonthDay
 
 	for _, v := range invs {
-		sum = sum.Add(v.YearMonthDay)
+		sum = sum.Plus(v.YearMonthDay)
 	}
 
 	return sum.TotalDays()
