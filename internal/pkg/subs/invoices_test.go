@@ -76,7 +76,7 @@ func TestNewOrderInvoice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newOrderInvoice(tt.args.timeParams, tt.args.o, tt.args.p)
+			got, err := newOrderInvoice(tt.args.timeParams, tt.args.o)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("newOrderInvoice() error = %v, wantErr %v", err, tt.wantErr)
 				return
