@@ -63,6 +63,16 @@ type Order struct {
 	CreatedAt chrono.Time `json:"createdAt" db:"created_utc"`
 }
 
+// PeriodCount produces a dt.YearMonthDay instance for easy calculation.
+// An extra day is always given as a bonus.
+func (o Order) PeriodCount() dt.YearMonthDay {
+	return dt.YearMonthDay{
+		Years:  o.YearsCount,
+		Months: o.MonthsCount,
+		Days:   o.DaysCount + 1,
+	}
+}
+
 func (o Order) PaymentTitle() string {
 	return price.BuildPaymentTitle(
 		o.Kind,
