@@ -57,6 +57,14 @@ func NewPersona() *Persona {
 	}
 }
 
+func NewNPC() *Persona {
+	p := NewPersona()
+
+	p.FtcID = "4eab2991-9669-41c2-b51e-75e1a0e76183"
+
+	return p
+}
+
 func (p *Persona) WithAccountKind(k enum.AccountKind) *Persona {
 	p.kind = k
 	return p

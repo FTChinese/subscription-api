@@ -69,7 +69,7 @@ func TestRepo_CreateWxUser(t *testing.T) {
 }
 
 func TestRepo_WxWebhook(t *testing.T) {
-	p := NewPersona()
+	p := NewNPC()
 
 	o := p.OrderBuilder().Build()
 
@@ -81,5 +81,5 @@ func TestRepo_WxWebhook(t *testing.T) {
 
 	payload := NewWxWebhookPayload(o)
 
-	t.Logf("%s", payload.ToXML())
+	t.Logf("\n%s\n", payload.ToXML())
 }
