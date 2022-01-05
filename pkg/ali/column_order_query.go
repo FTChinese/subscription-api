@@ -7,12 +7,12 @@ import (
 	"github.com/smartwalle/alipay"
 )
 
-type ColumnWebhookPayload struct {
-	*alipay.TradeNotification
+type ColumnOrderQuery struct {
+	*alipay.AliPayTradeQueryResponse
 }
 
-func (p ColumnWebhookPayload) Value() (driver.Value, error) {
-	if p.TradeNotification == nil || p.TradeNo == "" {
+func (p ColumnOrderQuery) Value() (driver.Value, error) {
+	if p.AliPayTradeQueryResponse == nil {
 		return nil, nil
 	}
 
@@ -24,15 +24,15 @@ func (p ColumnWebhookPayload) Value() (driver.Value, error) {
 	return string(b), nil
 }
 
-func (p *ColumnWebhookPayload) Scan(src interface{}) error {
+func (p *ColumnOrderQuery) Scan(src interface{}) error {
 	if src == nil {
-		*p = ColumnWebhookPayload{}
+		*p = ColumnOrderQuery{}
 		return nil
 	}
 
 	switch s := src.(type) {
 	case []byte:
-		var tmp ColumnWebhookPayload
+		var tmp ColumnOrderQuery
 		err := json.Unmarshal(s, &tmp)
 		if err != nil {
 			return err
