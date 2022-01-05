@@ -71,7 +71,6 @@ func (m Membership) CarryOverInvoice() invoice.Invoice {
 		OrderKind:      enum.OrderKindAddOn, // All carry-over invoice are add-ons
 		PaidAmount:     0,
 		PaymentMethod:  m.PaymentMethod,
-		PriceID:        m.FtcPlanID,
 		StripeSubsID:   null.String{},
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    chrono.Time{}, // Will be consumed in the future.
@@ -117,7 +116,6 @@ func (m Membership) withAddOnInvoice(i invoice.Invoice) (Membership, error) {
 		LegacyExpire:  null.Int{},
 		ExpireDate:    chrono.DateFrom(i.EndUTC.Time),
 		PaymentMethod: i.PaymentMethod,
-		FtcPlanID:     i.PriceID,
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
@@ -168,7 +166,6 @@ func (m Membership) addonToInvoice() invoice.Invoice {
 		OrderKind:     enum.OrderKindAddOn,
 		PaidAmount:    0,
 		PaymentMethod: payMethod,
-		PriceID:       null.String{},
 		CreatedUTC:    chrono.TimeNow(),
 		ConsumedUTC:   chrono.TimeNow(),
 		DateTimePeriod: dt.DateTimePeriod{

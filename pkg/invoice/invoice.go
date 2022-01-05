@@ -38,7 +38,6 @@ type Invoice struct {
 	OrderKind     enum.OrderKind `json:"orderKind" db:"order_kind"`     // Which kind of order created this invoice. For addon, there's actually no original order.
 	PaidAmount    float64        `json:"paidAmount" db:"paid_amount"`
 	PaymentMethod enum.PayMethod `json:"payMethod" db:"payment_method"`
-	PriceID       null.String    `json:"priceId" db:"price_id"`
 	StripeSubsID  null.String    `json:"stripeSubsId" db:"stripe_subs_id"` // For carry-over by switching to Stripe, the stripe subscription id.
 	CreatedUTC    chrono.Time    `json:"createdUtc" db:"created_utc"`
 	ConsumedUTC   chrono.Time    `json:"consumedUtc" db:"consumed_utc"` // For order kind create, renew or upgrade, an invoice is consumed immediately; for addon, it is usually consumed at a future time.
@@ -60,7 +59,6 @@ func NewAddonInvoice(params AddOnParams) Invoice {
 		OrderKind:      enum.OrderKindAddOn,
 		PaidAmount:     params.PaidAmount,
 		PaymentMethod:  params.PaymentMethod,
-		PriceID:        params.PriceID,
 		StripeSubsID:   null.String{},
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    chrono.Time{},
