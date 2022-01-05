@@ -210,7 +210,7 @@ func (env Env) orderTail(orderID string) (subs.Order, error) {
 }
 
 type orderResult struct {
-	order subs.Order
+	value subs.Order
 	err   error
 }
 
@@ -226,7 +226,7 @@ func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 
 		order, err := env.orderHeader(orderID)
 		headerCh <- orderResult{
-			order: order,
+			value: order,
 			err:   err,
 		}
 	}()
@@ -236,7 +236,7 @@ func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 
 		order, err := env.orderTail(orderID)
 		tailCh <- orderResult{
-			order: order,
+			value: order,
 			err:   err,
 		}
 	}()
@@ -250,20 +250,5 @@ func (env Env) LoadFullOrder(orderID string) (subs.Order, error) {
 		return subs.Order{}, tailRes.err
 	}
 
-	return subs.Order{
-		ID:            headerRes.order.ID,
-		UserIDs:       headerRes.order.UserIDs,
-		OriginalPrice: headerRes.order.OriginalPrice,
-		Edition:       headerRes.order.Edition,
-		PayableAmount: headerRes.order.PayableAmount,
-		Kind:          tailRes.order.Kind,
-		PaymentMethod: tailRes.order.PaymentMethod,
-		YearsCount:    0,
-		MonthsCount:   0,
-		DaysCount:     0,
-		WxAppID:       tailRes.order.WxAppID,
-		ConfirmedAt:   tailRes.order.ConfirmedAt,
-		DatePeriod:    tailRes.order.DatePeriod,
-		CreatedAt:     tailRes.order.CreatedAt,
-	}, nil
+	return headerRes.value.MergeTail(tailRes.value), nil
 }
