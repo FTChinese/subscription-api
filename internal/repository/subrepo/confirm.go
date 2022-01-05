@@ -3,14 +3,13 @@ package subrepo
 import (
 	"database/sql"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // ConfirmOrder updates the order received from webhook,
 // create or update membership, and optionally flag prorated orders as consumed.
 // @param order - the order loaded outside a transaction. You have to retrieve and lock it again here.
-func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order, p price.Price) (subs.ConfirmationResult, *subs.ConfirmError) {
+func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
 
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar().
@@ -38,7 +37,7 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order, p price.Pri
 
 	// This step is important to prevent concurrent webhook modification
 	// and ensures data integrity.
-	order = lo.Merge(order)
+	order = order.MergeLocked(lo)
 
 	// STEP 2: query membership
 	// For any errors, allow retry.
@@ -77,7 +76,6 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order, p price.Pri
 	sugar.Info("confirm order")
 	confirmed, err := subs.NewConfirmationResult(subs.ConfirmationParams{
 		Payment: pr,
-		Price:   p,
 		Order:   order,
 		Member:  member,
 	})
