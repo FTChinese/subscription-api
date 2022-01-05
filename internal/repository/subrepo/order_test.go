@@ -6,7 +6,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
-	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
@@ -58,15 +57,19 @@ func TestEnv_CreateOrder(t *testing.T) {
 			want: subs.Order{
 				ID:            "",
 				UserIDs:       newPersona.UserIDs(),
-				OriginalPrice: pw.MockPwPriceStdYear.UnitAmount,
 				Edition:       pw.MockPwPriceStdYear.Edition,
-				PayableAmount: pw.MockPwPriceStdYear.UnitAmount,
 				Kind:          enum.OrderKindCreate,
+				OriginalPrice: pw.MockPwPriceStdYear.UnitAmount,
+				PayableAmount: pw.MockPwPriceStdYear.UnitAmount,
 				PaymentMethod: enum.PayMethodAli,
+				YearsCount:    0,
+				MonthsCount:   0,
+				DaysCount:     0,
 				WxAppID:       null.String{},
-				CreatedAt:     chrono.Time{},
 				ConfirmedAt:   chrono.Time{},
-				DatePeriod:    dt.DatePeriod{},
+				CreatedAt:     chrono.Time{},
+				StartDate:     chrono.Date{},
+				EndDate:       chrono.Date{},
 			},
 			wantErr: false,
 		},
@@ -95,7 +98,6 @@ func TestEnv_CreateOrder(t *testing.T) {
 				WxAppID:       null.StringFrom(wxID),
 				CreatedAt:     chrono.Time{},
 				ConfirmedAt:   chrono.Time{},
-				DatePeriod:    dt.DatePeriod{},
 			},
 			wantErr: false,
 		},
@@ -124,7 +126,6 @@ func TestEnv_CreateOrder(t *testing.T) {
 				WxAppID:       null.StringFrom(wxID),
 				CreatedAt:     chrono.Time{},
 				ConfirmedAt:   chrono.Time{},
-				DatePeriod:    dt.DatePeriod{},
 			},
 			wantErr: false,
 		},
@@ -153,7 +154,6 @@ func TestEnv_CreateOrder(t *testing.T) {
 				WxAppID:       null.StringFrom(wxID),
 				CreatedAt:     chrono.Time{},
 				ConfirmedAt:   chrono.Time{},
-				DatePeriod:    dt.DatePeriod{},
 			},
 			wantErr: false,
 		},

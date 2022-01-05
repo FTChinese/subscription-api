@@ -246,9 +246,7 @@ func TestCtxSubs_Render(t *testing.T) {
 
 	type fields struct {
 		UserName string
-		Order    subs.Order
 		Invoices subs.Invoices
-		Snapshot reader.MemberSnapshot
 	}
 	tests := []struct {
 		name    string
@@ -260,17 +258,12 @@ func TestCtxSubs_Render(t *testing.T) {
 			name: "Create",
 			fields: fields{
 				UserName: gofakeit.Username(),
-				Order: subs.NewMockOrderBuilder("").
-					WithConfirmed().
-					WithStartTime(time.Now()).
-					Build(),
 				Invoices: subs.Invoices{
 					Purchased: invoice.NewMockInvoiceBuilder().
 						Build().
 						SetPeriod(time.Now()),
 					CarriedOver: invoice.Invoice{},
 				},
-				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
 		},
@@ -278,11 +271,6 @@ func TestCtxSubs_Render(t *testing.T) {
 			name: "Renew",
 			fields: fields{
 				UserName: gofakeit.Username(),
-				Order: subs.NewMockOrderBuilder("").
-					WithKind(enum.OrderKindRenew).
-					WithConfirmed().
-					WithStartTime(time.Now()).
-					Build(),
 				Invoices: subs.Invoices{
 					Purchased: invoice.NewMockInvoiceBuilder().
 						WithOrderKind(enum.OrderKindRenew).
@@ -290,7 +278,6 @@ func TestCtxSubs_Render(t *testing.T) {
 						SetPeriod(time.Now()),
 					CarriedOver: invoice.Invoice{},
 				},
-				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
 		},
@@ -298,11 +285,6 @@ func TestCtxSubs_Render(t *testing.T) {
 			name: "Upgrade",
 			fields: fields{
 				UserName: gofakeit.Username(),
-				Order: subs.NewMockOrderBuilder("").
-					WithKind(enum.OrderKindUpgrade).
-					WithConfirmed().
-					WithStartTime(time.Now()).
-					Build(),
 				Invoices: subs.Invoices{
 					Purchased: invoice.NewMockInvoiceBuilder().
 						WithOrderKind(enum.OrderKindUpgrade).
@@ -312,7 +294,6 @@ func TestCtxSubs_Render(t *testing.T) {
 						Build().
 						CarryOverInvoice(),
 				},
-				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
 		},
@@ -320,17 +301,12 @@ func TestCtxSubs_Render(t *testing.T) {
 			name: "AddOn",
 			fields: fields{
 				UserName: gofakeit.Username(),
-				Order: subs.NewMockOrderBuilder("").
-					WithKind(enum.OrderKindAddOn).
-					WithConfirmed().
-					Build(),
 				Invoices: subs.Invoices{
 					Purchased: invoice.NewMockInvoiceBuilder().
 						WithOrderKind(enum.OrderKindAddOn).
 						Build(),
 					CarriedOver: invoice.Invoice{},
 				},
-				Snapshot: reader.NewMockMemberBuilder("").WithPayMethod(enum.PayMethodStripe).Build().Snapshot(reader.NewOrderArchiver(enum.OrderKindAddOn)),
 			},
 			wantErr: false,
 		},
@@ -339,9 +315,7 @@ func TestCtxSubs_Render(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := CtxSubs{
 				UserName: tt.fields.UserName,
-				Order:    tt.fields.Order,
 				Invoices: tt.fields.Invoices,
-				Snapshot: tt.fields.Snapshot,
 			}
 			got, err := ctx.Render()
 			if (err != nil) != tt.wantErr {

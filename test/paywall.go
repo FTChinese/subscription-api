@@ -20,20 +20,20 @@ func NewDailyBanner() pw.BannerJSON {
 	faker.SeedGoFake()
 
 	return pw.BannerJSON{
-		ID:             ids.BannerID(),
-		Heading:        gofakeit.Word(),
-		SubHeading:     null.StringFrom(gofakeit.Sentence(5)),
-		CoverURL:       null.StringFrom(gofakeit.URL()),
-		Content:        null.StringFrom(gofakeit.Paragraph(2, 1, 10, "\n")),
-		Terms:          null.String{},
-		DateTimePeriod: dt.DateTimePeriod{},
+		ID:           ids.BannerID(),
+		Heading:      gofakeit.Word(),
+		SubHeading:   null.StringFrom(gofakeit.Sentence(5)),
+		CoverURL:     null.StringFrom(gofakeit.URL()),
+		Content:      null.StringFrom(gofakeit.Paragraph(2, 1, 10, "\n")),
+		Terms:        null.String{},
+		ChronoPeriod: dt.ChronoPeriod{},
 	}
 }
 
 func NewPromoBanner() pw.BannerJSON {
 	b := NewDailyBanner()
 
-	b.DateTimePeriod = dt.DateTimePeriod{
+	b.ChronoPeriod = dt.ChronoPeriod{
 		StartUTC: chrono.TimeNow(),
 		EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 7)),
 	}
@@ -242,7 +242,7 @@ func (b DiscountBuilder) Build(k price.OfferKind) price.Discount {
 			PriceOff:  null.FloatFrom(b.off),
 			PriceID:   b.priceID,
 			Recurring: false,
-			DateTimePeriod: dt.DateTimePeriod{
+			ChronoPeriod: dt.ChronoPeriod{
 				StartUTC: chrono.TimeNow(),
 				EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 7)),
 			},

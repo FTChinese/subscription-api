@@ -104,9 +104,9 @@ FT中文网用户 {{.UserName}},
 
 您于 {{.Purchased.CreatedUTC.StringCN}} 通过 {{.Purchased.PaymentMethod.StringCN}} 订阅了FT中文网 {{.Purchased.Tier.StringCN}}。
 
-订单号 {{.Order.ID}}
-支付金额 {{.Order.Amount | currency}}
-订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
+订单号 {{.Purchased.OrderID.String}}
+支付金额 {{.Purchased.PaidAmount | currency}}
+订阅周期: {{.Purchased.StartDate}} 至 {{.Purchased.EndDate}}
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
@@ -120,9 +120,9 @@ FT中文网用户 {{.UserName}},
 
 您于 {{.Purchased.CreatedUTC.StringCN}} 通过 {{.Purchased.PaymentMethod.StringCN}} 续订了FT中文网 {{.Purchased.Tier.StringCN}}。
 
-订单号 {{.Order.ID}}
-支付金额 {{.Order.Amount | currency}}
-订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
+订单号 {{.Purchased.OrderID.String}}
+支付金额 {{.Purchased.PaidAmount | currency}}
+订阅周期: {{.Purchased.StartDate}} 至 {{.Purchased.EndDate}}
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 
@@ -134,11 +134,11 @@ FT中文网用户 {{.UserName}},
 
 感谢您升级订阅FT中文网高端会员。
 
-您于 {{.Order.CreatedAt.StringCN}} 通过 {{.Order.PaymentMethod.StringCN}} 从标准会员升级到 {{.Order.Tier.StringCN}}。
+您于 {{.Purchased.CreatedUTC.StringCN}} 通过 {{.Purchased.PaymentMethod.StringCN}} 从标准会员升级到 {{.Purchased.Tier.StringCN}}。
 
-订单号 {{.Order.ID}}
-支付金额 {{.Order.Amount | currency}}
-订阅周期: {{.Order.StartDate}} 至 {{.Order.EndDate}}
+订单号 {{.Purchased.OrderID.String}}
+支付金额 {{.Purchased.PaidAmount | currency}}
+订阅周期: {{.Purchased.StartDate}} 至 {{.Purchased.EndDate}}
 
 本次升级前标准版订阅剩余 {{.CarriedOver.TotalDays}} 天，将在高端版到期后再次启用
 
@@ -154,11 +154,11 @@ FT中文网用户 {{.UserName}},
 
 您于 {{.Purchased.CreatedUTC.StringCN}} 通过 {{.Purchased.PaymentMethod.StringCN}} 购买一份 {{.Purchased.Tier.StringCN}}。
 
-订单号 {{.Order.ID}}
-支付金额 {{.Order.Amount | currency}}
+订单号 {{.Purchased.OrderID.String}}
+支付金额 {{.Purchased.PaidAmount | currency}}
 购买天数: {{.Purchased.TotalDays}}
 
-您当前会员失效后将启用本次购买的 {{.Purchased.Tier.StringCN}}。
+将于当前会员失效后启用本次购买的订阅时长。
 
 如有疑问，请联系客服：subscriber.service@ftchinese.com。
 

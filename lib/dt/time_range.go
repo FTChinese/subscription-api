@@ -49,36 +49,31 @@ func (r TimeRange) AddDays(days int) TimeRange {
 	return r
 }
 
-func (r TimeRange) ToDatePeriod() DatePeriod {
-	return DatePeriod{
-		StartDate: chrono.DateFrom(r.Start),
-		EndDate:   chrono.DateFrom(r.End),
-	}
+func (r TimeRange) StartTime() chrono.Time {
+	return chrono.TimeFrom(r.Start)
 }
 
-func (r TimeRange) ToDateTimePeriod() DateTimePeriod {
-	return DateTimePeriod{
-		StartUTC: chrono.TimeFrom(r.Start),
-		EndUTC:   chrono.TimeFrom(r.End),
-	}
+func (r TimeRange) EndTime() chrono.Time {
+	return chrono.TimeFrom(r.End)
 }
 
-type DateTimePeriod struct {
+func (r TimeRange) StartDate() chrono.Date {
+	return chrono.DateFrom(r.Start)
+}
+
+func (r TimeRange) EndDate() chrono.Date {
+	return chrono.DateFrom(r.End)
+}
+
+type ChronoPeriod struct {
 	StartUTC chrono.Time `json:"startUtc" db:"start_utc"`
 	EndUTC   chrono.Time `json:"endUtc" db:"end_utc"`
 }
 
-func (p DateTimePeriod) ToDatePeriod() DatePeriod {
-	return DatePeriod{
-		StartDate: chrono.DateFrom(p.StartUTC.Time),
-		EndDate:   chrono.DateFrom(p.EndUTC.Time),
-	}
+func (p ChronoPeriod) StartDate() chrono.Date {
+	return chrono.DateFrom(p.StartUTC.Time)
 }
 
-// DatePeriod is used to build the subscription period of a one-time purchase.
-type DatePeriod struct {
-	// Membership start date for this order. If might be ConfirmedAt or user's existing membership's expire date.
-	StartDate chrono.Date `json:"startDate" db:"start_date"`
-	// Membership end date for this order. Depends on start date.
-	EndDate chrono.Date `json:"endDate" db:"end_date"`
+func (p ChronoPeriod) EndDate() chrono.Date {
+	return chrono.DateFrom(p.EndUTC.Time)
 }
