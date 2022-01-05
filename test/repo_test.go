@@ -67,3 +67,19 @@ func TestRepo_CreateWxUser(t *testing.T) {
 	t.Logf("%+v", m)
 	repo.MustSaveMembership(m)
 }
+
+func TestRepo_WxWebhook(t *testing.T) {
+	p := NewPersona()
+
+	o := p.OrderBuilder().Build()
+
+	err := NewRepo().SaveOrder(o)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	payload := NewWxWebhookPayload(o)
+
+	t.Logf("%s", payload.ToXML())
+}
