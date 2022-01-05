@@ -8,7 +8,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
@@ -100,7 +99,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 			t.Logf("Pre-requisite: saving order %s", tt.args.order.ID)
 			repo.MustSaveOrder(tt.args.order)
 
-			got, err := env.ConfirmOrder(tt.args.result, tt.args.order, price.MockPriceStdYear)
+			got, err := env.ConfirmOrder(tt.args.result, tt.args.order)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ConfirmOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -131,7 +130,7 @@ func TestEnv_ConfirmOrder_Renewal(t *testing.T) {
 
 	paymentResult := subs.MockNewPaymentResult(order)
 
-	result, err := env.ConfirmOrder(paymentResult, order, price.MockPriceStdYear)
+	result, err := env.ConfirmOrder(paymentResult, order)
 	if err != nil {
 		t.Error(err)
 		return
@@ -163,7 +162,7 @@ func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
 
 	paymentResult := subs.MockNewPaymentResult(order)
 
-	result, err := env.ConfirmOrder(paymentResult, order, price.MockPriceStdYear)
+	result, err := env.ConfirmOrder(paymentResult, order)
 	if err != nil {
 		t.Error(err)
 		return
@@ -200,7 +199,7 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 
 	paymentResult := subs.MockNewPaymentResult(order)
 
-	result, err := env.ConfirmOrder(paymentResult, order, price.MockPriceStdYear)
+	result, err := env.ConfirmOrder(paymentResult, order)
 	if err != nil {
 		t.Error(err)
 		return
