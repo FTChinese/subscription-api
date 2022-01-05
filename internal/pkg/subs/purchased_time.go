@@ -27,11 +27,13 @@ func (b PurchasedTimeParams) Build() (dt.TimeRange, error) {
 		return dt.NewTimeRange(startTime).
 			WithPeriod(b.PeriodCount), nil
 
-	// Why use confirmation time here?
+	// For upgrade, it always starts immediately.
 	case enum.OrderKindUpgrade:
 		return dt.NewTimeRange(b.ConfirmedAt.Time).
 			WithPeriod(b.PeriodCount), nil
 
+	// For addon, you should not extend current subscription
+	// period.
 	case enum.OrderKindAddOn:
 		return dt.TimeRange{}, nil
 	}
