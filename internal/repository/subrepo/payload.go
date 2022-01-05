@@ -3,44 +3,12 @@ package subrepo
 import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
-	"github.com/smartwalle/alipay"
 )
 
-// SaveAliNotification logs everything Alipay sends.
-// Deprecated. Use SaveAliWebhookPayload
-func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
-
-	_, err := env.dbs.Write.Exec(ali.StmtInsertAliPayLoad,
-		n.NotifyTime,
-		n.NotifyType,
-		n.NotifyId,
-		n.AppId,
-		n.Charset,
-		n.Version,
-		n.SignType,
-		n.Sign,
-		n.TradeNo,
-		n.OutTradeNo,
-		n.OutBizNo,
-		n.BuyerId,
-		n.BuyerLogonId,
-		n.SellerId,
-		n.SellerEmail,
-		n.TradeStatus,
-		n.TotalAmount,
-		n.ReceiptAmount,
-		n.InvoiceAmount,
-		n.BuyerPayAmount,
-		n.PointAmount,
-		n.RefundFee,
-		n.GmtCreate,
-		n.GmtPayment,
-		n.GmtRefund,
-		n.GmtClose,
-		n.FundBillList,
-		n.PassbackParams,
-		n.VoucherDetailList,
-	)
+func (env Env) SaveAliWebhookPayload(p ali.WebhookPayload) error {
+	_, err := env.dbs.Write.NamedExec(
+		ali.StmtSavePayload,
+		p)
 
 	if err != nil {
 		return err
@@ -49,7 +17,7 @@ func (env Env) SaveAliNotification(n alipay.TradeNotification) error {
 	return nil
 }
 
-func (env Env) SaveAliWebhookPayload(p ali.WebhookPayload) error {
+func (env Env) SaveAliOrderQueryPayload(p ali.OrderQueryPayload) error {
 	_, err := env.dbs.Write.NamedExec(
 		ali.StmtSavePayload,
 		p)
