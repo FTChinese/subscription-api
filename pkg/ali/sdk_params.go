@@ -11,7 +11,7 @@ import (
 // - Inside native app, use the parameters to call alipay sdk.
 type SDKParams struct {
 	BrowserRedirect null.String `json:"browserRedirect"`
-	AppSDK          null.String `json:"appSdk"`
+	AppSDK          null.String `json:"app"`
 }
 
 func (p SDKParams) IsZero() bool {
