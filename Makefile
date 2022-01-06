@@ -28,17 +28,12 @@ compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec)
 
 server_dir := /data/node/go/bin
 
+.PHONY: dev
+dev :
+	go build -o $(default_exec) $(ldflags) -v $(src_dir)
+
 .PHONY: build
 build :
-	whoami
-	which go
-	go version
-	@echo "GOROOT=$(GOROOT)"
-	@echo "GOPATH=$(GOPATH)"
-	@echo "GOBIN=$(GOBIN)"
-	@echo "GO111MODULEON=$(GO111MODULEON)"
-	@echo "* Build from dir $(current_dir), $(version)"
-	ls ./build
 	$(compile_default_exec)
 
 outdir :
