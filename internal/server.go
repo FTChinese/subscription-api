@@ -117,6 +117,8 @@ func StartServer(s ServerStatus) {
 		Live:         s.LiveMode,
 	}
 
+	appRouter := controller.NewAppRouter(myDBs)
+
 	wxAuth := controller.NewWxAuth(myDBs, logger)
 
 	guard := access.NewGuard(myDBs)
@@ -497,6 +499,14 @@ func StartServer(s ServerStatus) {
 
 		// Bust cache, regardless of live mode or not.
 		r.Get("/__refresh", paywallRouter.BustCache)
+	})
+
+	r.Route("/apps", func(r chi.Router) {
+		r.Route("/android", func(r chi.Router) {
+			r.Get("/latest", appRouter.AndroidLatest)
+			r.Get("/releases", appRouter.AndroidList)
+			r.Get("/releases/{versionName}", appRouter.AndroidSingle)
+		})
 	})
 
 	// Isolate dangerous operations from user-facing features.
