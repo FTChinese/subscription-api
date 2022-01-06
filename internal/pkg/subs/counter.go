@@ -30,10 +30,11 @@ func (c Counter) buildOrder(k enum.OrderKind) (Order, error) {
 	return Order{
 		ID:            orderID,
 		UserIDs:       c.BaseAccount.CompoundIDs(),
-		OriginalPrice: c.Price.UnitAmount,
-		Edition:       c.Price.Edition,
-		PayableAmount: c.PayableAmount(),
+		Tier:          c.Price.Tier,
+		Cycle:         c.Price.Cycle,
 		Kind:          k,
+		OriginalPrice: c.Price.UnitAmount,
+		PayableAmount: c.PayableAmount(),
 		PaymentMethod: c.PayMethod,
 		YearsCount:    ymd.Years,
 		MonthsCount:   ymd.Months,
@@ -41,6 +42,8 @@ func (c Counter) buildOrder(k enum.OrderKind) (Order, error) {
 		WxAppID:       c.WxAppID,
 		ConfirmedAt:   chrono.Time{},
 		CreatedAt:     chrono.TimeNow(),
+		StartDate:     chrono.Date{},
+		EndDate:       chrono.Date{},
 	}, nil
 }
 

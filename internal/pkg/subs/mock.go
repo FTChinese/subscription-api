@@ -159,7 +159,8 @@ func (b MockOrderBuilder) Build() Order {
 			FtcID:      null.StringFrom(b.ftcID),
 			UnionID:    null.NewString(b.unionID, b.unionID != ""),
 		}.MustNormalize(),
-		Edition:       b.price.Edition,
+		Tier:          b.price.Tier,
+		Cycle:         b.price.Cycle,
 		Kind:          b.kind,
 		OriginalPrice: b.price.UnitAmount,
 		PayableAmount: item.PayableAmount(),
@@ -169,9 +170,9 @@ func (b MockOrderBuilder) Build() Order {
 		DaysCount:     ymd.Days,
 		WxAppID:       b.wxAppId,
 		ConfirmedAt:   chrono.TimeFrom(confirmed),
+		CreatedAt:     chrono.TimeNow(),
 		StartDate:     b.period.StartDate(),
 		EndDate:       b.period.EndDate(),
-		CreatedAt:     chrono.TimeNow(),
 	}
 }
 

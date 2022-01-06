@@ -40,7 +40,8 @@ type Order struct {
 	// Fields common to all.
 	ID string `json:"id" db:"order_id"`
 	ids.UserIDs
-	price.Edition                // Deprecated
+	Tier          enum.Tier      `json:"tier" db:"tier"`
+	Cycle         enum.Cycle     `json:"cycle" db:"cycle"` // Deprecated
 	Kind          enum.OrderKind `json:"kind" db:"kind"`
 	OriginalPrice float64        `json:"originalPrice" db:"original_price"` // The original price.
 	PayableAmount float64        `json:"payableAmount" db:"payable_amount"`
@@ -169,7 +170,10 @@ func (o Order) ValidatePayment(result PaymentResult) error {
 // This situation is rare but possible under high concurrency.
 func (o Order) CalibratedKind(m reader.Membership) enum.OrderKind {
 
-	kind := calibrateOrderKind(m, o.Edition)
+	kind := calibrateOrderKind(m, price.Edition{
+		Tier:  o.Tier,
+		Cycle: o.Cycle,
+	})
 	if kind == enum.OrderKindNull {
 		return o.Kind
 	}
