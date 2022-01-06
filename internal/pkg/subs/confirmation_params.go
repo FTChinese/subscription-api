@@ -7,6 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
@@ -51,9 +52,12 @@ func newOrderInvoice(timeParams PurchasedTimeParams, o Order) (invoice.Invoice, 
 	}
 
 	return invoice.Invoice{
-		ID:            ids.InvoiceID(),
-		CompoundID:    o.CompoundID,
-		Edition:       o.Edition,
+		ID:         ids.InvoiceID(),
+		CompoundID: o.CompoundID,
+		Edition: price.Edition{
+			Tier:  o.Tier,
+			Cycle: o.Cycle,
+		},
 		YearMonthDay:  timeParams.PeriodCount,
 		AddOnSource:   addOnSource,
 		OrderID:       null.StringFrom(o.ID),
