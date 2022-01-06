@@ -148,7 +148,7 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 
 	var send = func(ok bool) {
 		var err error
-		if ok {
+		if !ok {
 			_, err = w.Write([]byte("fail"))
 		} else {
 			_, err = w.Write([]byte("success"))
@@ -166,7 +166,10 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// If err is nil, then the signature is verified.
+	// Use this to test mocking data since we don't know how
+	// signature is generated for ali webhook.
+	//payload := test.GetMockPayload(req)
+	//If err is nil, then the signature is verified.
 	payload, err := router.AliPayClient.GetWebhookPayload(req)
 	sugar.Infof("+%v", payload)
 	if err != nil {
@@ -176,6 +179,7 @@ func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
+		sugar.Infof("Saving alipay webhook payload...")
 		err := router.SubsRepo.SaveAliWebhookPayload(
 			ali.NewWebhookPayload(payload))
 		if err != nil {
