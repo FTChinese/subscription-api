@@ -11,6 +11,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/postman"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/schema"
 	"github.com/jmoiron/sqlx"
 	"github.com/objcoding/wxpay"
 	"github.com/patrickmn/go-cache"
@@ -25,6 +26,7 @@ var (
 	WxPayApp    wechat.PayApp
 	WxPayClient *wxpay.Client
 	AliApp      ali.App
+	encoder     *schema.Encoder
 )
 
 func init() {
@@ -38,4 +40,5 @@ func init() {
 	WxPayApp = wechat.MustNewPayApp("wxapp.app_pay")
 	WxPayClient = wxpay.NewClient(wxpay.NewAccount(WxPayApp.AppID, WxPayApp.MchID, WxPayApp.APIKey, false))
 	AliApp = ali.MustInitApp()
+	encoder = schema.NewEncoder()
 }
