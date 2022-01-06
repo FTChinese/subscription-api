@@ -49,7 +49,7 @@ func NewOrderQueryPayload(p *alipay.AliPayTradeQueryResponse) OrderQueryPayload 
 }
 
 const StmtSavePayload = `
-INSERT INTO premium.alipay_webhook
+INSERT INTO premium.alipay_response
 SET order_id = :order_id,
 	payload = :payload,
 	created_utc = :created_utc,
