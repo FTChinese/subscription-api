@@ -13,7 +13,7 @@ import (
 var errTokenRequired = errors.New("no access credentials provided")
 
 // GetBearerAuth extracts OAuth access token from request header.
-// Authorization: Bearer ***REMOVED***
+// Authorization: Bearer 19c7d9016b68221cc60f00afca7c498c36c361e3
 func GetBearerAuth(req *http.Request) (string, error) {
 	authHeader := req.Header.Get("Authorization")
 	authForm := req.Form.Get("access_token")

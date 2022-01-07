@@ -15,14 +15,11 @@ import (
 var tomlConfig string
 
 var (
-	version string
-	build   string
-	commit  string
-	// For development, production == true, sandbox == true
-	// For online sandbox server, production == true, sandbox == true
-	// For online production server, production == true, sandbox == false
+	version    string
+	build      string
+	commit     string
 	production bool // Determine which db to use
-	liveMode   bool // Determine the mode when using Stripe/Apple service.
+	liveMode   bool // Determine pricing mode.
 )
 
 func init() {

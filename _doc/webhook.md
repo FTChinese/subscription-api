@@ -30,7 +30,7 @@ Example wx notification data as described on https://pay.weixin.qq.com/wiki/doc/
     "fee_type": "CNY",
     "out_trade_no":"FT0055501540633845",
     "sign":"8C4B3D90F2B989EAAC4B541329EF5F8B",
-    "appid":"***REMOVED***",
+    "appid":"wxacddf1c20516eb69",
     "openid":"ob7fA0h69OO0sTLyQQpYc55iF_P0",
     "trade_type":"APP"
 }

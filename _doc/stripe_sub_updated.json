@@ -291,7 +291,7 @@
         "total_count": 1,
         "url": "/v1/charges?payment_intent=pi_1F2aZXBzTK0hABgJs1W4pIGl"
       },
-      "client_secret": "***REMOVED***",
+      "client_secret": "pi_1F2aZXBzTK0hABgJs1W4pIGl_secret_Zev8qIdqBXXOF4ZRf0O2Fbesn",
       "confirmation_method": "automatic",
       "created": 1564651663,
       "currency": "gbp",

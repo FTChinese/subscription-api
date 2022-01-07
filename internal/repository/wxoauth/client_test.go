@@ -20,7 +20,7 @@ func TestClient_RefreshAccess(t *testing.T) {
 	}
 
 	// {
-	// AccessToken:***REMOVED***
+	// AccessToken:50_w3qi7Op6GZJrLipgeDAJtfyDhTWp0tHFNoyU03wS4p8S9AyO-4obfVdfPc0-y7tDLKVSAVEMVWJYtFbT8v1YeL0QVGSlzMpTnz3AQaACiiY
 	// ExpiresIn:7200
 	// RefreshToken:50_L89wZSqDFdDSAf6THq0YaTr0HgJxWO65Ez0n5fFVKw4-hQtPRzDlzWFapSBrXB5JmfQewjt1rrvwRT31bdLgV_8QdJeH6kX_q47XeJ473Lc
 	// OpenID:ob7fA0h69OO0sTLyQQpYc55iF_P0

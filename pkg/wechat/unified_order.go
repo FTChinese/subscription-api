@@ -80,7 +80,7 @@ type OrderResult struct {
 // prepay_id:wx131027225284604cf9f311763035575963
 // return_code:SUCCESS
 // return_msg:OK
-// appid:***REMOVED***
+// appid:wxacddf1c20516eb69
 // mch_id:1504993271
 // nonce_str:aOyCOfOvWZQZkRwp
 // ]

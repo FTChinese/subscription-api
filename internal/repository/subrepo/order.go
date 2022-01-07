@@ -10,7 +10,7 @@ import (
 )
 
 // For backward compatibility.
-const wxAppNativeApp = "***REMOVED***" // Used by native app to pay and log in.
+const wxAppNativeApp = "wxacddf1c20516eb69" // Used by native app to pay and log in.
 
 // CreateOrder creates an order and save it to db.
 // This version is applicable to all users, regardless of how their current membership is purchased. It no longer calculates user's
