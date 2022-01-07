@@ -32,8 +32,8 @@
 |  2       | 8202  | subs-api-v2      | https://www.ftacademy.cn/api/v2 |
 |  3       | 8203  | subs-api-v3      | https://www.ftacademy.cn/api/v3 |
 |  4       | 8204  | subs-api-v4      | https://www.ftacademy.cn/api/v4 |
-|  5      | 8205  | subs-api-v5      | https://www.ftacademy.cn/api/v5 |
-|  6      | 8206  | subs-api-v6      | https://www.ftacademy.cn/api/v6 |
+|  5       | 8205  | subs-api-v5       | https://www.ftacademy.cn/api/v5 |
+|  6       | 8206  | subs-api-v6       | https://www.ftacademy.cn/api/v6 |
 
 ## Authorization Header
 
