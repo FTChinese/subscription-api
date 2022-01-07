@@ -26,8 +26,9 @@
     9. Also run `make devconfig` command so that the modified configuration file is synced to your current directory so that Go's embedding of static assets works for development.
 3. In makefile, change `app_name := subs-api-v<your version name>`
 4. Configure URL. Map external URL to the new version's port.
-| Version  | Port  | Binary name      | External URL |
-| -------- | ----- | ---------------- | ------------ |
+
+| Version  | Port  | Binary name      | External URL                    |
+| -------- | ----- | ---------------- |---------------------------------|
 |  1       | 8200  | subscription-api | https://www.ftacademy.cn/api/v1 |
 |  2       | 8202  | subs-api-v2      | https://www.ftacademy.cn/api/v2 |
 |  3       | 8203  | subs-api-v3      | https://www.ftacademy.cn/api/v3 |
