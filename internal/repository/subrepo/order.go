@@ -2,15 +2,10 @@ package subrepo
 
 import (
 	"github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/guregu/null"
 )
-
-// For backward compatibility.
-const wxAppNativeApp = "wxacddf1c20516eb69" // Used by native app to pay and log in.
 
 // CreateOrder creates an order and save it to db.
 // This version is applicable to all users, regardless of how their current membership is purchased. It no longer calculates user's
@@ -94,11 +89,6 @@ func (env Env) RetrieveOrder(orderID string) (subs.Order, error) {
 
 	if err != nil {
 		return subs.Order{}, err
-	}
-
-	// Set wx app id to the one used by native app pay if missing.
-	if order.PaymentMethod == enum.PayMethodWx && order.WxAppID.IsZero() {
-		order.WxAppID = null.StringFrom(wxAppNativeApp)
 	}
 
 	return order, nil

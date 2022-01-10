@@ -350,7 +350,7 @@ See the [Error Response](#error-response) section for errors.
     "ftcOrderId": "FTB55FE0DE847779C9",
     "listPrice": 258,
     "netPrice": 0.01,
-    "appId": "wxacddf1c20516eb69",
+    "appId": "",
     "codeUrl": "weixin://wxpay/bizpayurl?pr=CbhlUTz"
 }
 ```
@@ -383,7 +383,7 @@ None.
     "ftcOrderId": "FT8AD02A2F3F0E44D2",
     "listPrice": 258,
     "netPrice": 0.01,
-    "appId": "wxc1bc20ee7478536a",
+    "appId": "",
     "mWebUrl": "https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=wx031227207396425c62fb29a30807789694&package=865496058"
 }
 ```
@@ -420,7 +420,7 @@ X-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36
     "ftcOrderId": "FT4E74602E64ABFB89",
     "listPrice": 258,
     "netPrice": 0.01,
-    "appId": "wxacddf1c20516eb69",
+    "appId": "",
     "timestamp": "1554265974",
     "nonce": "91dd2e4b9a92f730ea95",
     "pkg": "Sign=WXPay",

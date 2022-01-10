@@ -58,9 +58,9 @@ func (c Client) GetAccessToken(code string) (wxlogin.AccessResponse, error) {
 		return wxlogin.AccessResponse{}, errs[0]
 	}
 
-	// {"access_token":"22_JJVz_GH32Bt89Cfj_kaSYr5V-j8_iNphiYzQ3i3rMNRdk88k8GZw_v5qhuR9e3X5mZtn4-QTIyqgzmruxSlVZ0shrU9v3mzV7dLY46t4K0M",
+	// {"access_token":"",
 	// "expires_in":7200,
-	// "refresh_token":"22_FfPqWuDBKDZtCwsTyO9tCtWolvi62kXTioDSKN-OO00xxQcLCovxWxg_FWt17Ca5chDjKiQ_aQMyErN4NIJYTCMI0VAcN2Z5Yv2W9kj-AyM",
+	// "refresh_token":"",
 	// "openid":"ofP-k1LSVS-ObmrySM1aXKbv1Hjs",
 	// "scope":"snsapi_login",
 	// "unionid":"ogfvwjk6bFqv2yQpOrac0J3PqA0o"}

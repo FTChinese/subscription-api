@@ -61,7 +61,7 @@ func (c WxPayClient) QueryOrder(params OrderQueryParams) (wxpay.Params, error) {
 	// return_code == FAIL/SUCCESS only determines
 	// whether the response body signature is verified.
 	// Example:
-	// appid:wxacddf1c20516eb69
+	// appid:
 	// device_info: mch_id:1504993271
 	// nonce_str:9dmEFWFU5ooB9dMN
 	// out_trade_no:FT9F67C5CC9F47CF65

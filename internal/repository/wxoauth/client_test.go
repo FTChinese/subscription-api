@@ -4,13 +4,14 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
+	"go.uber.org/zap/zaptest"
 	"testing"
 )
 
 func TestClient_RefreshAccess(t *testing.T) {
 	faker.MustSetupViper()
 
-	client := NewClient(config.MustWxNativeApp())
+	client := NewClient(config.MustWxNativeApp(), zaptest.NewLogger(t))
 
 	accResp, err := client.RefreshAccess("")
 
@@ -20,10 +21,10 @@ func TestClient_RefreshAccess(t *testing.T) {
 	}
 
 	// {
-	// AccessToken:50_w3qi7Op6GZJrLipgeDAJtfyDhTWp0tHFNoyU03wS4p8S9AyO-4obfVdfPc0-y7tDLKVSAVEMVWJYtFbT8v1YeL0QVGSlzMpTnz3AQaACiiY
+	// AccessToken:
 	// ExpiresIn:7200
-	// RefreshToken:50_L89wZSqDFdDSAf6THq0YaTr0HgJxWO65Ez0n5fFVKw4-hQtPRzDlzWFapSBrXB5JmfQewjt1rrvwRT31bdLgV_8QdJeH6kX_q47XeJ473Lc
-	// OpenID:ob7fA0h69OO0sTLyQQpYc55iF_P0
+	// RefreshToken:
+	// OpenID:
 	//Scope:snsapi_userinfo
 	// UnionID:{NullString:{String: Valid:false}}
 	// RespStatus:{
@@ -37,7 +38,7 @@ func TestClient_RefreshAccess(t *testing.T) {
 func TestClient_IsAccessTokenValid(t *testing.T) {
 	faker.MustSetupViper()
 
-	client := NewClient(config.MustWxNativeApp())
+	client := NewClient(config.MustWxNativeApp(), zaptest.NewLogger(t))
 
 	isValid := client.IsAccessTokenValid(wxlogin.UserInfoParams{
 		AccessToken: "",

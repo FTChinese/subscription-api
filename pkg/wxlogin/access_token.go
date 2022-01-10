@@ -16,11 +16,9 @@ import (
 // and
 // /sns/oauth2/refresh_token?appid=APPID&grant_type=refresh_token&refresh_token=REFRESH_TOKEN
 type AccessResponse struct {
-	// Example: 16_Ix0E3WfWs9u5Rh9f-lB7_LgsQJ4zm1eodolFJpSzoQibTAuhIlp682vDmkZSaYIjD9gekOa1zQl-6c6S_CrN_cN9vx9mybwXNVgFbwPMMwM
 	AccessToken string `json:"access_token" db:"access_token"`
 	// Example: 7200
-	ExpiresIn int64 `json:"expires_in" db:"expires_in"`
-	// Exmaple: 16_IlmA9eLGjJw7gBKBT48wff1V1hAYAdpmIqUAypspepm6DsQ6kkcLeZmP932s9PcKp1WM5P_1YwUNQqF-29B_0CqGTqMpWkaaiNSYp26MmB4
+	ExpiresIn    int64  `json:"expires_in" db:"expires_in"`
 	RefreshToken string `json:"refresh_token" db:"refresh_token"`
 	// Example: ob7fA0h69OO0sTLyQQpYc55iF_P0
 	OpenID string `json:"openid" db:"open_id"`
