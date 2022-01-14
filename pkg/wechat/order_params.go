@@ -20,7 +20,7 @@ import (
 type SDKParams struct {
 	DesktopQr      null.String         `json:"desktopQr"`
 	MobileRedirect null.String         `json:"mobileRedirect"`
-	JsApi          JSApiParamsJSON     `json:"jsApi"` // Marshalled to null for empty value.
+	JsApi          JSApiParamsJSON     `json:"jsApi"` // Marshalled to null for empty value. Client should pass it to Wechat JS SDK.
 	AppSDK         NativeAppParamsJSON `json:"app"`   // Marshalled to null for empty value.
 }
 
