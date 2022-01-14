@@ -22,10 +22,9 @@ import (
 // `return_url` parameter is only required for apps running on ftacademy.cn. It is deprecated and changed to request body.
 //
 // Input:
+// priceId: string;
+// discountId?: string;
 // returnUrl?: string; Only for browsers.
-// tier: string;
-// cycle: string;
-// planId?: string;
 func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 	webhookURL := config.AliWxWebhookURL(
 		router.Live,
