@@ -12,7 +12,7 @@ type UnifiedOrderParams struct {
 	UserIP      string      `map:"spbill_create_ip"` // 支持IPV4和IPV6两种格式的IP地址。调用微信支付API的机器IP
 	WebhookURL  string      `map:"notify_url"`       // 接收微信支付异步通知回调地址，通知url必须为直接可访问的url，不能携带参数。公网域名必须为https
 	TradeType   string      `map:"trade_type"`
-	OpenID      null.String `map:"open_id"` // Required for JSAPI
+	OpenID      null.String `map:"openid"` // Required for JSAPI
 }
 
 // UnifiedOrderReq contains the data sent to wechat api to create an order.
@@ -56,7 +56,7 @@ func (o UnifiedOrderReq) Marshal() wxpay.Params {
 		SetString(keyTradeType, o.TradeType)
 
 	if o.OpenID.Valid {
-		p.SetString(keyOrderID, o.OpenID.String)
+		p.SetString(keyOpenID, o.OpenID.String)
 	}
 
 	return p
