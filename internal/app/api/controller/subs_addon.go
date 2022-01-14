@@ -9,6 +9,8 @@ import (
 // ClaimAddOn extends expiration time by transferring addon periods.
 // This could be done either by client automatically, or by
 // ftc staff manually.
+// TODO: when claiming addon for an expired b2b, we
+// revoke the linked licence automatically.
 func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
 	readerIDs := xhttp.UserIDsFromHeader(req.Header)
 
