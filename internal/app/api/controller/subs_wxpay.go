@@ -17,10 +17,9 @@ import (
 // WxPay creates order for wechat pay.
 // Header: X-User-Id: <uuid>, or X-Union-Id: <wechat union id>, or both.
 // Input:
-// openID?: string; Required only for payment inside wechat in-house browser.
-// tier: string; Currently acquired from URL param
-// cycle: string; Currently acquired from URL param
-// planId: string;
+// priceId: string;
+// discountId?: string;
+// openId?: string; Required only for payment inside wechat in-house browser.
 func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 	webhookURL := config.AliWxWebhookURL(
@@ -93,11 +92,11 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		}
 
 		// 商户后台收到用户支付单，调用微信支付统一下单接口
-		// See https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=8_3
+		// Native app https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=8_3
+		// QR: https://pay.weixin.qq.com/wiki/doc/api/native.php?chapter=9_1
 		// UnifiedOrder checks if `return_code` is SUCCESS/FAIL,
 		// validate the signature
 		// You have to check if return_code == SUCCESS, appid, mch_id, result_code are valid.
-
 		orderReq := wechat.NewOrderReq(wechat.UnifiedOrderParams{
 			Body:        pi.Order.PaymentTitle(),
 			OutTradeNo:  pi.Order.ID,
