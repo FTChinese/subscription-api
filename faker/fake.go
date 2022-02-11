@@ -24,7 +24,7 @@ func GenVersion() string {
 		rand.IntRange(1, 10))
 }
 
-func GenCustomerID() string {
+func GenStripeCusID() string {
 	id, _ := gorest.RandomBase64(9)
 	return "cus_" + id
 }
@@ -48,6 +48,10 @@ func GenInvoiceID() string {
 
 func GenPaymentIntentID() string {
 	return "pi_" + rand.String(14)
+}
+
+func GenPaymentMethodID() string {
+	return "pm_" + rand.String(14)
 }
 
 func RandNumericString() string {
