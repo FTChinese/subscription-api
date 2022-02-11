@@ -1,6 +1,7 @@
 package xhttp
 
 import (
+	"database/sql"
 	"errors"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/stripe/stripe-go/v72"
@@ -24,6 +25,10 @@ func HandleStripeErr(w http.ResponseWriter, err error) error {
 		return render.New(w).JSON(re.StatusCode, re)
 
 	default:
-		return err
+		if err == sql.ErrNoRows {
+			return render.New(w).NotFound(err.Error())
+		}
+
+		return render.New(w).InternalServerError(err.Error())
 	}
 }
