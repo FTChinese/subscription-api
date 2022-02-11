@@ -40,12 +40,7 @@ func (router StripeRouter) LoadPaymentMethod(w http.ResponseWriter, req *http.Re
 	pm, err := router.getPaymentMethod(pmID)
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.NewInternalError(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 

@@ -13,12 +13,7 @@ func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) 
 	prices, err := router.Env.ListPrices(router.Live, refresh)
 
 	if err != nil {
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.New(w).InternalServerError(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -41,12 +36,7 @@ func (router StripeRouter) LoadPrice(w http.ResponseWriter, req *http.Request) {
 	price, err := router.Env.LoadPrice(id, refresh)
 
 	if err != nil {
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.New(w).InternalServerError(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 

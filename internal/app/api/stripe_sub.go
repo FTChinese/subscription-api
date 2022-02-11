@@ -66,11 +66,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	item, err := router.Env.LoadCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-		_ = render.New(w).BadRequest(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -88,13 +84,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.New(w).DBError(err)
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -153,7 +143,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	item, err := router.Env.LoadCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
-		_ = render.New(w).BadRequest(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -165,12 +155,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.New(w).DBError(err)
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -182,6 +167,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 	if result.MissingPaymentIntent {
 		_ = render.New(w).BadRequest("PaymentIntent not expanded")
+		return
 	}
 
 	_ = render.New(w).OK(result)
@@ -210,11 +196,6 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	if err != nil {
 		sugar.Error(err)
 		err = xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
@@ -233,7 +214,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 
 	if err != nil {
 		sugar.Error(err)
-		_ = render.New(w).DBError(err)
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -269,12 +250,7 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.New(w).DBError(err)
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -308,12 +284,7 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.New(w).DBError(err)
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -364,12 +335,7 @@ func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 	subs, err := router.getSubscription(subsID)
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.NewInternalError(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -406,12 +372,7 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 	subs, err := router.getSubscription(subsID)
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.NewInternalError(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -437,12 +398,7 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 	pm, err := router.getPaymentMethod(subs.DefaultPaymentMethodID.String)
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.NewInternalError(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 

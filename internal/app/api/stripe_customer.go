@@ -30,12 +30,7 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.New(w).DBError(err)
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -67,18 +62,14 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 	cus, err := router.getCustomer(cusID)
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.NewInternalError(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
 	// If the request ftc id and the found customer mismatched.
 	if cus.FtcID != ftcID {
 		_ = render.New(w).NotFound("")
+		return
 	}
 
 	if cus.IsFromStripe {
@@ -129,12 +120,7 @@ func (router StripeRouter) GetCustomerDefaultPaymentMethod(w http.ResponseWriter
 	cus, err := router.getCustomer(cusID)
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.NewInternalError(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -148,19 +134,14 @@ func (router StripeRouter) GetCustomerDefaultPaymentMethod(w http.ResponseWriter
 	}
 
 	if cus.DefaultPaymentMethodID.IsZero() {
-		_ = render.NewNotFound("Default payment method not set")
+		_ = render.New(w).NotFound("Default payment method not set")
 		return
 	}
 
 	pm, err := router.getPaymentMethod(cus.DefaultPaymentMethodID.String)
 	if err != nil {
 		sugar.Error(err)
-		err := xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-
-		_ = render.NewInternalError(err.Error())
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -212,9 +193,6 @@ func (router StripeRouter) UpdateCustomerDefaultPaymentMethod(w http.ResponseWri
 	cus, err := router.Env.Client.SetCusDefaultPaymentMethod(pm)
 	if err != nil {
 		err = xhttp.HandleStripeErr(w, err)
-		if err != nil {
-			_ = render.New(w).BadRequest(err.Error())
-		}
 		return
 	}
 
