@@ -44,7 +44,7 @@ func NewPersona() *Persona {
 	return &Persona{
 		FtcID:      uuid.New().String(),
 		UnionID:    faker.GenWxID(),
-		StripeID:   faker.GenCustomerID(),
+		StripeID:   faker.GenStripeCusID(),
 		Email:      gofakeit.Email(),
 		UserName:   gofakeit.Username(),
 		Mobile:     faker.GenPhone(),
