@@ -34,7 +34,7 @@ func (e WebhookError) Error() string {
 	return e.Message
 }
 
-type WebhookResult struct {
+type WebhookSubsResult struct {
 	Member           reader.Membership          // New membership.
 	Versioned        reader.MembershipVersioned // If AnteChange is zero, update Member; otherwise insert Member.
 	CarryOverInvoice invoice.Invoice
@@ -47,7 +47,7 @@ type WebhookResultBuilder struct {
 	FtcMember    reader.Membership
 }
 
-// Build generates WebhookResult.
+// Build generates WebhookSubsResult.
 // Possibilities:
 // * No membership correspond to stripe subscription id. In such case what you can do depends on the ftc side:
 //    * Ftc side has no membership. You are safe to create a stripe membership directly;
@@ -58,7 +58,7 @@ type WebhookResultBuilder struct {
 // * Stripe side has membership:
 //    * If its user id does not match the account retrieve using customer id, it indicates data inconsistency, stop;
 //    * Otherwise the stripe membership already exists, simply update it.
-func (b WebhookResultBuilder) Build() (WebhookResult, error) {
+func (b WebhookResultBuilder) Build() (WebhookSubsResult, error) {
 	if b.StripeMember.IsZero() {
 		// If ftc side does not have membership.
 		if b.FtcMember.IsZero() {
@@ -67,7 +67,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 				Subs:    b.Subs,
 				AddOn:   addon.AddOn{},
 			})
-			return WebhookResult{
+			return WebhookSubsResult{
 				Member:           newMmb,
 				Versioned:        newMmb.Version(reader.NewStripeArchiver(reader.ArchiveActionWebhook)),
 				CarryOverInvoice: invoice.Invoice{},
@@ -82,7 +82,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 				Subs:    b.Subs,
 				AddOn:   b.FtcMember.AddOn,
 			})
-			return WebhookResult{
+			return WebhookSubsResult{
 				Member: newMmb,
 				Versioned: newMmb.Version(
 					reader.NewStripeArchiver(reader.ArchiveActionWebhook)).
@@ -96,7 +96,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 		// override a one-time payment.
 		if b.FtcMember.IsOneTime() {
 			if b.Subs.IsExpired() {
-				return WebhookResult{}, errors.New("expired stripe subscription cannot override a valid ftc membership")
+				return WebhookSubsResult{}, errors.New("expired stripe subscription cannot override a valid ftc membership")
 			}
 
 			// Turn current ftc side to carry over.
@@ -107,7 +107,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 				AddOn:   b.FtcMember.AddOn.Plus(addon.New(inv.Tier, inv.TotalDays())),
 			})
 
-			return WebhookResult{
+			return WebhookSubsResult{
 				Member: newMmb,
 				Versioned: newMmb.
 					Version(
@@ -123,7 +123,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 		// another stripe subscription or apple.
 		// Overriding a non-onetime valid membership should be
 		// forbidden. We should record such mismatch.
-		return WebhookResult{}, errors.New("cannot permit stripe to override an existing membership")
+		return WebhookSubsResult{}, errors.New("cannot permit stripe to override an existing membership")
 	}
 
 	// Since stripe membership exists, it must match user id;
@@ -131,7 +131,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 	// by subscription id and customer id, which shouldn't
 	// happen.
 	if b.StripeMember.CompoundID != b.UserIDs.CompoundID {
-		return WebhookResult{}, errors.New("stripe subscription is not targeting this user")
+		return WebhookSubsResult{}, errors.New("stripe subscription is not targeting this user")
 	}
 
 	// Current membership must be created from the subs,
@@ -142,7 +142,7 @@ func (b WebhookResultBuilder) Build() (WebhookResult, error) {
 		AddOn:   b.StripeMember.AddOn, // Carry on previous addon without touch.
 	})
 
-	return WebhookResult{
+	return WebhookSubsResult{
 		Member: newMmb,
 		Versioned: newMmb.Version(
 			reader.NewStripeArchiver(

@@ -24,17 +24,15 @@ type SubsResult struct {
 	MissingPaymentIntent bool                  `json:"-"` // Whether we failed to expanded latest_invoice.payment_intent. It is not required to create/upgrade a subscription, so we should not return an error.
 	Subs                 Subs                  `json:"subs"`
 	Member               reader.Membership     `json:"membership"` // New membership.
-	Snapshot             reader.MemberSnapshot `json:"-"`          // If Modified is false, this must exists. If Modified is true, its existence depends -- a newly created membership should not produce a snapshot.
+	Snapshot             reader.MemberSnapshot `json:"-"`          // If Modified is false, this must exists. If Modified is true, its existence depends on -- a newly created membership should not produce a snapshot.
 	CarryOverInvoice     invoice.Invoice       `json:"-"`
 }
 
-func NewSubsResult(ss *stripe.Subscription, params SubsResultParams) (SubsResult, error) {
-	subs, err := NewSubs(ss, params.UserIDs)
-	if err != nil {
-		return SubsResult{}, err
-	}
-
-	return newSubsResult(subs, params), nil
+func NewSubsResult(ss *stripe.Subscription, params SubsResultParams) SubsResult {
+	return newSubsResult(
+		NewSubs(params.UserIDs, ss),
+		params,
+	)
 }
 
 // newSubsResult exists for testing convenience.

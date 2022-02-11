@@ -1,31 +1,85 @@
 package stripe
 
-import "github.com/stripe/stripe-go/v72"
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"github.com/stripe/stripe-go/v72"
+)
 
 // SubsItem extracts a subscription item id and price id
 // from the first element of items data array.
 // Usually one subscription has only one item.
 type SubsItem struct {
-	ItemID  string    `json:"subsItemId" db:"subs_item_id"`
-	Price   PriceJSON `json:"price" db:"price"`
-	PriceID string    `json:"priceId" db:"price_id"`
+	ID             string    `json:"id"`
+	Price          PriceJSON `json:"price"`
+	Created        int64     `json:"created"`
+	Quantity       int64     `json:"quantity"`
+	SubscriptionID string    `json:"subscriptionId"`
 }
 
 // NewSubsItem gets the subscription item id and price id from a stripe subscription.
-// stripe.Subscription.Items contains a list of subscription
+// stripe.Subscription.Items contain a list of subscription
 // items, each with an attached price.
 // See https://stripe.com/docs/api/subscriptions/object#subscription_object-items
 // It the items Data array is empty, then it has nothing subscribed to.
-func NewSubsItem(items *stripe.SubscriptionItemList) SubsItem {
-	if items == nil || len(items.Data) == 0 {
-		return SubsItem{}
+func NewSubsItem(item *stripe.SubscriptionItem) SubsItem {
+	return SubsItem{
+		ID: item.ID,
+		Price: PriceJSON{
+			Price: NewPrice(item.Price),
+		},
+		Created:        item.Created,
+		Quantity:       item.Quantity,
+		SubscriptionID: item.Subscription,
+	}
+}
+
+type SubsItemList []SubsItem
+
+// Value implements Valuer interface by serializing an Invitation into
+// JSON data.
+func (l SubsItemList) Value() (driver.Value, error) {
+	if len(l) == 0 {
+		return nil, nil
 	}
 
-	return SubsItem{
-		ItemID:  items.Data[0].ID,
-		PriceID: items.Data[0].Price.ID,
-		Price: PriceJSON{
-			Price: NewPrice(items.Data[0].Price),
-		},
+	b, err := json.Marshal(l)
+	if err != nil {
+		return nil, err
 	}
+
+	return string(b), nil
+}
+
+// Scan implements Valuer interface by deserializing an invitation field.
+func (l *SubsItemList) Scan(src interface{}) error {
+	if src == nil {
+		*l = nil
+		return nil
+	}
+
+	switch s := src.(type) {
+	case []byte:
+		var tmp SubsItemList
+		err := json.Unmarshal(s, &tmp)
+		if err != nil {
+			return err
+		}
+		*l = tmp
+		return nil
+
+	default:
+		return errors.New("incompatible type to scan to PriceJSON")
+	}
+}
+
+func NewSubsItemList(items *stripe.SubscriptionItemList) SubsItemList {
+	var ret = make([]SubsItem, 0)
+
+	for _, item := range items.Data {
+		ret = append(ret, NewSubsItem(item))
+	}
+
+	return ret
 }

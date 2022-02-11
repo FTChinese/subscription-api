@@ -21,91 +21,95 @@ func getStatus(sts stripe.SubscriptionStatus) enum.SubsStatus {
 // It is created from stripe's subscription upon initial creation,
 // or refresh, or upgrade.
 type Subs struct {
-	ID string `json:"id" db:"id"`
+	IsFromStripe bool   `json:"-"` // Flat indicating whether the data comes from Stripe API
+	ID           string `json:"id" db:"id"`
 	price.Edition
 	// A date in the future at which the subscription will automatically get canceled
 	WillCancelAtUtc chrono.Time `json:"cancelAtUtc" db:"cancel_at_utc"`
-	// If the subscription has been canceled with the at_period_end flag set to true,
-	// cancel_at_period_end on the subscription will be true.
-	// You can use this attribute to determine whether a subscription that has a status of active is scheduled to be canceled at the end of the current period.
-	// When this field is true and it is not the end of current period,
-	// status is still active.
+	// Determine whether an active subscription is scheduled to be canceled at the end of the current period. When you cancel a subscription with `at_period_end=true`, this field will be true.
 	CancelAtPeriodEnd bool `json:"cancelAtPeriodEnd" db:"cancel_at_period_end"`
 	// If the subscription has been canceled, the date of that cancellation. If the subscription was canceled with cancel_at_period_end, canceled_at will reflect the time of the most recent update request, not the end of the subscription period when the subscription is automatically moved to a canceled state.
 	CanceledUTC chrono.Time `json:"canceledUtc" db:"canceled_utc"`
-
-	// End of the current period that the subscription has been invoiced for. At the end of this period, a new invoice will be created.
-	CurrentPeriodEnd chrono.Time `json:"currentPeriodEnd" db:"current_period_end"`
-	// Start of the current period that the subscription has been invoiced for.
+	// Start and End of the current period that the subscription has been invoiced for.
+	// At the end of this period, a new invoice will be created.
+	CurrentPeriodEnd   chrono.Time `json:"currentPeriodEnd" db:"current_period_end"`
 	CurrentPeriodStart chrono.Time `json:"currentPeriodStart" db:"current_period_start"`
-
-	CustomerID string `json:"customerId" db:"customer_id"`
-	// ID of the default payment method for the subscription. It must belong to the customer associated with the subscription. This takes precedence over default_source. If neither are set, invoices will use the customer’s invoice_settings.default_payment_method or default_source.
-	DefaultPaymentMethod null.String `json:"defaultPaymentMethod" db:"default_payment_method"`
+	CustomerID         string      `json:"customerId" db:"customer_id"`
+	// ID of the default payment method for the subscription.
+	// It must belong to the customer associated with the subscription.
+	// This takes precedence over default_source.
+	// If neither are set, invoices will use the customer’s invoice_settings.default_payment_method or default_source.
+	DefaultPaymentMethodID null.String `json:"defaultPaymentMethod" db:"default_payment_method_id"`
 	// If the subscription has ended, the date the subscription ended
-	EndedUTC        chrono.Time `json:"endedUtc" db:"ended_utc"`
-	FtcUserID       null.String `json:"ftcUserId" db:"ftc_user_id"`
-	LatestInvoiceID string      `json:"latestInvoiceId" db:"latest_invoice_id"`
-	LiveMode        bool        `json:"liveMode" db:"live_mode"`
-	SubsItem
+	EndedUTC        chrono.Time  `json:"endedUtc" db:"ended_utc"`
+	FtcUserID       null.String  `json:"ftcUserId" db:"ftc_user_id"`
+	Items           SubsItemList `json:"items" db:"items"`
+	LatestInvoiceID string       `json:"latestInvoiceId" db:"latest_invoice_id"`
+	LatestInvoice   Invoice      `json:"-"` // To be saved in a separate table.
+	LiveMode        bool         `json:"liveMode" db:"live_mode"`
 	// Date when the subscription was first created. The date might differ from the created date due to backdating.
-	StartDateUTC chrono.Time     `json:"startDateUtc" db:"start_date_utc"`
-	Status       enum.SubsStatus `json:"status" db:"sub_status"`
 	// This does not exist when refreshing current subscription.
 	// Occasionally stripe just does not expand it.
 	// Do not rely on it.
-	PaymentIntent PaymentIntent `json:"paymentIntent"`
+	PaymentIntentID null.String     `json:"-" db:"payment_intent_id"`
+	PaymentIntent   PaymentIntent   `json:"paymentIntent"` // To be saved in a separate table.
+	StartDateUTC    chrono.Time     `json:"startDateUtc" db:"start_date_utc"`
+	Status          enum.SubsStatus `json:"status" db:"sub_status"`
 	// Time at which the object was created. Measured in seconds since the Unix epoch.
-	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
-	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
+	Created int64 `json:"-" db:"created"`
+
+	ItemID string `json:"subsItemId"` // Deprecated. Kept for client deserialization. Will be removed in v7
 }
 
 // NewSubs converts stripe's subscription. It returns error if there's
 // no subscription item, which should deny membership modification since we have no idea what the user has subscribed to.
 // Such kind of error won't happen as long as stripe works.
-func NewSubs(ss *stripe.Subscription, ids ids.UserIDs) (Subs, error) {
+func NewSubs(ids ids.UserIDs, ss *stripe.Subscription) Subs {
 
 	var dpm null.String
 	if ss.DefaultPaymentMethod != nil {
 		dpm = null.StringFrom(ss.DefaultPaymentMethod.ID)
 	}
 
-	var invID string
-	if ss.LatestInvoice != nil {
-		invID = ss.LatestInvoice.ID
+	items := NewSubsItemList(ss.Items)
+	var edition price.Edition
+	if len(items) > 0 {
+		edition = items[0].Price.Edition()
 	}
-
-	subsItem := NewSubsItem(ss.Items)
 
 	status := getStatus(ss.Status)
 
 	var pi PaymentIntent
+	var inv Invoice
 	// LatestInvoice might be empty if it is not expanded.
 	if ss.LatestInvoice != nil {
+		inv = NewInvoice(ss.LatestInvoice)
 		pi = NewPaymentIntent(ss.LatestInvoice.PaymentIntent)
 	}
 
 	return Subs{
-		ID:                   ss.ID,
-		Edition:              subsItem.Price.Edition(),
-		WillCancelAtUtc:      chrono.TimeFrom(dt.FromUnix(ss.CancelAt)),
-		CancelAtPeriodEnd:    ss.CancelAtPeriodEnd,
-		CanceledUTC:          chrono.TimeFrom(dt.FromUnix(ss.CanceledAt)),
-		CurrentPeriodEnd:     chrono.TimeFrom(dt.FromUnix(ss.CurrentPeriodEnd)),
-		CurrentPeriodStart:   chrono.TimeFrom(dt.FromUnix(ss.CurrentPeriodStart)),
-		CustomerID:           ss.Customer.ID,
-		DefaultPaymentMethod: dpm,
-		SubsItem:             subsItem,
-		LatestInvoiceID:      invID,
-		LiveMode:             ss.Livemode,
-		StartDateUTC:         chrono.TimeFrom(dt.FromUnix(ss.StartDate)),
-		EndedUTC:             chrono.TimeFrom(dt.FromUnix(ss.EndedAt)),
-		CreatedUTC:           chrono.TimeFrom(dt.FromUnix(ss.Created)),
-		UpdatedUTC:           chrono.TimeNow(),
-		Status:               status,
-		FtcUserID:            ids.FtcID,
-		PaymentIntent:        pi,
-	}, nil
+		IsFromStripe:           true,
+		ID:                     ss.ID,
+		Edition:                edition,
+		WillCancelAtUtc:        chrono.TimeFrom(dt.FromUnix(ss.CancelAt)),
+		CancelAtPeriodEnd:      ss.CancelAtPeriodEnd,
+		CanceledUTC:            chrono.TimeFrom(dt.FromUnix(ss.CanceledAt)),
+		CurrentPeriodEnd:       chrono.TimeFrom(dt.FromUnix(ss.CurrentPeriodEnd)),
+		CurrentPeriodStart:     chrono.TimeFrom(dt.FromUnix(ss.CurrentPeriodStart)),
+		CustomerID:             ss.Customer.ID,
+		DefaultPaymentMethodID: dpm,
+		EndedUTC:               chrono.TimeFrom(dt.FromUnix(ss.EndedAt)),
+		FtcUserID:              ids.FtcID,
+		Items:                  items,
+		LatestInvoiceID:        inv.ID,
+		LatestInvoice:          inv,
+		LiveMode:               ss.Livemode,
+		PaymentIntentID:        null.NewString(pi.ID, pi.ID == ""),
+		PaymentIntent:          pi,
+		StartDateUTC:           chrono.TimeFrom(dt.FromUnix(ss.StartDate)),
+		Status:                 status,
+		Created:                ss.Created,
+	}
 }
 
 // ExpiresAt determines the exact expiration time.

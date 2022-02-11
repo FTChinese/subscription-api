@@ -47,7 +47,7 @@ func TestWebhookResultBuilder_Build(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    WebhookResult
+		want    WebhookSubsResult
 		wantErr bool
 	}{
 		{
@@ -58,7 +58,7 @@ func TestWebhookResultBuilder_Build(t *testing.T) {
 				StripeMember: reader.Membership{},
 				FtcMember:    reader.Membership{},
 			},
-			want: WebhookResult{
+			want: WebhookSubsResult{
 				Member: NewMembership(MembershipParams{
 					UserIDs: userIDs,
 					Subs:    subs,
@@ -84,7 +84,7 @@ func TestWebhookResultBuilder_Build(t *testing.T) {
 					PaymentMethod: enum.PayMethodAli,
 				},
 			},
-			want: WebhookResult{
+			want: WebhookSubsResult{
 				Member: NewMembership(MembershipParams{
 					UserIDs: userIDs,
 					Subs:    subs,
@@ -110,7 +110,7 @@ func TestWebhookResultBuilder_Build(t *testing.T) {
 					PaymentMethod: enum.PayMethodAli,
 				},
 			},
-			want:    WebhookResult{},
+			want:    WebhookSubsResult{},
 			wantErr: true,
 		},
 		{
@@ -121,7 +121,7 @@ func TestWebhookResultBuilder_Build(t *testing.T) {
 				StripeMember: reader.Membership{},
 				FtcMember:    ftcMmb,
 			},
-			want: WebhookResult{
+			want: WebhookSubsResult{
 				Member: NewMembership(MembershipParams{
 					UserIDs: userIDs,
 					Subs:    subs,

@@ -4,16 +4,16 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/google/uuid"
+	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
 	"reflect"
 	"testing"
 )
 
 func Test_newSubsResult(t *testing.T) {
-	userID := uuid.New().String()
-	member := reader.NewMockMemberBuilder(userID).Build()
-	subs := NewMockSubsBuilder(userID).Build()
+	p := test.NewPersona()
+	member := p.MemberBuilder().Build()
+	subs := NewMockSubsBuilder(p.FtcID).Build()
 
 	type args struct {
 		subs   Subs
@@ -48,7 +48,7 @@ func Test_newSubsResult(t *testing.T) {
 					PaymentMethod: enum.PayMethodStripe,
 					FtcPlanID:     null.String{},
 					StripeSubsID:  null.StringFrom(subs.ID),
-					StripePlanID:  null.StringFrom(subs.PriceID),
+					StripePlanID:  null.StringFrom(subs.Items[0].Price.ID),
 					AutoRenewal:   true,
 					Status:        enum.SubsStatusActive,
 					AppleSubsID:   null.String{},
@@ -65,7 +65,6 @@ func Test_newSubsResult(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := newSubsResult(tt.args.subs, tt.args.params)
 
-			tt.want.Subs.UpdatedUTC = got.Subs.UpdatedUTC
 			tt.want.Snapshot.CreatedUTC = got.Snapshot.CreatedUTC
 			tt.want.CarryOverInvoice.ID = got.CarryOverInvoice.ID
 			tt.want.CarryOverInvoice.CreatedUTC = got.CarryOverInvoice.CreatedUTC
