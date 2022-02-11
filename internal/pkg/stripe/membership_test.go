@@ -7,6 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"reflect"
 	"testing"
@@ -14,7 +15,7 @@ import (
 )
 
 func TestNewMembership(t *testing.T) {
-	subs := MockNewSubs()
+	subs := NewMockSubsBuilder(uuid.New().String()).Build()
 
 	type args struct {
 		params MembershipParams
