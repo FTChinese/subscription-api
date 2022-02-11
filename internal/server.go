@@ -3,19 +3,20 @@ package internal
 import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
-	"github.com/FTChinese/subscription-api/internal/app/api/controller"
+	"github.com/FTChinese/subscription-api/internal/app/api"
 	"github.com/FTChinese/subscription-api/internal/app/paybase"
 	"github.com/FTChinese/subscription-api/internal/pkg/letter"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
+	"github.com/FTChinese/subscription-api/internal/repository"
 	"github.com/FTChinese/subscription-api/internal/repository/accounts"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/cmsrepo"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
-	"github.com/FTChinese/subscription-api/internal/repository/stripeclient"
-	"github.com/FTChinese/subscription-api/internal/repository/striperepo"
+	"github.com/FTChinese/subscription-api/internal/repository/stripeenv"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
+	"github.com/FTChinese/subscription-api/internal/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -52,9 +53,13 @@ func StartServer(s ServerStatus) {
 
 	readerBaseRepo := shared.NewReaderCommon(myDBs)
 	paywallBaseRepo := shared.NewPaywallCommon(myDBs, paywallCache)
-	stripeBaseRepo := shared.NewStripeCommon(stripeClient, stripe.NewPriceCache())
 
-	userShared := controller.UserShared{
+	stripePriceStore := stripeenv.PriceStore{
+		Client: stripeClient,
+		Cache:  stripe.NewPriceCache(),
+	}
+
+	userShared := api.UserShared{
 		Repo:         accounts.New(myDBs, logger),
 		ReaderRepo:   readerBaseRepo,
 		SMSClient:    ztsms.NewClient(logger),
@@ -72,15 +77,15 @@ func StartServer(s ServerStatus) {
 		EmailService: emailService,
 	}
 
-	authRouter := controller.NewAuthRouter(userShared)
-	accountRouter := controller.NewAccountRouter(userShared)
-	ftcSubsRouter := controller.SubsRouter{
+	authRouter := api.NewAuthRouter(userShared)
+	accountRouter := api.NewAccountRouter(userShared)
+	ftcSubsRouter := api.SubsRouter{
 		FtcPayBase:  ftcPayShared,
 		PaywallRepo: paywallBaseRepo,
 		Live:        s.LiveMode,
 	}
 
-	iapRouter := controller.IAPRouter{
+	iapRouter := api.IAPRouter{
 		Repo:         iaprepo.New(myDBs, rdb, logger),
 		Client:       iaprepo.NewClient(logger),
 		ReaderRepo:   readerBaseRepo,
@@ -89,26 +94,27 @@ func StartServer(s ServerStatus) {
 		Live:         s.LiveMode,
 	}
 
-	stripeRouter := controller.StripeRouter{
-		SigningKey:      config.MustStripeWebhookKey().Pick(s.LiveMode),
-		StripeRepo:      striperepo.New(myDBs, stripeClient, logger),
-		StripePriceRepo: stripeBaseRepo,
-		ReaderRepo:      readerBaseRepo,
-		Client:          stripeClient,
-		Logger:          logger,
-		Live:            s.LiveMode,
+	stripeRouter := api.StripeRouter{
+		SigningKey: config.MustStripeWebhookKey().Pick(s.LiveMode),
+		Env: stripeenv.NewEnv(
+			repository.NewStripeRepo(myDBs, logger),
+			stripePriceStore,
+		),
+		ReaderRepo: readerBaseRepo,
+		Logger:     logger,
+		Live:       s.LiveMode,
 	}
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := controller.PaywallRouter{
-		ProductRepo:     products.New(myDBs),
-		PaywallRepo:     paywallBaseRepo,
-		StripePriceRepo: stripeBaseRepo,
-		Logger:          logger,
-		Live:            s.LiveMode,
+	paywallRouter := api.PaywallRouter{
+		ProductRepo: products.New(myDBs),
+		PaywallRepo: paywallBaseRepo,
+		StripePrice: stripePriceStore,
+		Logger:      logger,
+		Live:        s.LiveMode,
 	}
 
-	cmsRouter := controller.CMSRouter{
+	cmsRouter := api.CMSRouter{
 		Repo:         cmsrepo.New(myDBs, logger),
 		ReaderRepo:   readerBaseRepo,
 		PaywallRepo:  paywallBaseRepo,
@@ -117,9 +123,9 @@ func StartServer(s ServerStatus) {
 		Live:         s.LiveMode,
 	}
 
-	appRouter := controller.NewAppRouter(myDBs)
+	appRouter := api.NewAppRouter(myDBs)
 
-	wxAuth := controller.NewWxAuth(myDBs, logger)
+	wxAuth := api.NewWxAuth(myDBs, logger)
 
 	guard := access.NewGuard(myDBs)
 
@@ -211,14 +217,14 @@ func StartServer(s ServerStatus) {
 		// Do not check access token here since it is used by wx.
 		// Deprecated.
 		r.Route("/wx/callback", func(r chi.Router) {
-			r.Get("/next-reader", controller.WxCallbackHandler(wxlogin.CallbackAppNextUser))
+			r.Get("/next-reader", api.WxCallbackHandler(wxlogin.CallbackAppNextUser))
 		})
 
 		r.Route("/callback", func(r chi.Router) {
 			r.Use(xhttp.FormParsed)
 			r.Route("/wx", func(r chi.Router) {
-				r.Get("/next-user", controller.WxCallbackHandler(wxlogin.CallbackAppNextUser))
-				r.Get("/fta-reader", controller.WxCallbackHandler(wxlogin.CallbackAppFtaReader))
+				r.Get("/next-user", api.WxCallbackHandler(wxlogin.CallbackAppNextUser))
+				r.Get("/fta-reader", api.WxCallbackHandler(wxlogin.CallbackAppFtaReader))
 			})
 		})
 	})
@@ -376,27 +382,17 @@ func StartServer(s ServerStatus) {
 
 			r.Use(xhttp.RequireFtcID)
 
-			// Create a stripe customer if not exists yet, or
-			// just return the customer id if already exists.
+			// Create a stripe customer if not exists yet
 			r.Post("/", stripeRouter.CreateCustomer)
-			// TODO: Set an existing customer id to the user if not set yet.
 			// Use this to check customer's default source and default payment method.
 			r.Get("/{id}", stripeRouter.GetCustomer)
-			r.Post("/{id}/default-payment-method", stripeRouter.ChangeDefaultPaymentMethod)
+
+			r.Get("/{id}/default-payment-method", stripeRouter.GetCustomerDefaultPaymentMethod)
+			r.Post("/{id}/default-payment-method", stripeRouter.UpdateCustomerDefaultPaymentMethod)
+
 			// Generate ephemeral key for client when it is
 			// trying to modify customer data.
 			r.Post("/{id}/ephemeral-keys", stripeRouter.IssueKey)
-		})
-
-		r.Route("/setup-intents", func(r chi.Router) {
-			r.Use(xhttp.RequireFtcID)
-			r.Post("/", stripeRouter.CreateSetupIntent)
-		})
-
-		r.Route("/checkout", func(r chi.Router) {
-			r.Use(xhttp.RequireFtcID)
-
-			r.Post("/", stripeRouter.CreateCheckoutSession)
 		})
 
 		r.Route("/subs", func(r chi.Router) {
@@ -413,6 +409,11 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/refresh", stripeRouter.RefreshSubs)
 			r.Post("/{id}/cancel", stripeRouter.CancelSubs)
 			r.Post("/{id}/reactivate", stripeRouter.ReactivateSubscription)
+			r.Get("/{id}/default-payment-method", stripeRouter.GetSubsDefaultPaymentMethod)
+		})
+
+		r.Route("/payment-methods", func(r chi.Router) {
+			r.Get("/{id}", stripeRouter.LoadPaymentMethod)
 		})
 	})
 
