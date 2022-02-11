@@ -26,7 +26,18 @@ func (c Client) UpdateSubs(subID string, params *stripe.SubscriptionParams) (*st
 	return c.sc.Subscriptions.Update(subID, params)
 }
 
-func (c Client) GetSubs(subID string, expand bool) (*stripe.Subscription, error) {
+// SetSubsDefaultPaymentMethod after receiving event invoice.payment_succeeded.
+func (c Client) SetSubsDefaultPaymentMethod(subsID string, pmID string) (*stripe.Subscription, error) {
+	params := &stripe.SubscriptionParams{
+		DefaultPaymentMethod: stripe.String(pmID),
+	}
+
+	return c.sc.Subscriptions.Update(subsID, params)
+}
+
+// FetchSubs retrieves a stripe subscription.
+// When used to refresh a subscription, you should set expand to true.
+func (c Client) FetchSubs(subID string, expand bool) (*stripe.Subscription, error) {
 	var params *stripe.SubscriptionParams
 	if expand {
 		p := stripe.Params{}

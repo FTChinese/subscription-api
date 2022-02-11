@@ -33,7 +33,7 @@ func TestClient_NewSubs(t *testing.T) {
 				}.
 					NewSubParams(
 						"cus_KXMeDzH46HnpMB",
-						ftcStripe.SubSharedParams{}),
+						ftcStripe.SubsParams{}),
 			},
 			want:    nil,
 			wantErr: false,

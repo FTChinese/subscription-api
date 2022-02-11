@@ -1,6 +1,9 @@
 package stripeclient
 
-import "github.com/stripe/stripe-go/v72"
+import (
+	ftcStripe "github.com/FTChinese/subscription-api/internal/pkg/stripe"
+	"github.com/stripe/stripe-go/v72"
+)
 
 func (c Client) CreateCustomer(email string) (*stripe.Customer, error) {
 	defer c.logger.Sync()
@@ -22,9 +25,9 @@ func (c Client) CreateCustomer(email string) (*stripe.Customer, error) {
 	return cus, nil
 }
 
-// RetrieveCustomer retrieves the details of a stripe customer.
+// FetchCustomer retrieves the details of a stripe customer.
 // You can get a customer's default payment method from invoice_settings.default_payment_method.
-func (c Client) RetrieveCustomer(cusID string) (*stripe.Customer, error) {
+func (c Client) FetchCustomer(cusID string) (*stripe.Customer, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
 
@@ -37,4 +40,15 @@ func (c Client) RetrieveCustomer(cusID string) (*stripe.Customer, error) {
 	sugar.Infof("Retrieve stripe customer: %v", cus)
 
 	return cus, nil
+}
+
+// SetCusDefaultPaymentMethod changes customer's default payment method.
+func (c Client) SetCusDefaultPaymentMethod(pm ftcStripe.DefaultPaymentMethodParams) (*stripe.Customer, error) {
+	params := &stripe.CustomerParams{
+		InvoiceSettings: &stripe.CustomerInvoiceSettingsParams{
+			DefaultPaymentMethod: stripe.String(pm.DefaultMethod),
+		},
+	}
+
+	return c.sc.Customers.Update(pm.CustomerID, params)
 }

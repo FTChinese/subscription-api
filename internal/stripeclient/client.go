@@ -22,6 +22,10 @@ func New(live bool, logger *zap.Logger) Client {
 	}
 }
 
+func (c Client) Get() *client.API {
+	return c.sc
+}
+
 // CreateEphemeralKey generate a key so that client could restrict customer API directly.
 // Response:
 // {

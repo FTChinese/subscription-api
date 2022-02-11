@@ -22,7 +22,7 @@ func TestClient_CreateCustomer(t *testing.T) {
 func TestClient_RetrieveCustomer(t *testing.T) {
 	client := New(false, zaptest.NewLogger(t))
 
-	cus, err := client.RetrieveCustomer("cus_Ht6nKQQUq4ag2I")
+	cus, err := client.FetchCustomer("cus_Ht6nKQQUq4ag2I")
 	if err != nil {
 		t.Error(err)
 		return
