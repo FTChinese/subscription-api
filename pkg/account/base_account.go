@@ -131,6 +131,12 @@ func (a BaseAccount) WithMobile(m string) BaseAccount {
 	return a
 }
 
+func (a BaseAccount) WithStripeID(id string) BaseAccount {
+	a.StripeID = null.StringFrom(id)
+
+	return a
+}
+
 func (a BaseAccount) CompoundID() string {
 	if a.FtcID != "" {
 		return a.FtcID
