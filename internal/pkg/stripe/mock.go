@@ -8,28 +8,27 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"github.com/stripe/stripe-go/v72"
 	"time"
 )
 
 var MockPriceStdIntro = Price{
-	ID:        "price_1Juuu2BzTK0hABgJTXiK4NTt",
-	Active:    true,
-	Currency:  "gbp",
-	LiveMode:  false,
-	Nickname:  "Introductory Offer",
-	ProductID: "prod_FOde1wE4ZTRMcD",
+	ID:             "price_1Juuu2BzTK0hABgJTXiK4NTt",
+	Active:         true,
+	Currency:       "gbp",
+	IsIntroductory: true,
+	Kind:           price.KindOneTime,
+	LiveMode:       false,
+	Nickname:       "Introductory Offer",
+	ProductID:      "prod_FOde1wE4ZTRMcD",
 	PeriodCount: dt.YearMonthDay{
-		Years:  1,
+		Years:  0,
 		Months: 1,
 		Days:   0,
 	},
 	Tier:       enum.TierStandard,
-	Type:       stripe.PriceTypeOneTime,
 	UnitAmount: 10,
 	StartUTC:   null.String{},
 	EndUTC:     null.String{},
@@ -37,19 +36,20 @@ var MockPriceStdIntro = Price{
 }
 
 var MockPriceStdYear = Price{
-	ID:        "price_1IM2nFBzTK0hABgJiIDeDIox",
-	Active:    true,
-	Currency:  "gbp",
-	LiveMode:  false,
-	Nickname:  "Annual Price",
-	ProductID: "prod_FOde1wE4ZTRMcD",
+	ID:             "price_1IM2nFBzTK0hABgJiIDeDIox",
+	Active:         true,
+	Currency:       "gbp",
+	IsIntroductory: false,
+	Kind:           price.KindRecurring,
+	LiveMode:       false,
+	Nickname:       "Regular Yearly Charge",
+	ProductID:      "prod_FOde1wE4ZTRMcD",
 	PeriodCount: dt.YearMonthDay{
 		Years:  1,
 		Months: 0,
 		Days:   0,
 	},
 	Tier:       enum.TierStandard,
-	Type:       stripe.PriceTypeRecurring,
 	UnitAmount: 3999,
 	StartUTC:   null.String{},
 	EndUTC:     null.String{},
@@ -57,61 +57,51 @@ var MockPriceStdYear = Price{
 }
 
 var MockPriceStdMonth = Price{
-	ID:          "price_1IM2mgBzTK0hABgJVH8o9Sjm",
-	Active:      true,
-	Currency:    "gbp",
-	LiveMode:    false,
-	Nickname:    "Monthly Price",
-	ProductID:   "prod_FOde1wE4ZTRMcD",
-	PeriodCount: dt.YearMonthDay{},
-	Tier:        enum.TierStandard,
-	Type:        stripe.PriceTypeRecurring,
-	UnitAmount:  499,
-	StartUTC:    null.String{},
-	EndUTC:      null.String{},
-	Created:     1613617350,
+	ID:             "price_1IM2mgBzTK0hABgJVH8o9Sjm",
+	Active:         true,
+	Currency:       "gbp",
+	IsIntroductory: false,
+	Kind:           price.KindRecurring,
+	LiveMode:       false,
+	Nickname:       "Regular Monthly Charge",
+	ProductID:      "prod_FOde1wE4ZTRMcD",
+	PeriodCount: dt.YearMonthDay{
+		Years:  0,
+		Months: 1,
+		Days:   0,
+	},
+	Tier:       enum.TierStandard,
+	UnitAmount: 499,
+	StartUTC:   null.String{},
+	EndUTC:     null.String{},
+	Created:    1613617350,
 }
 
 var MockPricePrmYear = Price{
-	ID:        "plan_FOde0uAr0V4WmT",
-	Active:    true,
-	Currency:  "gbp",
-	LiveMode:  false,
-	Nickname:  "Premium Yearly Price",
-	Product:   "prod_FOdd1iNT29BIGq",
-	ProductID: "",
+	ID:             "plan_FOde0uAr0V4WmT",
+	Active:         true,
+	Currency:       "gbp",
+	IsIntroductory: false,
+	Kind:           price.KindRecurring,
+	LiveMode:       false,
+	Nickname:       "Premium Yearly Price",
+	ProductID:      "prod_FOdd1iNT29BIGq",
 	PeriodCount: dt.YearMonthDay{
 		Years:  1,
 		Months: 0,
 		Days:   0,
 	},
 	Tier:       enum.TierPremium,
-	Type:       stripe.PriceTypeRecurring,
 	UnitAmount: 23800,
 	StartUTC:   null.String{},
 	EndUTC:     null.String{},
 	Created:    1562567431,
 }
 
-func MockNewSubs() Subs {
-
-	subs, err := NewSubs(faker.MustGenStripeSubs(), ids.UserIDs{
-		CompoundID: "",
-		FtcID:      null.StringFrom(uuid.New().String()),
-		UnionID:    null.String{},
-	}.MustNormalize())
-
-	if err != nil {
-		panic(err)
-	}
-
-	return subs
-}
-
 type MockSubsBuilder struct {
-	ftcID   string
-	edition PriceEdition
-	status  enum.SubsStatus
+	ftcID  string
+	price  Price
+	status enum.SubsStatus
 }
 
 func NewMockSubsBuilder(ftcID string) MockSubsBuilder {
@@ -120,14 +110,18 @@ func NewMockSubsBuilder(ftcID string) MockSubsBuilder {
 	}
 
 	return MockSubsBuilder{
-		ftcID:   ftcID,
-		edition: PriceEditionStore.MustFindByEdition(price.StdYearEdition, false),
-		status:  enum.SubsStatusActive,
+		ftcID:  ftcID,
+		price:  MockPriceStdYear,
+		status: enum.SubsStatusActive,
 	}
 }
 
 func (b MockSubsBuilder) WithEdition(e price.Edition) MockSubsBuilder {
-	b.edition = PriceEditionStore.MustFindByEdition(e, false)
+	return b
+}
+
+func (b MockSubsBuilder) WithPrice(p Price) MockSubsBuilder {
+	b.price = p
 	return b
 }
 
@@ -142,50 +136,41 @@ func (b MockSubsBuilder) WithCanceled() MockSubsBuilder {
 
 func (b MockSubsBuilder) Build() Subs {
 	start := time.Now()
-	end := dt.NewTimeRange(start).WithCycle(b.edition.Cycle).End
+	end := dt.NewTimeRange(start).WithPeriod(b.price.PeriodCount).End
 	canceled := time.Time{}
 
-	if b.status == enum.SubsStatusCanceled {
-		end = time.Now().AddDate(0, 0, -1)
-		start = dt.NewTimeRange(end).WithCycleN(b.edition.Cycle, -1).End
-		canceled = end
-	}
+	subsID := faker.GenStripeSubID()
 
 	return Subs{
-		ID:                   faker.GenStripeSubID(),
-		Edition:              b.edition.Edition,
-		WillCancelAtUtc:      chrono.Time{},
-		CancelAtPeriodEnd:    false,
-		CanceledUTC:          chrono.TimeFrom(canceled), // Set it for automatic cancel.
-		CurrentPeriodEnd:     chrono.TimeFrom(end),
-		CurrentPeriodStart:   chrono.TimeFrom(start),
-		CustomerID:           faker.GenCustomerID(),
-		DefaultPaymentMethod: null.String{},
-		SubsItem: SubsItem{
-			ItemID:  faker.GenStripeItemID(),
-			PriceID: b.edition.PriceID,
+		ID:                     subsID,
+		Edition:                b.price.Edition(),
+		WillCancelAtUtc:        chrono.Time{},
+		CancelAtPeriodEnd:      false,
+		CanceledUTC:            chrono.TimeFrom(canceled), // Set it for automatic cancel.
+		CurrentPeriodEnd:       chrono.TimeFrom(end),
+		CurrentPeriodStart:     chrono.TimeFrom(start),
+		CustomerID:             faker.GenStripeCusID(),
+		DefaultPaymentMethodID: null.String{},
+		EndedUTC:               chrono.Time{},
+		FtcUserID:              null.StringFrom(b.ftcID),
+		Items: []SubsItem{
+			{
+				ID: faker.GenStripeItemID(),
+				Price: PriceJSON{
+					Price: b.price,
+				},
+				Created:        time.Now().Unix(),
+				Quantity:       1,
+				SubscriptionID: subsID,
+			},
 		},
 		LatestInvoiceID: faker.GenInvoiceID(),
+		LatestInvoice:   Invoice{},
 		LiveMode:        false,
+		PaymentIntentID: null.String{},
+		PaymentIntent:   PaymentIntent{},
 		StartDateUTC:    chrono.TimeNow(),
-		EndedUTC:        chrono.Time{},
-		CreatedUTC:      chrono.TimeNow(),
-		UpdatedUTC:      chrono.TimeNow(),
 		Status:          b.status,
-		FtcUserID:       null.StringFrom(b.ftcID),
-		PaymentIntent: PaymentIntent{
-			ID:                 faker.GenPaymentIntentID(),
-			Amount:             0,
-			CanceledAtUTC:      chrono.Time{},
-			CancellationReason: "",
-			ClientSecret:       null.String{},
-			CreatedUtc:         chrono.Time{},
-			Currency:           "",
-			CustomerID:         "",
-			InvoiceID:          "",
-			LiveMode:           false,
-			PaymentMethodID:    "",
-			Status:             "",
-		},
+		Created:         time.Now().Unix(),
 	}
 }
