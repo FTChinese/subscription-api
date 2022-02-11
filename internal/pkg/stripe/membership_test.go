@@ -3,6 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -15,7 +16,8 @@ import (
 )
 
 func TestNewMembership(t *testing.T) {
-	subs := NewMockSubsBuilder(uuid.New().String()).Build()
+
+	ftcID := uuid.New().String()
 
 	type args struct {
 		params MembershipParams
@@ -30,26 +32,59 @@ func TestNewMembership(t *testing.T) {
 			args: args{
 				params: MembershipParams{
 					UserIDs: ids.UserIDs{
-						CompoundID: subs.FtcUserID.String,
-						FtcID:      subs.FtcUserID,
+						CompoundID: ftcID,
+						FtcID:      null.StringFrom(ftcID),
 					},
-					Subs:  subs,
+					Subs: Subs{
+						IsFromStripe:           false,
+						ID:                     faker.GenStripeSubID(),
+						Edition:                price.MockEditionStdYear,
+						WillCancelAtUtc:        chrono.Time{},
+						CancelAtPeriodEnd:      false,
+						CanceledUTC:            chrono.Time{},
+						CurrentPeriodEnd:       chrono.TimeFrom(time.Now().AddDate(1, 0, 0)),
+						CurrentPeriodStart:     chrono.TimeFrom(time.Now()),
+						CustomerID:             faker.GenStripeCusID(),
+						DefaultPaymentMethodID: null.StringFrom(faker.GenPaymentMethodID()),
+						EndedUTC:               chrono.Time{},
+						FtcUserID:              null.StringFrom(ftcID),
+						Items: []SubsItem{
+							{
+								ID: faker.GenStripeItemID(),
+								Price: PriceJSON{
+									Price: MockPriceStdYear,
+								},
+								Created:        time.Now().Unix(),
+								Quantity:       1,
+								SubscriptionID: "",
+							},
+						},
+						LatestInvoiceID: "",
+						LatestInvoice:   Invoice{},
+						LiveMode:        false,
+						PaymentIntentID: null.StringFrom(faker.GenPaymentIntentID()),
+						PaymentIntent:   PaymentIntent{},
+						StartDateUTC:    chrono.TimeNow(),
+						Status:          enum.SubsStatusActive,
+						Created:         time.Now().Unix(),
+						ItemID:          "",
+					},
 					AddOn: addon.AddOn{},
 				},
 			},
 			want: reader.Membership{
 				UserIDs: ids.UserIDs{
-					CompoundID: subs.FtcUserID.String,
-					FtcID:      subs.FtcUserID,
+					CompoundID: ftcID,
+					FtcID:      null.StringFrom(ftcID),
 				},
-				Edition:       price.PremiumEdition,
-				LegacyTier:    null.IntFrom(reader.GetTierCode(enum.TierPremium)),
+				Edition:       price.StdYearEdition,
+				LegacyTier:    null.IntFrom(reader.GetTierCode(enum.TierStandard)),
 				LegacyExpire:  null.IntFrom(1638943057),
 				ExpireDate:    chrono.DateFrom(time.Unix(1638943057, 0)),
 				PaymentMethod: enum.PayMethodStripe,
 				FtcPlanID:     null.String{},
 				StripeSubsID:  null.StringFrom("sub_IX3JAkik1JKDzW"),
-				StripePlanID:  null.StringFrom("plan_FOde0uAr0V4WmT"),
+				StripePlanID:  null.StringFrom(MockPriceStdYear.ID),
 				AutoRenewal:   true,
 				Status:        enum.SubsStatusActive,
 				AppleSubsID:   null.String{},

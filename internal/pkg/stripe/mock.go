@@ -4,14 +4,10 @@
 package stripe
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"time"
 )
 
 var MockPriceStdIntro = Price{
@@ -96,81 +92,4 @@ var MockPricePrmYear = Price{
 	StartUTC:   null.String{},
 	EndUTC:     null.String{},
 	Created:    1562567431,
-}
-
-type MockSubsBuilder struct {
-	ftcID  string
-	price  Price
-	status enum.SubsStatus
-}
-
-func NewMockSubsBuilder(ftcID string) MockSubsBuilder {
-	if ftcID == "" {
-		ftcID = uuid.New().String()
-	}
-
-	return MockSubsBuilder{
-		ftcID:  ftcID,
-		price:  MockPriceStdYear,
-		status: enum.SubsStatusActive,
-	}
-}
-
-func (b MockSubsBuilder) WithEdition(e price.Edition) MockSubsBuilder {
-	return b
-}
-
-func (b MockSubsBuilder) WithPrice(p Price) MockSubsBuilder {
-	b.price = p
-	return b
-}
-
-func (b MockSubsBuilder) WithStatus(s enum.SubsStatus) MockSubsBuilder {
-	b.status = s
-	return b
-}
-
-func (b MockSubsBuilder) WithCanceled() MockSubsBuilder {
-	return b.WithStatus(enum.SubsStatusCanceled)
-}
-
-func (b MockSubsBuilder) Build() Subs {
-	start := time.Now()
-	end := dt.NewTimeRange(start).WithPeriod(b.price.PeriodCount).End
-	canceled := time.Time{}
-
-	subsID := faker.GenStripeSubID()
-
-	return Subs{
-		ID:                     subsID,
-		Edition:                b.price.Edition(),
-		WillCancelAtUtc:        chrono.Time{},
-		CancelAtPeriodEnd:      false,
-		CanceledUTC:            chrono.TimeFrom(canceled), // Set it for automatic cancel.
-		CurrentPeriodEnd:       chrono.TimeFrom(end),
-		CurrentPeriodStart:     chrono.TimeFrom(start),
-		CustomerID:             faker.GenStripeCusID(),
-		DefaultPaymentMethodID: null.String{},
-		EndedUTC:               chrono.Time{},
-		FtcUserID:              null.StringFrom(b.ftcID),
-		Items: []SubsItem{
-			{
-				ID: faker.GenStripeItemID(),
-				Price: PriceJSON{
-					Price: b.price,
-				},
-				Created:        time.Now().Unix(),
-				Quantity:       1,
-				SubscriptionID: subsID,
-			},
-		},
-		LatestInvoiceID: faker.GenInvoiceID(),
-		LatestInvoice:   Invoice{},
-		LiveMode:        false,
-		PaymentIntentID: null.String{},
-		PaymentIntent:   PaymentIntent{},
-		StartDateUTC:    chrono.TimeNow(),
-		Status:          b.status,
-		Created:         time.Now().Unix(),
-	}
 }
