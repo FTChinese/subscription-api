@@ -105,7 +105,7 @@ func NewPaymentMethod(pm *stripe.PaymentMethod) PaymentMethod {
 		CustomerID:   pm.Customer.ID,
 		Kind:         pm.Type,
 		Card:         NewPaymentMethodCard(pm.Card),
-		Created:      0,
+		Created:      pm.Created,
 		LiveMode:     false,
 	}
 }
