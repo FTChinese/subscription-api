@@ -1,3 +1,4 @@
+//go:build !production
 // +build !production
 
 package account
@@ -27,7 +28,7 @@ func NewMockFtcAccountBuilder(kind enum.AccountKind) MockFtcAccountBuilder {
 		kind:     kind,
 		ftcID:    uuid.New().String(),
 		wxID:     faker.GenWxID(),
-		stripeID: faker.GenCustomerID(),
+		stripeID: faker.GenStripeCusID(),
 		email:    gofakeit.Email(),
 		mobile:   gofakeit.Phone(),
 	}
