@@ -73,7 +73,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 			sp, err := router.StripePrice.
 				UpdatePriceMeta(
 					params.StripePriceID,
-					stripe.PriceMetaParams(p, false))
+					stripe.PriceMetaParams(p, p.IsOneTime()))
 
 			if err != nil {
 				sugar.Error(err)
