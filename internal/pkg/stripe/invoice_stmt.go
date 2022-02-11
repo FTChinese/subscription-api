@@ -9,19 +9,21 @@ customer_id = :customer_id,
 default_payment_method = :default_payment_method,
 hosted_invoice_url = :hosted_invoice_url,
 paid = :paid,
+live_mode = :live_mode,
 payment_intent_id = :payment_intent_id,
 period_end_utc = :period_end_utc,
 period_start_utc = :period_start_utc,
 receipt_number = :receipt_number,
 invoice_status = :invoice_status,
+subscription_id = :subscription_id,
 total = :total,
-updated_utc = :updated_utc
+created = :created
 `
 
 const StmtUpsertInvoice = `
 INSERT INTO premium.stripe_invoice
 SET id = :id,
-` + colInsertInvoice + `,
-created_utc = :created_utc
+` + colInsertInvoice + `
 ON DUPLICATE KEY UPDATE
-` + colInsertInvoice
+` + colInsertInvoice + `,
+updated_utc = UTC_TIMESTAMP()`
