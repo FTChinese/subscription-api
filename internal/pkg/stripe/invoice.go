@@ -30,6 +30,8 @@ type Invoice struct {
 
 func NewInvoice(si *stripe.Invoice) Invoice {
 
+	// Those fields are nil if you get it from subscripiton
+	// without expansion.
 	var pmID string
 	if si.DefaultPaymentMethod != nil {
 		pmID = si.DefaultPaymentMethod.ID
@@ -45,13 +47,28 @@ func NewInvoice(si *stripe.Invoice) Invoice {
 		piID = si.PaymentIntent.ID
 	}
 
+	var chargeID string
+	if si.Charge != nil {
+		chargeID = si.Charge.ID
+	}
+
+	var cm stripe.InvoiceCollectionMethod
+	if si.CollectionMethod != nil {
+		cm = *si.CollectionMethod
+	}
+
+	var cusID string
+	if si.Customer != nil {
+		cusID = si.Customer.ID
+	}
+
 	return Invoice{
 		ID:                   si.ID,
 		AutoAdvance:          si.AutoAdvance,
-		ChargeID:             si.Charge.ID,
-		CollectionMethod:     *si.CollectionMethod,
+		ChargeID:             chargeID,
+		CollectionMethod:     cm,
 		Currency:             string(si.Currency),
-		CustomerID:           si.Customer.ID,
+		CustomerID:           cusID,
 		DefaultPaymentMethod: null.NewString(pmID, pmID == ""),
 		HostedInvoiceURL:     null.NewString(si.HostedInvoiceURL, si.HostedInvoiceURL != ""),
 		LiveMode:             si.Livemode,
