@@ -1,11 +1,8 @@
 package stripe
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/lib/validator"
-	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 	"strings"
@@ -31,18 +28,21 @@ func (p *DefaultPaymentMethodParams) Validate() *render.ValidationError {
 
 // Customer contains the minimal data of a stripe.Customer.
 type Customer struct {
-	ID                   string          `json:"id"`
-	FtcID                string          `json:"ftcId"`
-	Currency             stripe.Currency `json:"currency"`
-	Created              int64           `json:"created"`
-	DefaultSource        null.String     `json:"defaultSource"`
-	DefaultPaymentMethod null.String     `json:"defaultPaymentMethod"`
-	Email                string          `json:"email"`
-	LiveMode             bool            `json:"liveMode"`
-	CreatedUTC           chrono.Time     `json:"createdUtc"` // Deprecated
+	// A flag indicating whether the data is fetching
+	// directly from stripe api.
+	// It is false if retrieve from our db.
+	IsFromStripe           bool            `json:"-"`
+	ID                     string          `json:"id" db:"id"`
+	FtcID                  string          `json:"ftcId" db:"ftc_user_id"`
+	Currency               stripe.Currency `json:"currency" db:"currency"`
+	Created                int64           `json:"created" db:"created"`
+	DefaultSource          null.String     `json:"defaultSource" db:"default_source_id"`
+	DefaultPaymentMethodID null.String     `json:"defaultPaymentMethod" db:"default_payment_method_id"` // TODO: JSON tag will be renamed to defaultPaymentMethodId in v7
+	Email                  string          `json:"email" db:"email"`
+	LiveMode               bool            `json:"liveMode" db:"live_mode"`
 }
 
-func NewCustomer(a account.BaseAccount, c *stripe.Customer) Customer {
+func NewCustomer(ftcID string, c *stripe.Customer) Customer {
 	var srcID string
 	if c.DefaultSource != nil {
 		srcID = c.DefaultSource.ID
@@ -54,28 +54,14 @@ func NewCustomer(a account.BaseAccount, c *stripe.Customer) Customer {
 	}
 
 	return Customer{
-		ID:                   c.ID,
-		FtcID:                a.FtcID,
-		Currency:             c.Currency,
-		Created:              c.Created,
-		DefaultSource:        null.NewString(srcID, srcID != ""),
-		DefaultPaymentMethod: null.NewString(pmID, pmID != ""),
-		Email:                a.Email,
-		LiveMode:             c.Livemode,
-		CreatedUTC:           chrono.TimeFrom(dt.FromUnix(c.Created)),
-	}
-}
-
-type CustomerAccount struct {
-	BaseAccount account.BaseAccount
-	Customer    Customer
-}
-
-func NewCustomerAccount(a account.BaseAccount, c *stripe.Customer) CustomerAccount {
-	a.StripeID = null.StringFrom(c.ID)
-
-	return CustomerAccount{
-		BaseAccount: a,
-		Customer:    NewCustomer(a, c),
+		IsFromStripe:           true,
+		ID:                     c.ID,
+		FtcID:                  ftcID,
+		Currency:               c.Currency,
+		Created:                c.Created,
+		DefaultSource:          null.NewString(srcID, srcID != ""),
+		DefaultPaymentMethodID: null.NewString(pmID, pmID != ""),
+		Email:                  c.Email,
+		LiveMode:               c.Livemode,
 	}
 }
