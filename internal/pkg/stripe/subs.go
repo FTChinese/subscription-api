@@ -42,6 +42,7 @@ type Subs struct {
 	// It must belong to the customer associated with the subscription.
 	// This takes precedence over default_source.
 	// If neither are set, invoices will use the customer’s invoice_settings.default_payment_method or default_source.
+	// It differs from customer default payment method which might exist even if this one does.
 	DefaultPaymentMethodID null.String `json:"defaultPaymentMethod" db:"default_payment_method_id"`
 	// If the subscription has ended, the date the subscription ended
 	EndedUTC        chrono.Time  `json:"endedUtc" db:"ended_utc"`
@@ -84,7 +85,8 @@ func NewSubs(ids ids.UserIDs, ss *stripe.Subscription) Subs {
 
 	var pi PaymentIntent
 	var inv Invoice
-	// LatestInvoice might be empty if it is not expanded.
+	// LatestInvoice exists even if it is not expanded;
+	// however, all pointer fields under invoice will be nil
 	if ss.LatestInvoice != nil {
 		inv = NewInvoice(ss.LatestInvoice)
 		pi = NewPaymentIntent(ss.LatestInvoice.PaymentIntent)
