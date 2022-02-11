@@ -5,6 +5,7 @@ package test
 
 import (
 	"github.com/FTChinese/subscription-api/internal/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/config"
@@ -305,6 +306,33 @@ func (r Repo) CreatePrice(p price.Price) {
 
 func (r Repo) CreateDiscount(d price.Discount) {
 	_, err := r.dbs.Write.NamedExec(price.StmtCreateDiscount, d)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func (r Repo) SaveStripeCustomer(c stripe.Customer) {
+	_, err := r.dbs.Write.NamedExec(
+		stripe.StmtInsertCustomer,
+		c)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func (r Repo) SaveStripePM(pm stripe.PaymentMethod) {
+	_, err := r.dbs.Write.NamedExec(
+		stripe.StmtInsertPaymentMethod,
+		pm)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func (r Repo) SaveStripeSubs(s stripe.Subs) {
+	_, err := r.dbs.Write.NamedExec(stripe.StmtUpsertSubsExpanded, s)
 	if err != nil {
 		log.Fatalln(err)
 	}
