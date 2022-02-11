@@ -28,7 +28,10 @@ type Subs struct {
 	WillCancelAtUtc chrono.Time `json:"cancelAtUtc" db:"cancel_at_utc"`
 	// Determine whether an active subscription is scheduled to be canceled at the end of the current period. When you cancel a subscription with `at_period_end=true`, this field will be true.
 	CancelAtPeriodEnd bool `json:"cancelAtPeriodEnd" db:"cancel_at_period_end"`
-	// If the subscription has been canceled, the date of that cancellation. If the subscription was canceled with cancel_at_period_end, canceled_at will reflect the time of the most recent update request, not the end of the subscription period when the subscription is automatically moved to a canceled state.
+	// If the subscription has been canceled, the date of that cancellation.
+	// If the subscription was canceled with cancel_at_period_end,
+	// canceled_at will reflect the time of the most recent update request,
+	// not the end of the subscription period when the subscription is automatically moved to a canceled state.
 	CanceledUTC chrono.Time `json:"canceledUtc" db:"canceled_utc"`
 	// Start and End of the current period that the subscription has been invoiced for.
 	// At the end of this period, a new invoice will be created.
