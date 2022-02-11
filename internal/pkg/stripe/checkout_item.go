@@ -2,33 +2,9 @@ package stripe
 
 import (
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/stripe/stripe-go/v72"
 )
-
-func addExtraSubParams(params *stripe.SubscriptionParams, other SubSharedParams) *stripe.SubscriptionParams {
-	// Expand latest_invoice.payment_intent.
-	params.AddExpand(KeyLatestInvoicePaymentIntent)
-
-	// {
-	// "status":400,
-	// "message":"Idempotent key length is 0 characters long, which is outside accepted lengths. Idempotent Keys must be 1-255 characters long. If you're looking for a decent generator, try using a UUID defined by IETF RFC 4122.",
-	// "request_id":"req_O6zILK5QEVpViw",
-	// "type":"idempotency_error"
-	// }
-	if other.IdempotencyKey != "" {
-		params.SetIdempotencyKey(other.IdempotencyKey)
-	}
-
-	if other.CouponID.Valid {
-		params.Coupon = stripe.String(other.CouponID.String)
-	}
-
-	if other.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripe.String(other.DefaultPaymentMethod.String)
-	}
-
-	return params
-}
 
 type CheckoutItem struct {
 	Price        Price
@@ -41,8 +17,8 @@ func (ci CheckoutItem) Validate() *render.ValidationError {
 		return nil
 	}
 
-	// Those two prices do not belong to the same product.
-	if ci.Price.Product != ci.Introductory.Product {
+	// You two prices must belong to the same product.
+	if ci.Price.ProductID != ci.Introductory.ProductID {
 		return &render.ValidationError{
 			Message: "Mismatched introductory price",
 			Field:   "introductory.product",
@@ -50,10 +26,10 @@ func (ci CheckoutItem) Validate() *render.ValidationError {
 		}
 	}
 
-	if ci.Introductory.Type != stripe.PriceTypeOneTime {
+	if ci.Introductory.Kind != price.KindOneTime {
 		return &render.ValidationError{
 			Message: "Introductory price must be of type one time",
-			Field:   "introductory.type",
+			Field:   "introductory.kind",
 			Code:    render.CodeInvalid,
 		}
 	}
@@ -62,7 +38,7 @@ func (ci CheckoutItem) Validate() *render.ValidationError {
 }
 
 // NewSubParams build stripe subscription parameters based on the item to check out.
-func (ci CheckoutItem) NewSubParams(cusID string, other SubSharedParams) *stripe.SubscriptionParams {
+func (ci CheckoutItem) NewSubParams(cusID string, other SubsParams) *stripe.SubscriptionParams {
 	params := &stripe.SubscriptionParams{
 		Customer:          stripe.String(cusID),
 		CancelAtPeriodEnd: stripe.Bool(false),
@@ -71,6 +47,14 @@ func (ci CheckoutItem) NewSubParams(cusID string, other SubSharedParams) *stripe
 				Price: stripe.String(ci.Price.ID),
 			},
 		},
+	}
+
+	// If default payment method is provided, use it;
+	// otherwise set payment behavior to incomplete.
+	if other.DefaultPaymentMethod.Valid {
+		params.DefaultPaymentMethod = stripe.String(other.DefaultPaymentMethod.String)
+	} else {
+		params.PaymentBehavior = stripe.String("default_incomplete")
 	}
 
 	// If there is introductory offer, add an extra invoice
@@ -87,12 +71,27 @@ func (ci CheckoutItem) NewSubParams(cusID string, other SubSharedParams) *stripe
 			ci.Introductory.PeriodCount.TotalDays())
 	}
 
-	addExtraSubParams(params, other)
+	// {
+	// "status":400,
+	// "message":"Idempotent key length is 0 characters long, which is outside accepted lengths. Idempotent Keys must be 1-255 characters long. If you're looking for a decent generator, try using a UUID defined by IETF RFC 4122.",
+	// "request_id":"req_O6zILK5QEVpViw",
+	// "type":"idempotency_error"
+	// }
+	if other.IdempotencyKey != "" {
+		params.SetIdempotencyKey(other.IdempotencyKey)
+	}
+
+	if other.CouponID.Valid {
+		params.Coupon = stripe.String(other.CouponID.String)
+	}
+
+	// Expand latest_invoice.payment_intent.
+	params.AddExpand(KeyLatestInvoicePaymentIntent)
 
 	return params
 }
 
-func (ci CheckoutItem) UpdateSubParams(ss *stripe.Subscription, other SubSharedParams) *stripe.SubscriptionParams {
+func (ci CheckoutItem) UpdateSubParams(ss *stripe.Subscription, other SubsParams) *stripe.SubscriptionParams {
 
 	params := &stripe.SubscriptionParams{
 		CancelAtPeriodEnd: stripe.Bool(false),
@@ -109,7 +108,20 @@ func (ci CheckoutItem) UpdateSubParams(ss *stripe.Subscription, other SubSharedP
 		},
 	}
 
-	addExtraSubParams(params, other)
+	if other.DefaultPaymentMethod.Valid {
+		params.DefaultPaymentMethod = stripe.String(other.DefaultPaymentMethod.String)
+	}
+
+	if other.IdempotencyKey != "" {
+		params.SetIdempotencyKey(other.IdempotencyKey)
+	}
+
+	if other.CouponID.Valid {
+		params.Coupon = stripe.String(other.CouponID.String)
+	}
+
+	// Expand latest_invoice.payment_intent.
+	params.AddExpand(KeyLatestInvoicePaymentIntent)
 
 	return params
 }

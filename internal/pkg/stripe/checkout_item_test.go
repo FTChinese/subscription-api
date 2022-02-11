@@ -12,7 +12,7 @@ func TestCheckoutItem_NewSubParams(t *testing.T) {
 		Introductory: MockPriceStdIntro,
 	}
 
-	p := item.NewSubParams("customer-id", SubSharedParams{
+	p := item.NewSubParams("customer-id", SubsParams{
 		CouponID:             null.String{},
 		DefaultPaymentMethod: null.String{},
 		IdempotencyKey:       "key",
