@@ -19,6 +19,11 @@ func NewMembership(params MembershipParams) reader.Membership {
 
 	expires := params.Subs.ExpiresAt()
 
+	var itemID string
+	if len(params.Subs.Items) > 0 {
+		itemID = params.Subs.Items[0].ID
+	}
+
 	return reader.Membership{
 		UserIDs:       params.UserIDs,
 		Edition:       params.Subs.Edition,
@@ -28,7 +33,7 @@ func NewMembership(params MembershipParams) reader.Membership {
 		PaymentMethod: enum.PayMethodStripe,
 		FtcPlanID:     null.String{},
 		StripeSubsID:  null.StringFrom(params.Subs.ID),
-		StripePlanID:  null.StringFrom(params.Subs.PriceID),
+		StripePlanID:  null.NewString(itemID, itemID != ""),
 		AutoRenewal:   params.Subs.IsAutoRenewal(),
 		Status:        params.Subs.Status,
 		AppleSubsID:   null.String{},
