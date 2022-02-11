@@ -11,13 +11,13 @@ import (
 	"strings"
 )
 
-// PaymentInput contains a customer's payment method.
-type PaymentInput struct {
+// DefaultPaymentMethodParams contains a customer's default payment method.
+type DefaultPaymentMethodParams struct {
 	CustomerID    string
 	DefaultMethod string `json:"defaultPaymentMethod"`
 }
 
-func (p *PaymentInput) Validate() *render.ValidationError {
+func (p *DefaultPaymentMethodParams) Validate() *render.ValidationError {
 	p.CustomerID = strings.TrimSpace(p.CustomerID)
 	p.DefaultMethod = strings.TrimSpace(p.DefaultMethod)
 
