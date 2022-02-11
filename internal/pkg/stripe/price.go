@@ -110,6 +110,8 @@ func (r PriceRecurring) IsZero() bool {
 	return r.Interval == "" && r.IntervalCount == 0 && r.UsageType == ""
 }
 
+// parseRecurringPeriod tries to deduce a dt.YearMonthDay from stripe.PriceRecurring
+// when it is not set in stripe's Metadata field
 func parseRecurringPeriod(r *stripe.PriceRecurring) dt.YearMonthDay {
 	if r == nil {
 		return dt.YearMonthDay{}
@@ -135,24 +137,25 @@ func parseRecurringPeriod(r *stripe.PriceRecurring) dt.YearMonthDay {
 }
 
 type Price struct {
-	ID             string           `json:"id"`
-	Active         bool             `json:"active"`
-	Currency       stripe.Currency  `json:"currency"`
-	IsIntroductory bool             `json:"isIntroductory"`
-	Kind           price.Kind       `json:"kind"`
-	LiveMode       bool             `json:"liveMode"`
-	Metadata       PriceMetadata    `json:"metadata"` // Deprecated
-	Nickname       string           `json:"nickname"`
-	Product        string           `json:"product"` // Deprecated
-	ProductID      string           `json:"productId"`
-	PeriodCount    dt.YearMonthDay  `json:"periodCount"`
-	Recurring      PriceRecurring   `json:"recurring"` // Deprecated
-	Tier           enum.Tier        `json:"tier"`      // The tier of this price.
-	Type           stripe.PriceType `json:"type"`      // Deprecated
-	UnitAmount     int64            `json:"unitAmount"`
-	StartUTC       null.String      `json:"startUtc"` // Start time if Introductory is true; otherwise omit.
-	EndUTC         null.String      `json:"endUtc"`   // End time if Introductory is true; otherwise omit.
-	Created        int64            `json:"created"`
+	ID             string          `json:"id"`
+	Active         bool            `json:"active"`
+	Currency       stripe.Currency `json:"currency"`
+	IsIntroductory bool            `json:"isIntroductory"`
+	Kind           price.Kind      `json:"kind"`
+	LiveMode       bool            `json:"liveMode"`
+	Nickname       string          `json:"nickname"`
+	ProductID      string          `json:"productId"`
+	PeriodCount    dt.YearMonthDay `json:"periodCount"`
+	Tier           enum.Tier       `json:"tier"` // The tier of this price.
+	UnitAmount     int64           `json:"unitAmount"`
+	StartUTC       null.String     `json:"startUtc"` // Start time if Introductory is true; otherwise omit.
+	EndUTC         null.String     `json:"endUtc"`   // End time if Introductory is true; otherwise omit.
+	Created        int64           `json:"created"`
+
+	Metadata  PriceMetadata    `json:"metadata"`  // Deprecated
+	Product   string           `json:"product"`   // Deprecated. Use ProductID
+	Recurring PriceRecurring   `json:"recurring"` // Deprecated
+	Type      stripe.PriceType `json:"type"`      // Deprecated. Use Kind.
 }
 
 func NewPrice(p *stripe.Price) Price {
@@ -173,18 +176,19 @@ func NewPrice(p *stripe.Price) Price {
 		IsIntroductory: meta.Introductory,
 		Kind:           price.Kind(p.Type),
 		LiveMode:       p.Livemode,
-		Metadata:       meta,
 		Nickname:       p.Nickname,
-		Product:        p.Product.ID,
 		ProductID:      p.Product.ID,
 		PeriodCount:    period,
-		Recurring:      NewPriceRecurring(p.Recurring),
 		Tier:           meta.Tier,
-		Type:           p.Type,
 		UnitAmount:     p.UnitAmount,
 		StartUTC:       meta.StartUTC,
 		EndUTC:         meta.EndUTC,
 		Created:        p.Created,
+
+		Metadata:  meta,
+		Product:   p.Product.ID,
+		Recurring: NewPriceRecurring(p.Recurring),
+		Type:      p.Type,
 	}
 }
 
