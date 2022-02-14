@@ -4,17 +4,18 @@ import (
 	"database/sql"
 	"github.com/FTChinese/go-rest/view"
 	"github.com/FTChinese/subscription-api/pkg/db"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"log"
 	"net/http"
 )
 
 type Guard struct {
-	env Repo
+	env Env
 }
 
 func NewGuard(dbs db.ReadWriteMyDBs) Guard {
 	return Guard{
-		env: NewRepo(dbs),
+		env: NewEnv(dbs),
 	}
 }
 
@@ -25,7 +26,7 @@ func (g Guard) CheckToken(next http.Handler) http.Handler {
 			return
 		}
 
-		token, err := GetBearerAuth(req)
+		token, err := xhttp.GetAccessToken(req)
 
 		if err != nil {
 			log.Printf("Token not found: %s", err)
