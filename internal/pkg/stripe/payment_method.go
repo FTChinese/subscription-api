@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"github.com/FTChinese/subscription-api/internal/pkg"
 	"github.com/stripe/stripe-go/v72"
 )
 
@@ -155,4 +156,9 @@ func (pm *PaymentMethodJSON) Scan(src interface{}) error {
 	default:
 		return errors.New("incompatible type to scan to PaymentMethodCard")
 	}
+}
+
+type PagedPaymentMethods struct {
+	pkg.PagedList
+	Data []PaymentMethod `json:"data"`
 }

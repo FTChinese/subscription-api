@@ -29,3 +29,15 @@ const StmtRetrievePaymentMethod = colPaymentMethod + `
 WHERE id = ?
 LIMIT 1
 `
+
+const StmtListPaymentMethods = colPaymentMethod + `
+WHERE customer_id = ?
+ORDER BY created
+LIMIT ? OFFSET ?
+`
+
+const StmtCountPaymentMethods = `
+SELECT COUNT(*) AS total_count
+FROM premium.stripe_payment_method
+WHERE customer_id = ?
+`

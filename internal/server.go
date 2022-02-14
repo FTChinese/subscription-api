@@ -413,6 +413,8 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/payment-methods", func(r chi.Router) {
+			r.Use(xhttp.RequireFtcID)
+			r.Get("/", stripeRouter.ListPaymentMethods)
 			r.Get("/{id}", stripeRouter.LoadPaymentMethod)
 		})
 	})
