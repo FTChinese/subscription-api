@@ -410,6 +410,8 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/cancel", stripeRouter.CancelSubs)
 			r.Post("/{id}/reactivate", stripeRouter.ReactivateSubscription)
 			r.Get("/{id}/default-payment-method", stripeRouter.GetSubsDefaultPaymentMethod)
+			// TODO: retrieve payment intent
+			//r.Get("/{id}/payment-intent", )
 		})
 
 		r.Route("/payment-methods", func(r chi.Router) {
