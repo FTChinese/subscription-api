@@ -392,14 +392,14 @@ func (m Membership) SubsKindOfStripe(e price.Edition) (SubsKind, error) {
 		// Standard upgrade to premium
 		case enum.TierPremium:
 			if m.IsTrialing() {
-				return SubsKindZero, errors.New("upgrading in trialing period is not allowed")
+				return SubsKindZero, ErrTrialUpgradeForbidden
 			}
 			return SubsKindUpgrade, nil
 
 		// Standard to standard
 		case enum.TierStandard:
 			if m.Cycle == e.Cycle {
-				return SubsKindZero, errors.New("already subscribed via stripe")
+				return SubsKindZero, ErrAlreadyStripeSubs
 			}
 
 			// Standard changing billing cycle.
@@ -407,13 +407,13 @@ func (m Membership) SubsKindOfStripe(e price.Edition) (SubsKind, error) {
 		}
 
 	case enum.PayMethodApple:
-		return SubsKindZero, errors.New("already subscribed via apple")
+		return SubsKindZero, ErrAlreadyAppleSubs
 
 	case enum.PayMethodB2B:
-		return SubsKindZero, errors.New("already subscribed via stripe")
+		return SubsKindZero, ErrAlreadyB2BSubs
 	}
 
-	return SubsKindZero, errors.New("unknown payment for current subscription")
+	return SubsKindZero, ErrUnknownPaymentMethod
 }
 
 // SubsKindByApple deduces how to handle user's current membership if one exists when Apple webhook arrives.

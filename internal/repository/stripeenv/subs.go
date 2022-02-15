@@ -2,6 +2,7 @@ package stripeenv
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/account"
@@ -53,11 +54,7 @@ func (env Env) CreateSubscription(
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripe.SubsResult{}, &render.ResponseError{
-			StatusCode: http.StatusBadRequest,
-			Message:    "Cannot create a new Stripe subscription: " + err.Error(),
-			Invalid:    nil,
-		}
+		return stripe.SubsResult{}, err
 	}
 
 	sugar.Infof("Stripe subscripiton kind: %s", subsKind.Localize())
@@ -65,11 +62,7 @@ func (env Env) CreateSubscription(
 	if !subsKind.IsNewSubs() {
 		sugar.Infof("Abort stripe new subscription due to not eligible.")
 		_ = tx.Rollback()
-		return stripe.SubsResult{}, &render.ResponseError{
-			StatusCode: http.StatusBadRequest,
-			Message:    "Only creating new stripe subscription allowed",
-			Invalid:    nil,
-		}
+		return stripe.SubsResult{}, errors.New("this endpoint only permit creating a new stripe subscription")
 	}
 
 	sugar.Info("Creating stripe subscription")
