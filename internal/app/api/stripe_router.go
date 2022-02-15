@@ -27,6 +27,16 @@ func (router StripeRouter) handleSubsResult(result stripe.SubsResult) {
 		sugar.Error(err)
 	}
 
+	err = router.Env.UpsertInvoice(result.Subs.LatestInvoice)
+	if err != nil {
+		sugar.Error(err)
+	}
+
+	err = router.Env.UpsertPaymentIntent(result.Subs.PaymentIntent)
+	if err != nil {
+		sugar.Error(err)
+	}
+
 	if !result.Snapshot.IsZero() {
 		err := router.ReaderRepo.ArchiveMember(result.Snapshot)
 		if err != nil {
