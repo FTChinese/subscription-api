@@ -86,6 +86,21 @@ func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 		return PaymentIntent{}
 	}
 
+	var cusID string
+	if pi.Customer != nil {
+		cusID = pi.Customer.ID
+	}
+
+	var invID string
+	if pi.Invoice != nil {
+		invID = pi.Invoice.ID
+	}
+
+	var pmID string
+	if pi.PaymentMethod != nil {
+		pmID = pi.PaymentMethod.ID
+	}
+
 	return PaymentIntent{
 		ID:                 pi.ID,
 		Amount:             pi.Amount,
@@ -95,11 +110,11 @@ func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 		ClientSecret:       null.NewString(pi.ClientSecret, pi.ClientSecret != ""),
 		Created:            pi.Created,
 		Currency:           pi.Currency,
-		CustomerID:         pi.Customer.ID,
-		InvoiceID:          pi.Invoice.ID,
+		CustomerID:         cusID,
+		InvoiceID:          invID,
 		LiveMode:           pi.Livemode,
 		NextAction:         NextActionJSON{pi.NextAction},
-		PaymentMethodID:    pi.PaymentMethod.ID,
+		PaymentMethodID:    pmID,
 		PaymentMethodTypes: pi.PaymentMethodTypes,
 		ReceiptEmail:       pi.ReceiptEmail,
 		SetupFutureUsage:   pi.SetupFutureUsage,

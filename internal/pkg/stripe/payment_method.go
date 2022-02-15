@@ -25,6 +25,16 @@ func NewPaymentMethodCard(c *stripe.PaymentMethodCard) PaymentMethodCard {
 		return PaymentMethodCard{}
 	}
 
+	var network stripe.PaymentMethodCardNetworks
+	if c.Networks != nil {
+		network = *c.Networks
+	}
+
+	var threeD stripe.PaymentMethodCardThreeDSecureUsage
+	if c.ThreeDSecureUsage != nil {
+		threeD = *c.ThreeDSecureUsage
+	}
+
 	return PaymentMethodCard{
 		Brand:             c.Brand,
 		Country:           c.Country,
@@ -33,8 +43,8 @@ func NewPaymentMethodCard(c *stripe.PaymentMethodCard) PaymentMethodCard {
 		Fingerprint:       c.Fingerprint,
 		Funding:           c.Funding,
 		Last4:             c.Last4,
-		Network:           *c.Networks,
-		ThreeDSecureUsage: *c.ThreeDSecureUsage,
+		Network:           network,
+		ThreeDSecureUsage: threeD,
 	}
 }
 
@@ -100,10 +110,15 @@ func NewPaymentMethod(pm *stripe.PaymentMethod) PaymentMethod {
 		return PaymentMethod{}
 	}
 
+	var cusID string
+	if pm.Customer != nil {
+		cusID = pm.Customer.ID
+	}
+
 	return PaymentMethod{
 		IsFromStripe: true,
 		ID:           pm.ID,
-		CustomerID:   pm.Customer.ID,
+		CustomerID:   cusID,
 		Kind:         pm.Type,
 		Card:         NewPaymentMethodCard(pm.Card),
 		Created:      pm.Created,

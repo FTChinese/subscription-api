@@ -114,7 +114,9 @@ func (env Env) CreateSubscription(
 
 	if !result.CarryOverInvoice.IsZero() {
 		sugar.Infof("Saving add-on for after switching to stripe: %v", result.CarryOverInvoice)
-		if err := tx.SaveInvoice(result.CarryOverInvoice); err != nil {
+		err := tx.SaveInvoice(result.CarryOverInvoice)
+		if err != nil {
+			_ = tx.Rollback()
 			// Since stripe subscription is already created, we should not rollback in case of error.
 			sugar.Error(err)
 		}
