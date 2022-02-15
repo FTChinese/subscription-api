@@ -158,6 +158,9 @@ func (router StripeRouter) GetCustomerDefaultPaymentMethod(w http.ResponseWriter
 }
 
 func (router StripeRouter) UpdateCustomerDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
 	ftcID := xhttp.GetFtcID(req.Header)
 	cusID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -165,14 +168,13 @@ func (router StripeRouter) UpdateCustomerDefaultPaymentMethod(w http.ResponseWri
 		return
 	}
 
-	var pm stripe.DefaultPaymentMethodParams
-	if err := gorest.ParseJSON(req.Body, &pm); err != nil {
+	var params stripe.DefaultPaymentMethodParams
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
-	pm.CustomerID = cusID
 
-	if ve := pm.Validate(); ve != nil {
+	if ve := params.Validate(); ve != nil {
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
@@ -190,11 +192,20 @@ func (router StripeRouter) UpdateCustomerDefaultPaymentMethod(w http.ResponseWri
 		_ = render.New(w).NotFound("")
 	}
 
-	cus, err := router.Env.Client.SetCusDefaultPaymentMethod(pm)
+	cus, err := router.Env.Client.SetCusDefaultPaymentMethod(
+		cusID,
+		params.DefaultMethod)
 	if err != nil {
 		err = xhttp.HandleStripeErr(w, err)
 		return
 	}
+
+	go func() {
+		_, err := router.Env.FetchSavePaymentMethod(params.DefaultMethod)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
 
 	_ = render.New(w).OK(stripe.NewCustomer(acnt.FtcID, cus))
 }
