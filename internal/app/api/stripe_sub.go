@@ -66,7 +66,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	item, err := router.Env.LoadCheckoutItem(input)
 	if err != nil {
 		sugar.Error(err)
-		handleSubsError(w, err)
+		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
@@ -84,7 +84,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		handleSubsError(w, err)
 		return
 	}
 
