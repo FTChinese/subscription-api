@@ -8,38 +8,6 @@ import (
 	"testing"
 )
 
-func TestStripeRepo_SaveCustomer(t *testing.T) {
-	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
-
-	type args struct {
-		c stripe.Customer
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Save customer",
-			args: args{
-				c: test.NewPersona().StripeCustomer(),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := repo.InsertCustomer(tt.args.c); (err != nil) != tt.wantErr {
-				t.Errorf("InsertCustomer() error = %v, wantErr %v", err, tt.wantErr)
-
-				return
-			}
-
-			t.Logf("%v", tt.args.c)
-		})
-	}
-}
-
 func TestStripeRepo_UpdateCustomer(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
 
@@ -65,8 +33,8 @@ func TestStripeRepo_UpdateCustomer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := repo.UpdateCustomer(tt.args.c); (err != nil) != tt.wantErr {
-				t.Errorf("UpdateCustomer() error = %v, wantErr %v", err, tt.wantErr)
+			if err := repo.UpsertCustomer(tt.args.c); (err != nil) != tt.wantErr {
+				t.Errorf("UpsertCustomer() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
