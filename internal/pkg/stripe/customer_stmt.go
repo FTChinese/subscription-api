@@ -7,7 +7,8 @@ WHERE user_id = :ftc_id
 LIMIT 1
 `
 
-const colCusBase = `
+const colCustomer = `
+ftc_user_id = :ftc_user_id,
 currency = :currency,
 created = :created,
 default_source_id = :default_source_id,
@@ -16,20 +17,12 @@ email = :email,
 live_mode = :live_mode
 `
 
-const StmtInsertCustomer = `
+const StmtUpsertCustomer = `
 INSERT INTO premium.stripe_customer
 SET id = :id,
-	ftc_user_id = :ftc_user_id,
-` + colCusBase
-
-// StmtUpdateCustomer updates an existing stripe customer.
-// Avoid writing to ftc_user_id column.
-const StmtUpdateCustomer = `
-UPDATE premium.stripe_customer
-SET ` + colCusBase + `
-WHERE id = :id
-LIMIT 1
-`
+` + colCustomer + `
+ON DUPLICATE KEY UPDATE
+` + colCustomer
 
 const StmtRetrieveCustomer = `
 SELECT id,
