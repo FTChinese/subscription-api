@@ -313,7 +313,7 @@ func (r Repo) CreateDiscount(d price.Discount) {
 
 func (r Repo) SaveStripeCustomer(c stripe.Customer) {
 	_, err := r.dbs.Write.NamedExec(
-		stripe.StmtInsertCustomer,
+		stripe.StmtUpsertCustomer,
 		c)
 
 	if err != nil {
