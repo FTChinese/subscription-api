@@ -60,17 +60,28 @@ func (env Env) CreateCustomer(ftcID string) (stripe.Customer, error) {
 
 // getCustomer retrieves a stripe customer when we know a ftc account.
 func (env Env) getCustomer(ba account.BaseAccount) (stripe.Customer, error) {
-	cus, err := env.RetrieveCustomer(ba.StripeID.String)
-	if err == nil {
-		return cus, nil
-	}
-
-	rawCus, err := env.Client.FetchCustomer(ba.StripeID.String)
+	cus, err := env.LoadOrFetchCustomer(ba.StripeID.String)
 	if err != nil {
 		return stripe.Customer{}, err
 	}
 
-	cus = stripe.NewCustomer(ba.FtcID, rawCus)
+	return cus.WithFtcID(ba.FtcID), nil
+}
 
-	return cus, nil
+// LoadOrFetchCustomer retrieves customer from our db,
+// and fallback to Stripe API if not found.
+// NOTE the Customer might not contain ftc id if fetched
+// from Stripe.
+func (env Env) LoadOrFetchCustomer(id string) (stripe.Customer, error) {
+	cus, err := env.RetrieveCustomer(id)
+	if err == nil {
+		return cus, nil
+	}
+
+	rawCus, err := env.Client.FetchCustomer(id)
+	if err != nil {
+		return stripe.Customer{}, err
+	}
+
+	return stripe.NewCustomer("", rawCus), nil
 }
