@@ -58,3 +58,16 @@ func NewCustomer(ftcID string, c *stripe.Customer) Customer {
 		LiveMode:               c.Livemode,
 	}
 }
+
+// WithFtcID add ftc id to a customer if it does not exist yet.
+// Used when you fetched customer from Stripe API but does not
+// get ftc id yet.
+func (c Customer) WithFtcID(id string) Customer {
+	if c.FtcID != "" {
+		return c
+	}
+
+	c.FtcID = id
+
+	return c
+}
