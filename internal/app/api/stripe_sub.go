@@ -395,7 +395,7 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 		return
 	}
 
-	pm, err := router.getPaymentMethod(subs.DefaultPaymentMethodID.String)
+	pm, err := router.Env.LoadOrFetchPaymentMethod(subs.DefaultPaymentMethodID.String)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
