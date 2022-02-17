@@ -387,12 +387,20 @@ func StartServer(s ServerStatus) {
 			// Use this to check customer's default source and default payment method.
 			r.Get("/{id}", stripeRouter.GetCustomer)
 
-			r.Get("/{id}/default-payment-method", stripeRouter.GetCustomerDefaultPaymentMethod)
-			r.Post("/{id}/default-payment-method", stripeRouter.UpdateCustomerDefaultPaymentMethod)
+			r.Get("/{id}/default-payment-method", stripeRouter.GetCusDefaultPaymentMethod)
+			r.Post("/{id}/default-payment-method", stripeRouter.UpdateCusDefaultPaymentMethod)
+
+			r.Get("/{id}/payment-methods", stripeRouter.ListCusPaymentMethods)
 
 			// Generate ephemeral key for client when it is
 			// trying to modify customer data.
 			r.Post("/{id}/ephemeral-keys", stripeRouter.IssueKey)
+		})
+
+		r.Route("/payment-methods", func(r chi.Router) {
+			r.Use(xhttp.RequireFtcID)
+			r.Post("/", stripeRouter.UpsertPaymentMethod)
+			r.Get("/{id}", stripeRouter.LoadPaymentMethod)
 		})
 
 		r.Route("/subs", func(r chi.Router) {
@@ -412,12 +420,6 @@ func StartServer(s ServerStatus) {
 			r.Get("/{id}/default-payment-method", stripeRouter.GetSubsDefaultPaymentMethod)
 			// TODO: retrieve payment intent
 			//r.Get("/{id}/payment-intent", )
-		})
-
-		r.Route("/payment-methods", func(r chi.Router) {
-			r.Use(xhttp.RequireFtcID)
-			r.Get("/", stripeRouter.ListPaymentMethods)
-			r.Get("/{id}", stripeRouter.LoadPaymentMethod)
 		})
 	})
 
