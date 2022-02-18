@@ -6,6 +6,7 @@ package test
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/lib/dt"
@@ -49,6 +50,22 @@ func StripeInvoice() stripe.Invoice {
 		SubscriptionID:       null.StringFrom(faker.GenStripeSubID()),
 		Total:                0,
 		Created:              time.Now().Unix(),
+	}
+}
+
+func StripeSetupIntent() stripe.SetupIntent {
+	return stripe.SetupIntent{
+		ID:                 faker.GenSetupIntentID(),
+		CancellationReason: "",
+		ClientSecret:       rand.String(40),
+		Created:            time.Now().Unix(),
+		CustomerID:         faker.GenStripeCusID(),
+		LiveMode:           false,
+		NextAction:         stripe.SetupIntentNextActionJSON{},
+		PaymentMethodID:    null.String{},
+		PaymentMethodTypes: nil,
+		Status:             "",
+		Usage:              sdk.SetupIntentUsageOffSession,
 	}
 }
 

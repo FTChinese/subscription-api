@@ -50,6 +50,10 @@ func GenPaymentIntentID() string {
 	return "pi_" + rand.String(14)
 }
 
+func GenSetupIntentID() string {
+	return "si_" + rand.String(14)
+}
+
 func GenPaymentMethodID() string {
 	return "pm_" + rand.String(14)
 }

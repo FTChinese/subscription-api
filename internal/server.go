@@ -397,6 +397,11 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/ephemeral-keys", stripeRouter.IssueKey)
 		})
 
+		r.Route("/setup-intents", func(r chi.Router) {
+			r.Use(xhttp.RequireFtcID)
+			r.Post("/", stripeRouter.CreateSetupIntent)
+		})
+
 		r.Route("/payment-methods", func(r chi.Router) {
 			r.Use(xhttp.RequireFtcID)
 			r.Post("/", stripeRouter.UpsertPaymentMethod)
