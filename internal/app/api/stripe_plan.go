@@ -8,7 +8,7 @@ import (
 
 // ListPrices retrieves all prices defined in Stripe.
 func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) {
-	refresh := req.FormValue("refresh") == "true"
+	refresh := xhttp.ParseQueryRefresh(req)
 
 	prices, err := router.Env.ListPrices(router.Live, refresh)
 
