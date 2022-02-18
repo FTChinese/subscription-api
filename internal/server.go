@@ -404,7 +404,7 @@ func StartServer(s ServerStatus) {
 
 		r.Route("/payment-methods", func(r chi.Router) {
 			r.Use(xhttp.RequireFtcID)
-			r.Post("/", stripeRouter.UpsertPaymentMethod)
+			// Query parameter: ?refresh=true|false
 			r.Get("/{id}", stripeRouter.LoadPaymentMethod)
 		})
 
