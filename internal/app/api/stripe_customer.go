@@ -138,7 +138,7 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 	}
 
 	// Fetch payment method
-	pm, err := router.Env.LoadOrFetchPaymentMethod(cus.DefaultPaymentMethodID.String)
+	pm, err := router.Env.LoadOrFetchPaymentMethod(cus.DefaultPaymentMethodID.String, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)

@@ -163,7 +163,7 @@ func (router StripeRouter) eventCustomer(rawCus sdk.Customer) error {
 	}
 
 	// Next checks if payment method saved in our db.
-	pm, err := router.Env.LoadOrFetchPaymentMethod(cus.DefaultPaymentMethodID.String)
+	pm, err := router.Env.LoadOrFetchPaymentMethod(cus.DefaultPaymentMethodID.String, false)
 	if err != nil {
 		return nil
 	}
@@ -222,7 +222,7 @@ func (router StripeRouter) eventPaymentSucceeded(rawInvoice sdk.Invoice) error {
 
 	sugar.Infof("Default payment method set for subscription: %s - %s", subs.ID, pi.PaymentMethod.ID)
 
-	pm, err := router.Env.LoadOrFetchPaymentMethod(pi.PaymentMethod.ID)
+	pm, err := router.Env.LoadOrFetchPaymentMethod(pi.PaymentMethod.ID, false)
 	if err != nil {
 		sugar.Error(err)
 		return err
