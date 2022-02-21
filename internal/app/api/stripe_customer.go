@@ -207,12 +207,21 @@ func (router StripeRouter) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, 
 	// We do not update customer here since the webhook
 	// will handle it.
 	go func() {
+		// Save updated customer
 		err := router.Env.UpsertCustomer(cus)
 		if err != nil {
 			sugar.Error(err)
 		}
 
-		_, err = router.Env.FetchAndSavePaymentMethod(params.DefaultMethod)
+		// Fetch the related payment method from Stripe
+		pm, err := router.Env.LoadOrFetchPaymentMethod(params.DefaultMethod, true)
+		if err != nil {
+			sugar.Error(err)
+			return
+		}
+
+		// Save this payment method.
+		err = router.Env.UpsertPaymentMethod(pm)
 		if err != nil {
 			sugar.Error(err)
 		}
