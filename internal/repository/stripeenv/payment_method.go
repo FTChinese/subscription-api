@@ -2,24 +2,6 @@ package stripeenv
 
 import "github.com/FTChinese/subscription-api/internal/pkg/stripe"
 
-// FetchAndSavePaymentMethod fetches a payment method from
-// stripe and save it to db.
-func (env Env) FetchAndSavePaymentMethod(pmID string) (stripe.PaymentMethod, error) {
-	rawPM, err := env.Client.FetchPaymentMethod(pmID)
-	if err != nil {
-		return stripe.PaymentMethod{}, err
-	}
-
-	pm := stripe.NewPaymentMethod(rawPM)
-
-	err = env.UpsertPaymentMethod(pm)
-	if err != nil {
-		return stripe.PaymentMethod{}, err
-	}
-
-	return pm, nil
-}
-
 // LoadOrFetchPaymentMethod retrieve a payment method from
 // db, and if not found, fallback to stripe API.
 func (env Env) LoadOrFetchPaymentMethod(id string, refresh bool) (stripe.PaymentMethod, error) {
@@ -45,4 +27,29 @@ func (env Env) LoadOrFetchPaymentMethod(id string, refresh bool) (stripe.Payment
 	}
 
 	return stripe.NewPaymentMethod(rawPM), nil
+}
+
+func (env Env) LoadOrFetchSetupIntent(id string, refresh bool) (stripe.SetupIntent, error) {
+	defer env.Logger.Sync()
+	sugar := env.Logger.Sugar()
+
+	// If not refreshing, use local db.
+	if !refresh {
+		si, err := env.RetrieveSetupIntent(id)
+		// If found, return it directly.
+		if err == nil {
+			return si, nil
+		}
+
+		// otherwise, fallthrough.
+		sugar.Error(err)
+	}
+
+	// If refreshing, or not found in local db.
+	rawSI, err := env.Client.FetchSetupIntent(id, false)
+	if err != nil {
+		return stripe.SetupIntent{}, err
+	}
+
+	return stripe.NewSetupIntent(rawSI), nil
 }
