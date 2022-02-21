@@ -61,13 +61,14 @@ func (na *SetupIntentNextActionJSON) Scan(src interface{}) error {
 }
 
 type SetupIntent struct {
+	IsFromStripe       bool                                 `json:"-"`
 	ID                 string                               `json:"id" db:"id"`
 	CancellationReason stripe.SetupIntentCancellationReason `json:"cancellationReason" db:"cancellation_reason"`
 	ClientSecret       string                               `json:"clientSecret" db:"client_secret"`
 	Created            int64                                `json:"-" db:"created"`
 	CustomerID         string                               `json:"customerId" db:"customer_id"`
 	LiveMode           bool                                 `json:"liveMode" db:"live_mode"`
-	NextAction         SetupIntentNextActionJSON            `json:"next_action" db:"next_action"`
+	NextAction         SetupIntentNextActionJSON            `json:"nextAction" db:"next_action"`
 	PaymentMethodID    null.String                          `json:"paymentMethodId" db:"payment_method_id"`
 	PaymentMethodTypes collection.StringList                `json:"-" db:"payment_method_types"`
 	Status             stripe.SetupIntentStatus             `json:"status" db:"intent_status"`
@@ -90,6 +91,7 @@ func NewSetupIntent(si *stripe.SetupIntent) SetupIntent {
 	}
 
 	return SetupIntent{
+		IsFromStripe:       true,
 		ID:                 si.ID,
 		CancellationReason: si.CancellationReason,
 		ClientSecret:       si.ClientSecret,

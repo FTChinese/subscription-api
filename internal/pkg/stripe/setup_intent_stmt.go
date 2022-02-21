@@ -19,3 +19,20 @@ SET id = :id,
 ` + colUpsertSetupIntent + `
 ON DUPLICATE KEY UPDATE
 ` + colUpsertSetupIntent
+
+const RetrieveSetupIntent = `
+SELECT id
+	cancellation_reason,
+	client_secret,
+	created,
+	customer_id,
+	live_mode,
+	next_action,
+	payment_method_id,
+	payment_method_types,
+	intent_status,
+	intent_usage
+FROM premium.stripe_setup_intent
+WHERE id = ?
+LIMIT 1
+`
