@@ -12,3 +12,12 @@ func (c Client) CreateSetupIntent(p stripe.SetupIntentParams) (*sdk.SetupIntent,
 
 	return c.sc.SetupIntents.New(params)
 }
+
+func (c Client) FetchSetupIntent(id string, expandPaymentMethod bool) (*sdk.SetupIntent, error) {
+	var params = &sdk.SetupIntentParams{}
+	if expandPaymentMethod {
+		params.AddExpand("payment_method")
+	}
+
+	return c.sc.SetupIntents.Get(id, params)
+}
