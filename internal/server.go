@@ -399,7 +399,12 @@ func StartServer(s ServerStatus) {
 
 		r.Route("/setup-intents", func(r chi.Router) {
 			r.Use(xhttp.RequireFtcID)
+			// Create a payment method
 			r.Post("/", stripeRouter.CreateSetupIntent)
+			// ?refresh=true
+			r.Get("/{id}", stripeRouter.GetSetupIntent)
+			// ?refresh=true
+			r.Get("/{id}/payment-method", stripeRouter.GetSetupPaymentMethod)
 		})
 
 		r.Route("/payment-methods", func(r chi.Router) {
