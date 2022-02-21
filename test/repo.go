@@ -331,6 +331,16 @@ func (r Repo) SaveStripePM(pm stripe.PaymentMethod) {
 	}
 }
 
+func (r Repo) SaveStripeSetupIntent(si stripe.SetupIntent) {
+	_, err := r.dbs.Write.NamedExec(
+		stripe.StmtUpsertSetupIntent,
+		si)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (r Repo) SaveStripeSubs(s stripe.Subs) {
 	_, err := r.dbs.Write.NamedExec(stripe.StmtUpsertSubsExpanded, s)
 	if err != nil {
