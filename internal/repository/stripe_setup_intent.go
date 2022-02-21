@@ -13,3 +13,17 @@ func (repo StripeRepo) UpsertSetupIntent(si stripe.SetupIntent) error {
 
 	return nil
 }
+
+func (repo StripeRepo) RetrieveSetupIntent(id string) (stripe.SetupIntent, error) {
+	var si stripe.SetupIntent
+	err := repo.dbs.Read.Get(
+		&si,
+		stripe.RetrieveSetupIntent,
+		id)
+
+	if err != nil {
+		return stripe.SetupIntent{}, err
+	}
+
+	return si, nil
+}

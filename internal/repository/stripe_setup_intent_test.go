@@ -36,3 +36,45 @@ func TestStripeRepo_UpsertSetupIntent(t *testing.T) {
 		})
 	}
 }
+
+func TestStripeRepo_RetrieveSetupIntent(t *testing.T) {
+	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
+
+	si := test.StripeSetupIntent()
+
+	test.NewRepo().SaveStripeSetupIntent(si)
+
+	type args struct {
+		id string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    stripe.SetupIntent
+		wantErr bool
+	}{
+		{
+			name: "",
+			args: args{
+				id: si.ID,
+			},
+			want:    stripe.SetupIntent{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := repo.RetrieveSetupIntent(tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RetrieveSetupIntent() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("RetrieveSetupIntent() got = %v, want %v", got, tt.want)
+			//}
+
+			t.Logf("%v", got)
+		})
+	}
+}
