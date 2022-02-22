@@ -361,6 +361,7 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 	sugar := router.Logger.Sugar()
 
 	ftcID := xhttp.GetFtcID(req.Header)
+	refresh := xhttp.ParseQueryRefresh(req)
 
 	subsID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -391,11 +392,11 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 	}
 
 	if subs.DefaultPaymentMethodID.IsZero() {
-		_ = render.NewNotFound("Default payment method not set")
+		_ = render.New(w).NotFound("Default payment method not set")
 		return
 	}
 
-	pm, err := router.Env.LoadOrFetchPaymentMethod(subs.DefaultPaymentMethodID.String, false)
+	pm, err := router.Env.LoadOrFetchPaymentMethod(subs.DefaultPaymentMethodID.String, refresh)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
