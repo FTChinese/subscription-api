@@ -59,6 +59,17 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}()
 		w.WriteHeader(http.StatusOK)
 
+	case "setup_intent.succeeded":
+		si := sdk.SetupIntent{}
+		if err := json.Unmarshal(event.Data.Raw, &si); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		go func() {
+			_ = router.eventSetupIntent(si)
+		}()
+		w.WriteHeader(http.StatusOK)
+
 	// create occurs whenever a customer is signed up for a new plan.
 	// update occurs whenever a subscription changes (e.g., switching from one plan to another, or changing the status from trial to active).
 	case "customer.subscription.created",
@@ -78,7 +89,11 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 
 	// A few days prior to renewal, your site receives an invoice.upcoming event at the webhook endpoint.
-	case "invoice.created", "invoice.payment_failed", "invoice.payment_action_required", "invoice.upcoming", "invoice.finalized":
+	case "invoice.created",
+		"invoice.payment_failed",
+		"invoice.payment_action_required",
+		"invoice.upcoming",
+		"invoice.finalized":
 		// Stripe waits an hour after receiving a successful response to the invoice.created event before attempting payment.
 		// If a successful response isn’t received within 72 hours, Stripe attempts to finalize and send the invoice.
 		// In live mode, if your webhook endpoint does not respond properly, Stripe continues retrying the webhook notification for up to three days with an exponential back off
@@ -174,6 +189,43 @@ func (router StripeRouter) eventCustomer(rawCus sdk.Customer) error {
 
 	err = router.Env.UpsertPaymentMethod(pm)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (router StripeRouter) eventSetupIntent(rawSI sdk.SetupIntent) error {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
+	si := stripe.NewSetupIntent(&rawSI)
+	err := router.Env.UpsertSetupIntent(si)
+	if err != nil {
+		sugar.Error(err)
+		return err
+	}
+
+	if si.PaymentMethodID.IsZero() {
+		return nil
+	}
+
+	pm, err := router.Env.LoadOrFetchPaymentMethod(si.PaymentMethodID.String, true)
+	if err != nil {
+		sugar.Error(err)
+		return err
+	}
+
+	// Save/Update payment method
+	err = router.Env.UpsertPaymentMethod(pm)
+	if err != nil {
+		sugar.Error(err)
+		return err
+	}
+
+	_, err = router.Env.SetCusDefaultPaymentIfMissing(si.CustomerID, si.PaymentMethodID.String)
+	if err != nil {
+		sugar.Error(err)
 		return err
 	}
 
