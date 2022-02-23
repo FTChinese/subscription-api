@@ -85,7 +85,7 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 }
 
 func (router StripeRouter) getCustomer(id string) (stripe.Customer, error) {
-	cus, err := router.Env.LoadOrFetchCustomer(id)
+	cus, err := router.Env.LoadOrFetchCustomer(id, false)
 	if err == nil {
 		return cus, nil
 	}

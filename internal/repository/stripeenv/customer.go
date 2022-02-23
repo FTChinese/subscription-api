@@ -2,7 +2,6 @@ package stripeenv
 
 import (
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/account"
 )
 
 // CreateCustomer create a customer under ftc account for user with `ftcID`.
@@ -29,7 +28,15 @@ func (env Env) CreateCustomer(ftcID string) (stripe.Customer, error) {
 	// If stripe customer id already exists, abort.
 	if baseAccount.StripeID.Valid {
 		_ = tx.Rollback()
-		return env.getCustomer(baseAccount)
+		cus, err := env.LoadOrFetchCustomer(
+			baseAccount.StripeID.String,
+			false)
+
+		if err != nil {
+			return stripe.Customer{}, err
+		}
+
+		return cus.WithFtcID(baseAccount.FtcID), nil
 	}
 
 	// Request stripe api to create customer.
@@ -58,24 +65,16 @@ func (env Env) CreateCustomer(ftcID string) (stripe.Customer, error) {
 	return cus, nil
 }
 
-// getCustomer retrieves a stripe customer when we know a ftc account.
-func (env Env) getCustomer(ba account.BaseAccount) (stripe.Customer, error) {
-	cus, err := env.LoadOrFetchCustomer(ba.StripeID.String)
-	if err != nil {
-		return stripe.Customer{}, err
-	}
-
-	return cus.WithFtcID(ba.FtcID), nil
-}
-
 // LoadOrFetchCustomer retrieves customer from our db,
 // and fallback to Stripe API if not found.
 // NOTE the Customer might not contain ftc id if fetched
 // from Stripe.
-func (env Env) LoadOrFetchCustomer(id string) (stripe.Customer, error) {
-	cus, err := env.RetrieveCustomer(id)
-	if err == nil {
-		return cus, nil
+func (env Env) LoadOrFetchCustomer(id string, refresh bool) (stripe.Customer, error) {
+	if !refresh {
+		cus, err := env.RetrieveCustomer(id)
+		if err == nil {
+			return cus, nil
+		}
 	}
 
 	rawCus, err := env.Client.FetchCustomer(id)
@@ -84,4 +83,22 @@ func (env Env) LoadOrFetchCustomer(id string) (stripe.Customer, error) {
 	}
 
 	return stripe.NewCustomer("", rawCus), nil
+}
+
+func (env Env) SetCusDefaultPaymentIfMissing(cusID string, pmID string) (stripe.Customer, error) {
+	cus, err := env.LoadOrFetchCustomer(cusID, false)
+	if err != nil {
+		return stripe.Customer{}, err
+	}
+
+	if cus.DefaultPaymentMethodID.Valid {
+		return cus, nil
+	}
+
+	rawCus, err := env.Client.SetCusDefaultPaymentMethod(cusID, pmID)
+	if err != nil {
+		return stripe.Customer{}, err
+	}
+
+	return stripe.NewCustomer(cus.FtcID, rawCus), nil
 }
