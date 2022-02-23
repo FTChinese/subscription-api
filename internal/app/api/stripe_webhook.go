@@ -70,6 +70,20 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}()
 		w.WriteHeader(http.StatusOK)
 
+	case "setup_intent.canceled":
+		si := sdk.SetupIntent{}
+		if err := json.Unmarshal(event.Data.Raw, &si); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		go func() {
+			err := router.Env.UpsertSetupIntent(stripe.NewSetupIntent(&si))
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+		w.WriteHeader(http.StatusOK)
+
 	// create occurs whenever a customer is signed up for a new plan.
 	// update occurs whenever a subscription changes (e.g., switching from one plan to another, or changing the status from trial to active).
 	case "customer.subscription.created",
