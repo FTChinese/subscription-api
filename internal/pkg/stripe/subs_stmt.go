@@ -69,10 +69,3 @@ SELECT id,
 FROM premium.stripe_subscription
 WHERE id = ?
 LIMIT 1`
-
-const StmtSubsExists = `
-SELECT EXISTS(
-	SELECT *
-	FROM premium.stripe_subscription
-	WHERE ID = ?
-) AS already_exists`
