@@ -387,8 +387,8 @@ func StartServer(s ServerStatus) {
 			// Use this to check customer's default source and default payment method.
 			r.Get("/{id}", stripeRouter.GetCustomer)
 
-			r.Get("/{id}/default-payment-method", stripeRouter.GetCusDefaultPaymentMethod)
 			r.Post("/{id}/default-payment-method", stripeRouter.UpdateCusDefaultPaymentMethod)
+			r.Get("/{id}/default-payment-method", stripeRouter.GetCusDefaultPaymentMethod)
 
 			r.Get("/{id}/payment-methods", stripeRouter.ListCusPaymentMethods)
 
