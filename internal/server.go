@@ -385,9 +385,11 @@ func StartServer(s ServerStatus) {
 			// Create a stripe customer if not exists yet
 			r.Post("/", stripeRouter.CreateCustomer)
 			// Use this to check customer's default source and default payment method.
+			// refresh=true
 			r.Get("/{id}", stripeRouter.GetCustomer)
 
 			r.Post("/{id}/default-payment-method", stripeRouter.UpdateCusDefaultPaymentMethod)
+			// ?refresh=true
 			r.Get("/{id}/default-payment-method", stripeRouter.GetCusDefaultPaymentMethod)
 
 			r.Get("/{id}/payment-methods", stripeRouter.ListCusPaymentMethods)
@@ -418,8 +420,6 @@ func StartServer(s ServerStatus) {
 
 			// Create a subscription
 			r.Post("/", stripeRouter.CreateSubs)
-			// List all subscriptions of a user
-			r.Get("/", stripeRouter.ListSubs)
 			// Get a single subscription
 			r.Get("/{id}", stripeRouter.LoadSubs)
 			r.Post("/{id}", stripeRouter.UpdateSubs)
@@ -428,6 +428,7 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/cancel", stripeRouter.CancelSubs)
 			r.Post("/{id}/reactivate", stripeRouter.ReactivateSubscription)
 			r.Get("/{id}/default-payment-method", stripeRouter.GetSubsDefaultPaymentMethod)
+			r.Post("/{id}/default-payment-method", stripeRouter.UpdateSubsDefaultPayMethod)
 		})
 	})
 
