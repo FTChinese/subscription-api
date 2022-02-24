@@ -3,6 +3,13 @@
 Stripe订阅仅限使用邮箱登录的用户。用户ID通过 HTTP header `X-User-Id` 字段设置。
 除 `/stripe/prices` 之外的请求均需提供该值。
 
+## Index
+
+* [Customers](./stripe_customers.md)
+* [Setup Intent](./stripe_setup_intent.md)
+* [Payment Method](./stripe_payment_method.md)
+* [Subscription](./stripe_subscription.md)
+
 ## API List
 
 * Get `/stripe/prices` List stripe prices

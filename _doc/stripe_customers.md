@@ -22,8 +22,6 @@ POST /stripe/customers
 
 在使用Stripe订阅之前，必须先在Stripe[创建 Customer](https://stripe.com/docs/api/customers/create).
 
-### Workflow
-
 ### Request
 
 NULL
