@@ -51,6 +51,7 @@ func (repo StripeRepo) countCusPaymentMethods(cusID string) (int64, error) {
 	var total int64
 	err := repo.dbs.Read.Get(
 		&total,
+		stripe.StmtCountPaymentMethods,
 		cusID)
 
 	if err != nil {
