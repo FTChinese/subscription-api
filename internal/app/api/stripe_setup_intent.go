@@ -122,19 +122,10 @@ func (router StripeRouter) loadSetupPaymentMethod(w http.ResponseWriter, setupID
 		return
 	}
 
-	pm, err := router.Env.LoadOrFetchPaymentMethod(si.PaymentMethodID.String, false)
+	pm, err := router.loadPaymentMethod(si.PaymentMethodID.String, false)
 	if err != nil {
 		_ = xhttp.HandleStripeErr(w, err)
 		return
-	}
-
-	if pm.IsFromStripe {
-		go func() {
-			err := router.Env.UpsertPaymentMethod(pm)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
 	}
 
 	_ = render.New(w).OK(pm)
