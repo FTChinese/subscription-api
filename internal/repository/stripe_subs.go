@@ -42,14 +42,3 @@ func (repo StripeRepo) RetrieveSubs(id string) (stripe.Subs, error) {
 
 	return s, nil
 }
-
-// SubsExists checks whether we stored a stripe subscription.
-func (repo StripeRepo) SubsExists(id string) (bool, error) {
-	var ok bool
-	err := repo.dbs.Read.Get(&ok, stripe.StmtSubsExists, id)
-	if err != nil {
-		return false, err
-	}
-
-	return ok, nil
-}
