@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	sdk "github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/webhook"
 	"io/ioutil"
@@ -333,7 +332,7 @@ func (router StripeRouter) eventSubscription(ss *sdk.Subscription) error {
 		}
 
 		err = router.Env.UpsertSubs(
-			stripe.NewSubs(ids.UserIDs{}, ss),
+			stripe.NewSubs("", ss),
 			false)
 		if err != nil {
 			sugar.Error(err)
@@ -344,7 +343,7 @@ func (router StripeRouter) eventSubscription(ss *sdk.Subscription) error {
 
 	// stripe.Subs could always be created regardless of user account present or not.
 	userIDs := account.CompoundIDs()
-	subs := stripe.NewSubs(userIDs, ss)
+	subs := stripe.NewSubs("", ss)
 
 	result, err := router.Env.OnWebhookSubs(subs, userIDs)
 	if err != nil {
@@ -363,7 +362,7 @@ func (router StripeRouter) eventSubscription(ss *sdk.Subscription) error {
 
 	// Update subscription
 	err = router.Env.UpsertSubs(
-		stripe.NewSubs(ids.UserIDs{}, ss), false)
+		stripe.NewSubs("", ss), false)
 
 	if err != nil {
 		sugar.Error(err)
