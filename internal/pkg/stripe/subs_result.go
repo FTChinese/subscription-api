@@ -30,7 +30,7 @@ type SubsResult struct {
 
 func NewSubsResult(ss *stripe.Subscription, params SubsResultParams) SubsResult {
 	return newSubsResult(
-		NewSubs(params.UserIDs, ss),
+		NewSubs(params.UserIDs.FtcID.String, ss),
 		params,
 	)
 }
