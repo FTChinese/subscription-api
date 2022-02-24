@@ -3,21 +3,32 @@
 Stripe订阅仅限使用邮箱登录的用户。用户ID通过 HTTP header `X-User-Id` 字段设置。
 除 `/stripe/prices` 之外的请求均需提供该值。
 
-## API接口列表
+## API List
 
-* `/stripe/prices`
-* `/stripe/customers`
-* `/stripe/customers/{id}`
-* `/stripe/customers/{id}/default-payment-method`
-* `/stripe/customers/{id}/ephemeral-keys`
-* `/stripe/subs`
-* `/stripe/subs/{id}`
-* `/stripe/subs/{id}/refresh`
-* `/stripe/subs/{id}/upgrade`
-* `/stripe/subs/{id}/cancel`
-* `/stripe/subs/{id}/reactivate`
+* Get `/stripe/prices` List stripe prices
+* Get `/stripe/prices/{id}` Get a specific price
+* POST `/stripe/customers` Create a new customer
+* GET `/stripe/customers/{id}` Get a customer details
+* GET `/stripe/customers/{id}/default-payment-method` Get the default payment method set on customer
+* POST `/stripe/customers/{id}/default-payment-method` Set/Change customer's default payment method
+* GET `/stripe/customers/{id}/payment-methods` List a payment methods of a customer.
+* POST `/stripe/customers/{id}/ephemeral-keys` Create an ephemeral key when native app wants to modify customer data.
+* POST `/stripe/setup-intents` Create a setup intent
+* GET `/stripe/setup-intents/{id}?<rfresh=true>` Get a setup intent
+* GET `/stripe/setup-intents/{id}/payment-method` The payment method created by this setup intent.
+* GET `/stripe/payment-methods/{id}?<refresh=true>` Get a payment method
+* POST `/stripe/subs` Create a new subscription
+* GET `/stripe/subs/{id}` Get a subscription
+* POST `/stripe/subs/{id}` Update a subscription
+* POST `/stripe/subs/{id}/refresh` Refresh a subscription
+* POST `/stripe/subs/{id}/cancel` Cancel a subscription
+* POST `/stripe/subs/{id}/reactivate` Undo a scheduled cancellation of subscription.
+* GET `/stripe/subs/{id}/default-payment-method` Get the default payment method of a subscription.
 
-注意：API返回的数据格式并不是Stripe的原始数据格式。
+注意：
+
+* API返回的数据格式并不是Stripe的原始数据格式。
+* Customer和Subscription的default payment method不一定一致。
 
 API在调用Stripe SDK时，遇到Stripe API返回的任何错误，都原样转发给客户端，不作改动，见 [Errors](https://stripe.com/docs/api/errors)。
 
