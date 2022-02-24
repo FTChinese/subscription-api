@@ -51,15 +51,20 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 	sugar := router.Logger.Sugar()
 
 	ftcID := xhttp.GetFtcID(req.Header)
+	refresh := xhttp.ParseQueryRefresh(req)
 	cusID, err := xhttp.GetURLParam(req, "id").ToString()
-
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	cus, err := router.getCustomer(cusID)
+	var cus stripe.Customer
+	if refresh {
+		cus, err = router.refreshCustomer(cusID)
+	} else {
+		cus, err = router.getCustomer(cusID)
+	}
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
@@ -72,23 +77,23 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	if cus.IsFromStripe {
-		go func() {
-			err := router.Env.UpsertCustomer(cus)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-	}
-
 	_ = render.New(w).OK(cus)
 }
 
 func (router StripeRouter) getCustomer(id string) (stripe.Customer, error) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
 	cus, err := router.Env.LoadOrFetchCustomer(id, false)
-	if err == nil {
+	if err != nil {
+		return stripe.Customer{}, err
+	}
+
+	if !cus.IsFromStripe {
 		return cus, nil
 	}
+
+	sugar.Error(err)
 
 	// If this customer is not found in our db, stop hitting Stripe API.
 	baseAccount, err := router.ReaderRepo.BaseAccountByStripeID(id)
@@ -96,7 +101,42 @@ func (router StripeRouter) getCustomer(id string) (stripe.Customer, error) {
 		return stripe.Customer{}, nil
 	}
 
+	go func() {
+		err := router.Env.UpsertCustomer(cus)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
 	return cus.WithFtcID(baseAccount.FtcID), nil
+}
+
+func (router StripeRouter) refreshCustomer(id string) (stripe.Customer, error) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
+	cus, err := router.Env.LoadOrFetchCustomer(id, true)
+	if err != nil {
+		sugar.Error(err)
+		return stripe.Customer{}, err
+	}
+
+	ba, err := router.ReaderRepo.BaseAccountByStripeID(id)
+	if err != nil {
+		sugar.Error(err)
+		return stripe.Customer{}, err
+	}
+
+	cus = cus.WithFtcID(ba.FtcID)
+
+	go func() {
+		err := router.Env.UpsertCustomer(cus)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
+	return cus, nil
 }
 
 // GetCusDefaultPaymentMethod load the payment method details
@@ -112,6 +152,8 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 		return
 	}
 
+	refresh := xhttp.ParseQueryRefresh(req)
+
 	// Load customer first; otherwise we do not know the
 	// default payment method id.
 	cus, err := router.getCustomer(cusID)
@@ -121,16 +163,6 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 		return
 	}
 
-	// Save to our db.
-	if cus.IsFromStripe {
-		go func() {
-			err := router.Env.UpsertCustomer(cus)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-	}
-
 	// Default payment method does not exist.
 	if cus.DefaultPaymentMethodID.IsZero() {
 		_ = render.New(w).NotFound("Default payment method not set")
@@ -138,11 +170,26 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 	}
 
 	// Fetch payment method
-	pm, err := router.Env.LoadOrFetchPaymentMethod(cus.DefaultPaymentMethodID.String, false)
+	pm, err := router.getCusDefaultPayMethod(
+		cus.DefaultPaymentMethodID.String,
+		refresh)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
 		return
+	}
+
+	_ = render.New(w).OK(pm)
+}
+
+func (router StripeRouter) getCusDefaultPayMethod(id string, refresh bool) (stripe.PaymentMethod, error) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
+	// Fetch payment method
+	pm, err := router.Env.LoadOrFetchPaymentMethod(id, refresh)
+	if err != nil {
+		return stripe.PaymentMethod{}, err
 	}
 
 	// Save it if not save in our db yet.
@@ -155,7 +202,7 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 		}()
 	}
 
-	_ = render.New(w).OK(pm)
+	return pm, nil
 }
 
 func (router StripeRouter) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
