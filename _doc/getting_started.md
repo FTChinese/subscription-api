@@ -5,6 +5,8 @@
 * Production: `http://www.ftacademy.cn/api/v<xx>`
 * Sandbox: `http://www.ftacademy.cn/api/sandbox`
 
+Current version: 6
+
 ## Versioning
 
 1. In `pkg/config/version.go`, change `Version`, `Port` variable.
