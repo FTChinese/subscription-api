@@ -1,23 +1,9 @@
 package stripe
 
 import (
-	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
-	"strings"
 )
-
-// DefaultPaymentMethodParams contains a customer's default payment method.
-type DefaultPaymentMethodParams struct {
-	DefaultMethod string `json:"defaultPaymentMethod"`
-}
-
-func (p *DefaultPaymentMethodParams) Validate() *render.ValidationError {
-	p.DefaultMethod = strings.TrimSpace(p.DefaultMethod)
-
-	return validator.New("defaultPaymentMethod").Required().Validate(p.DefaultMethod)
-}
 
 // Customer contains the minimal data of a stripe.Customer.
 type Customer struct {
