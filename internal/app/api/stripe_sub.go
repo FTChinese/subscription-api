@@ -97,8 +97,42 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(result)
 }
 
+// LoadSubs from ftc db only. If you want to refresh the subscription,
+// use the refresh endpoint.
+// Refreshing is not supported here as other endpoint with the
+// `refresh=true` query parameter since it involves syncing
+// membership.
+func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
+
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
+	ftcID := xhttp.GetFtcID(req.Header)
+
+	subsID, err := xhttp.GetURLParam(req, "id").ToString()
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	subs, err := router.Env.RetrieveSubs(subsID)
+	if err != nil {
+		sugar.Error(err)
+		_ = xhttp.HandleStripeErr(w, err)
+		return
+	}
+
+	if subs.FtcUserID.String != ftcID {
+		_ = render.New(w).NotFound("Subscription does not exist for this user")
+		return
+	}
+
+	_ = render.New(w).OK(subs)
+}
+
 // UpdateSubs updates a stripe subscription:
-// user could switch cycle of the same tier, or upgrading to a higher tier.
+// User could switch cycle of the same tier, or upgrading to a higher tier.
 // Input:
 // * priceId: string - The price to change to.
 // * coupon?: "",
@@ -173,10 +207,6 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(result)
 }
 
-func (router StripeRouter) ListSubs(w http.ResponseWriter, req *http.Request) {
-	// TODO: implementation
-}
-
 // RefreshSubs get the latest data of a subscription if user manually requested it.
 func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
@@ -219,7 +249,6 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Only update subs and snapshot if actually modified.
-	// TODO: this should differ from creating/updating subscription.
 	go func() {
 		router.handleSubsResult(result)
 	}()
@@ -299,68 +328,10 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 	_ = render.New(w).OK(result)
 }
 
-func (router StripeRouter) getSubscription(id string) (stripe.Subs, error) {
-	subs, err := router.Env.RetrieveSubs(id)
-	if err == nil {
-		return subs, nil
-	}
-
-	rawSubs, err := router.Env.Client.FetchSubs(id, false)
-	if err != nil {
-		return stripe.Subs{}, err
-	}
-
-	baseAccount, err := router.ReaderRepo.BaseAccountByStripeID(rawSubs.Customer.ID)
-	if err != nil {
-		return stripe.Subs{}, err
-	}
-
-	return stripe.NewSubs(baseAccount.CompoundIDs(), rawSubs), nil
-}
-
-func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
-
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
-
-	ftcID := xhttp.GetFtcID(req.Header)
-
-	subsID, err := xhttp.GetURLParam(req, "id").ToString()
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-
-	subs, err := router.getSubscription(subsID)
-	if err != nil {
-		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
-		return
-	}
-
-	if subs.FtcUserID.String != ftcID {
-		_ = render.New(w).NotFound("Subscription does not exist for this user")
-		return
-	}
-
-	if subs.IsFromStripe {
-		go func() {
-			err := router.Env.UpsertSubs(subs, false)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-	}
-
-	_ = render.New(w).OK(subs)
-}
-
 func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	ftcID := xhttp.GetFtcID(req.Header)
 	refresh := xhttp.ParseQueryRefresh(req)
 
 	subsID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -370,25 +341,11 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 		return
 	}
 
-	subs, err := router.getSubscription(subsID)
+	subs, err := router.Env.LoadOrFetchSubs(subsID, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
 		return
-	}
-
-	if subs.FtcUserID.String != ftcID {
-		_ = render.New(w).NotFound("Subscription does not exist for this user")
-		return
-	}
-
-	if subs.IsFromStripe {
-		go func() {
-			err := router.Env.UpsertSubs(subs, false)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
 	}
 
 	if subs.DefaultPaymentMethodID.IsZero() {
@@ -396,21 +353,61 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 		return
 	}
 
-	pm, err := router.Env.LoadOrFetchPaymentMethod(subs.DefaultPaymentMethodID.String, refresh)
+	pm, err := router.loadPaymentMethod(subs.DefaultPaymentMethodID.String, refresh)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
-	if pm.IsFromStripe {
-		go func() {
-			err := router.Env.UpsertPaymentMethod(pm)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
+	_ = render.New(w).OK(pm)
+}
+
+func (router StripeRouter) UpdateSubsDefaultPayMethod(w http.ResponseWriter, req *http.Request) {
+	defer router.Logger.Sync()
+	sugar := router.Logger.Sugar()
+
+	subsID, err := xhttp.GetURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
 	}
 
-	_ = render.New(w).OK(pm)
+	var params stripe.DefaultPaymentMethodParams
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	if ve := params.Validate(); ve != nil {
+		sugar.Error(err)
+		_ = render.New(w).Unprocessable(ve)
+		return
+	}
+
+	subs, err := router.Env.LoadOrFetchSubs(subsID, false)
+	if err != nil {
+		_ = xhttp.HandleStripeErr(w, err)
+		return
+	}
+
+	// Ensure the payment method exists
+	pm, err := router.loadPaymentMethod(params.DefaultMethod, false)
+	if err != nil {
+		_ = xhttp.HandleStripeErr(w, err)
+		return
+	}
+
+	rawSubs, err := router.Env.Client.SetSubsDefaultPaymentMethod(
+		subs.ID,
+		pm.ID)
+	if err != nil {
+		_ = xhttp.HandleStripeErr(w, err)
+		return
+	}
+
+	subs = stripe.NewSubs(subs.FtcUserID.String, rawSubs)
+
+	_ = render.New(w).OK(subs)
 }
