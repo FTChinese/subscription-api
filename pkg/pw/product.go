@@ -86,8 +86,8 @@ func (p Product) Activate() Product {
 	return p
 }
 
-// SetIntroPrice set an introductory price on product.
-func (p Product) SetIntroPrice(pri price.Price) Product {
+// WithIntroPrice set an introductory price on product.
+func (p Product) WithIntroPrice(pri price.Price) Product {
 	p.Introductory = price.JSONPrice{
 		Price: pri,
 	}

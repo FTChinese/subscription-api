@@ -223,7 +223,7 @@ func TestEnv_SetProductIntro(t *testing.T) {
 		{
 			name: "Set intro",
 			args: args{
-				p: prod.SetIntroPrice(
+				p: prod.WithIntroPrice(
 					pb.
 						NewYearPriceBuilder().
 						WithOneTime().

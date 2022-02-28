@@ -179,7 +179,7 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 	}
 
 	activated := pwPrice.Activate()
-	// If the price is activated yet.
+	// If the price is not activated yet.
 	if !pwPrice.Active {
 		err = router.ProductRepo.ActivatePrice(activated)
 		if err != nil {
@@ -196,7 +196,7 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	prod = prod.SetIntroPrice(activated)
+	prod = prod.WithIntroPrice(activated)
 
 	err = router.ProductRepo.SetProductIntro(prod)
 	if err != nil {
