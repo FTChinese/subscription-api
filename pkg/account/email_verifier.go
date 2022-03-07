@@ -3,6 +3,7 @@ package account
 import (
 	"fmt"
 	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/subscription-api/pkg/config"
 )
 
 // EmailVerifier holds the data used to create an email
@@ -28,7 +29,7 @@ func NewEmailVerifier(email string, sourceURL string) (EmailVerifier, error) {
 
 	// Provide default url to the verification link
 	if sourceURL == "" {
-		sourceURL = "https://users.chineseft.com/verify/email"
+		sourceURL = config.EmailVerificationURL
 	}
 
 	return EmailVerifier{

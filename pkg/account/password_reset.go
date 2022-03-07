@@ -6,6 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
+	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
 	"time"
@@ -47,7 +48,7 @@ func NewPwResetSession(params input.ForgotPasswordParams) (PwResetSession, error
 	}
 
 	if params.SourceURL.IsZero() {
-		params.SourceURL = null.StringFrom("https://users.ftchinese.com/password-reset")
+		params.SourceURL = null.StringFrom(config.PasswordResetURL)
 	}
 
 	sess := PwResetSession{
