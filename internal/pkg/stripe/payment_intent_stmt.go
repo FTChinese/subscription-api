@@ -16,7 +16,7 @@ payment_method_id = :payment_method_id,
 payment_method_types = :payment_method_types,
 receipt_email = :receipt_email,
 setup_future_usage = :setup_future_usage,
-intent_usage = :intent_usage
+intent_status = :intent_status
 `
 const StmtUpsertPaymentIntent = `
 INSERT INTO premium.stripe_payment_intent
