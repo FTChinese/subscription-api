@@ -218,7 +218,10 @@ func (env Env) UpdateSubscription(
 }
 
 // RefreshSubscription save stripe subscription and optionally update membership linked to it.
-func (env Env) RefreshSubscription(ss *sdk.Subscription, param stripe.SubsResultParams) (stripe.SubsResult, error) {
+func (env Env) RefreshSubscription(
+	ss *sdk.Subscription,
+	ba account.BaseAccount,
+) (stripe.SubsResult, error) {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar().
 		With("webhook", "stripe-subscription").
@@ -232,40 +235,25 @@ func (env Env) RefreshSubscription(ss *sdk.Subscription, param stripe.SubsResult
 
 	// Retrieve current membership by ftc id.
 	// If current membership is empty, we should create it.
-	currMmb, err := tx.RetrieveMember(param.UserIDs.CompoundID)
+	currMmb, err := tx.RetrieveMember(ba.FtcID)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return stripe.SubsResult{}, err
 	}
 
-	param.CurrentMember = currMmb
+	result := stripe.NewSubsResult(ss, stripe.SubsResultParams{
+		UserIDs:       ba.CompoundIDs(),
+		Kind:          reader.SubsKindRefresh,
+		CurrentMember: currMmb,
+		Action:        reader.ArchiveActionRefresh,
+	})
 
-	result := stripe.NewSubsResult(ss, param)
-
-	// Ensure that current membership is created via stripe.
-	if !result.Subs.ShouldUpsert(currMmb) {
+	// Ensure that current membership is created via stripe and data actually changed.
+	// if current membership turned to alpay/wxpay/apple, we should stop.
+	if !result.Modified {
 		_ = tx.Rollback()
-		sugar.Infof("Stripe subscription cannot update/insert its membership")
-		return stripe.SubsResult{
-			Modified:             false,
-			MissingPaymentIntent: false,
-			Subs:                 result.Subs,
-			Member:               currMmb,
-			Snapshot:             reader.MemberSnapshot{},
-		}, nil
-	}
-
-	// If nothing changed.
-	if !result.Member.IsModified(currMmb) {
-		_ = tx.Rollback()
-		return stripe.SubsResult{
-			Modified:             false,
-			MissingPaymentIntent: false,
-			Subs:                 result.Subs,
-			Member:               result.Member,
-			Snapshot:             reader.MemberSnapshot{},
-		}, nil
+		return result, nil
 	}
 
 	// Insert to update membership.
@@ -325,20 +313,18 @@ func (env Env) CancelSubscription(params stripe.CancelParams) (stripe.SubsResult
 		return stripe.SubsResult{}, sql.ErrNoRows
 	}
 
-	// If you want to cancel it, and membership is not auto renewal,
+	// If you want to cancel it, and membership is not auto-renewal,
 	// it means it is already canceled.
 	// If cancel is false, you are reactivating a canceled subscription.
-	// If the membership is not auto renewal, it means the member
+	// If the membership is not auto-renewal, it means the member
 	// is already reactivated, or not canceled at all.
-	// Only cancel and auto renewal are consistent should you proceed.
+	// Only cancel and auto-renewal are consistent should you proceed.
 	if params.Cancel != mmb.AutoRenewal {
 		_ = tx.Rollback()
 		return stripe.SubsResult{
-			Modified:             false,
-			MissingPaymentIntent: false,
-			Subs:                 stripe.Subs{},
-			Member:               mmb,
-			Snapshot:             reader.MemberSnapshot{},
+			Modified: false,
+			Subs:     stripe.Subs{},
+			Member:   mmb,
 		}, nil
 	}
 
