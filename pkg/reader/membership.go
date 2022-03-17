@@ -526,3 +526,27 @@ func (m Membership) Merge(other Membership) (Membership, error) {
 		return m.PlusAddOn(other.AddOn), nil
 	}
 }
+
+func (m Membership) UnlinkWx(anchor enum.AccountKind) Membership {
+	if m.IsZero() {
+		return m
+	}
+
+	switch anchor {
+	// If user wants to keep membership to email
+	case enum.AccountKindFtc:
+		// For linked account, the CompoundID is always ftc uuid.
+		// Just drop the union id.
+		m.UnionID = null.String{}
+		return m
+
+	// If user wants to keep membership on wechat
+	case enum.AccountKindWx:
+		m.CompoundID = m.UnionID.String
+		m.FtcID = null.String{}
+		return m
+
+	default:
+		return m
+	}
+}
