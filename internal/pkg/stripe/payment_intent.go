@@ -1,54 +1,10 @@
 package stripe
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"github.com/FTChinese/subscription-api/lib/collection"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 )
-
-type NextActionJSON struct {
-	*stripe.PaymentIntentNextAction
-}
-
-// Value implements Valuer interface by serializing an Invitation into
-// JSON data.
-func (na NextActionJSON) Value() (driver.Value, error) {
-	if na.PaymentIntentNextAction == nil {
-		return nil, nil
-	}
-
-	b, err := json.Marshal(na.PaymentIntentNextAction)
-	if err != nil {
-		return nil, err
-	}
-
-	return string(b), nil
-}
-
-// Scan implements Valuer interface by deserializing an invitation field.
-func (na *NextActionJSON) Scan(src interface{}) error {
-	if src == nil {
-		*na = NextActionJSON{}
-		return nil
-	}
-
-	switch s := src.(type) {
-	case []byte:
-		var tmp stripe.PaymentIntentNextAction
-		err := json.Unmarshal(s, &tmp)
-		if err != nil {
-			return err
-		}
-		*na = NextActionJSON{&tmp}
-		return nil
-
-	default:
-		return errors.New("incompatible type to scan to PaymentIntent")
-	}
-}
 
 type PaymentIntent struct {
 	ID                 string                                 `json:"id" db:"id"`
@@ -62,11 +18,11 @@ type PaymentIntent struct {
 	CustomerID         string                                 `json:"customerId" db:"customer_id"`
 	InvoiceID          string                                 `json:"invoiceId" db:"invoice_id"`
 	LiveMode           bool                                   `json:"liveMode" db:"live_mode"`
-	NextAction         NextActionJSON                         `json:"next_action" db:"next_action"`
+	NextAction         PINextActionJSON                       `json:"next_action" db:"next_action"`
 	PaymentMethodID    string                                 `json:"paymentMethodId" db:"payment_method_id"`
 	PaymentMethodTypes collection.StringList                  `json:"-" db:"payment_method_types"`
 	ReceiptEmail       string                                 `json:"-" db:"receipt_email"`
-	SetupFutureUsage   stripe.PaymentIntentSetupFutureUsage   `json:"-" db:"setup_future_usage"`
+	SetupFutureUsage   PISetupFutureUsage                     `json:"-" db:"setup_future_usage"`
 	// requires_payment_method,
 	// requires_confirmation,
 	// requires_action,
@@ -75,7 +31,7 @@ type PaymentIntent struct {
 	// canceled,
 	// succeeded
 	// See https://stripe.com/docs/payments/intents#intent-statuses
-	Status stripe.PaymentIntentStatus `json:"status" db:"intent_status"`
+	Status PIStatus `json:"status" db:"intent_status"`
 }
 
 // NewPaymentIntent transforms stripe's payment intent.
@@ -113,17 +69,17 @@ func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 		CustomerID:         cusID,
 		InvoiceID:          invID,
 		LiveMode:           pi.Livemode,
-		NextAction:         NextActionJSON{pi.NextAction},
+		NextAction:         PINextActionJSON{pi.NextAction},
 		PaymentMethodID:    pmID,
 		PaymentMethodTypes: pi.PaymentMethodTypes,
 		ReceiptEmail:       pi.ReceiptEmail,
-		SetupFutureUsage:   pi.SetupFutureUsage,
-		Status:             pi.Status,
+		SetupFutureUsage:   PISetupFutureUsage{pi.SetupFutureUsage},
+		Status:             PIStatus{pi.Status},
 	}
 }
 
 func (pi PaymentIntent) RequiresAction() bool {
-	return pi.Status == stripe.PaymentIntentStatusRequiresAction
+	return pi.Status.PaymentIntentStatus == stripe.PaymentIntentStatusRequiresAction
 }
 
 // IsZero tests whether payment intent is missing from the response.
