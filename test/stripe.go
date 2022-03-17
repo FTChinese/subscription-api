@@ -35,7 +35,7 @@ func StripeInvoice() stripe.Invoice {
 		ID:                   faker.GenInvoiceID(),
 		AutoAdvance:          true,
 		ChargeID:             "",
-		CollectionMethod:     sdk.InvoiceCollectionMethodChargeAutomatically,
+		CollectionMethod:     stripe.InvoiceCollectionMethod{},
 		Currency:             "gbp",
 		CustomerID:           faker.GenStripeCusID(),
 		DefaultPaymentMethod: null.String{},
@@ -46,7 +46,7 @@ func StripeInvoice() stripe.Invoice {
 		PeriodEndUTC:         chrono.TimeNow(),
 		PeriodStartUTC:       chrono.TimeNow(),
 		ReceiptNumber:        "",
-		Status:               sdk.InvoiceStatusOpen,
+		Status:               stripe.InvoiceStatus{},
 		SubscriptionID:       null.StringFrom(faker.GenStripeSubID()),
 		Total:                0,
 		Created:              time.Now().Unix(),
@@ -56,16 +56,16 @@ func StripeInvoice() stripe.Invoice {
 func StripeSetupIntent() stripe.SetupIntent {
 	return stripe.SetupIntent{
 		ID:                 faker.GenSetupIntentID(),
-		CancellationReason: "",
+		CancellationReason: stripe.SICancelReason{},
 		ClientSecret:       rand.String(40),
 		Created:            time.Now().Unix(),
 		CustomerID:         faker.GenStripeCusID(),
 		LiveMode:           false,
-		NextAction:         stripe.SetupIntentNextActionJSON{},
+		NextAction:         stripe.SINextActionJSON{},
 		PaymentMethodID:    null.String{},
 		PaymentMethodTypes: nil,
-		Status:             "",
-		Usage:              sdk.SetupIntentUsageOffSession,
+		Status:             stripe.SIStatus{},
+		Usage:              stripe.SIUsage{},
 	}
 }
 
@@ -82,12 +82,12 @@ func StripePaymentIntent() stripe.PaymentIntent {
 		CustomerID:         "",
 		InvoiceID:          "",
 		LiveMode:           false,
-		NextAction:         stripe.NextActionJSON{},
+		NextAction:         stripe.PINextActionJSON{},
 		PaymentMethodID:    "",
 		PaymentMethodTypes: nil,
 		ReceiptEmail:       "",
-		SetupFutureUsage:   "",
-		Status:             "",
+		SetupFutureUsage:   stripe.PISetupFutureUsage{},
+		Status:             stripe.PIStatus{},
 	}
 }
 
