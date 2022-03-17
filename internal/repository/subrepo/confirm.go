@@ -3,7 +3,6 @@ package subrepo
 import (
 	"database/sql"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // ConfirmOrder updates the order received from webhook,
@@ -64,7 +63,6 @@ func (env Env) ConfirmOrder(pr subs.PaymentResult, order subs.Order) (subs.Confi
 				Order:      order,
 				Invoices:   subs.Invoices{},
 				Membership: member,
-				Snapshot:   reader.MemberSnapshot{},
 				Notify:     false,
 			}, nil
 		}

@@ -71,7 +71,6 @@ func TestLinkBuilder_Build(t *testing.T) {
 					Subs:   iapSub,
 					AddOn:  addon.AddOn{},
 				}),
-				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
 		},
@@ -151,7 +150,6 @@ func TestLinkBuilder_Build(t *testing.T) {
 					Subs:   iapSub,
 					AddOn:  addon.AddOn{},
 				}),
-				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
 		},
@@ -207,7 +205,6 @@ func TestLinkBuilder_Build(t *testing.T) {
 					Subs:   iapSub,
 					AddOn:  addon.AddOn{},
 				}),
-				Snapshot: reader.MemberSnapshot{},
 			},
 			wantErr: false,
 		},
@@ -225,8 +222,6 @@ func TestLinkBuilder_Build(t *testing.T) {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
-			got.Snapshot = reader.MemberSnapshot{}
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Build() got = %s, want %s", faker.MustMarshalIndent(got), faker.MustMarshalIndent(tt.want))

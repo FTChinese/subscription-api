@@ -2,16 +2,17 @@ package reader
 
 import (
 	"errors"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/guregu/null"
 )
 
 type WxEmailLinkResult struct {
-	IsDuplicateLink   bool
-	Account           Account // The account after linked
-	FtcMemberSnapshot MemberSnapshot
-	WxMemberSnapshot  MemberSnapshot
+	IsDuplicateLink bool
+	Account         Account // The account after linked
+	FtcVersioned    MembershipVersioned
+	WxVersioned     MembershipVersioned
 }
 
 type WxEmailLinkBuilder struct {
@@ -89,26 +90,47 @@ func (b WxEmailLinkBuilder) Build() (WxEmailLinkResult, error) {
 	if err != nil {
 		if errors.Is(err, ErrAccountsAlreadyLinked) {
 			return WxEmailLinkResult{
-				IsDuplicateLink:   true,
-				Account:           b.FTC,
-				FtcMemberSnapshot: MemberSnapshot{},
-				WxMemberSnapshot:  MemberSnapshot{},
+				IsDuplicateLink: true,
+				Account:         b.FTC,
 			}, nil
 		}
 
 		return WxEmailLinkResult{}, err
 	}
 
+	arch := Archiver{
+		Name:   ArchiveNameWechat,
+		Action: ArchiveActionLink,
+	}
+
 	return WxEmailLinkResult{
 		IsDuplicateLink: false,
 		Account:         mergedAccount,
-		FtcMemberSnapshot: b.FTC.Membership.Snapshot(Archiver{
-			Name:   ArchiveNameWechat,
-			Action: ArchiveActionLink,
-		}),
-		WxMemberSnapshot: b.Wechat.Membership.Snapshot(Archiver{
-			Name:   ArchiveNameWechat,
-			Action: ArchiveActionLink,
-		}),
+		FtcVersioned:    mergedAccount.Membership.Version(arch).WithPriorVersion(b.FTC.Membership),
+		WxVersioned:     mergedAccount.Membership.Version(arch).WithPriorVersion(b.Wechat.Membership),
 	}, nil
+}
+
+type WxEmailUnlinkResult struct {
+	BaseAccount account.BaseAccount `json:"ftc"`        // The ftc side after unlink
+	Wechat      account.Wechat      `json:"wechat"`     // The wechat side after unlink
+	Membership  Membership          `json:"membership"` // The membership after unlink, if exists
+	Versioned   MembershipVersioned `json:"-"`
+}
+
+func NewWxEmailUnlinkResult(a Account, anchor enum.AccountKind) WxEmailUnlinkResult {
+	m := a.Membership.UnlinkWx(anchor)
+
+	var v MembershipVersioned
+	if !a.Membership.IsZero() {
+		v = m.Version(NewWechatArchiver(ArchiveActionUnlink)).
+			WithPriorVersion(a.Membership)
+	}
+
+	return WxEmailUnlinkResult{
+		BaseAccount: a.UnlinkWx(),
+		Wechat:      a.Wechat,
+		Membership:  m,
+		Versioned:   v,
+	}
 }

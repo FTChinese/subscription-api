@@ -18,14 +18,14 @@ import (
 type AddOnClaimed struct {
 	Invoices   []invoice.Invoice // The invoices used to extend membership's expiration date. They will not be used next time.
 	Membership Membership        // Update membership.
-	Snapshot   MemberSnapshot
+	Versioned  MembershipVersioned
 }
 
 // AddOnInvoiceCreated is the result of manually adding an invoice.
 type AddOnInvoiceCreated struct {
-	Invoice    invoice.Invoice `json:"invoice"`
-	Membership Membership      `json:"membership"`
-	Snapshot   MemberSnapshot  `json:"snapshot"`
+	Invoice    invoice.Invoice     `json:"invoice"`
+	Membership Membership          `json:"membership"`
+	Versioned  MembershipVersioned `json:"versioned"`
 }
 
 func (m Membership) PlusAddOn(addOn addon.AddOn) Membership {
@@ -33,7 +33,7 @@ func (m Membership) PlusAddOn(addOn addon.AddOn) Membership {
 	return m
 }
 
-// ClearIAPWithAddOn generates a expired membership after user want to unlink
+// ClearIAPWithAddOn generates an expired membership after user want to unlink
 // IAP since the existence of addon prevents a simple deletion.
 func (m Membership) ClearIAPWithAddOn() Membership {
 	m.LegacyExpire = null.IntFrom(0)
@@ -227,6 +227,6 @@ func (m Membership) ClaimAddOns(inv []invoice.Invoice) (AddOnClaimed, error) {
 	return AddOnClaimed{
 		Invoices:   addOns,
 		Membership: newM,
-		Snapshot:   m.Snapshot(NewOrderArchiver(enum.OrderKindAddOn)),
+		Versioned:  newM.Version(NewOrderArchiver(enum.OrderKindAddOn)).WithPriorVersion(m),
 	}, nil
 }

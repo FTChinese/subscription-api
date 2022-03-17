@@ -170,8 +170,8 @@ func (s Service) SendWxEmailLink(linkResult reader.WxEmailLinkResult) error {
 			WxNickname: linkResult.Account.Wechat.WxNickname.String,
 		},
 		Membership: linkResult.Account.Membership,
-		FtcMember:  linkResult.FtcMemberSnapshot.Membership,
-		WxMember:   linkResult.WxMemberSnapshot.Membership,
+		FtcMember:  linkResult.FtcVersioned.AnteChange.Membership,
+		WxMember:   linkResult.WxVersioned.AnteChange.Membership,
 	}.Render()
 
 	if err != nil {

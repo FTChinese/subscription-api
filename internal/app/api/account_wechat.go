@@ -13,7 +13,7 @@ import (
 	"net/http"
 )
 
-// WxSignUp allows a Wechat logged in user to create a new FTC account and binds it to the Wechat account.
+// WxSignUp allows a Wechat logged in user to create a new FTC account and link it to the Wechat account.
 //
 //	POST /users/wx/signup
 //
@@ -107,12 +107,16 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Check if wx side has membership. Ftc side must not have one since
+	// this is a new email account.
 	if !wxAccount.Membership.IsZero() {
 		go func() {
-			_ = router.ReaderRepo.ArchiveMember(wxAccount.Membership.Snapshot(reader.Archiver{
+			versioned := merged.Membership.Version(reader.Archiver{
 				Name:   reader.ArchiveNameWechat,
 				Action: reader.ArchiveActionLink,
-			}))
+			}).WithPriorVersion(wxAccount.Membership)
+
+			_ = router.ReaderRepo.VersionMembership(versioned)
 		}()
 	}
 
@@ -227,12 +231,12 @@ func (router AccountRouter) WxLinkEmail(w http.ResponseWriter, req *http.Request
 	}
 
 	go func() {
-		if !result.FtcMemberSnapshot.IsZero() {
-			_ = router.ReaderRepo.ArchiveMember(result.FtcMemberSnapshot)
+		if !result.FtcVersioned.IsZero() {
+			_ = router.ReaderRepo.VersionMembership(result.FtcVersioned)
 		}
 
-		if !result.WxMemberSnapshot.IsZero() {
-			_ = router.ReaderRepo.ArchiveMember(result.WxMemberSnapshot)
+		if !result.WxVersioned.IsZero() {
+			_ = router.ReaderRepo.VersionMembership(result.WxVersioned)
 		}
 	}()
 
@@ -311,12 +315,15 @@ func (router AccountRouter) WxUnlinkEmail(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	go func() {
-		_ = router.ReaderRepo.ArchiveMember(acnt.Membership.Snapshot(reader.Archiver{
-			Name:   reader.ArchiveNameWechat,
-			Action: reader.ArchiveActionUnlink,
-		}))
-	}()
+	result := reader.NewWxEmailUnlinkResult(acnt, params.Anchor)
+	if !result.Versioned.IsZero() {
+		go func() {
+			err := router.ReaderRepo.VersionMembership(result.Versioned)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+	}
 
 	go func() {
 		err := router.EmailService.SendWxEmailUnlink(

@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
@@ -199,7 +198,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		router.handleSubsResult(result)
 	}()
 
-	if result.MissingPaymentIntent {
+	if result.Subs.PaymentIntent.IsZero() {
 		_ = render.New(w).BadRequest("PaymentIntent not expanded")
 		return
 	}
@@ -230,17 +229,14 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Use Stripe customer id to find user account.
-	account, err := router.ReaderRepo.BaseAccountByStripeID(ss.Customer.ID)
+	ba, err := router.ReaderRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound("Stripe customer not found")
 		return
 	}
 
-	result, err := router.Env.RefreshSubscription(ss, stripe.SubsResultParams{
-		UserIDs: account.CompoundIDs(),
-		Action:  reader.ArchiveActionRefresh,
-	})
+	result, err := router.Env.RefreshSubscription(ss, ba)
 
 	if err != nil {
 		sugar.Error(err)

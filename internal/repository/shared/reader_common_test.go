@@ -263,49 +263,6 @@ func TestEnv_RetrieveAppleMember(t *testing.T) {
 	}
 }
 
-func TestEnv_ArchiveMember(t *testing.T) {
-	m := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).Build()
-
-	type fields struct {
-		DBs    db.ReadWriteMyDBs
-		Logger *zap.Logger
-	}
-	type args struct {
-		snapshot reader.MemberSnapshot
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Archive membership",
-			fields: fields{
-				DBs:    test.SplitDB,
-				Logger: zaptest.NewLogger(t),
-			},
-			args: args{
-				snapshot: m.Snapshot(reader.Archiver{
-					Name:   reader.ArchiveNameOrder,
-					Action: reader.ArchiveActionCreate,
-				}),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			env := ReaderCommon{
-				DBs: tt.fields.DBs,
-			}
-			if err := env.ArchiveMember(tt.args.snapshot); (err != nil) != tt.wantErr {
-				t.Errorf("ArchiveMember() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestEnv_VersionMembership(t *testing.T) {
 
 	env := NewReaderCommon(db.MockMySQL())

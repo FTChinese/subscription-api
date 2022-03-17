@@ -23,12 +23,12 @@ func (c ConfirmError) Error() string {
 // ConfirmationResult contains all the data in the process of confirming an order.
 // This is also used as the http response for manual confirmation.
 type ConfirmationResult struct {
-	Payment    PaymentResult         `json:"payment"` // Empty if order is already confirmed.
-	Order      Order                 `json:"order"`   // The confirmed order
-	Invoices   Invoices              `json:"-"`
-	Membership reader.Membership     `json:"membership"` // The updated membership. Empty if order is already confirmed.
-	Snapshot   reader.MemberSnapshot `json:"-"`
-	Notify     bool                  `json:"-"`
+	Payment    PaymentResult              `json:"payment"` // Empty if order is already confirmed.
+	Order      Order                      `json:"order"`   // The confirmed order
+	Invoices   Invoices                   `json:"-"`
+	Membership reader.Membership          `json:"membership"` // The updated membership. Empty if order is already confirmed.
+	Versioned  reader.MembershipVersioned `json:"-"`
+	Notify     bool                       `json:"-"`
 }
 
 // NewConfirmationResult confirms an order based on the payment result and
@@ -53,7 +53,8 @@ func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 			invoices.Purchased.ChronoPeriod),
 		Invoices:   invoices,
 		Membership: newM,
-		Snapshot:   p.snapshot(),
-		Notify:     true,
+		Versioned: newM.Version(reader.NewOrderArchiver(p.Order.Kind)).
+			WithPriorVersion(p.Member),
+		Notify: true,
 	}, nil
 }

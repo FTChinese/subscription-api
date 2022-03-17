@@ -3,11 +3,9 @@ package cmsrepo
 import (
 	"database/sql"
 	"errors"
-	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
@@ -142,79 +140,4 @@ func (env Env) DeleteMembership(compoundID string) (reader.Membership, error) {
 	}
 
 	return m, nil
-}
-
-func (env Env) countMemberSnapshot(ids ids.UserIDs) (int64, error) {
-	var count int64
-	err := env.dbs.Read.Get(
-		&count,
-		reader.StmtCountSnapshot,
-		ids.BuildFindInSet(),
-	)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
-}
-
-func (env Env) listMemberSnapshot(ids ids.UserIDs, p gorest.Pagination) ([]reader.MemberSnapshot, error) {
-	var s = make([]reader.MemberSnapshot, 0)
-	err := env.dbs.Read.Select(
-		&s,
-		reader.StmtListSnapshots,
-		ids.BuildFindInSet(),
-		p.Limit,
-		p.Offset(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
-}
-
-func (env Env) ListSnapshot(ids ids.UserIDs, p gorest.Pagination) (reader.SnapshotList, error) {
-	defer env.logger.Sync()
-	sugar := env.logger.Sugar()
-
-	countCh := make(chan int64)
-	listCh := make(chan reader.SnapshotList)
-
-	go func() {
-		defer close(countCh)
-		n, err := env.countMemberSnapshot(ids)
-		if err != nil {
-			sugar.Error(err)
-		}
-
-		countCh <- n
-	}()
-
-	go func() {
-		defer close(listCh)
-		s, err := env.listMemberSnapshot(ids, p)
-		if err != nil {
-			sugar.Error(err)
-		}
-		listCh <- reader.SnapshotList{
-			Total:      0,
-			Pagination: gorest.Pagination{},
-			Data:       s,
-			Err:        err,
-		}
-	}()
-
-	count, listResult := <-countCh, <-listCh
-
-	if listResult.Err != nil {
-		return reader.SnapshotList{}, listResult.Err
-	}
-
-	return reader.SnapshotList{
-		Total:      count,
-		Pagination: p,
-		Data:       listResult.Data,
-	}, nil
 }

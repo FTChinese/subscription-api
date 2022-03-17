@@ -89,9 +89,9 @@ func (env Env) Link(result apple.LinkResult) error {
 
 	// Save membership only when it is touched.
 	// If membership is take a snapshot, we must delete it.
-	if !result.Snapshot.IsZero() {
+	if !result.Versioned.IsZero() {
 		// Should we lock this row first?
-		err := tx.DeleteMember(result.Snapshot.UserIDs)
+		err := tx.DeleteMember(result.Versioned.PostChange.UserIDs)
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
@@ -176,8 +176,7 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 			return apple.UnlinkResult{}, err
 		}
 		return apple.UnlinkResult{
-			IAPSubs:  sub,
-			Snapshot: reader.MemberSnapshot{},
+			IAPSubs: sub,
 		}, nil
 	}
 
@@ -191,18 +190,26 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 		}
 	}
 
+	var versioned reader.MembershipVersioned
 	// With addon, turn the membership into an invalid version.
 	if m.HasAddOn() {
-		if err := tx.UpdateMember(m.ClearIAPWithAddOn()); err != nil {
+		newMmb := m.ClearIAPWithAddOn()
+		if err := tx.UpdateMember(newMmb); err != nil {
 			_ = tx.Rollback()
 			return apple.UnlinkResult{}, err
 		}
+		versioned = newMmb.
+			Version(reader.NewAppleArchiver(reader.ArchiveActionUnlink)).
+			WithPriorVersion(m)
 	} else {
 		// Delete this membership.
 		if err := tx.DeleteMember(m.UserIDs); err != nil {
 			_ = tx.Rollback()
 			return apple.UnlinkResult{}, err
 		}
+		versioned = m.
+			Version(reader.NewAppleArchiver(reader.ArchiveActionUnlink)).
+			WithPriorVersion(m)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -211,8 +218,8 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 
 	// Return the snapshot of the membership for archiving.
 	return apple.UnlinkResult{
-		IAPSubs:  sub,
-		Snapshot: m.Snapshot(reader.ArchiverAppleUnlink),
+		IAPSubs:   sub,
+		Versioned: versioned,
 	}, nil
 }
 

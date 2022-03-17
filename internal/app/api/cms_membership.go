@@ -160,21 +160,3 @@ func (router CMSRouter) DeleteMembership(w http.ResponseWriter, req *http.Reques
 
 	_ = render.New(w).NoContent()
 }
-
-// ListMemberSnapshots loads a list of membership change history.
-// Pagination support by adding query parameter:
-// page=<int>&per_page=<int>
-func (router CMSRouter) ListMemberSnapshots(w http.ResponseWriter, req *http.Request) {
-
-	userIDs := xhttp.UserIDsFromQuery(req.Form)
-
-	p := gorest.GetPagination(req)
-
-	list, err := router.Repo.ListSnapshot(userIDs, p)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	_ = render.New(w).OK(list)
-}

@@ -33,7 +33,7 @@ func (router CMSRouter) CreateAddOn(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		err := router.ReaderRepo.ArchiveMember(result.Snapshot)
+		err := router.ReaderRepo.VersionMembership(result.Versioned)
 		if err != nil {
 			sugar.Error(err)
 		}

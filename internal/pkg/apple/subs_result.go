@@ -14,10 +14,10 @@ type SubsResultParams struct {
 }
 
 type SubsResult struct {
-	Subs             Subscription          `json:"subscription"`
-	Member           reader.Membership     `json:"membership"`
-	Snapshot         reader.MemberSnapshot `json:"-"`
-	CarryOverInvoice invoice.Invoice       `json:"-"`
+	Subs             Subscription               `json:"subscription"`
+	Member           reader.Membership          `json:"membership"`
+	Versioned        reader.MembershipVersioned `json:"-"`
+	CarryOverInvoice invoice.Invoice            `json:"-"`
 }
 
 func NewSubsResult(subs Subscription, params SubsResultParams) (SubsResult, error) {
@@ -44,15 +44,16 @@ func NewSubsResult(subs Subscription, params SubsResultParams) (SubsResult, erro
 			Plus(addon.New(inv.Tier, inv.TotalDays())),
 	})
 
-	var snapshot reader.MemberSnapshot
+	var versioned reader.MembershipVersioned
 	if !params.CurrentMember.IsZero() {
-		snapshot = params.CurrentMember.Snapshot(reader.NewAppleArchiver(params.Action))
+		m.Version(reader.NewAppleArchiver(params.Action)).
+			WithPriorVersion(params.CurrentMember)
 	}
 
 	return SubsResult{
 		Subs:             subs,
 		Member:           m,
-		Snapshot:         snapshot,
+		Versioned:        versioned,
 		CarryOverInvoice: inv,
 	}, nil
 }

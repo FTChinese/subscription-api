@@ -74,8 +74,8 @@ func (pay FtcPayBase) ConfirmOrder(result subs.PaymentResult, order subs.Order) 
 	}
 
 	go func() {
-		if !confirmed.Snapshot.IsZero() {
-			err := pay.ReaderRepo.ArchiveMember(confirmed.Snapshot)
+		if !confirmed.Versioned.IsZero() {
+			err := pay.ReaderRepo.VersionMembership(confirmed.Versioned)
 			if err != nil {
 				sugar.Error(err)
 			}

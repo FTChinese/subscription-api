@@ -67,9 +67,14 @@ func (router IAPRouter) UpsertSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	go func() {
-		router.processSubsResult(result.Snapshot)
-	}()
+	if !result.Versioned.IsZero() {
+		go func() {
+			err := router.ReaderRepo.VersionMembership(result.Versioned)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+	}
 
 	_ = render.New(w).OK(sub)
 }
@@ -151,9 +156,14 @@ func (router IAPRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	go func() {
-		router.processSubsResult(result.Snapshot)
-	}()
+	if !result.Versioned.IsZero() {
+		go func() {
+			err := router.ReaderRepo.VersionMembership(result.Versioned)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+	}
 
 	_ = render.New(w).OK(result)
 }

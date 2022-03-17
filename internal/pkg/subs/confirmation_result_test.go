@@ -49,7 +49,6 @@ func TestNewConfirmationResult(t *testing.T) {
 			t.Logf("Order %s", faker.MustMarshalIndent(got.Order))
 			t.Logf("Invoices %s", faker.MustMarshalIndent(got.Invoices))
 			t.Logf("Membership %s", faker.MustMarshalIndent(got.Membership))
-			t.Logf("Snapshot %s", faker.MustMarshalIndent(got.Snapshot))
 		})
 	}
 }

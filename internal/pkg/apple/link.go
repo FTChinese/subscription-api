@@ -30,14 +30,14 @@ func (i *LinkInput) Validate() *render.ValidationError {
 }
 
 type LinkResult struct {
-	Initial  bool                  // Is this initial link?
-	Member   reader.Membership     // Updated membership or original membership if already linked and expiration date not changed.
-	Snapshot reader.MemberSnapshot // Previous memberships. The original membership should be deleted, and then archived. If snapshot exists, them Touched must be always true.
+	Initial   bool              // Is this initial link?
+	Member    reader.Membership // Updated membership or original membership if already linked and expiration date not changed.
+	Versioned reader.MembershipVersioned
 }
 
 type UnlinkResult struct {
-	IAPSubs  Subscription
-	Snapshot reader.MemberSnapshot
+	IAPSubs   Subscription
+	Versioned reader.MembershipVersioned
 }
 
 type LinkBuilder struct {
@@ -77,7 +77,7 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 					Subs:   b.IAPSubs,
 					AddOn:  addon.AddOn{},
 				}),
-				Snapshot: reader.MemberSnapshot{}, // Nothing to archive.
+				Versioned: reader.MembershipVersioned{}, // Nothing to archive.
 			}, nil
 		}
 
@@ -85,14 +85,18 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		// an existing iap membership.
 		// If ftc side is older than IAP, update it.
 		if b.CurrentFtc.ExpireDate.Before(b.IAPSubs.ExpiresDateUTC.Time) {
+			newMmb := NewMembership(MembershipParams{
+				UserID: b.Account.CompoundIDs(),
+				Subs:   b.IAPSubs,
+				AddOn:  b.CurrentFtc.AddOn,
+			})
+
 			return LinkResult{
 				Initial: false,
-				Member: NewMembership(MembershipParams{
-					UserID: b.Account.CompoundIDs(),
-					Subs:   b.IAPSubs,
-					AddOn:  b.CurrentFtc.AddOn,
-				}),
-				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+				Member:  newMmb,
+				Versioned: newMmb.
+					Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
+					WithPriorVersion(b.CurrentFtc),
 			}, nil
 		}
 
@@ -125,16 +129,19 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	// Apple Account B <-|-> Ftc Account A.
 	// In such case we should deny it unless user is manually changing it and the `force` parameter should be provided.
 	if b.CurrentFtc.IsIAP() {
+		newMmb := NewMembership(MembershipParams{
+			UserID: b.Account.CompoundIDs(),
+			Subs:   b.IAPSubs,
+			AddOn:  b.CurrentFtc.AddOn,
+		})
 		// TODO: this seems useless.
 		if b.Force {
 			return LinkResult{
 				Initial: true,
-				Member: NewMembership(MembershipParams{
-					UserID: b.Account.CompoundIDs(),
-					Subs:   b.IAPSubs,
-					AddOn:  b.CurrentFtc.AddOn,
-				}),
-				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+				Member:  newMmb,
+				Versioned: newMmb.
+					Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
+					WithPriorVersion(b.CurrentFtc),
 			}, nil
 		}
 
@@ -152,14 +159,17 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 		// side to be overridden; otherwise we shall keep the FTC
 		// side intact.
 		if b.isFtcLegacyFormat() {
+			newMmb := NewMembership(MembershipParams{
+				UserID: b.Account.CompoundIDs(),
+				Subs:   b.IAPSubs,
+				AddOn:  b.CurrentFtc.AddOn,
+			})
 			return LinkResult{
 				Initial: true,
-				Member: NewMembership(MembershipParams{
-					UserID: b.Account.CompoundIDs(),
-					Subs:   b.IAPSubs,
-					AddOn:  b.CurrentFtc.AddOn,
-				}),
-				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+				Member:  newMmb,
+				Versioned: newMmb.
+					Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
+					WithPriorVersion(b.CurrentFtc),
 			}, nil
 		}
 
@@ -172,14 +182,17 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	// TODO: if IAP side is expired, why should we update it at all?
 	if b.IAPSubs.IsExpired() {
 		if b.isFtcLegacyFormat() {
+			newMmb := NewMembership(MembershipParams{
+				UserID: b.Account.CompoundIDs(),
+				Subs:   b.IAPSubs,
+				AddOn:  b.CurrentFtc.AddOn,
+			})
 			return LinkResult{
 				Initial: true,
-				Member: NewMembership(MembershipParams{
-					UserID: b.Account.CompoundIDs(),
-					Subs:   b.IAPSubs,
-					AddOn:  b.CurrentFtc.AddOn,
-				}),
-				Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+				Member:  newMmb,
+				Versioned: newMmb.
+					Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
+					WithPriorVersion(b.CurrentFtc),
 			}, nil
 		}
 
@@ -188,14 +201,17 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 
 	// FTC side us expired while IAP subscription is not expired.
 	// We can safely override the FTC side.
+	newMmb := NewMembership(MembershipParams{
+		UserID: b.Account.CompoundIDs(),
+		Subs:   b.IAPSubs,
+		AddOn:  b.CurrentFtc.AddOn,
+	})
 	return LinkResult{
 		Initial: true,
-		Member: NewMembership(MembershipParams{
-			UserID: b.Account.CompoundIDs(),
-			Subs:   b.IAPSubs,
-			AddOn:  b.CurrentFtc.AddOn,
-		}),
-		Snapshot: b.CurrentFtc.Snapshot(reader.ArchiverAppleLink),
+		Member:  newMmb,
+		Versioned: newMmb.
+			Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
+			WithPriorVersion(b.CurrentFtc),
 	}, nil
 }
 

@@ -38,8 +38,8 @@ func (router StripeRouter) handleSubsResult(result stripe.SubsResult) {
 		sugar.Error(err)
 	}
 
-	if !result.Snapshot.IsZero() {
-		err := router.ReaderRepo.ArchiveMember(result.Snapshot)
+	if !result.Versioned.IsZero() {
+		err := router.ReaderRepo.VersionMembership(result.Versioned)
 		if err != nil {
 			sugar.Error(err)
 		}

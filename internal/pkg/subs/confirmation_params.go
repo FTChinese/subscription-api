@@ -99,7 +99,3 @@ func (p ConfirmationParams) invoices() (Invoices, error) {
 		CarriedOver: p.carryOverInvoice(),
 	}, nil
 }
-
-func (p ConfirmationParams) snapshot() reader.MemberSnapshot {
-	return p.Member.Snapshot(reader.NewOrderArchiver(p.Order.Kind))
-}

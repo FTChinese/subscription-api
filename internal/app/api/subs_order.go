@@ -5,7 +5,6 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
@@ -173,7 +172,6 @@ func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request)
 			Payment:    payResult,
 			Order:      order,
 			Membership: m,
-			Snapshot:   reader.MemberSnapshot{},
 		})
 
 		return

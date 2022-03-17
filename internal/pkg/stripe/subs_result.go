@@ -20,12 +20,11 @@ type SubsResultParams struct {
 
 // SubsResult contains the data to save to db.
 type SubsResult struct {
-	Modified             bool                  `json:"-"` // Indicate whether membership actually modified.
-	MissingPaymentIntent bool                  `json:"-"` // Whether we failed to expanded latest_invoice.payment_intent. It is not required to create/upgrade a subscription, so we should not return an error.
-	Subs                 Subs                  `json:"subs"`
-	Member               reader.Membership     `json:"membership"` // New membership.
-	Snapshot             reader.MemberSnapshot `json:"-"`          // If Modified is false, this must exists. If Modified is true, its existence depends on -- a newly created membership should not produce a snapshot.
-	CarryOverInvoice     invoice.Invoice       `json:"-"`
+	Modified         bool                       `json:"-"` // Indicate whether membership actually modified.
+	Subs             Subs                       `json:"subs"`
+	Member           reader.Membership          `json:"membership"` // New membership.
+	Versioned        reader.MembershipVersioned `json:"-"`
+	CarryOverInvoice invoice.Invoice            `json:"-"` // Only exists when user shifting from one-time purchase to Stripe. It does not exists upon refreshing/upgrading/cancellation.
 }
 
 func NewSubsResult(ss *stripe.Subscription, params SubsResultParams) SubsResult {
@@ -40,11 +39,13 @@ func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
 
 	var inv invoice.Invoice
 	if params.Kind == reader.SubsKindOneTimeToSub {
-		inv = params.CurrentMember.CarryOverInvoice().
+		inv = params.
+			CurrentMember.
+			CarryOverInvoice().
 			WithStripeSubsID(subs.ID)
 	}
 
-	m := NewMembership(MembershipParams{
+	newMmb := NewMembership(MembershipParams{
 		UserIDs: params.UserIDs,
 		Subs:    subs,
 		AddOn: params.CurrentMember.
@@ -52,21 +53,25 @@ func newSubsResult(subs Subs, params SubsResultParams) SubsResult {
 			Plus(addon.New(inv.Tier, inv.TotalDays())),
 	})
 
-	// For refreshing, nothing might be changed.
-	isModified := m.IsModified(params.CurrentMember)
+	// For refreshing, nothing might be changed; or user might switched
+	// to other purchase channel.
+	isModified := newMmb.IsModified(params.CurrentMember) && subs.ShouldUpsert(params.CurrentMember)
 
-	// Only create a snapshot if membership exists and is actually modified.
-	var snapshot reader.MemberSnapshot
-	if !params.CurrentMember.IsZero() && isModified {
-		snapshot = params.CurrentMember.Snapshot(reader.NewStripeArchiver(params.Action))
+	// Only create a snapshot if membership is actually modified.
+	var versioned reader.MembershipVersioned
+	if isModified {
+		versioned = newMmb.Version(reader.NewStripeArchiver(params.Action))
+	}
+	// Keep a previous version of membership only when exists.
+	if !params.CurrentMember.IsZero() {
+		versioned = versioned.WithPriorVersion(params.CurrentMember)
 	}
 
 	return SubsResult{
-		Modified:             isModified,
-		MissingPaymentIntent: subs.PaymentIntent.IsZero(),
-		Subs:                 subs,
-		Member:               m,
-		Snapshot:             snapshot,
-		CarryOverInvoice:     inv,
+		Modified:         isModified,
+		Subs:             subs,
+		Member:           newMmb,
+		Versioned:        versioned,
+		CarryOverInvoice: inv,
 	}
 }

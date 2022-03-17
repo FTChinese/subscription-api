@@ -59,6 +59,8 @@ func (env Env) CreateAddOn(inv invoice.Invoice) (reader.AddOnInvoiceCreated, err
 	return reader.AddOnInvoiceCreated{
 		Invoice:    inv,
 		Membership: newM,
-		Snapshot:   member.Snapshot(reader.NewOrderArchiver(enum.OrderKindAddOn)),
+		Versioned: newM.
+			Version(reader.NewOrderArchiver(enum.OrderKindAddOn)).
+			WithPriorVersion(member),
 	}, nil
 }

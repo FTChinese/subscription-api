@@ -116,20 +116,6 @@ func (env ReaderCommon) RetrieveAppleMember(txID string) (reader.Membership, err
 	return m.Sync(), nil
 }
 
-// ArchiveMember saves a member's snapshot at a specific moment.
-// Deprecated.
-func (env ReaderCommon) ArchiveMember(snapshot reader.MemberSnapshot) error {
-	_, err := env.DBs.Write.NamedExec(
-		reader.StmtSaveSnapshot,
-		snapshot)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (env ReaderCommon) VersionMembership(v reader.MembershipVersioned) error {
 	_, err := env.DBs.Write.NamedExec(
 		reader.StmtVersionMembership,

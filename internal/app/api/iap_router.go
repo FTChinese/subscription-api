@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/FTChinese/subscription-api/internal/pkg/letter"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
@@ -59,19 +58,6 @@ func (router IAPRouter) doVerification(receipt string) (apple.VerificationResp, 
 	return resp, nil
 }
 
-func (router IAPRouter) processSubsResult(snapshot reader.MemberSnapshot) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
-
-	// Backup previous membership
-	if !snapshot.IsZero() {
-		err := router.ReaderRepo.ArchiveMember(snapshot)
-		if err != nil {
-			sugar.Error(err)
-		}
-	}
-}
-
 // VerifyReceipt verifies if the receipt data send by client is valid. After app store responded,
 // its latest_receipt, latest_receipt_info, pending_renewal_info are saved in DB in background thread.
 // An apple.Subscription is created from the response, which is saved or updated if already exists,
@@ -122,7 +108,14 @@ func (router IAPRouter) VerifyReceipt(w http.ResponseWriter, req *http.Request) 
 				return
 			}
 
-			router.processSubsResult(result.Snapshot)
+			if result.Versioned.IsZero() {
+				return
+			}
+
+			err = router.ReaderRepo.VersionMembership(result.Versioned)
+			if err != nil {
+				sugar.Error(err)
+			}
 		}()
 	}
 
@@ -190,9 +183,14 @@ func (router IAPRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Snapshot might be empty is this subscription is linked to ftc account yet.
-	go func() {
-		router.processSubsResult(result.Snapshot)
-	}()
+	if !result.Versioned.IsZero() {
+		go func() {
+			err := router.ReaderRepo.VersionMembership(result.Versioned)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
+	}
 
 	_ = render.New(w).OK(nil)
 }

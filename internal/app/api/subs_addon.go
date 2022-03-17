@@ -20,9 +20,11 @@ func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	go func() {
-		_ = router.ReaderRepo.ArchiveMember(result.Snapshot)
-	}()
+	if !result.Versioned.IsZero() {
+		go func() {
+			_ = router.ReaderRepo.VersionMembership(result.Versioned)
+		}()
+	}
 
 	_ = render.New(w).OK(result.Membership)
 }

@@ -111,9 +111,9 @@ func (env Env) LinkWechat(result reader.WxEmailLinkResult) error {
 		return nil
 	}
 
-	if !result.FtcMemberSnapshot.IsZero() {
+	if !result.FtcVersioned.AnteChange.IsZero() {
 		sugar.Infof("Removing ftc side members...")
-		err := tx.DeleteMember(result.FtcMemberSnapshot.UserIDs)
+		err := tx.DeleteMember(result.FtcVersioned.AnteChange.UserIDs)
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
@@ -121,9 +121,9 @@ func (env Env) LinkWechat(result reader.WxEmailLinkResult) error {
 		}
 	}
 
-	if !result.WxMemberSnapshot.IsZero() {
+	if !result.WxVersioned.AnteChange.IsZero() {
 		sugar.Infof("Removing wechat side members...")
-		err := tx.DeleteMember(result.WxMemberSnapshot.UserIDs)
+		err := tx.DeleteMember(result.WxVersioned.AnteChange.UserIDs)
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()

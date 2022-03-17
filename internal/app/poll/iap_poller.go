@@ -145,8 +145,8 @@ func (p IAPPoller) verify(s apple.BaseSchema) error {
 		return err
 	}
 
-	if !result.Snapshot.IsZero() {
-		err := p.readerRepo.ArchiveMember(result.Snapshot)
+	if !result.Versioned.IsZero() {
+		err := p.readerRepo.VersionMembership(result.Versioned)
 		if err != nil {
 			sugar.Error(err)
 		}

@@ -130,8 +130,8 @@ func (router IAPRouter) Link(w http.ResponseWriter, req *http.Request) {
 
 	go func() {
 		// Backup previous membership
-		if !result.Snapshot.IsZero() {
-			err := router.ReaderRepo.ArchiveMember(result.Snapshot)
+		if !result.Versioned.IsZero() {
+			err := router.ReaderRepo.VersionMembership(result.Versioned)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -186,8 +186,8 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		if !result.Snapshot.IsZero() {
-			err := router.ReaderRepo.ArchiveMember(result.Snapshot)
+		if !result.Versioned.IsZero() {
+			err := router.ReaderRepo.VersionMembership(result.Versioned)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -198,7 +198,7 @@ func (router IAPRouter) Unlink(w http.ResponseWriter, req *http.Request) {
 			sugar.Error(err)
 		}
 
-		account, err := router.ReaderRepo.BaseAccountByUUID(result.Snapshot.FtcID.String)
+		account, err := router.ReaderRepo.BaseAccountByUUID(result.Versioned.PostChange.FtcID.String)
 		if err != nil {
 			return
 		}
