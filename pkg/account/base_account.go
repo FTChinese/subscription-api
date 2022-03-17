@@ -169,3 +169,9 @@ func (a BaseAccount) NormalizeName() string {
 
 	return a.ExtractEmailName()
 }
+
+// UnlinkWx is used when unlink an email-wechat account
+func (a BaseAccount) UnlinkWx() BaseAccount {
+	a.UnionID = null.String{}
+	return a
+}
