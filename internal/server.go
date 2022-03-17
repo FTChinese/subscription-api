@@ -541,9 +541,9 @@ func StartServer(s ServerStatus) {
 		})
 
 		// ?ftc_id=<uuid>&union_id=<union_id>&page=<int>&per_page=<int>
-		r.With(xhttp.FormParsed).
-			With(xhttp.RequireUserIDsQuery).
-			Get("/snapshots", cmsRouter.ListMemberSnapshots)
+		//r.With(xhttp.FormParsed).
+		//	With(xhttp.RequireUserIDsQuery).
+		//	Get("/snapshots", cmsRouter.ListMemberSnapshots)
 
 		r.Route("/addons", func(r chi.Router) {
 			// Add an invoice to a user.
