@@ -62,6 +62,10 @@ func MustStripeAPIKey() AuthKeys {
 	return MustLoadAuthKeys("api_keys.stripe_secret")
 }
 
+func MustStripePubKey() AuthKeys {
+	return MustLoadAuthKeys("api_keys.stripe_publishable")
+}
+
 func MustStripeWebhookKey() AuthKeys {
 	return MustLoadAuthKeys(stripeWebhookKey)
 }
