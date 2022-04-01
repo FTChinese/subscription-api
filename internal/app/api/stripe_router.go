@@ -12,11 +12,12 @@ import (
 )
 
 type StripeRouter struct {
-	SigningKey string
-	Env        stripeenv.Env
-	ReaderRepo shared.ReaderCommon
-	Logger     *zap.Logger
-	Live       bool
+	SigningKey     string
+	PublishableKey string
+	Env            stripeenv.Env
+	ReaderRepo     shared.ReaderCommon
+	Logger         *zap.Logger
+	Live           bool
 }
 
 func (router StripeRouter) handleSubsResult(result stripe.SubsResult) {
@@ -73,44 +74,5 @@ func handleSubsError(w http.ResponseWriter, err error) {
 
 	default:
 		_ = xhttp.HandleStripeErr(w, err)
-	}
-}
-
-// IssueKey creates an ephemeral key.
-// https://stripe.com/docs/mobile/android/basic#set-up-ephemeral-key
-//
-// POST /stripe/customers/{id}/ephemeral-keys?api_version=<version>
-func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
-
-	// Get stripe customer id.
-	cusID, err := xhttp.GetURLParam(req, "id").ToString()
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-
-	stripeVersion := req.FormValue("api_version")
-	if stripeVersion == "" {
-		_ = render.New(w).BadRequest("Stripe-Version not found")
-		return
-	}
-
-	keyData, err := router.Env.Client.CreateEphemeralKey(cusID, stripeVersion)
-	if err != nil {
-		sugar.Error(err)
-		err = xhttp.HandleStripeErr(w, err)
-		if err == nil {
-			return
-		}
-		_ = render.New(w).BadRequest(err.Error())
-		return
-	}
-
-	_, err = w.Write(keyData)
-	if err != nil {
-		sugar.Error(err)
 	}
 }
