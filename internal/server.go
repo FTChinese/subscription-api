@@ -95,7 +95,8 @@ func StartServer(s ServerStatus) {
 	}
 
 	stripeRouter := api.StripeRouter{
-		SigningKey: config.MustStripeWebhookKey().Pick(s.LiveMode),
+		SigningKey:     config.MustStripeWebhookKey().Pick(s.LiveMode),
+		PublishableKey: config.MustStripePubKey().Pick(s.LiveMode),
 		Env: stripeenv.NewEnv(
 			repository.NewStripeRepo(myDBs, logger),
 			stripePriceStore,
@@ -407,6 +408,10 @@ func StartServer(s ServerStatus) {
 			r.Get("/{id}", stripeRouter.GetSetupIntent)
 			// ?refresh=true
 			r.Get("/{id}/payment-method", stripeRouter.GetSetupPaymentMethod)
+		})
+
+		r.Route("/payment-sheet", func(r chi.Router) {
+			r.Post("/setup", stripeRouter.SetupWithEphemeral)
 		})
 
 		r.Route("/payment-methods", func(r chi.Router) {
