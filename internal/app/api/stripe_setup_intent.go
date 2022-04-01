@@ -12,7 +12,7 @@ func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Re
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
-	var params stripe.SetupIntentParams
+	var params stripe.CustomerParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
