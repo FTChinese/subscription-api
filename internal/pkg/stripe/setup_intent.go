@@ -1,20 +1,10 @@
 package stripe
 
 import (
-	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/collection"
-	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 )
-
-type SetupIntentParams struct {
-	Customer string `json:"customer"`
-}
-
-func (p SetupIntentParams) Validate() *render.ValidationError {
-	return validator.New("customer").Required().Validate(p.Customer)
-}
 
 type SetupIntent struct {
 	IsFromStripe       bool                  `json:"-"`
