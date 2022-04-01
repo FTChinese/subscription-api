@@ -36,8 +36,8 @@ func (c Client) asyncCreateSetupIntent(cusID string) <-chan asyncSetupIntent {
 	return ch
 }
 
-func (c Client) SetupWithEphemeral(cusID, version string) (*sdk.SetupIntent, *sdk.EphemeralKey, error) {
-	setupCh, keyCh := c.asyncCreateSetupIntent(cusID), c.asyncCreateEphemeralKey(cusID, version)
+func (c Client) SetupWithEphemeral(cusID string) (*sdk.SetupIntent, *sdk.EphemeralKey, error) {
+	setupCh, keyCh := c.asyncCreateSetupIntent(cusID), c.asyncCreateEphemeralKey(cusID)
 
 	setupResult, keyResult := <-setupCh, <-keyCh
 	if setupResult.error != nil {

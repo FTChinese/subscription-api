@@ -67,13 +67,7 @@ func (router StripeRouter) SetupWithEphemeral(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	stripeVersion := req.FormValue("api_version")
-	if stripeVersion == "" {
-		_ = render.New(w).BadRequest("Stripe-Version not found")
-		return
-	}
-
-	rawSI, rawKey, err := router.Env.Client.SetupWithEphemeral(params.Customer, stripeVersion)
+	rawSI, rawKey, err := router.Env.Client.SetupWithEphemeral(params.Customer)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)

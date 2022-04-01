@@ -1,6 +1,9 @@
 package stripeclient
 
-import "github.com/stripe/stripe-go/v72"
+import (
+	"github.com/FTChinese/subscription-api/pkg/config"
+	"github.com/stripe/stripe-go/v72"
+)
 
 // CreateEphemeralKey generate a key so that client could restrict customer API directly.
 // Response:
@@ -47,12 +50,12 @@ type asyncEphemeralKey struct {
 	error error
 }
 
-func (c Client) asyncCreateEphemeralKey(cusID, version string) <-chan asyncEphemeralKey {
+func (c Client) asyncCreateEphemeralKey(cusID string) <-chan asyncEphemeralKey {
 	ch := make(chan asyncEphemeralKey)
 
 	params := &stripe.EphemeralKeyParams{
 		Customer:      stripe.String(cusID),
-		StripeVersion: stripe.String(version),
+		StripeVersion: stripe.String(config.StripeVersion),
 	}
 
 	go func() {
