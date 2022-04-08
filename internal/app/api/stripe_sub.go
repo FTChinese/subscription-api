@@ -4,6 +4,8 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
@@ -33,25 +35,25 @@ import (
 // in case user already linked wechat.
 // Notification email is sent upon webhook receiving data, not here.
 func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := xhttp.GetFtcID(req.Header)
-	var input stripe.SubsParams
-	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+	var params pw.StripeSubsParams
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
-	// Validate input data.
-	if err := input.Validate(); err != nil {
+	// Validate params data.
+	if err := params.Validate(); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).Unprocessable(err)
 		return
 	}
 
-	acnt, err := router.ReaderRepo.BaseAccountByUUID(ftcID)
+	acnt, err := router.readerRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -62,7 +64,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	item, err := router.Env.LoadCheckoutItem(input)
+	item, err := router.findCartItem(params)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
@@ -75,15 +77,28 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	cart := pw.NewShoppingCart(acnt).
+		WithStripeItem(item)
+
 	// Create stripe subscription.
-	result, err := router.Env.CreateSubscription(
-		acnt,
-		item,
-		input)
+	result, cart, err := router.stripeRepo.CreateSubscription(cart, params)
 
 	if err != nil {
 		sugar.Error(err)
-		handleSubsError(w, err)
+		_ = xhttp.HandleStripeErr(w, err)
+		return
+	}
+
+	go func() {
+		err := router.stripeRepo.SaveShoppingSession(
+			stripe.NewShoppingSession(cart, params))
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
+	if cart.Intent.Kind == reader.SubsKindForbidden {
+		handleSubsError(w, cart.Intent.Error)
 		return
 	}
 
@@ -103,8 +118,8 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 // membership.
 func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	ftcID := xhttp.GetFtcID(req.Header)
 
@@ -115,7 +130,7 @@ func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	subs, err := router.Env.RetrieveSubs(subsID)
+	subs, err := router.stripeRepo.RetrieveSubs(subsID)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
@@ -145,12 +160,12 @@ func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 // one is standard and another if premium.
 // So we cannot rely on this field to find FTC plan.
 func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := xhttp.GetFtcID(req.Header)
-	var input stripe.SubsParams
+	var input pw.StripeSubsParams
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -162,7 +177,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	account, err := router.ReaderRepo.BaseAccountByUUID(ftcID)
+	account, err := router.readerRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -173,14 +188,14 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	item, err := router.Env.LoadCheckoutItem(input)
+	item, err := router.findCartItem(input)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
 		return
 	}
 
-	result, err := router.Env.UpdateSubscription(
+	result, err := router.stripeRepo.UpdateSubscription(
 		account,
 		item,
 		input,
@@ -208,8 +223,8 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 // RefreshSubs get the latest data of a subscription if user manually requested it.
 func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Get the subscription id from url
 	subsID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -221,7 +236,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 
 	// Use Stripe SDK to retrieve data.
 	// The latest invoice field is expanded.
-	ss, err := router.Env.Client.FetchSubs(subsID, true)
+	ss, err := router.stripeRepo.Client.FetchSubs(subsID, true)
 	if err != nil {
 		sugar.Error(err)
 		err = xhttp.HandleStripeErr(w, err)
@@ -229,14 +244,14 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Use Stripe customer id to find user account.
-	ba, err := router.ReaderRepo.BaseAccountByStripeID(ss.Customer.ID)
+	ba, err := router.readerRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).NotFound("Stripe customer not found")
 		return
 	}
 
-	result, err := router.Env.RefreshSubscription(ss, ba)
+	result, err := router.stripeRepo.RefreshSubscription(ss, ba)
 
 	if err != nil {
 		sugar.Error(err)
@@ -255,8 +270,8 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 // CancelSubs cancels a stripe subscription at period end.
 // See https://stripe.com/docs/billing/subscriptions/cancel
 func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	ftcID := xhttp.GetFtcID(req.Header)
 
@@ -267,7 +282,7 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	result, err := router.Env.CancelSubscription(stripe.CancelParams{
+	result, err := router.stripeRepo.CancelSubscription(stripe.CancelParams{
 		FtcID:  ftcID,
 		SubID:  subsID,
 		Cancel: true,
@@ -290,8 +305,8 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 
 // ReactivateSubscription undo subscription cancellation before period ends.
 func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	ftcID := xhttp.GetFtcID(req.Header)
 
@@ -301,7 +316,7 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 		return
 	}
 
-	result, err := router.Env.CancelSubscription(stripe.CancelParams{
+	result, err := router.stripeRepo.CancelSubscription(stripe.CancelParams{
 		FtcID:  ftcID,
 		SubID:  subsID,
 		Cancel: false,
@@ -325,8 +340,8 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 }
 
 func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	refresh := xhttp.ParseQueryRefresh(req)
 
@@ -337,7 +352,7 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 		return
 	}
 
-	subs, err := router.Env.LoadOrFetchSubs(subsID, false)
+	subs, err := router.stripeRepo.LoadOrFetchSubs(subsID, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
@@ -360,8 +375,8 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 }
 
 func (router StripeRouter) UpdateSubsDefaultPayMethod(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	subsID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -382,7 +397,7 @@ func (router StripeRouter) UpdateSubsDefaultPayMethod(w http.ResponseWriter, req
 		return
 	}
 
-	subs, err := router.Env.LoadOrFetchSubs(subsID, false)
+	subs, err := router.stripeRepo.LoadOrFetchSubs(subsID, false)
 	if err != nil {
 		_ = xhttp.HandleStripeErr(w, err)
 		return
@@ -395,7 +410,7 @@ func (router StripeRouter) UpdateSubsDefaultPayMethod(w http.ResponseWriter, req
 		return
 	}
 
-	rawSubs, err := router.Env.Client.SetSubsDefaultPaymentMethod(
+	rawSubs, err := router.stripeRepo.Client.SetSubsDefaultPaymentMethod(
 		subs.ID,
 		pm.ID)
 	if err != nil {
