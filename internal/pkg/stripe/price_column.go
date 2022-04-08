@@ -4,21 +4,22 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
-// PriceJSON saves price to or retrieves from db as JSON field.
-type PriceJSON struct {
-	Price
+// PriceColumn saves price to or retrieves from db as JSON field.
+type PriceColumn struct {
+	price.StripePrice
 }
 
 // Value implements Valuer interface by serializing an Invitation into
 // JSON data.
-func (j PriceJSON) Value() (driver.Value, error) {
-	if j.ID == "" {
+func (p PriceColumn) Value() (driver.Value, error) {
+	if p.ID == "" {
 		return nil, nil
 	}
 
-	b, err := json.Marshal(j)
+	b, err := json.Marshal(p.StripePrice)
 	if err != nil {
 		return nil, err
 	}
@@ -27,23 +28,23 @@ func (j PriceJSON) Value() (driver.Value, error) {
 }
 
 // Scan implements Valuer interface by deserializing an invitation field.
-func (j *PriceJSON) Scan(src interface{}) error {
+func (p *PriceColumn) Scan(src interface{}) error {
 	if src == nil {
-		*j = PriceJSON{}
+		*p = PriceColumn{}
 		return nil
 	}
 
 	switch s := src.(type) {
 	case []byte:
-		var tmp PriceJSON
+		var tmp price.StripePrice
 		err := json.Unmarshal(s, &tmp)
 		if err != nil {
 			return err
 		}
-		*j = tmp
+		*p = PriceColumn{tmp}
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan to PriceJSON")
+		return errors.New("incompatible type to scan to PriceColumn")
 	}
 }
