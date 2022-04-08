@@ -21,8 +21,8 @@ import (
 // - expireDate: string;
 // - payMethod: string;
 func (router CMSRouter) CreateMembership(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	var params input.MemberParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -35,15 +35,15 @@ func (router CMSRouter) CreateMembership(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	ba, err := router.ReaderRepo.FindBaseAccount(ids.UserIDs{
+	ba, err := router.readerRepo.FindBaseAccount(ids.UserIDs{
 		CompoundID: "",
 		FtcID:      params.FtcID,
 		UnionID:    params.UnionID,
 	}.MustNormalize())
 
-	// TODO: in the future client should present a drag-drop ui
 	// so that user could directly select a price.
-	paywall, err := router.PaywallRepo.LoadPaywall(router.Live)
+
+	paywall, err := router.LoadCachedPaywall(false)
 	if err != nil {
 		sugar.Error(err)
 	}
@@ -62,7 +62,7 @@ func (router CMSRouter) CreateMembership(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	mmb, err := router.Repo.CreateMembership(ba, params)
+	mmb, err := router.repo.CreateMembership(ba, params)
 	if err != nil {
 		var ve *render.ValidationError
 		if errors.As(err, &ve) {
@@ -104,7 +104,7 @@ func (router CMSRouter) UpdateMembership(w http.ResponseWriter, req *http.Reques
 
 	// TODO: in the future client should present a drag-drop ui
 	// so that user could directly select a price.
-	paywall, err := router.PaywallRepo.LoadPaywall(router.Live)
+	paywall, err := router.LoadCachedPaywall(false)
 	ftcPrice, _ := paywall.FindPriceByEdition(price.Edition{
 		Tier:  params.Tier,
 		Cycle: params.Cycle,
@@ -112,7 +112,7 @@ func (router CMSRouter) UpdateMembership(w http.ResponseWriter, req *http.Reques
 
 	params.PriceID = ftcPrice.ID
 
-	v, err := router.Repo.UpdateMembership(
+	v, err := router.repo.UpdateMembership(
 		id,
 		params,
 		staffName)
@@ -129,7 +129,7 @@ func (router CMSRouter) UpdateMembership(w http.ResponseWriter, req *http.Reques
 	}
 	go func() {
 		// TODO: versioned by
-		err := router.ReaderRepo.VersionMembership(v)
+		err := router.readerRepo.VersionMembership(v)
 		if err != nil {
 
 		}
@@ -143,7 +143,7 @@ func (router CMSRouter) DeleteMembership(w http.ResponseWriter, req *http.Reques
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 	staffName := xhttp.GetStaffName(req.Header)
 
-	m, err := router.Repo.DeleteMembership(id)
+	m, err := router.repo.DeleteMembership(id)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -151,7 +151,7 @@ func (router CMSRouter) DeleteMembership(w http.ResponseWriter, req *http.Reques
 
 	if !m.IsZero() {
 		go func() {
-			_ = router.ReaderRepo.VersionMembership(m.Deleted(reader.Archiver{
+			_ = router.readerRepo.VersionMembership(m.Deleted(reader.Archiver{
 				Name:   reader.ArchiveName(staffName),
 				Action: reader.ArchiveActionDelete,
 			}))

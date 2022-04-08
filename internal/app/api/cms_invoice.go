@@ -10,8 +10,8 @@ import (
 // CreateAddOn manually add an addon to a user.
 // This is usually used to perform compensation.
 func (router CMSRouter) CreateAddOn(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	var params invoice.AddOnParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -26,14 +26,14 @@ func (router CMSRouter) CreateAddOn(w http.ResponseWriter, req *http.Request) {
 
 	inv := invoice.NewAddonInvoice(params)
 
-	result, err := router.Repo.CreateAddOn(inv)
+	result, err := router.repo.CreateAddOn(inv)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	go func() {
-		err := router.ReaderRepo.VersionMembership(result.Versioned)
+		err := router.readerRepo.VersionMembership(result.Versioned)
 		if err != nil {
 			sugar.Error(err)
 		}
