@@ -2,7 +2,6 @@ package addons
 
 import (
 	gorest "github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
@@ -13,23 +12,12 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"testing"
-	"time"
 )
 
 func TestEnv_InvoicesCarriedOver(t *testing.T) {
 	userID := uuid.New().String()
 	repo := test.NewRepo()
-	repo.MustSaveInvoiceN([]invoice.Invoice{
-		invoice.NewMockInvoiceBuilder().
-			WithFtcID(userID).
-			Build().
-			SetPeriod(time.Now()),
-		invoice.NewMockInvoiceBuilder().
-			WithFtcID(userID).
-			WithOrderKind(enum.OrderKindRenew).
-			Build().
-			SetPeriod(time.Now().AddDate(1, 0, 1)),
-	})
+	repo.MustSaveInvoiceN([]invoice.Invoice{})
 
 	env := Env{
 		dbs:    test.SplitDB,
@@ -65,11 +53,6 @@ func TestEnv_InvoicesCarriedOver(t *testing.T) {
 func TestEnv_ListInvoices(t *testing.T) {
 	ftcID := uuid.New().String()
 	wxID := faker.GenWxID()
-
-	repo := test.NewRepo()
-	repo.MustSaveInvoice(invoice.NewMockInvoiceBuilder().WithFtcID(ftcID).Build())
-	repo.MustSaveInvoice(invoice.NewMockInvoiceBuilder().WithUnionID(wxID).Build())
-	repo.MustSaveInvoice(invoice.NewMockInvoiceBuilder().WithFtcID(ftcID).Build())
 
 	type fields struct {
 		dbs    db.ReadWriteMyDBs

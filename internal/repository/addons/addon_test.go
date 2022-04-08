@@ -63,10 +63,7 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 						WithFtcID(userA).
 						Build().
 						CarryOverInvoice(),
-					invoice.NewMockInvoiceBuilder().
-						WithFtcID(userA).
-						WithOrderKind(enum.OrderKindAddOn).
-						Build(),
+					invoice.Invoice{},
 				},
 			},
 			args: args{
@@ -115,70 +112,6 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 			}
 			//if !reflect.DeepEqual(got, tt.want) {
 			//	t.Errorf("ClaimAddOn() got = %v, want %v", got, tt.want)
-			//}
-
-			t.Logf("%s", faker.MustMarshalIndent(got))
-		})
-	}
-}
-
-func TestEnv_CreateAddOn(t *testing.T) {
-	ftcID := uuid.New().String()
-
-	repo := test.NewRepo()
-
-	type requisite struct {
-		membership reader.Membership
-	}
-	type fields struct {
-		dbs    db.ReadWriteMyDBs
-		logger *zap.Logger
-	}
-	type args struct {
-		inv invoice.Invoice
-	}
-	tests := []struct {
-		name      string
-		requisite requisite
-		fields    fields
-		args      args
-		//want    reader.AddOnInvoiceCreated
-		wantErr bool
-	}{
-		{
-			name: "Create addon",
-			requisite: requisite{
-				membership: reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-					WithFtcID(ftcID).
-					Build(),
-			},
-			fields: fields{
-				dbs:    test.SplitDB,
-				logger: zaptest.NewLogger(t),
-			},
-			args: args{
-				inv: invoice.NewMockInvoiceBuilder().
-					WithFtcID(ftcID).
-					Build(),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repo.MustSaveMembership(tt.requisite.membership)
-
-			env := Env{
-				dbs:    tt.fields.dbs,
-				logger: tt.fields.logger,
-			}
-			got, err := env.CreateAddOn(tt.args.inv)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateAddOn() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("CreateAddOn() got = %v, want %v", got, tt.want)
 			//}
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
