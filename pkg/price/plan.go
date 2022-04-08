@@ -24,7 +24,7 @@ type Plan struct {
 
 // NewPlan creates a new Plan.
 // Deprecated.
-func NewPlan(p Price) Plan {
+func NewPlan(p FtcPrice) Plan {
 	return Plan{
 		ID:            p.ID,
 		Edition:       p.Edition,
