@@ -7,6 +7,7 @@ var (
 )
 
 // The following lists Stripe subscription errors
+// TODO: move to pw package.
 var (
 	ErrTrialUpgradeForbidden = errors.New("upgrading in trialing period is not allowed")
 	ErrAlreadyStripeSubs     = errors.New("already a stripe subscription")
