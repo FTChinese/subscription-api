@@ -20,11 +20,11 @@ func (c Client) ListPrices() ([]*stripeSdk.Price, error) {
 	return list.Data, nil
 }
 
-// RetrievePrice from stripe API.
+// FetchPrice from stripe API.
 // See https://stripe.com/docs/api/prices/retrieve.
 // It seems the SDK handled it incorrectly since the API doc
 // says no parameter is required.
-func (c Client) RetrievePrice(id string) (*stripeSdk.Price, error) {
+func (c Client) FetchPrice(id string) (*stripeSdk.Price, error) {
 	return c.sc.Prices.Get(id, nil)
 }
 

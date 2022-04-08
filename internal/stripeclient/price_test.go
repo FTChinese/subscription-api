@@ -31,7 +31,7 @@ func TestClient_RetrievePrice(t *testing.T) {
 	faker.MustSetupViper()
 
 	client := New(false, zaptest.NewLogger(t))
-	p, err := client.RetrievePrice("price_1Juuu2BzTK0hABgJTXiK4NTt")
+	p, err := client.FetchPrice("price_1Juuu2BzTK0hABgJTXiK4NTt")
 	if err != nil {
 		t.Error(err)
 		return
