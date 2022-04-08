@@ -145,7 +145,7 @@ func (b PriceBuilder) WithRecurring() PriceBuilder {
 	return b
 }
 
-func (b PriceBuilder) Build() price.Price {
+func (b PriceBuilder) Build() price.FtcPrice {
 	var amount float64
 	if b.edition == price.StdMonthEdition {
 		amount = 35
@@ -155,10 +155,10 @@ func (b PriceBuilder) Build() price.Price {
 		amount = 1998
 	}
 
-	p := price.New(price.CreationParams{
+	p := price.New(price.FtcCreationParams{
 		Kind:    b.kind,
 		Edition: b.edition,
-		UpdateParams: price.UpdateParams{
+		FtcUpdateParams: price.FtcUpdateParams{
 			Title:    null.StringFrom(gofakeit.Sentence(3)),
 			Nickname: null.StringFrom(gofakeit.Sentence(2)),
 			PeriodCount: price.ColumnYearMonthDay{

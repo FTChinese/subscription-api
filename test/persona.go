@@ -219,7 +219,7 @@ func (p *Persona) MemberBuilder() MemberBuilder {
 		accountKind:  p.kind,
 		ftcID:        p.FtcID,
 		unionID:      p.UnionID,
-		price:        pw.MockPwPriceStdYear.Price,
+		price:        pw.MockPwPriceStdYear.FtcPrice,
 		payMethod:    enum.PayMethodAli,
 		expiration:   time.Now().AddDate(1, 0, 0),
 		subsStatus:   0,

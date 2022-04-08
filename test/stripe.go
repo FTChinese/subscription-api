@@ -122,7 +122,7 @@ func (p Persona) StripeSubsBuilder() StripeSubsBuilder {
 
 type StripeSubsBuilder struct {
 	ftcID  string
-	price  stripe.Price
+	price  price.StripePrice
 	status enum.SubsStatus
 }
 
@@ -130,7 +130,7 @@ func (b StripeSubsBuilder) WithEdition(e price.Edition) StripeSubsBuilder {
 	return b
 }
 
-func (b StripeSubsBuilder) WithPrice(p stripe.Price) StripeSubsBuilder {
+func (b StripeSubsBuilder) WithPrice(p price.StripePrice) StripeSubsBuilder {
 	b.price = p
 	return b
 }
@@ -166,8 +166,8 @@ func (b StripeSubsBuilder) Build() stripe.Subs {
 		Items: []stripe.SubsItem{
 			{
 				ID: faker.GenStripeItemID(),
-				Price: stripe.PriceJSON{
-					Price: b.price,
+				Price: stripe.PriceColumn{
+					StripePrice: b.price,
 				},
 				Created:        time.Now().Unix(),
 				Quantity:       1,

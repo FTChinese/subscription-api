@@ -297,7 +297,7 @@ func (r Repo) CreateProduct(p pw.Product) {
 	}
 }
 
-func (r Repo) CreatePrice(p price.Price) {
+func (r Repo) CreatePrice(p price.FtcPrice) {
 	_, err := r.dbs.Write.NamedExec(price.StmtCreatePrice, p)
 	if err != nil {
 		log.Fatalln(err)

@@ -404,10 +404,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 			fields: Membership{},
 			args: args{
 				userID: ids.NewFtcUserID(userID),
-				inv: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					SetPeriodStart(time.Now()).
-					Build(),
+				inv:    invoice.Invoice{},
 			},
 			want: Membership{
 				UserIDs:       ids.NewFtcUserID(userID),
@@ -432,11 +429,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 			fields: current,
 			args: args{
 				userID: ids.NewFtcUserID(userID),
-				inv: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					WithOrderKind(enum.OrderKindRenew).
-					SetPeriodStart(current.ExpireDate.Time).
-					Build(),
+				inv:    invoice.Invoice{},
 			},
 			want: Membership{
 				UserIDs:       ids.NewFtcUserID(userID),
@@ -461,12 +454,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 			fields: current,
 			args: args{
 				userID: ids.NewFtcUserID(userID),
-				inv: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					WithPrice(pw.MockPwPricePrm).
-					WithOrderKind(enum.OrderKindUpgrade).
-					SetPeriodStart(time.Now()).
-					Build(),
+				inv:    invoice.Invoice{},
 			},
 			want: Membership{
 				UserIDs:       ids.NewFtcUserID(userID),
@@ -491,10 +479,7 @@ func TestMembership_WithInvoice(t *testing.T) {
 			fields: current,
 			args: args{
 				userID: ids.NewFtcUserID(userID),
-				inv: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					WithOrderKind(enum.OrderKindAddOn).
-					Build(),
+				inv:    invoice.Invoice{},
 			},
 			want: current.PlusAddOn(addon.AddOn{
 				Standard: 367,
@@ -570,7 +555,7 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 		{
 			name: "Standard add-on for premium",
 			fields: NewMockMemberBuilder(userID).
-				WithPrice(pw.MockPwPricePrm.Price).
+				WithPrice(pw.MockPwPricePrm.FtcPrice).
 				Build(),
 			args: args{
 				e: price.StdYearEdition,
@@ -602,7 +587,7 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 			name: "Stripe premium purchase standard add-on",
 			fields: NewMockMemberBuilder(userID).
 				WithPayMethod(enum.PayMethodStripe).
-				WithPrice(pw.MockPwPricePrm.Price).
+				WithPrice(pw.MockPwPricePrm.FtcPrice).
 				Build(),
 			args: args{
 				e: price.StdYearEdition,
@@ -614,7 +599,7 @@ func TestMembership_OrderKindByOneTime(t *testing.T) {
 			name: "Stripe premium purchase premium add-on",
 			fields: NewMockMemberBuilder(userID).
 				WithPayMethod(enum.PayMethodStripe).
-				WithPrice(pw.MockPwPricePrm.Price).
+				WithPrice(pw.MockPwPricePrm.FtcPrice).
 				Build(),
 			args: args{
 				e: price.PremiumEdition,
@@ -657,7 +642,7 @@ func TestMembership_SubsKindByStripe(t *testing.T) {
 			args: args{
 				e: price.StdYearEdition,
 			},
-			want:    SubsKindNew,
+			want:    SubsKindCreate,
 			wantErr: false,
 		},
 		{
@@ -666,19 +651,19 @@ func TestMembership_SubsKindByStripe(t *testing.T) {
 			args: args{
 				e: price.StdYearEdition,
 			},
-			want:    SubsKindOneTimeToSub,
+			want:    SubsKindOneTimeToAutoRenew,
 			wantErr: false,
 		},
 		{
 			name: "Already Stripe Premium",
 			fields: NewMockMemberBuilder(userID).
 				WithPayMethod(enum.PayMethodStripe).
-				WithPrice(pw.MockPwPricePrm.Price).
+				WithPrice(pw.MockPwPricePrm.FtcPrice).
 				Build(),
 			args: args{
 				e: price.StdYearEdition,
 			},
-			want:    SubsKindZero,
+			want:    SubsKindForbidden,
 			wantErr: true,
 		},
 		{
@@ -698,7 +683,7 @@ func TestMembership_SubsKindByStripe(t *testing.T) {
 			args: args{
 				e: price.StdYearEdition,
 			},
-			want:    SubsKindZero,
+			want:    SubsKindForbidden,
 			wantErr: true,
 		},
 		{
@@ -709,7 +694,7 @@ func TestMembership_SubsKindByStripe(t *testing.T) {
 			args: args{
 				e: price.StdMonthEdition,
 			},
-			want:    SubsKindSwitchCycle,
+			want:    SubsKindSwitchInterval,
 			wantErr: false,
 		},
 		{
@@ -720,7 +705,7 @@ func TestMembership_SubsKindByStripe(t *testing.T) {
 			args: args{
 				e: price.StdMonthEdition,
 			},
-			want:    SubsKindZero,
+			want:    SubsKindForbidden,
 			wantErr: true,
 		},
 		{
@@ -731,7 +716,7 @@ func TestMembership_SubsKindByStripe(t *testing.T) {
 			args: args{
 				e: price.StdMonthEdition,
 			},
-			want:    SubsKindZero,
+			want:    SubsKindForbidden,
 			wantErr: true,
 		},
 	}
@@ -762,25 +747,25 @@ func TestMembership_SubsKindByApple(t *testing.T) {
 		{
 			name:    "Empty",
 			fields:  Membership{},
-			want:    SubsKindNew,
+			want:    SubsKindCreate,
 			wantErr: false,
 		},
 		{
 			name:    "One-time carried over",
 			fields:  NewMockMemberBuilder(userID).Build(),
-			want:    SubsKindOneTimeToSub,
+			want:    SubsKindOneTimeToAutoRenew,
 			wantErr: false,
 		},
 		{
 			name:    "Active Stripe cannot use Apple",
 			fields:  NewMockMemberBuilder(userID).WithPayMethod(enum.PayMethodStripe).Build(),
-			want:    SubsKindZero,
+			want:    SubsKindForbidden,
 			wantErr: true,
 		},
 		{
 			name:    "Active Apple can be refreshed",
 			fields:  NewMockMemberBuilder(userID).WithPayMethod(enum.PayMethodApple).Build(),
-			want:    SubsKindRefresh,
+			want:    SubsKindRefreshAutoRenew,
 			wantErr: false,
 		},
 	}

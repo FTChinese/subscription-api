@@ -11,7 +11,7 @@ import (
 func TestRepo_SaveMembership(t *testing.T) {
 	p := NewPersona()
 
-	err := NewRepo().SaveMembership(p.MemberBuilder().WithPrice(pw.MockPwPriceStdYear.Price).Build())
+	err := NewRepo().SaveMembership(p.MemberBuilder().WithPrice(pw.MockPwPriceStdYear.FtcPrice).Build())
 
 	if err != nil {
 		t.Error(err)

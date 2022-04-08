@@ -19,7 +19,7 @@ type MemberBuilder struct {
 	accountKind  enum.AccountKind
 	ftcID        string
 	unionID      string
-	price        price.Price
+	price        price.FtcPrice
 	payMethod    enum.PayMethod
 	expiration   time.Time
 	subsStatus   enum.SubsStatus
@@ -74,7 +74,7 @@ func (b MemberBuilder) WithWx() MemberBuilder {
 
 // WithPrice sets the subscription plan for payment method alipay or wechat.
 // Call this together with WithAlipay or WithWx
-func (b MemberBuilder) WithPrice(p price.Price) MemberBuilder {
+func (b MemberBuilder) WithPrice(p price.FtcPrice) MemberBuilder {
 	b.price = p
 
 	return b

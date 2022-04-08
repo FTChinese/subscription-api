@@ -8,7 +8,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"reflect"
@@ -20,11 +19,7 @@ func TestMembership_withAddOnInvoice(t *testing.T) {
 
 	userID := uuid.New().String()
 
-	inv := invoice.NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		Build().
-		SetPeriod(time.Now())
+	inv := invoice.Invoice{}
 
 	current := NewMockMemberBuilderV2(enum.AccountKindFtc).
 		WithFtcID(userID).
@@ -148,8 +143,6 @@ func TestMembership_addonToInvoice(t *testing.T) {
 
 func TestMembership_pickConsumableAddOn(t *testing.T) {
 
-	ftcID := uuid.New().String()
-
 	type args struct {
 		groupedInv invoice.AddOnGroup
 	}
@@ -180,19 +173,8 @@ func TestMembership_pickConsumableAddOn(t *testing.T) {
 				Build(),
 			args: args{
 				groupedInv: map[enum.Tier][]invoice.Invoice{
-					enum.TierStandard: {
-						invoice.NewMockInvoiceBuilder().
-							WithFtcID(ftcID).
-							WithOrderKind(enum.OrderKindAddOn).
-							WithAddOnSource(addon.SourceUserPurchase).
-							Build(),
-						invoice.NewMockInvoiceBuilder().
-							WithFtcID(ftcID).
-							WithOrderKind(enum.OrderKindAddOn).
-							WithAddOnSource(addon.SourceCompensation).
-							Build(),
-					},
-					enum.TierPremium: nil,
+					enum.TierStandard: {},
+					enum.TierPremium:  nil,
 				},
 			},
 			want: 2,
@@ -217,11 +199,7 @@ func TestMembership_ClaimAddOns(t *testing.T) {
 
 	userID := uuid.New().String()
 
-	inv := invoice.NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		Build().
-		SetPeriod(time.Now())
+	inv := invoice.Invoice{}
 
 	m := NewMockMemberBuilderV2(enum.AccountKindFtc).
 		WithFtcID(userID).
@@ -243,17 +221,7 @@ func TestMembership_ClaimAddOns(t *testing.T) {
 			name:   "Transfer addon invoices",
 			fields: m,
 			args: args{
-				inv: []invoice.Invoice{
-					invoice.NewMockInvoiceBuilder().
-						WithFtcID(userID).
-						WithOrderKind(enum.OrderKindAddOn).
-						Build(),
-					invoice.NewMockInvoiceBuilder().
-						WithFtcID(userID).
-						WithPrice(pw.MockPwPricePrm).
-						WithOrderKind(enum.OrderKindAddOn).
-						Build(),
-				},
+				inv: []invoice.Invoice{},
 			},
 			wantErr: false,
 		},
@@ -268,12 +236,7 @@ func TestMembership_ClaimAddOns(t *testing.T) {
 				}).
 				Build(),
 			args: args{
-				inv: []invoice.Invoice{
-					invoice.NewMockInvoiceBuilder().
-						WithFtcID(userID).
-						WithOrderKind(enum.OrderKindAddOn).
-						Build(),
-				},
+				inv: []invoice.Invoice{},
 			},
 			wantErr: false,
 		},
