@@ -6,13 +6,15 @@ import (
 	"errors"
 )
 
-type ColumnMembership struct {
+// MembershipColumn is used to save Membership as a JSON column
+// in MySQL.
+type MembershipColumn struct {
 	Membership
 }
 
 // Value implements Valuer interface by saving the entire
 // type as JSON string, or null if it is a zero value.
-func (m ColumnMembership) Value() (driver.Value, error) {
+func (m MembershipColumn) Value() (driver.Value, error) {
 	// For zero value, save as NULL.
 	if m.IsZero() {
 		return nil, nil
@@ -26,16 +28,16 @@ func (m ColumnMembership) Value() (driver.Value, error) {
 	return string(b), nil
 }
 
-func (m *ColumnMembership) Scan(src interface{}) error {
+func (m *MembershipColumn) Scan(src interface{}) error {
 	// Handle null value.
 	if src == nil {
-		*m = ColumnMembership{}
+		*m = MembershipColumn{}
 		return nil
 	}
 
 	switch s := src.(type) {
 	case []byte:
-		var tmp ColumnMembership
+		var tmp MembershipColumn
 		err := json.Unmarshal(s, &tmp)
 		if err != nil {
 			return err
@@ -44,6 +46,6 @@ func (m *ColumnMembership) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return errors.New("incompatible type to scna to ColumnMembership")
+		return errors.New("incompatible type to scna to MembershipColumn")
 	}
 }
