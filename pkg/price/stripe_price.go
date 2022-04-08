@@ -1,18 +1,16 @@
-package stripe
+package price
 
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 	"strconv"
-	"time"
 )
 
-// PriceMetadata parsed the fields defined in stripe price's medata field.
+// StripePriceMetadata parsed the fields defined in stripe price's medata field.
 // Those are customer-defined key-value pairs.
-type PriceMetadata struct {
+type StripePriceMetadata struct {
 	Introductory bool            `json:"introductory"` // Is this an introductory price? If false, it is treated as regular price.
 	PeriodDays   int64           `json:"periodDays"`
 	PeriodCount  dt.YearMonthDay `json:"-"`
@@ -29,7 +27,7 @@ type PriceMetadata struct {
 // - introductory: boolean
 // - start_utc?: string
 // - end_utc?: string
-func NewPriceMeta(m map[string]string) PriceMetadata {
+func NewPriceMeta(m map[string]string) StripePriceMetadata {
 	tier, _ := enum.ParseTier(m["tier"])
 	pd, _ := strconv.Atoi(m["period_days"])
 	years, _ := strconv.Atoi(m["years"])
@@ -39,7 +37,7 @@ func NewPriceMeta(m map[string]string) PriceMetadata {
 	start, _ := m["start_utc"]
 	end, _ := m["end_utc"]
 
-	return PriceMetadata{
+	return StripePriceMetadata{
 		Tier:       tier,
 		PeriodDays: int64(pd),
 		PeriodCount: dt.YearMonthDay{
@@ -53,7 +51,7 @@ func NewPriceMeta(m map[string]string) PriceMetadata {
 	}.SyncPeriod()
 }
 
-func (m PriceMetadata) SyncPeriod() PriceMetadata {
+func (m StripePriceMetadata) SyncPeriod() StripePriceMetadata {
 	if m.PeriodDays == 0 {
 		m.PeriodDays = m.PeriodCount.TotalDays()
 	}
@@ -61,32 +59,9 @@ func (m PriceMetadata) SyncPeriod() PriceMetadata {
 	return m
 }
 
-func PriceMetaParams(p price.Price, isIntro bool) map[string]string {
-
-	start := ""
-	end := ""
-	if !p.StartUTC.IsZero() {
-		start = p.StartUTC.In(time.UTC).Format(time.RFC3339)
-	}
-
-	if !p.EndUTC.IsZero() {
-		end = p.EndUTC.In(time.UTC).Format(time.RFC3339)
-	}
-
-	return map[string]string{
-		"tier":         p.Tier.String(),
-		"years":        strconv.FormatInt(p.PeriodCount.Years, 10),
-		"months":       strconv.FormatInt(p.PeriodCount.Months, 10),
-		"days":         strconv.FormatInt(p.PeriodCount.Days, 10),
-		"introductory": strconv.FormatBool(isIntro),
-		"start_utc":    start,
-		"end_utc":      end,
-	}
-}
-
-// PriceRecurring is the equivalence of stripe.PriceRecurring.
+// StripePriceRecurring is the equivalence of stripe.PriceRecurring.
 // Deprecated
-type PriceRecurring struct {
+type StripePriceRecurring struct {
 	Interval      stripe.PriceRecurringInterval  `json:"interval"`
 	IntervalCount int64                          `json:"intervalCount"`
 	UsageType     stripe.PriceRecurringUsageType `json:"usageType"`
@@ -94,19 +69,19 @@ type PriceRecurring struct {
 
 // NewPriceRecurring converts stripe recurring.
 // Deprecated.
-func NewPriceRecurring(r *stripe.PriceRecurring) PriceRecurring {
+func NewPriceRecurring(r *stripe.PriceRecurring) StripePriceRecurring {
 	if r == nil {
-		return PriceRecurring{}
+		return StripePriceRecurring{}
 	}
 
-	return PriceRecurring{
+	return StripePriceRecurring{
 		Interval:      r.Interval,
 		IntervalCount: r.IntervalCount,
 		UsageType:     r.UsageType,
 	}
 }
 
-func (r PriceRecurring) IsZero() bool {
+func (r StripePriceRecurring) IsZero() bool {
 	return r.Interval == "" && r.IntervalCount == 0 && r.UsageType == ""
 }
 
@@ -136,12 +111,13 @@ func parseRecurringPeriod(r *stripe.PriceRecurring) dt.YearMonthDay {
 	return ymd
 }
 
-type Price struct {
+type StripePrice struct {
+	IsFromStripe   bool            `json:"-"`
 	ID             string          `json:"id"`
 	Active         bool            `json:"active"`
 	Currency       stripe.Currency `json:"currency"`
 	IsIntroductory bool            `json:"isIntroductory"`
-	Kind           price.Kind      `json:"kind"`
+	Kind           Kind            `json:"kind"`
 	LiveMode       bool            `json:"liveMode"`
 	Nickname       string          `json:"nickname"`
 	ProductID      string          `json:"productId"`
@@ -152,13 +128,13 @@ type Price struct {
 	EndUTC         null.String     `json:"endUtc"`   // End time if Introductory is true; otherwise omit.
 	Created        int64           `json:"created"`
 
-	Metadata  PriceMetadata    `json:"metadata"`  // Deprecated
-	Product   string           `json:"product"`   // Deprecated. Use ProductID
-	Recurring PriceRecurring   `json:"recurring"` // Deprecated
-	Type      stripe.PriceType `json:"type"`      // Deprecated. Use Kind.
+	Metadata  StripePriceMetadata  `json:"metadata"`  // Deprecated
+	Product   string               `json:"product"`   // Deprecated. Use ProductID
+	Recurring StripePriceRecurring `json:"recurring"` // Deprecated
+	Type      stripe.PriceType     `json:"type"`      // Deprecated. Use Kind.
 }
 
-func NewPrice(p *stripe.Price) Price {
+func NewPrice(p *stripe.Price) StripePrice {
 
 	meta := NewPriceMeta(p.Metadata)
 
@@ -169,12 +145,13 @@ func NewPrice(p *stripe.Price) Price {
 		period = parseRecurringPeriod(p.Recurring)
 	}
 
-	return Price{
+	return StripePrice{
+		IsFromStripe:   true,
 		ID:             p.ID,
 		Active:         p.Active,
 		Currency:       p.Currency,
 		IsIntroductory: meta.Introductory,
-		Kind:           price.Kind(p.Type),
+		Kind:           Kind(p.Type),
 		LiveMode:       p.Livemode,
 		Nickname:       p.Nickname,
 		ProductID:      p.Product.ID,
@@ -192,14 +169,14 @@ func NewPrice(p *stripe.Price) Price {
 	}
 }
 
-func (p Price) IsZero() bool {
+func (p StripePrice) IsZero() bool {
 	return p.ID == ""
 }
 
 // Edition deduces the edition of stripe price since that
 // information might be missing.
-func (p Price) Edition() price.Edition {
-	return price.Edition{
+func (p StripePrice) Edition() Edition {
+	return Edition{
 		Tier:  p.Tier,
 		Cycle: p.PeriodCount.EqCycle(),
 	}
