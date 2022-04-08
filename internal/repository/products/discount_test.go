@@ -242,7 +242,7 @@ func TestEnv_ArchivePriceDiscounts(t *testing.T) {
 			name: "Archive discount under a price",
 			args: args{
 				p: pw.PaywallPrice{
-					Price: price.Price{
+					FtcPrice: price.FtcPrice{
 						ID: p.ID,
 					},
 					Offers: nil,

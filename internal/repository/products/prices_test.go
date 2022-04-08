@@ -20,7 +20,7 @@ func TestEnv_CreatePrice(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		p price.Price
+		p price.FtcPrice
 	}
 	tests := []struct {
 		name    string
@@ -30,10 +30,10 @@ func TestEnv_CreatePrice(t *testing.T) {
 		{
 			name: "Recurring price",
 			args: args{
-				p: price.New(price.CreationParams{
+				p: price.New(price.FtcCreationParams{
 					Kind:    price.KindRecurring,
 					Edition: price.MockEditionStdYear,
-					UpdateParams: price.UpdateParams{
+					FtcUpdateParams: price.FtcUpdateParams{
 						Title:    null.StringFrom(gofakeit.Sentence(20)),
 						Nickname: null.StringFrom(gofakeit.Word()),
 						PeriodCount: price.ColumnYearMonthDay{
@@ -55,13 +55,13 @@ func TestEnv_CreatePrice(t *testing.T) {
 		{
 			name: "One time price",
 			args: args{
-				p: price.New(price.CreationParams{
+				p: price.New(price.FtcCreationParams{
 					Kind: price.KindOneTime,
 					Edition: price.Edition{
 						Tier:  enum.TierStandard,
 						Cycle: enum.CycleNull,
 					},
-					UpdateParams: price.UpdateParams{
+					FtcUpdateParams: price.FtcUpdateParams{
 						Title:    null.StringFrom(gofakeit.Sentence(2)),
 						Nickname: null.StringFrom(gofakeit.Word()),
 						PeriodCount: price.ColumnYearMonthDay{
@@ -101,7 +101,7 @@ func TestEnv_UpdatePrice(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		p price.Price
+		p price.FtcPrice
 	}
 	tests := []struct {
 		name    string
@@ -111,7 +111,7 @@ func TestEnv_UpdatePrice(t *testing.T) {
 		{
 			name: "Update price",
 			args: args{
-				p: p.Update(price.UpdateParams{
+				p: p.Update(price.FtcUpdateParams{
 					Title:         null.StringFrom("Updating description"),
 					Nickname:      null.StringFrom("Updating nickname"),
 					StripePriceID: "changed_stripe_id",
@@ -159,7 +159,7 @@ func TestEnv_ActivatePrice(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		p price.Price
+		p price.FtcPrice
 	}
 	tests := []struct {
 		name    string
@@ -205,7 +205,7 @@ func TestEnv_UpdatePriceOffers(t *testing.T) {
 			name: "Update price offers",
 			args: args{
 				pwp: pw.PaywallPrice{
-					Price: p,
+					FtcPrice: p,
 					Offers: []price.Discount{
 						test.NewDiscountBuilder(p.ID).BuildPromo(),
 						test.NewDiscountBuilder(p.ID).BuildRetention(),
@@ -287,7 +287,7 @@ func TestEnv_ArchivePrice(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		p price.Price
+		p price.FtcPrice
 	}
 	tests := []struct {
 		name    string

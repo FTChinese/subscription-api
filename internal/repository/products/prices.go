@@ -6,7 +6,7 @@ import (
 )
 
 // CreatePrice inserts a row into plan table.
-func (env Env) CreatePrice(p price.Price) error {
+func (env Env) CreatePrice(p price.FtcPrice) error {
 	_, err := env.dbs.Write.NamedExec(price.StmtCreatePrice, p)
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func (env Env) CreatePlan(p price.Plan) error {
 }
 
 // UpdatePrice updates a price's description and stripe price id.
-func (env Env) UpdatePrice(p price.Price) error {
+func (env Env) UpdatePrice(p price.FtcPrice) error {
 	_, err := env.dbs.Write.NamedExec(
 		price.StmtUpdatePrice,
 		p)
@@ -40,7 +40,7 @@ func (env Env) UpdatePrice(p price.Price) error {
 // ActivatePrice flags a price as active while all other
 // prices of the same edition and same live mode under the same product id
 // is turned to inactive.
-func (env Env) ActivatePrice(p price.Price) error {
+func (env Env) ActivatePrice(p price.FtcPrice) error {
 	tx, err := env.beginPriceTx()
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (env Env) ActivatePrice(p price.Price) error {
 	return nil
 }
 
-func (env Env) DeactivatePrice(p price.Price) error {
+func (env Env) DeactivatePrice(p price.FtcPrice) error {
 	_, err := env.dbs.Write.NamedExec(
 		price.StmtActivatePrice,
 		p)
@@ -125,7 +125,7 @@ func (env Env) ListProductPrices(prodID string, live bool) ([]pw.PaywallPrice, e
 	return list, nil
 }
 
-func (env Env) ArchivePrice(p price.Price) error {
+func (env Env) ArchivePrice(p price.FtcPrice) error {
 	_, err := env.dbs.Write.NamedExec(
 		price.StmtArchivePrice,
 		p)
