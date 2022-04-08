@@ -20,10 +20,10 @@ import (
 // priceId: string;
 // discountId?: string;
 // openId?: string; Required only for payment inside wechat in-house browser.
-func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
+func (router FtcPayRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 	webhookURL := config.AliWxWebhookURL(
-		router.Live,
+		router.live,
 		enum.PayMethodWx)
 
 	// Find the client to use for wxpay
@@ -62,7 +62,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 			return
 		}
 
-		item, re := router.loadCheckoutItem(input.CartParams, router.Live)
+		item, re := router.loadCheckoutItem(input.FtcCartParams, router.live)
 		if re != nil {
 			sugar.Error(re)
 			_ = render.New(w).JSON(re.StatusCode, re)
@@ -70,10 +70,10 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		}
 
 		counter := subs.Counter{
-			BaseAccount:  acnt,
-			CheckoutItem: item,
-			PayMethod:    enum.PayMethodWx,
-			WxAppID:      null.StringFrom(payClient.GetApp().AppID),
+			BaseAccount: acnt,
+			CartItemFtc: item,
+			PayMethod:   enum.PayMethodWx,
+			WxAppID:     null.StringFrom(payClient.GetApp().AppID),
 		}
 
 		pi, err := router.SubsRepo.CreateOrder(counter)
@@ -160,7 +160,7 @@ func (router SubsRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 
 // WxWebHook implements 支付结果通知
 // https://pay.weixin.qq.com/wiki/doc/api/app/app.php?chapter=9_7&index=3
-func (router SubsRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
+func (router FtcPayRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 

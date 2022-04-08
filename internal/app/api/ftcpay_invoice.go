@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func (router SubsRouter) ListInvoices(w http.ResponseWriter, req *http.Request) {
+func (router FtcPayRouter) ListInvoices(w http.ResponseWriter, req *http.Request) {
 	if err := req.ParseForm(); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -28,7 +28,7 @@ func (router SubsRouter) ListInvoices(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(list)
 }
 
-func (router SubsRouter) LoadInvoice(w http.ResponseWriter, req *http.Request) {
+func (router FtcPayRouter) LoadInvoice(w http.ResponseWriter, req *http.Request) {
 	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	invID, err := xhttp.GetURLParam(req, "id").ToString()

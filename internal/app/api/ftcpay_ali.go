@@ -25,9 +25,9 @@ import (
 // priceId: string;
 // discountId?: string;
 // returnUrl?: string; Only for browsers.
-func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
+func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 	webhookURL := config.AliWxWebhookURL(
-		router.Live,
+		router.live,
 		enum.PayMethodAli)
 
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -69,7 +69,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 
 		sugar.Infof("Start loading checkout item...")
 
-		item, re := router.loadCheckoutItem(params.CartParams, router.Live)
+		item, re := router.loadCheckoutItem(params.FtcCartParams, router.live)
 		if re != nil {
 			sugar.Error(re)
 			_ = render.New(w).JSON(re.StatusCode, re)
@@ -79,10 +79,10 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		sugar.Infof("Checkout item loaded %v", item)
 
 		counter := subs.Counter{
-			BaseAccount:  acnt,
-			CheckoutItem: item,
-			PayMethod:    enum.PayMethodAli,
-			WxAppID:      null.String{},
+			BaseAccount: acnt,
+			CartItemFtc: item,
+			PayMethod:   enum.PayMethodAli,
+			WxAppID:     null.String{},
 		}
 
 		sugar.Infof("Creating order...")
@@ -141,7 +141,7 @@ func (router SubsRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 // AliWebHook handles alipay server-side notification.
 // See https://opendocs.alipay.com/open/204/105301
 // POST /webhook/alipay
-func (router SubsRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
+func (router FtcPayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 

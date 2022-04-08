@@ -13,7 +13,7 @@ import (
 // ListOrders loads a list of membership change history.
 // Pagination support by adding query parameter:
 // page=<int>&per_page=<int>
-func (router SubsRouter) ListOrders(w http.ResponseWriter, req *http.Request) {
+func (router FtcPayRouter) ListOrders(w http.ResponseWriter, req *http.Request) {
 	if err := req.ParseForm(); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -31,7 +31,7 @@ func (router SubsRouter) ListOrders(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(list)
 }
 
-func (router SubsRouter) LoadOrder(w http.ResponseWriter, req *http.Request) {
+func (router FtcPayRouter) LoadOrder(w http.ResponseWriter, req *http.Request) {
 	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	orderID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -56,7 +56,7 @@ func (router SubsRouter) LoadOrder(w http.ResponseWriter, req *http.Request) {
 
 // RawPaymentResult fetch data from wxpay or alipay order query endpoints and transfer the data as is.
 // The response data formats are not always the same one.
-func (router SubsRouter) RawPaymentResult(w http.ResponseWriter, req *http.Request) {
+func (router FtcPayRouter) RawPaymentResult(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
@@ -113,7 +113,7 @@ func (router SubsRouter) RawPaymentResult(w http.ResponseWriter, req *http.Reque
 // VerifyPayment checks against payment provider's api to get
 // the payment result of an order.
 // POST /orders/{id}/verify-payment
-func (router SubsRouter) VerifyPayment(w http.ResponseWriter, req *http.Request) {
+func (router FtcPayRouter) VerifyPayment(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 

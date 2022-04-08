@@ -11,7 +11,7 @@ import (
 // ftc staff manually.
 // TODO: when claiming addon for an expired b2b, we
 // revoke the linked licence automatically.
-func (router SubsRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
+func (router FtcPayRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
 	readerIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	result, err := router.AddOnRepo.ClaimAddOn(readerIDs)

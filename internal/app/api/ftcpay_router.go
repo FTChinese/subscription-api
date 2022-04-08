@@ -6,23 +6,40 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/app/paybase"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
-	"github.com/FTChinese/subscription-api/internal/repository/shared"
+	"github.com/FTChinese/subscription-api/internal/repository"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/patrickmn/go-cache"
+	"go.uber.org/zap"
 	"net/http"
 )
 
-// SubsRouter is the base type used to handle shared payment operations.
-type SubsRouter struct {
+// FtcPayRouter is the base type used to handle shared payment operations.
+type FtcPayRouter struct {
 	paybase.FtcPayBase // This contains readers.Env to access account data.
-	PaywallRepo        shared.PaywallCommon
-	Live               bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
+	paywallRepo        repository.PaywallRepo
+	cacheRepo          repository.CacheRepo
+	live               bool // Determine webhook url. If true, use production server; otherwise goes to sandbox server.
+}
+
+func NewFtcPayRouter(
+	dbs db.ReadWriteMyDBs,
+	c *cache.Cache,
+	logger *zap.Logger,
+	live bool,
+) FtcPayRouter {
+	return FtcPayRouter{
+		FtcPayBase:  paybase.NewFtcPay(dbs, logger),
+		paywallRepo: repository.NewPaywallRepo(dbs),
+		cacheRepo:   repository.NewCacheRepo(c),
+		live:        live,
+	}
 }
 
 // Centralized error handling after order creation.
 // It handles the errors propagated from Membership.AliWxSubsKind(),
-func (router SubsRouter) handleOrderErr(w http.ResponseWriter, err error) {
+func (router FtcPayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	var ve *render.ValidationError
 	if errors.As(err, &ve) {
 		_ = render.New(w).Unprocessable(ve)
@@ -32,7 +49,7 @@ func (router SubsRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	_ = render.New(w).DBError(err)
 }
 
-func (router SubsRouter) postOrderCreation(order subs.Order, client footprint.Client) error {
+func (router FtcPayRouter) postOrderCreation(order subs.Order, client footprint.Client) error {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
@@ -49,7 +66,7 @@ func (router SubsRouter) postOrderCreation(order subs.Order, client footprint.Cl
 	return nil
 }
 
-func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
+func (router FtcPayRouter) processWebhookResult(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
@@ -80,17 +97,18 @@ func (router SubsRouter) processWebhookResult(result subs.PaymentResult) (subs.C
 	return router.ConfirmOrder(result, order)
 }
 
-func (router SubsRouter) loadCheckoutItem(params pw.CartParams, live bool) (price.CheckoutItem, *render.ResponseError) {
+func (router FtcPayRouter) loadCheckoutItem(params pw.FtcCartParams, live bool) (pw.CartItemFtc, *render.ResponseError) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
 	sugar.Infof("Load checkout item. Live %t", live)
 
-	paywall, err := router.PaywallRepo.LoadPaywall(live)
+	// TODO: use PaymentShared.
+	paywall, err := router.paywallRepo.LoadPaywall(live)
 	// If price and discount could be found in paywall.
 	if err == nil {
 		sugar.Infof("Paywall Cache found. Search checkout item.")
-		item, err := paywall.FindCheckoutItem(params)
+		item, err := paywall.BuildFtcCartItem(params)
 		if err == nil {
 			sugar.Infof("Checkout item found in cache")
 			return item, nil
@@ -100,18 +118,18 @@ func (router SubsRouter) loadCheckoutItem(params pw.CartParams, live bool) (pric
 	}
 
 	// Otherwise, retrieve from db.
-	ci, err := router.PaywallRepo.LoadCheckoutItem(
+	ci, err := router.paywallRepo.LoadCheckoutItem(
 		params,
-		router.Live)
+		router.live)
 
 	if err != nil {
 		sugar.Error(err)
-		return price.CheckoutItem{}, render.NewDBError(err)
+		return pw.CartItemFtc{}, render.NewDBError(err)
 	}
 
 	if err := ci.Verify(live); err != nil {
 		sugar.Error(err)
-		return price.CheckoutItem{}, render.NewBadRequest(err.Error())
+		return pw.CartItemFtc{}, render.NewBadRequest(err.Error())
 	}
 
 	return ci, nil
