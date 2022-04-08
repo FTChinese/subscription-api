@@ -4,79 +4,15 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/addon"
-	"github.com/FTChinese/subscription-api/pkg/pw"
-	"github.com/google/uuid"
 	"reflect"
 	"testing"
 	"time"
 )
 
-func TestNewAddOnGroup(t *testing.T) {
-	userID := uuid.New().String()
-	inv1 := NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		Build()
-	inv2 := NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		WithPrice(pw.MockPwPricePrm).
-		Build()
-	inv3 := NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		WithAddOnSource(addon.SourceCarryOver).
-		Build()
-
-	type args struct {
-		inv []Invoice
-	}
-	tests := []struct {
-		name string
-		args args
-		want AddOnGroup
-	}{
-		{
-			name: "Group Add-ons",
-			args: args{
-				inv: []Invoice{
-					inv1,
-					inv2,
-					inv3,
-				},
-			},
-			want: AddOnGroup{
-				enum.TierStandard: []Invoice{
-					inv1,
-					inv3,
-				},
-				enum.TierPremium: []Invoice{
-					inv2,
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewAddOnGroup(tt.args.inv); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewAddOnGroup() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_consumeAddOn(t *testing.T) {
-	userID := uuid.New().String()
-	inv1 := NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		Build()
+	inv1 := Invoice{}
 
-	inv2 := NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		WithAddOnSource(addon.SourceCarryOver).
-		Build()
+	inv2 := Invoice{}
 
 	now := time.Now()
 
@@ -110,8 +46,6 @@ func Test_consumeAddOn(t *testing.T) {
 
 func Test_reduceInvoices(t *testing.T) {
 
-	ftcID := uuid.New().String()
-
 	type args struct {
 		invs []Invoice
 	}
@@ -123,23 +57,7 @@ func Test_reduceInvoices(t *testing.T) {
 		{
 			name: "Reduce invoices days",
 			args: args{
-				invs: []Invoice{
-					NewMockInvoiceBuilder().
-						WithFtcID(ftcID).
-						WithOrderKind(enum.OrderKindAddOn).
-						WithAddOnSource(addon.SourceUserPurchase).
-						Build(),
-					NewMockInvoiceBuilder().
-						WithFtcID(ftcID).
-						WithOrderKind(enum.OrderKindAddOn).
-						WithAddOnSource(addon.SourceCarryOver).
-						Build(),
-					NewMockInvoiceBuilder().
-						WithFtcID(ftcID).
-						WithOrderKind(enum.OrderKindAddOn).
-						WithAddOnSource(addon.SourceCompensation).
-						Build(),
-				},
+				invs: []Invoice{},
 			},
 			want: 366*3 + 3,
 		},
@@ -159,7 +77,6 @@ func Test_reduceInvoices(t *testing.T) {
 }
 
 func TestAddOnGroup_ToAddOn(t *testing.T) {
-	ftcID := uuid.New().String()
 
 	tests := []struct {
 		name string
@@ -169,26 +86,8 @@ func TestAddOnGroup_ToAddOn(t *testing.T) {
 		{
 			name: "Sum addon days",
 			g: AddOnGroup{
-				enum.TierStandard: {
-					NewMockInvoiceBuilder().
-						WithFtcID(ftcID).
-						WithOrderKind(enum.OrderKindAddOn).
-						WithAddOnSource(addon.SourceUserPurchase).
-						Build(),
-
-					NewMockInvoiceBuilder().
-						WithFtcID(ftcID).
-						WithOrderKind(enum.OrderKindAddOn).
-						WithAddOnSource(addon.SourceCompensation).
-						Build(),
-				},
-				enum.TierPremium: {
-					NewMockInvoiceBuilder().
-						WithFtcID(ftcID).
-						WithOrderKind(enum.OrderKindAddOn).
-						WithAddOnSource(addon.SourceCarryOver).
-						Build(),
-				},
+				enum.TierStandard: {},
+				enum.TierPremium:  {},
 			},
 			want: addon.AddOn{
 				Standard: 367 * 2,
