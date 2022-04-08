@@ -22,11 +22,11 @@ SET id = :snapshot_id,
 // versions of modification in a dedicated table.
 type MembershipVersioned struct {
 	ID               string           `json:"id" db:"snapshot_id"`
-	AnteChange       ColumnMembership `json:"anteChange" db:"ante_change"` // Membership before being changed
+	AnteChange       MembershipColumn `json:"anteChange" db:"ante_change"` // Membership before being changed
 	CreatedBy        null.String      `json:"createdBy" db:"created_by"`
 	CreatedUTC       chrono.Time      `json:"createdUtc" db:"created_utc"`
 	B2BTransactionID null.String      `json:"b2bTransactionId" db:"b2b_transaction_id"`
-	PostChange       ColumnMembership `json:"postChange" db:"post_change"`       // Membership after being changed.
+	PostChange       MembershipColumn `json:"postChange" db:"post_change"`       // Membership after being changed.
 	RetailOrderID    null.String      `json:"retailOderId" db:"retail_order_id"` // Only exists when user is performing renewal or upgrading.
 }
 
@@ -60,7 +60,7 @@ func (v MembershipVersioned) WithPriorVersion(m Membership) MembershipVersioned 
 		return v
 	}
 
-	v.AnteChange = ColumnMembership{m}
+	v.AnteChange = MembershipColumn{m}
 
 	return v
 }
@@ -75,11 +75,11 @@ func (m Membership) Version(by Archiver) MembershipVersioned {
 
 	return MembershipVersioned{
 		ID:               ids.SnapshotID(),
-		AnteChange:       ColumnMembership{}, // Optional. Only exists if a previous version existed.
+		AnteChange:       MembershipColumn{}, // Optional. Only exists if a previous version existed.
 		CreatedBy:        null.StringFrom(by.String()),
 		CreatedUTC:       chrono.TimeNow(),
 		B2BTransactionID: null.String{},
-		PostChange:       ColumnMembership{m},
+		PostChange:       MembershipColumn{m},
 		RetailOrderID:    null.String{},
 	}
 }
@@ -87,11 +87,11 @@ func (m Membership) Version(by Archiver) MembershipVersioned {
 func (m Membership) Deleted(by Archiver) MembershipVersioned {
 	return MembershipVersioned{
 		ID:               ids.SnapshotID(),
-		AnteChange:       ColumnMembership{m},
+		AnteChange:       MembershipColumn{m},
 		CreatedBy:        null.StringFrom(by.String()),
 		CreatedUTC:       chrono.TimeNow(),
 		B2BTransactionID: null.String{},
-		PostChange:       ColumnMembership{},
+		PostChange:       MembershipColumn{},
 		RetailOrderID:    null.String{},
 	}
 }
