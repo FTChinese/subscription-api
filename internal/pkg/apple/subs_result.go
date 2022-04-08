@@ -31,7 +31,7 @@ func NewSubsResult(subs Subscription, params SubsResultParams) (SubsResult, erro
 	// For existing membership, it cannot be purchased by means other than Apple.
 	// This could only be possible when performing link.
 	var inv invoice.Invoice
-	if subsKind == reader.SubsKindOneTimeToSub {
+	if subsKind == reader.SubsKindOneTimeToAutoRenew {
 		inv = params.CurrentMember.CarryOverInvoice().
 			WithAppleTxID(subs.OriginalTransactionID)
 	}

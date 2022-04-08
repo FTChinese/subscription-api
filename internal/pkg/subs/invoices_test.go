@@ -26,7 +26,7 @@ func TestNewOrderInvoice(t *testing.T) {
 	type args struct {
 		timeParams PurchasedTimeParams
 		o          Order
-		p          price.Price
+		p          price.FtcPrice
 	}
 	tests := []struct {
 		name    string
@@ -115,10 +115,7 @@ func TestInvoices_membership(t *testing.T) {
 		{
 			name: "Create new membership",
 			fields: fields{
-				Purchased: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					SetPeriodStart(now).
-					Build(),
+				Purchased:   invoice.Invoice{},
 				CarriedOver: invoice.Invoice{},
 			},
 			args: args{
@@ -146,11 +143,7 @@ func TestInvoices_membership(t *testing.T) {
 		{
 			name: "Renew membership",
 			fields: fields{
-				Purchased: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					SetPeriodStart(current.ExpireDate.Time).
-					WithOrderKind(enum.OrderKindRenew).
-					Build(),
+				Purchased:   invoice.Invoice{},
 				CarriedOver: invoice.Invoice{},
 			},
 			args: args{
@@ -178,11 +171,7 @@ func TestInvoices_membership(t *testing.T) {
 		{
 			name: "Upgrade membership",
 			fields: fields{
-				Purchased: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					SetPeriodStart(now).
-					WithOrderKind(enum.OrderKindUpgrade).
-					Build(),
+				Purchased:   invoice.Invoice{},
 				CarriedOver: current.CarryOverInvoice(),
 			},
 			args: args{
@@ -210,10 +199,7 @@ func TestInvoices_membership(t *testing.T) {
 		{
 			name: "Add on",
 			fields: fields{
-				Purchased: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					WithOrderKind(enum.OrderKindAddOn).
-					Build(),
+				Purchased:   invoice.Invoice{},
 				CarriedOver: invoice.Invoice{},
 			},
 			args: args{

@@ -11,7 +11,7 @@ import (
 )
 
 type PaymentIntent struct {
-	Price      price.Price       `json:"price"`
+	Price      price.FtcPrice    `json:"price"`
 	Offer      price.Discount    `json:"offer"`
 	Order      Order             `json:"order"`
 	Membership reader.Membership `json:"membership"`
@@ -21,7 +21,7 @@ type PaymentIntentSchema struct {
 	OrderID      string                  `db:"order_id"`
 	Price        price.JSONPrice         `db:"price"`
 	Offer        price.ColumnDiscount    `db:"offer"`
-	Membership   reader.ColumnMembership `db:"membership"`
+	Membership   reader.MembershipColumn `db:"membership"`
 	WxPayParams  wechat.ColumnSDKParams  `db:"wxpay_params"`
 	AliPayParams ali.ColumnSDKParams     `db:"alipay_params"`
 	CreatedUTC   chrono.Time             `db:"created_utc"`
@@ -43,12 +43,12 @@ func (p WxPaymentIntent) Schema() PaymentIntentSchema {
 	return PaymentIntentSchema{
 		OrderID: p.Order.ID,
 		Price: price.JSONPrice{
-			Price: p.Price,
+			FtcPrice: p.Price,
 		},
 		Offer: price.ColumnDiscount{
 			Discount: p.Offer,
 		},
-		Membership: reader.ColumnMembership{
+		Membership: reader.MembershipColumn{
 			Membership: p.Membership,
 		},
 		WxPayParams: wechat.ColumnSDKParams{
@@ -92,12 +92,12 @@ func (p AliPaymentIntent) Schema() PaymentIntentSchema {
 	return PaymentIntentSchema{
 		OrderID: p.Order.ID,
 		Price: price.JSONPrice{
-			Price: p.Price,
+			FtcPrice: p.Price,
 		},
 		Offer: price.ColumnDiscount{
 			Discount: p.Offer,
 		},
-		Membership: reader.ColumnMembership{
+		Membership: reader.MembershipColumn{
 			Membership: p.Membership,
 		},
 		WxPayParams: wechat.ColumnSDKParams{},

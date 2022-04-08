@@ -140,8 +140,8 @@ func (b MockOrderBuilder) findDiscount() price.Discount {
 }
 func (b MockOrderBuilder) Build() Order {
 
-	item := price.CheckoutItem{
-		Price: b.price.Price,
+	item := pw.CartItemFtc{
+		Price: b.price.FtcPrice,
 		Offer: b.findDiscount(),
 	}
 

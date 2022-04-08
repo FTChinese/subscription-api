@@ -112,7 +112,7 @@ func Test_calibrateOrderKind(t *testing.T) {
 			name: "Standard add-on for premium",
 			args: args{
 				m: reader.NewMockMemberBuilder(userID).
-					WithPrice(pw.MockPwPricePrm.Price).
+					WithPrice(pw.MockPwPricePrm.FtcPrice).
 					Build(),
 				e: price.StdYearEdition,
 			},

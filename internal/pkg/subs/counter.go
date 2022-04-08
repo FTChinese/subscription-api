@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 )
@@ -14,7 +14,7 @@ import (
 // Counter collects all information to create a one-time purchase.
 type Counter struct {
 	BaseAccount account.BaseAccount
-	price.CheckoutItem
+	pw.CartItemFtc
 	PayMethod enum.PayMethod
 	WxAppID   null.String
 }

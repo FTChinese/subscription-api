@@ -1,14 +1,17 @@
 package letter
 
 import (
-	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/brianvoe/gofakeit/v5"
+	"github.com/guregu/null"
 	"testing"
-	"time"
 )
 
 func TestCtxVerification_Render(t *testing.T) {
@@ -259,9 +262,23 @@ func TestCtxSubs_Render(t *testing.T) {
 			fields: fields{
 				UserName: gofakeit.Username(),
 				Invoices: subs.Invoices{
-					Purchased: invoice.NewMockInvoiceBuilder().
-						Build().
-						SetPeriod(time.Now()),
+					Purchased: invoice.Invoice{
+						ID:             ids.InvoiceID(),
+						CompoundID:     "",
+						Edition:        price.Edition{},
+						YearMonthDay:   dt.YearMonthDay{},
+						AddOnSource:    "",
+						AppleTxID:      null.String{},
+						OrderID:        null.String{},
+						OrderKind:      0,
+						PaidAmount:     0,
+						PaymentMethod:  0,
+						StripeSubsID:   null.String{},
+						CreatedUTC:     chrono.Time{},
+						ConsumedUTC:    chrono.Time{},
+						ChronoPeriod:   dt.ChronoPeriod{},
+						CarriedOverUtc: chrono.Time{},
+					},
 					CarriedOver: invoice.Invoice{},
 				},
 			},
@@ -272,10 +289,7 @@ func TestCtxSubs_Render(t *testing.T) {
 			fields: fields{
 				UserName: gofakeit.Username(),
 				Invoices: subs.Invoices{
-					Purchased: invoice.NewMockInvoiceBuilder().
-						WithOrderKind(enum.OrderKindRenew).
-						Build().
-						SetPeriod(time.Now()),
+					Purchased:   invoice.Invoice{},
 					CarriedOver: invoice.Invoice{},
 				},
 			},
@@ -286,10 +300,7 @@ func TestCtxSubs_Render(t *testing.T) {
 			fields: fields{
 				UserName: gofakeit.Username(),
 				Invoices: subs.Invoices{
-					Purchased: invoice.NewMockInvoiceBuilder().
-						WithOrderKind(enum.OrderKindUpgrade).
-						Build().
-						SetPeriod(time.Now()),
+					Purchased: invoice.Invoice{},
 					CarriedOver: reader.NewMockMemberBuilder("").
 						Build().
 						CarryOverInvoice(),
@@ -302,9 +313,7 @@ func TestCtxSubs_Render(t *testing.T) {
 			fields: fields{
 				UserName: gofakeit.Username(),
 				Invoices: subs.Invoices{
-					Purchased: invoice.NewMockInvoiceBuilder().
-						WithOrderKind(enum.OrderKindAddOn).
-						Build(),
+					Purchased:   invoice.Invoice{},
 					CarriedOver: invoice.Invoice{},
 				},
 			},
