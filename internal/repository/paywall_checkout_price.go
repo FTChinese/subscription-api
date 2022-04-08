@@ -1,4 +1,4 @@
-package shared
+package repository
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -6,9 +6,9 @@ import (
 )
 
 // RetrievePaywallPrice retrieves a single row by plan id.
-func (env PaywallCommon) RetrievePaywallPrice(id string, live bool) (pw.PaywallPrice, error) {
+func (repo PaywallRepo) RetrievePaywallPrice(id string, live bool) (pw.PaywallPrice, error) {
 	var p pw.PaywallPrice
-	err := env.dbs.Read.Get(
+	err := repo.dbs.Read.Get(
 		&p,
 		pw.StmtSelectPaywallPrice,
 		id,
@@ -26,13 +26,13 @@ type asyncPriceResult struct {
 	error error
 }
 
-func (env PaywallCommon) asyncLoadPrice(id string, live bool) <-chan asyncPriceResult {
+func (repo PaywallRepo) asyncLoadPrice(id string, live bool) <-chan asyncPriceResult {
 	c := make(chan asyncPriceResult)
 
 	go func() {
 		defer close(c)
 
-		p, err := env.RetrievePaywallPrice(id, live)
+		p, err := repo.RetrievePaywallPrice(id, live)
 
 		c <- asyncPriceResult{
 			value: p,
@@ -44,9 +44,9 @@ func (env PaywallCommon) asyncLoadPrice(id string, live bool) <-chan asyncPriceR
 }
 
 // LoadDiscount retrieve a single row of discount
-func (env PaywallCommon) LoadDiscount(id string) (price.Discount, error) {
+func (repo PaywallRepo) LoadDiscount(id string) (price.Discount, error) {
 	var d price.Discount
-	err := env.dbs.Read.Get(
+	err := repo.dbs.Read.Get(
 		&d,
 		price.StmtSelectDiscount,
 		id)
@@ -63,7 +63,7 @@ type asyncDiscountResult struct {
 }
 
 // load discount asynchronously. If id is empty, returns immediately.
-func (env PaywallCommon) asyncLoadDiscount(id string) <-chan asyncDiscountResult {
+func (repo PaywallRepo) asyncLoadDiscount(id string) <-chan asyncDiscountResult {
 	c := make(chan asyncDiscountResult)
 
 	if id == "" {
@@ -75,7 +75,7 @@ func (env PaywallCommon) asyncLoadDiscount(id string) <-chan asyncDiscountResult
 		go func() {
 			defer close(c)
 
-			d, err := env.LoadDiscount(id)
+			d, err := repo.LoadDiscount(id)
 
 			c <- asyncDiscountResult{
 				value: d,
@@ -88,33 +88,33 @@ func (env PaywallCommon) asyncLoadDiscount(id string) <-chan asyncDiscountResult
 }
 
 // LoadCheckoutItem loads a price and a discount from db.
-func (env PaywallCommon) LoadCheckoutItem(params pw.CartParams, live bool) (price.CheckoutItem, error) {
+func (repo PaywallRepo) LoadCheckoutItem(params pw.FtcCartParams, live bool) (pw.CartItemFtc, error) {
 
 	if params.DiscountID.IsZero() {
-		pwp, err := env.RetrievePaywallPrice(params.PriceID, live)
+		pwp, err := repo.RetrievePaywallPrice(params.PriceID, live)
 		if err != nil {
-			return price.CheckoutItem{}, err
+			return pw.CartItemFtc{}, err
 		}
 
-		return price.CheckoutItem{
-			Price: pwp.Price,
+		return pw.CartItemFtc{
+			Price: pwp.FtcPrice,
 			Offer: price.Discount{},
 		}, nil
 	}
 
-	priceCh, discCh := env.asyncLoadPrice(params.PriceID, live), env.asyncLoadDiscount(params.DiscountID.String)
+	priceCh, discCh := repo.asyncLoadPrice(params.PriceID, live), repo.asyncLoadDiscount(params.DiscountID.String)
 
 	priceResult, discResult := <-priceCh, <-discCh
 	if priceResult.error != nil {
-		return price.CheckoutItem{}, priceResult.error
+		return pw.CartItemFtc{}, priceResult.error
 	}
 
 	if discResult.error != nil {
-		return price.CheckoutItem{}, discResult.error
+		return pw.CartItemFtc{}, discResult.error
 	}
 
-	return price.CheckoutItem{
-		Price: priceResult.value.Price,
+	return pw.CartItemFtc{
+		Price: priceResult.value.FtcPrice,
 		Offer: discResult.value,
 	}, nil
 }

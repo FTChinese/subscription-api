@@ -1,4 +1,4 @@
-package shared
+package repository
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestEnv_LoadDiscount(t *testing.T) {
-	env := NewPaywallCommon(db.MockMySQL(), nil)
+	env := NewPaywallRepo(db.MockMySQL(), nil)
 
 	pb := test.NewStdProdBuilder().NewYearPriceBuilder()
 	disc := pb.NewDiscountBuilder().BuildRetention()
