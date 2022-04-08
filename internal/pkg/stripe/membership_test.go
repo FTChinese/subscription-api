@@ -51,8 +51,8 @@ func TestNewMembership(t *testing.T) {
 						Items: []SubsItem{
 							{
 								ID: faker.GenStripeItemID(),
-								Price: PriceJSON{
-									Price: MockPriceStdYear,
+								Price: PriceColumn{
+									StripePrice: MockPriceStdYear,
 								},
 								Created:        time.Now().Unix(),
 								Quantity:       1,

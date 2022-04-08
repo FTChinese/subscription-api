@@ -10,7 +10,7 @@ import (
 	"github.com/guregu/null"
 )
 
-var MockPriceStdIntro = Price{
+var MockPriceStdIntro = price.StripePrice{
 	ID:             "price_1Juuu2BzTK0hABgJTXiK4NTt",
 	Active:         true,
 	Currency:       "gbp",
@@ -31,7 +31,7 @@ var MockPriceStdIntro = Price{
 	Created:    1636704870,
 }
 
-var MockPriceStdYear = Price{
+var MockPriceStdYear = price.StripePrice{
 	ID:             "price_1IM2nFBzTK0hABgJiIDeDIox",
 	Active:         true,
 	Currency:       "gbp",
@@ -52,7 +52,7 @@ var MockPriceStdYear = Price{
 	Created:    1613617385,
 }
 
-var MockPriceStdMonth = Price{
+var MockPriceStdMonth = price.StripePrice{
 	ID:             "price_1IM2mgBzTK0hABgJVH8o9Sjm",
 	Active:         true,
 	Currency:       "gbp",
@@ -73,7 +73,7 @@ var MockPriceStdMonth = Price{
 	Created:    1613617350,
 }
 
-var MockPricePrmYear = Price{
+var MockPricePrmYear = price.StripePrice{
 	ID:             "plan_FOde0uAr0V4WmT",
 	Active:         true,
 	Currency:       "gbp",
