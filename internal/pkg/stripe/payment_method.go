@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/pkg"
 	"github.com/FTChinese/subscription-api/lib/validator"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/stripe/stripe-go/v72"
 	"strings"
 )
