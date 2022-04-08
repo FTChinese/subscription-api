@@ -87,9 +87,9 @@ func (p Product) Activate() Product {
 }
 
 // WithIntroPrice set an introductory price on product.
-func (p Product) WithIntroPrice(pri price.Price) Product {
+func (p Product) WithIntroPrice(pri price.FtcPrice) Product {
 	p.Introductory = price.JSONPrice{
-		Price: pri,
+		FtcPrice: pri,
 	}
 
 	p.UpdatedUTC = chrono.TimeNow()

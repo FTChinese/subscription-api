@@ -9,7 +9,7 @@ import (
 // The actual price user paid should be the original price minus
 // promotion offer if promotion period is valid.
 type PaywallPrice struct {
-	price.Price
+	price.FtcPrice
 	Offers price.DiscountListJSON `json:"offers" db:"discount_list"`
 }
 
@@ -36,29 +36,29 @@ func (p PaywallPrice) FindValidOffer(id string) (price.Discount, error) {
 	return price.Discount{}, price.ErrDiscountNotFound
 }
 
-func (p PaywallPrice) CheckoutItem(offerID null.String) (price.CheckoutItem, error) {
+func (p PaywallPrice) CheckoutItem(offerID null.String) (CartItemFtc, error) {
 	// For introductory price, ignore discount.
 	if p.IsOneTime() {
-		return price.CheckoutItem{
-			Price: p.Price,
+		return CartItemFtc{
+			Price: p.FtcPrice,
 			Offer: price.Discount{},
 		}, nil
 	}
 
 	if offerID.IsZero() {
-		return price.CheckoutItem{
-			Price: p.Price,
+		return CartItemFtc{
+			Price: p.FtcPrice,
 			Offer: price.Discount{},
 		}, nil
 	}
 
 	offer, err := p.FindValidOffer(offerID.String)
 	if err != nil {
-		return price.CheckoutItem{}, err
+		return CartItemFtc{}, err
 	}
 
-	return price.CheckoutItem{
-		Price: p.Price,
+	return CartItemFtc{
+		Price: p.FtcPrice,
 		Offer: offer,
 	}, nil
 }

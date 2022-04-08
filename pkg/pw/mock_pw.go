@@ -6,16 +6,16 @@ package pw
 import "github.com/FTChinese/subscription-api/pkg/price"
 
 var MockPwPriceStdYear = PaywallPrice{
-	Price:  price.MockPriceStdYear,
-	Offers: price.MockStdYearOffers,
+	FtcPrice: price.MockPriceStdYear,
+	Offers:   price.MockStdYearOffers,
 }
 
 var MockPwPriceStdMonth = PaywallPrice{
-	Price:  price.MockPriceStdMonth,
-	Offers: price.MockStdMonthOffers,
+	FtcPrice: price.MockPriceStdMonth,
+	Offers:   price.MockStdMonthOffers,
 }
 
 var MockPwPricePrm = PaywallPrice{
-	Price:  price.MockPricePrm,
-	Offers: price.MockPrmOffers,
+	FtcPrice: price.MockPricePrm,
+	Offers:   price.MockPrmOffers,
 }

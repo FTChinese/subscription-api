@@ -54,8 +54,8 @@ func TestFtcPrice_ApplicableOffer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := PaywallPrice{
-				Price:  tt.fields.Price,
-				Offers: tt.fields.Offers,
+				FtcPrice: tt.fields.FtcPrice,
+				Offers:   tt.fields.Offers,
 			}
 
 			got := f.Offers.FindApplicable(tt.args.enjoys)
