@@ -20,7 +20,7 @@ type MockMemberBuilder struct {
 	accountKind  enum.AccountKind
 	ftcID        string
 	unionID      string
-	price        price.Price
+	price        price.FtcPrice
 	payMethod    enum.PayMethod
 	expiration   time.Time
 	subsStatus   enum.SubsStatus
@@ -42,7 +42,7 @@ func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
 		accountKind: enum.AccountKindFtc,
 		ftcID:       ftcID,
 		unionID:     faker.GenWxID(),
-		price:       pw.MockPwPriceStdYear.Price,
+		price:       pw.MockPwPriceStdYear.FtcPrice,
 		payMethod:   enum.PayMethodAli,
 		expiration:  time.Now().AddDate(0, 1, 0),
 	}
@@ -53,7 +53,7 @@ func NewMockMemberBuilderV2(k enum.AccountKind) MockMemberBuilder {
 		accountKind:  k,
 		ftcID:        uuid.New().String(),
 		unionID:      faker.GenWxID(),
-		price:        pw.MockPwPriceStdYear.Price,
+		price:        pw.MockPwPriceStdYear.FtcPrice,
 		payMethod:    enum.PayMethodAli,
 		expiration:   time.Now().AddDate(0, 1, 0),
 		subsStatus:   0,
@@ -108,7 +108,7 @@ func (b MockMemberBuilder) WithWx() MockMemberBuilder {
 
 // WithPrice sets the subscription plan for payment method alipay or wechat.
 // Call this together with WithAlipay or WithWx
-func (b MockMemberBuilder) WithPrice(p price.Price) MockMemberBuilder {
+func (b MockMemberBuilder) WithPrice(p price.FtcPrice) MockMemberBuilder {
 	b.price = p
 
 	return b
