@@ -1,8 +1,6 @@
 package txrepo
 
 import (
-	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/test"
@@ -16,22 +14,7 @@ func TestAddOnTx_AddOnInvoices(t *testing.T) {
 	userID := uuid.New().String()
 
 	repo := test.NewRepo()
-	repo.MustSaveInvoiceN([]invoice.Invoice{
-		invoice.NewMockInvoiceBuilder().
-			WithFtcID(userID).
-			WithOrderKind(enum.OrderKindAddOn).
-			Build(),
-		invoice.NewMockInvoiceBuilder().
-			WithFtcID(userID).
-			WithOrderKind(enum.OrderKindAddOn).
-			WithAddOnSource(addon.SourceCarryOver).
-			Build(),
-		invoice.NewMockInvoiceBuilder().
-			WithFtcID(userID).
-			WithOrderKind(enum.OrderKindAddOn).
-			WithAddOnSource(addon.SourceCompensation).
-			Build(),
-	})
+	repo.MustSaveInvoiceN([]invoice.Invoice{})
 
 	type fields struct {
 		Tx *sqlx.Tx
@@ -79,22 +62,9 @@ func TestAddOnTx_AddOnInvoices(t *testing.T) {
 
 func TestAddOnTx_AddOnInvoiceConsumed(t *testing.T) {
 
-	userID := uuid.New().String()
-
-	inv1 := invoice.NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		Build()
-	inv2 := invoice.NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		WithAddOnSource(addon.SourceCarryOver).
-		Build()
-	inv3 := invoice.NewMockInvoiceBuilder().
-		WithFtcID(userID).
-		WithOrderKind(enum.OrderKindAddOn).
-		WithAddOnSource(addon.SourceCompensation).
-		Build()
+	inv1 := invoice.Invoice{}
+	inv2 := invoice.Invoice{}
+	inv3 := invoice.Invoice{}
 
 	repo := test.NewRepo()
 	repo.MustSaveInvoice(inv1)

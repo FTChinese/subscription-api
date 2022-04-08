@@ -80,8 +80,8 @@ func TestMemberTx_SaveOrder(t *testing.T) {
 			args: args{
 				order: p.OrderBuilder().
 					WithPrice(pw.PaywallPrice{
-						Price:  price.MockIntroPrice,
-						Offers: nil,
+						FtcPrice: price.MockIntroPrice,
+						Offers:   nil,
 					}).
 					Build(),
 			},

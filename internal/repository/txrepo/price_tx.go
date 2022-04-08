@@ -21,7 +21,7 @@ func NewPriceTx(tx *sqlx.Tx) PriceTx {
 // state simultaneously.
 // The passed-in PaywallPrice is the one that should be excluded
 // from deactivating.s
-func (tx PriceTx) DeactivateSiblingPrice(p price.Price) error {
+func (tx PriceTx) DeactivateSiblingPrice(p price.FtcPrice) error {
 	_, err := tx.NamedExec(
 		price.StmtDeactivateSiblingPrices,
 		p)
@@ -36,7 +36,7 @@ func (tx PriceTx) DeactivateSiblingPrice(p price.Price) error {
 // ActivatePrice turns the is_active state to true for the
 // specified price.
 // It should be called immediately following the above one.
-func (tx PriceTx) ActivatePrice(p price.Price) error {
+func (tx PriceTx) ActivatePrice(p price.FtcPrice) error {
 	_, err := tx.NamedExec(price.StmtActivatePrice, p)
 	if err != nil {
 		return err

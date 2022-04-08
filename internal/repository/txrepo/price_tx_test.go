@@ -38,7 +38,7 @@ func TestPriceTx_DeactivateSiblingPrice(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		p price.Price
+		p price.FtcPrice
 	}
 	tests := []struct {
 		name    string
@@ -78,7 +78,7 @@ func TestPriceTx_ActivatePrice(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		p price.Price
+		p price.FtcPrice
 	}
 	tests := []struct {
 		name    string

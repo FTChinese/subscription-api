@@ -221,9 +221,7 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					Build(),
+				inv: invoice.Invoice{},
 			},
 		},
 		{
@@ -232,10 +230,7 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					WithOrderKind(enum.OrderKindRenew).
-					Build(),
+				inv: invoice.Invoice{},
 			},
 		},
 		{
@@ -244,10 +239,7 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					WithOrderKind(enum.OrderKindUpgrade).
-					Build(),
+				inv: invoice.Invoice{},
 			},
 		},
 		{
@@ -256,10 +248,7 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: invoice.NewMockInvoiceBuilder().
-					WithFtcID(userID).
-					WithOrderKind(enum.OrderKindAddOn).
-					Build(),
+				inv: invoice.Invoice{},
 			},
 		},
 		{
