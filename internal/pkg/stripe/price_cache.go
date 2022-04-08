@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/stripe/stripe-go/v72"
 	"sync"
 )
@@ -8,15 +9,15 @@ import (
 // PriceCache acts as a cache after retrieving Stripe prices.
 type PriceCache struct {
 	len     int
-	prices  []Price        // Use an array to store the prices.
-	idIndex map[string]int // price id to its position in the array.
-	mux     sync.Mutex     // The data is global. Lock it for concurrency.
+	prices  []price.StripePrice // Use an array to store the prices.
+	idIndex map[string]int      // price id to its position in the array.
+	mux     sync.Mutex          // The data is global. Lock it for concurrency.
 }
 
 func NewPriceCache() *PriceCache {
 	return &PriceCache{
 		len:     0,
-		prices:  make([]Price, 0),
+		prices:  make([]price.StripePrice, 0),
 		idIndex: map[string]int{},
 	}
 }
@@ -31,19 +32,19 @@ func (store *PriceCache) AddAll(sps []*stripe.Price) {
 	defer store.mux.Unlock()
 
 	for _, sp := range sps {
-		_ = store.upsert(NewPrice(sp))
+		_ = store.upsert(price.NewPrice(sp))
 	}
 }
 
 // Upsert inserts or update a price.
-func (store *PriceCache) Upsert(p Price) int {
+func (store *PriceCache) Upsert(p price.StripePrice) int {
 	store.mux.Lock()
 	defer store.mux.Unlock()
 
 	return store.upsert(p)
 }
 
-func (store *PriceCache) upsert(p Price) int {
+func (store *PriceCache) upsert(p price.StripePrice) int {
 
 	// If this price already cached, update it.
 	// We perform this operation in case of any update on the Stripe side.
@@ -70,8 +71,8 @@ func (store *PriceCache) upsert(p Price) int {
 }
 
 // List returned a list all prices in the specified environment.
-func (store *PriceCache) List(live bool) []Price {
-	var prices = make([]Price, 0)
+func (store *PriceCache) List(live bool) []price.StripePrice {
+	var prices = make([]price.StripePrice, 0)
 
 	for _, v := range store.prices {
 		if v.LiveMode != live {
@@ -85,10 +86,10 @@ func (store *PriceCache) List(live bool) []Price {
 }
 
 // Find tries to find a Price by id.
-func (store *PriceCache) Find(id string) (Price, bool) {
+func (store *PriceCache) Find(id string) (price.StripePrice, bool) {
 	i, ok := store.idIndex[id]
 	if !ok {
-		return Price{}, false
+		return price.StripePrice{}, false
 	}
 
 	return store.prices[i], true
