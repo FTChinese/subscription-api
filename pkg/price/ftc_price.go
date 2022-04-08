@@ -7,27 +7,29 @@ import (
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
+	"strconv"
 	"strings"
+	"time"
 )
 
-type UpdateParams struct {
+type FtcUpdateParams struct {
 	Title         null.String        `json:"title"`
 	Nickname      null.String        `json:"nickname"`
 	PeriodCount   ColumnYearMonthDay `json:"periodCount"`
 	StripePriceID string             `json:"stripePriceId"`
 }
 
-func (p UpdateParams) Validate() *render.ValidationError {
+func (p FtcUpdateParams) Validate() *render.ValidationError {
 	return validator.New("stripePriceId").Required().Validate(p.StripePriceID)
 }
 
-// CreationParams is the form data submitted to create a price.
+// FtcCreationParams is the form data submitted to create a price.
 // A new plan is always created under a certain product.
 // Therefore, the input data does not have tier field.
-type CreationParams struct {
+type FtcCreationParams struct {
 	Edition
 	Kind Kind `json:"kind"`
-	UpdateParams
+	FtcUpdateParams
 	ProductID  string      `json:"productId"`
 	StartUTC   chrono.Time `json:"startUtc"`
 	EndUTC     chrono.Time `json:"endUtc"`
@@ -37,7 +39,7 @@ type CreationParams struct {
 // Validate checks whether the input data to create a new plan is valid.
 // `productTier` is used to specify for which edition of product this plan is created.
 // Premium product is not allowed to have a monthly pricing plan.
-func (p *CreationParams) Validate() *render.ValidationError {
+func (p *FtcCreationParams) Validate() *render.ValidationError {
 
 	if p.UnitAmount <= 0 {
 		return &render.ValidationError{
@@ -106,12 +108,11 @@ func (p *CreationParams) Validate() *render.ValidationError {
 		return ve
 	}
 
-	return p.UpdateParams.Validate()
+	return p.FtcUpdateParams.Validate()
 }
 
-// Price presents the price of a price. It unified prices coming
-// from various source, e.g., FTC in-house or Stripe API.
-type Price struct {
+// FtcPrice contains ftc pricing plan.
+type FtcPrice struct {
 	ID            string             `json:"id" db:"price_id"`
 	Edition                          // Sibling requirement
 	Active        bool               `json:"active" db:"is_active"`
@@ -130,8 +131,8 @@ type Price struct {
 	CreatedUTC    chrono.Time        `json:"createdUtc" db:"created_utc"`
 }
 
-func New(p CreationParams, live bool) Price {
-	return Price{
+func New(p FtcCreationParams, live bool) FtcPrice {
+	return FtcPrice{
 		ID:            ids.PriceID(),
 		Edition:       p.Edition,
 		Active:        false,
@@ -151,13 +152,13 @@ func New(p CreationParams, live bool) Price {
 	}
 }
 
-func (p Price) IsZero() bool {
+func (p FtcPrice) IsZero() bool {
 	return p.ID == ""
 }
 
 // Update modifies an existing price.
 // Only the field listed here is modifiable.
-func (p Price) Update(params UpdateParams) Price {
+func (p FtcPrice) Update(params FtcUpdateParams) FtcPrice {
 	p.Title = params.Title
 	p.Nickname = params.Nickname
 	p.StripePriceID = params.StripePriceID
@@ -167,13 +168,13 @@ func (p Price) Update(params UpdateParams) Price {
 }
 
 // Activate put a price on paywall.
-func (p Price) Activate() Price {
+func (p FtcPrice) Activate() FtcPrice {
 	p.Active = true
 
 	return p
 }
 
-func (p Price) Deactivate() Price {
+func (p FtcPrice) Deactivate() FtcPrice {
 	p.Active = false
 
 	return p
@@ -181,7 +182,7 @@ func (p Price) Deactivate() Price {
 
 // Archive put a price into archive and no longer usable.
 // No idea why I created this.
-func (p Price) Archive() Price {
+func (p FtcPrice) Archive() FtcPrice {
 	p.Archived = true
 	p.Active = false
 
@@ -190,7 +191,7 @@ func (p Price) Archive() Price {
 
 // DailyCost calculates the daily average price depending on the cycles.
 // Deprecated. Moved to client.
-func (p Price) DailyCost() DailyCost {
+func (p FtcPrice) DailyCost() DailyCost {
 	switch p.Cycle {
 	case enum.CycleYear:
 		return NewDailyCostOfYear(p.UnitAmount)
@@ -202,10 +203,32 @@ func (p Price) DailyCost() DailyCost {
 	return DailyCost{}
 }
 
-func (p Price) IsOneTime() bool {
+func (p FtcPrice) IsOneTime() bool {
 	return p.Kind == KindOneTime
 }
 
-func (p Price) IsRecurring() bool {
+func (p FtcPrice) IsRecurring() bool {
 	return p.Kind == KindRecurring
+}
+
+func (p FtcPrice) StripeMeta() map[string]string {
+	start := ""
+	end := ""
+	if !p.StartUTC.IsZero() {
+		start = p.StartUTC.In(time.UTC).Format(time.RFC3339)
+	}
+
+	if !p.EndUTC.IsZero() {
+		end = p.EndUTC.In(time.UTC).Format(time.RFC3339)
+	}
+
+	return map[string]string{
+		"tier":         p.Tier.String(),
+		"years":        strconv.FormatInt(p.PeriodCount.Years, 10),
+		"months":       strconv.FormatInt(p.PeriodCount.Months, 10),
+		"days":         strconv.FormatInt(p.PeriodCount.Days, 10),
+		"introductory": strconv.FormatBool(p.IsOneTime()),
+		"start_utc":    start,
+		"end_utc":      end,
+	}
 }
