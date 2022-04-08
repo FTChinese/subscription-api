@@ -3,14 +3,13 @@ package api
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
 
 func (router PaywallRouter) ListProducts(w http.ResponseWriter, req *http.Request) {
-	products, err := router.ProductRepo.ListProducts(router.Live)
+	products, err := router.productRepo.ListProducts(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -27,8 +26,8 @@ func (router PaywallRouter) ListProducts(w http.ResponseWriter, req *http.Reques
 // - smallPrint?: string;
 // - tier: standard | premium;
 func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	var params pw.ProductParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -43,9 +42,9 @@ func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	p := pw.NewProduct(params, router.Live)
+	p := pw.NewProduct(params, router.live)
 
-	err := router.ProductRepo.CreateProduct(p)
+	err := router.productRepo.CreateProduct(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -56,14 +55,14 @@ func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Reque
 
 // LoadProduct loads a single product by id.
 func (router PaywallRouter) LoadProduct(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
 	sugar.Infof("Retrieving product %s", id)
 
-	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
+	prod, err := router.productRepo.RetrieveProduct(id, router.live)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -79,8 +78,8 @@ func (router PaywallRouter) LoadProduct(w http.ResponseWriter, req *http.Request
 // - heading: string;
 // - smallPrint: string;
 func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
@@ -99,7 +98,7 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 
 	sugar.Infof("Retrieving product %s", id)
 
-	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
+	prod, err := router.productRepo.RetrieveProduct(id, router.live)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -109,7 +108,7 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 	sugar.Infof("Product retrieved %v", prod)
 
 	updated := prod.Update(params)
-	err = router.ProductRepo.UpdateProduct(updated)
+	err = router.productRepo.UpdateProduct(updated)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -126,14 +125,14 @@ func (router PaywallRouter) ActivateProduct(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
+	prod, err := router.productRepo.RetrieveProduct(id, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	prod = prod.Activate()
-	err = router.ProductRepo.SetProductOnPaywall(prod)
+	err = router.productRepo.SetProductOnPaywall(prod)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -148,8 +147,8 @@ func (router PaywallRouter) ActivateProduct(w http.ResponseWriter, req *http.Req
 // Request body:
 // - priceId: string;
 func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	id, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -165,9 +164,9 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	pwPrice, err := router.PaywallRepo.RetrievePaywallPrice(
+	pwPrice, err := router.paywallRepo.RetrievePaywallPrice(
 		params.PriceID,
-		router.Live)
+		router.live)
 
 	if !pwPrice.IsOneTime() {
 		_ = render.New(w).Unprocessable(&render.ValidationError{
@@ -181,7 +180,7 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 	activated := pwPrice.Activate()
 	// If the price is not activated yet.
 	if !pwPrice.Active {
-		err = router.ProductRepo.ActivatePrice(activated)
+		err = router.productRepo.ActivatePrice(activated)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 			sugar.Error(err)
@@ -189,7 +188,7 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 		}
 	}
 
-	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
+	prod, err := router.productRepo.RetrieveProduct(id, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
@@ -198,36 +197,19 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 
 	prod = prod.WithIntroPrice(activated)
 
-	err = router.ProductRepo.SetProductIntro(prod)
+	err = router.productRepo.SetProductIntro(prod)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
 		return
 	}
 
-	// Sync stripe price metadata
-	if activated.StripePriceID != "" {
-		go func() {
-			sp, err := router.StripePrice.
-				UpdatePriceMeta(
-					activated.ID,
-					stripe.PriceMetaParams(activated, true))
-
-			if err != nil {
-				sugar.Error(err)
-				return
-			}
-
-			sugar.Infof("Stripe price meta updated %v", sp)
-		}()
-	}
-
 	_ = render.New(w).OK(prod)
 }
 
 func (router PaywallRouter) DropIntroPrice(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	id, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -236,14 +218,14 @@ func (router PaywallRouter) DropIntroPrice(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	prod, err := router.ProductRepo.RetrieveProduct(id, router.Live)
+	prod, err := router.productRepo.RetrieveProduct(id, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
 		return
 	}
 
-	err = router.ProductRepo.DeactivatePrice(prod.Introductory.Deactivate())
+	err = router.productRepo.DeactivatePrice(prod.Introductory.Deactivate())
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
@@ -251,7 +233,7 @@ func (router PaywallRouter) DropIntroPrice(w http.ResponseWriter, req *http.Requ
 	}
 
 	prod = prod.DropIntroPrice()
-	err = router.ProductRepo.SetProductIntro(prod)
+	err = router.productRepo.SetProductIntro(prod)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)

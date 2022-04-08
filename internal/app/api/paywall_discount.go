@@ -10,8 +10,8 @@ import (
 
 // CreateDiscount creates a new discount and update corresponding price.
 func (router PaywallRouter) CreateDiscount(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	var params price.DiscountParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -27,19 +27,19 @@ func (router PaywallRouter) CreateDiscount(w http.ResponseWriter, req *http.Requ
 	}
 
 	// Find the price for this discount first.
-	ftcPrice, err := router.PaywallRepo.RetrievePaywallPrice(params.PriceID, router.Live)
+	ftcPrice, err := router.paywallRepo.RetrievePaywallPrice(params.PriceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	discount := price.NewDiscount(params, ftcPrice.LiveMode)
-	if err := router.ProductRepo.CreateDiscount(discount); err != nil {
+	if err := router.productRepo.CreateDiscount(discount); err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_, err = router.ProductRepo.RefreshPriceOffers(ftcPrice)
+	_, err = router.productRepo.RefreshPriceOffers(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -55,8 +55,8 @@ func (router PaywallRouter) ListDiscounts(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	discounts, err := router.ProductRepo.
-		ListDiscounts(priceID, router.Live)
+	discounts, err := router.productRepo.
+		ListDiscounts(priceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -72,26 +72,26 @@ func (router PaywallRouter) DropDiscount(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	discount, err := router.PaywallRepo.LoadDiscount(id)
+	discount, err := router.paywallRepo.LoadDiscount(id)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	discount = discount.Cancel()
-	err = router.ProductRepo.UpdateDiscount(discount)
+	err = router.productRepo.UpdateDiscount(discount)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	ftcPrice, err := router.PaywallRepo.RetrievePaywallPrice(discount.PriceID, router.Live)
+	ftcPrice, err := router.paywallRepo.RetrievePaywallPrice(discount.PriceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	ftcPrice, err = router.ProductRepo.RefreshPriceOffers(ftcPrice)
+	ftcPrice, err = router.productRepo.RefreshPriceOffers(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

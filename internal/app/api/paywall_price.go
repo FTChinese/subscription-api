@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
@@ -19,13 +18,53 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	prices, err := router.ProductRepo.ListProductPrices(productID, router.Live)
+	prices, err := router.productRepo.ListProductPrices(productID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	_ = render.New(w).OK(prices)
+}
+
+// update stripe price based on ftc price settings.
+func (router PaywallRouter) updateStripPriceMeta(id string, ftcPrice price.FtcPrice) (price.StripePrice, error) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	rawPrice, err := router.
+		stripeRepo.
+		Client.
+		SetPriceMeta(id, ftcPrice.StripeMeta())
+
+	if err != nil {
+		return price.StripePrice{}, err
+	}
+
+	p := price.NewPrice(rawPrice)
+
+	err = router.stripeRepo.UpsertPrice(p)
+	if err != nil {
+		sugar.Error(err)
+	}
+
+	return price.NewPrice(rawPrice), nil
+}
+
+func (router PaywallRouter) ensureStripePrice(id string) (price.StripePrice, error) {
+	sp, err := router.stripeRepo.LoadOrFetchPrice(id, false)
+	if err != nil {
+		return price.StripePrice{}, err
+	}
+
+	if sp.IsFromStripe {
+		err := router.stripeRepo.UpsertPrice(sp)
+		if err != nil {
+			return price.StripePrice{}, err
+		}
+	}
+
+	return sp, nil
 }
 
 // CreatePrice creates a new price.
@@ -41,10 +80,10 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 // - unitAmount: number
 // Returns price.Price.
 func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
-	var params price.CreationParams
+	var params price.FtcCreationParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -57,9 +96,9 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	p := price.New(params, router.Live)
+	p := price.New(params, router.live)
 
-	err := router.ProductRepo.CreatePrice(p)
+	err := router.productRepo.CreatePrice(p)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -70,10 +109,10 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 	if p.StripePriceID != "" {
 		go func() {
 			sugar.Infof("Updating stripe price %s metadata", p.StripePriceID)
-			sp, err := router.StripePrice.
-				UpdatePriceMeta(
-					params.StripePriceID,
-					stripe.PriceMetaParams(p, p.IsOneTime()))
+			sp, err := router.updateStripPriceMeta(
+				params.StripePriceID,
+				p,
+			)
 
 			if err != nil {
 				sugar.Error(err)
@@ -87,7 +126,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 	// Sync legacy table.
 	if p.IsRecurring() {
 		go func() {
-			err := router.ProductRepo.CreatePlan(price.NewPlan(p))
+			err := router.productRepo.CreatePlan(price.NewPlan(p))
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -104,25 +143,25 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 // - stripePriceId: string;
 // Return price.Price.
 func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
-	var params price.UpdateParams
+	var params price.FtcUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	ftcPrice, err := router.PaywallRepo.RetrievePaywallPrice(id, router.Live)
+	ftcPrice, err := router.paywallRepo.RetrievePaywallPrice(id, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	updated := ftcPrice.Price.Update(params)
-	err = router.ProductRepo.UpdatePrice(updated)
+	updated := ftcPrice.FtcPrice.Update(params)
+	err = router.productRepo.UpdatePrice(updated)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -131,12 +170,10 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 	if params.StripePriceID != "" {
 		go func() {
 			sugar.Infof("Updating stripe price %s metadata", params.StripePriceID)
-			sp, err := router.StripePrice.
-				UpdatePriceMeta(
-					params.StripePriceID,
-					stripe.PriceMetaParams(
-						updated,
-						updated.IsOneTime() && updated.Active))
+			sp, err := router.updateStripPriceMeta(
+				params.StripePriceID,
+				updated,
+			)
 
 			if err != nil {
 				sugar.Error(err)
@@ -161,7 +198,7 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 	}
 
 	// Find the price for this discount first.
-	ftcPrice, err := router.PaywallRepo.RetrievePaywallPrice(priceID, router.Live)
+	ftcPrice, err := router.paywallRepo.RetrievePaywallPrice(priceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -173,7 +210,7 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 	}
 
 	// Update offers
-	ftcPrice, err = router.ProductRepo.RefreshPriceOffers(ftcPrice)
+	ftcPrice, err = router.productRepo.RefreshPriceOffers(ftcPrice)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -185,8 +222,8 @@ func (router PaywallRouter) RefreshPriceOffers(w http.ResponseWriter, req *http.
 // ActivatePrice flags a price to active state.
 // Returns price.Price.
 func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	priceID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -196,7 +233,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 	}
 
 	// Load this price.
-	pwPrice, err := router.PaywallRepo.RetrievePaywallPrice(priceID, router.Live)
+	pwPrice, err := router.paywallRepo.RetrievePaywallPrice(priceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
@@ -204,16 +241,19 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 	}
 
 	// Check if stripe price present.
-	_, err = router.StripePrice.LoadPrice(pwPrice.StripePriceID, router.Live)
+	_, err = router.ensureStripePrice(pwPrice.StripePriceID)
 	if err != nil {
-		_ = render.New(w).BadRequest(err.Error())
+		sugar.Error(err)
+	}
+	if err != nil {
+		_ = xhttp.HandleStripeErr(w, err)
 		sugar.Error(err)
 		return
 	}
 
-	activated := pwPrice.Price.Activate()
+	activated := pwPrice.FtcPrice.Activate()
 
-	err = router.ProductRepo.ActivatePrice(activated)
+	err = router.productRepo.ActivatePrice(activated)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -235,15 +275,15 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	p, err := router.PaywallRepo.RetrievePaywallPrice(priceID, router.Live)
+	p, err := router.paywallRepo.RetrievePaywallPrice(priceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	archived := p.Price.Archive()
+	archived := p.FtcPrice.Archive()
 
-	err = router.ProductRepo.ArchivePrice(archived)
+	err = router.productRepo.ArchivePrice(archived)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -255,7 +295,7 @@ func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	err = router.ProductRepo.ArchivePriceDiscounts(p)
+	err = router.productRepo.ArchivePriceDiscounts(p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
