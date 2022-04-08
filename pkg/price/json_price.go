@@ -10,7 +10,7 @@ import (
 // as a JSON column in sql, and marshalled into null for
 // empty value when used as introductory.
 type JSONPrice struct {
-	Price
+	FtcPrice
 }
 
 // MarshalJSON encodes an optional price to nullable result.
@@ -19,12 +19,12 @@ func (p JSONPrice) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 
-	return json.Marshal(p.Price)
+	return json.Marshal(p.FtcPrice)
 }
 
 // UnmarshalJSON parses a nullable value to price.
 func (p *JSONPrice) UnmarshalJSON(b []byte) error {
-	var v Price
+	var v FtcPrice
 	if b == nil {
 		*p = JSONPrice{}
 		return nil
@@ -35,7 +35,7 @@ func (p *JSONPrice) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*p = JSONPrice{Price: v}
+	*p = JSONPrice{FtcPrice: v}
 	return nil
 }
 

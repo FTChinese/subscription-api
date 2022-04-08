@@ -9,7 +9,7 @@ import (
 
 func TestIntroductoryJSON_MarshalJSON(t *testing.T) {
 	type fields struct {
-		Price Price
+		Price FtcPrice
 	}
 	tests := []struct {
 		name    string
@@ -20,7 +20,7 @@ func TestIntroductoryJSON_MarshalJSON(t *testing.T) {
 		{
 			name: "Marshal empty price",
 			fields: fields{
-				Price: Price{},
+				Price: FtcPrice{},
 			},
 			want:    []byte("null"),
 			wantErr: false,
@@ -28,7 +28,7 @@ func TestIntroductoryJSON_MarshalJSON(t *testing.T) {
 		{
 			name: "Marshal price",
 			fields: fields{
-				Price: Price{
+				Price: FtcPrice{
 					ID:            ids.PriceID(),
 					Edition:       Edition{},
 					Active:        false,
@@ -54,7 +54,7 @@ func TestIntroductoryJSON_MarshalJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := JSONPrice{
-				Price: tt.fields.Price,
+				FtcPrice: tt.fields.Price,
 			}
 			got, err := p.MarshalJSON()
 			if (err != nil) != tt.wantErr {
