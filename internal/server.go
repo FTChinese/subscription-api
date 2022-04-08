@@ -4,19 +4,10 @@ import (
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/app/api"
-	"github.com/FTChinese/subscription-api/internal/app/paybase"
 	"github.com/FTChinese/subscription-api/internal/pkg/letter"
-	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/internal/repository"
 	"github.com/FTChinese/subscription-api/internal/repository/accounts"
-	"github.com/FTChinese/subscription-api/internal/repository/addons"
-	"github.com/FTChinese/subscription-api/internal/repository/cmsrepo"
 	"github.com/FTChinese/subscription-api/internal/repository/iaprepo"
-	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
-	"github.com/FTChinese/subscription-api/internal/repository/stripeenv"
-	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
-	"github.com/FTChinese/subscription-api/internal/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
@@ -48,17 +39,9 @@ func StartServer(s ServerStatus) {
 
 	// Set the cache default expiration time to 2 hours.
 	paywallCache := cache.New(2*time.Hour, 0)
-	stripeClient := stripeclient.New(s.LiveMode, logger)
 	emailService := letter.NewService(logger)
 
 	readerBaseRepo := shared.NewReaderCommon(myDBs)
-	paywallBaseRepo := shared.NewPaywallCommon(myDBs, paywallCache)
-
-	stripePriceStore := stripeenv.PriceStore{
-		Client: stripeClient,
-		Cache:  stripe.NewPriceCache(),
-	}
-
 	userShared := api.UserShared{
 		Repo:         accounts.New(myDBs, logger),
 		ReaderRepo:   readerBaseRepo,
@@ -67,23 +50,13 @@ func StartServer(s ServerStatus) {
 		EmailService: emailService,
 	}
 
-	ftcPayShared := paybase.FtcPayBase{
-		SubsRepo:     subrepo.New(myDBs, logger),
-		ReaderRepo:   readerBaseRepo,
-		AddOnRepo:    addons.New(myDBs, logger),
-		AliPayClient: ali.NewPayClient(ali.MustInitApp(), logger),
-		WxPayClients: wechat.NewWxClientStore(wechat.MustGetPayApps(), logger),
-		Logger:       logger,
-		EmailService: emailService,
-	}
-
 	authRouter := api.NewAuthRouter(userShared)
 	accountRouter := api.NewAccountRouter(userShared)
-	ftcSubsRouter := api.SubsRouter{
-		FtcPayBase:  ftcPayShared,
-		PaywallRepo: paywallBaseRepo,
-		Live:        s.LiveMode,
-	}
+	ftcSubsRouter := api.NewFtcPayRouter(
+		myDBs,
+		paywallCache,
+		logger,
+		s.LiveMode)
 
 	iapRouter := api.IAPRouter{
 		Repo:         iaprepo.New(myDBs, rdb, logger),
@@ -94,35 +67,24 @@ func StartServer(s ServerStatus) {
 		Live:         s.LiveMode,
 	}
 
-	stripeRouter := api.StripeRouter{
-		SigningKey:     config.MustStripeWebhookKey().Pick(s.LiveMode),
-		PublishableKey: config.MustStripePubKey().Pick(s.LiveMode),
-		Env: stripeenv.NewEnv(
-			repository.NewStripeRepo(myDBs, logger),
-			stripePriceStore,
-		),
-		ReaderRepo: readerBaseRepo,
-		Logger:     logger,
-		Live:       s.LiveMode,
-	}
+	stripeRouter := api.NewStripeRouter(
+		myDBs,
+		paywallCache,
+		logger,
+		s.LiveMode)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
-	paywallRouter := api.PaywallRouter{
-		ProductRepo: products.New(myDBs),
-		PaywallRepo: paywallBaseRepo,
-		StripePrice: stripePriceStore,
-		Logger:      logger,
-		Live:        s.LiveMode,
-	}
+	paywallRouter := api.NewPaywallRouter(
+		myDBs,
+		paywallCache,
+		logger,
+		s.LiveMode)
 
-	cmsRouter := api.CMSRouter{
-		Repo:         cmsrepo.New(myDBs, logger),
-		ReaderRepo:   readerBaseRepo,
-		PaywallRepo:  paywallBaseRepo,
-		Logger:       logger,
-		EmailService: emailService,
-		Live:         s.LiveMode,
-	}
+	cmsRouter := api.NewCMSRouter(
+		myDBs,
+		paywallCache,
+		logger,
+		s.LiveMode)
 
 	appRouter := api.NewAppRouter(myDBs)
 
