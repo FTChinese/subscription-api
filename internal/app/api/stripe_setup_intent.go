@@ -9,8 +9,8 @@ import (
 )
 
 func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	var params stripe.CustomerParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -25,7 +25,7 @@ func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	rawSI, err := router.Env.Client.CreateSetupIntent(params)
+	rawSI, err := router.stripeRepo.Client.CreateSetupIntent(params)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
@@ -35,7 +35,7 @@ func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Re
 	si := stripe.NewSetupIntent(rawSI)
 
 	go func() {
-		err := router.Env.UpsertSetupIntent(si)
+		err := router.stripeRepo.UpsertSetupIntent(si)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -45,8 +45,8 @@ func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Re
 }
 
 func (router StripeRouter) GetSetupIntent(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	siID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -58,7 +58,7 @@ func (router StripeRouter) GetSetupIntent(w http.ResponseWriter, req *http.Reque
 	refresh := xhttp.ParseQueryRefresh(req)
 	sugar.Infof("Refreshing setup intent: %t", refresh)
 
-	si, err := router.Env.LoadOrFetchSetupIntent(siID, refresh)
+	si, err := router.stripeRepo.LoadOrFetchSetupIntent(siID, refresh)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
@@ -67,7 +67,7 @@ func (router StripeRouter) GetSetupIntent(w http.ResponseWriter, req *http.Reque
 
 	if si.IsFromStripe {
 		go func() {
-			err := router.Env.UpsertSetupIntent(si)
+			err := router.stripeRepo.UpsertSetupIntent(si)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -78,8 +78,8 @@ func (router StripeRouter) GetSetupIntent(w http.ResponseWriter, req *http.Reque
 }
 
 func (router StripeRouter) GetSetupPaymentMethod(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	siID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -99,10 +99,10 @@ func (router StripeRouter) GetSetupPaymentMethod(w http.ResponseWriter, req *htt
 }
 
 func (router StripeRouter) loadSetupPaymentMethod(w http.ResponseWriter, setupID string) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
-	si, err := router.Env.LoadOrFetchSetupIntent(setupID, false)
+	si, err := router.stripeRepo.LoadOrFetchSetupIntent(setupID, false)
 	if err != nil {
 		_ = xhttp.HandleStripeErr(w, err)
 		return
@@ -110,7 +110,7 @@ func (router StripeRouter) loadSetupPaymentMethod(w http.ResponseWriter, setupID
 
 	if si.IsFromStripe {
 		go func() {
-			err := router.Env.UpsertSetupIntent(si)
+			err := router.stripeRepo.UpsertSetupIntent(si)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -132,10 +132,10 @@ func (router StripeRouter) loadSetupPaymentMethod(w http.ResponseWriter, setupID
 }
 
 func (router StripeRouter) refreshSetupPaymentMethod(w http.ResponseWriter, setupID string) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
-	rawSI, err := router.Env.Client.FetchSetupIntent(setupID, true)
+	rawSI, err := router.stripeRepo.Client.FetchSetupIntent(setupID, true)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
@@ -143,7 +143,7 @@ func (router StripeRouter) refreshSetupPaymentMethod(w http.ResponseWriter, setu
 
 	si := stripe.NewSetupIntent(rawSI)
 	go func() {
-		err := router.Env.UpsertSetupIntent(si)
+		err := router.stripeRepo.UpsertSetupIntent(si)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -157,7 +157,7 @@ func (router StripeRouter) refreshSetupPaymentMethod(w http.ResponseWriter, setu
 	pm := stripe.NewPaymentMethod(rawSI.PaymentMethod)
 
 	go func() {
-		err := router.Env.UpsertPaymentMethod(pm)
+		err := router.stripeRepo.UpsertPaymentMethod(pm)
 		if err != nil {
 			sugar.Error(err)
 		}

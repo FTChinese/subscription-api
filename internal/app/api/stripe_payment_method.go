@@ -12,8 +12,8 @@ import (
 // If query parameter ?refresh=true is passed,
 // it will bypass local db and use Stripe API directly.
 func (router StripeRouter) LoadPaymentMethod(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	pmID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -35,11 +35,11 @@ func (router StripeRouter) LoadPaymentMethod(w http.ResponseWriter, req *http.Re
 }
 
 func (router StripeRouter) loadPaymentMethod(pmID string, refresh bool) (stripe.PaymentMethod, error) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Fetch payment method
-	pm, err := router.Env.LoadOrFetchPaymentMethod(pmID, refresh)
+	pm, err := router.stripeRepo.LoadOrFetchPaymentMethod(pmID, refresh)
 	if err != nil {
 		return stripe.PaymentMethod{}, err
 	}
@@ -47,7 +47,7 @@ func (router StripeRouter) loadPaymentMethod(pmID string, refresh bool) (stripe.
 	// Save it if not save in our db yet.
 	if pm.IsFromStripe {
 		go func() {
-			err := router.Env.UpsertPaymentMethod(pm)
+			err := router.stripeRepo.UpsertPaymentMethod(pm)
 			if err != nil {
 				sugar.Error(err)
 			}

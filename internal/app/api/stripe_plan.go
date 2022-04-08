@@ -7,10 +7,11 @@ import (
 )
 
 // ListPrices retrieves all prices defined in Stripe.
+// Deprecated
 func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) {
 	refresh := xhttp.ParseQueryRefresh(req)
 
-	prices, err := router.Env.ListPrices(router.Live, refresh)
+	prices, err := router.stripeRepo.ListPricesCompat(router.live, refresh)
 
 	if err != nil {
 		_ = xhttp.HandleStripeErr(w, err)
@@ -25,7 +26,11 @@ func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(prices)
 }
 
+// LoadPrice tries to find a single price of Stripe.
 func (router StripeRouter) LoadPrice(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
 	refresh := req.FormValue("refresh") == "true"
 	id, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -33,11 +38,20 @@ func (router StripeRouter) LoadPrice(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	price, err := router.Env.LoadPrice(id, refresh)
+	price, err := router.stripeRepo.LoadCachedPrice(id, refresh)
 
 	if err != nil {
 		_ = xhttp.HandleStripeErr(w, err)
 		return
+	}
+
+	if price.IsFromStripe {
+		go func() {
+			err := router.stripeRepo.UpsertPrice(price)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
 	}
 
 	_ = render.New(w).OK(price)

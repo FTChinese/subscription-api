@@ -14,8 +14,8 @@ import (
 // POST /stripe/customers/{id}/ephemeral-keys?api_version=<version>
 // Kept for android app < 6.2.0
 func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	// Get stripe customer id.
 	cusID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -31,7 +31,7 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	keyData, err := router.Env.Client.CreateEphemeralKey(cusID, stripeVersion)
+	keyData, err := router.stripeRepo.Client.CreateEphemeralKey(cusID, stripeVersion)
 	if err != nil {
 		sugar.Error(err)
 		err = xhttp.HandleStripeErr(w, err)
@@ -49,8 +49,8 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 }
 
 func (router StripeRouter) SetupWithEphemeral(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
 
 	_ = req.ParseForm()
 
@@ -67,7 +67,7 @@ func (router StripeRouter) SetupWithEphemeral(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	rawSI, rawKey, err := router.Env.Client.SetupWithEphemeral(params.Customer)
+	rawSI, rawKey, err := router.stripeRepo.Client.SetupWithEphemeral(params.Customer)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleStripeErr(w, err)
@@ -78,14 +78,14 @@ func (router StripeRouter) SetupWithEphemeral(w http.ResponseWriter, req *http.R
 		ClientSecret:   rawSI.ClientSecret,
 		EphemeralKey:   rawKey.Secret,
 		CustomerID:     params.Customer,
-		PublishableKey: router.PublishableKey,
-		LiveMode:       router.Live,
+		PublishableKey: router.publishableKey,
+		LiveMode:       router.live,
 	}
 
 	si := stripe.NewSetupIntent(rawSI)
 
 	go func() {
-		err := router.Env.UpsertSetupIntent(si)
+		err := router.stripeRepo.UpsertSetupIntent(si)
 		if err != nil {
 			sugar.Error(err)
 		}
