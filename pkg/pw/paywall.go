@@ -3,12 +3,14 @@ package pw
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
 type Paywall struct {
 	PaywallDoc
-	Products []PaywallProduct `json:"products"`
+	Products     []PaywallProduct             `json:"products"`
+	StripePrices map[string]price.StripePrice `json:"stripePrices"`
 }
 
 func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
@@ -24,8 +26,8 @@ func (w Paywall) findPrice(id string) (PaywallPrice, error) {
 		if !prod.Introductory.IsZero() {
 			if prod.Introductory.ID == id {
 				return PaywallPrice{
-					Price:  prod.Introductory.Price,
-					Offers: nil,
+					FtcPrice: prod.Introductory.FtcPrice,
+					Offers:   nil,
 				}, nil
 			}
 		}
@@ -40,6 +42,8 @@ func (w Paywall) findPrice(id string) (PaywallPrice, error) {
 	return PaywallPrice{}, errors.New("the requested price is not found")
 }
 
+// FindPriceByEdition tries to find a price for a specific edition.
+// Deprecated.
 func (w Paywall) FindPriceByEdition(e price.Edition) (PaywallPrice, error) {
 	for _, prod := range w.Products {
 		for _, p := range prod.Prices {
@@ -52,10 +56,12 @@ func (w Paywall) FindPriceByEdition(e price.Edition) (PaywallPrice, error) {
 	return PaywallPrice{}, sql.ErrNoRows
 }
 
-func (w Paywall) FindCheckoutItem(params CartParams) (price.CheckoutItem, error) {
+// BuildFtcCartItem constructs an FTC price checkout item
+// from cached data.
+func (w Paywall) BuildFtcCartItem(params FtcCartParams) (CartItemFtc, error) {
 	pwPrice, err := w.findPrice(params.PriceID)
 	if err != nil {
-		return price.CheckoutItem{}, err
+		return CartItemFtc{}, err
 	}
 
 	return pwPrice.CheckoutItem(params.DiscountID)
@@ -78,4 +84,26 @@ func (w Paywall) StripePriceIDs() []string {
 	}
 
 	return ids
+}
+
+// BuildStripeCartItem constructs a Stripe checkout item
+// from cached data.
+func (w Paywall) BuildStripeCartItem(params StripeSubsParams) (CartItemStripe, error) {
+	recurring, ok := w.StripePrices[params.PriceID]
+	if !ok {
+		return CartItemStripe{}, fmt.Errorf("stripe price %s not found", params.PriceID)
+	}
+
+	var intro price.StripePrice
+	if params.IntroductoryPriceID.Valid {
+		intro, ok = w.StripePrices[params.IntroductoryPriceID.String]
+		if !ok {
+			return CartItemStripe{}, fmt.Errorf("stripe price %s not found", params.IntroductoryPriceID.String)
+		}
+	}
+
+	return CartItemStripe{
+		Recurring:    recurring,
+		Introductory: intro,
+	}, nil
 }
