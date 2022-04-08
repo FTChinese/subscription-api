@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/stripe/stripe-go/v72"
 )
 
@@ -11,11 +12,11 @@ import (
 // from the first element of items data array.
 // Usually one subscription has only one item.
 type SubsItem struct {
-	ID             string    `json:"id"`
-	Price          PriceJSON `json:"price"`
-	Created        int64     `json:"created"`
-	Quantity       int64     `json:"quantity"`
-	SubscriptionID string    `json:"subscriptionId"`
+	ID             string      `json:"id"`
+	Price          PriceColumn `json:"price"`
+	Created        int64       `json:"created"`
+	Quantity       int64       `json:"quantity"`
+	SubscriptionID string      `json:"subscriptionId"`
 }
 
 // NewSubsItem gets the subscription item id and price id from a stripe subscription.
@@ -26,8 +27,8 @@ type SubsItem struct {
 func NewSubsItem(item *stripe.SubscriptionItem) SubsItem {
 	return SubsItem{
 		ID: item.ID,
-		Price: PriceJSON{
-			Price: NewPrice(item.Price),
+		Price: PriceColumn{
+			StripePrice: price.NewPrice(item.Price),
 		},
 		Created:        item.Created,
 		Quantity:       item.Quantity,
@@ -70,7 +71,7 @@ func (l *SubsItemList) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan to PriceJSON")
+		return errors.New("incompatible type to scan to PriceColumn")
 	}
 }
 

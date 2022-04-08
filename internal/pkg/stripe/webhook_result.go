@@ -24,8 +24,8 @@ type WebhookError struct {
 	ID                      string                  `db:"id"`
 	EventType               string                  `db:"event_type"`
 	Message                 string                  `db:"message"`
-	CurrentStripeMembership reader.ColumnMembership `db:"current_stripe_membership"`
-	CurrentDestMembership   reader.ColumnMembership `db:"current_dest_membership"`
+	CurrentStripeMembership reader.MembershipColumn `db:"current_stripe_membership"`
+	CurrentDestMembership   reader.MembershipColumn `db:"current_dest_membership"`
 	TargetUserID            string                  `db:"target_user_id"`
 	CreatedUTC              chrono.Time             `db:"created_utc"`
 }
