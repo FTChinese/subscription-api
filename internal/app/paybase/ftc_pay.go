@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
 	"github.com/FTChinese/subscription-api/pkg/ali"
+	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"go.uber.org/zap"
 )
@@ -21,6 +22,21 @@ type FtcPayBase struct {
 	WxPayClients wechat.WxPayClientStore
 	EmailService letter.Service
 	Logger       *zap.Logger
+}
+
+func NewFtcPay(
+	dbs db.ReadWriteMyDBs,
+	logger *zap.Logger,
+) FtcPayBase {
+	return FtcPayBase{
+		SubsRepo:     subrepo.New(dbs, logger),
+		ReaderRepo:   shared.NewReaderCommon(dbs),
+		AddOnRepo:    addons.New(dbs, logger),
+		AliPayClient: ali.NewPayClient(ali.MustInitApp(), logger),
+		WxPayClients: wechat.NewWxClientStore(wechat.MustGetPayApps(), logger),
+		EmailService: letter.NewService(logger),
+		Logger:       logger,
+	}
 }
 
 // SendConfirmEmail sends an email to user after an order is confirmed.
