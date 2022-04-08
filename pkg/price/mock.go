@@ -26,7 +26,7 @@ var MockEditionPrm = Edition{
 	Cycle: enum.CycleYear,
 }
 
-var MockIntroPrice = Price{
+var MockIntroPrice = FtcPrice{
 	ID: "price_x6rCUXxPC8tB",
 	Edition: Edition{
 		Tier:  enum.TierStandard,
@@ -54,7 +54,7 @@ var MockIntroPrice = Price{
 	CreatedUTC:    chrono.TimeNow(),
 }
 
-var MockPriceStdYear = Price{
+var MockPriceStdYear = FtcPrice{
 	ID:       "price_WHc5ssjh6pqw",
 	Edition:  MockEditionStdYear,
 	Active:   true,
@@ -128,7 +128,7 @@ var MockStdYearOffers = []Discount{
 	},
 }
 
-var MockPriceStdMonth = Price{
+var MockPriceStdMonth = FtcPrice{
 	ID:       "price_v5E2WSqJymxe",
 	Edition:  MockEditionStdMonth,
 	Active:   true,
@@ -155,7 +155,7 @@ var MockPriceStdMonth = Price{
 
 var MockStdMonthOffers []Discount
 
-var MockPricePrm = Price{
+var MockPricePrm = FtcPrice{
 	ID:       "price_zsTj2TQ1h3jB",
 	Edition:  MockEditionPrm,
 	Active:   true,
