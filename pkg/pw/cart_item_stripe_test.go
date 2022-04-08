@@ -1,18 +1,19 @@
-package stripe
+package pw
 
 import (
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/guregu/null"
 	"testing"
 )
 
 func TestCheckoutItem_NewSubParams(t *testing.T) {
-	item := CheckoutItem{
-		Price:        MockPriceStdYear,
-		Introductory: MockPriceStdIntro,
+	item := CartItemStripe{
+		Recurring:    stripe.MockPriceStdYear,
+		Introductory: stripe.MockPriceStdIntro,
 	}
 
-	p := item.NewSubParams("customer-id", SubsParams{
+	p := item.NewSubParams("customer-id", StripeSubsParams{
 		CouponID:             null.String{},
 		DefaultPaymentMethod: null.String{},
 		IdempotencyKey:       "key",
