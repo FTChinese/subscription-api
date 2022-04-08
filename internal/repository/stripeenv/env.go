@@ -1,18 +1,21 @@
 package stripeenv
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository"
+	"github.com/FTChinese/subscription-api/internal/stripeclient"
 )
 
-// Env extends PriceStore
 type Env struct {
-	PriceStore
+	Client stripeclient.Client
+	Cache  *stripe.PriceCache // Deprecated
 	repository.StripeRepo
 }
 
-func NewEnv(repo repository.StripeRepo, store PriceStore) Env {
+func New(client stripeclient.Client, repo repository.StripeRepo) Env {
 	return Env{
-		PriceStore: store,
+		Client:     client,
+		Cache:      stripe.NewPriceCache(),
 		StripeRepo: repo,
 	}
 }
