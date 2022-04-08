@@ -2,8 +2,8 @@ package repository
 
 import (
 	"github.com/FTChinese/go-rest"
-	"github.com/FTChinese/subscription-api/internal/pkg"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg"
 )
 
 func (repo StripeRepo) UpsertCustomer(c stripe.Customer) error {
