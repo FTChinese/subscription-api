@@ -46,8 +46,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				counter: subs.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
-					CheckoutItem: price.CheckoutItem{
-						Price: pw.MockPwPriceStdYear.Price,
+					CartItemFtc: pw.CartItemFtc{
+						Price: pw.MockPwPriceStdYear.FtcPrice,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodAli,
@@ -78,8 +78,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				counter: subs.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
-					CheckoutItem: price.CheckoutItem{
-						Price: pw.MockPwPriceStdYear.Price,
+					CartItemFtc: pw.CartItemFtc{
+						Price: pw.MockPwPriceStdYear.FtcPrice,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodWx,
@@ -106,8 +106,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				counter: subs.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
-					CheckoutItem: price.CheckoutItem{
-						Price: pw.MockPwPricePrm.Price,
+					CartItemFtc: pw.CartItemFtc{
+						Price: pw.MockPwPricePrm.FtcPrice,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodWx,
@@ -134,8 +134,8 @@ func TestEnv_CreateOrder(t *testing.T) {
 			args: args{
 				counter: subs.Counter{
 					BaseAccount: newPersona.EmailOnlyAccount(),
-					CheckoutItem: price.CheckoutItem{
-						Price: pw.MockPwPriceStdYear.Price,
+					CartItemFtc: pw.CartItemFtc{
+						Price: pw.MockPwPriceStdYear.FtcPrice,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodWx,

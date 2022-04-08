@@ -32,10 +32,10 @@ func TestEnv_SavePaymentIntent(t *testing.T) {
 				pi: subs.PaymentIntentSchema{
 					OrderID: ids.MustOrderID(),
 					Price: price.JSONPrice{
-						Price: price.MockPriceStdYear,
+						FtcPrice: price.MockPriceStdYear,
 					},
 					Offer:       price.ColumnDiscount{},
-					Membership:  reader.ColumnMembership{},
+					Membership:  reader.MembershipColumn{},
 					WxPayParams: wechat.ColumnSDKParams{},
 					AliPayParams: ali.ColumnSDKParams{
 						SDKParams: ali.SDKParams{
@@ -53,10 +53,10 @@ func TestEnv_SavePaymentIntent(t *testing.T) {
 				pi: subs.PaymentIntentSchema{
 					OrderID: ids.MustOrderID(),
 					Price: price.JSONPrice{
-						Price: price.MockPriceStdYear,
+						FtcPrice: price.MockPriceStdYear,
 					},
 					Offer:      price.ColumnDiscount{},
-					Membership: reader.ColumnMembership{},
+					Membership: reader.MembershipColumn{},
 					WxPayParams: wechat.ColumnSDKParams{
 						SDKParams: wechat.SDKParams{
 							DesktopQr:      null.String{},

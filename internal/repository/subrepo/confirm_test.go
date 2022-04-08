@@ -114,7 +114,7 @@ func TestEnv_ConfirmOrder_Renewal(t *testing.T) {
 	repo := test.NewRepo()
 
 	memberPriorRenewal := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithPrice(pw.MockPwPriceStdYear.Price).
+		WithPrice(pw.MockPwPriceStdYear.FtcPrice).
 		Build()
 
 	repo.MustSaveMembership(memberPriorRenewal)
@@ -145,7 +145,7 @@ func TestEnv_ConfirmOder_Upgrade(t *testing.T) {
 
 	// Existing membership is standard
 	stdMmb := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithPrice(pw.MockPwPriceStdYear.Price).
+		WithPrice(pw.MockPwPriceStdYear.FtcPrice).
 		Build()
 	repo.MustSaveMembership(stdMmb)
 
@@ -182,7 +182,7 @@ func TestEnv_ConfirmOrder_AddOn(t *testing.T) {
 
 	// Current membership comes from IAP.
 	iapMmb := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithPrice(pw.MockPwPriceStdYear.Price).
+		WithPrice(pw.MockPwPriceStdYear.FtcPrice).
 		WithPayMethod(enum.PayMethodApple).
 		Build()
 	repo.MustSaveMembership(iapMmb)
