@@ -3,6 +3,7 @@ package stripeclient
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	ftcStripe "github.com/FTChinese/subscription-api/internal/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/stripe/stripe-go/v72"
 	"go.uber.org/zap/zaptest"
 	"testing"
@@ -27,13 +28,13 @@ func TestClient_NewSubs(t *testing.T) {
 			name:   "Introductory offer",
 			fields: client,
 			args: args{
-				params: ftcStripe.CheckoutItem{
-					Price:        ftcStripe.MockPriceStdYear,
+				params: pw.CartItemStripe{
+					Recurring:    ftcStripe.MockPriceStdYear,
 					Introductory: ftcStripe.MockPriceStdIntro,
 				}.
 					NewSubParams(
 						"cus_KXMeDzH46HnpMB",
-						ftcStripe.SubsParams{}),
+						pw.StripeSubsParams{}),
 			},
 			want:    nil,
 			wantErr: false,
