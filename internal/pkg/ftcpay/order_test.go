@@ -1,10 +1,9 @@
-package subs
+package ftcpay
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/google/uuid"
 	"testing"
@@ -85,7 +84,10 @@ func Test_calibrateOrderKind(t *testing.T) {
 		{
 			name: "Expired membership",
 			args: args{
-				m: reader.NewMockMemberBuilder(userID).WithExpiration(time.Now().AddDate(0, 0, -1)).Build(),
+				m: reader.NewMockMemberBuilder().
+					SetFtcID(userID).
+					WithExpiration(time.Now().AddDate(0, 0, -1)).
+					Build(),
 				e: price.StdYearEdition,
 			},
 			want: enum.OrderKindCreate,
@@ -93,7 +95,8 @@ func Test_calibrateOrderKind(t *testing.T) {
 		{
 			name: "Renewal",
 			args: args{
-				m: reader.NewMockMemberBuilder(userID).
+				m: reader.NewMockMemberBuilder().
+					SetFtcID(userID).
 					Build(),
 				e: price.StdYearEdition,
 			},
@@ -102,7 +105,8 @@ func Test_calibrateOrderKind(t *testing.T) {
 		{
 			name: "Upgrade",
 			args: args{
-				m: reader.NewMockMemberBuilder(userID).
+				m: reader.NewMockMemberBuilder().
+					SetFtcID(userID).
 					Build(),
 				e: price.PremiumEdition,
 			},
@@ -111,8 +115,9 @@ func Test_calibrateOrderKind(t *testing.T) {
 		{
 			name: "Standard add-on for premium",
 			args: args{
-				m: reader.NewMockMemberBuilder(userID).
-					WithPrice(pw.MockPwPricePrm.FtcPrice).
+				m: reader.NewMockMemberBuilder().
+					SetFtcID(userID).
+					WithPrice(reader.MockPwPricePrm.FtcPrice).
 					Build(),
 				e: price.StdYearEdition,
 			},
@@ -121,8 +126,9 @@ func Test_calibrateOrderKind(t *testing.T) {
 		{
 			name: "Stripe add-on",
 			args: args{
-				m: reader.NewMockMemberBuilder(userID).
-					WithPayMethod(enum.PayMethodStripe).
+				m: reader.NewMockMemberBuilder().
+					SetFtcID(userID).
+					WithStripe("").
 					Build(),
 				e: price.StdYearEdition,
 			},
@@ -131,8 +137,9 @@ func Test_calibrateOrderKind(t *testing.T) {
 		{
 			name: "IAP add-on",
 			args: args{
-				m: reader.NewMockMemberBuilder(userID).
-					WithPayMethod(enum.PayMethodApple).
+				m: reader.NewMockMemberBuilder().
+					SetFtcID(userID).
+					WithApple("").
 					Build(),
 				e: price.StdYearEdition,
 			},

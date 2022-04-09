@@ -1,4 +1,4 @@
-package subs
+package ftcpay
 
 // StmtCreateOrder a new order. The newly created order does not have
 // ConfirmedAt, StartDate and EndDate set.

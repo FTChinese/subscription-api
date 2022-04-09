@@ -1,4 +1,4 @@
-package subs
+package ftcpay
 
 import (
 	"github.com/FTChinese/subscription-api/faker"

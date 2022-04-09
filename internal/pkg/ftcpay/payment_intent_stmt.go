@@ -1,4 +1,4 @@
-package subs
+package ftcpay
 
 const StmtSavePaymentIntent = `
 INSERT INTO premium.ftc_payment_intent

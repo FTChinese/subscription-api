@@ -1,7 +1,7 @@
 //go:build !production
 // +build !production
 
-package subs
+package ftcpay
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
@@ -12,7 +12,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
 	"time"
@@ -22,7 +22,7 @@ type MockOrderBuilder struct {
 	id        string
 	ftcID     string
 	unionID   string
-	price     pw.PaywallPrice
+	price     reader.PaywallPrice
 	kind      enum.OrderKind
 	payMethod enum.PayMethod
 	wxAppId   null.String
@@ -37,7 +37,7 @@ func NewMockOrderBuilder(ftcID string) MockOrderBuilder {
 		id:        ids.MustOrderID(),
 		ftcID:     ftcID,
 		unionID:   "",
-		price:     pw.MockPwPriceStdYear,
+		price:     reader.MockPwPriceStdYear,
 		kind:      enum.OrderKindCreate,
 		payMethod: enum.PayMethodAli,
 		confirmed: false,
@@ -55,21 +55,21 @@ func (b MockOrderBuilder) WithUnionID(id string) MockOrderBuilder {
 	return b
 }
 
-func (b MockOrderBuilder) WithPrice(p pw.PaywallPrice) MockOrderBuilder {
+func (b MockOrderBuilder) WithPrice(p reader.PaywallPrice) MockOrderBuilder {
 	b.price = p
 	return b
 }
 
 func (b MockOrderBuilder) WithStdYear() MockOrderBuilder {
-	return b.WithPrice(pw.MockPwPriceStdYear)
+	return b.WithPrice(reader.MockPwPriceStdYear)
 }
 
 func (b MockOrderBuilder) WithStdMonth() MockOrderBuilder {
-	return b.WithPrice(pw.MockPwPriceStdMonth)
+	return b.WithPrice(reader.MockPwPriceStdMonth)
 }
 
 func (b MockOrderBuilder) WithPrm() MockOrderBuilder {
-	return b.WithPrice(pw.MockPwPricePrm)
+	return b.WithPrice(reader.MockPwPricePrm)
 }
 
 func (b MockOrderBuilder) WithKind(k enum.OrderKind) MockOrderBuilder {
@@ -140,7 +140,7 @@ func (b MockOrderBuilder) findDiscount() price.Discount {
 }
 func (b MockOrderBuilder) Build() Order {
 
-	item := pw.CartItemFtc{
+	item := reader.CartItemFtc{
 		Price: b.price.FtcPrice,
 		Offer: b.findDiscount(),
 	}

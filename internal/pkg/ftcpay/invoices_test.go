@@ -1,4 +1,4 @@
-package subs
+package ftcpay
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
@@ -94,7 +94,9 @@ func TestNewOrderInvoice(t *testing.T) {
 
 func TestInvoices_membership(t *testing.T) {
 	userID := uuid.New().String()
-	current := reader.NewMockMemberBuilder(userID).Build()
+	current := reader.NewMockMemberBuilder().
+		SetFtcID(userID).
+		Build()
 	now := time.Now()
 
 	type fields struct {
