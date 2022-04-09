@@ -71,9 +71,8 @@ func TestEnv_updateMembership(t *testing.T) {
 	txID := faker.GenAppleSubID()
 
 	current := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithFtcID(userID).
-		WithPayMethod(enum.PayMethodApple).
-		WithIapID(txID).
+		SetFtcID(userID).
+		WithApple(txID).
 		Build()
 	test.NewRepo().MustSaveMembership(current)
 
