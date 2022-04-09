@@ -111,10 +111,9 @@ func (router AccountRouter) WxSignUp(w http.ResponseWriter, req *http.Request) {
 	// this is a new email account.
 	if !wxAccount.Membership.IsZero() {
 		go func() {
-			versioned := merged.Membership.Version(reader.Archiver{
-				Name:   reader.ArchiveNameWechat,
-				Action: reader.ArchiveActionLink,
-			}).WithPriorVersion(wxAccount.Membership)
+			versioned := reader.NewMembershipVersioned(merged.Membership).
+				WithPriorVersion(wxAccount.Membership).
+				ArchivedBy(reader.NewArchiver().ByWechat().ActionLink())
 
 			_ = router.ReaderRepo.VersionMembership(versioned)
 		}()

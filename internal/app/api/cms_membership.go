@@ -151,10 +151,9 @@ func (router CMSRouter) DeleteMembership(w http.ResponseWriter, req *http.Reques
 
 	if !m.IsZero() {
 		go func() {
-			_ = router.readerRepo.VersionMembership(m.Deleted(reader.Archiver{
-				Name:   reader.ArchiveName(staffName),
-				Action: reader.ArchiveActionDelete,
-			}))
+			v := m.Deleted().
+				ArchivedBy(reader.NewArchiver().By(staffName).ActionDelete())
+			_ = router.readerRepo.VersionMembership(v)
 		}()
 	}
 
