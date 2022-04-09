@@ -5,12 +5,11 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
@@ -32,35 +31,36 @@ func TestEnv_CreateOrder(t *testing.T) {
 	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
-		counter subs.Counter
+		counter reader.ShoppingCart
 		p       *test.Persona
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    subs.Order
+		want    ftcpay.Order
 		wantErr bool
 	}{
 		{
 			name: "New order",
 			args: args{
-				counter: subs.Counter{
-					BaseAccount: newPersona.EmailOnlyAccount(),
-					CartItemFtc: pw.CartItemFtc{
-						Price: pw.MockPwPriceStdYear.FtcPrice,
+				counter: reader.ShoppingCart{
+					Account: newPersona.EmailOnlyAccount(),
+					FtcItem: reader.CartItemFtc{
+						Price: reader.MockPwPriceStdYear.FtcPrice,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodAli,
 					WxAppID:   null.String{},
 				},
 			},
-			want: subs.Order{
+			want: ftcpay.Order{
 				ID:            "",
 				UserIDs:       newPersona.UserIDs(),
-				Edition:       pw.MockPwPriceStdYear.Edition,
+				Tier:          reader.MockPwPriceStdYear.Tier,
+				Cycle:         reader.MockPwPriceStdYear.Cycle,
 				Kind:          enum.OrderKindCreate,
-				OriginalPrice: pw.MockPwPriceStdYear.UnitAmount,
-				PayableAmount: pw.MockPwPriceStdYear.UnitAmount,
+				OriginalPrice: reader.MockPwPriceStdYear.UnitAmount,
+				PayableAmount: reader.MockPwPriceStdYear.UnitAmount,
 				PaymentMethod: enum.PayMethodAli,
 				YearsCount:    0,
 				MonthsCount:   0,
@@ -76,10 +76,10 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "Renewal order",
 			args: args{
-				counter: subs.Counter{
-					BaseAccount: newPersona.EmailOnlyAccount(),
-					CartItemFtc: pw.CartItemFtc{
-						Price: pw.MockPwPriceStdYear.FtcPrice,
+				counter: reader.ShoppingCart{
+					Account: newPersona.EmailOnlyAccount(),
+					FtcItem: reader.CartItemFtc{
+						Price: reader.MockPwPriceStdYear.FtcPrice,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodWx,
@@ -87,12 +87,13 @@ func TestEnv_CreateOrder(t *testing.T) {
 				},
 				p: renewalPerson,
 			},
-			want: subs.Order{
+			want: ftcpay.Order{
 				ID:            "",
 				UserIDs:       renewalPerson.UserIDs(),
-				OriginalPrice: pw.MockPwPriceStdYear.UnitAmount,
-				Edition:       pw.MockPwPriceStdYear.Edition,
-				PayableAmount: pw.MockPwPriceStdYear.UnitAmount,
+				OriginalPrice: reader.MockPwPriceStdYear.UnitAmount,
+				Tier:          enum.TierStandard,
+				Cycle:         enum.CycleYear,
+				PayableAmount: reader.MockPwPriceStdYear.UnitAmount,
 				Kind:          enum.OrderKindRenew,
 				PaymentMethod: enum.PayMethodWx,
 				WxAppID:       null.StringFrom(wxID),
@@ -104,10 +105,10 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "Upgrade order",
 			args: args{
-				counter: subs.Counter{
-					BaseAccount: newPersona.EmailOnlyAccount(),
-					CartItemFtc: pw.CartItemFtc{
-						Price: pw.MockPwPricePrm.FtcPrice,
+				counter: reader.ShoppingCart{
+					Account: newPersona.EmailOnlyAccount(),
+					FtcItem: reader.CartItemFtc{
+						Price: reader.MockPwPricePrm.FtcPrice,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodWx,
@@ -115,12 +116,13 @@ func TestEnv_CreateOrder(t *testing.T) {
 				},
 				p: upgradePerson,
 			},
-			want: subs.Order{
+			want: ftcpay.Order{
 				ID:            "",
 				UserIDs:       upgradePerson.UserIDs(),
-				OriginalPrice: pw.MockPwPricePrm.UnitAmount,
-				Edition:       pw.MockPwPricePrm.Edition,
-				PayableAmount: pw.MockPwPricePrm.UnitAmount,
+				OriginalPrice: reader.MockPwPricePrm.UnitAmount,
+				Tier:          enum.TierPremium,
+				Cycle:         enum.CycleYear,
+				PayableAmount: reader.MockPwPricePrm.UnitAmount,
 				Kind:          enum.OrderKindUpgrade,
 				PaymentMethod: enum.PayMethodWx,
 				WxAppID:       null.StringFrom(wxID),
@@ -132,10 +134,10 @@ func TestEnv_CreateOrder(t *testing.T) {
 		{
 			name: "Add-on order",
 			args: args{
-				counter: subs.Counter{
-					BaseAccount: newPersona.EmailOnlyAccount(),
-					CartItemFtc: pw.CartItemFtc{
-						Price: pw.MockPwPriceStdYear.FtcPrice,
+				counter: reader.ShoppingCart{
+					Account: newPersona.EmailOnlyAccount(),
+					FtcItem: reader.CartItemFtc{
+						Price: reader.MockPwPriceStdYear.FtcPrice,
 						Offer: price.Discount{},
 					},
 					PayMethod: enum.PayMethodWx,
@@ -143,12 +145,13 @@ func TestEnv_CreateOrder(t *testing.T) {
 				},
 				p: addOnPerson,
 			},
-			want: subs.Order{
+			want: ftcpay.Order{
 				ID:            "",
 				UserIDs:       addOnPerson.UserIDs(),
-				OriginalPrice: pw.MockPwPriceStdYear.UnitAmount,
-				Edition:       pw.MockPwPriceStdYear.Edition,
-				PayableAmount: pw.MockPwPriceStdYear.UnitAmount,
+				OriginalPrice: reader.MockPwPriceStdYear.UnitAmount,
+				Tier:          enum.TierStandard,
+				Cycle:         enum.CycleYear,
+				PayableAmount: reader.MockPwPriceStdYear.UnitAmount,
 				Kind:          enum.OrderKindAddOn,
 				PaymentMethod: enum.PayMethodWx,
 				WxAppID:       null.StringFrom(wxID),
@@ -165,18 +168,21 @@ func TestEnv_CreateOrder(t *testing.T) {
 			switch tt.want.Kind {
 			case enum.OrderKindRenew:
 				repo.MustSaveMembership(
-					reader.NewMockMemberBuilder(p.FtcID).
+					reader.NewMockMemberBuilder().
+						SetFtcID(p.FtcID).
 						Build(),
 				)
 			case enum.OrderKindUpgrade:
 				repo.MustSaveMembership(
-					reader.NewMockMemberBuilder(p.FtcID).
+					reader.NewMockMemberBuilder().
+						SetFtcID(p.FtcID).
 						Build(),
 				)
 			case enum.OrderKindAddOn:
 				repo.MustSaveMembership(
-					reader.NewMockMemberBuilder(p.FtcID).
-						WithPayMethod(enum.PayMethodStripe).
+					reader.NewMockMemberBuilder().
+						SetFtcID(p.FtcID).
+						WithStripe("").
 						Build(),
 				)
 			}
@@ -233,7 +239,7 @@ func TestEnv_RetrieveOrder(t *testing.T) {
 	ftcID := uuid.New().String()
 
 	repo := test.NewRepo()
-	order := repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+	order := repo.MustSaveOrder(ftcpay.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
@@ -319,15 +325,15 @@ func TestEnv_ListOrders(t *testing.T) {
 	ftcID := uuid.New().String()
 
 	repo := test.NewRepo()
-	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+	repo.MustSaveOrder(ftcpay.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
-	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+	repo.MustSaveOrder(ftcpay.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
-	repo.MustSaveOrder(subs.NewMockOrderBuilder("").
+	repo.MustSaveOrder(ftcpay.NewMockOrderBuilder("").
 		WithFtcID(ftcID).
 		WithKind(enum.OrderKindCreate).
 		Build())
