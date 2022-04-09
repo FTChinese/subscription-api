@@ -2,8 +2,9 @@ package stripeenv
 
 import (
 	"context"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"golang.org/x/sync/semaphore"
 	"runtime"
 )
@@ -129,21 +130,21 @@ func (env Env) ListPricesCompat(live bool, refresh bool) ([]price.StripePrice, e
 }
 
 // LoadCheckoutItem from database, or from Stripe API if not found in database.
-func (env Env) LoadCheckoutItem(params pw.StripeSubsParams) (pw.CartItemStripe, error) {
+func (env Env) LoadCheckoutItem(params stripe.SubsParams) (reader.CartItemStripe, error) {
 	recurring, err := env.LoadOrFetchPrice(params.PriceID, false)
 	if err != nil {
-		return pw.CartItemStripe{}, err
+		return reader.CartItemStripe{}, err
 	}
 
 	var introPrice price.StripePrice
 	if params.IntroductoryPriceID.Valid {
 		introPrice, err = env.LoadOrFetchPrice(params.IntroductoryPriceID.String, false)
 		if err != nil {
-			return pw.CartItemStripe{}, err
+			return reader.CartItemStripe{}, err
 		}
 	}
 
-	return pw.CartItemStripe{
+	return reader.CartItemStripe{
 		Recurring:    recurring,
 		Introductory: introPrice,
 	}, nil
