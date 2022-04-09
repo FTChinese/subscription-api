@@ -3,7 +3,6 @@ package iaprepo
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/subscription-api/internal/pkg/apple"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // SaveSubs saves an apple.Subscription instance and
@@ -84,7 +83,6 @@ func (env Env) updateMembership(s apple.Subscription) (apple.SubsResult, error) 
 	result, err := apple.NewSubsResult(s, apple.SubsResultParams{
 		UserID:        currMember.UserIDs,
 		CurrentMember: currMember,
-		Action:        reader.ArchiveActionVerify,
 	})
 	if err != nil {
 		sugar.Error(err)

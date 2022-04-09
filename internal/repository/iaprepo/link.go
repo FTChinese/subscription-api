@@ -198,18 +198,18 @@ func (env Env) Unlink(input apple.LinkInput) (apple.UnlinkResult, error) {
 			_ = tx.Rollback()
 			return apple.UnlinkResult{}, err
 		}
-		versioned = newMmb.
-			Version(reader.NewAppleArchiver(reader.ArchiveActionUnlink)).
-			WithPriorVersion(m)
+		versioned = reader.NewMembershipVersioned(newMmb).
+			WithPriorVersion(m).
+			ArchivedBy(reader.NewArchiver().ByApple().ActionUnlink())
 	} else {
 		// Delete this membership.
 		if err := tx.DeleteMember(m.UserIDs); err != nil {
 			_ = tx.Rollback()
 			return apple.UnlinkResult{}, err
 		}
-		versioned = m.
-			Version(reader.NewAppleArchiver(reader.ArchiveActionUnlink)).
-			WithPriorVersion(m)
+		versioned = reader.NewMembershipVersioned(m).
+			WithPriorVersion(m).
+			ArchivedBy(reader.NewArchiver().ByApple().ActionUnlink())
 	}
 
 	if err := tx.Commit(); err != nil {
