@@ -138,7 +138,7 @@ func (r Repo) GenerateIAPUnlinkParams(hasAddOn bool) apple.LinkInput {
 	iapID := faker.GenAppleSubID()
 
 	builder := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithFtcID(ftcID).
+		SetFtcID(ftcID).
 		WithPayMethod(enum.PayMethodApple).
 		WithIapID(iapID)
 	if hasAddOn {

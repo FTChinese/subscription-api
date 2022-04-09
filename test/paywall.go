@@ -10,16 +10,16 @@ import (
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
 	"time"
 )
 
-func NewDailyBanner() pw.BannerJSON {
+func NewDailyBanner() reader.BannerJSON {
 	faker.SeedGoFake()
 
-	return pw.BannerJSON{
+	return reader.BannerJSON{
 		ID:           ids.BannerID(),
 		Heading:      gofakeit.Word(),
 		SubHeading:   null.StringFrom(gofakeit.Sentence(5)),
@@ -30,7 +30,7 @@ func NewDailyBanner() pw.BannerJSON {
 	}
 }
 
-func NewPromoBanner() pw.BannerJSON {
+func NewPromoBanner() reader.BannerJSON {
 	b := NewDailyBanner()
 
 	b.ChronoPeriod = dt.ChronoPeriod{
@@ -73,11 +73,11 @@ func (b ProductBuilder) WithSandbox() ProductBuilder {
 	return b
 }
 
-func (b ProductBuilder) Build() pw.Product {
+func (b ProductBuilder) Build() reader.Product {
 	faker.SeedGoFake()
 
-	return pw.NewProduct(
-		pw.ProductParams{
+	return reader.NewProduct(
+		reader.ProductParams{
 			CreatedBy: gofakeit.Username(),
 			Description: null.StringFrom(gofakeit.Paragraph(
 				4, 1, 10, "\n")),

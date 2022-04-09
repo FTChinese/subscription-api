@@ -5,15 +5,14 @@ package test
 
 import (
 	"github.com/FTChinese/subscription-api/internal/pkg/apple"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wxlogin"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
@@ -193,9 +192,9 @@ func (r Repo) MustSaveMembership(m reader.Membership) {
 	}
 }
 
-func (r Repo) SaveOrder(order subs.Order) error {
+func (r Repo) SaveOrder(order ftcpay.Order) error {
 
-	var stmt = subs.StmtCreateOrder + `,
+	var stmt = ftcpay.StmtCreateOrder + `,
 		confirmed_utc = :confirmed_utc,
 		start_date = :start_date,
 		end_date = :end_date`
@@ -211,7 +210,7 @@ func (r Repo) SaveOrder(order subs.Order) error {
 	return nil
 }
 
-func (r Repo) MustSaveOrder(order subs.Order) subs.Order {
+func (r Repo) MustSaveOrder(order ftcpay.Order) ftcpay.Order {
 
 	if err := r.SaveOrder(order); err != nil {
 		panic(err)
@@ -220,7 +219,7 @@ func (r Repo) MustSaveOrder(order subs.Order) subs.Order {
 	return order
 }
 
-func (r Repo) MustSaveRenewalOrders(orders []subs.Order) {
+func (r Repo) MustSaveRenewalOrders(orders []ftcpay.Order) {
 	for _, v := range orders {
 		r.MustSaveOrder(v)
 	}
@@ -290,8 +289,8 @@ func (r Repo) MustSaveIAPReceipt(schema apple.ReceiptSchema) {
 	}
 }
 
-func (r Repo) CreateProduct(p pw.Product) {
-	_, err := r.dbs.Write.NamedExec(pw.StmtCreateProduct, p)
+func (r Repo) CreateProduct(p reader.Product) {
+	_, err := r.dbs.Write.NamedExec(reader.StmtCreateProduct, p)
 	if err != nil {
 		log.Fatalln(err)
 	}

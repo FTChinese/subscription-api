@@ -8,7 +8,7 @@ import (
 	"encoding/xml"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/objcoding/wxpay"
 	"strconv"
@@ -49,7 +49,7 @@ type WxWebhookPayload struct {
 	TimeEnd            string `json:"time_end" xml:"time_end"`
 }
 
-func NewWxWebhookPayload(o subs.Order) WxWebhookPayload {
+func NewWxWebhookPayload(o ftcpay.Order) WxWebhookPayload {
 	return WxWebhookPayload{
 		ReturnCode:         wechat.Success,
 		ReturnMsg:          "",

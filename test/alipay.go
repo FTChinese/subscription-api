@@ -7,7 +7,7 @@ import (
 	"crypto"
 	"encoding/base64"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/smartwalle/alipay"
 	"github.com/smartwalle/alipay/encoding"
 	"net/http"
@@ -31,7 +31,7 @@ type AliPayWebhook struct {
 	ReceiptAmount string `schema:"receipt_amount"`
 }
 
-func NewAlipayWebhook(order subs.Order) AliPayWebhook {
+func NewAlipayWebhook(order ftcpay.Order) AliPayWebhook {
 	return AliPayWebhook{
 		NotifyTime:    chrono.TimeNow().Format(chrono.SQLDateTime),
 		NotifyType:    "trade_status_sync",

@@ -3,7 +3,6 @@ package test
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"testing"
 )
@@ -11,7 +10,7 @@ import (
 func TestRepo_SaveMembership(t *testing.T) {
 	p := NewPersona()
 
-	err := NewRepo().SaveMembership(p.MemberBuilder().WithPrice(pw.MockPwPriceStdYear.FtcPrice).Build())
+	err := NewRepo().SaveMembership(p.MemberBuilder().WithPrice(reader.MockPwPriceStdYear.FtcPrice).Build())
 
 	if err != nil {
 		t.Error(err)
@@ -62,7 +61,7 @@ func TestRepo_CreateWxUser(t *testing.T) {
 	}
 
 	m := reader.NewMockMemberBuilderV2(enum.AccountKindWx).
-		WithWxID(p.UnionID).
+		SetWxID(p.UnionID).
 		Build()
 	t.Logf("%+v", m)
 	repo.MustSaveMembership(m)
