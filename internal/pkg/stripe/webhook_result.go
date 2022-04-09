@@ -62,14 +62,13 @@ func (b WebhookResultBuilder) Build() (WebhookSubsResult, error) {
 	if b.StripeMember.IsZero() {
 		// If ftc side does not have membership.
 		if b.FtcMember.IsZero() {
-			newMmb := NewMembership(MembershipParams{
-				UserIDs: b.UserIDs,
-				Subs:    b.Subs,
-				AddOn:   addon.AddOn{},
-			})
+			newMmb := b.Subs.BuildMembership(
+				b.UserIDs,
+				addon.AddOn{})
 			return WebhookSubsResult{
-				Member:           newMmb,
-				Versioned:        newMmb.Version(reader.NewStripeArchiver(reader.ArchiveActionWebhook)),
+				Member: newMmb,
+				Versioned: reader.NewMembershipVersioned(newMmb).
+					ArchivedBy(reader.NewArchiver().ByStripe().ActionWebhook()),
 				CarryOverInvoice: invoice.Invoice{},
 			}, nil
 		}
@@ -77,16 +76,14 @@ func (b WebhookResultBuilder) Build() (WebhookSubsResult, error) {
 		// Ftc side has expired membership.
 		// It's safe to override it.
 		if b.FtcMember.IsExpired() {
-			newMmb := NewMembership(MembershipParams{
-				UserIDs: b.UserIDs,
-				Subs:    b.Subs,
-				AddOn:   b.FtcMember.AddOn,
-			})
+			newMmb := b.Subs.BuildMembership(
+				b.UserIDs,
+				addon.AddOn{})
 			return WebhookSubsResult{
 				Member: newMmb,
-				Versioned: newMmb.Version(
-					reader.NewStripeArchiver(reader.ArchiveActionWebhook)).
-					WithPriorVersion(b.FtcMember),
+				Versioned: reader.NewMembershipVersioned(newMmb).
+					WithPriorVersion(b.FtcMember).
+					ArchivedBy(reader.NewArchiver().ByStripe().ActionWebhook()),
 				CarryOverInvoice: invoice.Invoice{},
 			}, nil
 		}
@@ -101,20 +98,15 @@ func (b WebhookResultBuilder) Build() (WebhookSubsResult, error) {
 
 			// Turn current ftc side to carry over.
 			inv := b.FtcMember.CarryOverInvoice()
-			newMmb := NewMembership(MembershipParams{
-				UserIDs: b.UserIDs,
-				Subs:    b.Subs,
-				AddOn:   b.FtcMember.AddOn.Plus(addon.New(inv.Tier, inv.TotalDays())),
-			})
+			newMmb := b.Subs.BuildMembership(
+				b.UserIDs,
+				b.FtcMember.NextRoundAddOn(inv))
 
 			return WebhookSubsResult{
 				Member: newMmb,
-				Versioned: newMmb.
-					Version(
-						reader.NewStripeArchiver(
-							reader.ArchiveActionWebhook,
-						)).
-					WithPriorVersion(b.FtcMember),
+				Versioned: reader.NewMembershipVersioned(newMmb).
+					WithPriorVersion(b.FtcMember).
+					ArchivedBy(reader.NewArchiver().ByStripe().ActionWebhook()),
 				CarryOverInvoice: inv,
 			}, nil
 		}
@@ -136,18 +128,15 @@ func (b WebhookResultBuilder) Build() (WebhookSubsResult, error) {
 
 	// Current membership must be created from the subs,
 	// simply update it.
-	newMmb := NewMembership(MembershipParams{
-		UserIDs: b.UserIDs,
-		Subs:    b.Subs,
-		AddOn:   b.StripeMember.AddOn, // Carry on previous addon without touch.
-	})
+	newMmb := b.Subs.BuildMembership(
+		b.UserIDs,
+		b.StripeMember.AddOn)
 
 	return WebhookSubsResult{
 		Member: newMmb,
-		Versioned: newMmb.Version(
-			reader.NewStripeArchiver(
-				reader.ArchiveActionWebhook)).
-			WithPriorVersion(b.FtcMember),
+		Versioned: reader.NewMembershipVersioned(newMmb).
+			WithPriorVersion(b.FtcMember).
+			ArchivedBy(reader.NewArchiver().ByStripe().ActionWebhook()),
 		CarryOverInvoice: invoice.Invoice{},
 	}, nil
 }
