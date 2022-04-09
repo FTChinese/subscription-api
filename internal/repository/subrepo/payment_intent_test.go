@@ -2,7 +2,7 @@ package subrepo
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
@@ -20,7 +20,7 @@ func TestEnv_SavePaymentIntent(t *testing.T) {
 	env := New(db.MockMySQL(), zaptest.NewLogger(t))
 
 	type args struct {
-		pi subs.PaymentIntentSchema
+		pi ftcpay.PaymentIntentSchema
 	}
 	tests := []struct {
 		name string
@@ -29,7 +29,7 @@ func TestEnv_SavePaymentIntent(t *testing.T) {
 		{
 			name: "Save alipay intent",
 			args: args{
-				pi: subs.PaymentIntentSchema{
+				pi: ftcpay.PaymentIntentSchema{
 					OrderID: ids.MustOrderID(),
 					Price: price.JSONPrice{
 						FtcPrice: price.MockPriceStdYear,
@@ -50,7 +50,7 @@ func TestEnv_SavePaymentIntent(t *testing.T) {
 		{
 			name: "Save wxpay intent",
 			args: args{
-				pi: subs.PaymentIntentSchema{
+				pi: ftcpay.PaymentIntentSchema{
 					OrderID: ids.MustOrderID(),
 					Price: price.JSONPrice{
 						FtcPrice: price.MockPriceStdYear,
