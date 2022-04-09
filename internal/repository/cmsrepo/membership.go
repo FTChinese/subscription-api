@@ -96,10 +96,10 @@ func (env Env) UpdateMembership(compoundID string, params input.MemberParams, by
 		return reader.MembershipVersioned{}, err
 	}
 
-	return updated.Version(reader.Archiver{
-		Name:   reader.ArchiveName(by),
-		Action: reader.ArchiveActionUpdate,
-	}).WithPriorVersion(current), nil
+	v := reader.NewMembershipVersioned(updated).
+		WithPriorVersion(current).
+		ArchivedBy(reader.NewArchiver().By(by).ActionUpdate())
+	return v, nil
 }
 
 func (env Env) DeleteMembership(compoundID string) (reader.Membership, error) {
