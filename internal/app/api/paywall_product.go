@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
 )
@@ -29,7 +29,7 @@ func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Reque
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
 
-	var params pw.ProductParams
+	var params reader.ProductParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		sugar.Error(err)
@@ -42,7 +42,7 @@ func (router PaywallRouter) CreateProduct(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	p := pw.NewProduct(params, router.live)
+	p := reader.NewProduct(params, router.live)
 
 	err := router.productRepo.CreateProduct(p)
 	if err != nil {
@@ -83,7 +83,7 @@ func (router PaywallRouter) UpdateProduct(w http.ResponseWriter, req *http.Reque
 
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
-	var params pw.ProductParams
+	var params reader.ProductParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -157,7 +157,7 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	var params pw.ProductIntroParams
+	var params reader.ProductIntroParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		sugar.Error(err)

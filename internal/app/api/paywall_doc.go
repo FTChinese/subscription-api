@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"net/http"
 )
 
@@ -17,18 +17,18 @@ import (
 // - content?: string;
 // - terms?: string;
 func (router PaywallRouter) SaveBanner(w http.ResponseWriter, req *http.Request) {
-	var params pw.BannerJSON
+	var params reader.BannerJSON
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	if ve := params.Validate(pw.BannerKindDaily); ve != nil {
+	if ve := params.Validate(reader.BannerKindDaily); ve != nil {
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
-	banner := params.WithID(pw.BannerKindDaily)
+	banner := params.WithID(reader.BannerKindDaily)
 
 	pwb, err := router.paywallRepo.RetrievePaywallDoc(router.live)
 	if err != nil {
@@ -37,7 +37,7 @@ func (router PaywallRouter) SaveBanner(w http.ResponseWriter, req *http.Request)
 	}
 
 	if pwb.IsEmpty() {
-		pwb = pw.NewPaywallDoc(router.live)
+		pwb = reader.NewPaywallDoc(router.live)
 	}
 
 	pwb = pwb.WithBanner(banner)
@@ -63,18 +63,18 @@ func (router PaywallRouter) SaveBanner(w http.ResponseWriter, req *http.Request)
 // - startUtc: string;
 // - endUtc: string;
 func (router PaywallRouter) SavePromo(w http.ResponseWriter, req *http.Request) {
-	var params pw.BannerJSON
+	var params reader.BannerJSON
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
-	if ve := params.Validate(pw.BannerKindPromo); ve != nil {
+	if ve := params.Validate(reader.BannerKindPromo); ve != nil {
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
 
-	promo := params.WithID(pw.BannerKindPromo)
+	promo := params.WithID(reader.BannerKindPromo)
 
 	pwb, err := router.paywallRepo.RetrievePaywallDoc(router.live)
 	if err != nil {

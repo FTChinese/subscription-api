@@ -9,7 +9,6 @@ import (
 	"github.com/FTChinese/subscription-api/internal/stripeclient"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"github.com/patrickmn/go-cache"
@@ -106,10 +105,10 @@ func handleSubsError(w http.ResponseWriter, err error) {
 	}
 }
 
-func (router StripeRouter) findCartItem(params pw.StripeSubsParams) (pw.CartItemStripe, error) {
+func (router StripeRouter) findCartItem(params stripe.SubsParams) (reader.CartItemStripe, error) {
 	paywall, err := router.cacheRepo.LoadPaywall(router.live)
 	if err == nil {
-		item, err := paywall.BuildStripeCartItem(params)
+		item, err := params.BuildCartItem(paywall.StripePrices)
 		if err == nil {
 			return item, nil
 		}
@@ -117,7 +116,7 @@ func (router StripeRouter) findCartItem(params pw.StripeSubsParams) (pw.CartItem
 
 	item, err := router.stripeRepo.LoadCheckoutItem(params)
 	if err != nil {
-		return pw.CartItemStripe{}, err
+		return reader.CartItemStripe{}, err
 	}
 
 	// Save to our database if not saved yet.

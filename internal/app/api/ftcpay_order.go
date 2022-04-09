@@ -4,7 +4,7 @@ import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
@@ -168,7 +168,7 @@ func (router FtcPayRouter) VerifyPayment(w http.ResponseWriter, req *http.Reques
 			return
 		}
 
-		_ = render.New(w).OK(subs.ConfirmationResult{
+		_ = render.New(w).OK(ftcpay.ConfirmationResult{
 			Payment:    payResult,
 			Order:      order,
 			Membership: m,

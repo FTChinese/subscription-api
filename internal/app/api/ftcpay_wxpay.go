@@ -4,12 +4,12 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
-	"github.com/guregu/null"
 	"github.com/objcoding/wxpay"
 	"net/http"
 )
@@ -50,7 +50,7 @@ func (router FtcPayRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		}
 
 		// Parse request body.
-		input := subs.NewWxPayReq(tradeType)
+		input := ftcpay.NewWxPayReq(tradeType)
 		if err := gorest.ParseJSON(req.Body, &input); err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
@@ -69,14 +69,11 @@ func (router FtcPayRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 			return
 		}
 
-		counter := subs.Counter{
-			BaseAccount: acnt,
-			CartItemFtc: item,
-			PayMethod:   enum.PayMethodWx,
-			WxAppID:     null.StringFrom(payClient.GetApp().AppID),
-		}
+		cart := reader.NewShoppingCart(acnt).
+			WithFtcItem(item).
+			WithWxPay(payClient.GetApp().AppID)
 
-		pi, err := router.SubsRepo.CreateOrder(counter)
+		pi, err := router.SubsRepo.CreateOrder(cart)
 		if err != nil {
 			sugar.Error(err)
 			router.handleOrderErr(w, err)
@@ -145,7 +142,7 @@ func (router FtcPayRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 			return
 		}
 
-		payIntent := subs.NewWxPaymentIntent(pi, payParams)
+		payIntent := ftcpay.NewWxPaymentIntent(pi, payParams)
 
 		go func() {
 			err := router.SubsRepo.SavePaymentIntent(payIntent.Schema())
@@ -226,7 +223,7 @@ func (router FtcPayRouter) WxWebHook(w http.ResponseWriter, req *http.Request) {
 		}
 	}()
 
-	payResult := subs.NewWxWebhookResult(wechat.NewWebhookParams(rawPayload))
+	payResult := ftcpay.NewWxWebhookResult(wechat.NewWebhookParams(rawPayload))
 
 	sugar.Info("Start processing wx webhook")
 	_, cfmErr := router.processWebhookResult(payResult)

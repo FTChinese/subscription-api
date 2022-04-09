@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/app/paybase"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/repository"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 	"net/http"
@@ -49,7 +49,7 @@ func (router FtcPayRouter) handleOrderErr(w http.ResponseWriter, err error) {
 	_ = render.New(w).DBError(err)
 }
 
-func (router FtcPayRouter) postOrderCreation(order subs.Order, client footprint.Client) error {
+func (router FtcPayRouter) postOrderCreation(order ftcpay.Order, client footprint.Client) error {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
@@ -66,7 +66,7 @@ func (router FtcPayRouter) postOrderCreation(order subs.Order, client footprint.
 	return nil
 }
 
-func (router FtcPayRouter) processWebhookResult(result subs.PaymentResult) (subs.ConfirmationResult, *subs.ConfirmError) {
+func (router FtcPayRouter) processWebhookResult(result ftcpay.PaymentResult) (ftcpay.ConfirmationResult, *ftcpay.ConfirmError) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
@@ -81,34 +81,33 @@ func (router FtcPayRouter) processWebhookResult(result subs.PaymentResult) (subs
 
 	if result.ShouldRetry() {
 		msg := fmt.Sprintf("payment status %s", result.PaymentState)
-		return subs.ConfirmationResult{}, result.ConfirmError(msg, true)
+		return ftcpay.ConfirmationResult{}, result.ConfirmError(msg, true)
 	}
 
 	if !result.IsOrderPaid() {
-		return subs.ConfirmationResult{}, result.ConfirmError("order not paid", false)
+		return ftcpay.ConfirmationResult{}, result.ConfirmError("order not paid", false)
 	}
 
 	order, err := router.SubsRepo.LoadFullOrder(result.OrderID)
 	if err != nil {
 		sugar.Error(err)
-		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
+		return ftcpay.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
 	return router.ConfirmOrder(result, order)
 }
 
-func (router FtcPayRouter) loadCheckoutItem(params pw.FtcCartParams, live bool) (pw.CartItemFtc, *render.ResponseError) {
+func (router FtcPayRouter) loadCheckoutItem(params ftcpay.FtcCartParams, live bool) (reader.CartItemFtc, *render.ResponseError) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
 	sugar.Infof("Load checkout item. Live %t", live)
 
-	// TODO: use PaymentShared.
-	paywall, err := router.paywallRepo.LoadPaywall(live)
+	paywall, err := router.cacheRepo.LoadPaywall(live)
 	// If price and discount could be found in paywall.
 	if err == nil {
 		sugar.Infof("Paywall Cache found. Search checkout item.")
-		item, err := paywall.BuildFtcCartItem(params)
+		item, err := params.BuildCartItem(paywall.Products)
 		if err == nil {
 			sugar.Infof("Checkout item found in cache")
 			return item, nil
@@ -124,12 +123,12 @@ func (router FtcPayRouter) loadCheckoutItem(params pw.FtcCartParams, live bool) 
 
 	if err != nil {
 		sugar.Error(err)
-		return pw.CartItemFtc{}, render.NewDBError(err)
+		return reader.CartItemFtc{}, render.NewDBError(err)
 	}
 
 	if err := ci.Verify(live); err != nil {
 		sugar.Error(err)
-		return pw.CartItemFtc{}, render.NewBadRequest(err.Error())
+		return reader.CartItemFtc{}, render.NewBadRequest(err.Error())
 	}
 
 	return ci, nil

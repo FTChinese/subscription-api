@@ -4,7 +4,6 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
@@ -40,7 +39,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := xhttp.GetFtcID(req.Header)
-	var params pw.StripeSubsParams
+	var params stripe.SubsParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
@@ -77,17 +76,11 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	cart := pw.NewShoppingCart(acnt).
+	cart := reader.NewShoppingCart(acnt).
 		WithStripeItem(item)
 
 	// Create stripe subscription.
 	result, cart, err := router.stripeRepo.CreateSubscription(cart, params)
-
-	if err != nil {
-		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
-		return
-	}
 
 	go func() {
 		err := router.stripeRepo.SaveShoppingSession(
@@ -97,8 +90,9 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		}
 	}()
 
-	if cart.Intent.Kind == reader.SubsKindForbidden {
-		handleSubsError(w, cart.Intent.Error)
+	if err != nil {
+		sugar.Error(err)
+		handleSubsError(w, err)
 		return
 	}
 
@@ -165,7 +159,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := xhttp.GetFtcID(req.Header)
-	var input pw.StripeSubsParams
+	var input stripe.SubsParams
 	if err := gorest.ParseJSON(req.Body, &input); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -195,9 +189,9 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	result, err := router.stripeRepo.UpdateSubscription(
-		account,
-		item,
+	cart := reader.NewShoppingCart(account).WithStripeItem(item)
+	result, cart, err := router.stripeRepo.UpdateSubscription(
+		cart,
 		input,
 	)
 

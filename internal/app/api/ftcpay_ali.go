@@ -4,12 +4,12 @@ import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
-	"github.com/guregu/null"
 	"net/http"
 )
 
@@ -51,7 +51,7 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 
 		sugar.Infof("Base account found %v", acnt)
 
-		var params subs.AliPayReq
+		var params ftcpay.AliPayReq
 		if err := gorest.ParseJSON(req.Body, &params); err != nil {
 			sugar.Error(err)
 			_ = render.New(w).BadRequest(err.Error())
@@ -78,15 +78,12 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 
 		sugar.Infof("Checkout item loaded %v", item)
 
-		counter := subs.Counter{
-			BaseAccount: acnt,
-			CartItemFtc: item,
-			PayMethod:   enum.PayMethodAli,
-			WxAppID:     null.String{},
-		}
+		cart := reader.NewShoppingCart(acnt).
+			WithFtcItem(item).
+			WithAlipay()
 
 		sugar.Infof("Creating order...")
-		pi, err := router.SubsRepo.CreateOrder(counter)
+		pi, err := router.SubsRepo.CreateOrder(cart)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).InternalServerError(err.Error())
@@ -118,7 +115,7 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		}
 		sugar.Infof("Alipay signed order param: %s", param)
 
-		alipayIntent, err := subs.NewAliPaymentIntent(
+		alipayIntent, err := ftcpay.NewAliPaymentIntent(
 			pi,
 			param,
 			kind)
@@ -187,7 +184,7 @@ func (router FtcPayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) 
 	}()
 
 	sugar.Info("Start processing ali webhook")
-	payResult, err := subs.NewAliWebhookResult(payload)
+	payResult, err := ftcpay.NewAliWebhookResult(payload)
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
