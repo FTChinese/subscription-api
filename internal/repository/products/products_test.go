@@ -5,7 +5,7 @@ import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
 	"testing"
@@ -21,7 +21,7 @@ func TestEnv_ListProducts(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []pw.Product
+		want    []reader.Product
 		wantErr bool
 	}{
 		{
@@ -55,7 +55,7 @@ func TestEnv_CreateProduct(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		p pw.Product
+		p reader.Product
 	}
 	tests := []struct {
 		name    string
@@ -96,7 +96,7 @@ func TestEnv_RetrieveProduct(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    pw.Product
+		want    reader.Product
 		wantErr bool
 	}{
 		{
@@ -105,7 +105,7 @@ func TestEnv_RetrieveProduct(t *testing.T) {
 				id:   "prod_GIvJj8oo3Dmf",
 				live: true,
 			},
-			want:    pw.Product{},
+			want:    reader.Product{},
 			wantErr: false,
 		},
 	}
@@ -130,7 +130,7 @@ func TestEnv_UpdateProduct(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		p pw.Product
+		p reader.Product
 	}
 	tests := []struct {
 		name    string
@@ -140,9 +140,9 @@ func TestEnv_UpdateProduct(t *testing.T) {
 		{
 			name: "Update product",
 			args: args{
-				p: pw.Product{
+				p: reader.Product{
 					ID: "prod_RYRkuSDr64fv",
-					ProductParams: pw.ProductParams{
+					ProductParams: reader.ProductParams{
 						CreatedBy:   "Koepp1854",
 						Description: null.StringFrom("Cast communication inflation test state advance write talk express scheme.\nPut change decade philosophy move foundation shall say instance bridge.\nEnhance introduce hear 're hell be institution require own protection.\nFunction risk background finance alter deserve leadership would structure take."),
 						Heading:     "高级会员update",
@@ -176,7 +176,7 @@ func TestEnv_SetProductOnPaywall(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		p pw.Product
+		p reader.Product
 	}
 	tests := []struct {
 		name    string
@@ -213,7 +213,7 @@ func TestEnv_SetProductIntro(t *testing.T) {
 	test.NewRepo().CreateProduct(prod)
 
 	type args struct {
-		p pw.Product
+		p reader.Product
 	}
 	tests := []struct {
 		name    string

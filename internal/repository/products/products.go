@@ -1,14 +1,14 @@
 package products
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-func (env Env) ListProducts(live bool) ([]pw.Product, error) {
-	var list = make([]pw.Product, 0)
+func (env Env) ListProducts(live bool) ([]reader.Product, error) {
+	var list = make([]reader.Product, 0)
 	err := env.dbs.Read.Select(
 		&list,
-		pw.StmtListProducts,
+		reader.StmtListProducts,
 		live)
 
 	if err != nil {
@@ -18,9 +18,9 @@ func (env Env) ListProducts(live bool) ([]pw.Product, error) {
 	return list, nil
 }
 
-func (env Env) CreateProduct(p pw.Product) error {
+func (env Env) CreateProduct(p reader.Product) error {
 	_, err := env.dbs.Write.NamedExec(
-		pw.StmtCreateProduct,
+		reader.StmtCreateProduct,
 		p)
 
 	if err != nil {
@@ -30,24 +30,24 @@ func (env Env) CreateProduct(p pw.Product) error {
 	return nil
 }
 
-func (env Env) RetrieveProduct(id string, live bool) (pw.Product, error) {
-	var p pw.Product
+func (env Env) RetrieveProduct(id string, live bool) (reader.Product, error) {
+	var p reader.Product
 	err := env.dbs.Read.Get(
 		&p,
-		pw.StmtRetrieveProduct,
+		reader.StmtRetrieveProduct,
 		id,
 		live)
 
 	if err != nil {
-		return pw.Product{}, err
+		return reader.Product{}, err
 	}
 
 	return p, nil
 }
 
-func (env Env) UpdateProduct(p pw.Product) error {
+func (env Env) UpdateProduct(p reader.Product) error {
 	_, err := env.dbs.Write.NamedExec(
-		pw.StmtUpdateProduct,
+		reader.StmtUpdateProduct,
 		p)
 
 	if err != nil {
@@ -57,7 +57,7 @@ func (env Env) UpdateProduct(p pw.Product) error {
 	return nil
 }
 
-func (env Env) SetProductOnPaywall(p pw.Product) error {
+func (env Env) SetProductOnPaywall(p reader.Product) error {
 	tx, err := env.beginProductTx()
 	if err != nil {
 		return err
@@ -98,9 +98,9 @@ func (env Env) SetProductOnPaywall(p pw.Product) error {
 	return nil
 }
 
-func (env Env) SetProductIntro(p pw.Product) error {
+func (env Env) SetProductIntro(p reader.Product) error {
 	_, err := env.dbs.Write.NamedExec(
-		pw.StmtSetProductIntro,
+		reader.StmtSetProductIntro,
 		p)
 
 	if err != nil {

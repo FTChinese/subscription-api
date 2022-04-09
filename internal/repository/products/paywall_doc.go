@@ -1,12 +1,12 @@
 package products
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-func (env Env) CreatePaywallDoc(pwb pw.PaywallDoc) (int64, error) {
+func (env Env) CreatePaywallDoc(pwb reader.PaywallDoc) (int64, error) {
 	result, err := env.dbs.Write.NamedExec(
-		pw.StmtInsertPaywallDoc,
+		reader.StmtInsertPaywallDoc,
 		pwb)
 
 	if err != nil {

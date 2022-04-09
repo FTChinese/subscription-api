@@ -2,7 +2,7 @@ package products
 
 import (
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 func (env Env) CreateDiscount(d price.Discount) error {
@@ -63,7 +63,7 @@ func (env Env) ListDiscounts(priceID string, live bool) ([]price.Discount, error
 
 // ArchivePriceDiscounts turns all discount under a price into
 // cancelled mode.
-func (env Env) ArchivePriceDiscounts(p pw.PaywallPrice) error {
+func (env Env) ArchivePriceDiscounts(p reader.PaywallPrice) error {
 	_, err := env.dbs.Write.NamedExec(
 		price.StmtArchivePriceDiscounts,
 		p)

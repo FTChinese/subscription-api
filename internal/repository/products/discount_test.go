@@ -7,7 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
@@ -231,7 +231,7 @@ func TestEnv_ArchivePriceDiscounts(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		p pw.PaywallPrice
+		p reader.PaywallPrice
 	}
 	tests := []struct {
 		name    string
@@ -241,7 +241,7 @@ func TestEnv_ArchivePriceDiscounts(t *testing.T) {
 		{
 			name: "Archive discount under a price",
 			args: args{
-				p: pw.PaywallPrice{
+				p: reader.PaywallPrice{
 					FtcPrice: price.FtcPrice{
 						ID: p.ID,
 					},

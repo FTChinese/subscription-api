@@ -7,7 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
@@ -194,7 +194,7 @@ func TestEnv_UpdatePriceOffers(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		pwp pw.PaywallPrice
+		pwp reader.PaywallPrice
 	}
 	tests := []struct {
 		name    string
@@ -204,7 +204,7 @@ func TestEnv_UpdatePriceOffers(t *testing.T) {
 		{
 			name: "Update price offers",
 			args: args{
-				pwp: pw.PaywallPrice{
+				pwp: reader.PaywallPrice{
 					FtcPrice: p,
 					Offers: []price.Discount{
 						test.NewDiscountBuilder(p.ID).BuildPromo(),
@@ -245,7 +245,7 @@ func TestEnv_ListPrices(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []pw.PaywallPrice
+		want    []reader.PaywallPrice
 		wantErr bool
 	}{
 		{

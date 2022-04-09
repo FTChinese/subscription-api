@@ -3,7 +3,7 @@ package products
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"testing"
 )
@@ -13,7 +13,7 @@ func TestEnv_CreatePaywallDoc(t *testing.T) {
 	env := New(db.MockMySQL())
 
 	type args struct {
-		pwb pw.PaywallDoc
+		pwb reader.PaywallDoc
 	}
 	tests := []struct {
 		name    string
@@ -23,10 +23,10 @@ func TestEnv_CreatePaywallDoc(t *testing.T) {
 		{
 			name: "Create paywall doc",
 			args: args{
-				pwb: pw.PaywallDoc{
+				pwb: reader.PaywallDoc{
 					ID:          0,
 					DailyBanner: test.NewDailyBanner(),
-					PromoBanner: pw.BannerJSON{},
+					PromoBanner: reader.BannerJSON{},
 					LiveMode:    false,
 					CreatedUTC:  chrono.TimeNow(),
 				},
