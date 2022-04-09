@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"strconv"
 	"strings"
@@ -71,7 +71,7 @@ func Render(name string, ctx interface{}) (string, error) {
 
 type CtxSubs struct {
 	UserName string
-	subs.Invoices
+	ftcpay.Invoices
 }
 
 func (ctx CtxSubs) Render() (string, error) {

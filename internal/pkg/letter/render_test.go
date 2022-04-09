@@ -3,7 +3,7 @@ package letter
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/faker"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
@@ -249,7 +249,7 @@ func TestCtxSubs_Render(t *testing.T) {
 
 	type fields struct {
 		UserName string
-		Invoices subs.Invoices
+		Invoices ftcpay.Invoices
 	}
 	tests := []struct {
 		name    string
@@ -261,7 +261,7 @@ func TestCtxSubs_Render(t *testing.T) {
 			name: "Create",
 			fields: fields{
 				UserName: gofakeit.Username(),
-				Invoices: subs.Invoices{
+				Invoices: ftcpay.Invoices{
 					Purchased: invoice.Invoice{
 						ID:             ids.InvoiceID(),
 						CompoundID:     "",
@@ -288,7 +288,7 @@ func TestCtxSubs_Render(t *testing.T) {
 			name: "Renew",
 			fields: fields{
 				UserName: gofakeit.Username(),
-				Invoices: subs.Invoices{
+				Invoices: ftcpay.Invoices{
 					Purchased:   invoice.Invoice{},
 					CarriedOver: invoice.Invoice{},
 				},
@@ -299,9 +299,9 @@ func TestCtxSubs_Render(t *testing.T) {
 			name: "Upgrade",
 			fields: fields{
 				UserName: gofakeit.Username(),
-				Invoices: subs.Invoices{
+				Invoices: ftcpay.Invoices{
 					Purchased: invoice.Invoice{},
-					CarriedOver: reader.NewMockMemberBuilder("").
+					CarriedOver: reader.NewMockMemberBuilder().
 						Build().
 						CarryOverInvoice(),
 				},
@@ -312,7 +312,7 @@ func TestCtxSubs_Render(t *testing.T) {
 			name: "AddOn",
 			fields: fields{
 				UserName: gofakeit.Username(),
-				Invoices: subs.Invoices{
+				Invoices: ftcpay.Invoices{
 					Purchased:   invoice.Invoice{},
 					CarriedOver: invoice.Invoice{},
 				},

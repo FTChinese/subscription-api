@@ -4,7 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/internal/pkg/apple"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/postman"
@@ -228,7 +228,7 @@ func (s Service) SendWxEmailUnlink(a reader.Account, anchor enum.AccountKind) er
 
 // SendOneTimePurchase sends an email after user made a
 // successful one-time purchase.
-func (s Service) SendOneTimePurchase(a account.BaseAccount, invs subs.Invoices) error {
+func (s Service) SendOneTimePurchase(a account.BaseAccount, invs ftcpay.Invoices) error {
 	defer s.logger.Sync()
 	sugar := s.logger.Sugar()
 
