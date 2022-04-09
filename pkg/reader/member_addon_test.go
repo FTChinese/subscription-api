@@ -22,7 +22,7 @@ func TestMembership_withAddOnInvoice(t *testing.T) {
 	inv := invoice.Invoice{}
 
 	current := NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithFtcID(userID).
+		SetFtcID(userID).
 		WithExpiration(time.Now().AddDate(0, 0, -1)).
 		Build().
 		PlusAddOn(addon.New(inv.Tier, inv.TotalDays()))
@@ -202,7 +202,7 @@ func TestMembership_ClaimAddOns(t *testing.T) {
 	inv := invoice.Invoice{}
 
 	m := NewMockMemberBuilderV2(enum.AccountKindFtc).
-		WithFtcID(userID).
+		SetFtcID(userID).
 		WithExpiration(time.Now().AddDate(0, 0, -1)).
 		Build().
 		PlusAddOn(addon.New(inv.Tier, inv.TotalDays()))
@@ -228,7 +228,7 @@ func TestMembership_ClaimAddOns(t *testing.T) {
 		{
 			name: "Transfer addon invoices",
 			fields: NewMockMemberBuilderV2(enum.AccountKindFtc).
-				WithFtcID(userID).
+				SetFtcID(userID).
 				WithExpiration(time.Now().AddDate(0, 0, -1)).
 				WithAddOn(addon.AddOn{
 					Standard: 1000,
