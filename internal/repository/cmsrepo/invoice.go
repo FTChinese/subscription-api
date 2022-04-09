@@ -2,7 +2,6 @@ package cmsrepo
 
 import (
 	"database/sql"
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/invoice"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -59,8 +58,8 @@ func (env Env) CreateAddOn(inv invoice.Invoice) (reader.AddOnInvoiceCreated, err
 	return reader.AddOnInvoiceCreated{
 		Invoice:    inv,
 		Membership: newM,
-		Versioned: newM.
-			Version(reader.NewOrderArchiver(enum.OrderKindAddOn)).
-			WithPriorVersion(member),
+		Versioned: reader.NewMembershipVersioned(newM).
+			WithPriorVersion(member).
+			ArchivedBy(reader.NewArchiver().ByManual().ActionAddOn()),
 	}, nil
 }
