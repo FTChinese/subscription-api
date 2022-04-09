@@ -55,12 +55,12 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 			},
 			requisite: requisite{
 				membership: reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-					WithFtcID(userA).
+					SetFtcID(userA).
 					WithExpiration(time.Now().AddDate(0, 0, -1)).
 					Build(),
 				invoices: []invoice.Invoice{
 					reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-						WithFtcID(userA).
+						SetFtcID(userA).
 						Build().
 						CarryOverInvoice(),
 					invoice.Invoice{},
@@ -79,7 +79,7 @@ func TestEnv_ClaimAddOn(t *testing.T) {
 			},
 			requisite: requisite{
 				membership: reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
-					WithFtcID(userB).
+					SetFtcID(userB).
 					WithExpiration(time.Now().AddDate(0, 0, -1)).
 					WithAddOn(addon.AddOn{
 						Standard: 367,
