@@ -1,6 +1,7 @@
-package subs
+package ftcpay
 
 import (
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
@@ -46,6 +47,13 @@ func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 		return ConfirmationResult{}, err
 	}
 
+	var archiver = reader.NewArchiver().WithOrderKind(p.Order.Kind)
+	if p.Order.PaymentMethod == enum.PayMethodAli {
+		archiver = archiver.ByAli()
+	} else if p.Order.PaymentMethod == enum.PayMethodWx {
+		archiver = archiver.ByWechat()
+	}
+
 	return ConfirmationResult{
 		Payment: p.Payment,
 		Order: p.Order.Confirmed(
@@ -53,8 +61,9 @@ func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 			invoices.Purchased.ChronoPeriod),
 		Invoices:   invoices,
 		Membership: newM,
-		Versioned: newM.Version(reader.NewOrderArchiver(p.Order.Kind)).
-			WithPriorVersion(p.Member),
+		Versioned: reader.NewMembershipVersioned(newM).
+			WithPriorVersion(p.Member).
+			ArchivedBy(archiver),
 		Notify: true,
 	}, nil
 }
