@@ -1,33 +1,12 @@
-package pw
+package reader
 
 import (
 	"errors"
 	"fmt"
-	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/guregu/null"
 )
-
-// FtcCartParams contains the item user want to buy.
-// Both price and offer only requires id field to be set.
-type FtcCartParams struct {
-	PriceID    string      `json:"priceId"`
-	DiscountID null.String `json:"discountId"`
-}
-
-func (s *FtcCartParams) Validate() *render.ValidationError {
-	if s.PriceID == "" {
-		return &render.ValidationError{
-			Message: "Missing priceId field",
-			Field:   "priceId",
-			Code:    render.CodeMissingField,
-		}
-	}
-
-	return nil
-}
 
 // CartItemFtc contains a price user is trying to purchase and optional discount of this price
 // applicable to this user.
