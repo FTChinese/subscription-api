@@ -30,8 +30,24 @@ type MembershipVersioned struct {
 	RetailOrderID    null.String      `json:"retailOderId" db:"retail_order_id"` // Only exists when user is performing renewal or upgrading.
 }
 
-func (v MembershipVersioned) WithCreator(name string) MembershipVersioned {
-	v.CreatedBy = null.StringFrom(name)
+func NewMembershipVersioned(latest Membership) MembershipVersioned {
+	if latest.IsZero() {
+		return MembershipVersioned{}
+	}
+
+	return MembershipVersioned{
+		ID:               ids.SnapshotID(),
+		AnteChange:       MembershipColumn{}, // Optional. Only exists if a previous version existed.
+		CreatedBy:        null.String{},
+		CreatedUTC:       chrono.TimeNow(),
+		B2BTransactionID: null.String{},
+		PostChange:       MembershipColumn{latest},
+		RetailOrderID:    null.String{},
+	}
+}
+
+func (v MembershipVersioned) ArchivedBy(who Archiver) MembershipVersioned {
+	v.CreatedBy = null.StringFrom(who.String())
 	return v
 }
 
@@ -65,30 +81,11 @@ func (v MembershipVersioned) WithPriorVersion(m Membership) MembershipVersioned 
 	return v
 }
 
-// Version takes a snapshots of the latest membership.
-// Call WithPriorVersion method if you are updating an existing
-// membership.
-func (m Membership) Version(by Archiver) MembershipVersioned {
-	if m.IsZero() {
-		return MembershipVersioned{}
-	}
-
-	return MembershipVersioned{
-		ID:               ids.SnapshotID(),
-		AnteChange:       MembershipColumn{}, // Optional. Only exists if a previous version existed.
-		CreatedBy:        null.StringFrom(by.String()),
-		CreatedUTC:       chrono.TimeNow(),
-		B2BTransactionID: null.String{},
-		PostChange:       MembershipColumn{m},
-		RetailOrderID:    null.String{},
-	}
-}
-
-func (m Membership) Deleted(by Archiver) MembershipVersioned {
+func (m Membership) Deleted() MembershipVersioned {
 	return MembershipVersioned{
 		ID:               ids.SnapshotID(),
 		AnteChange:       MembershipColumn{m},
-		CreatedBy:        null.StringFrom(by.String()),
+		CreatedBy:        null.String{},
 		CreatedUTC:       chrono.TimeNow(),
 		B2BTransactionID: null.String{},
 		PostChange:       MembershipColumn{},
