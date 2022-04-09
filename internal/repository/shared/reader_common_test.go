@@ -285,7 +285,7 @@ func TestEnv_VersionMembership(t *testing.T) {
 					AnteChange: reader.MembershipColumn{
 						Membership: p.MemberBuilder().Build(),
 					},
-					CreatedBy:        null.StringFrom(reader.NewStripeArchiver(reader.ArchiveActionWebhook).String()),
+					CreatedBy:        null.StringFrom("any.body"),
 					CreatedUTC:       chrono.TimeNow(),
 					B2BTransactionID: null.String{},
 					PostChange: reader.MembershipColumn{
