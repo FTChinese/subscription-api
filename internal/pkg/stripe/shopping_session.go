@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/guregu/null"
 )
 
 const StmtShoppingSession = `
@@ -15,6 +15,8 @@ SET ftc_user_id = :ftc_user_id,
 	recurring_price = :recurring_price,
 	introductory_price = :introductory_price,
 	membership = :membership,
+	checkout_intent = :checkout_intent,
+	request_parameters = :request_parameters,
 	created_utc = :created_utc
 `
 
@@ -22,15 +24,16 @@ SET ftc_user_id = :ftc_user_id,
 // creates/updates subscription.
 type ShoppingSession struct {
 	FtcUserID         string                  `db:"ftc_user_id"`
+	SubsID            null.String             `db:"subs_id"`
 	RecurringPrice    PriceColumn             `db:"recurring_price"`
 	IntroductoryPrice PriceColumn             `db:"introductory_price"`
 	Membership        reader.MembershipColumn `db:"membership"`
-	Intent            pw.CheckoutIntent       `db:"checkout_intent"`
+	Intent            reader.CheckoutIntent   `db:"checkout_intent"`
 	RequestParams     SubsReqParamsColumn     `db:"request_parameters"`
 	CreatedUTC        chrono.Time             `db:"created_utc"`
 }
 
-func NewShoppingSession(cart pw.ShoppingCart, params pw.StripeSubsParams) ShoppingSession {
+func NewShoppingSession(cart reader.ShoppingCart, params SubsParams) ShoppingSession {
 	return ShoppingSession{
 		FtcUserID: cart.Account.FtcID,
 		RecurringPrice: PriceColumn{
@@ -49,14 +52,14 @@ func NewShoppingSession(cart pw.ShoppingCart, params pw.StripeSubsParams) Shoppi
 }
 
 type SubsReqParamsColumn struct {
-	pw.StripeSubsParams
+	SubsParams
 }
 
 // Value implements Valuer interface by serializing an Invitation into
 // JSON data.
 func (p SubsReqParamsColumn) Value() (driver.Value, error) {
 
-	b, err := json.Marshal(p.StripeSubsParams)
+	b, err := json.Marshal(p.SubsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +76,7 @@ func (p *SubsReqParamsColumn) Scan(src interface{}) error {
 
 	switch s := src.(type) {
 	case []byte:
-		var tmp pw.StripeSubsParams
+		var tmp SubsParams
 		err := json.Unmarshal(s, &tmp)
 		if err != nil {
 			return err
