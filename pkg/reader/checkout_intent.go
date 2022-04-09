@@ -1,4 +1,4 @@
-package pw
+package reader
 
 import (
 	"database/sql/driver"
@@ -6,25 +6,24 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 type CheckoutIntent struct {
-	Kind  reader.SubsKind `json:"kind"`
-	Error error           `json:"error"`
+	Kind  SubsIntentKind `json:"kind"`
+	Error error          `json:"error"`
 }
 
 var unknownCheckout = CheckoutIntent{
-	Kind:  reader.SubsKindForbidden,
-	Error: reader.ErrUnknownPaymentMethod,
+	Kind:  IntentForbidden,
+	Error: ErrUnknownPaymentMethod,
 }
 
 // NewCheckoutIntentStripe deduces what kind of action
 // when user is trying is subscribed via Stripe.
-func NewCheckoutIntentStripe(m reader.Membership, p price.StripePrice) CheckoutIntent {
+func NewCheckoutIntentStripe(m Membership, p price.StripePrice) CheckoutIntent {
 	if m.IsExpired() || m.IsInvalidStripe() {
 		return CheckoutIntent{
-			Kind:  reader.SubsKindCreate,
+			Kind:  IntentCreate,
 			Error: nil,
 		}
 	}
@@ -32,7 +31,7 @@ func NewCheckoutIntentStripe(m reader.Membership, p price.StripePrice) CheckoutI
 	switch m.PaymentMethod {
 	case enum.PayMethodAli, enum.PayMethodWx:
 		return CheckoutIntent{
-			Kind:  reader.SubsKindOneTimeToAutoRenew,
+			Kind:  IntentOneTimeToAutoRenew,
 			Error: nil,
 		}
 
@@ -42,13 +41,13 @@ func NewCheckoutIntentStripe(m reader.Membership, p price.StripePrice) CheckoutI
 			// Save edition
 			if p.PeriodCount.EqCycle() == m.Cycle {
 				return CheckoutIntent{
-					Kind:  reader.SubsKindForbidden,
-					Error: reader.ErrAlreadyStripeSubs,
+					Kind:  IntentForbidden,
+					Error: ErrAlreadyStripeSubs,
 				}
 			}
 			// Same tier and different cycle.
 			return CheckoutIntent{
-				Kind:  reader.SubsKindSwitchInterval,
+				Kind:  IntentSwitchInterval,
 				Error: nil,
 			}
 		}
@@ -59,42 +58,45 @@ func NewCheckoutIntentStripe(m reader.Membership, p price.StripePrice) CheckoutI
 		case enum.TierPremium:
 			if m.IsTrialing() {
 				return CheckoutIntent{
-					Kind:  reader.SubsKindForbidden,
-					Error: reader.ErrTrialUpgradeForbidden,
+					Kind:  IntentForbidden,
+					Error: ErrTrialUpgradeForbidden,
 				}
 			}
 			return CheckoutIntent{
-				Kind:  reader.SubsKindUpgrade,
+				Kind:  IntentUpgrade,
 				Error: nil,
 			}
 		// Current premium to standard
 		case enum.TierStandard:
 			return CheckoutIntent{
-				Kind:  reader.SubsKindDowngrade,
+				Kind:  IntentDowngrade,
 				Error: nil,
 			}
 		}
 
 	case enum.PayMethodApple:
 		return CheckoutIntent{
-			Kind:  reader.SubsKindForbidden,
-			Error: reader.ErrAlreadyAppleSubs,
+			Kind:  IntentForbidden,
+			Error: ErrAlreadyAppleSubs,
 		}
 
 	case enum.PayMethodB2B:
 		return CheckoutIntent{
-			Kind:  reader.SubsKindForbidden,
-			Error: reader.ErrAlreadyB2BSubs,
+			Kind:  IntentForbidden,
+			Error: ErrAlreadyB2BSubs,
 		}
 	}
 
 	return unknownCheckout
 }
 
-func NewCheckoutIntentFtc(m reader.Membership, p price.FtcPrice) CheckoutIntent {
+// NewCheckoutIntentFtc determines what a user can do
+// when trying to pay via ali/wx, depending on the current
+// membership.
+func NewCheckoutIntentFtc(m Membership, p price.FtcPrice) CheckoutIntent {
 	if m.IsExpired() || m.IsInvalidStripe() {
 		return CheckoutIntent{
-			Kind:  reader.SubsKindCreate,
+			Kind:  IntentCreate,
 			Error: nil,
 		}
 	}
@@ -107,13 +109,13 @@ func NewCheckoutIntentFtc(m reader.Membership, p price.FtcPrice) CheckoutIntent 
 			// For one-time purchase, do not allow purchase beyond 3 years.
 			if !m.WithinMaxRenewalPeriod() {
 				return CheckoutIntent{
-					Kind:  reader.SubsKindForbidden,
+					Kind:  IntentForbidden,
 					Error: errors.New("exceeding allowed max renewal period"),
 				}
 			}
 
 			return CheckoutIntent{
-				Kind:  reader.SubsKindRenew,
+				Kind:  IntentRenew,
 				Error: nil,
 			}
 		}
@@ -123,7 +125,7 @@ func NewCheckoutIntentFtc(m reader.Membership, p price.FtcPrice) CheckoutIntent 
 		// Upgrading to premium.
 		case enum.TierPremium:
 			return CheckoutIntent{
-				Kind:  reader.SubsKindUpgrade,
+				Kind:  IntentUpgrade,
 				Error: nil,
 			}
 
@@ -131,7 +133,7 @@ func NewCheckoutIntentFtc(m reader.Membership, p price.FtcPrice) CheckoutIntent 
 		// For Ali/Wx, it is add-on; however, user is allowed to switch to stripe.
 		case enum.TierStandard:
 			return CheckoutIntent{
-				Kind:  reader.SubsKindAddOn,
+				Kind:  IntentAddOn,
 				Error: nil,
 			}
 		}
@@ -140,7 +142,7 @@ func NewCheckoutIntentFtc(m reader.Membership, p price.FtcPrice) CheckoutIntent 
 		// Stripe user purchase same tier of one-time.
 		if m.Tier == p.Tier {
 			return CheckoutIntent{
-				Kind:  reader.SubsKindAddOn,
+				Kind:  IntentAddOn,
 				Error: nil,
 			}
 		}
@@ -149,14 +151,14 @@ func NewCheckoutIntentFtc(m reader.Membership, p price.FtcPrice) CheckoutIntent 
 		// tripe standard -> onetime premium
 		case enum.TierPremium:
 			return CheckoutIntent{
-				Kind:  reader.SubsKindForbidden,
+				Kind:  IntentForbidden,
 				Error: errors.New("subscription mode cannot use one-time purchase to upgrade"),
 			}
 
 		case enum.TierStandard:
 			// Stripe premium -> onetime standard
 			return CheckoutIntent{
-				Kind:  reader.SubsKindAddOn,
+				Kind:  IntentAddOn,
 				Error: nil,
 			}
 		}
@@ -164,31 +166,65 @@ func NewCheckoutIntentFtc(m reader.Membership, p price.FtcPrice) CheckoutIntent 
 	case enum.PayMethodApple:
 		if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
 			return CheckoutIntent{
-				Kind:  reader.SubsKindForbidden,
+				Kind:  IntentForbidden,
 				Error: errors.New("subscription mode cannot use one-time purchase to upgrade"),
 			}
 		}
 
 		return CheckoutIntent{
-			Kind:  reader.SubsKindAddOn,
+			Kind:  IntentAddOn,
 			Error: nil,
 		}
 
 	case enum.PayMethodB2B:
 		if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
 			return CheckoutIntent{
-				Kind:  reader.SubsKindForbidden,
+				Kind:  IntentForbidden,
 				Error: errors.New("corporate subscription cannot use retail payment to upgrade"),
 			}
 		}
 
 		return CheckoutIntent{
-			Kind:  reader.SubsKindRenew,
+			Kind:  IntentRenew,
 			Error: nil,
 		}
 	}
 
 	return unknownCheckout
+}
+
+func NewCheckoutIntentApple(m Membership) CheckoutIntent {
+	if m.IsExpired() || m.IsInvalidStripe() {
+		return CheckoutIntent{
+			Kind:  IntentCreate,
+			Error: nil,
+		}
+	}
+
+	switch m.PaymentMethod {
+	case enum.PayMethodAli, enum.PayMethodWx:
+		return CheckoutIntent{
+			Kind:  IntentOneTimeToAutoRenew,
+			Error: nil,
+		}
+
+	case enum.PayMethodStripe:
+		return CheckoutIntent{
+			Kind:  IntentForbidden,
+			Error: errors.New("iap is not allowed to override a valid stripe subscription"),
+		}
+
+	case enum.PayMethodApple:
+		return CheckoutIntent{
+			Kind:  IntentRenew,
+			Error: nil,
+		}
+	}
+
+	return CheckoutIntent{
+		Kind:  IntentOneTimeToAutoRenew,
+		Error: nil,
+	}
 }
 
 // Value implements Valuer interface by serializing an Invitation into
