@@ -2,7 +2,7 @@ package poll
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/poller"
 	"github.com/jmoiron/sqlx"
@@ -21,8 +21,8 @@ func TestOrderPoller_createOrderChannel(t *testing.T) {
 	}
 }
 
-func mustGetOrder(db *sqlx.DB) subs.Order {
-	var order subs.Order
+func mustGetOrder(db *sqlx.DB) ftcpay.Order {
+	var order ftcpay.Order
 	err := db.Get(&order, StmtAliUnconfirmed+` LIMIT 1`)
 	if err != nil {
 		panic(err)

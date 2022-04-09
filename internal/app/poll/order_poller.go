@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/internal/app/paybase"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/pkg/letter"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const StmtAliUnconfirmed = subs.StmtOrderCols + `
+const StmtAliUnconfirmed = ftcpay.StmtOrderCols + `
 FROM premium.log_ali_notification AS a
     LEFT JOIN premium.ftc_trade AS o
     ON a.ftc_order_id = o.trade_no
@@ -26,7 +26,7 @@ WHERE o.trade_no IS NOT NULL
 	AND o.billing_cycle IS NOT NULL
     AND a.trade_status = 'TRADE_SUCCESS'`
 
-const StmtWxUnconfirmed = subs.StmtOrderCols + `
+const StmtWxUnconfirmed = ftcpay.StmtOrderCols + `
 FROM premium.log_wx_notification AS w
     LEFT JOIN premium.ftc_trade AS o
     ON w.ftc_order_id = o.trade_no
@@ -59,11 +59,11 @@ func NewOrderPoller(myDBs db.ReadWriteMyDBs, logger *zap.Logger) OrderPoller {
 // that are not confirmed but have valid webhook payloads.
 // Returns a channel of order so that we could streaming each row
 // rather than loading all rows in memory.
-func (p OrderPoller) retrieveOrders() <-chan subs.Order {
+func (p OrderPoller) retrieveOrders() <-chan ftcpay.Order {
 	defer p.Logger.Sync()
 	sugar := p.Logger.Sugar()
 
-	ch := make(chan subs.Order)
+	ch := make(chan ftcpay.Order)
 
 	go func() {
 		defer close(ch)
@@ -74,7 +74,7 @@ func (p OrderPoller) retrieveOrders() <-chan subs.Order {
 			return
 		}
 
-		order := subs.Order{}
+		order := ftcpay.Order{}
 		for rows.Next() {
 			err := rows.StructScan(&order)
 			if err != nil {
@@ -109,7 +109,7 @@ func (p OrderPoller) retrieveOrders() <-chan subs.Order {
 	return ch
 }
 
-func (p OrderPoller) verify(order subs.Order) error {
+func (p OrderPoller) verify(order ftcpay.Order) error {
 	defer p.Logger.Sync()
 	sugar := p.Logger.Sugar().With("orderId", order.ID)
 
@@ -167,7 +167,7 @@ func (p OrderPoller) Start(dryRun bool) error {
 			break
 		}
 
-		go func(o subs.Order) {
+		go func(o ftcpay.Order) {
 			pollerLog.IncTotal()
 
 			defer orderSem.Release(1)
