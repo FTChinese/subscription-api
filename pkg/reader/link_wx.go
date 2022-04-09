@@ -98,16 +98,17 @@ func (b WxEmailLinkBuilder) Build() (WxEmailLinkResult, error) {
 		return WxEmailLinkResult{}, err
 	}
 
-	arch := Archiver{
-		Name:   ArchiveNameWechat,
-		Action: ArchiveActionLink,
-	}
+	arch := NewArchiver().ByWechat().ActionLink()
 
 	return WxEmailLinkResult{
 		IsDuplicateLink: false,
 		Account:         mergedAccount,
-		FtcVersioned:    mergedAccount.Membership.Version(arch).WithPriorVersion(b.FTC.Membership),
-		WxVersioned:     mergedAccount.Membership.Version(arch).WithPriorVersion(b.Wechat.Membership),
+		FtcVersioned: NewMembershipVersioned(mergedAccount.Membership).
+			WithPriorVersion(b.FTC.Membership).
+			ArchivedBy(arch),
+		WxVersioned: NewMembershipVersioned(mergedAccount.Membership).
+			WithPriorVersion(b.Wechat.Membership).
+			ArchivedBy(arch),
 	}, nil
 }
 
@@ -123,8 +124,9 @@ func NewWxEmailUnlinkResult(a Account, anchor enum.AccountKind) WxEmailUnlinkRes
 
 	var v MembershipVersioned
 	if !a.Membership.IsZero() {
-		v = m.Version(NewWechatArchiver(ArchiveActionUnlink)).
-			WithPriorVersion(a.Membership)
+		v = NewMembershipVersioned(m).
+			WithPriorVersion(a.Membership).
+			ArchivedBy(NewArchiver().ByWechat().ActionUnlink())
 	}
 
 	return WxEmailUnlinkResult{
