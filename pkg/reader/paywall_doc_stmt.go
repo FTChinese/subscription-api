@@ -1,4 +1,4 @@
-package pw
+package reader
 
 const StmtInsertPaywallDoc = `
 INSERT INTO subs_product.paywall_doc

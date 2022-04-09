@@ -1,4 +1,4 @@
-package pw
+package reader
 
 // StmtSetPriceOffers updates price's discount list column.
 const StmtSetPriceOffers = `

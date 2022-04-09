@@ -1,9 +1,33 @@
-package pw
+package reader
 
 import (
+	"errors"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 )
+
+func FindPaywallPrice(products []PaywallProduct, priceID string) (PaywallPrice, error) {
+	for _, prod := range products {
+		// First try to see if the target is introductory price.
+		if !prod.Introductory.IsZero() {
+			if prod.Introductory.ID == priceID {
+				return PaywallPrice{
+					FtcPrice: prod.Introductory.FtcPrice,
+					Offers:   nil,
+				}, nil
+			}
+		}
+
+		// Then search in the price list.
+		for _, v := range prod.Prices {
+			if v.ID == priceID {
+				return v, nil
+			}
+		}
+	}
+
+	return PaywallPrice{}, errors.New("the requested price is not found")
+}
 
 // PaywallPrice contains a price's original price and promotion.
 // The actual price user paid should be the original price minus
@@ -36,7 +60,7 @@ func (p PaywallPrice) FindValidOffer(id string) (price.Discount, error) {
 	return price.Discount{}, price.ErrDiscountNotFound
 }
 
-func (p PaywallPrice) CheckoutItem(offerID null.String) (CartItemFtc, error) {
+func (p PaywallPrice) BuildCartItem(offerID null.String) (CartItemFtc, error) {
 	// For introductory price, ignore discount.
 	if p.IsOneTime() {
 		return CartItemFtc{

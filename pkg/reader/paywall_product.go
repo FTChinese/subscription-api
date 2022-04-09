@@ -1,4 +1,4 @@
-package pw
+package reader
 
 // PaywallProduct describes the data used to present to user on paywall.
 type PaywallProduct struct {

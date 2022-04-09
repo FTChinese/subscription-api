@@ -1,4 +1,4 @@
-package pw
+package reader
 
 const colUpsertProduct = `
 description = :description,

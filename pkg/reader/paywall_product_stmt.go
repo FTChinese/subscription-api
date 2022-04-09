@@ -1,4 +1,4 @@
-package pw
+package reader
 
 // StmtPaywallProducts retrieves products put on paywall.
 // Current active products under paywall is specified by
