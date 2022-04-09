@@ -10,7 +10,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"time"
@@ -32,17 +31,13 @@ type MockMemberBuilder struct {
 }
 
 // NewMockMemberBuilder creates a new membership builder.
-// Deprecated
-func NewMockMemberBuilder(ftcID string) MockMemberBuilder {
-	if ftcID == "" {
-		ftcID = uuid.New().String()
-	}
+func NewMockMemberBuilder() MockMemberBuilder {
 
 	return MockMemberBuilder{
 		accountKind: enum.AccountKindFtc,
-		ftcID:       ftcID,
+		ftcID:       uuid.New().String(),
 		unionID:     faker.GenWxID(),
-		price:       pw.MockPwPriceStdYear.FtcPrice,
+		price:       MockPwPriceStdYear.FtcPrice,
 		payMethod:   enum.PayMethodAli,
 		expiration:  time.Now().AddDate(0, 1, 0),
 	}
@@ -53,7 +48,7 @@ func NewMockMemberBuilderV2(k enum.AccountKind) MockMemberBuilder {
 		accountKind:  k,
 		ftcID:        uuid.New().String(),
 		unionID:      faker.GenWxID(),
-		price:        pw.MockPwPriceStdYear.FtcPrice,
+		price:        MockPwPriceStdYear.FtcPrice,
 		payMethod:    enum.PayMethodAli,
 		expiration:   time.Now().AddDate(0, 1, 0),
 		subsStatus:   0,
@@ -64,23 +59,38 @@ func NewMockMemberBuilderV2(k enum.AccountKind) MockMemberBuilder {
 	}
 }
 
+func (b MockMemberBuilder) WithFtcOnly() MockMemberBuilder {
+	b.accountKind = enum.AccountKindFtc
+	return b
+}
+
+func (b MockMemberBuilder) WithWxOnly() MockMemberBuilder {
+	b.accountKind = enum.AccountKindWx
+	return b
+}
+
+func (b MockMemberBuilder) WithLinked() MockMemberBuilder {
+	b.accountKind = enum.AccountKindLinked
+	return b
+}
+
 func (b MockMemberBuilder) WithAccountKind(k enum.AccountKind) MockMemberBuilder {
 	b.accountKind = k
 	return b
 }
 
-func (b MockMemberBuilder) WithIDs(ids ids.UserIDs) MockMemberBuilder {
+func (b MockMemberBuilder) SetIDs(ids ids.UserIDs) MockMemberBuilder {
 	b.ftcID = ids.FtcID.String
 	b.unionID = ids.UnionID.String
 	return b
 }
 
-func (b MockMemberBuilder) WithFtcID(id string) MockMemberBuilder {
+func (b MockMemberBuilder) SetFtcID(id string) MockMemberBuilder {
 	b.ftcID = id
 	return b
 }
 
-func (b MockMemberBuilder) WithWxID(id string) MockMemberBuilder {
+func (b MockMemberBuilder) SetWxID(id string) MockMemberBuilder {
 	b.unionID = id
 	return b
 }
