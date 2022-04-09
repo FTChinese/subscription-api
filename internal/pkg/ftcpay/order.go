@@ -1,4 +1,4 @@
-package subs
+package ftcpay
 
 import (
 	"fmt"
@@ -56,6 +56,34 @@ type Order struct {
 	StartDate chrono.Date `json:"startDate" db:"start_date"`
 	// Membership end date for this order. Depends on start date.
 	EndDate chrono.Date `json:"endDate" db:"end_date"`
+}
+
+func NewOrder(cart reader.ShoppingCart) (Order, error) {
+	orderID, err := ids.OrderID()
+	if err != nil {
+		return Order{}, err
+	}
+
+	ymd := cart.FtcItem.PeriodCount()
+
+	return Order{
+		ID:            orderID,
+		UserIDs:       cart.Account.CompoundIDs(),
+		Tier:          cart.FtcItem.Price.Tier,
+		Cycle:         ymd.EqCycle(),
+		Kind:          cart.Intent.Kind.ToOrderKind(),
+		OriginalPrice: cart.FtcItem.Price.UnitAmount,
+		PayableAmount: cart.FtcItem.PayableAmount(),
+		PaymentMethod: cart.PayMethod,
+		YearsCount:    ymd.Years,
+		MonthsCount:   ymd.Months,
+		DaysCount:     ymd.Months,
+		WxAppID:       cart.WxAppID,
+		ConfirmedAt:   chrono.Time{},
+		CreatedAt:     chrono.TimeNow(),
+		StartDate:     chrono.Date{},
+		EndDate:       chrono.Date{},
+	}, nil
 }
 
 // MergeTail merges two orders.
