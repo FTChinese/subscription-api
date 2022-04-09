@@ -2,8 +2,8 @@ package paybase
 
 import (
 	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/internal/pkg/letter"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
 	"github.com/FTChinese/subscription-api/internal/repository/addons"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/internal/repository/subrepo"
@@ -40,7 +40,7 @@ func NewFtcPay(
 }
 
 // SendConfirmEmail sends an email to user after an order is confirmed.
-func (pay FtcPayBase) SendConfirmEmail(result subs.ConfirmationResult) error {
+func (pay FtcPayBase) SendConfirmEmail(result ftcpay.ConfirmationResult) error {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
@@ -68,14 +68,14 @@ func (pay FtcPayBase) SendConfirmEmail(result subs.ConfirmationResult) error {
 // ConfirmOrder confirms an order, update membership, backup previous
 // membership state, and send email.
 // Used by both webhook and client verification.
-func (pay FtcPayBase) ConfirmOrder(result subs.PaymentResult, order subs.Order) (subs.ConfirmationResult, *subs.ConfirmError) {
+func (pay FtcPayBase) ConfirmOrder(result ftcpay.PaymentResult, order ftcpay.Order) (ftcpay.ConfirmationResult, *ftcpay.ConfirmError) {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
 	sugar.Info("Validate payment result")
 	if err := order.ValidatePayment(result); err != nil {
 		sugar.Error(err)
-		return subs.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
+		return ftcpay.ConfirmationResult{}, result.ConfirmError(err.Error(), false)
 	}
 
 	confirmed, cfmErr := pay.SubsRepo.ConfirmOrder(result, order)
@@ -116,11 +116,11 @@ func (pay FtcPayBase) ConfirmOrder(result subs.PaymentResult, order subs.Order) 
 }
 
 // VerifyOrder verifies against payment providers that an order is actually paid.
-func (pay FtcPayBase) VerifyOrder(order subs.Order) (subs.PaymentResult, error) {
+func (pay FtcPayBase) VerifyOrder(order ftcpay.Order) (ftcpay.PaymentResult, error) {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
-	var payResult subs.PaymentResult
+	var payResult ftcpay.PaymentResult
 	var err error
 
 	switch order.PaymentMethod {
@@ -133,20 +133,20 @@ func (pay FtcPayBase) VerifyOrder(order subs.Order) (subs.PaymentResult, error) 
 
 	if err != nil {
 		sugar.Error(err)
-		return subs.PaymentResult{}, err
+		return ftcpay.PaymentResult{}, err
 	}
 
 	return payResult, nil
 }
 
-func (pay FtcPayBase) verifyAliOrder(order subs.Order) (subs.PaymentResult, error) {
+func (pay FtcPayBase) verifyAliOrder(order ftcpay.Order) (ftcpay.PaymentResult, error) {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
 	aliOrder, err := pay.AliPayClient.QueryOrder(order.ID)
 	if err != nil {
 		sugar.Error(err)
-		return subs.PaymentResult{}, err
+		return ftcpay.PaymentResult{}, err
 	}
 
 	sugar.Infof("Alipay raw order: %+v", aliOrder)
@@ -160,23 +160,23 @@ func (pay FtcPayBase) verifyAliOrder(order subs.Order) (subs.PaymentResult, erro
 		}
 	}()
 
-	return subs.NewAliPayResult(aliOrder), nil
+	return ftcpay.NewAliPayResult(aliOrder), nil
 }
 
-func (pay FtcPayBase) verifyWxOrder(order subs.Order) (subs.PaymentResult, error) {
+func (pay FtcPayBase) verifyWxOrder(order ftcpay.Order) (ftcpay.PaymentResult, error) {
 	defer pay.Logger.Sync()
 	sugar := pay.Logger.Sugar()
 
 	client, err := pay.WxPayClients.FindByAppID(order.WxAppID.String)
 	if err != nil {
 		sugar.Error(err)
-		return subs.PaymentResult{}, err
+		return ftcpay.PaymentResult{}, err
 	}
 
 	payload, err := client.QueryOrder(wechat.NewOrderQueryParams(order.ID))
 	if err != nil {
 		sugar.Error(err)
-		return subs.PaymentResult{}, err
+		return ftcpay.PaymentResult{}, err
 	}
 
 	sugar.Infof("Wxpay raw order %+v", payload)
@@ -193,5 +193,5 @@ func (pay FtcPayBase) verifyWxOrder(order subs.Order) (subs.PaymentResult, error
 		}
 	}()
 
-	return subs.NewWxPayResult(wechat.NewOrderQueryResp(payload)), nil
+	return ftcpay.NewWxPayResult(wechat.NewOrderQueryResp(payload)), nil
 }
