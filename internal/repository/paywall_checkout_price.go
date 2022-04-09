@@ -1,28 +1,29 @@
 package repository
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
 // RetrievePaywallPrice retrieves a single row by plan id.
-func (repo PaywallRepo) RetrievePaywallPrice(id string, live bool) (pw.PaywallPrice, error) {
-	var p pw.PaywallPrice
+func (repo PaywallRepo) RetrievePaywallPrice(id string, live bool) (reader.PaywallPrice, error) {
+	var p reader.PaywallPrice
 	err := repo.dbs.Read.Get(
 		&p,
-		pw.StmtSelectPaywallPrice,
+		reader.StmtSelectPaywallPrice,
 		id,
 		live)
 
 	if err != nil {
-		return pw.PaywallPrice{}, err
+		return reader.PaywallPrice{}, err
 	}
 
 	return p, nil
 }
 
 type asyncPriceResult struct {
-	value pw.PaywallPrice
+	value reader.PaywallPrice
 	error error
 }
 
@@ -88,15 +89,15 @@ func (repo PaywallRepo) asyncLoadDiscount(id string) <-chan asyncDiscountResult 
 }
 
 // LoadCheckoutItem loads a price and a discount from db.
-func (repo PaywallRepo) LoadCheckoutItem(params pw.FtcCartParams, live bool) (pw.CartItemFtc, error) {
+func (repo PaywallRepo) LoadCheckoutItem(params ftcpay.FtcCartParams, live bool) (reader.CartItemFtc, error) {
 
 	if params.DiscountID.IsZero() {
 		pwp, err := repo.RetrievePaywallPrice(params.PriceID, live)
 		if err != nil {
-			return pw.CartItemFtc{}, err
+			return reader.CartItemFtc{}, err
 		}
 
-		return pw.CartItemFtc{
+		return reader.CartItemFtc{
 			Price: pwp.FtcPrice,
 			Offer: price.Discount{},
 		}, nil
@@ -106,14 +107,14 @@ func (repo PaywallRepo) LoadCheckoutItem(params pw.FtcCartParams, live bool) (pw
 
 	priceResult, discResult := <-priceCh, <-discCh
 	if priceResult.error != nil {
-		return pw.CartItemFtc{}, priceResult.error
+		return reader.CartItemFtc{}, priceResult.error
 	}
 
 	if discResult.error != nil {
-		return pw.CartItemFtc{}, discResult.error
+		return reader.CartItemFtc{}, discResult.error
 	}
 
-	return pw.CartItemFtc{
+	return reader.CartItemFtc{
 		Price: priceResult.value.FtcPrice,
 		Offer: discResult.value,
 	}, nil

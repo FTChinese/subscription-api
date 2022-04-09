@@ -3,7 +3,7 @@ package repository
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"testing"
 )
 
@@ -18,7 +18,7 @@ func TestEnv_retrievePaywall(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    pw.Paywall
+		want    reader.Paywall
 		wantErr bool
 	}{
 		{
@@ -26,7 +26,7 @@ func TestEnv_retrievePaywall(t *testing.T) {
 			args: args{
 				live: true,
 			},
-			want:    pw.Paywall{},
+			want:    reader.Paywall{},
 			wantErr: false,
 		},
 	}
@@ -58,7 +58,7 @@ func TestEnv_retrieveActiveProducts(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []pw.Product
+		want    []reader.Product
 		wantErr bool
 	}{
 		{
@@ -101,7 +101,7 @@ func TestEnv_listActivePrices(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []pw.PaywallPrice
+		want    []reader.PaywallPrice
 		wantErr bool
 	}{
 		{

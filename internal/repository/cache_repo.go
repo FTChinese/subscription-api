@@ -3,7 +3,7 @@ package repository
 import (
 	"errors"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -21,22 +21,22 @@ func NewCacheRepo(c *cache.Cache) CacheRepo {
 	}
 }
 
-func (repo CacheRepo) CachePaywall(p pw.Paywall, live bool) {
+func (repo CacheRepo) CachePaywall(p reader.Paywall, live bool) {
 	repo.cache.Set(
 		paywallCacheKey(live),
 		p,
 		cache.NoExpiration)
 }
 
-func (repo CacheRepo) LoadPaywall(live bool) (pw.Paywall, error) {
+func (repo CacheRepo) LoadPaywall(live bool) (reader.Paywall, error) {
 	x, found := repo.cache.Get(paywallCacheKey(live))
 	if found {
-		if paywall, ok := x.(pw.Paywall); ok {
+		if paywall, ok := x.(reader.Paywall); ok {
 			return paywall, nil
 		}
 	}
 
-	return pw.Paywall{}, errors.New("not found")
+	return reader.Paywall{}, errors.New("not found")
 }
 
 func (repo CacheRepo) Clear() {
