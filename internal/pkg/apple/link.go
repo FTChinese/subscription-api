@@ -94,9 +94,9 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			return LinkResult{
 				Initial: false,
 				Member:  newMmb,
-				Versioned: newMmb.
-					Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
-					WithPriorVersion(b.CurrentFtc),
+				Versioned: reader.NewMembershipVersioned(newMmb).
+					WithPriorVersion(b.CurrentFtc).
+					ArchivedBy(reader.NewArchiver().ActionLink()),
 			}, nil
 		}
 
@@ -139,9 +139,9 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			return LinkResult{
 				Initial: true,
 				Member:  newMmb,
-				Versioned: newMmb.
-					Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
-					WithPriorVersion(b.CurrentFtc),
+				Versioned: reader.NewMembershipVersioned(newMmb).
+					WithPriorVersion(b.CurrentFtc).
+					ArchivedBy(reader.NewArchiver().ByApple().ActionLink()),
 			}, nil
 		}
 
@@ -167,9 +167,9 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			return LinkResult{
 				Initial: true,
 				Member:  newMmb,
-				Versioned: newMmb.
-					Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
-					WithPriorVersion(b.CurrentFtc),
+				Versioned: reader.NewMembershipVersioned(newMmb).
+					WithPriorVersion(b.CurrentFtc).
+					ArchivedBy(reader.NewArchiver().ByApple().ActionLink()),
 			}, nil
 		}
 
@@ -190,9 +190,9 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 			return LinkResult{
 				Initial: true,
 				Member:  newMmb,
-				Versioned: newMmb.
-					Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
-					WithPriorVersion(b.CurrentFtc),
+				Versioned: reader.NewMembershipVersioned(newMmb).
+					WithPriorVersion(b.CurrentFtc).
+					ArchivedBy(reader.NewArchiver().ByApple().ActionLink()),
 			}, nil
 		}
 
@@ -209,9 +209,12 @@ func (b LinkBuilder) Build() (LinkResult, error) {
 	return LinkResult{
 		Initial: true,
 		Member:  newMmb,
-		Versioned: newMmb.
-			Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
-			WithPriorVersion(b.CurrentFtc),
+		//Versioned: newMmb.
+		//	Version(reader.NewAppleArchiver(reader.ArchiveActionLink)).
+		//	WithPriorVersion(b.CurrentFtc),
+		Versioned: reader.NewMembershipVersioned(newMmb).
+			WithPriorVersion(b.CurrentFtc).
+			ArchivedBy(reader.NewArchiver().ByApple().ActionLink()),
 	}, nil
 }
 

@@ -10,7 +10,6 @@ import (
 type SubsResultParams struct {
 	UserID        ids.UserIDs
 	CurrentMember reader.Membership
-	Action        reader.ArchiveAction
 }
 
 type SubsResult struct {
@@ -21,9 +20,9 @@ type SubsResult struct {
 }
 
 func NewSubsResult(subs Subscription, params SubsResultParams) (SubsResult, error) {
-	subsKind, err := params.CurrentMember.SubsKindByApple()
-	if err != nil {
-		return SubsResult{}, err
+	intent := reader.NewCheckoutIntentApple(params.CurrentMember)
+	if intent.Error != nil {
+		return SubsResult{}, intent.Error
 	}
 
 	// Webhook should never trigger this:
@@ -31,7 +30,7 @@ func NewSubsResult(subs Subscription, params SubsResultParams) (SubsResult, erro
 	// For existing membership, it cannot be purchased by means other than Apple.
 	// This could only be possible when performing link.
 	var inv invoice.Invoice
-	if subsKind == reader.SubsKindOneTimeToAutoRenew {
+	if intent.Kind.IsSwitchToAutoRenew() {
 		inv = params.CurrentMember.CarryOverInvoice().
 			WithAppleTxID(subs.OriginalTransactionID)
 	}
@@ -46,8 +45,9 @@ func NewSubsResult(subs Subscription, params SubsResultParams) (SubsResult, erro
 
 	var versioned reader.MembershipVersioned
 	if !params.CurrentMember.IsZero() {
-		m.Version(reader.NewAppleArchiver(params.Action)).
-			WithPriorVersion(params.CurrentMember)
+		versioned = reader.NewMembershipVersioned(m).
+			WithPriorVersion(params.CurrentMember).
+			ArchivedBy(reader.NewArchiver().ByApple().ActionLink())
 	}
 
 	return SubsResult{
