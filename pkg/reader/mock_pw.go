@@ -1,7 +1,7 @@
 //go:build !production
 // +build !production
 
-package pw
+package reader
 
 import "github.com/FTChinese/subscription-api/pkg/price"
 
