@@ -1,4 +1,4 @@
-package pw
+package reader
 
 import (
 	"database/sql/driver"

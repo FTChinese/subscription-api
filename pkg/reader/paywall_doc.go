@@ -1,4 +1,4 @@
-package pw
+package reader
 
 import "github.com/FTChinese/go-rest/chrono"
 
