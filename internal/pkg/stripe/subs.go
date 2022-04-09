@@ -4,6 +4,8 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/addon"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
@@ -169,6 +171,7 @@ func (s Subs) IsExpired() bool {
 
 // ShouldUpsert checks whether stripe subscription should be allowed to
 // create/update user's membership.
+// This is used to prevent webhook overriding a valid non-stripe membership.
 func (s Subs) ShouldUpsert(m reader.Membership) bool {
 	if m.IsZero() {
 		return true
@@ -189,4 +192,30 @@ func (s Subs) WithFtcID(id string) Subs {
 	s.FtcUserID = null.StringFrom(id)
 
 	return s
+}
+
+func (s Subs) BuildMembership(ids ids.UserIDs, addOn addon.AddOn) reader.Membership {
+	expires := s.ExpiresAt()
+
+	var priceID string
+	if len(s.Items) > 0 {
+		priceID = s.Items[0].Price.ID
+	}
+
+	return reader.Membership{
+		UserIDs:       ids,
+		Edition:       s.Edition,
+		LegacyTier:    null.IntFrom(reader.GetTierCode(s.Tier)),
+		LegacyExpire:  null.IntFrom(expires.Unix()),
+		ExpireDate:    chrono.DateFrom(expires),
+		PaymentMethod: enum.PayMethodStripe,
+		FtcPlanID:     null.String{},
+		StripeSubsID:  null.StringFrom(s.ID),
+		StripePlanID:  null.NewString(priceID, priceID != ""),
+		AutoRenewal:   s.IsAutoRenewal(),
+		Status:        s.Status,
+		AppleSubsID:   null.String{},
+		B2BLicenceID:  null.String{},
+		AddOn:         addOn,
+	}
 }
