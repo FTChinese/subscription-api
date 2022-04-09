@@ -1,9 +1,10 @@
-package pw
+package reader
 
 import (
 	"errors"
+	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/account"
-	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/guregu/null"
 )
 
 // ShoppingCart contains the essential information of a
@@ -16,7 +17,9 @@ type ShoppingCart struct {
 	Account       account.BaseAccount
 	FtcItem       CartItemFtc
 	StripeItem    CartItemStripe
-	CurrentMember reader.Membership
+	PayMethod     enum.PayMethod
+	WxAppID       null.String
+	CurrentMember Membership
 	Intent        CheckoutIntent
 }
 
@@ -25,7 +28,7 @@ func NewShoppingCart(account account.BaseAccount) ShoppingCart {
 		Account:       account,
 		FtcItem:       CartItemFtc{},
 		StripeItem:    CartItemStripe{},
-		CurrentMember: reader.Membership{},
+		CurrentMember: Membership{},
 		Intent:        CheckoutIntent{},
 	}
 }
@@ -33,6 +36,7 @@ func NewShoppingCart(account account.BaseAccount) ShoppingCart {
 func (s ShoppingCart) WithStripeItem(item CartItemStripe) ShoppingCart {
 	s.FtcItem = CartItemFtc{}
 	s.StripeItem = item
+	s.PayMethod = enum.PayMethodStripe
 
 	return s
 }
@@ -45,8 +49,20 @@ func (s ShoppingCart) WithFtcItem(item CartItemFtc) ShoppingCart {
 	return s
 }
 
+func (s ShoppingCart) WithAlipay() ShoppingCart {
+	s.PayMethod = enum.PayMethodAli
+	return s
+}
+
+func (s ShoppingCart) WithWxPay(appID string) ShoppingCart {
+	s.PayMethod = enum.PayMethodWx
+	s.WxAppID = null.StringFrom(appID)
+
+	return s
+}
+
 // WithMember sets current membership.
-func (s ShoppingCart) WithMember(m reader.Membership) ShoppingCart {
+func (s ShoppingCart) WithMember(m Membership) ShoppingCart {
 
 	var intent CheckoutIntent
 
@@ -60,7 +76,7 @@ func (s ShoppingCart) WithMember(m reader.Membership) ShoppingCart {
 			s.StripeItem.Recurring)
 	} else {
 		intent = CheckoutIntent{
-			Kind:  reader.SubsKindForbidden,
+			Kind:  IntentForbidden,
 			Error: errors.New("no purchase item set yet"),
 		}
 	}
