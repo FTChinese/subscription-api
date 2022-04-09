@@ -1,4 +1,4 @@
-package subs
+package ftcpay
 
 import (
 	"errors"
@@ -15,6 +15,24 @@ type PaymentIntent struct {
 	Offer      price.Discount    `json:"offer"`
 	Order      Order             `json:"order"`
 	Membership reader.Membership `json:"membership"`
+}
+
+func NewPaymentIntent(cart reader.ShoppingCart) (PaymentIntent, error) {
+	if cart.Intent.Kind.IsForbidden() {
+		return PaymentIntent{}, cart.Intent.Error
+	}
+
+	order, err := NewOrder(cart)
+	if err != nil {
+		return PaymentIntent{}, err
+	}
+
+	return PaymentIntent{
+		Price:      cart.FtcItem.Price,
+		Offer:      cart.FtcItem.Offer,
+		Order:      order,
+		Membership: cart.CurrentMember,
+	}, nil
 }
 
 type PaymentIntentSchema struct {
