@@ -1,7 +1,7 @@
 package txrepo
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -16,9 +16,9 @@ func NewProductTx(tx *sqlx.Tx) ProductTx {
 }
 
 // DeactivateSiblingProduct turns products of same tier in same mode to inactive except the specified one.
-func (tx ProductTx) DeactivateSiblingProduct(p pw.Product) error {
+func (tx ProductTx) DeactivateSiblingProduct(p reader.Product) error {
 	_, err := tx.NamedExec(
-		pw.StmtDeactivateSiblingProducts,
+		reader.StmtDeactivateSiblingProducts,
 		p)
 
 	if err != nil {
@@ -28,9 +28,9 @@ func (tx ProductTx) DeactivateSiblingProduct(p pw.Product) error {
 	return nil
 }
 
-func (tx ProductTx) ActivateProduct(p pw.Product) error {
+func (tx ProductTx) ActivateProduct(p reader.Product) error {
 	_, err := tx.NamedExec(
-		pw.StmtActivateProduct,
+		reader.StmtActivateProduct,
 		p)
 
 	if err != nil {
@@ -40,9 +40,9 @@ func (tx ProductTx) ActivateProduct(p pw.Product) error {
 	return nil
 }
 
-func (tx ProductTx) SetProductOnPaywallLegacy(p pw.Product) error {
+func (tx ProductTx) SetProductOnPaywallLegacy(p reader.Product) error {
 	_, err := tx.NamedExec(
-		pw.StmtPutProductOnPaywallLegacy,
+		reader.StmtPutProductOnPaywallLegacy,
 		p)
 
 	if err != nil {
@@ -52,9 +52,9 @@ func (tx ProductTx) SetProductOnPaywallLegacy(p pw.Product) error {
 	return nil
 }
 
-func (tx ProductTx) SetProductOnPaywall(p pw.Product) error {
+func (tx ProductTx) SetProductOnPaywall(p reader.Product) error {
 	_, err := tx.NamedExec(
-		pw.StmtPutProductOnPaywall,
+		reader.StmtPutProductOnPaywall,
 		p)
 
 	if err != nil {

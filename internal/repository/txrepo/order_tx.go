@@ -1,7 +1,7 @@
 package txrepo
 
 import (
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -20,10 +20,10 @@ func NewOrderTx(tx *sqlx.Tx) OrderTx {
 // SaveOrder saves an order to db.
 // This is only limited to alipay and wechat pay.
 // Stripe pay does not generate any orders on our side.
-func (tx OrderTx) SaveOrder(order subs.Order) error {
+func (tx OrderTx) SaveOrder(order ftcpay.Order) error {
 
 	_, err := tx.NamedExec(
-		subs.StmtCreateOrder,
+		ftcpay.StmtCreateOrder,
 		order)
 
 	if err != nil {
@@ -33,22 +33,22 @@ func (tx OrderTx) SaveOrder(order subs.Order) error {
 	return nil
 }
 
-func (tx OrderTx) LockOrder(orderID string) (subs.LockedOrder, error) {
-	var lo subs.LockedOrder
+func (tx OrderTx) LockOrder(orderID string) (ftcpay.LockedOrder, error) {
+	var lo ftcpay.LockedOrder
 
-	err := tx.Get(&lo, subs.StmtLockOrder, orderID)
+	err := tx.Get(&lo, ftcpay.StmtLockOrder, orderID)
 
 	if err != nil {
-		return subs.LockedOrder{}, err
+		return ftcpay.LockedOrder{}, err
 	}
 
 	return lo, nil
 }
 
 // ConfirmOrder set an order's confirmation time and the purchased period.
-func (tx OrderTx) ConfirmOrder(order subs.Order) error {
+func (tx OrderTx) ConfirmOrder(order ftcpay.Order) error {
 	_, err := tx.NamedExec(
-		subs.StmtConfirmOrder,
+		ftcpay.StmtConfirmOrder,
 		order,
 	)
 

@@ -3,10 +3,10 @@ package txrepo
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/internal/pkg/subs"
+	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/price"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
 	"testing"
@@ -21,7 +21,7 @@ func TestMemberTx_SaveOrder(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		order subs.Order
+		order ftcpay.Order
 	}
 	tests := []struct {
 		name    string
@@ -79,7 +79,7 @@ func TestMemberTx_SaveOrder(t *testing.T) {
 			},
 			args: args{
 				order: p.OrderBuilder().
-					WithPrice(pw.PaywallPrice{
+					WithPrice(reader.PaywallPrice{
 						FtcPrice: price.MockIntroPrice,
 						Offers:   nil,
 					}).
@@ -175,7 +175,7 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		order subs.Order
+		order ftcpay.Order
 	}
 	tests := []struct {
 		name    string

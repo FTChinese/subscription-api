@@ -3,7 +3,7 @@ package txrepo
 import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/pkg/pw"
+	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
 	"testing"
@@ -23,7 +23,7 @@ func TestProductTx_DeactivateSiblingProduct(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		p pw.Product
+		p reader.Product
 	}
 	tests := []struct {
 		name    string
@@ -74,7 +74,7 @@ func TestProductTx_ActivateProduct(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		p pw.Product
+		p reader.Product
 	}
 	tests := []struct {
 		name    string
@@ -123,7 +123,7 @@ func TestProductTx_SetProductOnPaywallLegacy(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		p pw.Product
+		p reader.Product
 	}
 	tests := []struct {
 		name    string
@@ -178,7 +178,7 @@ func TestProductTx_SetProductOnPaywall(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		p pw.Product
+		p reader.Product
 	}
 	tests := []struct {
 		name    string
