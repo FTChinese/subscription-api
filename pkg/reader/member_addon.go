@@ -54,6 +54,19 @@ func (m Membership) CarriedOverAddOn() addon.AddOn {
 	return addon.New(m.Tier, m.RemainingDays())
 }
 
+// NextRoundAddOn calculates the total addOn for such a
+// situation:
+// Current membership is converted to carry-over invoice;
+// however, it already has addOn present. For the next
+// round of membership to be generated, we have to add
+// the carry-over's total days to current addon,
+// which is equivalent to add current addon with remaining days.
+// We should not use RemainingDays directly since current membership might
+// not eligible for carry-over.
+func (m Membership) NextRoundAddOn(inv invoice.Invoice) addon.AddOn {
+	return m.AddOn.Plus(addon.New(inv.Tier, inv.TotalDays()))
+}
+
 // CarryOverInvoice creates a new invoice based on remaining days of current membership.
 // This should only be used when user is upgrading from standard to premium using one-time purchase,
 // or switch from one-time purchase to subscription mode.
@@ -227,6 +240,9 @@ func (m Membership) ClaimAddOns(inv []invoice.Invoice) (AddOnClaimed, error) {
 	return AddOnClaimed{
 		Invoices:   addOns,
 		Membership: newM,
-		Versioned:  newM.Version(NewOrderArchiver(enum.OrderKindAddOn)).WithPriorVersion(m),
+		//Versioned:  newM.Version(NewOrderArchiver(enum.OrderKindAddOn)).WithPriorVersion(m),
+		Versioned: NewMembershipVersioned(newM).
+			WithPriorVersion(m).
+			ArchivedBy(NewArchiver().ByFtcOrder().ActionClaimAddOn()),
 	}, nil
 }
