@@ -76,7 +76,7 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, _ *http.Request) {
 	_ = render.New(w).JSON(http.StatusOK, paywall)
 }
 
-func (router PaywallRouter) LoadPricing(w http.ResponseWriter, _ *http.Request) {
+func (router PaywallRouter) LoadFtcActivePrices(w http.ResponseWriter, _ *http.Request) {
 	p, err := router.paywallRepo.ListActivePrices(router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
