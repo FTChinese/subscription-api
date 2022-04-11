@@ -35,7 +35,11 @@ func GenStripeSubID() string {
 }
 
 func GenStripePriceID() string {
-	return "plan_" + rand.String(14)
+	return "price_" + rand.String(14)
+}
+
+func GenStripeProductID() string {
+	return "product_" + rand.String(14)
 }
 
 func GenStripeItemID() string {
