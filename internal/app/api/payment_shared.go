@@ -58,8 +58,8 @@ func (ps PaymentShared) LoadPaywall() (reader.Paywall, error) {
 	return paywall, nil
 }
 
-func (ps PaymentShared) LoadCachedPaywall(bust bool) (reader.Paywall, error) {
-	if !bust {
+func (ps PaymentShared) LoadCachedPaywall(refresh bool) (reader.Paywall, error) {
+	if !refresh {
 		paywall, err := ps.cacheRepo.LoadPaywall(ps.live)
 		if err == nil {
 			return paywall, nil
