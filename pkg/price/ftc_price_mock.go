@@ -11,21 +11,6 @@ import (
 	"time"
 )
 
-var MockEditionStdYear = Edition{
-	Tier:  enum.TierStandard,
-	Cycle: enum.CycleYear,
-}
-
-var MockEditionStdMonth = Edition{
-	Tier:  enum.TierStandard,
-	Cycle: enum.CycleMonth,
-}
-
-var MockEditionPrm = Edition{
-	Tier:  enum.TierPremium,
-	Cycle: enum.CycleYear,
-}
-
 var MockIntroPrice = FtcPrice{
 	ID: "price_x6rCUXxPC8tB",
 	Edition: Edition{
