@@ -434,7 +434,7 @@ func StartServer(s ServerStatus) {
 		r.Get("/", paywallRouter.LoadPaywall)
 
 		// List active prices used on paywall.
-		r.Get("/active/prices", paywallRouter.LoadPricing)
+		r.Get("/active/prices", paywallRouter.LoadFtcActivePrices)
 
 		r.Route("/banner", func(r chi.Router) {
 			r.Post("/", paywallRouter.SaveBanner)
