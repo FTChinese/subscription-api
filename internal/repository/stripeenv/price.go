@@ -70,8 +70,8 @@ func (env Env) LoadCachedPrice(id string, refresh bool) (price.StripePrice, erro
 	return p, nil
 }
 
-// ListPrices loads all prices for a list of ids.
-func (env Env) ListPrices(ids []string) (map[string]price.StripePrice, error) {
+// ListPrices loads all stripe prices for a list of ids.
+func (env Env) ListPrices(ids []string, refresh bool) (map[string]price.StripePrice, error) {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
 	ctx := context.Background()
@@ -86,7 +86,7 @@ func (env Env) ListPrices(ids []string) (map[string]price.StripePrice, error) {
 		}
 
 		go func(id string) {
-			p, err := env.LoadOrFetchPrice(id, false)
+			p, err := env.LoadOrFetchPrice(id, refresh)
 			if err != nil {
 				sugar.Error(err)
 				anyErr = err
