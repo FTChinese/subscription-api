@@ -28,7 +28,7 @@ func (router StripeRouter) CreateSetupIntent(w http.ResponseWriter, req *http.Re
 	rawSI, err := router.stripeRepo.Client.CreateSetupIntent(params)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -61,7 +61,7 @@ func (router StripeRouter) GetSetupIntent(w http.ResponseWriter, req *http.Reque
 	si, err := router.stripeRepo.LoadOrFetchSetupIntent(siID, refresh)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -104,7 +104,7 @@ func (router StripeRouter) loadSetupPaymentMethod(w http.ResponseWriter, setupID
 
 	si, err := router.stripeRepo.LoadOrFetchSetupIntent(setupID, false)
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -124,7 +124,7 @@ func (router StripeRouter) loadSetupPaymentMethod(w http.ResponseWriter, setupID
 
 	pm, err := router.loadPaymentMethod(si.PaymentMethodID.String, false)
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -138,7 +138,7 @@ func (router StripeRouter) refreshSetupPaymentMethod(w http.ResponseWriter, setu
 	rawSI, err := router.stripeRepo.Client.FetchSetupIntent(setupID, true)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 	}
 
 	si := stripe.NewSetupIntent(rawSI)

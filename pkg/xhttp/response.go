@@ -8,8 +8,8 @@ import (
 	"net/http"
 )
 
-// HandleStripeErr Forward stripe error to client, and give the error back to caller to handle if it is not stripe error.
-func HandleStripeErr(w http.ResponseWriter, err error) error {
+// HandleSubsErr processes various errors generated in the workflow or one-time purchase or subscription.
+func HandleSubsErr(w http.ResponseWriter, err error) error {
 
 	var se *stripe.Error
 	var ve *render.ValidationError

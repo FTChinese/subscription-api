@@ -246,7 +246,7 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		sugar.Error(err)
 	}
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		sugar.Error(err)
 		return
 	}

@@ -76,7 +76,7 @@ func (router FtcPayRouter) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		pi, err := router.SubsRepo.CreateOrder(cart)
 		if err != nil {
 			sugar.Error(err)
-			_ = xhttp.HandleStripeErr(w, err)
+			_ = xhttp.HandleSubsErr(w, err)
 			return
 		}
 

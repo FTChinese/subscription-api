@@ -66,7 +66,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	item, err := router.findCartItem(params)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -92,7 +92,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, reader.ConvertIntentError(err))
+		_ = xhttp.HandleSubsErr(w, reader.ConvertIntentError(err))
 		return
 	}
 
@@ -127,7 +127,7 @@ func (router StripeRouter) LoadSubs(w http.ResponseWriter, req *http.Request) {
 	subs, err := router.stripeRepo.RetrieveSubs(subsID)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -185,7 +185,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	item, err := router.findCartItem(input)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, reader.ConvertIntentError(err))
+		_ = xhttp.HandleSubsErr(w, reader.ConvertIntentError(err))
 		return
 	}
 
@@ -233,7 +233,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	ss, err := router.stripeRepo.Client.FetchSubs(subsID, true)
 	if err != nil {
 		sugar.Error(err)
-		err = xhttp.HandleStripeErr(w, err)
+		err = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -249,7 +249,7 @@ func (router StripeRouter) RefreshSubs(w http.ResponseWriter, req *http.Request)
 
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -284,7 +284,7 @@ func (router StripeRouter) CancelSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -318,7 +318,7 @@ func (router StripeRouter) ReactivateSubscription(w http.ResponseWriter, req *ht
 
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -349,7 +349,7 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 	subs, err := router.stripeRepo.LoadOrFetchSubs(subsID, false)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -361,7 +361,7 @@ func (router StripeRouter) GetSubsDefaultPaymentMethod(w http.ResponseWriter, re
 	pm, err := router.loadPaymentMethod(subs.DefaultPaymentMethodID.String, refresh)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -393,14 +393,14 @@ func (router StripeRouter) UpdateSubsDefaultPayMethod(w http.ResponseWriter, req
 
 	subs, err := router.stripeRepo.LoadOrFetchSubs(subsID, false)
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
 	// Ensure the payment method exists
 	pm, err := router.loadPaymentMethod(params.DefaultMethod, false)
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -408,7 +408,7 @@ func (router StripeRouter) UpdateSubsDefaultPayMethod(w http.ResponseWriter, req
 		subs.ID,
 		pm.ID)
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 

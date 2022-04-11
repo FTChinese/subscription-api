@@ -34,7 +34,7 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 	keyData, err := router.stripeRepo.Client.CreateEphemeralKey(cusID, stripeVersion)
 	if err != nil {
 		sugar.Error(err)
-		err = xhttp.HandleStripeErr(w, err)
+		err = xhttp.HandleSubsErr(w, err)
 		if err == nil {
 			return
 		}
@@ -70,7 +70,7 @@ func (router StripeRouter) SetupWithEphemeral(w http.ResponseWriter, req *http.R
 	rawSI, rawKey, err := router.stripeRepo.Client.SetupWithEphemeral(params.Customer)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 

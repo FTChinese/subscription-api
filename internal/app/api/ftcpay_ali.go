@@ -110,7 +110,7 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		param, err := router.AliPayClient.CreateOrder(or)
 		if err != nil {
 			sugar.Error(err)
-			_ = xhttp.HandleStripeErr(w, err)
+			_ = xhttp.HandleSubsErr(w, err)
 			return
 		}
 		sugar.Infof("Alipay signed order param: %s", param)

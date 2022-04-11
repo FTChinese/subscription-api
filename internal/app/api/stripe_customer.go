@@ -30,7 +30,7 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -62,7 +62,7 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 	cus, err := router.loadCustomer(cusID, refresh)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -127,7 +127,7 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 	cus, err := router.loadCustomer(cusID, false)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -143,7 +143,7 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 		refresh)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -191,7 +191,7 @@ func (router StripeRouter) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, 
 		cusID,
 		params.DefaultMethod)
 	if err != nil {
-		err = xhttp.HandleStripeErr(w, err)
+		err = xhttp.HandleSubsErr(w, err)
 		return
 	}
 

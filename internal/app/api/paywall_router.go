@@ -40,7 +40,7 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 	paywall, err := router.LoadCachedPaywall(refresh)
 
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (router PaywallRouter) BustCache(w http.ResponseWriter, _ *http.Request) {
 
 	paywall, err := router.LoadCachedPaywall(true)
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 

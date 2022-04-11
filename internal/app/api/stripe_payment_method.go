@@ -27,7 +27,7 @@ func (router StripeRouter) LoadPaymentMethod(w http.ResponseWriter, req *http.Re
 	pm, err := router.loadPaymentMethod(pmID, refresh)
 	if err != nil {
 		sugar.Error(err)
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 

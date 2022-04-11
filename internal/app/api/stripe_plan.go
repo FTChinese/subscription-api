@@ -14,7 +14,7 @@ func (router StripeRouter) ListPrices(w http.ResponseWriter, req *http.Request) 
 	prices, err := router.stripeRepo.ListPricesCompat(router.live, refresh)
 
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
@@ -41,7 +41,7 @@ func (router StripeRouter) LoadPrice(w http.ResponseWriter, req *http.Request) {
 	price, err := router.stripeRepo.LoadCachedPrice(id, refresh)
 
 	if err != nil {
-		_ = xhttp.HandleStripeErr(w, err)
+		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
