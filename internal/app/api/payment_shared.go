@@ -37,7 +37,8 @@ func NewPaymentShared(
 }
 
 // LoadPaywall directly from database or Stripe API.
-func (ps PaymentShared) LoadPaywall() (reader.Paywall, error) {
+// refresh - determines whether retrieve stripe prices directly form its API.
+func (ps PaymentShared) LoadPaywall(refresh bool) (reader.Paywall, error) {
 	defer ps.logger.Sync()
 	sugar := ps.logger.Sugar()
 
@@ -48,7 +49,7 @@ func (ps PaymentShared) LoadPaywall() (reader.Paywall, error) {
 	}
 
 	stripeIDs := paywall.StripePriceIDs()
-	stripePrices, err := ps.stripeRepo.ListPrices(stripeIDs)
+	stripePrices, err := ps.stripeRepo.ListPrices(stripeIDs, refresh)
 	if err != nil {
 		return reader.Paywall{}, err
 	}
@@ -66,7 +67,7 @@ func (ps PaymentShared) LoadCachedPaywall(refresh bool) (reader.Paywall, error) 
 		}
 	}
 
-	paywall, err := ps.LoadPaywall()
+	paywall, err := ps.LoadPaywall(refresh)
 	if err != nil {
 		return reader.Paywall{}, err
 	}
