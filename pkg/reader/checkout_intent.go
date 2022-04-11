@@ -10,7 +10,7 @@ import (
 
 type CheckoutIntent struct {
 	Kind  SubsIntentKind `json:"kind"`
-	Error error          `json:"error"`
+	Error error          `json:"error"` // A message telling why the Kind is IntentForbidden.
 }
 
 var unknownCheckout = CheckoutIntent{
@@ -110,7 +110,7 @@ func NewCheckoutIntentFtc(m Membership, p price.FtcPrice) CheckoutIntent {
 			if !m.WithinMaxRenewalPeriod() {
 				return CheckoutIntent{
 					Kind:  IntentForbidden,
-					Error: errors.New("exceeding allowed max renewal period"),
+					Error: ErrExceedingMaxRenewal,
 				}
 			}
 
@@ -152,7 +152,7 @@ func NewCheckoutIntentFtc(m Membership, p price.FtcPrice) CheckoutIntent {
 		case enum.TierPremium:
 			return CheckoutIntent{
 				Kind:  IntentForbidden,
-				Error: errors.New("subscription mode cannot use one-time purchase to upgrade"),
+				Error: ErrSubsUpgradeViaOneTime,
 			}
 
 		case enum.TierStandard:
@@ -167,7 +167,7 @@ func NewCheckoutIntentFtc(m Membership, p price.FtcPrice) CheckoutIntent {
 		if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
 			return CheckoutIntent{
 				Kind:  IntentForbidden,
-				Error: errors.New("subscription mode cannot use one-time purchase to upgrade"),
+				Error: ErrSubsUpgradeViaOneTime,
 			}
 		}
 
@@ -180,7 +180,7 @@ func NewCheckoutIntentFtc(m Membership, p price.FtcPrice) CheckoutIntent {
 		if m.Tier == enum.TierStandard && p.Tier == enum.TierPremium {
 			return CheckoutIntent{
 				Kind:  IntentForbidden,
-				Error: errors.New("corporate subscription cannot use retail payment to upgrade"),
+				Error: ErrB2BUpgradeViaOneTime,
 			}
 		}
 

@@ -80,7 +80,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		WithStripeItem(item)
 
 	// Create stripe subscription.
-	result, cart, err := router.stripeRepo.CreateSubscription(cart, params)
+	cart, result, err := router.stripeRepo.CreateSubscription(cart, params)
 
 	go func() {
 		err := router.stripeRepo.SaveShoppingSession(
@@ -92,7 +92,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 
 	if err != nil {
 		sugar.Error(err)
-		handleSubsError(w, err)
+		_ = xhttp.HandleStripeErr(w, reader.ConvertIntentError(err))
 		return
 	}
 
@@ -190,14 +190,14 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	}
 
 	cart := reader.NewShoppingCart(account).WithStripeItem(item)
-	result, cart, err := router.stripeRepo.UpdateSubscription(
+	cart, result, err := router.stripeRepo.UpdateSubscription(
 		cart,
 		input,
 	)
 
 	if err != nil {
 		sugar.Error(err)
-		handleSubsError(w, err)
+		_ = xhttp.HandleStripeErr(w, reader.ConvertIntentError(err))
 		return
 	}
 

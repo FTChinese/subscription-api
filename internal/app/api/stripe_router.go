@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
@@ -10,10 +9,8 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 type StripeRouter struct {
@@ -72,36 +69,6 @@ func (router StripeRouter) handleSubsResult(result stripe.SubsSuccess) {
 		if err != nil {
 			sugar.Error(err)
 		}
-	}
-}
-
-func handleSubsError(w http.ResponseWriter, err error) {
-	switch err {
-	case reader.ErrTrialUpgradeForbidden:
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: err.Error(),
-			Field:   "trial_upgrade",
-			Code:    render.CodeInvalid,
-		})
-
-	case reader.ErrAlreadyStripeSubs,
-		reader.ErrAlreadyAppleSubs,
-		reader.ErrAlreadyB2BSubs:
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: err.Error(),
-			Field:   "membership",
-			Code:    render.CodeAlreadyExists,
-		})
-
-	case reader.ErrUnknownPaymentMethod:
-		_ = render.New(w).Unprocessable(&render.ValidationError{
-			Message: err.Error(),
-			Field:   "payMethod",
-			Code:    render.CodeInvalid,
-		})
-
-	default:
-		_ = xhttp.HandleStripeErr(w, err)
 	}
 }
 
