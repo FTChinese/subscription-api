@@ -44,6 +44,22 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	// Save stripe prices if any of them is fetched from
+	// Stripe API.
+	go func() {
+		defer router.logger.Sync()
+		sugar := router.logger.Sugar()
+
+		for _, sp := range paywall.StripePrices {
+			if sp.IsFromStripe {
+				err := router.stripeRepo.UpsertPrice(sp)
+				if err != nil {
+					sugar.Error(err)
+				}
+			}
+		}
+	}()
+
 	_ = render.New(w).JSON(http.StatusOK, paywall)
 }
 
