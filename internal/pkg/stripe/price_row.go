@@ -2,15 +2,15 @@ package stripe
 
 import "github.com/FTChinese/subscription-api/pkg/price"
 
-const colUpsertPrice = `
-id = :id
-price_data = :price_data
-`
 const StmtUpsertPrice = `
 INSERT INTO subs_product.stripe_price
-SET ` + colUpsertPrice + `
+SET id = :id,
+	price_data = :price_data,
+	created_utc = UTC_TIMESTAMP()
 ON DUPLICATE KEY UPDATE
-` + colUpsertPrice
+	price_data = :price_data,
+	updated_utc = UTC_TIMESTAMP()
+`
 
 const StmtRetrievePrice = `
 SELECT id,
