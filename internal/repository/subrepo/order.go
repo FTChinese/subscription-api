@@ -36,7 +36,12 @@ func (env Env) CreateOrder(cart reader.ShoppingCart) (ftcpay.PaymentIntent, erro
 	}
 	sugar.Infof("Membership retrieved %+v", member)
 
-	cart = cart.WithMember(member)
+	cart, err = cart.WithMember(member)
+	if err != nil {
+		sugar.Error(err)
+		_ = otx.Rollback()
+		return ftcpay.PaymentIntent{}, err
+	}
 
 	// First calculate a Checkout instance.
 	// Then see if the Offer field has Recurring.

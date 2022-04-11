@@ -21,39 +21,37 @@ import (
 // util.ErrNonStripeValidSub
 // util.ErrStripeDuplicateSub
 // util.ErrUnknownSubState
-func (env Env) CreateSubscription(cart reader.ShoppingCart, params stripe.SubsParams) (stripe.SubsSuccess, reader.ShoppingCart, error) {
+func (env Env) CreateSubscription(cart reader.ShoppingCart, params stripe.SubsParams) (reader.ShoppingCart, stripe.SubsSuccess, error) {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
 
 	tx, err := env.BeginStripeTx()
 	if err != nil {
 		sugar.Error(err)
-		return stripe.SubsSuccess{}, cart, err
+		return cart, stripe.SubsSuccess{}, err
 	}
 
 	// Retrieve member for this user to check whether the operation is allowed.
 	sugar.Infof("Retrieving membership before creating stripe subscription: %s", cart.Account.CompoundID())
 
 	mmb, err := tx.RetrieveMember(cart.Account.CompoundID())
-
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, err
+		return cart, stripe.SubsSuccess{}, err
 	}
 
-	cart = cart.WithMember(mmb)
-
-	if cart.Intent.Error != nil {
+	cart, err = cart.WithMember(mmb)
+	if err != nil {
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, cart.Intent.Error
+		return cart, stripe.SubsSuccess{}, err
 	}
 
 	if !cart.Intent.Kind.IsNewSubs() {
 		sugar.Errorf("expected shopping cart intent to be new subs, got %s", cart.Intent.Kind)
 
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, errors.New("this endpoint only permit creating a new stripe subscription")
+		return cart, stripe.SubsSuccess{}, errors.New("this endpoint only permit creating a new stripe subscription")
 	}
 
 	sugar.Info("Creating stripe subscription")
@@ -67,7 +65,7 @@ func (env Env) CreateSubscription(cart reader.ShoppingCart, params stripe.SubsPa
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, err
+		return cart, stripe.SubsSuccess{}, err
 	}
 
 	sugar.Infof("New subscription created %v", ss.ID)
@@ -87,7 +85,7 @@ func (env Env) CreateSubscription(cart reader.ShoppingCart, params stripe.SubsPa
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return stripe.SubsSuccess{}, cart, err
+			return cart, stripe.SubsSuccess{}, err
 		}
 	} else {
 		sugar.Info("Updating an existing membership to stripe")
@@ -95,7 +93,7 @@ func (env Env) CreateSubscription(cart reader.ShoppingCart, params stripe.SubsPa
 		if err != nil {
 			sugar.Error(err)
 			_ = tx.Rollback()
-			return stripe.SubsSuccess{}, cart, err
+			return cart, stripe.SubsSuccess{}, err
 		}
 	}
 
@@ -111,10 +109,10 @@ func (env Env) CreateSubscription(cart reader.ShoppingCart, params stripe.SubsPa
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return stripe.SubsSuccess{}, cart, err
+		return cart, stripe.SubsSuccess{}, err
 	}
 
-	return result, cart, nil
+	return cart, result, nil
 }
 
 // UpdateSubscription switches subscription plan.
@@ -123,14 +121,14 @@ func (env Env) CreateSubscription(cart reader.ShoppingCart, params stripe.SubsPa
 func (env Env) UpdateSubscription(
 	cart reader.ShoppingCart,
 	params stripe.SubsParams,
-) (stripe.SubsSuccess, reader.ShoppingCart, error) {
+) (reader.ShoppingCart, stripe.SubsSuccess, error) {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
 
 	tx, err := env.BeginStripeTx()
 	if err != nil {
 		sugar.Error(err)
-		return stripe.SubsSuccess{}, cart, err
+		return cart, stripe.SubsSuccess{}, err
 	}
 
 	// Retrieve current membership.
@@ -138,26 +136,25 @@ func (env Env) UpdateSubscription(
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, nil
+		return cart, stripe.SubsSuccess{}, nil
 	}
 
-	cart = cart.WithMember(mmb)
-
-	if cart.Intent.Error != nil {
+	cart, err = cart.WithMember(mmb)
+	if err != nil {
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, cart.Intent.Error
+		return cart, stripe.SubsSuccess{}, err
 	}
 
 	if !cart.Intent.Kind.IsUpdating() {
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, errors.New("this endpoint only supports updating an existing valid Stripe subscription")
+		return cart, stripe.SubsSuccess{}, errors.New("this endpoint only supports updating an existing valid Stripe subscription")
 	}
 
 	currentSubs, err := env.LoadOrFetchSubs(mmb.StripeSubsID.String, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, err
+		return cart, stripe.SubsSuccess{}, err
 	}
 
 	ss, err := env.Client.UpdateSubs(
@@ -167,7 +164,7 @@ func (env Env) UpdateSubscription(
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, err
+		return cart, stripe.SubsSuccess{}, err
 	}
 	sugar.Infof("Subscription id %s, status %s, payment intent status %s", ss.ID, ss.Status, ss.LatestInvoice.PaymentIntent.Status)
 
@@ -181,15 +178,15 @@ func (env Env) UpdateSubscription(
 	if err := tx.UpdateMember(result.Member); err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
-		return stripe.SubsSuccess{}, cart, err
+		return cart, stripe.SubsSuccess{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		sugar.Error(err)
-		return stripe.SubsSuccess{}, cart, err
+		return cart, stripe.SubsSuccess{}, err
 	}
 
-	return result, cart, nil
+	return cart, result, nil
 }
 
 // RefreshSubscription save stripe subscription and optionally update membership linked to it.
