@@ -36,8 +36,10 @@ func (i CartItemFtc) PeriodCount() dt.YearMonthDay {
 // db separately.
 func (i CartItemFtc) Verify(live bool) error {
 	// If the discount does not
-	if i.Price.ID != i.Offer.PriceID {
-		return errors.New("the price and discount does not match")
+	if !i.Offer.IsZero() {
+		if i.Price.ID != i.Offer.PriceID {
+			return errors.New("the price and discount does not match")
+		}
 	}
 
 	if i.Price.LiveMode != live {
