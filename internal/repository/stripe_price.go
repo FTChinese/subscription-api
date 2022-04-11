@@ -6,9 +6,11 @@ import (
 )
 
 func (repo StripeRepo) UpsertPrice(p price.StripePrice) error {
+	row := stripe.NewPriceRow(p)
+
 	_, err := repo.dbs.Write.NamedExec(
 		stripe.StmtUpsertPrice,
-		p)
+		row)
 
 	if err != nil {
 		return err
