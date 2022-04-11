@@ -9,7 +9,7 @@ import (
 )
 
 func TestEnv_LoadDiscount(t *testing.T) {
-	env := NewPaywallRepo(db.MockMySQL(), nil)
+	env := NewPaywallRepo(db.MockMySQL())
 
 	pb := test.NewStdProdBuilder().NewYearPriceBuilder()
 	disc := pb.NewDiscountBuilder().BuildRetention()
