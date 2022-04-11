@@ -107,8 +107,8 @@ func TestStripeTx_SaveCustomerID(t *testing.T) {
 
 func TestStripeTx_RetrieveStripeMember(t *testing.T) {
 
-	m := reader.NewMockMemberBuilder("").
-		WithPayMethod(enum.PayMethodStripe).
+	m := reader.NewMockMemberBuilder().
+		WithStripe("").
 		Build()
 
 	test.NewRepo().MustSaveMembership(m)
