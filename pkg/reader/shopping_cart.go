@@ -62,7 +62,7 @@ func (s ShoppingCart) WithWxPay(appID string) ShoppingCart {
 }
 
 // WithMember sets current membership.
-func (s ShoppingCart) WithMember(m Membership) ShoppingCart {
+func (s ShoppingCart) WithMember(m Membership) (ShoppingCart, error) {
 
 	var intent CheckoutIntent
 
@@ -84,5 +84,5 @@ func (s ShoppingCart) WithMember(m Membership) ShoppingCart {
 	s.CurrentMember = m
 	s.Intent = intent
 
-	return s
+	return s, s.Intent.Error
 }
