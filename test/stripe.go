@@ -126,10 +126,6 @@ type StripeSubsBuilder struct {
 	status enum.SubsStatus
 }
 
-func (b StripeSubsBuilder) WithEdition(e price.Edition) StripeSubsBuilder {
-	return b
-}
-
 func (b StripeSubsBuilder) WithPrice(p price.StripePrice) StripeSubsBuilder {
 	b.price = p
 	return b

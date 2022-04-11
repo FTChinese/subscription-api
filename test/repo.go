@@ -346,3 +346,13 @@ func (r Repo) SaveStripeSubs(s stripe.Subs) {
 		log.Fatalln(err)
 	}
 }
+
+func (r Repo) SaveStripePrice(p price.StripePrice) {
+	_, err := r.dbs.Write.NamedExec(
+		stripe.StmtUpsertPrice,
+		stripe.NewPriceRow(p))
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
