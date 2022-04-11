@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/guregu/null"
 )
 
 const StmtShoppingSession = `
@@ -24,7 +23,6 @@ SET ftc_user_id = :ftc_user_id,
 // creates/updates subscription.
 type ShoppingSession struct {
 	FtcUserID         string                  `db:"ftc_user_id"`
-	SubsID            null.String             `db:"subs_id"`
 	RecurringPrice    PriceColumn             `db:"recurring_price"`
 	IntroductoryPrice PriceColumn             `db:"introductory_price"`
 	Membership        reader.MembershipColumn `db:"membership"`
