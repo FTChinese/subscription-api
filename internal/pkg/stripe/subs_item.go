@@ -12,11 +12,11 @@ import (
 // from the first element of items data array.
 // Usually one subscription has only one item.
 type SubsItem struct {
-	ID             string      `json:"id"`
-	Price          PriceColumn `json:"price"`
-	Created        int64       `json:"created"`
-	Quantity       int64       `json:"quantity"`
-	SubscriptionID string      `json:"subscriptionId"`
+	ID             string            `json:"id"`
+	Price          price.StripePrice `json:"price"`
+	Created        int64             `json:"created"`
+	Quantity       int64             `json:"quantity"`
+	SubscriptionID string            `json:"subscriptionId"`
 }
 
 // NewSubsItem gets the subscription item id and price id from a stripe subscription.
@@ -26,16 +26,16 @@ type SubsItem struct {
 // It the items Data array is empty, then it has nothing subscribed to.
 func NewSubsItem(item *stripe.SubscriptionItem) SubsItem {
 	return SubsItem{
-		ID: item.ID,
-		Price: PriceColumn{
-			StripePrice: price.NewPrice(item.Price),
-		},
+		ID:             item.ID,
+		Price:          price.NewStripePrice(item.Price),
 		Created:        item.Created,
 		Quantity:       item.Quantity,
 		SubscriptionID: item.Subscription,
 	}
 }
 
+// SubsItemList implements sql Value and Scan interface so that
+// we could save a list of SubsItems as JSON.
 type SubsItemList []SubsItem
 
 // Value implements Valuer interface by serializing an Invitation into
