@@ -1,5 +1,4 @@
 //go:build !production
-// +build !production
 
 package test
 
@@ -115,7 +114,7 @@ func StripePaymentMethod() stripe.PaymentMethod {
 func (p Persona) StripeSubsBuilder() StripeSubsBuilder {
 	return StripeSubsBuilder{
 		ftcID:  p.FtcID,
-		price:  stripe.MockPriceStdYear,
+		price:  price.MockStripeStdYearPrice,
 		status: enum.SubsStatusActive,
 	}
 }
