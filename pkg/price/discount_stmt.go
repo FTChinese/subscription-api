@@ -59,7 +59,7 @@ const StmtListPriceActiveDiscounts = colDiscount + `
 WHERE plan_id = ?
 	AND current_status = 'active'
 	AND live_mode = ?
-	AND (end_utc IS NULL OR end_utc >= UTC_TIMESTAMP)
+	AND (end_utc IS NULL OR end_utc >= UTC_TIMESTAMP())
 ORDER BY price_off DESC`
 
 // StmtListDiscountsOfPrice retrieves all discount under a price.
