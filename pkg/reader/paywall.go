@@ -7,8 +7,8 @@ import (
 
 type Paywall struct {
 	PaywallDoc
-	Products     []PaywallProduct             `json:"products"`
-	StripePrices map[string]price.StripePrice `json:"stripePrices"`
+	Products []PaywallProduct    `json:"products"`
+	Stripe   []StripePaywallItem `json:"stripe"`
 }
 
 func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
