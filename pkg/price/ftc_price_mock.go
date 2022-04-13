@@ -1,5 +1,4 @@
 //go:build !production
-// +build !production
 
 package price
 
@@ -11,7 +10,7 @@ import (
 	"time"
 )
 
-var MockIntroPrice = FtcPrice{
+var MockFtcStdIntroPrice = FtcPrice{
 	ID: "price_x6rCUXxPC8tB",
 	Edition: Edition{
 		Tier:  enum.TierStandard,
@@ -39,7 +38,7 @@ var MockIntroPrice = FtcPrice{
 	CreatedUTC:    chrono.TimeNow(),
 }
 
-var MockPriceStdYear = FtcPrice{
+var MockFtcStdYearPrice = FtcPrice{
 	ID:       "price_WHc5ssjh6pqw",
 	Edition:  MockEditionStdYear,
 	Active:   true,
@@ -64,7 +63,7 @@ var MockPriceStdYear = FtcPrice{
 	CreatedUTC:    chrono.TimeNow(),
 }
 
-var MockStdYearOffers = []Discount{
+var MockFtcStdYearOffers = []Discount{
 	{
 		ID:       "dsc_iirQArMFjBfs",
 		LiveMode: false,
@@ -113,7 +112,7 @@ var MockStdYearOffers = []Discount{
 	},
 }
 
-var MockPriceStdMonth = FtcPrice{
+var MockFtcStdMonthPrice = FtcPrice{
 	ID:       "price_v5E2WSqJymxe",
 	Edition:  MockEditionStdMonth,
 	Active:   true,
@@ -138,9 +137,9 @@ var MockPriceStdMonth = FtcPrice{
 	CreatedUTC:    chrono.TimeNow(),
 }
 
-var MockStdMonthOffers []Discount
+var MockFtcStdMonthOffers []Discount
 
-var MockPricePrm = FtcPrice{
+var MockFtcPrmPrice = FtcPrice{
 	ID:       "price_zsTj2TQ1h3jB",
 	Edition:  MockEditionPrm,
 	Active:   true,
@@ -165,7 +164,7 @@ var MockPricePrm = FtcPrice{
 	CreatedUTC:    chrono.TimeNow(),
 }
 
-var MockPrmOffers = []Discount{
+var MockFtcPrmOffers = []Discount{
 	{
 		ID:       "dsc_m7f0nlLHdOoB",
 		LiveMode: false,

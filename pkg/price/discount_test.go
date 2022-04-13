@@ -18,13 +18,13 @@ func TestDiscountListJSON_FindApplicable(t *testing.T) {
 	}{
 		{
 			name: "Find applicable offer",
-			l:    MockStdYearOffers,
+			l:    MockFtcStdYearOffers,
 			args: args{
 				filters: []OfferKind{
 					OfferKindRetention,
 				},
 			},
-			want: MockStdYearOffers[1],
+			want: MockFtcStdYearOffers[1],
 		},
 	}
 	for _, tt := range tests {
