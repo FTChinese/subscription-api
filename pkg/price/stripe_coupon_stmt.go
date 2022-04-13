@@ -9,6 +9,7 @@ end_utc = :end_utc,
 live_mode = :live_mode,
 display_name = :name,
 price_id = :price_id,
+redeem_by = :redeem_by,
 start_utc = :start_utc,
 current_status = :status
 `
