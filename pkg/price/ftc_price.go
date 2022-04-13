@@ -7,9 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
-	"strconv"
 	"strings"
-	"time"
 )
 
 type FtcUpdateParams struct {
@@ -209,26 +207,4 @@ func (p FtcPrice) IsOneTime() bool {
 
 func (p FtcPrice) IsRecurring() bool {
 	return p.Kind == KindRecurring
-}
-
-func (p FtcPrice) StripeMeta() map[string]string {
-	start := ""
-	end := ""
-	if !p.StartUTC.IsZero() {
-		start = p.StartUTC.In(time.UTC).Format(time.RFC3339)
-	}
-
-	if !p.EndUTC.IsZero() {
-		end = p.EndUTC.In(time.UTC).Format(time.RFC3339)
-	}
-
-	return map[string]string{
-		"tier":         p.Tier.String(),
-		"years":        strconv.FormatInt(p.PeriodCount.Years, 10),
-		"months":       strconv.FormatInt(p.PeriodCount.Months, 10),
-		"days":         strconv.FormatInt(p.PeriodCount.Days, 10),
-		"introductory": strconv.FormatBool(p.IsOneTime()),
-		"start_utc":    start,
-		"end_utc":      end,
-	}
 }
