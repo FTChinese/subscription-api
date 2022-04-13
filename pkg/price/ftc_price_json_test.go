@@ -53,7 +53,7 @@ func TestIntroductoryJSON_MarshalJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := JSONPrice{
+			p := FtcPriceJSON{
 				FtcPrice: tt.fields.Price,
 			}
 			got, err := p.MarshalJSON()
@@ -73,7 +73,7 @@ func TestIntroductoryJSON_MarshalJSON(t *testing.T) {
 func TestIntroductoryJSON_UnmarshalJSON(t *testing.T) {
 	null := []byte("null")
 
-	var p JSONPrice
+	var p FtcPriceJSON
 	err := p.UnmarshalJSON(null)
 	if err != nil {
 		t.Error(err)
