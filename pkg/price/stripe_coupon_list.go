@@ -1,25 +1,21 @@
-package stripe
+package price
 
 import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
-// PriceColumn saves price to or retrieves from db as JSON field.
-type PriceColumn struct {
-	price.StripePrice
-}
+type StripeCouponList []StripeCoupon
 
 // Value implements Valuer interface by serializing an Invitation into
 // JSON data.
-func (p PriceColumn) Value() (driver.Value, error) {
-	if p.ID == "" {
+func (c StripeCouponList) Value() (driver.Value, error) {
+	if len(c) == 0 {
 		return nil, nil
 	}
 
-	b, err := json.Marshal(p.StripePrice)
+	b, err := json.Marshal(c)
 	if err != nil {
 		return nil, err
 	}
@@ -28,23 +24,23 @@ func (p PriceColumn) Value() (driver.Value, error) {
 }
 
 // Scan implements Valuer interface by deserializing an invitation field.
-func (p *PriceColumn) Scan(src interface{}) error {
+func (c *StripeCouponList) Scan(src interface{}) error {
 	if src == nil {
-		*p = PriceColumn{}
+		*c = StripeCouponList{}
 		return nil
 	}
 
 	switch s := src.(type) {
 	case []byte:
-		var tmp price.StripePrice
+		var tmp []StripeCoupon
 		err := json.Unmarshal(s, &tmp)
 		if err != nil {
 			return err
 		}
-		*p = PriceColumn{tmp}
+		*c = tmp
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan to PriceColumn")
+		return errors.New("incompatible type to scan to StripeCouponList")
 	}
 }
