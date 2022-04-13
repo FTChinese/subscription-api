@@ -12,6 +12,8 @@ import (
 
 // SubsParams is the request body to create a new subscription
 // or update an existing one.
+// IntroductoryPriceID and CouponID are mutually exclusive.
+// When an introductory price exists, a coupon should never be applied.
 type SubsParams struct {
 	PriceID             string      `json:"priceId"`
 	IntroductoryPriceID null.String `json:"introductoryPriceId"`
@@ -24,33 +26,46 @@ type SubsParams struct {
 }
 
 // Validate checks if customer and idempotency fields are set.
-func (p SubsParams) Validate() *render.ValidationError {
-	return validator.New("priceId").Required().Validate(p.PriceID)
+func (pr SubsParams) Validate() *render.ValidationError {
+	return validator.New("priceId").Required().Validate(pr.PriceID)
 }
 
 // BuildCartItem constructs a Stripe checkout item
 // from cached data.
-func (p SubsParams) BuildCartItem(prices map[string]price.StripePrice) (reader.CartItemStripe, error) {
-	recurring, ok := prices[p.PriceID]
-	if !ok {
-		return reader.CartItemStripe{}, fmt.Errorf("stripe price %s not found", p.PriceID)
+func (pr SubsParams) BuildCartItem(items []reader.StripePaywallItem) (reader.CartItemStripe, error) {
+	index := map[string]int{}
+	for i, v := range items {
+		index[v.Price.ID] = i
 	}
 
+	recurringIndex, ok := index[pr.PriceID]
+	if !ok {
+		return reader.CartItemStripe{}, fmt.Errorf("stripe price %s not found", pr.PriceID)
+	}
+
+	recurringItem := items[recurringIndex]
+
 	var intro price.StripePrice
-	if p.IntroductoryPriceID.Valid {
-		intro, ok = prices[p.IntroductoryPriceID.String]
+	var coupon price.StripeCoupon
+	if pr.IntroductoryPriceID.Valid {
+		introIndex, ok := index[pr.IntroductoryPriceID.String]
 		if !ok {
-			return reader.CartItemStripe{}, fmt.Errorf("stripe price %s not found", p.IntroductoryPriceID.String)
+			return reader.CartItemStripe{}, fmt.Errorf("stripe price %s not found", pr.IntroductoryPriceID.String)
+		} else {
+			intro = items[introIndex].Price
 		}
+	} else if pr.CouponID.Valid {
+		coupon = recurringItem.FindCoupon(pr.CouponID.String)
 	}
 
 	return reader.CartItemStripe{
-		Recurring:    recurring,
+		Recurring:    recurringItem.Price,
 		Introductory: intro,
+		Coupon:       coupon,
 	}, nil
 }
 
-func (p SubsParams) NewSubParams(cusID string, ci reader.CartItemStripe) *stripeSdk.SubscriptionParams {
+func (pr SubsParams) NewSubParams(cusID string, ci reader.CartItemStripe) *stripeSdk.SubscriptionParams {
 	params := &stripeSdk.SubscriptionParams{
 		Customer:          stripeSdk.String(cusID),
 		CancelAtPeriodEnd: stripeSdk.Bool(false),
@@ -63,13 +78,13 @@ func (p SubsParams) NewSubParams(cusID string, ci reader.CartItemStripe) *stripe
 
 	// If default payment method is provided, use it;
 	// otherwise set payment behavior to incomplete.
-	if p.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripeSdk.String(p.DefaultPaymentMethod.String)
+	if pr.DefaultPaymentMethod.Valid {
+		params.DefaultPaymentMethod = stripeSdk.String(pr.DefaultPaymentMethod.String)
 	} else {
 		params.PaymentBehavior = stripeSdk.String("default_incomplete")
 	}
 
-	// If there is introductory offer, add an extra invoice
+	// If there is an introductory offer, add an extra invoice
 	// and trial period.
 	if !ci.Introductory.IsZero() {
 		params.AddInvoiceItems = []*stripeSdk.SubscriptionAddInvoiceItemParams{
@@ -81,6 +96,8 @@ func (p SubsParams) NewSubParams(cusID string, ci reader.CartItemStripe) *stripe
 
 		params.TrialPeriodDays = stripeSdk.Int64(
 			ci.Introductory.PeriodCount.TotalDays())
+	} else if !ci.Coupon.IsZero() {
+		params.Coupon = stripeSdk.String(ci.Coupon.ID)
 	}
 
 	// {
@@ -89,12 +106,8 @@ func (p SubsParams) NewSubParams(cusID string, ci reader.CartItemStripe) *stripe
 	// "request_id":"req_O6zILK5QEVpViw",
 	// "type":"idempotency_error"
 	// }
-	if p.IdempotencyKey != "" {
-		params.SetIdempotencyKey(p.IdempotencyKey)
-	}
-
-	if p.CouponID.Valid {
-		params.Coupon = stripeSdk.String(p.CouponID.String)
+	if pr.IdempotencyKey != "" {
+		params.SetIdempotencyKey(pr.IdempotencyKey)
 	}
 
 	// Expand latest_invoice.payment_intent.
@@ -103,7 +116,7 @@ func (p SubsParams) NewSubParams(cusID string, ci reader.CartItemStripe) *stripe
 	return params
 }
 
-func (p SubsParams) UpdateSubParams(itemID string, ci reader.CartItemStripe) *stripeSdk.SubscriptionParams {
+func (pr SubsParams) UpdateSubParams(itemID string, ci reader.CartItemStripe) *stripeSdk.SubscriptionParams {
 
 	params := &stripeSdk.SubscriptionParams{
 		CancelAtPeriodEnd: stripeSdk.Bool(false),
@@ -120,16 +133,18 @@ func (p SubsParams) UpdateSubParams(itemID string, ci reader.CartItemStripe) *st
 		},
 	}
 
-	if p.DefaultPaymentMethod.Valid {
-		params.DefaultPaymentMethod = stripeSdk.String(p.DefaultPaymentMethod.String)
+	// For updating subscription, introductory price should never exist while
+	// a coupon is optional.
+	if !ci.Coupon.IsZero() {
+		params.Coupon = stripeSdk.String(ci.Coupon.ID)
 	}
 
-	if p.IdempotencyKey != "" {
-		params.SetIdempotencyKey(p.IdempotencyKey)
+	if pr.DefaultPaymentMethod.Valid {
+		params.DefaultPaymentMethod = stripeSdk.String(pr.DefaultPaymentMethod.String)
 	}
 
-	if p.CouponID.Valid {
-		params.Coupon = stripeSdk.String(p.CouponID.String)
+	if pr.IdempotencyKey != "" {
+		params.SetIdempotencyKey(pr.IdempotencyKey)
 	}
 
 	// Expand latest_invoice.payment_intent.
