@@ -7,9 +7,12 @@ import (
 
 // CartItemStripe contains the items to be purchased using
 // stripe.
+// Introductory and Coupon are mutually exclusive.
+// An introductory price should not have any coupons attached to it.
 type CartItemStripe struct {
 	Recurring    price.StripePrice
 	Introductory price.StripePrice // This is optional.
+	Coupon       price.StripeCoupon
 }
 
 // AnyFromStripe checks if there's any price coming from API
