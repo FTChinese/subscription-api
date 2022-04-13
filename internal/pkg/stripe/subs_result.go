@@ -41,7 +41,7 @@ type SubsSuccess struct {
 	Subs             Subs                       `json:"subs"`
 	Member           reader.Membership          `json:"membership"` // New membership.
 	Versioned        reader.MembershipVersioned `json:"-"`
-	CarryOverInvoice invoice.Invoice            `json:"-"` // Only exists when user shifting from one-time purchase to Stripe. It does not exists upon refreshing/upgrading/cancellation.
+	CarryOverInvoice invoice.Invoice            `json:"-"` // Only exists when user shifting from one-time purchase to Stripe. It does not exist upon refreshing/upgrading/cancellation.
 }
 
 // newSubsResult exists for testing convenience.
