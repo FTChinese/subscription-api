@@ -6,15 +6,15 @@ import (
 	"errors"
 )
 
-// JSONPrice wrap Price so that it could be saved
+// FtcPriceJSON wrap Price so that it could be saved
 // as a JSON column in sql, and marshalled into null for
 // empty value when used as introductory.
-type JSONPrice struct {
+type FtcPriceJSON struct {
 	FtcPrice
 }
 
 // MarshalJSON encodes an optional price to nullable result.
-func (p JSONPrice) MarshalJSON() ([]byte, error) {
+func (p FtcPriceJSON) MarshalJSON() ([]byte, error) {
 	if p.ID == "" {
 		return []byte("null"), nil
 	}
@@ -23,10 +23,10 @@ func (p JSONPrice) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON parses a nullable value to price.
-func (p *JSONPrice) UnmarshalJSON(b []byte) error {
+func (p *FtcPriceJSON) UnmarshalJSON(b []byte) error {
 	var v FtcPrice
 	if b == nil {
-		*p = JSONPrice{}
+		*p = FtcPriceJSON{}
 		return nil
 	}
 
@@ -35,13 +35,13 @@ func (p *JSONPrice) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*p = JSONPrice{FtcPrice: v}
+	*p = FtcPriceJSON{FtcPrice: v}
 	return nil
 }
 
 // Value implements Valuer interface by serializing an Invitation into
 // JSON data.
-func (p JSONPrice) Value() (driver.Value, error) {
+func (p FtcPriceJSON) Value() (driver.Value, error) {
 	if p.ID == "" {
 		return nil, nil
 	}
@@ -55,15 +55,15 @@ func (p JSONPrice) Value() (driver.Value, error) {
 }
 
 // Scan implements Valuer interface by deserializing an invitation field.
-func (p *JSONPrice) Scan(src interface{}) error {
+func (p *FtcPriceJSON) Scan(src interface{}) error {
 	if src == nil {
-		*p = JSONPrice{}
+		*p = FtcPriceJSON{}
 		return nil
 	}
 
 	switch s := src.(type) {
 	case []byte:
-		var tmp JSONPrice
+		var tmp FtcPriceJSON
 		err := json.Unmarshal(s, &tmp)
 		if err != nil {
 			return err
@@ -72,6 +72,6 @@ func (p *JSONPrice) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan to JSONPrice")
+		return errors.New("incompatible type to scan to FtcPriceJSON")
 	}
 }
