@@ -1,5 +1,4 @@
 //go:build !production
-// +build !production
 
 package faker
 
@@ -48,6 +47,10 @@ func GenStripeItemID() string {
 
 func GenInvoiceID() string {
 	return "in_" + rand.String(14)
+}
+
+func StripeCouponID() string {
+	return rand.String(8)
 }
 
 func GenPaymentIntentID() string {
