@@ -32,7 +32,7 @@ func (store *PriceCache) AddAll(sps []*stripe.Price) {
 	defer store.mux.Unlock()
 
 	for _, sp := range sps {
-		_ = store.upsert(price.NewPrice(sp))
+		_ = store.upsert(price.NewStripePrice(sp))
 	}
 }
 
