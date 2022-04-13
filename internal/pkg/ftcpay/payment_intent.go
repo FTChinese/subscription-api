@@ -37,8 +37,8 @@ func NewPaymentIntent(cart reader.ShoppingCart) (PaymentIntent, error) {
 
 type PaymentIntentSchema struct {
 	OrderID      string                  `db:"order_id"`
-	Price        price.JSONPrice         `db:"price"`
-	Offer        price.ColumnDiscount    `db:"offer"`
+	Price        price.FtcPriceJSON      `db:"price"`
+	Offer        price.DiscountColumn    `db:"offer"`
 	Membership   reader.MembershipColumn `db:"membership"`
 	WxPayParams  wechat.ColumnSDKParams  `db:"wxpay_params"`
 	AliPayParams ali.ColumnSDKParams     `db:"alipay_params"`
@@ -60,10 +60,10 @@ func NewWxPaymentIntent(pi PaymentIntent, params wechat.SDKParams) WxPaymentInte
 func (p WxPaymentIntent) Schema() PaymentIntentSchema {
 	return PaymentIntentSchema{
 		OrderID: p.Order.ID,
-		Price: price.JSONPrice{
+		Price: price.FtcPriceJSON{
 			FtcPrice: p.Price,
 		},
-		Offer: price.ColumnDiscount{
+		Offer: price.DiscountColumn{
 			Discount: p.Offer,
 		},
 		Membership: reader.MembershipColumn{
@@ -109,10 +109,10 @@ func NewAliPaymentIntent(pi PaymentIntent, param string, kind ali.EntryKind) (Al
 func (p AliPaymentIntent) Schema() PaymentIntentSchema {
 	return PaymentIntentSchema{
 		OrderID: p.Order.ID,
-		Price: price.JSONPrice{
+		Price: price.FtcPriceJSON{
 			FtcPrice: p.Price,
 		},
-		Offer: price.ColumnDiscount{
+		Offer: price.DiscountColumn{
 			Discount: p.Offer,
 		},
 		Membership: reader.MembershipColumn{
