@@ -142,7 +142,7 @@ func (b StripeSubsBuilder) WithCanceled() StripeSubsBuilder {
 
 func (b StripeSubsBuilder) Build() stripe.Subs {
 	start := time.Now()
-	end := dt.NewTimeRange(start).WithPeriod(b.price.PeriodCount).End
+	end := dt.NewTimeRange(start).WithPeriod(b.price.PeriodCount.YearMonthDay).End
 	canceled := time.Time{}
 
 	subsID := faker.GenStripeSubID()
@@ -161,10 +161,8 @@ func (b StripeSubsBuilder) Build() stripe.Subs {
 		FtcUserID:              null.StringFrom(b.ftcID),
 		Items: []stripe.SubsItem{
 			{
-				ID: faker.GenStripeItemID(),
-				Price: stripe.PriceColumn{
-					StripePrice: b.price,
-				},
+				ID:             faker.GenStripeItemID(),
+				Price:          b.price,
 				Created:        time.Now().Unix(),
 				Quantity:       1,
 				SubscriptionID: subsID,
