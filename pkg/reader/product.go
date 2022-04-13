@@ -52,9 +52,9 @@ type Product struct {
 	Active   bool   `json:"active" db:"is_active"` // Indicates whether is product is on paywall
 	LiveMode bool   `json:"liveMode" db:"live_mode"`
 	ProductParams
-	Introductory price.JSONPrice `json:"introductory" db:"introductory"`
-	CreatedUTC   chrono.Time     `json:"createdUtc" db:"created_utc"`
-	UpdatedUTC   chrono.Time     `json:"updatedUtc" db:"updated_utc"`
+	Introductory price.FtcPriceJSON `json:"introductory" db:"introductory"`
+	CreatedUTC   chrono.Time        `json:"createdUtc" db:"created_utc"`
+	UpdatedUTC   chrono.Time        `json:"updatedUtc" db:"updated_utc"`
 }
 
 func NewProduct(params ProductParams, live bool) Product {
@@ -63,7 +63,7 @@ func NewProduct(params ProductParams, live bool) Product {
 		Active:        false,
 		LiveMode:      live,
 		ProductParams: params,
-		Introductory:  price.JSONPrice{},
+		Introductory:  price.FtcPriceJSON{},
 		CreatedUTC:    chrono.TimeNow(),
 		UpdatedUTC:    chrono.Time{},
 	}
@@ -88,7 +88,7 @@ func (p Product) Activate() Product {
 
 // WithIntroPrice set an introductory price on product.
 func (p Product) WithIntroPrice(pri price.FtcPrice) Product {
-	p.Introductory = price.JSONPrice{
+	p.Introductory = price.FtcPriceJSON{
 		FtcPrice: pri,
 	}
 
@@ -99,7 +99,7 @@ func (p Product) WithIntroPrice(pri price.FtcPrice) Product {
 
 // DropIntroPrice removed an introductory price from product.
 func (p Product) DropIntroPrice() Product {
-	p.Introductory = price.JSONPrice{}
+	p.Introductory = price.FtcPriceJSON{}
 	p.UpdatedUTC = chrono.TimeNow()
 
 	return p
