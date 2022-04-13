@@ -10,20 +10,27 @@ import (
 type StripeCouponMeta struct {
 	PriceID  null.String `json:"priceId" db:"price_id"`
 	StartUTC chrono.Time `json:"startUtc" db:"start_utc"`
+	EndUTC   chrono.Time `json:"endUtc" db:"end_utc"`
 }
 
 func ParseStripeCouponMeta(m map[string]string) StripeCouponMeta {
 	priceId := m["price_id"]
 	start := m["start_utc"]
+	end := m["end_utc"]
 
 	var startTime time.Time
+	var endTime time.Time
 	if start != "" {
 		startTime, _ = time.Parse(time.RFC3339, start)
+	}
+	if end != "" {
+		endTime, _ = time.Parse(time.RFC3339, end)
 	}
 
 	return StripeCouponMeta{
 		PriceID:  null.NewString(priceId, priceId != ""),
 		StartUTC: chrono.TimeFrom(startTime),
+		EndUTC:   chrono.TimeFrom(endTime),
 	}
 }
 
@@ -31,6 +38,7 @@ func (p StripeCouponMeta) ToMap() map[string]string {
 	return map[string]string{
 		"price_id":  p.PriceID.String,
 		"start_utc": p.StartUTC.Format(time.RFC3339),
+		"end_utc":   p.EndUTC.Format(time.RFC3339),
 	}
 }
 
@@ -52,15 +60,15 @@ func (p StripeCouponMeta) ToMap() map[string]string {
 // It might be reasonable if we could establish a mapping between a specific billing cycle and a coupon,
 // so that a billing cycle could not redeem another coupon as long as one is already applied to it.
 type StripeCoupon struct {
-	IsFromStripe bool        `json:"-"`
-	ID           string      `json:"id" db:"id"`
-	AmountOff    int64       `json:"amountOff" db:"amount_off"`
-	Created      int64       `json:"created" db:"created"`
-	Currency     string      `json:"currency" db:"currency"`
-	Duration     string      `json:"duration" db:"duration"`
-	EndUTC       chrono.Time `json:"endUtc" db:"endUtc"` // Stripe's redeem_by field.
-	LiveMode     bool        `json:"liveMode" db:"live_mode"`
-	Name         string      `json:"name" db:"name"`
+	IsFromStripe bool                  `json:"-"`
+	ID           string                `json:"id" db:"id"`
+	AmountOff    int64                 `json:"amountOff" db:"amount_off"`
+	Created      int64                 `json:"created" db:"created"`
+	Currency     string                `json:"currency" db:"currency"`
+	Duration     stripe.CouponDuration `json:"duration" db:"duration"`
+	LiveMode     bool                  `json:"liveMode" db:"live_mode"`
+	Name         string                `json:"name" db:"name"`
+	RedeemBy     int64                 `json:"redeemBy" db:"redeem_by"`
 	StripeCouponMeta
 	Status DiscountStatus `json:"status" db:"status"`
 }
@@ -79,10 +87,10 @@ func NewStripeCoupon(c *stripe.Coupon) StripeCoupon {
 		AmountOff:        c.AmountOff,
 		Created:          c.Created,
 		Currency:         string(c.Currency),
-		Duration:         string(c.Duration),
-		EndUTC:           chrono.TimeFrom(time.Unix(c.RedeemBy, 0)),
+		Duration:         c.Duration,
 		LiveMode:         c.Livemode,
 		Name:             c.Name,
+		RedeemBy:         c.RedeemBy,
 		StripeCouponMeta: meta,
 		Status:           status,
 	}
@@ -95,4 +103,8 @@ func (c StripeCoupon) IsZero() bool {
 func (c StripeCoupon) Cancelled() StripeCoupon {
 	c.Status = DiscountStatusCancelled
 	return c
+}
+
+func (c StripeCoupon) IsValid() bool {
+	return (time.Now().Unix() <= c.RedeemBy) && (c.Status == DiscountStatusActive)
 }
