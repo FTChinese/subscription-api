@@ -33,13 +33,9 @@ type ShoppingSession struct {
 
 func NewShoppingSession(cart reader.ShoppingCart, params SubsParams) ShoppingSession {
 	return ShoppingSession{
-		FtcUserID: cart.Account.FtcID,
-		RecurringPrice: PriceColumn{
-			StripePrice: cart.StripeItem.Recurring,
-		},
-		IntroductoryPrice: PriceColumn{
-			StripePrice: cart.StripeItem.Introductory,
-		},
+		FtcUserID:         cart.Account.FtcID,
+		RecurringPrice:    PriceColumn{cart.StripeItem.Recurring},
+		IntroductoryPrice: PriceColumn{cart.StripeItem.Introductory},
 		Membership: reader.MembershipColumn{
 			Membership: cart.CurrentMember,
 		},
