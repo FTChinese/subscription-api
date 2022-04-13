@@ -60,15 +60,15 @@ func (p StripeCouponMeta) ToMap() map[string]string {
 // It might be reasonable if we could establish a mapping between a specific billing cycle and a coupon,
 // so that a billing cycle could not redeem another coupon as long as one is already applied to it.
 type StripeCoupon struct {
-	IsFromStripe bool                  `json:"-"`
-	ID           string                `json:"id" db:"id"`
-	AmountOff    int64                 `json:"amountOff" db:"amount_off"`
-	Created      int64                 `json:"created" db:"created"`
-	Currency     string                `json:"currency" db:"currency"`
-	Duration     stripe.CouponDuration `json:"duration" db:"duration"`
-	LiveMode     bool                  `json:"liveMode" db:"live_mode"`
-	Name         string                `json:"name" db:"name"`
-	RedeemBy     int64                 `json:"redeemBy" db:"redeem_by"`
+	IsFromStripe bool        `json:"-"`
+	ID           string      `json:"id" db:"id"`
+	AmountOff    int64       `json:"amountOff" db:"amount_off"`
+	Created      int64       `json:"created" db:"created"`
+	Currency     string      `json:"currency" db:"currency"`
+	Duration     null.String `json:"duration" db:"duration"`
+	LiveMode     bool        `json:"liveMode" db:"live_mode"`
+	Name         string      `json:"name" db:"name"`
+	RedeemBy     int64       `json:"redeemBy" db:"redeem_by"`
 	StripeCouponMeta
 	Status DiscountStatus `json:"status" db:"status"`
 }
@@ -87,7 +87,7 @@ func NewStripeCoupon(c *stripe.Coupon) StripeCoupon {
 		AmountOff:        c.AmountOff,
 		Created:          c.Created,
 		Currency:         string(c.Currency),
-		Duration:         c.Duration,
+		Duration:         null.NewString(string(c.Duration), c.Duration != ""),
 		LiveMode:         c.Livemode,
 		Name:             c.Name,
 		RedeemBy:         c.RedeemBy,
