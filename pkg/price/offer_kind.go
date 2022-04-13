@@ -11,8 +11,8 @@ type OfferKind string
 const (
 	OfferKindNull         OfferKind = ""
 	OfferKindPromotion    OfferKind = "promotion"    // Apply to all uses
-	OfferKindRetention    OfferKind = "retention"    // Apply only to valid user
-	OfferKindWinBack      OfferKind = "win_back"     // Apply only to expired user
+	OfferKindRetention    OfferKind = "retention"    // Apply only to valid subscription.
+	OfferKindWinBack      OfferKind = "win_back"     // Apply only to expired subscription.
 	OfferKindIntroductory OfferKind = "introductory" // Apply only to a new user who has not enjoyed an introductory offer
 )
 
