@@ -6,12 +6,12 @@ import (
 	"errors"
 )
 
-// ColumnDiscount is used to save/retrieve Discount in a SQL JSON column.
-type ColumnDiscount struct {
+// DiscountColumn is used to save/retrieve Discount in a SQL JSON column.
+type DiscountColumn struct {
 	Discount
 }
 
-func (d ColumnDiscount) Value() (driver.Value, error) {
+func (d DiscountColumn) Value() (driver.Value, error) {
 	if d.IsZero() {
 		return nil, nil
 	}
@@ -24,14 +24,14 @@ func (d ColumnDiscount) Value() (driver.Value, error) {
 	return string(b), nil
 }
 
-func (d *ColumnDiscount) Scan(src interface{}) error {
+func (d *DiscountColumn) Scan(src interface{}) error {
 	if src == nil {
-		*d = ColumnDiscount{}
+		*d = DiscountColumn{}
 	}
 
 	switch s := src.(type) {
 	case []byte:
-		var tmp ColumnDiscount
+		var tmp DiscountColumn
 		err := json.Unmarshal(s, &tmp)
 		if err != nil {
 			return err
@@ -40,6 +40,6 @@ func (d *ColumnDiscount) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan to JSONPrice")
+		return errors.New("incompatible type to scan to DiscountColumn")
 	}
 }
