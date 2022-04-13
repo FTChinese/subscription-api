@@ -69,11 +69,3 @@ type ChronoPeriod struct {
 	StartUTC chrono.Time `json:"startUtc" db:"start_utc"`
 	EndUTC   chrono.Time `json:"endUtc" db:"end_utc"`
 }
-
-func (p ChronoPeriod) StartDate() chrono.Date {
-	return chrono.DateFrom(p.StartUTC.Time)
-}
-
-func (p ChronoPeriod) EndDate() chrono.Date {
-	return chrono.DateFrom(p.EndUTC.Time)
-}
