@@ -43,7 +43,7 @@ func TestEnv_CreatePrice(t *testing.T) {
 								Days:   0,
 							},
 						},
-						StripePriceID: faker.GenStripePriceID(),
+						StripePriceID: faker.StripePriceID(),
 					},
 
 					ProductID:  ids.ProductID(),
@@ -71,7 +71,7 @@ func TestEnv_CreatePrice(t *testing.T) {
 								Days:   7,
 							},
 						},
-						StripePriceID: faker.GenStripePriceID(),
+						StripePriceID: faker.StripePriceID(),
 					},
 					ProductID:  ids.ProductID(),
 					UnitAmount: 1,
