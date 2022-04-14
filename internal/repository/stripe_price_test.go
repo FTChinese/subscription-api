@@ -24,7 +24,7 @@ func TestStripeRepo_UpsertPrice(t *testing.T) {
 		{
 			name: "Insert a new price",
 			args: args{
-				p: price.MockNewStripePrice(),
+				p: price.MockRandomStripePrice(),
 			},
 			wantErr: false,
 		},
@@ -40,7 +40,7 @@ func TestStripeRepo_UpsertPrice(t *testing.T) {
 
 func TestStripeRepo_RetrievePrice(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
-	sp := price.MockNewStripePrice()
+	sp := price.MockRandomStripePrice()
 
 	test.NewRepo().SaveStripePrice(sp)
 

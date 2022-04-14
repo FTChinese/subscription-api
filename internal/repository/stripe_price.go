@@ -1,16 +1,14 @@
 package repository
 
 import (
-	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
 func (repo StripeRepo) UpsertPrice(p price.StripePrice) error {
-	row := stripe.NewPriceRow(p)
 
 	_, err := repo.dbs.Write.NamedExec(
-		stripe.StmtUpsertPrice,
-		row)
+		price.StmtUpsertStripePrice,
+		p)
 
 	if err != nil {
 		return err
@@ -20,16 +18,16 @@ func (repo StripeRepo) UpsertPrice(p price.StripePrice) error {
 }
 
 func (repo StripeRepo) RetrievePrice(id string) (price.StripePrice, error) {
-	var row stripe.PriceRow
+	var p price.StripePrice
 
 	err := repo.dbs.Read.Get(
-		&row,
-		stripe.StmtRetrievePrice,
+		&p,
+		price.StmtRetrieveStripePrice,
 		id)
 
 	if err != nil {
 		return price.StripePrice{}, err
 	}
 
-	return row.Data.StripePrice, nil
+	return p, nil
 }
