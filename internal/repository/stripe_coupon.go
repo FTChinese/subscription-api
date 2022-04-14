@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
@@ -46,4 +47,26 @@ func (repo StripeRepo) UpdateCouponStatus(c price.StripeCoupon) error {
 		c)
 
 	return err
+}
+
+func (repo StripeRepo) InsertCouponRedeemed(r stripe.CouponRedeemed) error {
+	_, err := repo.dbs.Write.NamedExec(
+		stripe.StmtInsertCouponRedeemed,
+		r)
+
+	return err
+}
+
+func (repo StripeRepo) InvoiceHasCouponApplied(invoiceID string) (bool, error) {
+	var ok bool
+	err := repo.dbs.Read.Get(
+		&ok,
+		stripe.StmtInvoiceHasCoupon,
+		invoiceID)
+
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
 }
