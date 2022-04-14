@@ -82,14 +82,7 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	// Create stripe subscription.
 	cart, result, err := router.stripeRepo.CreateSubscription(cart, params)
 
-	go func() {
-		err := router.stripeRepo.SaveShoppingSession(
-			stripe.NewShoppingSession(cart, params))
-		if err != nil {
-			sugar.Error(err)
-		}
-	}()
-
+	// Shopping session should be saved regardless of success or failure
 	session := stripe.NewShoppingSession(cart, params)
 
 	if err != nil {
@@ -107,20 +100,10 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	// Backup previous membership if exists.
 	go func() {
 		router.handleSubsResult(result)
-		router.saveShoppingSession(session.WithSubs(result.Subs.ID))
+		router.saveShoppingSession(session.WithSubs(result.Subs))
 	}()
 
 	_ = render.New(w).OK(result)
-}
-
-func (router StripeRouter) saveShoppingSession(s stripe.ShoppingSession) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
-
-	err := router.stripeRepo.SaveShoppingSession(s)
-	if err != nil {
-		sugar.Error(err)
-	}
 }
 
 // LoadSubs from ftc db only. If you want to refresh the subscription,
@@ -227,7 +210,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	// Backup previous membership.
 	go func() {
 		router.handleSubsResult(result)
-		router.saveShoppingSession(session.WithSubs(result.Subs.ID))
+		router.saveShoppingSession(session.WithSubs(result.Subs))
 	}()
 
 	if result.Subs.PaymentIntent.IsZero() {
