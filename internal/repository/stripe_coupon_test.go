@@ -1,13 +1,28 @@
 package repository
 
 import (
+	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/test"
+	"github.com/google/uuid"
 	"go.uber.org/zap/zaptest"
 	"reflect"
 	"testing"
 )
+
+func mockCouponRedeemed() stripe.CouponRedeemed {
+	return stripe.CouponRedeemed{
+		InvoiceID:   faker.StripeInvoiceID(),
+		FtcID:       uuid.New().String(),
+		SubsID:      faker.StripeSubsID(),
+		CouponID:    faker.StripeCouponID(),
+		CreatedUTC:  chrono.TimeNow(),
+		RedeemedUTC: chrono.TimeNow(),
+	}
+}
 
 func TestStripeRepo_UpsertCoupon(t *testing.T) {
 
@@ -111,6 +126,81 @@ func TestStripeRepo_RetrieveActiveCouponsOfPrice(t *testing.T) {
 			}
 			if len(got) != tt.want {
 				t.Errorf("RetrieveActiveCouponsOfPrice() got = %d, want %d", len(got), tt.want)
+			}
+		})
+	}
+}
+
+func TestStripeRepo_InsertCouponRedeemed(t *testing.T) {
+	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
+
+	type args struct {
+		r stripe.CouponRedeemed
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "",
+			args: args{
+				r: stripe.CouponRedeemed{
+					InvoiceID:   faker.StripeInvoiceID(),
+					FtcID:       uuid.New().String(),
+					SubsID:      faker.StripeSubsID(),
+					CouponID:    faker.StripeCouponID(),
+					CreatedUTC:  chrono.TimeNow(),
+					RedeemedUTC: chrono.TimeNow(),
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := repo.InsertCouponRedeemed(tt.args.r); (err != nil) != tt.wantErr {
+				t.Errorf("InsertCouponRedeemed() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestStripeRepo_InvoiceHasCouponApplied(t *testing.T) {
+	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
+	cr := mockCouponRedeemed()
+
+	_ = repo.InsertCouponRedeemed(cr)
+
+	type args struct {
+		invoiceID string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "",
+			args: args{
+				invoiceID: cr.InvoiceID,
+			},
+			want:    true,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := repo.InvoiceHasCouponApplied(tt.args.invoiceID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InvoiceHasCouponApplied() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("InvoiceHasCouponApplied() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
