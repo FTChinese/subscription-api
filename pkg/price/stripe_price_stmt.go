@@ -35,9 +35,10 @@ created = :created
 `
 const StmtUpsertStripePrice = `
 INSERT INTO subs_product.stripe_price
-SET ` + colInsertStripePrice + `
+SET id = :id,
+` + colInsertStripePrice + `
 ON DUPLICATE KEY UPDATE
-	updated_utc = UTC_TIMESTAMP()
+	updated_utc = UTC_TIMESTAMP(),
 ` + colInsertStripePrice
 
 const StmtRetrieveStripePrice = colSelectStripePrice + `
