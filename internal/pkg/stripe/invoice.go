@@ -3,6 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/lib/sq"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 )
@@ -15,6 +16,7 @@ type Invoice struct {
 	Currency             string                  `db:"currency"`
 	CustomerID           string                  `db:"customer_id"`
 	DefaultPaymentMethod null.String             `db:"default_payment_method"`
+	Discounts            sq.StringList           `db:"discounts"`
 	HostedInvoiceURL     null.String             `db:"hosted_invoice_url"`
 	LiveMode             bool                    `db:"live_mode"`
 	Paid                 bool                    `db:"paid"`
@@ -65,6 +67,7 @@ func NewInvoice(si *stripe.Invoice) Invoice {
 		Currency:             string(si.Currency),
 		CustomerID:           cusID,
 		DefaultPaymentMethod: null.NewString(pmID, pmID == ""),
+		Discounts:            collectDiscountIDs(si.Discounts),
 		HostedInvoiceURL:     null.NewString(si.HostedInvoiceURL, si.HostedInvoiceURL != ""),
 		LiveMode:             si.Livemode,
 		Paid:                 si.Paid,
@@ -77,4 +80,14 @@ func NewInvoice(si *stripe.Invoice) Invoice {
 		Total:                si.Total,
 		Created:              si.Created,
 	}
+}
+
+func collectDiscountIDs(discounts []*stripe.Discount) []string {
+	var list = make([]string, 0)
+
+	for _, v := range discounts {
+		list = append(list, v.ID)
+	}
+
+	return list
 }
