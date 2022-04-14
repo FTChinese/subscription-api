@@ -130,7 +130,7 @@ var MockStripePrmPrice = StripePrice{
 func MockRandomStripePrice() StripePrice {
 	return StripePrice{
 		IsFromStripe:   false,
-		ID:             faker.GenStripePriceID(),
+		ID:             faker.StripePriceID(),
 		Active:         true,
 		Currency:       "gbp",
 		IsIntroductory: false,
@@ -154,9 +154,13 @@ func MockRandomStripePrice() StripePrice {
 }
 
 func MockRandomStripeCoupon() StripeCoupon {
+	return mockRandomCouponOfPrice(faker.StripePriceID())
+}
+
+func mockRandomCouponOfPrice(priceId string) StripeCoupon {
 	return StripeCoupon{
 		IsFromStripe: false,
-		ID:           faker.GenStripePriceID(),
+		ID:           faker.StripePriceID(),
 		AmountOff:    100,
 		Created:      0,
 		Currency:     "gbp",
@@ -165,10 +169,22 @@ func MockRandomStripeCoupon() StripeCoupon {
 		Name:         "",
 		RedeemBy:     0,
 		StripeCouponMeta: StripeCouponMeta{
-			PriceID:  null.StringFrom(faker.GenStripePriceID()),
-			StartUTC: chrono.TimeNow(),
-			EndUTC:   chrono.TimeFrom(time.Now().AddDate(0, 0, 7)),
+			PriceID:  null.StringFrom(priceId),
+			StartUTC: chrono.TimeUTCNow(),
+			EndUTC:   chrono.TimeUTCFrom(time.Now().AddDate(0, 0, 7)),
 		},
 		Status: DiscountStatusActive,
 	}
+}
+
+func MockRandomCouponList(n int) []StripeCoupon {
+	var list = make([]StripeCoupon, 0)
+
+	priceID := faker.StripePriceID()
+
+	for i := 0; i < n; i++ {
+		list = append(list, mockRandomCouponOfPrice(priceID))
+	}
+
+	return list
 }
