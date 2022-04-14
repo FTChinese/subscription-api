@@ -16,7 +16,7 @@ type Invoice struct {
 	Currency             string                  `db:"currency"`
 	CustomerID           string                  `db:"customer_id"`
 	DefaultPaymentMethod null.String             `db:"default_payment_method"`
-	Discounts            sq.StringList           `db:"discounts"`
+	Discounts            sq.StringList           `db:"discount_ids"`
 	HostedInvoiceURL     null.String             `db:"hosted_invoice_url"`
 	LiveMode             bool                    `db:"live_mode"`
 	Paid                 bool                    `db:"paid"`
