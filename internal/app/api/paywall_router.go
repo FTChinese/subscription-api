@@ -50,11 +50,20 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 		defer router.logger.Sync()
 		sugar := router.logger.Sugar()
 
-		for _, sp := range paywall.StripePrices {
-			if sp.IsFromStripe {
-				err := router.stripeRepo.UpsertPrice(sp)
+		for _, item := range paywall.Stripe {
+			if item.Price.IsFromStripe {
+				err := router.stripeRepo.UpsertPrice(item.Price)
 				if err != nil {
 					sugar.Error(err)
+				}
+			}
+
+			for _, coupon := range item.Coupons {
+				if coupon.IsFromStripe {
+					err := router.stripeRepo.UpsertCoupon(coupon)
+					if err != nil {
+						sugar.Error(err)
+					}
 				}
 			}
 		}
