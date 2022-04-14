@@ -338,7 +338,6 @@ func StartServer(s ServerStatus) {
 			// List stripe prices. If query parameter has refresh=true, no cached data will be used.
 			// ?refresh=true|false
 			r.Get("/", stripeRouter.ListPrices)
-			r.Get("/{id}", stripeRouter.LoadPrice)
 		})
 
 		r.Route("/customers", func(r chi.Router) {
@@ -399,39 +398,13 @@ func StartServer(s ServerStatus) {
 		})
 	})
 
-	r.Route("/apple", func(r chi.Router) {
-		r.Use(guard.CheckToken)
-
-		// Verify an encoded receipt and returns the decoded data.
-		r.Post("/verify-receipt", iapRouter.VerifyReceipt)
-		// Link FTC account to apple subscription.
-		r.Post("/link", iapRouter.Link)
-		// Unlink ftc account from apple subscription.
-		r.Post("/unlink", iapRouter.Unlink)
-
-		// Verify a receipt like the verify-receipt.
-		// Returns the extracted subscription instead the verified receipt.
-		r.Post("/subs", iapRouter.UpsertSubs)
-		// Load one subscription.
-
-		// ?page=<int>&per_page<int>
-		r.With(xhttp.RequireFtcID).Get("/subs", iapRouter.ListSubs)
-		// Load a single subscription.
-		r.Get("/subs/{id}", iapRouter.LoadSubs)
-		// Refresh an existing subscription of an original transaction id.
-		r.Patch("/subs/{id}", iapRouter.RefreshSubs)
-
-		// Load a receipt and its associated subscription. Internal only.
-		// ?fs=true
-		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
-	})
-
 	r.Route("/paywall", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
 		// Data used to build a paywall.
 		// Live server only outputs live data while sandbox for sandbox data only.
-		r.Get("/", paywallRouter.LoadPaywall)
+		// ?refresh=true
+		r.With(xhttp.FormParsed).Get("/", paywallRouter.LoadPaywall)
 
 		// List active prices used on paywall.
 		r.Get("/active/prices", paywallRouter.LoadFtcActivePrices)
@@ -486,6 +459,33 @@ func StartServer(s ServerStatus) {
 		r.Get("/__refresh", paywallRouter.BustCache)
 	})
 
+	r.Route("/apple", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+
+		// Verify an encoded receipt and returns the decoded data.
+		r.Post("/verify-receipt", iapRouter.VerifyReceipt)
+		// Link FTC account to apple subscription.
+		r.Post("/link", iapRouter.Link)
+		// Unlink ftc account from apple subscription.
+		r.Post("/unlink", iapRouter.Unlink)
+
+		// Verify a receipt like the verify-receipt.
+		// Returns the extracted subscription instead the verified receipt.
+		r.Post("/subs", iapRouter.UpsertSubs)
+		// Load one subscription.
+
+		// ?page=<int>&per_page<int>
+		r.With(xhttp.RequireFtcID).Get("/subs", iapRouter.ListSubs)
+		// Load a single subscription.
+		r.Get("/subs/{id}", iapRouter.LoadSubs)
+		// Refresh an existing subscription of an original transaction id.
+		r.Patch("/subs/{id}", iapRouter.RefreshSubs)
+
+		// Load a receipt and its associated subscription. Internal only.
+		// ?fs=true
+		r.Get("/receipt/{id}", iapRouter.LoadReceipt)
+	})
+
 	r.Route("/apps", func(r chi.Router) {
 		r.Route("/android", func(r chi.Router) {
 			r.Get("/latest", appRouter.AndroidLatest)
@@ -517,6 +517,21 @@ func StartServer(s ServerStatus) {
 			// If the invoice is targeting addon, then
 			// membership should be updated accordingly.
 			r.Post("/", cmsRouter.CreateAddOn)
+		})
+
+		r.Route("/stripe", func(r chi.Router) {
+			// ?refresh=true
+			r.Route("/prices", func(r chi.Router) {
+				r.Get("/", cmsRouter.LoadStripePrice)
+			})
+
+			r.Route("/coupons", func(r chi.Router) {
+
+				// ?refresh=true
+				r.Get("/{id}", cmsRouter.LoadStripeCoupon)
+				r.Post("{id}", cmsRouter.UpdateStripeCoupon)
+				r.Delete("/{id}", cmsRouter.DeleteStripeCoupon)
+			})
 		})
 	})
 
