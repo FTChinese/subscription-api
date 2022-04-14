@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"github.com/guregu/null"
 )
 
 const StmtShoppingSession = `
@@ -32,7 +31,7 @@ type ShoppingSession struct {
 	Intent            reader.CheckoutIntent   `db:"checkout_intent"`
 	Membership        reader.MembershipColumn `db:"membership"`
 	RequestParams     SubsReqParamsColumn     `db:"request_parameters"`
-	SubsID            null.String             `db:"subs_id"` // Only exists after subscription success
+	Subs              SubsColumn              `db:"subs_id"` // Only exists after subscription success
 	CreatedUTC        chrono.Time             `db:"created_utc"`
 }
 
@@ -49,10 +48,25 @@ func NewShoppingSession(cart reader.ShoppingCart, params SubsParams) ShoppingSes
 	}
 }
 
-func (s ShoppingSession) WithSubs(id string) ShoppingSession {
-	s.SubsID = null.StringFrom(id)
+func (s ShoppingSession) WithSubs(subs Subs) ShoppingSession {
+	s.Subs = SubsColumn{subs}
 
 	return s
+}
+
+func (s ShoppingSession) CouponRedeemed() CouponRedeemed {
+	if s.Coupon.IsZero() || s.Subs.LatestInvoiceID == "" {
+		return CouponRedeemed{}
+	}
+
+	return CouponRedeemed{
+		InvoiceID:   s.Subs.LatestInvoiceID,
+		FtcID:       s.FtcUserID,
+		SubsID:      s.Subs.ID,
+		CouponID:    s.Coupon.ID,
+		CreatedUTC:  chrono.TimeNow(),
+		RedeemedUTC: chrono.TimeNow(),
+	}
 }
 
 type SubsReqParamsColumn struct {
