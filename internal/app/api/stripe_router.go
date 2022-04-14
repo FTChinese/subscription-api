@@ -75,7 +75,7 @@ func (router StripeRouter) handleSubsResult(result stripe.SubsSuccess) {
 func (router StripeRouter) findCartItem(params stripe.SubsParams) (reader.CartItemStripe, error) {
 	paywall, err := router.cacheRepo.LoadPaywall(router.live)
 	if err == nil {
-		item, err := params.BuildCartItem(paywall.StripePrices)
+		item, err := params.BuildCartItem(paywall.Stripe)
 		if err == nil {
 			return item, nil
 		}

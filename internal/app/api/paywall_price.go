@@ -35,20 +35,20 @@ func (router PaywallRouter) updateStripPriceMeta(id string, ftcPrice price.FtcPr
 	rawPrice, err := router.
 		stripeRepo.
 		Client.
-		SetPriceMeta(id, ftcPrice.StripeMeta())
+		SetPriceMeta(id, price.BuildStripePriceMeta(ftcPrice))
 
 	if err != nil {
 		return price.StripePrice{}, err
 	}
 
-	p := price.NewPrice(rawPrice)
+	p := price.NewStripePrice(rawPrice)
 
 	err = router.stripeRepo.UpsertPrice(p)
 	if err != nil {
 		sugar.Error(err)
 	}
 
-	return price.NewPrice(rawPrice), nil
+	return price.NewStripePrice(rawPrice), nil
 }
 
 func (router PaywallRouter) ensureStripePrice(id string) (price.StripePrice, error) {
