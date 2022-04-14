@@ -195,7 +195,7 @@ func TestEnv_UpsertMobile(t *testing.T) {
 			hasProfile: true,
 			args: args{
 				params: ftcWithMobile.
-					WithMobile(faker.GenPhone()).
+					WithMobile(faker.Phone()).
 					MobileUpdater(),
 			},
 			wantErr: false,

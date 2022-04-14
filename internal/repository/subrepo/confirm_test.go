@@ -34,7 +34,7 @@ func TestEnv_ConfirmOrder(t *testing.T) {
 
 	linkedAccountOrder := ftcpay.NewMockOrderBuilder("").
 		WithFtcID(uuid.New().String()).
-		WithUnionID(faker.GenWxID()).
+		WithUnionID(faker.WxUnionID()).
 		WithKind(enum.OrderKindCreate).
 		WithPayMethod(enum.PayMethodWx).
 		Build()
@@ -259,7 +259,7 @@ func TestEnv_SavePayResult(t *testing.T) {
 					PaymentState:     ali.TradeStatusSuccess,
 					PaymentStateDesc: "",
 					Amount:           null.IntFrom(28000),
-					TransactionID:    faker.GenTxID(),
+					TransactionID:    faker.AppleTxID(),
 					OrderID:          ids.MustOrderID(),
 					PaidAt:           chrono.TimeNow(),
 					PayMethod:        enum.PayMethodAli,

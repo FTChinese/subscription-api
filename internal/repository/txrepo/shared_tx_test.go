@@ -269,7 +269,7 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 			args: args{
 				inv: reader.NewMockMemberBuilder(userID).
 					Build().CarryOverInvoice().
-					WithStripeSubsID(faker.GenStripeSubID()),
+					WithStripeSubsID(faker.StripeSubsID()),
 			},
 		},
 		{
@@ -280,7 +280,7 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 			args: args{
 				inv: reader.NewMockMemberBuilder(userID).
 					Build().CarryOverInvoice().
-					WithAppleTxID(faker.GenAppleSubID()),
+					WithAppleTxID(faker.AppleSubID()),
 			},
 		},
 	}

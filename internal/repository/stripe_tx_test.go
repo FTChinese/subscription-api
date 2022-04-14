@@ -66,7 +66,7 @@ func TestStripeTx_SaveCustomerID(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	a.StripeID = null.StringFrom(faker.GenStripeCusID())
+	a.StripeID = null.StringFrom(faker.StripeCustomerID())
 
 	type fields struct {
 		Tx *sqlx.Tx

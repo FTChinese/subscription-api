@@ -52,7 +52,7 @@ func TestEnv_InvoicesCarriedOver(t *testing.T) {
 
 func TestEnv_ListInvoices(t *testing.T) {
 	ftcID := uuid.New().String()
-	wxID := faker.GenWxID()
+	wxID := faker.WxUnionID()
 
 	type fields struct {
 		dbs    db.ReadWriteMyDBs

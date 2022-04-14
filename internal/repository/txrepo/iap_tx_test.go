@@ -15,7 +15,7 @@ func TestIAPTx_RetrieveAppleMember(t *testing.T) {
 
 	m := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
 		WithPayMethod(enum.PayMethodApple).
-		WithIapID(faker.GenAppleSubID()).
+		WithIapID(faker.AppleSubID()).
 		Build()
 
 	repo := test.NewRepo()

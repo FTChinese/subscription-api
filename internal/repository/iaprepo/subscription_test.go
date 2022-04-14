@@ -22,7 +22,7 @@ func TestEnv_SaveSubs(t *testing.T) {
 	p2 := test.NewPersona()
 
 	m := p2.MemberBuilder().
-		WithApple(faker.GenAppleSubID()).
+		WithApple(faker.AppleSubID()).
 		WithExpiration(time.Now().AddDate(0, -6, 0)).
 		Build()
 	test.NewRepo().MustSaveMembership(m)
@@ -68,7 +68,7 @@ func TestEnv_SaveSubs(t *testing.T) {
 
 func TestEnv_updateMembership(t *testing.T) {
 	userID := uuid.New().String()
-	txID := faker.GenAppleSubID()
+	txID := faker.AppleSubID()
 
 	current := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
 		SetFtcID(userID).

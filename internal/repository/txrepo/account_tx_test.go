@@ -103,7 +103,7 @@ func TestAccountTx_AddUnionIDToFtc(t *testing.T) {
 
 	test.NewRepo().MustCreateFtcAccount(a)
 
-	a.UnionID = null.StringFrom(faker.GenWxID())
+	a.UnionID = null.StringFrom(faker.WxUnionID())
 
 	type fields struct {
 		SharedTx SharedTx
@@ -217,7 +217,7 @@ func TestAccountTx_RetrieveMobiles(t *testing.T) {
 			args: args{
 				u: account.MobileUpdater{
 					FtcID:  emailOnlyWithProfile.FtcID,
-					Mobile: null.StringFrom(faker.GenPhone()),
+					Mobile: null.StringFrom(faker.Phone()),
 				},
 			},
 			want: []account.MobileUpdater{
@@ -236,7 +236,7 @@ func TestAccountTx_RetrieveMobiles(t *testing.T) {
 			args: args{
 				u: account.MobileUpdater{
 					FtcID:  emailOnlyNoProfile.FtcID,
-					Mobile: null.StringFrom(faker.GenPhone()),
+					Mobile: null.StringFrom(faker.Phone()),
 				},
 			},
 			want:    []account.MobileUpdater{},

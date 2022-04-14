@@ -20,7 +20,7 @@ import (
 )
 
 func TestEnv_CreateOrder(t *testing.T) {
-	wxID := faker.GenWxID()
+	wxID := faker.WxUnionID()
 	repo := test.NewRepo()
 
 	newPersona := test.NewPersona()
