@@ -396,6 +396,10 @@ func StartServer(s ServerStatus) {
 			r.Get("/{id}/default-payment-method", stripeRouter.GetSubsDefaultPaymentMethod)
 			r.Post("/{id}/default-payment-method", stripeRouter.UpdateSubsDefaultPayMethod)
 		})
+
+		r.Route("/invoices", func(r chi.Router) {
+			r.Get("/{id}/discounted", stripeRouter.InvoiceHasCoupon)
+		})
 	})
 
 	r.Route("/paywall", func(r chi.Router) {
