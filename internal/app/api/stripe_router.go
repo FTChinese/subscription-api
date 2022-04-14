@@ -105,6 +105,13 @@ func (router StripeRouter) findCartItem(params stripe.SubsParams) (reader.CartIt
 					sugar.Error(err)
 				}
 			}
+
+			if item.Coupon.IsFromStripe {
+				err := router.stripeRepo.UpsertCoupon(item.Coupon)
+				if err != nil {
+					sugar.Error(err)
+				}
+			}
 		}()
 	}
 
