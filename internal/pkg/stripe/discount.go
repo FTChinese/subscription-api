@@ -7,13 +7,14 @@ import (
 )
 
 const colDiscount = `
-	coupon := coupon,
-	customer_id := customer_id,
-	end := end,
-	invoice_id := invoice_id,
-	promotion_code_id := promotion_code_id,
-	start := start,
-	subs_id := subs_id`
+	coupon = :coupon,
+	customer_id = :customer_id,
+	end_time = :end_time,
+	invoice_id = :invoice_id,
+	promotion_code_id = :promotion_code_id,
+	start_time = :start_time,
+	subs_id = :subs_id
+`
 
 const StmtUpsertDiscount = `
 INSERT INTO premium.stripe_discount
@@ -26,10 +27,10 @@ const StmtRetrieveDiscount = `
 SELECT id,
 	coupon,
 	customer_id,
-	end,
+	end_time,
 	invoice_id,
 	promotion_code_id,
-	start,
+	start_time,
 	subs_id
 FROM premium.stripe_discount
 WHERE id = ?
@@ -41,11 +42,11 @@ type Discount struct {
 	ID              string       `db:"id"`
 	Coupon          CouponColumn `db:"coupon"`
 	CustomerID      string       `db:"customer_id"`
-	End             null.Int     `db:"end"`
+	End             null.Int     `db:"end_time"`
 	InvoiceID       null.String  `db:"invoice_id"`
 	InvoiceItemID   null.String  `db:"invoice_item_id"`
 	PromotionCodeID null.String  `db:"promotion_code_id"`
-	Start           int64        `db:"start"`
+	Start           int64        `db:"start_time"`
 	SubsID          null.String  `db:"subs_id"`
 }
 
