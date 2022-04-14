@@ -9,25 +9,25 @@ import (
 )
 
 type Invoice struct {
-	ID                   string                  `db:"id"`
-	AutoAdvance          bool                    `db:"auto_advance"`
-	ChargeID             string                  `db:"charge_id"`
-	CollectionMethod     InvoiceCollectionMethod `db:"collection_method"`
-	Currency             string                  `db:"currency"`
-	CustomerID           string                  `db:"customer_id"`
-	DefaultPaymentMethod null.String             `db:"default_payment_method"`
-	Discounts            sq.StringList           `db:"discount_ids"`
-	HostedInvoiceURL     null.String             `db:"hosted_invoice_url"`
-	LiveMode             bool                    `db:"live_mode"`
-	Paid                 bool                    `db:"paid"`
-	PaymentIntentID      string                  `db:"payment_intent_id"`
-	PeriodEndUTC         chrono.Time             `db:"period_end_utc"`
-	PeriodStartUTC       chrono.Time             `db:"period_start_utc"`
-	ReceiptNumber        string                  `db:"receipt_number"`
-	Status               InvoiceStatus           `db:"invoice_status"`
-	SubscriptionID       null.String             `db:"subscription_id"`
-	Total                int64                   `db:"total"`
-	Created              int64                   `db:"created"`
+	ID                   string                  `json:"id" db:"id"`
+	AutoAdvance          bool                    `json:"autoAdvance" db:"auto_advance"`
+	ChargeID             string                  `json:"chargeId" db:"charge_id"`
+	CollectionMethod     InvoiceCollectionMethod `json:"collectionMethod" db:"collection_method"`
+	Currency             string                  `json:"currency" db:"currency"`
+	CustomerID           string                  `json:"customerId" db:"customer_id"`
+	DefaultPaymentMethod null.String             `json:"defaultPaymentMethod" db:"default_payment_method"`
+	Discounts            sq.StringList           `json:"discounts" db:"discount_ids"`
+	HostedInvoiceURL     null.String             `json:"hostedInvoiceUrl" db:"hosted_invoice_url"`
+	LiveMode             bool                    `json:"liveMode" db:"live_mode"`
+	Paid                 bool                    `json:"paid" db:"paid"`
+	PaymentIntentID      string                  `json:"paymentIntentId" db:"payment_intent_id"`
+	PeriodEndUTC         chrono.Time             `json:"periodEndUtc" db:"period_end_utc"`
+	PeriodStartUTC       chrono.Time             `json:"periodStartUtc" db:"period_start_utc"`
+	ReceiptNumber        string                  `json:"receiptNumber" db:"receipt_number"`
+	Status               InvoiceStatus           `json:"status" db:"invoice_status"`
+	SubscriptionID       null.String             `json:"subscriptionId" db:"subscription_id"`
+	Total                int64                   `json:"total" db:"total"`
+	Created              int64                   `json:"created" db:"created"`
 }
 
 func NewInvoice(si *stripe.Invoice) Invoice {
