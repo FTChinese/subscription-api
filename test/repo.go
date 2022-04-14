@@ -1,5 +1,4 @@
 //go:build !production
-// +build !production
 
 package test
 
@@ -354,5 +353,21 @@ func (r Repo) SaveStripePrice(p price.StripePrice) {
 
 	if err != nil {
 		log.Fatalln(err)
+	}
+}
+
+func (r Repo) SaveStripeCoupon(c price.StripeCoupon) {
+	_, err := r.dbs.Write.NamedExec(
+		price.StmtUpsertCoupon,
+		c)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func (r Repo) SaveStripeCoupons(coupons []price.StripeCoupon) {
+	for _, v := range coupons {
+		r.SaveStripeCoupon(v)
 	}
 }

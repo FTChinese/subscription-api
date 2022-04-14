@@ -3,6 +3,7 @@ package test
 import (
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"testing"
 )
@@ -81,4 +82,16 @@ func TestRepo_WxWebhook(t *testing.T) {
 	payload := NewWxWebhookPayload(o)
 
 	t.Logf("\n%s\n", payload.ToXML())
+}
+
+func TestRepo_SaveStripeCoupons(t *testing.T) {
+
+	r := NewRepo()
+
+	coupons := price.MockRandomCouponList(3)
+
+	t.Logf("%v", coupons)
+
+	r.SaveStripeCoupons(coupons)
+
 }

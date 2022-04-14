@@ -200,7 +200,7 @@ func (b MemberBuilder) Build() reader.Membership {
 
 	case enum.PayMethodStripe:
 		m.StripeSubsID = null.StringFrom(b.stripeSubsID)
-		m.StripePlanID = null.StringFrom(faker.GenStripePriceID())
+		m.StripePlanID = null.StringFrom(faker.StripePriceID())
 
 	case enum.PayMethodApple:
 		m.AppleSubsID = null.StringFrom(b.iapTxID)

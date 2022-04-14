@@ -164,7 +164,7 @@ func (b PriceBuilder) Build() price.FtcPrice {
 			PeriodCount: price.ColumnYearMonthDay{
 				YearMonthDay: dt.NewYearMonthDay(b.edition.Cycle),
 			},
-			StripePriceID: faker.GenStripePriceID(),
+			StripePriceID: faker.StripePriceID(),
 		},
 
 		ProductID:  b.productID,
