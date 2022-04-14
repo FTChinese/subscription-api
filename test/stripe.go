@@ -18,7 +18,7 @@ import (
 func (p Persona) StripeCustomer() stripe.Customer {
 	return stripe.Customer{
 		IsFromStripe:           false,
-		ID:                     faker.GenStripeCusID(),
+		ID:                     faker.StripeCustomerID(),
 		FtcID:                  p.FtcID,
 		Currency:               "gbp",
 		Created:                time.Now().Unix(),
@@ -31,12 +31,12 @@ func (p Persona) StripeCustomer() stripe.Customer {
 
 func StripeInvoice() stripe.Invoice {
 	return stripe.Invoice{
-		ID:                   faker.GenInvoiceID(),
+		ID:                   faker.StripeInvoiceID(),
 		AutoAdvance:          true,
 		ChargeID:             "",
 		CollectionMethod:     stripe.InvoiceCollectionMethod{},
 		Currency:             "gbp",
-		CustomerID:           faker.GenStripeCusID(),
+		CustomerID:           faker.StripeCustomerID(),
 		DefaultPaymentMethod: null.String{},
 		HostedInvoiceURL:     null.String{},
 		LiveMode:             false,
@@ -46,7 +46,7 @@ func StripeInvoice() stripe.Invoice {
 		PeriodStartUTC:       chrono.TimeNow(),
 		ReceiptNumber:        "",
 		Status:               stripe.InvoiceStatus{},
-		SubscriptionID:       null.StringFrom(faker.GenStripeSubID()),
+		SubscriptionID:       null.StringFrom(faker.StripeSubsID()),
 		Total:                0,
 		Created:              time.Now().Unix(),
 	}
@@ -54,11 +54,11 @@ func StripeInvoice() stripe.Invoice {
 
 func StripeSetupIntent() stripe.SetupIntent {
 	return stripe.SetupIntent{
-		ID:                 faker.GenSetupIntentID(),
+		ID:                 faker.StripeSetupIntentID(),
 		CancellationReason: stripe.SICancelReason{},
 		ClientSecret:       rand.String(40),
 		Created:            time.Now().Unix(),
-		CustomerID:         faker.GenStripeCusID(),
+		CustomerID:         faker.StripeCustomerID(),
 		LiveMode:           false,
 		NextAction:         stripe.SINextActionJSON{},
 		PaymentMethodID:    null.String{},
@@ -70,7 +70,7 @@ func StripeSetupIntent() stripe.SetupIntent {
 
 func StripePaymentIntent() stripe.PaymentIntent {
 	return stripe.PaymentIntent{
-		ID:                 faker.GenPaymentIntentID(),
+		ID:                 faker.StripePaymentIntentID(),
 		Amount:             299,
 		AmountReceived:     299,
 		CanceledAt:         0,
@@ -92,8 +92,8 @@ func StripePaymentIntent() stripe.PaymentIntent {
 
 func StripePaymentMethod() stripe.PaymentMethod {
 	return stripe.PaymentMethod{
-		ID:         faker.GenPaymentMethodID(),
-		CustomerID: faker.GenStripeCusID(),
+		ID:         faker.StripePaymentMethodID(),
+		CustomerID: faker.StripeCustomerID(),
 		Kind:       sdk.PaymentMethodTypeCard,
 		Card: stripe.PaymentMethodCard{
 			Brand:             "visa",
@@ -144,7 +144,7 @@ func (b StripeSubsBuilder) Build() stripe.Subs {
 	end := dt.NewTimeRange(start).WithPeriod(b.price.PeriodCount.YearMonthDay).End
 	canceled := time.Time{}
 
-	subsID := faker.GenStripeSubID()
+	subsID := faker.StripeSubsID()
 
 	return stripe.Subs{
 		ID:                     subsID,
@@ -154,23 +154,23 @@ func (b StripeSubsBuilder) Build() stripe.Subs {
 		CanceledUTC:            chrono.TimeFrom(canceled), // Set it for automatic cancel.
 		CurrentPeriodEnd:       chrono.TimeFrom(end),
 		CurrentPeriodStart:     chrono.TimeFrom(start),
-		CustomerID:             faker.GenStripeCusID(),
+		CustomerID:             faker.StripeCustomerID(),
 		DefaultPaymentMethodID: null.String{},
 		EndedUTC:               chrono.Time{},
 		FtcUserID:              null.StringFrom(b.ftcID),
 		Items: []stripe.SubsItem{
 			{
-				ID:             faker.GenStripeItemID(),
+				ID:             faker.StripeSubsItemID(),
 				Price:          b.price,
 				Created:        time.Now().Unix(),
 				Quantity:       1,
 				SubscriptionID: subsID,
 			},
 		},
-		LatestInvoiceID: faker.GenInvoiceID(),
+		LatestInvoiceID: faker.StripeInvoiceID(),
 		LatestInvoice:   stripe.Invoice{},
 		LiveMode:        false,
-		PaymentIntentID: null.StringFrom(faker.GenPaymentIntentID()),
+		PaymentIntentID: null.StringFrom(faker.StripePaymentIntentID()),
 		PaymentIntent:   stripe.PaymentIntent{},
 		StartDateUTC:    chrono.TimeNow(),
 		Status:          b.status,

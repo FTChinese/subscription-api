@@ -25,13 +25,13 @@ type IAPBuilder struct {
 
 func NewIAPBuilder(origTxID string) IAPBuilder {
 	if origTxID == "" {
-		origTxID = faker.GenAppleSubID()
+		origTxID = faker.AppleSubID()
 	}
 
 	return IAPBuilder{
 		env:        apple.EnvSandbox,
 		origTxID:   origTxID,
-		lastTxID:   faker.GenAppleSubID(),
+		lastTxID:   faker.AppleSubID(),
 		edition:    price.StdYearEdition,
 		autoRenew:  true,
 		expiration: time.Now().AddDate(1, 0, 0),

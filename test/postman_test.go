@@ -21,7 +21,7 @@ func TestEmailSignUp_WithMobile(t *testing.T) {
 func TestVerifySMSCode_NewMobile(t *testing.T) {
 	repo := NewRepo()
 
-	v := ztsms.NewVerifier(faker.GenPhone(), null.String{})
+	v := ztsms.NewVerifier(faker.Phone(), null.String{})
 	repo.MustSaveMobileVerifier(v)
 
 	t.Logf("%s", faker.MustMarshalIndent(v))
@@ -67,7 +67,7 @@ func TestMobileSignUp_RealPhone(t *testing.T) {
 // and user wants to create a new account with this mobile.
 // Simply generate a new phone works.
 func TestMobileSignUp_NewMobileAccount(t *testing.T) {
-	v := ztsms.NewVerifier(faker.GenPhone(), null.String{})
+	v := ztsms.NewVerifier(faker.Phone(), null.String{})
 
 	NewRepo().MustSaveMobileVerifier(v)
 
@@ -82,7 +82,7 @@ func TestMobileSignUp_NewMobileAccount(t *testing.T) {
 func TestMobileSignUp_LinkNewEmail(t *testing.T) {
 	a := NewPersona().EmailOnlyAccount()
 
-	v := ztsms.NewVerifier(faker.GenPhone(), null.String{})
+	v := ztsms.NewVerifier(faker.Phone(), null.String{})
 
 	NewRepo().MustSaveMobileVerifier(v)
 
@@ -95,7 +95,7 @@ func TestMobileSignUp_LinkNewEmail(t *testing.T) {
 // Generate a new phone, and create an email-only account.
 func TestMobileSignUp_LinkExistingEmail(t *testing.T) {
 	a := NewPersona().EmailOnlyAccount()
-	v := ztsms.NewVerifier(faker.GenPhone(), null.String{})
+	v := ztsms.NewVerifier(faker.Phone(), null.String{})
 
 	repo := NewRepo()
 	repo.MustCreateFtcAccount(a)

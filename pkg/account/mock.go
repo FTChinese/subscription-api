@@ -27,8 +27,8 @@ func NewMockFtcAccountBuilder(kind enum.AccountKind) MockFtcAccountBuilder {
 	return MockFtcAccountBuilder{
 		kind:     kind,
 		ftcID:    uuid.New().String(),
-		wxID:     faker.GenWxID(),
-		stripeID: faker.GenStripeCusID(),
+		wxID:     faker.WxUnionID(),
+		stripeID: faker.StripeCustomerID(),
 		email:    gofakeit.Email(),
 		mobile:   gofakeit.Phone(),
 	}

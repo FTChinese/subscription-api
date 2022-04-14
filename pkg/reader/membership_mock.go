@@ -1,5 +1,4 @@
 //go:build !production
-// +build !production
 
 package reader
 
@@ -36,7 +35,7 @@ func NewMockMemberBuilder() MockMemberBuilder {
 	return MockMemberBuilder{
 		accountKind: enum.AccountKindFtc,
 		ftcID:       uuid.New().String(),
-		unionID:     faker.GenWxID(),
+		unionID:     faker.WxUnionID(),
 		price:       MockPwPriceStdYear.FtcPrice,
 		payMethod:   enum.PayMethodAli,
 		expiration:  time.Now().AddDate(0, 1, 0),
@@ -47,7 +46,7 @@ func NewMockMemberBuilderV2(k enum.AccountKind) MockMemberBuilder {
 	return MockMemberBuilder{
 		accountKind:  k,
 		ftcID:        uuid.New().String(),
-		unionID:      faker.GenWxID(),
+		unionID:      faker.WxUnionID(),
 		price:        MockPwPriceStdYear.FtcPrice,
 		payMethod:    enum.PayMethodAli,
 		expiration:   time.Now().AddDate(0, 1, 0),
@@ -126,7 +125,7 @@ func (b MockMemberBuilder) WithPrice(p price.FtcPrice) MockMemberBuilder {
 
 func (b MockMemberBuilder) WithStripe(subsID string) MockMemberBuilder {
 	if subsID == "" {
-		subsID = faker.GenStripeSubID()
+		subsID = faker.StripeSubsID()
 	}
 
 	b.payMethod = enum.PayMethodStripe
@@ -139,7 +138,7 @@ func (b MockMemberBuilder) WithStripe(subsID string) MockMemberBuilder {
 
 func (b MockMemberBuilder) WithApple(txID string) MockMemberBuilder {
 	if txID == "" {
-		txID = faker.GenAppleSubID()
+		txID = faker.AppleSubID()
 	}
 
 	b.iapTxID = txID
@@ -150,7 +149,7 @@ func (b MockMemberBuilder) WithApple(txID string) MockMemberBuilder {
 
 func (b MockMemberBuilder) WithB2B(licID string) MockMemberBuilder {
 	if licID == "" {
-		licID = faker.GenLicenceID()
+		licID = faker.B2BLicenceID()
 	}
 
 	b.b2bLicID = licID

@@ -128,7 +128,7 @@ func TestMembership_IsExpired(t *testing.T) {
 					UnionID:    null.String{},
 				}.MustNormalize(),
 				ExpireDate:   chrono.DateFrom(time.Now().AddDate(-1, 0, 0)),
-				StripeSubsID: null.StringFrom(faker.GenStripeSubID()),
+				StripeSubsID: null.StringFrom(faker.StripeSubsID()),
 				StripePlanID: null.StringFrom(faker.StripePriceID()),
 				AutoRenewal:  true,
 			},

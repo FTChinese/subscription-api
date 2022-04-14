@@ -78,7 +78,7 @@ func (r Repo) ReqMobileLinkNoProfile(a account.BaseAccount) *http.Request {
 			Password: a.Password,
 		},
 		DeviceToken: null.String{},
-		Mobile:      faker.GenPhone(),
+		Mobile:      faker.Phone(),
 	}
 
 	return httptest.NewRequest(
@@ -93,7 +93,7 @@ func (r Repo) ReqMobileLinkWithProfile(a account.BaseAccount) *http.Request {
 
 	mobile := a.Mobile.String
 	if mobile == "" {
-		mobile = faker.GenPhone()
+		mobile = faker.Phone()
 	}
 
 	params := input.MobileLinkParams{
@@ -121,7 +121,7 @@ func (r Repo) ReqMobileLinkPhoneTaken(a account.BaseAccount) *http.Request {
 			Password: a.Password,
 		},
 		DeviceToken: null.String{},
-		Mobile:      faker.GenPhone(),
+		Mobile:      faker.Phone(),
 	}
 
 	return httptest.NewRequest(
@@ -135,7 +135,7 @@ func (r Repo) GenerateIAPUnlinkParams(hasAddOn bool) apple.LinkInput {
 	sugar := r.logger.Sugar()
 
 	ftcID := uuid.New().String()
-	iapID := faker.GenAppleSubID()
+	iapID := faker.AppleSubID()
 
 	builder := reader.NewMockMemberBuilderV2(enum.AccountKindFtc).
 		SetFtcID(ftcID).
@@ -182,7 +182,7 @@ func AppleUnlinkReq() *http.Request {
 
 	repo := NewRepo()
 
-	id := faker.GenAppleSubID()
+	id := faker.AppleSubID()
 
 	repo.MustCreateFtcAccount(p.EmailOnlyAccount())
 	repo.MustSaveIAPSubs(

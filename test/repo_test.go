@@ -39,7 +39,7 @@ func TestRepo_SaveIAPSubs(t *testing.T) {
 
 // Generate a mocking wx user
 func TestRepo_SaveWxUser(t *testing.T) {
-	unionID := faker.GenWxID()
+	unionID := faker.WxUnionID()
 	t.Logf("Wx user %s", unionID)
 
 	schema := NewPersona().WxUser()

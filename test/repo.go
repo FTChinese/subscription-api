@@ -371,3 +371,13 @@ func (r Repo) SaveStripeCoupons(coupons []price.StripeCoupon) {
 		r.SaveStripeCoupon(v)
 	}
 }
+
+func (r Repo) SaveStripeDiscount(d stripe.Discount) {
+	_, err := r.dbs.Write.NamedExec(
+		stripe.StmtUpsertDiscount,
+		d)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+}

@@ -82,7 +82,7 @@ func (b MemberBuilder) WithPrice(p price.FtcPrice) MemberBuilder {
 
 func (b MemberBuilder) WithStripe(subsID string) MemberBuilder {
 	if subsID == "" {
-		subsID = faker.GenStripeSubID()
+		subsID = faker.StripeSubsID()
 	}
 
 	b.payMethod = enum.PayMethodStripe
@@ -95,7 +95,7 @@ func (b MemberBuilder) WithStripe(subsID string) MemberBuilder {
 
 func (b MemberBuilder) WithApple(txID string) MemberBuilder {
 	if txID == "" {
-		txID = faker.GenAppleSubID()
+		txID = faker.AppleSubID()
 	}
 
 	b.iapTxID = txID
@@ -106,7 +106,7 @@ func (b MemberBuilder) WithApple(txID string) MemberBuilder {
 
 func (b MemberBuilder) WithB2B(licID string) MemberBuilder {
 	if licID == "" {
-		licID = faker.GenLicenceID()
+		licID = faker.B2BLicenceID()
 	}
 
 	b.b2bLicID = licID

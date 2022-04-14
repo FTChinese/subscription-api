@@ -1,3 +1,4 @@
+//go:build !production
 // +build !production
 
 package footprint
@@ -21,7 +22,7 @@ func MockClient(ip string) Client {
 
 	return Client{
 		Platform:  enum.Platform(rand.IntRange(1, 10)),
-		Version:   null.StringFrom(faker.GenVersion()),
+		Version:   null.StringFrom(faker.SemanticVersion()),
 		UserIP:    null.StringFrom(ip),
 		UserAgent: null.StringFrom(gofakeit.UserAgent()),
 	}

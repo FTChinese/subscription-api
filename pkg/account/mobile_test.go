@@ -10,7 +10,7 @@ import (
 
 func TestPermitUpsertMobile(t *testing.T) {
 	id := uuid.New().String()
-	mobile := faker.GenPhone()
+	mobile := faker.Phone()
 
 	type args struct {
 		rows []MobileUpdater
@@ -28,7 +28,7 @@ func TestPermitUpsertMobile(t *testing.T) {
 				rows: []MobileUpdater{
 					{
 						FtcID:  id,
-						Mobile: null.StringFrom(faker.GenPhone()),
+						Mobile: null.StringFrom(faker.Phone()),
 					},
 					{
 						FtcID:  uuid.New().String(),
@@ -66,7 +66,7 @@ func TestPermitUpsertMobile(t *testing.T) {
 				rows: []MobileUpdater{
 					{
 						FtcID:  id,
-						Mobile: null.StringFrom(faker.GenPhone()),
+						Mobile: null.StringFrom(faker.Phone()),
 					},
 				},
 				dest: MobileUpdater{

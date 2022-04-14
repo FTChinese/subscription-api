@@ -23,7 +23,7 @@ type MockSubsBuilder struct {
 // otherwise the subscription is not linked to any ftc account.
 func NewMockSubsBuilder(userID string) MockSubsBuilder {
 	return MockSubsBuilder{
-		orgTxID: faker.GenAppleSubID(),
+		orgTxID: faker.AppleSubID(),
 		exp:     time.Now().AddDate(1, 0, 0),
 		edition: price.StdYearEdition,
 		userID:  userID,
@@ -51,7 +51,7 @@ func (b MockSubsBuilder) Build() Subscription {
 			Environment:           EnvSandbox,
 			OriginalTransactionID: b.orgTxID,
 		},
-		LastTransactionID: faker.GenAppleSubID(),
+		LastTransactionID: faker.AppleSubID(),
 		ProductID:         "",
 		PurchaseDateUTC:   chrono.TimeNow(),
 		ExpiresDateUTC:    chrono.TimeFrom(b.exp),

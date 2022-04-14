@@ -15,20 +15,20 @@ func SeedGoFake() {
 	gofakeit.Seed(time.Now().UnixNano())
 }
 
-// GenVersion creates a semantic version string.
-func GenVersion() string {
+// SemanticVersion creates a semantic version string.
+func SemanticVersion() string {
 	return fmt.Sprintf("%d.%d.%d",
 		rand.IntRange(1, 10),
 		rand.IntRange(1, 10),
 		rand.IntRange(1, 10))
 }
 
-func GenStripeCusID() string {
+func StripeCustomerID() string {
 	id, _ := gorest.RandomBase64(9)
 	return "cus_" + id
 }
 
-func GenStripeSubID() string {
+func StripeSubsID() string {
 	id, _ := rand.Base64(9)
 	return "sub_" + id
 }
@@ -37,31 +37,35 @@ func StripePriceID() string {
 	return "price_" + rand.String(14)
 }
 
-func GenStripeProductID() string {
+func StripeProductID() string {
 	return "product_" + rand.String(14)
 }
 
-func GenStripeItemID() string {
+func StripeSubsItemID() string {
 	return "si_" + rand.String(14)
 }
 
-func GenInvoiceID() string {
+func StripeInvoiceID() string {
 	return "in_" + rand.String(14)
+}
+
+func StripeDiscountID() string {
+	return "di_" + rand.String(14)
 }
 
 func StripeCouponID() string {
 	return rand.String(8)
 }
 
-func GenPaymentIntentID() string {
+func StripePaymentIntentID() string {
 	return "pi_" + rand.String(14)
 }
 
-func GenSetupIntentID() string {
+func StripeSetupIntentID() string {
 	return "si_" + rand.String(14)
 }
 
-func GenPaymentMethodID() string {
+func StripePaymentMethodID() string {
 	return "pm_" + rand.String(14)
 }
 
@@ -69,21 +73,21 @@ func RandNumericString() string {
 	return rand.StringWithCharset(9, "0123456789")
 }
 
-func GenAppleSubID() string {
+func AppleSubID() string {
 	return "1000000" + RandNumericString()
 }
 
-func GenWxID() string {
+func WxUnionID() string {
 	id, _ := gorest.RandomBase64(21)
 	return id
 }
 
-func GenWxAccessToken() string {
+func WxAccessToken() string {
 	token, _ := gorest.RandomBase64(82)
 	return token
 }
 
-func GenTxID() string {
+func AppleTxID() string {
 	return rand.String(28)
 }
 
@@ -91,7 +95,7 @@ func RandomGender() enum.Gender {
 	return enum.Gender(rand.IntRange(0, 3))
 }
 
-func GenAvatar() string {
+func Avatar() string {
 	var gender = []string{"men", "women"}
 
 	n := rand.IntRange(1, 35)
@@ -100,20 +104,20 @@ func GenAvatar() string {
 	return fmt.Sprintf("https://randomuser.me/api/portraits/thumb/%s/%d.jpg", g, n)
 }
 
-func GenLicenceID() string {
+func B2BLicenceID() string {
 	return "lic_" + rand.String(12)
 }
 
-func GenPhone() string {
+func Phone() string {
 	return fmt.Sprintf("1%d%d", rand.IntRange(3, 9), rand.IntRange(100000000, 999999999))
 }
 
-func GenEmail() string {
+func Email() string {
 	SeedGoFake()
 	return gofakeit.Email()
 }
 
-func GenCardSerial() string {
+func CardSerial() string {
 	now := time.Now()
 	anni := now.Year() - 2005
 	suffix := rand.IntRange(0, 9999)

@@ -137,7 +137,7 @@ func MockRandomStripePrice() StripePrice {
 		Kind:           KindRecurring,
 		LiveMode:       false,
 		Nickname:       "A mocking price",
-		ProductID:      faker.GenStripeProductID(),
+		ProductID:      faker.StripeProductID(),
 		PeriodCount: ColumnYearMonthDay{
 			dt.YearMonthDay{
 				Years:  1,
@@ -174,7 +174,7 @@ func (p StripePrice) MockRandomCoupons(n int) []StripeCoupon {
 func mockRandomCouponOfPrice(priceId string) StripeCoupon {
 	return StripeCoupon{
 		IsFromStripe: false,
-		ID:           faker.StripePriceID(),
+		ID:           faker.StripeCouponID(),
 		AmountOff:    100,
 		Created:      0,
 		Currency:     "gbp",

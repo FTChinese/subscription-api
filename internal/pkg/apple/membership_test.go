@@ -19,7 +19,7 @@ func TestNewMembership(t *testing.T) {
 	userID := uuid.New().String()
 
 	now := time.Now()
-	txID := faker.GenAppleSubID()
+	txID := faker.AppleSubID()
 
 	type args struct {
 		params MembershipParams

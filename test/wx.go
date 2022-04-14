@@ -62,7 +62,7 @@ func NewWxWebhookPayload(o ftcpay.Order) WxWebhookPayload {
 		ResultCode:         wechat.Success,
 		ErrCode:            "",
 		ErrCodeDes:         "",
-		OpenID:             faker.GenWxID(),
+		OpenID:             faker.WxUnionID(),
 		IsSubscribed:       "N",
 		TradeType:          string(wechat.TradeTypeApp),
 		BankType:           "ICBC_DEBIT",

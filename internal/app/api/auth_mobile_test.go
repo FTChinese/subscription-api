@@ -46,7 +46,7 @@ func TestAuthRouter_VerifySMSCode(t *testing.T) {
 			args: args{
 				w: httptest.NewRecorder(),
 				req: repo.ReqVerifySMSForMobileEmail(
-					ztsms.NewVerifier(faker.GenPhone(), null.String{}),
+					ztsms.NewVerifier(faker.Phone(), null.String{}),
 				),
 			},
 			wantStatus: 200,

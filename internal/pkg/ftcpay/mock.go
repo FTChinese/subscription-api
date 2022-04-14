@@ -101,7 +101,7 @@ func (b MockOrderBuilder) WithOfferKinds(k price.OfferKind) MockOrderBuilder {
 func (b MockOrderBuilder) WithPayMethod(m enum.PayMethod) MockOrderBuilder {
 	b.payMethod = m
 	if m == enum.PayMethodWx {
-		b.wxAppId = null.StringFrom(faker.GenWxID())
+		b.wxAppId = null.StringFrom(faker.WxUnionID())
 	}
 	return b
 }

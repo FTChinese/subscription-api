@@ -19,7 +19,7 @@ import (
 func TestLinkBuilder_Build(t *testing.T) {
 
 	ftcId := uuid.New().String()
-	origTxId := faker.GenAppleSubID()
+	origTxId := faker.AppleSubID()
 	expire := chrono.TimeFrom(time.Now().AddDate(1, 0, 0))
 	memberID := ids.UserIDs{
 		CompoundID: "",
@@ -32,7 +32,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 			Environment:           EnvProduction,
 			OriginalTransactionID: origTxId,
 		},
-		LastTransactionID: faker.GenAppleSubID(),
+		LastTransactionID: faker.AppleSubID(),
 		ProductID:         "",
 		PurchaseDateUTC:   chrono.TimeNow(),
 		ExpiresDateUTC:    expire,
@@ -110,9 +110,9 @@ func TestLinkBuilder_Build(t *testing.T) {
 				IAPSubs: Subscription{
 					BaseSchema: BaseSchema{
 						Environment:           EnvProduction,
-						OriginalTransactionID: faker.GenAppleSubID(),
+						OriginalTransactionID: faker.AppleSubID(),
 					},
-					LastTransactionID: faker.GenAppleSubID(),
+					LastTransactionID: faker.AppleSubID(),
 					ProductID:         "",
 					PurchaseDateUTC:   chrono.TimeNow(),
 					ExpiresDateUTC:    expire,
@@ -171,7 +171,7 @@ func TestLinkBuilder_Build(t *testing.T) {
 						Environment:           EnvProduction,
 						OriginalTransactionID: origTxId,
 					},
-					LastTransactionID: faker.GenAppleSubID(),
+					LastTransactionID: faker.AppleSubID(),
 					ProductID:         "",
 					ExpiresDateUTC:    chrono.TimeFrom(time.Now().AddDate(0, 0, -2)),
 					Edition:           price.StdYearEdition,
