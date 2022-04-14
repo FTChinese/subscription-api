@@ -8,7 +8,7 @@ import (
 
 type StringList []string
 
-// Value implements Valuer interface by serializing an Invitation into
+// Value implements Valuer interface by serializing a string array into
 // JSON data.
 func (l StringList) Value() (driver.Value, error) {
 	if len(l) == 0 {
@@ -41,6 +41,6 @@ func (l *StringList) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan to PaymentIntent")
+		return errors.New("incompatible type to scan to StringList")
 	}
 }
