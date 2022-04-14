@@ -15,7 +15,7 @@ import (
 func TestStripeRepo_SaveShoppingSession(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
 
-	sp := price.MockNewStripePrice()
+	sp := price.MockRandomStripePrice()
 
 	type args struct {
 		s stripe.ShoppingSession
@@ -29,10 +29,8 @@ func TestStripeRepo_SaveShoppingSession(t *testing.T) {
 			name: "save shopping cart",
 			args: args{
 				s: stripe.ShoppingSession{
-					FtcUserID: uuid.New().String(),
-					RecurringPrice: stripe.PriceColumn{
-						StripePrice: sp,
-					},
+					FtcUserID:         uuid.New().String(),
+					RecurringPrice:    stripe.PriceColumn{StripePrice: sp},
 					IntroductoryPrice: stripe.PriceColumn{},
 					Membership:        reader.MembershipColumn{},
 					Intent: reader.CheckoutIntent{
