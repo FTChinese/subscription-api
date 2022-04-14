@@ -18,7 +18,7 @@ type CartItemStripe struct {
 // AnyFromStripe checks if there's any price coming from API
 // so that we could save it.
 func (ci CartItemStripe) AnyFromStripe() bool {
-	return ci.Recurring.IsFromStripe || ci.Introductory.IsFromStripe
+	return ci.Recurring.IsFromStripe || ci.Introductory.IsFromStripe || ci.Coupon.IsFromStripe
 }
 
 // Validate ensures introductory price is correctly set.
