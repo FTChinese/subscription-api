@@ -117,3 +117,27 @@ func (router StripeRouter) findCartItem(params stripe.SubsParams) (reader.CartIt
 
 	return item, nil
 }
+
+func (router StripeRouter) saveShoppingSession(s stripe.ShoppingSession) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	err := router.stripeRepo.SaveShoppingSession(s)
+	if err != nil {
+		sugar.Error(err)
+	}
+
+	if s.Subs.ID == "" {
+		return
+	}
+
+	redeemed := s.CouponRedeemed()
+	if redeemed.IsZero() {
+		return
+	}
+
+	err = router.stripeRepo.InsertCouponRedeemed(redeemed)
+	if err != nil {
+		sugar.Error(err)
+	}
+}
