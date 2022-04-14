@@ -33,7 +33,7 @@ func GenStripeSubID() string {
 	return "sub_" + id
 }
 
-func GenStripePriceID() string {
+func StripePriceID() string {
 	return "price_" + rand.String(14)
 }
 
