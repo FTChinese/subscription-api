@@ -49,12 +49,12 @@ func (ps PaymentShared) LoadPaywall(refresh bool) (reader.Paywall, error) {
 	}
 
 	stripeIDs := paywall.StripePriceIDs()
-	stripePrices, err := ps.stripeRepo.ListPrices(stripeIDs, refresh)
+	stripePrices, err := ps.stripeRepo.LoadOrFetchPaywallItems(stripeIDs, refresh)
 	if err != nil {
 		return reader.Paywall{}, err
 	}
 
-	paywall.StripePrices = stripePrices
+	paywall.Stripe = stripePrices
 
 	return paywall, nil
 }
