@@ -157,6 +157,20 @@ func MockRandomStripeCoupon() StripeCoupon {
 	return mockRandomCouponOfPrice(faker.StripePriceID())
 }
 
+func (p StripePrice) MockRandomCoupon() StripeCoupon {
+	return mockRandomCouponOfPrice(p.ID)
+}
+
+func (p StripePrice) MockRandomCoupons(n int) []StripeCoupon {
+	var list = make([]StripeCoupon, 0)
+
+	for i := 0; i < n; i++ {
+		list = append(list, mockRandomCouponOfPrice(p.ID))
+	}
+
+	return list
+}
+
 func mockRandomCouponOfPrice(priceId string) StripeCoupon {
 	return StripeCoupon{
 		IsFromStripe: false,
