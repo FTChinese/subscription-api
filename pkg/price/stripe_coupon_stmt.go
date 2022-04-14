@@ -55,7 +55,7 @@ ORDER BY amount_off DESC
 const StmtCouponsOfPrices = `
 SELECT ` + colSelectCoupon + `
 FROM subs_product.stripe_coupon
-WHERE price_id IN (?)
+WHERE FIND_IN_SET(price_id, ?) > 0
 	AND current_status = 'active'
 	AND (end_utc IS NULL OR end_utc >= UTC_TIMESTAMP())
 ORDER BY amount_off DESC

@@ -47,5 +47,6 @@ LIMIT 1
 `
 
 const StmtListStripePrice = colSelectStripePrice + `
-WHERE id IN (?)
+WHERE FIND_IN_SET(id, ?) > 0
+ORDER BY created
 `
