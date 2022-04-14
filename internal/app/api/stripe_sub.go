@@ -90,9 +90,16 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 		}
 	}()
 
+	session := stripe.NewShoppingSession(cart, params)
+
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, reader.ConvertIntentError(err))
+
+		go func() {
+			router.saveShoppingSession(session)
+		}()
+
 		return
 	}
 
@@ -100,9 +107,20 @@ func (router StripeRouter) CreateSubs(w http.ResponseWriter, req *http.Request) 
 	// Backup previous membership if exists.
 	go func() {
 		router.handleSubsResult(result)
+		router.saveShoppingSession(session.WithSubs(result.Subs.ID))
 	}()
 
 	_ = render.New(w).OK(result)
+}
+
+func (router StripeRouter) saveShoppingSession(s stripe.ShoppingSession) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	err := router.stripeRepo.SaveShoppingSession(s)
+	if err != nil {
+		sugar.Error(err)
+	}
 }
 
 // LoadSubs from ftc db only. If you want to refresh the subscription,
@@ -159,14 +177,14 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := xhttp.GetFtcID(req.Header)
-	var input stripe.SubsParams
-	if err := gorest.ParseJSON(req.Body, &input); err != nil {
+	var params stripe.SubsParams
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 	// Validating if user is updating to the same price is postponed to
 	// building checkout intent.
-	if ve := input.Validate(); ve != nil {
+	if ve := params.Validate(); ve != nil {
 		_ = render.New(w).Unprocessable(ve)
 		return
 	}
@@ -182,7 +200,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	item, err := router.findCartItem(input)
+	item, err := router.findCartItem(params)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)
@@ -192,12 +210,16 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	cart := reader.NewShoppingCart(account).WithStripeItem(item)
 	cart, result, err := router.stripeRepo.UpdateSubscription(
 		cart,
-		input,
+		params,
 	)
 
+	session := stripe.NewShoppingSession(cart, params)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, reader.ConvertIntentError(err))
+		go func() {
+			router.saveShoppingSession(session)
+		}()
 		return
 	}
 
@@ -205,6 +227,7 @@ func (router StripeRouter) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 	// Backup previous membership.
 	go func() {
 		router.handleSubsResult(result)
+		router.saveShoppingSession(session.WithSubs(result.Subs.ID))
 	}()
 
 	if result.Subs.PaymentIntent.IsZero() {
