@@ -2,17 +2,6 @@ package repository
 
 import "github.com/FTChinese/subscription-api/internal/pkg/stripe"
 
-// InsertSubsError saves any error in stripe response.
-func (repo StripeRepo) InsertSubsError(e stripe.APIError) error {
-	_, err := repo.dbs.Write.NamedExec(stripe.StmtSaveAPIError, e)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (repo StripeRepo) UpsertSubs(s stripe.Subs, expanded bool) error {
 	var stmt string
 	if expanded {
