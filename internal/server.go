@@ -533,7 +533,8 @@ func StartServer(s ServerStatus) {
 
 				// ?refresh=true
 				r.Get("/{id}", cmsRouter.LoadStripeCoupon)
-				r.Post("{id}", cmsRouter.UpdateStripeCoupon)
+				r.Post("/{id}", cmsRouter.UpdateStripeCoupon)
+				r.Post("/{id}", cmsRouter.UpdateStripeCoupon)
 				r.Delete("/{id}", cmsRouter.DeleteStripeCoupon)
 			})
 		})
