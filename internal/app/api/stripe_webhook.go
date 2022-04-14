@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg/price"
 	sdk "github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/webhook"
 	"io/ioutil"
@@ -74,6 +75,19 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 				sugar.Error(err)
 			}
 		}()
+		w.WriteHeader(http.StatusOK)
+
+	case "coupon.created", "coupon.updated", "coupon.deleted":
+		c := sdk.Coupon{}
+		if err := json.Unmarshal(event.Data.Raw, &c); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		go func() {
+			_ = router.eventCoupon(c)
+		}()
+
 		w.WriteHeader(http.StatusOK)
 
 	case "setup_intent.succeeded":
@@ -157,6 +171,21 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}()
 		w.WriteHeader(http.StatusOK)
 
+	case "price.created", "price.deleted", "price.updated":
+		var rawPrice sdk.Price
+		err := json.Unmarshal(event.Data.Raw, &rawPrice)
+		if err != nil {
+			sugar.Error(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		go func() {
+			_ = router.eventPrice(rawPrice)
+		}()
+
+		w.WriteHeader(http.StatusOK)
+
 	default:
 		w.WriteHeader(http.StatusOK)
 	}
@@ -202,6 +231,21 @@ func (router StripeRouter) eventCustomer(rawCus sdk.Customer) error {
 
 	err = router.stripeRepo.UpsertPaymentMethod(pm)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (router StripeRouter) eventCoupon(rawCoupon sdk.Coupon) error {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	coupon := price.NewStripeCoupon(&rawCoupon)
+
+	err := router.stripeRepo.UpsertCoupon(coupon)
+	if err != nil {
+		sugar.Error(err)
 		return err
 	}
 
@@ -306,6 +350,21 @@ func (router StripeRouter) eventPaymentSucceeded(rawInvoice sdk.Invoice) error {
 
 	// Save the invoice.
 	err = router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&rawInvoice))
+	if err != nil {
+		sugar.Error(err)
+		return err
+	}
+
+	return nil
+}
+
+func (router StripeRouter) eventPrice(rawPrice sdk.Price) error {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	p := price.NewStripePrice(&rawPrice)
+
+	err := router.stripeRepo.UpsertPrice(p)
 	if err != nil {
 		sugar.Error(err)
 		return err
