@@ -2,6 +2,6 @@ package sq
 
 import "strings"
 
-func GetFindInSet(s []string) string {
+func FindInSetValue(s []string) string {
 	return strings.Join(s, ",")
 }
