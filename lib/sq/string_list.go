@@ -1,4 +1,4 @@
-package collection
+package sq
 
 import (
 	"database/sql/driver"

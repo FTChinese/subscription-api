@@ -1,24 +1,24 @@
 package stripe
 
 import (
-	"github.com/FTChinese/subscription-api/lib/collection"
+	"github.com/FTChinese/subscription-api/lib/sq"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 )
 
 type SetupIntent struct {
-	IsFromStripe       bool                  `json:"-"`
-	ID                 string                `json:"id" db:"id"`
-	CancellationReason SICancelReason        `json:"cancellationReason" db:"cancellation_reason"`
-	ClientSecret       string                `json:"clientSecret" db:"client_secret"`
-	Created            int64                 `json:"-" db:"created"`
-	CustomerID         string                `json:"customerId" db:"customer_id"`
-	LiveMode           bool                  `json:"liveMode" db:"live_mode"`
-	NextAction         SINextActionJSON      `json:"nextAction" db:"next_action"`
-	PaymentMethodID    null.String           `json:"paymentMethodId" db:"payment_method_id"`
-	PaymentMethodTypes collection.StringList `json:"-" db:"payment_method_types"`
-	Status             SIStatus              `json:"status" db:"intent_status"`
-	Usage              SIUsage               `json:"usage" db:"intent_usage"`
+	IsFromStripe       bool             `json:"-"`
+	ID                 string           `json:"id" db:"id"`
+	CancellationReason SICancelReason   `json:"cancellationReason" db:"cancellation_reason"`
+	ClientSecret       string           `json:"clientSecret" db:"client_secret"`
+	Created            int64            `json:"-" db:"created"`
+	CustomerID         string           `json:"customerId" db:"customer_id"`
+	LiveMode           bool             `json:"liveMode" db:"live_mode"`
+	NextAction         SINextActionJSON `json:"nextAction" db:"next_action"`
+	PaymentMethodID    null.String      `json:"paymentMethodId" db:"payment_method_id"`
+	PaymentMethodTypes sq.StringList    `json:"-" db:"payment_method_types"`
+	Status             SIStatus         `json:"status" db:"intent_status"`
+	Usage              SIUsage          `json:"usage" db:"intent_usage"`
 }
 
 func NewSetupIntent(si *stripe.SetupIntent) SetupIntent {
