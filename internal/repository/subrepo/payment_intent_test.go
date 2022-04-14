@@ -31,10 +31,10 @@ func TestEnv_SavePaymentIntent(t *testing.T) {
 			args: args{
 				pi: ftcpay.PaymentIntentSchema{
 					OrderID: ids.MustOrderID(),
-					Price: price.JSONPrice{
-						FtcPrice: price.MockPriceStdYear,
+					Price: price.FtcPriceJSON{
+						FtcPrice: price.MockFtcStdYearPrice,
 					},
-					Offer:       price.ColumnDiscount{},
+					Offer:       price.DiscountColumn{},
 					Membership:  reader.MembershipColumn{},
 					WxPayParams: wechat.ColumnSDKParams{},
 					AliPayParams: ali.ColumnSDKParams{
@@ -52,10 +52,10 @@ func TestEnv_SavePaymentIntent(t *testing.T) {
 			args: args{
 				pi: ftcpay.PaymentIntentSchema{
 					OrderID: ids.MustOrderID(),
-					Price: price.JSONPrice{
-						FtcPrice: price.MockPriceStdYear,
+					Price: price.FtcPriceJSON{
+						FtcPrice: price.MockFtcStdYearPrice,
 					},
-					Offer:      price.ColumnDiscount{},
+					Offer:      price.DiscountColumn{},
 					Membership: reader.MembershipColumn{},
 					WxPayParams: wechat.ColumnSDKParams{
 						SDKParams: wechat.SDKParams{
@@ -101,7 +101,7 @@ func TestEnv_RetrieveOrderPrice(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    price.JSONPrice
+		want    price.FtcPriceJSON
 		wantErr bool
 	}{
 		{
@@ -109,7 +109,7 @@ func TestEnv_RetrieveOrderPrice(t *testing.T) {
 			args: args{
 				orderID: "FT838E3D4DD90B04A6",
 			},
-			want:    price.JSONPrice{},
+			want:    price.FtcPriceJSON{},
 			wantErr: false,
 		},
 	}

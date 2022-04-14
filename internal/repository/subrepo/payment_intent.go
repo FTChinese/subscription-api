@@ -17,13 +17,13 @@ func (env Env) SavePaymentIntent(pi ftcpay.PaymentIntentSchema) error {
 	return nil
 }
 
-func (env Env) RetrieveOrderPrice(orderID string) (price.JSONPrice, error) {
-	var p price.JSONPrice
+func (env Env) RetrieveOrderPrice(orderID string) (price.FtcPriceJSON, error) {
+	var p price.FtcPriceJSON
 
 	err := env.dbs.Read.Get(&p, ftcpay.StmtOrderPrice, orderID)
 
 	if err != nil {
-		return price.JSONPrice{}, err
+		return price.FtcPriceJSON{}, err
 	}
 
 	return p, nil
