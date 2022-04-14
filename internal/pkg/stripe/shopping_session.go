@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/guregu/null"
 )
 
 const StmtShoppingSession = `
@@ -13,9 +14,11 @@ INSERT INTO premium.stripe_shopping_session
 SET ftc_user_id = :ftc_user_id,
 	recurring_price = :recurring_price,
 	introductory_price = :introductory_price,
-	membership = :membership,
 	checkout_intent = :checkout_intent,
+	coupon = :coupon,
+	membership = :membership,
 	request_parameters = :request_parameters,
+	subs_id = :subs_id,
 	created_utc = :created_utc
 `
 
@@ -25,9 +28,11 @@ type ShoppingSession struct {
 	FtcUserID         string                  `db:"ftc_user_id"`
 	RecurringPrice    PriceColumn             `db:"recurring_price"`
 	IntroductoryPrice PriceColumn             `db:"introductory_price"`
-	Membership        reader.MembershipColumn `db:"membership"`
+	Coupon            CouponColumn            `db:"coupon"`
 	Intent            reader.CheckoutIntent   `db:"checkout_intent"`
+	Membership        reader.MembershipColumn `db:"membership"`
 	RequestParams     SubsReqParamsColumn     `db:"request_parameters"`
+	SubsID            null.String             `db:"subs_id"` // Only exists after subscription success
 	CreatedUTC        chrono.Time             `db:"created_utc"`
 }
 
@@ -36,13 +41,18 @@ func NewShoppingSession(cart reader.ShoppingCart, params SubsParams) ShoppingSes
 		FtcUserID:         cart.Account.FtcID,
 		RecurringPrice:    PriceColumn{cart.StripeItem.Recurring},
 		IntroductoryPrice: PriceColumn{cart.StripeItem.Introductory},
-		Membership: reader.MembershipColumn{
-			Membership: cart.CurrentMember,
-		},
-		Intent:        cart.Intent,
-		RequestParams: SubsReqParamsColumn{params},
-		CreatedUTC:    chrono.TimeNow(),
+		Coupon:            CouponColumn{cart.StripeItem.Coupon},
+		Membership:        reader.MembershipColumn{Membership: cart.CurrentMember},
+		Intent:            cart.Intent,
+		RequestParams:     SubsReqParamsColumn{params},
+		CreatedUTC:        chrono.TimeNow(),
 	}
+}
+
+func (s ShoppingSession) WithSubs(id string) ShoppingSession {
+	s.SubsID = null.StringFrom(id)
+
+	return s
 }
 
 type SubsReqParamsColumn struct {
