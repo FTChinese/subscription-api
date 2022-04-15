@@ -52,7 +52,7 @@ func StartServer(s ServerStatus) {
 
 	authRouter := api.NewAuthRouter(userShared)
 	accountRouter := api.NewAccountRouter(userShared)
-	ftcSubsRouter := api.NewFtcPayRoutes(
+	ftcPayRoutes := api.NewFtcPayRoutes(
 		myDBs,
 		paywallCache,
 		logger,
@@ -271,16 +271,16 @@ func StartServer(s ServerStatus) {
 		r.Use(xhttp.RequireFtcOrUnionID)
 
 		// Create a new subscription for desktop browser
-		r.Post("/desktop", ftcSubsRouter.WxPay(wechat.TradeTypeDesktop))
+		r.Post("/desktop", ftcPayRoutes.WxPay(wechat.TradeTypeDesktop))
 
 		// Create an order for mobile browser
-		r.Post("/mobile", ftcSubsRouter.WxPay(wechat.TradeTypeMobile))
+		r.Post("/mobile", ftcPayRoutes.WxPay(wechat.TradeTypeMobile))
 
 		// Create an order for wx-embedded browser
-		r.Post("/jsapi", ftcSubsRouter.WxPay(wechat.TradeTypeJSAPI))
+		r.Post("/jsapi", ftcPayRoutes.WxPay(wechat.TradeTypeJSAPI))
 
 		// Creat an order for native app
-		r.Post("/app", ftcSubsRouter.WxPay(wechat.TradeTypeApp))
+		r.Post("/app", ftcPayRoutes.WxPay(wechat.TradeTypeApp))
 	})
 
 	// Require user id.
@@ -290,13 +290,13 @@ func StartServer(s ServerStatus) {
 		r.Use(xhttp.FormParsed)
 
 		// Create an order for desktop browser
-		r.Post("/desktop", ftcSubsRouter.AliPay(ali.EntryDesktopWeb))
+		r.Post("/desktop", ftcPayRoutes.AliPay(ali.EntryDesktopWeb))
 
 		// Create an order for mobile browser
-		r.Post("/mobile", ftcSubsRouter.AliPay(ali.EntryMobileWeb))
+		r.Post("/mobile", ftcPayRoutes.AliPay(ali.EntryMobileWeb))
 
 		// Create an order for native app.
-		r.Post("/app", ftcSubsRouter.AliPay(ali.EntryApp))
+		r.Post("/app", ftcPayRoutes.AliPay(ali.EntryApp))
 	})
 
 	r.Route("/membership", func(r chi.Router) {
@@ -304,7 +304,7 @@ func StartServer(s ServerStatus) {
 		r.Use(xhttp.RequireFtcOrUnionID)
 		// Get the membership of a user
 		r.Get("/", accountRouter.LoadMembership)
-		r.Post("/addons", ftcSubsRouter.ClaimAddOn)
+		r.Post("/addons", ftcPayRoutes.ClaimAddOn)
 	})
 
 	r.Route("/orders", func(r chi.Router) {
@@ -312,28 +312,28 @@ func StartServer(s ServerStatus) {
 		r.Use(xhttp.RequireFtcOrUnionID)
 
 		// Pagination: page=<int>&per_page=<int>
-		r.Get("/", ftcSubsRouter.ListOrders)
-		r.Get("/{id}", ftcSubsRouter.LoadOrder)
+		r.Get("/", ftcPayRoutes.ListOrders)
+		r.Get("/{id}", ftcPayRoutes.LoadOrder)
 
 		// Transfer order query data from ali or wx api as is.
-		r.Get("/{id}/payment-result", ftcSubsRouter.RawPaymentResult)
+		r.Get("/{id}/payment-result", ftcPayRoutes.RawPaymentResult)
 		// Verify if an order is confirmed, and returns PaymentResult.
-		r.Post("/{id}/verify-payment", ftcSubsRouter.VerifyPayment)
+		r.Post("/{id}/verify-payment", ftcPayRoutes.VerifyPayment)
 	})
 
 	r.Route("/invoices", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(xhttp.RequireFtcOrUnionID)
 		// List a user's invoices. Use query parameter `kind=create|renew|upgrade|addon` to filter.
-		r.Get("/", ftcSubsRouter.ListInvoices)
+		r.Get("/", ftcPayRoutes.ListInvoices)
 		// Show a single invoice.
-		r.Get("/{id}", ftcSubsRouter.LoadInvoice)
+		r.Get("/{id}", ftcPayRoutes.LoadInvoice)
 	})
 
 	r.Route("/ftc-pay", func(r chi.Router) {
 		r.Use(xhttp.RequireFtcOrUnionID)
 		r.Route("/discounts", func(r chi.Router) {
-			r.Get("/{id}/redeemed", ftcSubsRouter.IsDiscountRedeemed)
+			r.Get("/{id}/redeemed", ftcPayRoutes.IsDiscountRedeemed)
 		})
 	})
 
@@ -548,8 +548,8 @@ func StartServer(s ServerStatus) {
 	})
 
 	r.Route("/webhook", func(r chi.Router) {
-		r.Post("/wxpay", ftcSubsRouter.WxWebHook)
-		r.Post("/alipay", ftcSubsRouter.AliWebHook)
+		r.Post("/wxpay", ftcPayRoutes.WxWebHook)
+		r.Post("/alipay", ftcPayRoutes.AliWebHook)
 		// Events
 		//invoice.finalized
 		//invoice.payment_succeeded
