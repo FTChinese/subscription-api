@@ -56,6 +56,7 @@ func (u UserIDs) MustNormalize() UserIDs {
 // BuildFindInSet builds a value to be used in MySQL
 // function FIND_IN_SET(str, strlist) so that find
 // a user's data by both ftc id and union id.
+// Deprecated
 func (u UserIDs) BuildFindInSet() string {
 	strList := make([]string, 0)
 
@@ -70,7 +71,7 @@ func (u UserIDs) BuildFindInSet() string {
 	return strings.Join(strList, ",")
 }
 
-func (u UserIDs) IDSlice() []string {
+func (u UserIDs) CollectIDs() []string {
 	strList := make([]string, 0)
 
 	if u.FtcID.Valid {
