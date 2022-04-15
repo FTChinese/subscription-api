@@ -25,14 +25,14 @@ import (
 // priceId: string;
 // discountId?: string;
 // returnUrl?: string; Only for browsers.
-func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
+func (routes FtcPayRoutes) AliPay(kind ali.EntryKind) http.HandlerFunc {
 	webhookURL := config.AliWxWebhookURL(
-		router.live,
+		routes.live,
 		enum.PayMethodAli)
 
 	return func(w http.ResponseWriter, req *http.Request) {
-		defer router.Logger.Sync()
-		sugar := router.Logger.Sugar()
+		defer routes.Logger.Sync()
+		sugar := routes.Logger.Sugar()
 
 		// Collect client metadata from header.
 		clientApp := footprint.NewClient(req)
@@ -42,7 +42,7 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		sugar.Infof("Alipay from app for %v", readerIDs)
 
 		// Find user account.
-		acnt, err := router.ReaderRepo.FindBaseAccount(readerIDs)
+		acnt, err := routes.ReaderRepo.FindBaseAccount(readerIDs)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).DBError(err)
@@ -69,7 +69,7 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 
 		sugar.Infof("Start loading checkout item...")
 
-		item, re := router.loadCheckoutItem(params.FtcCartParams, router.live)
+		item, re := routes.loadCheckoutItem(params.FtcCartParams, routes.live)
 		if re != nil {
 			sugar.Error(re)
 			_ = render.New(w).JSON(re.StatusCode, re)
@@ -83,7 +83,7 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			WithAlipay()
 
 		sugar.Infof("Creating order...")
-		pi, err := router.SubsRepo.CreateOrder(cart)
+		pi, err := routes.SubsRepo.CreateOrder(cart)
 		if err != nil {
 			sugar.Error(err)
 			_ = render.New(w).InternalServerError(err.Error())
@@ -92,7 +92,7 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 
 		sugar.Infof("Created order: %+v", pi.Order)
 
-		err = router.postOrderCreation(pi.Order, clientApp)
+		err = routes.postOrderCreation(pi.Order, clientApp)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 			return
@@ -107,7 +107,7 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 			ReturnURL:   params.ReturnURL,
 		}
 
-		param, err := router.AliPayClient.CreateOrder(or)
+		param, err := routes.AliPayClient.CreateOrder(or)
 		if err != nil {
 			sugar.Error(err)
 			_ = xhttp.HandleSubsErr(w, err)
@@ -125,7 +125,7 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		}
 
 		go func() {
-			err := router.SubsRepo.SavePaymentIntent(alipayIntent.Schema())
+			err := routes.SubsRepo.SavePaymentIntent(alipayIntent.Schema())
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -138,9 +138,9 @@ func (router FtcPayRouter) AliPay(kind ali.EntryKind) http.HandlerFunc {
 // AliWebHook handles alipay server-side notification.
 // See https://opendocs.alipay.com/open/204/105301
 // POST /webhook/alipay
-func (router FtcPayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+func (routes FtcPayRoutes) AliWebHook(w http.ResponseWriter, req *http.Request) {
+	defer routes.Logger.Sync()
+	sugar := routes.Logger.Sugar()
 
 	var send = func(ok bool) {
 		var err error
@@ -166,7 +166,7 @@ func (router FtcPayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) 
 	// signature is generated for ali webhook.
 	//payload := test.GetMockPayload(req)
 	//If err is nil, then the signature is verified.
-	payload, err := router.AliPayClient.GetWebhookPayload(req)
+	payload, err := routes.AliPayClient.GetWebhookPayload(req)
 	sugar.Infof("+%v", payload)
 	if err != nil {
 		sugar.Error(err)
@@ -176,7 +176,7 @@ func (router FtcPayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) 
 
 	go func() {
 		sugar.Infof("Saving alipay webhook payload...")
-		err := router.SubsRepo.SaveAliWebhookPayload(
+		err := routes.SubsRepo.SaveAliWebhookPayload(
 			ali.NewWebhookPayload(payload))
 		if err != nil {
 			sugar.Error(err)
@@ -188,7 +188,7 @@ func (router FtcPayRouter) AliWebHook(w http.ResponseWriter, req *http.Request) 
 
 	// 1、商户需要验证该通知数据中的out_trade_no是否为商户系统中创建的订单号
 	// 2、判断total_amount是否确实为该订单的实际金额（即商户订单创建时的金额）
-	_, cfmErr := router.processWebhookResult(payResult)
+	_, cfmErr := routes.processWebhookResult(payResult)
 
 	if cfmErr != nil {
 		sugar.Error(cfmErr)

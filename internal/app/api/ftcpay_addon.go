@@ -11,10 +11,10 @@ import (
 // ftc staff manually.
 // TODO: when claiming addon for an expired b2b, we
 // revoke the linked licence automatically.
-func (router FtcPayRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
+func (routes FtcPayRoutes) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
 	readerIDs := xhttp.UserIDsFromHeader(req.Header)
 
-	result, err := router.AddOnRepo.ClaimAddOn(readerIDs)
+	result, err := routes.AddOnRepo.ClaimAddOn(readerIDs)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -22,7 +22,7 @@ func (router FtcPayRouter) ClaimAddOn(w http.ResponseWriter, req *http.Request) 
 
 	if !result.Versioned.IsZero() {
 		go func() {
-			_ = router.ReaderRepo.VersionMembership(result.Versioned)
+			_ = routes.ReaderRepo.VersionMembership(result.Versioned)
 		}()
 	}
 

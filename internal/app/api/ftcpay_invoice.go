@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func (router FtcPayRouter) ListInvoices(w http.ResponseWriter, req *http.Request) {
+func (routes FtcPayRoutes) ListInvoices(w http.ResponseWriter, req *http.Request) {
 	if err := req.ParseForm(); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -16,7 +16,7 @@ func (router FtcPayRouter) ListInvoices(w http.ResponseWriter, req *http.Request
 	p := gorest.GetPagination(req)
 	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
-	list, err := router.AddOnRepo.ListInvoices(
+	list, err := routes.AddOnRepo.ListInvoices(
 		userIDs,
 		p,
 	)
@@ -28,7 +28,7 @@ func (router FtcPayRouter) ListInvoices(w http.ResponseWriter, req *http.Request
 	_ = render.New(w).OK(list)
 }
 
-func (router FtcPayRouter) LoadInvoice(w http.ResponseWriter, req *http.Request) {
+func (routes FtcPayRoutes) LoadInvoice(w http.ResponseWriter, req *http.Request) {
 	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	invID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -37,7 +37,7 @@ func (router FtcPayRouter) LoadInvoice(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	inv, err := router.AddOnRepo.LoadInvoice(invID)
+	inv, err := routes.AddOnRepo.LoadInvoice(invID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return

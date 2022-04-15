@@ -13,7 +13,7 @@ import (
 // ListOrders loads a list of membership change history.
 // Pagination support by adding query parameter:
 // page=<int>&per_page=<int>
-func (router FtcPayRouter) ListOrders(w http.ResponseWriter, req *http.Request) {
+func (routes FtcPayRoutes) ListOrders(w http.ResponseWriter, req *http.Request) {
 	if err := req.ParseForm(); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
 		return
@@ -22,7 +22,7 @@ func (router FtcPayRouter) ListOrders(w http.ResponseWriter, req *http.Request) 
 	p := gorest.GetPagination(req)
 	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
-	list, err := router.SubsRepo.ListOrders(userIDs, p)
+	list, err := routes.SubsRepo.ListOrders(userIDs, p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -31,7 +31,7 @@ func (router FtcPayRouter) ListOrders(w http.ResponseWriter, req *http.Request) 
 	_ = render.New(w).OK(list)
 }
 
-func (router FtcPayRouter) LoadOrder(w http.ResponseWriter, req *http.Request) {
+func (routes FtcPayRoutes) LoadOrder(w http.ResponseWriter, req *http.Request) {
 	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
 	orderID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -40,7 +40,7 @@ func (router FtcPayRouter) LoadOrder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	order, err := router.SubsRepo.RetrieveOrder(orderID)
+	order, err := routes.SubsRepo.RetrieveOrder(orderID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -56,9 +56,9 @@ func (router FtcPayRouter) LoadOrder(w http.ResponseWriter, req *http.Request) {
 
 // RawPaymentResult fetch data from wxpay or alipay order query endpoints and transfer the data as is.
 // The response data formats are not always the same one.
-func (router FtcPayRouter) RawPaymentResult(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+func (routes FtcPayRoutes) RawPaymentResult(w http.ResponseWriter, req *http.Request) {
+	defer routes.Logger.Sync()
+	sugar := routes.Logger.Sugar()
 
 	// Get ftc order id from URL
 	orderID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -68,7 +68,7 @@ func (router FtcPayRouter) RawPaymentResult(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	order, err := router.SubsRepo.LoadFullOrder(orderID)
+	order, err := routes.SubsRepo.LoadFullOrder(orderID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -83,7 +83,7 @@ func (router FtcPayRouter) RawPaymentResult(w http.ResponseWriter, req *http.Req
 
 	switch order.PaymentMethod {
 	case enum.PayMethodWx:
-		client, err := router.WxPayClients.FindByAppID(order.ID)
+		client, err := routes.WxPayClients.FindByAppID(order.ID)
 		if err != nil {
 			_ = render.New(w).InternalServerError(err.Error())
 			return
@@ -98,7 +98,7 @@ func (router FtcPayRouter) RawPaymentResult(w http.ResponseWriter, req *http.Req
 		return
 
 	case enum.PayMethodAli:
-		aliRes, err := router.AliPayClient.QueryOrder(order.ID)
+		aliRes, err := routes.AliPayClient.QueryOrder(order.ID)
 		if err != nil {
 			_ = render.New(w).InternalServerError(err.Error())
 			return
@@ -113,9 +113,9 @@ func (router FtcPayRouter) RawPaymentResult(w http.ResponseWriter, req *http.Req
 // VerifyPayment checks against payment provider's api to get
 // the payment result of an order.
 // POST /orders/{id}/verify-payment
-func (router FtcPayRouter) VerifyPayment(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
-	sugar := router.Logger.Sugar()
+func (routes FtcPayRoutes) VerifyPayment(w http.ResponseWriter, req *http.Request) {
+	defer routes.Logger.Sync()
+	sugar := routes.Logger.Sugar()
 
 	// Get ftc order id from URL
 	orderID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -129,7 +129,7 @@ func (router FtcPayRouter) VerifyPayment(w http.ResponseWriter, req *http.Reques
 
 	sugar.Info("Start verifying payment")
 
-	order, err := router.SubsRepo.LoadFullOrder(orderID)
+	order, err := routes.SubsRepo.LoadFullOrder(orderID)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -143,7 +143,7 @@ func (router FtcPayRouter) VerifyPayment(w http.ResponseWriter, req *http.Reques
 	}
 
 	// Start fetching payment result from Ali/Wx
-	payResult, err := router.VerifyOrder(order)
+	payResult, err := routes.VerifyOrder(order)
 	sugar.Infof("Payment result: %+v", payResult)
 
 	if err != nil {
@@ -153,7 +153,7 @@ func (router FtcPayRouter) VerifyPayment(w http.ResponseWriter, req *http.Reques
 	}
 
 	go func() {
-		err := router.SubsRepo.SavePayResult(payResult)
+		err := routes.SubsRepo.SavePayResult(payResult)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -162,7 +162,7 @@ func (router FtcPayRouter) VerifyPayment(w http.ResponseWriter, req *http.Reques
 	if !payResult.IsOrderPaid() {
 		sugar.Info("Order is either not paid or already confirmed")
 
-		m, err := router.ReaderRepo.RetrieveMember(order.CompoundID)
+		m, err := routes.ReaderRepo.RetrieveMember(order.CompoundID)
 		if err != nil {
 			_ = render.New(w).DBError(err)
 			return
@@ -178,7 +178,7 @@ func (router FtcPayRouter) VerifyPayment(w http.ResponseWriter, req *http.Reques
 	}
 
 	// If the order is paid, confirm it.
-	cfmResult, cfmErr := router.ConfirmOrder(payResult, order)
+	cfmResult, cfmErr := routes.ConfirmOrder(payResult, order)
 	if cfmErr != nil {
 		_ = render.New(w).DBError(cfmErr)
 		return
