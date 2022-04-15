@@ -52,7 +52,7 @@ func StartServer(s ServerStatus) {
 
 	authRouter := api.NewAuthRouter(userShared)
 	accountRouter := api.NewAccountRouter(userShared)
-	ftcSubsRouter := api.NewFtcPayRouter(
+	ftcSubsRouter := api.NewFtcPayRoutes(
 		myDBs,
 		paywallCache,
 		logger,
@@ -328,6 +328,13 @@ func StartServer(s ServerStatus) {
 		r.Get("/", ftcSubsRouter.ListInvoices)
 		// Show a single invoice.
 		r.Get("/{id}", ftcSubsRouter.LoadInvoice)
+	})
+
+	r.Route("/ftc-pay", func(r chi.Router) {
+		r.Use(xhttp.RequireFtcOrUnionID)
+		r.Route("/discounts", func(r chi.Router) {
+			r.Get("/{id}/redeemed", ftcSubsRouter.IsDiscountRedeemed)
+		})
 	})
 
 	r.Route("/stripe", func(r chi.Router) {
