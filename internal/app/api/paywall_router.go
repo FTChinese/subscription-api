@@ -23,7 +23,7 @@ func NewPaywallRouter(
 	live bool,
 ) PaywallRouter {
 	return PaywallRouter{
-		productRepo: products.Env{},
+		productRepo: products.New(dbs),
 		PaymentShared: NewPaymentShared(
 			dbs,
 			c,
