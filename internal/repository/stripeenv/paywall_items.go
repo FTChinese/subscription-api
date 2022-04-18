@@ -36,8 +36,8 @@ func (env Env) loadOrFetchPaywallPrices(ids []string, refresh bool) ([]price.Str
 }
 
 func isAllPriceRetrieved(ids []string, prices []price.StripePrice) []string {
-	var result []string
-	var received map[string]interface{}
+	var result = make([]string, 0)
+	var received = make(map[string]interface{})
 	for _, v := range prices {
 		received[v.ID] = nil
 	}
