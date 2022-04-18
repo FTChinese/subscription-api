@@ -24,9 +24,9 @@ import (
 // - invoice.payment_succeeded
 // - invoice.upcoming
 // See https://stripe.com/docs/api/events/types
-func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sugar()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) WebHook(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sugar()
+	sugar := routes.logger.Sugar()
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -35,7 +35,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	event, err := webhook.ConstructEvent(body, req.Header.Get("Stripe-Signature"), router.signingKey)
+	event, err := webhook.ConstructEvent(body, req.Header.Get("Stripe-Signature"), routes.signingKey)
 	if err != nil {
 		sugar.Errorf("Error verifying webhook signature: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -55,7 +55,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		go func() {
-			_ = router.eventCustomer(rawCus)
+			_ = routes.eventCustomer(rawCus)
 		}()
 		w.WriteHeader(http.StatusOK)
 
@@ -70,7 +70,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		go func() {
-			err := router.eventSubscription(&s)
+			err := routes.eventSubscription(&s)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -85,7 +85,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}
 
 		go func() {
-			_ = router.eventCoupon(c)
+			_ = routes.eventCoupon(c)
 		}()
 
 		w.WriteHeader(http.StatusOK)
@@ -97,7 +97,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		go func() {
-			_ = router.eventSetupIntent(si)
+			_ = routes.eventSetupIntent(si)
 		}()
 		w.WriteHeader(http.StatusOK)
 
@@ -108,7 +108,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		go func() {
-			err := router.stripeRepo.UpsertSetupIntent(stripe.NewSetupIntent(&si))
+			err := routes.stripeRepo.UpsertSetupIntent(stripe.NewSetupIntent(&si))
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -131,7 +131,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}
 		sugar.Infof("invoice: %v", i)
 		go func() {
-			err := router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
+			err := routes.stripeRepo.UpsertInvoice(stripe.NewInvoice(&i))
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -151,7 +151,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		go func() {
-			_ = router.eventPaymentSucceeded(invoice)
+			_ = routes.eventPaymentSucceeded(invoice)
 		}()
 		w.WriteHeader(http.StatusOK)
 
@@ -167,7 +167,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		go func() {
-			_ = router.eventPaymentMethod(rawPM)
+			_ = routes.eventPaymentMethod(rawPM)
 		}()
 		w.WriteHeader(http.StatusOK)
 
@@ -181,7 +181,7 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 		}
 
 		go func() {
-			_ = router.eventPrice(rawPrice)
+			_ = routes.eventPrice(rawPrice)
 		}()
 
 		w.WriteHeader(http.StatusOK)
@@ -197,11 +197,11 @@ func (router StripeRouter) WebHook(w http.ResponseWriter, req *http.Request) {
 // If the default payment method is set on a customer, we will try to
 // duplicate the payment method data from Stripe if it is not yet saved
 // in our db yet.
-func (router StripeRouter) eventCustomer(rawCus sdk.Customer) error {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) eventCustomer(rawCus sdk.Customer) error {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
-	baseAccount, err := router.readerRepo.BaseAccountByStripeID(rawCus.ID)
+	baseAccount, err := routes.readerRepo.BaseAccountByStripeID(rawCus.ID)
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -209,7 +209,7 @@ func (router StripeRouter) eventCustomer(rawCus sdk.Customer) error {
 
 	cus := stripe.NewCustomer(baseAccount.FtcID, &rawCus)
 
-	err = router.stripeRepo.UpsertCustomer(cus)
+	err = routes.stripeRepo.UpsertCustomer(cus)
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -220,7 +220,7 @@ func (router StripeRouter) eventCustomer(rawCus sdk.Customer) error {
 	}
 
 	// Next checks if payment method saved in our db.
-	pm, err := router.stripeRepo.LoadOrFetchPaymentMethod(cus.DefaultPaymentMethodID.String, false)
+	pm, err := routes.stripeRepo.LoadOrFetchPaymentMethod(cus.DefaultPaymentMethodID.String, false)
 	if err != nil {
 		return nil
 	}
@@ -229,7 +229,7 @@ func (router StripeRouter) eventCustomer(rawCus sdk.Customer) error {
 		return nil
 	}
 
-	err = router.stripeRepo.UpsertPaymentMethod(pm)
+	err = routes.stripeRepo.UpsertPaymentMethod(pm)
 	if err != nil {
 		return err
 	}
@@ -237,13 +237,13 @@ func (router StripeRouter) eventCustomer(rawCus sdk.Customer) error {
 	return nil
 }
 
-func (router StripeRouter) eventCoupon(rawCoupon sdk.Coupon) error {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) eventCoupon(rawCoupon sdk.Coupon) error {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	coupon := price.NewStripeCoupon(&rawCoupon)
 
-	err := router.stripeRepo.UpsertCoupon(coupon)
+	err := routes.stripeRepo.UpsertCoupon(coupon)
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -252,12 +252,12 @@ func (router StripeRouter) eventCoupon(rawCoupon sdk.Coupon) error {
 	return nil
 }
 
-func (router StripeRouter) eventSetupIntent(rawSI sdk.SetupIntent) error {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) eventSetupIntent(rawSI sdk.SetupIntent) error {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	si := stripe.NewSetupIntent(&rawSI)
-	err := router.stripeRepo.UpsertSetupIntent(si)
+	err := routes.stripeRepo.UpsertSetupIntent(si)
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -267,20 +267,20 @@ func (router StripeRouter) eventSetupIntent(rawSI sdk.SetupIntent) error {
 		return nil
 	}
 
-	pm, err := router.stripeRepo.LoadOrFetchPaymentMethod(si.PaymentMethodID.String, true)
+	pm, err := routes.stripeRepo.LoadOrFetchPaymentMethod(si.PaymentMethodID.String, true)
 	if err != nil {
 		sugar.Error(err)
 		return err
 	}
 
 	// Save/Update payment method
-	err = router.stripeRepo.UpsertPaymentMethod(pm)
+	err = routes.stripeRepo.UpsertPaymentMethod(pm)
 	if err != nil {
 		sugar.Error(err)
 		return err
 	}
 
-	_, err = router.stripeRepo.SetCusDefaultPaymentIfMissing(si.CustomerID, si.PaymentMethodID.String)
+	_, err = routes.stripeRepo.SetCusDefaultPaymentIfMissing(si.CustomerID, si.PaymentMethodID.String)
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -290,12 +290,12 @@ func (router StripeRouter) eventSetupIntent(rawSI sdk.SetupIntent) error {
 }
 
 // eventPaymentMethod handles payment method event.
-func (router StripeRouter) eventPaymentMethod(rawPM sdk.PaymentMethod) error {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) eventPaymentMethod(rawPM sdk.PaymentMethod) error {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	pm := stripe.NewPaymentMethod(&rawPM)
-	err := router.stripeRepo.UpsertPaymentMethod(pm)
+	err := routes.stripeRepo.UpsertPaymentMethod(pm)
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -307,11 +307,11 @@ func (router StripeRouter) eventPaymentMethod(rawPM sdk.PaymentMethod) error {
 // eventPaymentSucceeded sets payment method extracted from
 // invoice's payment intent to the subscription contained
 // in this invoice.
-func (router StripeRouter) eventPaymentSucceeded(rawInvoice sdk.Invoice) error {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) eventPaymentSucceeded(rawInvoice sdk.Invoice) error {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
-	pi, err := router.stripeRepo.Client.FetchPaymentIntent(
+	pi, err := routes.stripeRepo.Client.FetchPaymentIntent(
 		rawInvoice.PaymentIntent.ID)
 
 	if err != nil {
@@ -320,7 +320,7 @@ func (router StripeRouter) eventPaymentSucceeded(rawInvoice sdk.Invoice) error {
 	}
 
 	// Set default payment method on subscription
-	subs, err := router.stripeRepo.Client.SetSubsDefaultPaymentMethod(
+	subs, err := routes.stripeRepo.Client.SetSubsDefaultPaymentMethod(
 		rawInvoice.Subscription.ID,
 		pi.PaymentMethod.ID,
 	)
@@ -331,7 +331,7 @@ func (router StripeRouter) eventPaymentSucceeded(rawInvoice sdk.Invoice) error {
 
 	sugar.Infof("Default payment method set for subscription: %s - %s", subs.ID, pi.PaymentMethod.ID)
 
-	pm, err := router.stripeRepo.LoadOrFetchPaymentMethod(pi.PaymentMethod.ID, false)
+	pm, err := routes.stripeRepo.LoadOrFetchPaymentMethod(pi.PaymentMethod.ID, false)
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -342,14 +342,14 @@ func (router StripeRouter) eventPaymentSucceeded(rawInvoice sdk.Invoice) error {
 	}
 
 	// Save/Update payment method
-	err = router.stripeRepo.UpsertPaymentMethod(pm)
+	err = routes.stripeRepo.UpsertPaymentMethod(pm)
 	if err != nil {
 		sugar.Error(err)
 		return err
 	}
 
 	// Save the invoice.
-	err = router.stripeRepo.UpsertInvoice(stripe.NewInvoice(&rawInvoice))
+	err = routes.stripeRepo.UpsertInvoice(stripe.NewInvoice(&rawInvoice))
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -358,13 +358,13 @@ func (router StripeRouter) eventPaymentSucceeded(rawInvoice sdk.Invoice) error {
 	return nil
 }
 
-func (router StripeRouter) eventPrice(rawPrice sdk.Price) error {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) eventPrice(rawPrice sdk.Price) error {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	p := price.NewStripePrice(&rawPrice)
 
-	err := router.stripeRepo.UpsertPrice(p)
+	err := routes.stripeRepo.UpsertPrice(p)
 	if err != nil {
 		sugar.Error(err)
 		return err
@@ -374,13 +374,13 @@ func (router StripeRouter) eventPrice(rawPrice sdk.Price) error {
 }
 
 // Handle subscription received by webhook.
-func (router StripeRouter) eventSubscription(ss *sdk.Subscription) error {
+func (routes StripeRoutes) eventSubscription(ss *sdk.Subscription) error {
 
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	// Find user account by stripe customer id.
-	account, err := router.readerRepo.BaseAccountByStripeID(ss.Customer.ID)
+	account, err := routes.readerRepo.BaseAccountByStripeID(ss.Customer.ID)
 	if err != nil {
 		sugar.Error(err)
 		// If user account is not found,
@@ -390,7 +390,7 @@ func (router StripeRouter) eventSubscription(ss *sdk.Subscription) error {
 			return err
 		}
 
-		err = router.stripeRepo.UpsertSubs(
+		err = routes.stripeRepo.UpsertSubs(
 			stripe.NewSubs("", ss),
 			false)
 		if err != nil {
@@ -404,13 +404,13 @@ func (router StripeRouter) eventSubscription(ss *sdk.Subscription) error {
 	userIDs := account.CompoundIDs()
 	subs := stripe.NewSubs("", ss)
 
-	result, err := router.stripeRepo.OnWebhookSubs(subs, userIDs)
+	result, err := routes.stripeRepo.OnWebhookSubs(subs, userIDs)
 	if err != nil {
 		sugar.Error(err)
 
 		var whe stripe.WebhookError
 		if errors.As(err, &whe) {
-			err := router.stripeRepo.SaveWebhookError(whe)
+			err := routes.stripeRepo.SaveWebhookError(whe)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -420,7 +420,7 @@ func (router StripeRouter) eventSubscription(ss *sdk.Subscription) error {
 	}
 
 	// Update subscription
-	err = router.stripeRepo.UpsertSubs(
+	err = routes.stripeRepo.UpsertSubs(
 		stripe.NewSubs("", ss), false)
 
 	if err != nil {
@@ -428,7 +428,7 @@ func (router StripeRouter) eventSubscription(ss *sdk.Subscription) error {
 	}
 
 	// Backup old membership
-	err = router.readerRepo.VersionMembership(result.Versioned)
+	err = routes.readerRepo.VersionMembership(result.Versioned)
 
 	if err != nil {
 		sugar.Error(err)

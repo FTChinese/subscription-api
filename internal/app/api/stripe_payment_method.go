@@ -11,9 +11,9 @@ import (
 // or fetch it from Stripe if not exists.
 // If query parameter ?refresh=true is passed,
 // it will bypass local db and use Stripe API directly.
-func (router StripeRouter) LoadPaymentMethod(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) LoadPaymentMethod(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	pmID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -24,7 +24,7 @@ func (router StripeRouter) LoadPaymentMethod(w http.ResponseWriter, req *http.Re
 
 	refresh := xhttp.ParseQueryRefresh(req)
 
-	pm, err := router.loadPaymentMethod(pmID, refresh)
+	pm, err := routes.loadPaymentMethod(pmID, refresh)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)
@@ -34,12 +34,12 @@ func (router StripeRouter) LoadPaymentMethod(w http.ResponseWriter, req *http.Re
 	_ = render.New(w).OK(pm)
 }
 
-func (router StripeRouter) loadPaymentMethod(pmID string, refresh bool) (stripe.PaymentMethod, error) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) loadPaymentMethod(pmID string, refresh bool) (stripe.PaymentMethod, error) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	// Fetch payment method
-	pm, err := router.stripeRepo.LoadOrFetchPaymentMethod(pmID, refresh)
+	pm, err := routes.stripeRepo.LoadOrFetchPaymentMethod(pmID, refresh)
 	if err != nil {
 		return stripe.PaymentMethod{}, err
 	}
@@ -47,7 +47,7 @@ func (router StripeRouter) loadPaymentMethod(pmID string, refresh bool) (stripe.
 	// Save it if not save in our db yet.
 	if pm.IsFromStripe {
 		go func() {
-			err := router.stripeRepo.UpsertPaymentMethod(pm)
+			err := routes.stripeRepo.UpsertPaymentMethod(pm)
 			if err != nil {
 				sugar.Error(err)
 			}

@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type StripeRouter struct {
+type StripeRoutes struct {
 	signingKey     string
 	publishableKey string
 	readerRepo     shared.ReaderCommon
@@ -23,13 +23,13 @@ type StripeRouter struct {
 	live           bool
 }
 
-func NewStripeRouter(
+func NewStripeRoutes(
 	dbs db.ReadWriteMyDBs,
 	c *cache.Cache,
 	logger *zap.Logger,
 	live bool,
-) StripeRouter {
-	return StripeRouter{
+) StripeRoutes {
+	return StripeRoutes{
 		signingKey: config.MustStripeWebhookKey().
 			Pick(live),
 		publishableKey: config.MustStripePubKey().
@@ -45,35 +45,35 @@ func NewStripeRouter(
 	}
 }
 
-func (router StripeRouter) handleSubsResult(result stripe.SubsSuccess) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) handleSubsResult(result stripe.SubsSuccess) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
-	err := router.stripeRepo.UpsertSubs(result.Subs, true)
+	err := routes.stripeRepo.UpsertSubs(result.Subs, true)
 	if err != nil {
 		sugar.Error(err)
 	}
 
-	err = router.stripeRepo.UpsertInvoice(result.Subs.LatestInvoice)
+	err = routes.stripeRepo.UpsertInvoice(result.Subs.LatestInvoice)
 	if err != nil {
 		sugar.Error(err)
 	}
 
-	err = router.stripeRepo.UpsertPaymentIntent(result.Subs.PaymentIntent)
+	err = routes.stripeRepo.UpsertPaymentIntent(result.Subs.PaymentIntent)
 	if err != nil {
 		sugar.Error(err)
 	}
 
 	if !result.Versioned.IsZero() {
-		err := router.readerRepo.VersionMembership(result.Versioned)
+		err := routes.readerRepo.VersionMembership(result.Versioned)
 		if err != nil {
 			sugar.Error(err)
 		}
 	}
 }
 
-func (router StripeRouter) findCartItem(params stripe.SubsParams) (reader.CartItemStripe, error) {
-	paywall, err := router.cacheRepo.LoadPaywall(router.live)
+func (routes StripeRoutes) findCartItem(params stripe.SubsParams) (reader.CartItemStripe, error) {
+	paywall, err := routes.cacheRepo.LoadPaywall(routes.live)
 	if err == nil {
 		item, err := params.BuildCartItem(paywall.Stripe)
 		if err == nil {
@@ -81,7 +81,7 @@ func (router StripeRouter) findCartItem(params stripe.SubsParams) (reader.CartIt
 		}
 	}
 
-	item, err := router.stripeRepo.LoadCheckoutItem(params)
+	item, err := routes.stripeRepo.LoadCheckoutItem(params)
 	if err != nil {
 		return reader.CartItemStripe{}, err
 	}
@@ -89,25 +89,25 @@ func (router StripeRouter) findCartItem(params stripe.SubsParams) (reader.CartIt
 	// Save to our database if not saved yet.
 	if item.AnyFromStripe() {
 		go func() {
-			defer router.logger.Sync()
-			sugar := router.logger.Sugar()
+			defer routes.logger.Sync()
+			sugar := routes.logger.Sugar()
 
 			if item.Recurring.IsFromStripe {
-				err := router.stripeRepo.UpsertPrice(item.Recurring)
+				err := routes.stripeRepo.UpsertPrice(item.Recurring)
 				if err != nil {
 					sugar.Error(err)
 				}
 			}
 
 			if item.Introductory.IsFromStripe {
-				err := router.stripeRepo.UpsertPrice(item.Introductory)
+				err := routes.stripeRepo.UpsertPrice(item.Introductory)
 				if err != nil {
 					sugar.Error(err)
 				}
 			}
 
 			if item.Coupon.IsFromStripe {
-				err := router.stripeRepo.UpsertCoupon(item.Coupon)
+				err := routes.stripeRepo.UpsertCoupon(item.Coupon)
 				if err != nil {
 					sugar.Error(err)
 				}
@@ -118,11 +118,11 @@ func (router StripeRouter) findCartItem(params stripe.SubsParams) (reader.CartIt
 	return item, nil
 }
 
-func (router StripeRouter) saveShoppingSession(s stripe.ShoppingSession) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) saveShoppingSession(s stripe.ShoppingSession) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
-	err := router.stripeRepo.SaveShoppingSession(s)
+	err := routes.stripeRepo.SaveShoppingSession(s)
 	if err != nil {
 		sugar.Error(err)
 	}
@@ -136,7 +136,7 @@ func (router StripeRouter) saveShoppingSession(s stripe.ShoppingSession) {
 		return
 	}
 
-	err = router.stripeRepo.InsertCouponRedeemed(redeemed)
+	err = routes.stripeRepo.InsertCouponRedeemed(redeemed)
 	if err != nil {
 		sugar.Error(err)
 	}

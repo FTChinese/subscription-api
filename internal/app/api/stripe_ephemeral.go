@@ -13,9 +13,9 @@ import (
 //
 // POST /stripe/customers/{id}/ephemeral-keys?api_version=<version>
 // Kept for android app < 6.2.0
-func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) IssueKey(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	// Get stripe customer id.
 	cusID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -31,7 +31,7 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	keyData, err := router.stripeRepo.Client.CreateEphemeralKey(cusID, stripeVersion)
+	keyData, err := routes.stripeRepo.Client.CreateEphemeralKey(cusID, stripeVersion)
 	if err != nil {
 		sugar.Error(err)
 		err = xhttp.HandleSubsErr(w, err)
@@ -48,9 +48,9 @@ func (router StripeRouter) IssueKey(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (router StripeRouter) SetupWithEphemeral(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) SetupWithEphemeral(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	_ = req.ParseForm()
 
@@ -67,7 +67,7 @@ func (router StripeRouter) SetupWithEphemeral(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	rawSI, rawKey, err := router.stripeRepo.Client.SetupWithEphemeral(params.Customer)
+	rawSI, rawKey, err := routes.stripeRepo.Client.SetupWithEphemeral(params.Customer)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)
@@ -78,14 +78,14 @@ func (router StripeRouter) SetupWithEphemeral(w http.ResponseWriter, req *http.R
 		ClientSecret:   rawSI.ClientSecret,
 		EphemeralKey:   rawKey.Secret,
 		CustomerID:     params.Customer,
-		PublishableKey: router.publishableKey,
-		LiveMode:       router.live,
+		PublishableKey: routes.publishableKey,
+		LiveMode:       routes.live,
 	}
 
 	si := stripe.NewSetupIntent(rawSI)
 
 	go func() {
-		err := router.stripeRepo.UpsertSetupIntent(si)
+		err := routes.stripeRepo.UpsertSetupIntent(si)
 		if err != nil {
 			sugar.Error(err)
 		}

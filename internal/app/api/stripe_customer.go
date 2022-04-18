@@ -20,13 +20,13 @@ import (
 // POST /stripe/customers
 // Request: empty.
 // Response: stripe.Customer
-func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) CreateCustomer(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	ftcID := xhttp.GetFtcID(req.Header)
 
-	cus, err := router.stripeRepo.CreateCustomer(ftcID)
+	cus, err := routes.stripeRepo.CreateCustomer(ftcID)
 
 	if err != nil {
 		sugar.Error(err)
@@ -36,7 +36,7 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 
 	if cus.IsFromStripe {
 		go func() {
-			err := router.stripeRepo.UpsertCustomer(cus)
+			err := routes.stripeRepo.UpsertCustomer(cus)
 			if err != nil {
 				sugar.Error(err)
 			}
@@ -46,9 +46,9 @@ func (router StripeRouter) CreateCustomer(w http.ResponseWriter, req *http.Reque
 	_ = render.New(w).OK(cus)
 }
 
-func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) GetCustomer(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	ftcID := xhttp.GetFtcID(req.Header)
 	refresh := xhttp.ParseQueryRefresh(req)
@@ -59,7 +59,7 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	cus, err := router.loadCustomer(cusID, refresh)
+	cus, err := routes.loadCustomer(cusID, refresh)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)
@@ -75,11 +75,11 @@ func (router StripeRouter) GetCustomer(w http.ResponseWriter, req *http.Request)
 	_ = render.New(w).OK(cus)
 }
 
-func (router StripeRouter) loadCustomer(id string, refresh bool) (stripe.Customer, error) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) loadCustomer(id string, refresh bool) (stripe.Customer, error) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
-	cus, err := router.stripeRepo.LoadOrFetchCustomer(id, refresh)
+	cus, err := routes.stripeRepo.LoadOrFetchCustomer(id, refresh)
 	if err != nil {
 		sugar.Error(err)
 		return stripe.Customer{}, err
@@ -89,7 +89,7 @@ func (router StripeRouter) loadCustomer(id string, refresh bool) (stripe.Custome
 		return cus, nil
 	}
 
-	ba, err := router.readerRepo.BaseAccountByStripeID(id)
+	ba, err := routes.readerRepo.BaseAccountByStripeID(id)
 	if err != nil {
 		sugar.Error(err)
 		return stripe.Customer{}, err
@@ -98,7 +98,7 @@ func (router StripeRouter) loadCustomer(id string, refresh bool) (stripe.Custome
 	cus = cus.WithFtcID(ba.FtcID)
 
 	go func() {
-		err := router.stripeRepo.UpsertCustomer(cus)
+		err := routes.stripeRepo.UpsertCustomer(cus)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -109,9 +109,9 @@ func (router StripeRouter) loadCustomer(id string, refresh bool) (stripe.Custome
 
 // GetCusDefaultPaymentMethod load the payment method details
 // which is set as a customer's default payment method.
-func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) GetCusDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	cusID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -124,7 +124,7 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 
 	// Load customer first; otherwise we do not know the
 	// default payment method id.
-	cus, err := router.loadCustomer(cusID, false)
+	cus, err := routes.loadCustomer(cusID, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)
@@ -138,7 +138,7 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 	}
 
 	// Fetch payment method
-	pm, err := router.loadPaymentMethod(
+	pm, err := routes.loadPaymentMethod(
 		cus.DefaultPaymentMethodID.String,
 		refresh)
 	if err != nil {
@@ -150,9 +150,9 @@ func (router StripeRouter) GetCusDefaultPaymentMethod(w http.ResponseWriter, req
 	_ = render.New(w).OK(pm)
 }
 
-func (router StripeRouter) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	ftcID := xhttp.GetFtcID(req.Header)
 	cusID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -174,7 +174,7 @@ func (router StripeRouter) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, 
 		return
 	}
 
-	acnt, err := router.readerRepo.BaseAccountByUUID(ftcID)
+	acnt, err := routes.readerRepo.BaseAccountByUUID(ftcID)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
@@ -187,7 +187,7 @@ func (router StripeRouter) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, 
 		_ = render.New(w).NotFound("")
 	}
 
-	rawCus, err := router.stripeRepo.Client.SetCusDefaultPaymentMethod(
+	rawCus, err := routes.stripeRepo.Client.SetCusDefaultPaymentMethod(
 		cusID,
 		params.DefaultMethod)
 	if err != nil {
@@ -202,20 +202,20 @@ func (router StripeRouter) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, 
 	// will handle it.
 	go func() {
 		// Save updated customer
-		err := router.stripeRepo.UpsertCustomer(cus)
+		err := routes.stripeRepo.UpsertCustomer(cus)
 		if err != nil {
 			sugar.Error(err)
 		}
 
 		// Fetch the related payment method from Stripe
-		pm, err := router.stripeRepo.LoadOrFetchPaymentMethod(params.DefaultMethod, true)
+		pm, err := routes.stripeRepo.LoadOrFetchPaymentMethod(params.DefaultMethod, true)
 		if err != nil {
 			sugar.Error(err)
 			return
 		}
 
 		// Save this payment method.
-		err = router.stripeRepo.UpsertPaymentMethod(pm)
+		err = routes.stripeRepo.UpsertPaymentMethod(pm)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -224,9 +224,9 @@ func (router StripeRouter) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, 
 	_ = render.New(w).OK(cus)
 }
 
-func (router StripeRouter) ListCusPaymentMethods(w http.ResponseWriter, req *http.Request) {
-	defer router.logger.Sync()
-	sugar := router.logger.Sugar()
+func (routes StripeRoutes) ListCusPaymentMethods(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
 
 	p := gorest.GetPagination(req)
 	cusID, err := xhttp.GetURLParam(req, "id").ToString()
@@ -236,7 +236,7 @@ func (router StripeRouter) ListCusPaymentMethods(w http.ResponseWriter, req *htt
 		return
 	}
 
-	list, err := router.stripeRepo.ListCusPaymentMethods(cusID, p)
+	list, err := routes.stripeRepo.ListCusPaymentMethods(cusID, p)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
