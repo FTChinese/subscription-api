@@ -2,7 +2,7 @@ package xhttp
 
 import (
 	"github.com/FTChinese/go-rest"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 )
 
