@@ -67,7 +67,7 @@ func StartServer(s ServerStatus) {
 		Live:         s.LiveMode,
 	}
 
-	stripeRouter := api.NewStripeRouter(
+	stripeRoutes := api.NewStripeRoutes(
 		myDBs,
 		paywallCache,
 		logger,
@@ -344,7 +344,15 @@ func StartServer(s ServerStatus) {
 			r.Use(xhttp.FormParsed)
 			// List stripe prices. If query parameter has refresh=true, no cached data will be used.
 			// ?refresh=true|false
-			r.Get("/", stripeRouter.ListPrices)
+			r.Get("/", stripeRoutes.ListPrices)
+			// ?refresh=true
+			r.Get("/{id}", stripeRoutes.LoadStripePrice)
+		})
+
+		r.Route("/coupons", func(r chi.Router) {
+			r.Use(xhttp.FormParsed)
+			// ?refresh=true
+			r.Get("/{id}", stripeRoutes.LoadStripeCoupon)
 		})
 
 		r.Route("/customers", func(r chi.Router) {
@@ -352,60 +360,62 @@ func StartServer(s ServerStatus) {
 			r.Use(xhttp.RequireFtcID)
 
 			// Create a stripe customer if not exists yet
-			r.Post("/", stripeRouter.CreateCustomer)
+			r.Post("/", stripeRoutes.CreateCustomer)
 			// Use this to check customer's default source and default payment method.
 			// refresh=true
-			r.Get("/{id}", stripeRouter.GetCustomer)
+			r.Get("/{id}", stripeRoutes.GetCustomer)
 
-			r.Post("/{id}/default-payment-method", stripeRouter.UpdateCusDefaultPaymentMethod)
+			r.Post("/{id}/default-payment-method", stripeRoutes.UpdateCusDefaultPaymentMethod)
 			// ?refresh=true
-			r.Get("/{id}/default-payment-method", stripeRouter.GetCusDefaultPaymentMethod)
+			r.Get("/{id}/default-payment-method", stripeRoutes.GetCusDefaultPaymentMethod)
 
-			r.Get("/{id}/payment-methods", stripeRouter.ListCusPaymentMethods)
+			r.Get("/{id}/payment-methods", stripeRoutes.ListCusPaymentMethods)
 
 			// Generate ephemeral key for client when it is
 			// trying to modify customer data.
-			r.Post("/{id}/ephemeral-keys", stripeRouter.IssueKey)
+			r.Post("/{id}/ephemeral-keys", stripeRoutes.IssueKey)
 		})
 
 		r.Route("/setup-intents", func(r chi.Router) {
 			r.Use(xhttp.RequireFtcID)
 			// Create a payment method
-			r.Post("/", stripeRouter.CreateSetupIntent)
+			r.Post("/", stripeRoutes.CreateSetupIntent)
 			// ?refresh=true
-			r.Get("/{id}", stripeRouter.GetSetupIntent)
+			r.With(xhttp.FormParsed).
+				Get("/{id}", stripeRoutes.GetSetupIntent)
 			// ?refresh=true
-			r.Get("/{id}/payment-method", stripeRouter.GetSetupPaymentMethod)
+			r.Get("/{id}/payment-method", stripeRoutes.GetSetupPaymentMethod)
 		})
 
 		r.Route("/payment-sheet", func(r chi.Router) {
-			r.Post("/setup", stripeRouter.SetupWithEphemeral)
+			r.Post("/setup", stripeRoutes.SetupWithEphemeral)
 		})
 
 		r.Route("/payment-methods", func(r chi.Router) {
 			r.Use(xhttp.RequireFtcID)
 			// Query parameter: ?refresh=true|false
-			r.Get("/{id}", stripeRouter.LoadPaymentMethod)
+			r.With(xhttp.FormParsed).
+				Get("/{id}", stripeRoutes.LoadPaymentMethod)
 		})
 
 		r.Route("/subs", func(r chi.Router) {
 			r.Use(xhttp.RequireFtcID)
 
 			// Create a subscription
-			r.Post("/", stripeRouter.CreateSubs)
+			r.Post("/", stripeRoutes.CreateSubs)
 			// Get a single subscription
-			r.Get("/{id}", stripeRouter.LoadSubs)
-			r.Post("/{id}", stripeRouter.UpdateSubs)
+			r.Get("/{id}", stripeRoutes.LoadSubs)
+			r.Post("/{id}", stripeRoutes.UpdateSubs)
 			// Update a subscription
-			r.Post("/{id}/refresh", stripeRouter.RefreshSubs)
-			r.Post("/{id}/cancel", stripeRouter.CancelSubs)
-			r.Post("/{id}/reactivate", stripeRouter.ReactivateSubscription)
-			r.Get("/{id}/default-payment-method", stripeRouter.GetSubsDefaultPaymentMethod)
-			r.Post("/{id}/default-payment-method", stripeRouter.UpdateSubsDefaultPayMethod)
+			r.Post("/{id}/refresh", stripeRoutes.RefreshSubs)
+			r.Post("/{id}/cancel", stripeRoutes.CancelSubs)
+			r.Post("/{id}/reactivate", stripeRoutes.ReactivateSubscription)
+			r.Get("/{id}/default-payment-method", stripeRoutes.GetSubsDefaultPaymentMethod)
+			r.Post("/{id}/default-payment-method", stripeRoutes.UpdateSubsDefaultPayMethod)
 		})
 
 		r.Route("/invoices", func(r chi.Router) {
-			r.Get("/{id}/discounted", stripeRouter.InvoiceHasCoupon)
+			r.Get("/{id}/discounted", stripeRoutes.InvoiceHasCoupon)
 		})
 	})
 
@@ -531,17 +541,9 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/stripe", func(r chi.Router) {
-			// ?refresh=true
-			r.Route("/prices", func(r chi.Router) {
-				r.Get("/{id}", cmsRouter.LoadStripePrice)
-			})
-
 			r.Route("/coupons", func(r chi.Router) {
-
-				// ?refresh=true
-				r.Get("/{id}", cmsRouter.LoadStripeCoupon)
-				r.Post("/{id}", cmsRouter.UpdateStripeCoupon)
-				r.Delete("/{id}", cmsRouter.DeleteStripeCoupon)
+				r.Post("/{id}", stripeRoutes.UpdateStripeCoupon)
+				r.Delete("/{id}", stripeRoutes.DeleteStripeCoupon)
 			})
 		})
 	})
@@ -559,7 +561,7 @@ func StartServer(s ServerStatus) {
 		//customer.subscription.created
 		// http://www.ftacademy.cn/api/v1/webhook/stripe For version 1
 		// http://www.ftacademy.cn/api/v2/webhook/stripe For version 2
-		r.Post("/stripe", stripeRouter.WebHook)
+		r.Post("/stripe", stripeRoutes.WebHook)
 		r.Post("/apple", iapRouter.WebHook)
 	})
 
