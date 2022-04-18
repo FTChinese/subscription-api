@@ -533,14 +533,13 @@ func StartServer(s ServerStatus) {
 		r.Route("/stripe", func(r chi.Router) {
 			// ?refresh=true
 			r.Route("/prices", func(r chi.Router) {
-				r.Get("/", cmsRouter.LoadStripePrice)
+				r.Get("/{id}", cmsRouter.LoadStripePrice)
 			})
 
 			r.Route("/coupons", func(r chi.Router) {
 
 				// ?refresh=true
 				r.Get("/{id}", cmsRouter.LoadStripeCoupon)
-				r.Post("/{id}", cmsRouter.UpdateStripeCoupon)
 				r.Post("/{id}", cmsRouter.UpdateStripeCoupon)
 				r.Delete("/{id}", cmsRouter.DeleteStripeCoupon)
 			})
