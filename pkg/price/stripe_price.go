@@ -142,7 +142,7 @@ type StripePrice struct {
 	ID             string             `json:"id" db:"id"`
 	Active         bool               `json:"active" db:"active"`
 	Currency       stripe.Currency    `json:"currency" db:"currency"`
-	IsIntroductory bool               `json:"isIntroductory" db:"is_intro"`
+	IsIntroductory bool               `json:"isIntroductory" db:"is_intro"` // Deprecated
 	Kind           Kind               `json:"kind" db:"kind"`
 	LiveMode       bool               `json:"liveMode" db:"live_mode"`
 	Nickname       string             `json:"nickname" db:"nickname"`
