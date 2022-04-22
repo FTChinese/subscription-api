@@ -8,6 +8,22 @@ import (
 	"net/http"
 )
 
+func (routes StripeRoutes) ListCouponsOfPrice(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
+
+	priceId, _ := xhttp.GetURLParam(req, "id").ToString()
+
+	coupons, err := routes.stripeRepo.RetrieveCouponsOfPrice(priceId)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(coupons)
+}
+
 // LoadStripeCoupon gets a stripe coupon from db or Stripe API.
 // Query parameters:
 // - refresh=true to force refresh db data.
