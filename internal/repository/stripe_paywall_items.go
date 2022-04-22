@@ -19,11 +19,12 @@ func (repo StripeRepo) RetrievePaywallPrices(ids []string) ([]price.StripePrice,
 	return list, nil
 }
 
+// RetrievePaywallCoupons retrieves active coupons of the specified prices used on paywall.
 func (repo StripeRepo) RetrievePaywallCoupons(priceIDs []string) ([]price.StripeCoupon, error) {
 	var list = make([]price.StripeCoupon, 0)
 	err := repo.dbs.Read.Select(
 		&list,
-		price.StmtCouponsOfPrices,
+		price.StmtActiveCouponsOfPrices,
 		sq.FindInSetValue(priceIDs))
 
 	if err != nil {
