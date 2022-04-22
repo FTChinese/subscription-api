@@ -347,6 +347,7 @@ func StartServer(s ServerStatus) {
 			r.Get("/", stripeRoutes.ListPrices)
 			// ?refresh=true
 			r.Get("/{id}", stripeRoutes.LoadStripePrice)
+			r.Get("/{id}/coupons", stripeRoutes.ListCouponsOfPrice)
 		})
 
 		r.Route("/coupons", func(r chi.Router) {
