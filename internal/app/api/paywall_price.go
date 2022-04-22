@@ -28,14 +28,22 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 }
 
 // update stripe price based on ftc price settings.
-func (router PaywallRouter) updateStripPriceMeta(id string, ftcPrice price.FtcPrice) (price.StripePrice, error) {
+// This should be used when
+// - creating ftc price;
+// - updating ftc price;
+// - attaching ftc intro price to product.
+func (router PaywallRouter) updateStripPriceMeta(ftcPrice price.FtcPrice) (price.StripePrice, error) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
+
+	sugar.Infof("Updating stripe price meta")
 
 	rawPrice, err := router.
 		stripeRepo.
 		Client.
-		SetPriceMeta(id, price.BuildStripePriceMeta(ftcPrice))
+		SetPriceMeta(
+			ftcPrice.StripePriceID,
+			price.BuildStripePriceMeta(ftcPrice))
 
 	if err != nil {
 		return price.StripePrice{}, err
@@ -108,18 +116,7 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 	// Sync stripe price metadata
 	if p.StripePriceID != "" {
 		go func() {
-			sugar.Infof("Updating stripe price %s metadata", p.StripePriceID)
-			sp, err := router.updateStripPriceMeta(
-				params.StripePriceID,
-				p,
-			)
-
-			if err != nil {
-				sugar.Error(err)
-				return
-			}
-
-			sugar.Infof("Stripe price meta set %v", sp)
+			_, _ = router.updateStripPriceMeta(p)
 		}()
 	}
 
@@ -150,12 +147,14 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 
 	var params price.FtcUpdateParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
+		sugar.Error(err)
 		_ = render.New(w).BadRequest(err.Error())
 		return
 	}
 
 	ftcPrice, err := router.paywallRepo.RetrievePaywallPrice(id, router.live)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
@@ -163,24 +162,14 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 	updated := ftcPrice.FtcPrice.Update(params)
 	err = router.productRepo.UpdatePrice(updated)
 	if err != nil {
+		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
 	}
 
 	if params.StripePriceID != "" {
 		go func() {
-			sugar.Infof("Updating stripe price %s metadata", params.StripePriceID)
-			sp, err := router.updateStripPriceMeta(
-				params.StripePriceID,
-				updated,
-			)
-
-			if err != nil {
-				sugar.Error(err)
-				return
-			}
-
-			sugar.Infof("Stripe price meta updated %v", sp)
+			_, _ = router.updateStripPriceMeta(updated)
 		}()
 	}
 
