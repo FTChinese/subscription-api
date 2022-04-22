@@ -69,17 +69,16 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 		}
 	}()
 
-	_ = render.New(w).JSON(http.StatusOK, paywall)
-}
+	if refresh {
+		go func() {
+			defer router.logger.Sync()
+			sugar := router.logger.Sugar()
 
-// BustCache clears the cached paywall data.
-// Deprecated
-func (router PaywallRouter) BustCache(w http.ResponseWriter, _ *http.Request) {
-
-	paywall, err := router.LoadCachedPaywall(true)
-	if err != nil {
-		_ = xhttp.HandleSubsErr(w, err)
-		return
+			_, err := router.stripeRepo.ListPricesCompat(router.live, true)
+			if err != nil {
+				sugar.Error(err)
+			}
+		}()
 	}
 
 	_ = render.New(w).JSON(http.StatusOK, paywall)
