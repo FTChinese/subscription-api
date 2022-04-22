@@ -43,16 +43,16 @@ WHERE id = ?
 LIMIT 1
 `
 
-const StmtActiveCouponsOfPrice = `
+// StmtPriceCoupons retrieves all active coupons of a price.
+const StmtPriceCoupons = `
 SELECT ` + colSelectCoupon + `
 FROM subs_product.stripe_coupon
 WHERE price_id = ?
-	AND current_status = 'active'
-	AND (end_utc IS NULL OR end_utc >= UTC_TIMESTAMP())
 ORDER BY amount_off DESC
 `
 
-const StmtCouponsOfPrices = `
+// StmtActiveCouponsOfPrices retrieves coupons of the specified prices
+const StmtActiveCouponsOfPrices = `
 SELECT ` + colSelectCoupon + `
 FROM subs_product.stripe_coupon
 WHERE FIND_IN_SET(price_id, ?) > 0
