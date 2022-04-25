@@ -1,6 +1,8 @@
 package txrepo
 
 import (
+	"testing"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
@@ -10,7 +12,6 @@ import (
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"testing"
 )
 
 func TestSharedTx_CreateMember(t *testing.T) {
@@ -58,7 +59,7 @@ func TestSharedTx_RetrieveMember(t *testing.T) {
 
 	repo := test.NewRepo()
 
-	m := reader.NewMockMemberBuilder("").Build()
+	m := reader.NewMockMemberBuilder().Build()
 	t.Logf("%v", m.UserIDs)
 	repo.MustSaveMembership(m)
 
@@ -257,7 +258,8 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: reader.NewMockMemberBuilder(userID).
+				inv: reader.NewMockMemberBuilder().
+					SetFtcID(userID).
 					Build().CarryOverInvoice().WithOrderID(ids.MustOrderID()),
 			},
 		},
@@ -267,7 +269,8 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: reader.NewMockMemberBuilder(userID).
+				inv: reader.NewMockMemberBuilder().
+					SetFtcID(userID).
 					Build().CarryOverInvoice().
 					WithStripeSubsID(faker.StripeSubsID()),
 			},
@@ -278,7 +281,8 @@ func TestSharedTx_SaveInvoice(t *testing.T) {
 				Tx: test.DB.MustBegin(),
 			},
 			args: args{
-				inv: reader.NewMockMemberBuilder(userID).
+				inv: reader.NewMockMemberBuilder().
+					SetFtcID(userID).
 					Build().CarryOverInvoice().
 					WithAppleTxID(faker.AppleSubID()),
 			},
