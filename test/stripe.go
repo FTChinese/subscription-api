@@ -3,6 +3,8 @@
 package test
 
 import (
+	"time"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/rand"
@@ -12,7 +14,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
 	sdk "github.com/stripe/stripe-go/v72"
-	"time"
 )
 
 func (p Persona) StripeCustomer() stripe.Customer {
@@ -85,8 +86,8 @@ func StripePaymentIntent() stripe.PaymentIntent {
 		PaymentMethodID:    "",
 		PaymentMethodTypes: nil,
 		ReceiptEmail:       "",
-		SetupFutureUsage:   stripe.PISetupFutureUsage{},
-		Status:             stripe.PIStatus{},
+		SetupFutureUsage:   stripe.SetupFutureUsage{},
+		Status:             "",
 	}
 }
 
