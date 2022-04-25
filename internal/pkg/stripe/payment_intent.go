@@ -22,7 +22,7 @@ type PaymentIntent struct {
 	PaymentMethodID    string                                 `json:"paymentMethodId" db:"payment_method_id"`
 	PaymentMethodTypes sq.StringList                          `json:"-" db:"payment_method_types"`
 	ReceiptEmail       string                                 `json:"-" db:"receipt_email"`
-	SetupFutureUsage   PISetupFutureUsage                     `json:"-" db:"setup_future_usage"`
+	SetupFutureUsage   SetupFutureUsage                       `json:"-" db:"setup_future_usage"`
 	// requires_payment_method,
 	// requires_confirmation,
 	// requires_action,
@@ -31,7 +31,7 @@ type PaymentIntent struct {
 	// canceled,
 	// succeeded
 	// See https://stripe.com/docs/payments/intents#intent-statuses
-	Status PIStatus `json:"status" db:"intent_status"`
+	Status string `json:"status" db:"intent_status"`
 }
 
 // NewPaymentIntent transforms stripe's payment intent.
@@ -73,13 +73,13 @@ func NewPaymentIntent(pi *stripe.PaymentIntent) PaymentIntent {
 		PaymentMethodID:    pmID,
 		PaymentMethodTypes: pi.PaymentMethodTypes,
 		ReceiptEmail:       pi.ReceiptEmail,
-		SetupFutureUsage:   PISetupFutureUsage{pi.SetupFutureUsage},
-		Status:             PIStatus{pi.Status},
+		SetupFutureUsage:   SetupFutureUsage{pi.SetupFutureUsage},
+		Status:             string(pi.Status),
 	}
 }
 
 func (pi PaymentIntent) RequiresAction() bool {
-	return pi.Status.PaymentIntentStatus == stripe.PaymentIntentStatusRequiresAction
+	return pi.Status == string(stripe.PaymentIntentStatusRequiresAction)
 }
 
 // IsZero tests whether payment intent is missing from the response.
