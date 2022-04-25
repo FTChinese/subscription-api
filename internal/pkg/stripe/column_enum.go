@@ -2,6 +2,7 @@ package stripe
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"errors"
 
 	"github.com/stripe/stripe-go/v72"
@@ -17,6 +18,26 @@ func newInvoiceCollectionMethod(cm *stripe.InvoiceCollectionMethod) InvoiceColle
 	}
 
 	return InvoiceCollectionMethod{*cm}
+}
+
+func (cm InvoiceCollectionMethod) MarshalJSON() ([]byte, error) {
+	return json.Marshal(cm.InvoiceCollectionMethod)
+}
+
+func (cm *InvoiceCollectionMethod) UnmarshalJSON(b []byte) error {
+	if b == nil {
+		*cm = InvoiceCollectionMethod{}
+	}
+
+	var v stripe.InvoiceCollectionMethod
+	err := json.Unmarshal(b, &v)
+
+	if err != nil {
+		return err
+	}
+
+	*cm = InvoiceCollectionMethod{v}
+	return nil
 }
 
 func (cm InvoiceCollectionMethod) Value() (driver.Value, error) {
@@ -47,6 +68,26 @@ type InvoiceStatus struct {
 	stripe.InvoiceStatus
 }
 
+func (iv InvoiceStatus) MarshalJSON() ([]byte, error) {
+	return json.Marshal(iv.InvoiceStatus)
+}
+
+func (iv *InvoiceStatus) UnmarshalJSON(b []byte) error {
+	if b == nil {
+		*iv = InvoiceStatus{}
+	}
+
+	var v stripe.InvoiceStatus
+	err := json.Unmarshal(b, &v)
+
+	if err != nil {
+		return err
+	}
+
+	*iv = InvoiceStatus{v}
+	return nil
+}
+
 func (iv InvoiceStatus) Value() (driver.Value, error) {
 	if iv.InvoiceStatus == "" {
 		return nil, nil
@@ -71,11 +112,31 @@ func (iv *InvoiceStatus) Scan(src interface{}) error {
 	}
 }
 
-type PISetupFutureUsage struct {
+type SetupFutureUsage struct {
 	stripe.PaymentIntentSetupFutureUsage
 }
 
-func (sf PISetupFutureUsage) Value() (driver.Value, error) {
+func (sf SetupFutureUsage) MarshalJSON() ([]byte, error) {
+	return json.Marshal(sf.PaymentIntentSetupFutureUsage)
+}
+
+func (sf *SetupFutureUsage) UnmarshalJSON(b []byte) error {
+	if b == nil {
+		*sf = SetupFutureUsage{}
+	}
+
+	var v stripe.PaymentIntentSetupFutureUsage
+	err := json.Unmarshal(b, &v)
+
+	if err != nil {
+		return err
+	}
+
+	*sf = SetupFutureUsage{v}
+	return nil
+}
+
+func (sf SetupFutureUsage) Value() (driver.Value, error) {
 	if sf.PaymentIntentSetupFutureUsage == "" {
 		return nil, nil
 	}
@@ -83,52 +144,44 @@ func (sf PISetupFutureUsage) Value() (driver.Value, error) {
 	return string(sf.PaymentIntentSetupFutureUsage), nil
 }
 
-func (sf *PISetupFutureUsage) Scan(src interface{}) error {
+func (sf *SetupFutureUsage) Scan(src interface{}) error {
 	if src == nil {
-		*sf = PISetupFutureUsage{}
+		*sf = SetupFutureUsage{}
 		return nil
 	}
 
 	switch s := src.(type) {
 	case []byte:
-		*sf = PISetupFutureUsage{stripe.PaymentIntentSetupFutureUsage(s)}
+		*sf = SetupFutureUsage{stripe.PaymentIntentSetupFutureUsage(s)}
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan to PISetupFutureUsage")
-	}
-}
-
-type PIStatus struct {
-	stripe.PaymentIntentStatus
-}
-
-func (ps PIStatus) Value() (driver.Value, error) {
-	if ps.PaymentIntentStatus == "" {
-		return nil, nil
-	}
-
-	return string(ps.PaymentIntentStatus), nil
-}
-
-func (ps *PIStatus) Scan(src interface{}) error {
-	if src == nil {
-		*ps = PIStatus{}
-		return nil
-	}
-
-	switch s := src.(type) {
-	case []byte:
-		*ps = PIStatus{stripe.PaymentIntentStatus(s)}
-		return nil
-
-	default:
-		return errors.New("incompatible type to scan to PIStatus")
+		return errors.New("incompatible type to scan to SetupFutureUsage")
 	}
 }
 
 type SIStatus struct {
 	stripe.SetupIntentStatus
+}
+
+func (ss SIStatus) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ss.SetupIntentStatus)
+}
+
+func (ss *SIStatus) UnmarshalJSON(b []byte) error {
+	if b == nil {
+		*ss = SIStatus{}
+	}
+
+	var v stripe.SetupIntentStatus
+	err := json.Unmarshal(b, &v)
+
+	if err != nil {
+		return err
+	}
+
+	*ss = SIStatus{v}
+	return nil
 }
 
 func (ss SIStatus) Value() (driver.Value, error) {
@@ -159,6 +212,26 @@ type SIUsage struct {
 	stripe.SetupIntentUsage
 }
 
+func (su SIUsage) MarshalJSON() ([]byte, error) {
+	return json.Marshal(su.SetupIntentUsage)
+}
+
+func (su *SIUsage) UnmarshalJSON(b []byte) error {
+	if b == nil {
+		*su = SIUsage{}
+	}
+
+	var v stripe.SetupIntentUsage
+	err := json.Unmarshal(b, &v)
+
+	if err != nil {
+		return err
+	}
+
+	*su = SIUsage{v}
+	return nil
+}
+
 func (su SIUsage) Value() (driver.Value, error) {
 	if su.SetupIntentUsage == "" {
 		return nil, nil
@@ -179,12 +252,32 @@ func (su *SIUsage) Scan(src interface{}) error {
 		return nil
 
 	default:
-		return errors.New("incompatible type to scan to PISetupFutureUsage")
+		return errors.New("incompatible type to scan to SetupFutureUsage")
 	}
 }
 
 type SICancelReason struct {
 	stripe.SetupIntentCancellationReason
+}
+
+func (su SICancelReason) MarshalJSON() ([]byte, error) {
+	return json.Marshal(su.SetupIntentCancellationReason)
+}
+
+func (su *SICancelReason) UnmarshalJSON(b []byte) error {
+	if b == nil {
+		*su = SICancelReason{}
+	}
+
+	var v stripe.SetupIntentCancellationReason
+	err := json.Unmarshal(b, &v)
+
+	if err != nil {
+		return err
+	}
+
+	*su = SICancelReason{v}
+	return nil
 }
 
 func (su SICancelReason) Value() (driver.Value, error) {
