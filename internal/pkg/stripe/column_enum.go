@@ -3,6 +3,7 @@ package stripe
 import (
 	"database/sql/driver"
 	"errors"
+
 	"github.com/stripe/stripe-go/v72"
 )
 
@@ -23,7 +24,7 @@ func (cm InvoiceCollectionMethod) Value() (driver.Value, error) {
 		return nil, nil
 	}
 
-	return cm.InvoiceCollectionMethod, nil
+	return string(cm.InvoiceCollectionMethod), nil
 }
 
 func (cm *InvoiceCollectionMethod) Scan(src interface{}) error {
