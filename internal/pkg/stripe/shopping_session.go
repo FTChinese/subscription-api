@@ -4,8 +4,10 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/guregu/null"
 )
 
 const StmtShoppingSession = `
@@ -18,6 +20,7 @@ SET ftc_user_id = :ftc_user_id,
 	membership = :membership,
 	request_parameters = :request_parameters,
 	subs_id = :subs_id,
+	subs_detail = :subs_detail,
 	created_utc = :created_utc
 `
 
@@ -31,7 +34,8 @@ type ShoppingSession struct {
 	Intent            reader.CheckoutIntent   `db:"checkout_intent"`
 	Membership        reader.MembershipColumn `db:"membership"`
 	RequestParams     SubsReqParamsColumn     `db:"request_parameters"`
-	Subs              SubsColumn              `db:"subs_id"` // Only exists after subscription success
+	SubsID            null.String             `db:"subs_id"`
+	Subs              SubsColumn              `db:"subs_detail"` // Only exists after subscription success
 	CreatedUTC        chrono.Time             `db:"created_utc"`
 }
 
@@ -49,6 +53,7 @@ func NewShoppingSession(cart reader.ShoppingCart, params SubsParams) ShoppingSes
 }
 
 func (s ShoppingSession) WithSubs(subs Subs) ShoppingSession {
+	s.SubsID = null.StringFrom(subs.ID)
 	s.Subs = SubsColumn{subs}
 
 	return s
