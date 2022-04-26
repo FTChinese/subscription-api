@@ -416,7 +416,7 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/invoices", func(r chi.Router) {
-			r.Get("/{id}/discounted", stripeRoutes.InvoiceHasCoupon)
+			r.Get("/{id}/coupon-applied", stripeRoutes.InvoiceHasCoupon)
 		})
 	})
 
