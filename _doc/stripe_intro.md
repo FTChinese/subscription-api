@@ -12,18 +12,48 @@ Stripe订阅仅限使用邮箱登录的用户。用户ID通过 HTTP header `X-Us
 
 ## API List
 
+### Prices
+
 * Get `/stripe/prices` List stripe prices
 * Get `/stripe/prices/{id}` Get a specific price
+* Get `/stripe/prices/{id}/coupons` List coupons attached to a price.
+
+### Coupons
+
+* Get `/stripe/coupons/{id}` Get a coupon.
+
+### Customers
+
+Requires header `X-User-Id`
+
 * POST `/stripe/customers` Create a new customer
 * GET `/stripe/customers/{id}` Get a customer details
-* GET `/stripe/customers/{id}/default-payment-method` Get the default payment method set on customer
+* GET `/stripe/customers/{id}/default-payment-method?<refresh=true>` Get the default payment method set on customer
 * POST `/stripe/customers/{id}/default-payment-method` Set/Change customer's default payment method
 * GET `/stripe/customers/{id}/payment-methods` List a payment methods of a customer.
 * POST `/stripe/customers/{id}/ephemeral-keys` Create an ephemeral key when native app wants to modify customer data.
+
+### Setup intent
+
+Requires header `X-User-Id`
+
 * POST `/stripe/setup-intents` Create a setup intent
 * GET `/stripe/setup-intents/{id}?<rfresh=true>` Get a setup intent
-* GET `/stripe/setup-intents/{id}/payment-method` The payment method created by this setup intent.
-* GET `/stripe/payment-methods/{id}?<refresh=true>` Get a payment method
+* GET `/stripe/setup-intents/{id}/payment-method?<rfresh=true>` The payment method created by this setup intent.
+* GET `/stripe/payment-methods/{id}?<refresh=true>` Get the payment method of a setup intent.
+
+### Payment sheet
+
+* Post `/stripe/payment-sheet/setup`
+
+### Payment Methods
+
+* Get `/stripe/payment-methods/{id}?<refresh=true>` Get a payment method.
+
+### Subscription
+
+Requires header `X-User-Id`
+
 * POST `/stripe/subs` Create a new subscription
 * GET `/stripe/subs/{id}` Get a subscription
 * POST `/stripe/subs/{id}` Update a subscription
@@ -31,8 +61,13 @@ Stripe订阅仅限使用邮箱登录的用户。用户ID通过 HTTP header `X-Us
 * POST `/stripe/subs/{id}/cancel` Cancel a subscription
 * POST `/stripe/subs/{id}/reactivate` Undo a scheduled cancellation of subscription.
 * GET `/stripe/subs/{id}/default-payment-method` Get the default payment method of a subscription.
+* POST `/stripe/subs/{id}/default-payment-method` Modify a subscription's default payment method.
 
-注意：
+### Invoice
+
+* GET `/stripe/invoices/{id}/coupon-applied` Check if an invoice has any coupon applied on it.
+
+### 注意
 
 * API返回的数据格式并不是Stripe的原始数据格式。
 * Customer和Subscription的default payment method不一定一致。
