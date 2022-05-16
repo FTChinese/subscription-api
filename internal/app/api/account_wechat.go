@@ -241,6 +241,7 @@ func (router AccountRouter) WxLinkEmail(w http.ResponseWriter, req *http.Request
 
 	// Send email telling user that the accounts are linked.
 	go func() {
+		sugar.Info("Sending wx-email linked letter")
 		err := router.EmailService.SendWxEmailLink(result)
 		if err != nil {
 			sugar.Error(err)
