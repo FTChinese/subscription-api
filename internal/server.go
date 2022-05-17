@@ -80,6 +80,10 @@ func StartServer(s ServerStatus) {
 		logger,
 		s.LiveMode)
 
+	legalRoutes := api.NewLegalRepo(
+		myDBs,
+		logger)
+
 	cmsRouter := api.NewCMSRouter(
 		myDBs,
 		paywallCache,
@@ -312,7 +316,8 @@ func StartServer(s ServerStatus) {
 		r.Use(xhttp.RequireFtcOrUnionID)
 
 		// Pagination: page=<int>&per_page=<int>
-		r.Get("/", ftcPayRoutes.ListOrders)
+		r.With(xhttp.FormParsed).
+			Get("/", ftcPayRoutes.ListOrders)
 		r.Get("/{id}", ftcPayRoutes.LoadOrder)
 
 		// Transfer order query data from ali or wx api as is.
@@ -510,6 +515,13 @@ func StartServer(s ServerStatus) {
 			r.Get("/releases", appRouter.AndroidList)
 			r.Get("/releases/{versionName}", appRouter.AndroidSingle)
 		})
+	})
+
+	r.Route("/legal", func(r chi.Router) {
+		r.Get("/", legalRoutes.List)
+		r.Post("/", legalRoutes.Update)
+		r.Get("/{title}", legalRoutes.Load)
+		r.Patch("/{title}", legalRoutes.Update)
 	})
 
 	// Isolate dangerous operations from user-facing features.
