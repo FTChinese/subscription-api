@@ -5,27 +5,21 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
-	"github.com/FTChinese/subscription-api/pkg/codec"
-	"github.com/FTChinese/subscription-api/pkg/conv"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
 )
 
 type ContentParams struct {
 	Author  string      `json:"author" db:"author"`
-	TitleEn string      `json:"titleEn" db:"title_en"`
-	TitleCn string      `json:"titleCn" db:"title_cn"`
+	Title   string      `json:"title" db:"title"`
 	Summary null.String `json:"summary" db:"summary"`
 	Body    string      `json:"body" db:"body"`
 	Keyword null.String `json:"keyword" db:"keyword"`
 }
 
 func (p *ContentParams) Validate() *render.ValidationError {
-	ve := validator.New("titleEn").Required().Validate(p.TitleEn)
-	if ve != nil {
-		return ve
-	}
 
-	ve = validator.New("titleCn").Required().Validate(p.TitleCn)
+	ve := validator.New("title").Required().Validate(p.Title)
 	if ve != nil {
 		return ve
 	}
@@ -34,26 +28,19 @@ func (p *ContentParams) Validate() *render.ValidationError {
 }
 
 type Legal struct {
-	ID string `json:"id" db:"title_hash"`
+	HashID string `json:"id" db:"hash_id"`
 	ContentParams
 	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
 	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
 }
 
 func NewLegal(p ContentParams) Legal {
-	titleEn := conv.SlashConcat(p.TitleEn)
-	hash := codec.HexStringSum(titleEn)
+
+	id := ids.LegalDocID()
 	return Legal{
-		ID: hash,
-		ContentParams: ContentParams{
-			Author:  p.Author,
-			TitleEn: titleEn,
-			TitleCn: p.TitleCn,
-			Summary: p.Summary,
-			Body:    p.Body,
-			Keyword: p.Keyword,
-		},
-		CreatedUTC: chrono.TimeNow(),
+		HashID:        id,
+		ContentParams: p,
+		CreatedUTC:    chrono.TimeNow(),
 	}
 }
 
@@ -64,8 +51,8 @@ func (l Legal) Update(p ContentParams) Legal {
 }
 
 type Teaser struct {
-	ID      string      `json:"id" db:"title_hash"`
-	TitleEn string      `json:"titleEn" db:"title_en"`
+	ID      string      `json:"id" db:"hash_id"`
+	Title   string      `json:"title" db:"title"`
 	Summary null.String `json:"summary" db:"summary"`
 }
 

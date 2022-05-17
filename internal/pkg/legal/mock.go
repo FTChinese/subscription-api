@@ -14,8 +14,7 @@ func NewMockLegal() Legal {
 	return NewLegal(
 		ContentParams{
 			Author:  gofakeit.Name(),
-			TitleEn: gofakeit.Sentence(3),
-			TitleCn: gofakeit.Sentence(4),
+			Title:   gofakeit.Sentence(4),
 			Summary: null.StringFrom(gofakeit.Sentence(10)),
 			Body:    gofakeit.Sentence(20),
 			Keyword: null.String{},

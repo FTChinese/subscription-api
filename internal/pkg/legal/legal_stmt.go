@@ -2,8 +2,7 @@ package legal
 
 const colInsertLegal = `
 author = :author,
-title_en = :title_en,
-title_cn = :title_cn,
+title = :title,
 summary = :summary,
 body = :body,
 keyword = :keyword
@@ -11,7 +10,7 @@ keyword = :keyword
 
 const StmtInsertLegal = `
 INSERT INTO file_store.legal
-SET title_hash = UNHEX(:title_hash),
+SET hash_id = UNHEX(:hash_id),
 ` + colInsertLegal + `,
 	created_utc = :created_utc
 `
@@ -20,22 +19,21 @@ const StmtUpdateLegal = `
 UPDATE file_store.legal
 SET ` + colInsertLegal + `,
 	updated_utc = :updated_utc
-WHERE title_hash = UNHEX(:title_hash)
+WHERE hash_id = UNHEX(:hash_id)
 LIMIT 1
 `
 
 const StmtRetrieveLegal = `
-SELECT LOWER(HEX(title_hash)) AS title_hash,
+SELECT LOWER(HEX(hash_id)) AS hash_id,
 	author,
-	title_en,
-	title_cn,
+	title,
 	summary,
 	body,
 	keyword,
 	created_utc,
 	updated_utc
 FROM file_store.legal
-WHERE title_hash = UNHEX(?)
+WHERE hash_id = UNHEX(?)
 LIMIT 1
 `
 
@@ -45,10 +43,10 @@ FROM file_store.legal
 `
 
 const StmtListLegal = `
-SELECT LOWER(HEX(title_hash)) AS title_hash,
-	title_cn,
+SELECT LOWER(HEX(hash_id)) AS hash_id,
+	title,
 	summary
 FROM file_store.legal
-ORDER BY id DESC
+ORDER BY auto_id DESC
 LIMIT ? OFFSET ?
 `

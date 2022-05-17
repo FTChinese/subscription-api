@@ -78,7 +78,7 @@ func TestLegalRepo_Retrieve(t *testing.T) {
 	_ = repo.Create(l)
 
 	type args struct {
-		title string
+		id string
 	}
 	tests := []struct {
 		name    string
@@ -89,7 +89,7 @@ func TestLegalRepo_Retrieve(t *testing.T) {
 		{
 			name: "Retrieve",
 			args: args{
-				title: l.TitleEn,
+				id: l.HashID,
 			},
 			want:    legal.Legal{},
 			wantErr: false,
@@ -98,7 +98,7 @@ func TestLegalRepo_Retrieve(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := repo.Retrieve(tt.args.title)
+			got, err := repo.Retrieve(tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Retrieve() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -3,8 +3,6 @@ package repository
 import (
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/subscription-api/internal/pkg/legal"
-	"github.com/FTChinese/subscription-api/pkg/codec"
-	"github.com/FTChinese/subscription-api/pkg/conv"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"go.uber.org/zap"
 )
@@ -37,13 +35,13 @@ func (repo LegalRepo) Update(l legal.Legal) error {
 	return err
 }
 
-func (repo LegalRepo) Retrieve(title string) (legal.Legal, error) {
+func (repo LegalRepo) Retrieve(id string) (legal.Legal, error) {
 	var l legal.Legal
 
 	err := repo.dbs.Read.Get(
 		&l,
 		legal.StmtRetrieveLegal,
-		codec.HexStringSum(conv.SlashConcat(title)),
+		id,
 	)
 
 	if err != nil {
