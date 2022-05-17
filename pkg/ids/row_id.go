@@ -70,3 +70,9 @@ func PriceID() string {
 func DiscountID() string {
 	return "dsc_" + rand.String(12)
 }
+
+func LegalDocID() string {
+	h, _ := gorest.RandomHex(8)
+
+	return h
+}
