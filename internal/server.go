@@ -519,9 +519,7 @@ func StartServer(s ServerStatus) {
 
 	r.Route("/legal", func(r chi.Router) {
 		r.Get("/", legalRoutes.List)
-		r.Post("/", legalRoutes.Update)
 		r.Get("/{title}", legalRoutes.Load)
-		r.Patch("/{title}", legalRoutes.Update)
 	})
 
 	// Isolate dangerous operations from user-facing features.
@@ -554,6 +552,11 @@ func StartServer(s ServerStatus) {
 				r.Post("/{id}", stripeRoutes.UpdateStripeCoupon)
 				r.Delete("/{id}", stripeRoutes.DeleteStripeCoupon)
 			})
+		})
+
+		r.Route("/legal", func(r chi.Router) {
+			r.Post("/", legalRoutes.Update)
+			r.Patch("/{title}", legalRoutes.Update)
 		})
 	})
 
