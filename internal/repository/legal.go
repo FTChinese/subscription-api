@@ -27,9 +27,17 @@ func (repo LegalRepo) Create(l legal.Legal) error {
 	return err
 }
 
-func (repo LegalRepo) Update(l legal.Legal) error {
+func (repo LegalRepo) UpdateContent(l legal.Legal) error {
 	_, err := repo.dbs.Write.NamedExec(
 		legal.StmtUpdateLegal,
+		l)
+
+	return err
+}
+
+func (repo LegalRepo) UpdateStatus(l legal.Legal) error {
+	_, err := repo.dbs.Write.NamedExec(
+		legal.StmtUpdateStatus,
 		l)
 
 	return err
