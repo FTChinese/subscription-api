@@ -23,7 +23,7 @@ func NewLegalRepo(dbs db.ReadWriteMyDBs, logger *zap.Logger) LegalRoutes {
 	}
 }
 
-func (routes LegalRoutes) List(w http.ResponseWriter, req *http.Request) {
+func (routes LegalRoutes) ListActive(w http.ResponseWriter, req *http.Request) {
 	p := gorest.GetPagination(req)
 
 	list, err := routes.repo.ListLegal(p)
