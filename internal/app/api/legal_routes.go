@@ -94,7 +94,32 @@ func (routes LegalRoutes) Update(w http.ResponseWriter, req *http.Request) {
 	}
 
 	legalDoc = legalDoc.Update(params)
-	err = routes.repo.Update(legalDoc)
+	err = routes.repo.UpdateContent(legalDoc)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(legalDoc)
+}
+
+func (routes LegalRoutes) Publish(w http.ResponseWriter, req *http.Request) {
+	id, _ := xhttp.GetURLParam(req, "id").ToString()
+
+	var params legal.ActiveParams
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	legalDoc, err := routes.repo.Retrieve(id)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	legalDoc = legalDoc.Publish(params.Publish)
+	err = routes.repo.UpdateStatus(legalDoc)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
