@@ -59,11 +59,11 @@ func (repo LegalRepo) Retrieve(id string) (legal.Legal, error) {
 	return l, nil
 }
 
-func (repo LegalRepo) countLegalRows() (int64, error) {
+func (repo LegalRepo) countLegalRows(activeOnly bool) (int64, error) {
 	var count int64
 	err := repo.dbs.Read.Get(
 		&count,
-		legal.StmtCount,
+		legal.BuildStmtCount(activeOnly),
 	)
 
 	if err != nil {
@@ -73,11 +73,11 @@ func (repo LegalRepo) countLegalRows() (int64, error) {
 	return count, nil
 }
 
-func (repo LegalRepo) listLegal(p gorest.Pagination) ([]legal.Legal, error) {
+func (repo LegalRepo) listLegal(p gorest.Pagination, activeOnly bool) ([]legal.Legal, error) {
 	var list = make([]legal.Legal, 0)
 	err := repo.dbs.Read.Select(
 		&list,
-		legal.StmtListLegal,
+		legal.BuildStmtList(activeOnly),
 		p.Limit,
 		p.Offset())
 
@@ -88,7 +88,7 @@ func (repo LegalRepo) listLegal(p gorest.Pagination) ([]legal.Legal, error) {
 	return list, nil
 }
 
-func (repo LegalRepo) ListLegal(p gorest.Pagination) (legal.List, error) {
+func (repo LegalRepo) ListLegal(p gorest.Pagination, activeOnly bool) (legal.List, error) {
 	defer repo.logger.Sync()
 	sugar := repo.logger.Sugar()
 
@@ -97,7 +97,7 @@ func (repo LegalRepo) ListLegal(p gorest.Pagination) (legal.List, error) {
 
 	go func() {
 		defer close(countCh)
-		n, err := repo.countLegalRows()
+		n, err := repo.countLegalRows(activeOnly)
 		if err != nil {
 			sugar.Error(err)
 		}
@@ -107,7 +107,7 @@ func (repo LegalRepo) ListLegal(p gorest.Pagination) (legal.List, error) {
 
 	go func() {
 		defer close(listCh)
-		list, err := repo.listLegal(p)
+		list, err := repo.listLegal(p, activeOnly)
 		if err != nil {
 			sugar.Error(err)
 		}
