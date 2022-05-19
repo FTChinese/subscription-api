@@ -9,6 +9,10 @@ import (
 	"github.com/guregu/null"
 )
 
+type ActiveParams struct {
+	Publish bool `json:"publish"`
+}
+
 type ContentParams struct {
 	Author  string      `json:"author" db:"author"`
 	Title   string      `json:"title" db:"title"`
@@ -29,6 +33,7 @@ func (p *ContentParams) Validate() *render.ValidationError {
 
 type Legal struct {
 	HashID string `json:"id" db:"hash_id"`
+	Active bool   `json:"active" db:"active"`
 	ContentParams
 	CreatedUTC chrono.Time `json:"createdUtc" db:"created_utc"`
 	UpdatedUTC chrono.Time `json:"updatedUtc" db:"updated_utc"`
@@ -39,19 +44,35 @@ func NewLegal(p ContentParams) Legal {
 	id := ids.LegalDocID()
 	return Legal{
 		HashID:        id,
+		Active:        false,
 		ContentParams: p,
 		CreatedUTC:    chrono.TimeNow(),
 	}
 }
 
 func (l Legal) Update(p ContentParams) Legal {
-	l.ContentParams = p
+	l.ContentParams = ContentParams{
+		Author:  l.Author,
+		Title:   p.Title,
+		Summary: p.Summary,
+		Body:    p.Body,
+		Keyword: p.Keyword,
+	}
+	l.UpdatedUTC = chrono.TimeNow()
+
+	return l
+}
+
+func (l Legal) Publish(active bool) Legal {
+	l.Active = active
+	l.UpdatedUTC = chrono.TimeNow()
 
 	return l
 }
 
 type Teaser struct {
 	ID      string      `json:"id" db:"hash_id"`
+	Active  bool        `json:"active" db:"active"`
 	Title   string      `json:"title" db:"title"`
 	Summary null.String `json:"summary" db:"summary"`
 }
