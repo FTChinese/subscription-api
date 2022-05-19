@@ -36,7 +36,7 @@ func TestLegalRepo_Create(t *testing.T) {
 	}
 }
 
-func TestLegalRepo_Update(t *testing.T) {
+func TestLegalRepo_UpdateContent(t *testing.T) {
 
 	repo := NewLegalRepo(db.MockMySQL(), zaptest.NewLogger(t))
 
@@ -63,7 +63,7 @@ func TestLegalRepo_Update(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if err := repo.Update(tt.args.l); (err != nil) != tt.wantErr {
+			if err := repo.UpdateContent(tt.args.l); (err != nil) != tt.wantErr {
 				t.Errorf("Update() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -119,7 +119,8 @@ func TestLegalRepo_ListLegal(t *testing.T) {
 	_ = repo.Create(l)
 
 	type args struct {
-		p gorest.Pagination
+		p          gorest.Pagination
+		activeOnly bool
 	}
 	tests := []struct {
 		name    string
@@ -130,7 +131,17 @@ func TestLegalRepo_ListLegal(t *testing.T) {
 		{
 			name: "List",
 			args: args{
-				p: gorest.NewPagination(1, 20),
+				p:          gorest.NewPagination(1, 20),
+				activeOnly: true,
+			},
+			want:    legal.List{},
+			wantErr: false,
+		},
+		{
+			name: "List",
+			args: args{
+				p:          gorest.NewPagination(1, 20),
+				activeOnly: false,
 			},
 			want:    legal.List{},
 			wantErr: false,
@@ -139,7 +150,7 @@ func TestLegalRepo_ListLegal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := repo.ListLegal(tt.args.p)
+			got, err := repo.ListLegal(tt.args.p, tt.args.activeOnly)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListLegal() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -149,6 +160,38 @@ func TestLegalRepo_ListLegal(t *testing.T) {
 			//}
 
 			t.Logf("%v", got)
+		})
+	}
+}
+
+func TestLegalRepo_UpdateStatus(t *testing.T) {
+	repo := NewLegalRepo(db.MockMySQL(), zaptest.NewLogger(t))
+
+	l := legal.NewMockLegal()
+
+	_ = repo.Create(l)
+	type args struct {
+		l legal.Legal
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Update status",
+			args: args{
+				l: l.Publish(true),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if err := repo.UpdateStatus(tt.args.l); (err != nil) != tt.wantErr {
+				t.Errorf("UpdateStatus() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }
