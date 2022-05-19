@@ -38,7 +38,15 @@ WHERE hash_id = UNHEX(?)
 LIMIT 1
 `
 
-const StmtCount = `
+const StmtUpdateStatus = `
+UPDATE file_store.legal
+SET active = :active,
+	updated_utc = :updated_utc
+WHERE hash_id = UNHEX(:hash_id)
+LIMIT 1
+`
+
+const stmtCountAll = `
 SELECT COUNT(*) AS row_count
 FROM file_store.legal
 `
