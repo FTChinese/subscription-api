@@ -26,7 +26,7 @@ func NewLegalRepo(dbs db.ReadWriteMyDBs, logger *zap.Logger) LegalRoutes {
 func (routes LegalRoutes) ListActive(w http.ResponseWriter, req *http.Request) {
 	p := gorest.GetPagination(req)
 
-	list, err := routes.repo.ListLegal(p)
+	list, err := routes.repo.ListLegal(p, true)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
