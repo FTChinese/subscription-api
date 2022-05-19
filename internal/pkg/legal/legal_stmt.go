@@ -51,11 +51,35 @@ SELECT COUNT(*) AS row_count
 FROM file_store.legal
 `
 
-const StmtListLegal = `
+const stmtActiveOnly = `
+WHERE active = 1
+`
+
+func BuildStmtCount(activeOnly bool) string {
+	if activeOnly {
+		return stmtCountAll + stmtActiveOnly
+	}
+
+	return stmtCountAll
+}
+
+const stmtListFrom = `
 SELECT LOWER(HEX(hash_id)) AS hash_id,
+	active,
 	title,
 	summary
 FROM file_store.legal
+`
+
+const stmtListLimit = `
 ORDER BY auto_id DESC
 LIMIT ? OFFSET ?
 `
+
+func BuildStmtList(activeOnly bool) string {
+	if activeOnly {
+		return stmtListFrom + stmtActiveOnly + stmtListLimit
+	}
+
+	return stmtListFrom + stmtListLimit
+}
