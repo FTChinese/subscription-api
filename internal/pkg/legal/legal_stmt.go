@@ -25,6 +25,7 @@ LIMIT 1
 
 const StmtRetrieveLegal = `
 SELECT LOWER(HEX(hash_id)) AS hash_id,
+	active,
 	author,
 	title,
 	summary,
