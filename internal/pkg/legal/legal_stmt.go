@@ -1,7 +1,6 @@
 package legal
 
 const colInsertLegal = `
-author = :author,
 title = :title,
 summary = :summary,
 body = :body,
@@ -11,6 +10,7 @@ keyword = :keyword
 const StmtInsertLegal = `
 INSERT INTO file_store.legal
 SET hash_id = UNHEX(:hash_id),
+	author = :author,
 ` + colInsertLegal + `,
 	created_utc = :created_utc
 `
