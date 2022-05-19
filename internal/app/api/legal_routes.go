@@ -79,7 +79,7 @@ func (routes LegalRoutes) Create(w http.ResponseWriter, req *http.Request) {
 }
 
 func (routes LegalRoutes) Update(w http.ResponseWriter, req *http.Request) {
-	title, _ := xhttp.GetURLParam(req, "title").ToString()
+	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
 	var params legal.ContentParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
@@ -87,7 +87,7 @@ func (routes LegalRoutes) Update(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	legalDoc, err := routes.repo.Retrieve(title)
+	legalDoc, err := routes.repo.Retrieve(id)
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
