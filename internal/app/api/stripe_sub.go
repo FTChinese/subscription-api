@@ -125,6 +125,9 @@ func (routes StripeRoutes) LoadSubs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// We cannot use LoadOrFetchSubs here since if the data
+	// is fetched from Stripe API, we cannot ensure this
+	// ftc id definitely belong to this subscription.
 	subs, err := routes.stripeRepo.RetrieveSubs(subsID)
 	if err != nil {
 		sugar.Error(err)
