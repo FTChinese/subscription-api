@@ -18,7 +18,6 @@ type ContentParams struct {
 	Title   string      `json:"title" db:"title"`
 	Summary null.String `json:"summary" db:"summary"`
 	Body    string      `json:"body" db:"body"`
-	Keyword null.String `json:"keyword" db:"keyword"`
 }
 
 func (p *ContentParams) Validate() *render.ValidationError {
@@ -56,7 +55,6 @@ func (l Legal) Update(p ContentParams) Legal {
 		Title:   p.Title,
 		Summary: p.Summary,
 		Body:    p.Body,
-		Keyword: p.Keyword,
 	}
 	l.UpdatedUTC = chrono.TimeNow()
 

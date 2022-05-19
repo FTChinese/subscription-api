@@ -3,8 +3,7 @@ package legal
 const colInsertLegal = `
 title = :title,
 summary = :summary,
-body = :body,
-keyword = :keyword
+body = :body
 `
 
 const StmtInsertLegal = `
@@ -30,7 +29,6 @@ SELECT LOWER(HEX(hash_id)) AS hash_id,
 	title,
 	summary,
 	body,
-	keyword,
 	created_utc,
 	updated_utc
 FROM file_store.legal

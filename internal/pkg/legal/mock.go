@@ -17,6 +17,5 @@ func NewMockLegal() Legal {
 			Title:   gofakeit.Sentence(4),
 			Summary: null.StringFrom(gofakeit.Sentence(10)),
 			Body:    gofakeit.Sentence(20),
-			Keyword: null.String{},
 		})
 }
