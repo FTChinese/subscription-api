@@ -35,10 +35,12 @@ func (routes LegalRoutes) ListActive(w http.ResponseWriter, req *http.Request) {
 	_ = render.New(w).OK(list)
 }
 
-func (routes LegalRoutes) Load(w http.ResponseWriter, req *http.Request) {
-	var params legal.ContentParams
-	if err := gorest.ParseJSON(req.Body, &params); err != nil {
-		_ = render.New(w).BadRequest(err.Error())
+func (routes LegalRoutes) ListAll(w http.ResponseWriter, req *http.Request) {
+	p := gorest.GetPagination(req)
+
+	list, err := routes.repo.ListLegal(p, false)
+	if err != nil {
+		_ = render.New(w).DBError(err)
 		return
 	}
 
