@@ -518,8 +518,8 @@ func StartServer(s ServerStatus) {
 	})
 
 	r.Route("/legal", func(r chi.Router) {
-		r.Get("/", legalRoutes.List)
-		r.Get("/{title}", legalRoutes.Load)
+		r.Get("/", legalRoutes.ListActive)
+		r.Get("/{id}", legalRoutes.Load)
 	})
 
 	// Isolate dangerous operations from user-facing features.
@@ -555,8 +555,10 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/legal", func(r chi.Router) {
-			r.Post("/", legalRoutes.Update)
-			r.Patch("/{title}", legalRoutes.Update)
+			r.Get("/", legalRoutes.ListAll)
+			r.Post("/", legalRoutes.Create)
+			r.Patch("/{id}", legalRoutes.Update)
+			r.Post("/{id}/publish", legalRoutes.Publish)
 		})
 	})
 
