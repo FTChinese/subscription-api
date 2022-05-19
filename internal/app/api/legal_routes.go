@@ -44,9 +44,13 @@ func (routes LegalRoutes) ListAll(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	title, _ := xhttp.GetURLParam(req, "title").ToString()
+	_ = render.New(w).OK(list)
+}
 
-	doc, err := routes.repo.Retrieve(title)
+func (routes LegalRoutes) Load(w http.ResponseWriter, req *http.Request) {
+	id, _ := xhttp.GetURLParam(req, "id").ToString()
+
+	doc, err := routes.repo.Retrieve(id)
 
 	if err != nil {
 		_ = render.New(w).DBError(err)
