@@ -134,7 +134,7 @@ func (b PriceBuilder) WithActive() PriceBuilder {
 	return b
 }
 
-func (b PriceBuilder) Build() price.Price {
+func (b PriceBuilder) Build() price.FtcPrice {
 	var amount float64
 	if b.edition == price.StdMonthEdition {
 		amount = 35
@@ -144,18 +144,22 @@ func (b PriceBuilder) Build() price.Price {
 		amount = 1998
 	}
 
-	return price.Price{
-		ID:          b.priceID,
-		Edition:     b.edition,
-		Active:      b.active,
-		Currency:    "cny",
-		Description: null.String{},
-		LiveMode:    b.live,
-		Nickname:    null.String{},
-		ProductID:   b.productID,
-		UnitAmount:  amount,
-		CreatedUTC:  chrono.TimeNow(),
-		CreatedBy:   gofakeit.Username(),
+	return price.FtcPrice{
+		Price: price.Price{
+			ID:          b.priceID,
+			Edition:     b.edition,
+			Active:      b.active,
+			Currency:    "cny",
+			Description: null.String{},
+			LiveMode:    b.live,
+			Nickname:    null.String{},
+			ProductID:   b.productID,
+			UnitAmount:  amount,
+			CreatedUTC:  chrono.TimeNow(),
+			CreatedBy:   gofakeit.Username(),
+		},
+		StripePriceID: "price_test",
+		Offers:        nil,
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 
 func TestEnv_CreatePaywallDoc(t *testing.T) {
 
-	env := newTestEnv(db.MockMySQL(), nil)
+	env := newTestEnv(db.MockMySQL())
 
 	type args struct {
 		pwb pw.PaywallDoc

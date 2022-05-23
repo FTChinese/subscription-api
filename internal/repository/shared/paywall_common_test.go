@@ -92,7 +92,7 @@ func TestEnv_retrieveActiveProducts(t *testing.T) {
 	}
 }
 
-func TestEnv_listActivePrices(t *testing.T) {
+func TestEnv_ListActivePrices(t *testing.T) {
 
 	env := PaywallCommon{
 		dbs:   db.MockMySQL(),

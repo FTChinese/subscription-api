@@ -66,9 +66,9 @@ func (a PayApp) Validate() error {
 
 func MustGetPayApps() []PayApp {
 	keys := map[string]TradeType{
-		"wxapp.native_app":    TradeTypeApp,
-		"wxapp.webrowser_pay": TradeTypeJSAPI,
-		"wxapp.web_pay":       TradeTypeDesktop, // Also used as TradeTypeMobile
+		"wxapp.app_pay":     TradeTypeApp,
+		"wxapp.jsapi_pay":   TradeTypeJSAPI,
+		"wxapp.browser_pay": TradeTypeDesktop, // Also used as TradeTypeMobile
 	}
 
 	var apps []PayApp

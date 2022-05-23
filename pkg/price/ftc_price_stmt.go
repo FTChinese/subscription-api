@@ -7,16 +7,15 @@ SELECT p.id AS price_id,
 	p.is_active AS is_active,
 	p.archived AS archived,
 	p.currency AS currency,
-	p.description AS description,
+	p.title AS description,
 	p.live_mode AS live_mode,
 	p.nickname AS nickname,
 	p.product_id AS product_id,
-	p.price AS unit_amount,
+	p.unit_amount AS unit_amount,
 	IFNULL(stripe_price_id, '') AS stripe_price_id,
 	p.created_utc AS created_utc,
-	p.created_by AS created_by,
 	p.discount_list AS discount_list
-FROM subs_product.plan AS p
+FROM subs_product.price AS p
 `
 
 // StmtFtcPrice retrieves a row from plan table that is not archived.
@@ -50,33 +49,32 @@ ORDER BY p.is_active DESC, p.cycle DESC, p.created_utc DESC
 
 // StmtSetPriceOffers updates price's discount list column.
 const StmtSetPriceOffers = `
-UPDATE subs_product.plan
+UPDATE subs_product.price
 SET discount_list = :discount_list
 WHERE id = :price_id
 LIMIT 1
 `
 
 const StmtCreatePrice = `
-INSERT INTO subs_product.plan
+INSERT INTO subs_product.price
 SET id = :price_id,
 	cycle = :cycle,
 	tier = :tier,
 	archived = :archived,
 	is_active = :is_active,
 	currency = :currency,
-	description = :description,
+	title = :description,
 	live_mode = :live_mode,
 	nickname = :nickname,
 	product_id = :product_id,
-	price = :unit_amount,
+	unit_amount = :unit_amount,
 	stripe_price_id = :stripe_price_id,
-	created_utc = :created_utc,
-	created_by = :created_by
+	created_utc = :created_utc
 `
 
 const StmtUpdatePrice = `
-UPDATE subs_product.plan
-SET description = :description,
+UPDATE subs_product.price
+SET title = :description,
 	nickname = :nickname,
 	stripe_price_id = :stripe_price_id
 WHERE id = :price_id
@@ -89,7 +87,7 @@ LIMIT 1
 // In this way we could ensure a product won't have duplicate
 // active price of the same edition.
 const StmtDeactivatePricesOfSameEdition = `
-UPDATE subs_product.plan
+UPDATE subs_product.price
 SET is_active = FALSE
 WHERE product_id = :product_id
 	AND tier = :tier
@@ -102,7 +100,7 @@ WHERE product_id = :product_id
 // Used together with the above statement to ensure that
 // uniqueness of edition under a product.
 const StmtActivatePrice = `
-UPDATE subs_product.plan
+UPDATE subs_product.price
 SET is_active = TRUE
 WHERE id = :price_id
 LIMIT 1`
@@ -121,7 +119,7 @@ ON DUPLICATE KEY UPDATE
 `
 
 const StmtArchivePrice = `
-UPDATE subs_product.plan
+UPDATE subs_product.price
 SET archived = TRUE,
 	discount_list = NULL
 WHERE id = :price_id
