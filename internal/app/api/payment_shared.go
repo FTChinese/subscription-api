@@ -36,12 +36,37 @@ func NewPaymentShared(
 	}
 }
 
+func (ps PaymentShared) LoadCachedPaywall(refresh bool) (reader.Paywall, error) {
+	defer ps.logger.Sync()
+	sugar := ps.logger.Sugar()
+
+	if !refresh {
+		sugar.Infof("Try loading cached paywall...")
+		paywall, err := ps.cacheRepo.LoadPaywall(ps.live)
+		if err == nil {
+			return paywall, nil
+		}
+		sugar.Error(err)
+	}
+
+	sugar.Infof("Loading paywall from db or stripe api...")
+	paywall, err := ps.LoadPaywall(refresh)
+	if err != nil {
+		return reader.Paywall{}, err
+	}
+
+	ps.cacheRepo.CachePaywall(paywall, ps.live)
+
+	return paywall, nil
+}
+
 // LoadPaywall directly from database or Stripe API.
 // refresh - determines whether retrieve stripe prices directly form its API.
 func (ps PaymentShared) LoadPaywall(refresh bool) (reader.Paywall, error) {
 	defer ps.logger.Sync()
 	sugar := ps.logger.Sugar()
 
+	sugar.Infof("Loading paywall from db")
 	paywall, err := ps.paywallRepo.RetrievePaywall(ps.live)
 	if err != nil {
 		sugar.Error(err)
@@ -49,30 +74,15 @@ func (ps PaymentShared) LoadPaywall(refresh bool) (reader.Paywall, error) {
 	}
 
 	stripeIDs := paywall.StripePriceIDs()
+	sugar.Infof("Loading stripe prices: %s", stripeIDs)
 	stripePrices, err := ps.stripeRepo.LoadOrFetchPaywallItems(stripeIDs, refresh)
 	if err != nil {
+		sugar.Error(err)
 		return reader.Paywall{}, err
 	}
 
+	sugar.Infof("Stripe prices loaded")
 	paywall.Stripe = stripePrices
-
-	return paywall, nil
-}
-
-func (ps PaymentShared) LoadCachedPaywall(refresh bool) (reader.Paywall, error) {
-	if !refresh {
-		paywall, err := ps.cacheRepo.LoadPaywall(ps.live)
-		if err == nil {
-			return paywall, nil
-		}
-	}
-
-	paywall, err := ps.LoadPaywall(refresh)
-	if err != nil {
-		return reader.Paywall{}, err
-	}
-
-	ps.cacheRepo.CachePaywall(paywall, ps.live)
 
 	return paywall, nil
 }

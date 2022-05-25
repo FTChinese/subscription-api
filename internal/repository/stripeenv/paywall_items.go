@@ -8,10 +8,15 @@ import (
 
 // loadOrFetchPaywallPrices loads all stripe prices for a list of ids.
 func (env Env) loadOrFetchPaywallPrices(ids []string, refresh bool) ([]price.StripePrice, error) {
+	defer env.Logger.Sync()
+	sugar := env.Logger.Sugar()
+
 	var diff []string
 	if !refresh {
+		sugar.Infof("Load stripe prices from db")
 		list, err := env.RetrievePaywallPrices(ids)
 		if err != nil {
+			sugar.Error(err)
 			diff = ids
 		} else {
 			diff = isAllPriceRetrieved(ids, list)
@@ -20,16 +25,14 @@ func (env Env) loadOrFetchPaywallPrices(ids []string, refresh bool) ([]price.Str
 		if len(diff) == 0 {
 			return list, nil
 		}
+
+		sugar.Infof("Some of stripes not found in db: %s", ids)
 	}
 
-	pricesMap, err := env.Client.FetchPricesOf(ids)
+	sugar.Infof("Fetch from Stripe API...")
+	priceList, err := env.Client.FetchPricesOf(ids)
 	if err != nil {
 		return nil, err
-	}
-
-	priceList := make([]price.StripePrice, 0)
-	for _, v := range pricesMap {
-		priceList = append(priceList, v)
 	}
 
 	return priceList, nil
