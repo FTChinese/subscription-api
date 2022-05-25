@@ -37,12 +37,12 @@ func (c Client) FetchPrice(id string) (*stripeSdk.Price, error) {
 	return c.sc.Prices.Get(id, nil)
 }
 
-func (c Client) FetchPricesOf(ids []string) (map[string]price.StripePrice, error) {
+func (c Client) FetchPricesOf(ids []string) ([]price.StripePrice, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
 	ctx := context.Background()
 
-	var prices = make(map[string]price.StripePrice)
+	var priceStore = NewSyncPrices()
 	var anyErr error
 
 	for _, id := range ids {
@@ -51,19 +51,22 @@ func (c Client) FetchPricesOf(ids []string) (map[string]price.StripePrice, error
 			break
 		}
 
+		sugar.Infof("Start a new goroutine to fetch stripe price %s", id)
 		go func(id string) {
 			p, err := c.FetchPrice(id)
 			if err != nil {
 				sugar.Error(err)
 				anyErr = err
 			} else {
-				prices[id] = price.NewStripePrice(p)
+				priceStore.Add(price.NewStripePrice(p))
 			}
 			sem.Release(1)
+			sugar.Infof("Release goroutine")
 		}(id)
 	}
 
 	if anyErr != nil {
+		sugar.Error(anyErr)
 		return nil, anyErr
 	}
 
@@ -72,7 +75,7 @@ func (c Client) FetchPricesOf(ids []string) (map[string]price.StripePrice, error
 		return nil, err
 	}
 
-	return prices, nil
+	return priceStore.Map(ids), nil
 }
 
 func (c Client) SetPriceMeta(id string, meta map[string]string) (*stripeSdk.Price, error) {
