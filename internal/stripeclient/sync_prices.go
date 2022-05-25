@@ -10,8 +10,8 @@ type SyncPrices struct {
 	store map[string]price.StripePrice
 }
 
-func NewSyncPrices() SyncPrices {
-	return SyncPrices{
+func NewSyncPrices() *SyncPrices {
+	return &SyncPrices{
 		mux:   sync.Mutex{},
 		store: make(map[string]price.StripePrice),
 	}

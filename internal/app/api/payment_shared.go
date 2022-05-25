@@ -75,7 +75,7 @@ func (ps PaymentShared) LoadPaywall(refresh bool) (reader.Paywall, error) {
 
 	stripeIDs := paywall.StripePriceIDs()
 	sugar.Infof("Loading stripe prices: %s", stripeIDs)
-	stripePrices, err := ps.stripeRepo.LoadOrFetchPaywallItems(stripeIDs, refresh)
+	stripePrices, err := ps.stripeRepo.LoadOrFetchPaywallItems(stripeIDs, false)
 	if err != nil {
 		sugar.Error(err)
 		return reader.Paywall{}, err
