@@ -27,10 +27,21 @@ func TestEnv_SavePwResetSession(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Save password reset session",
+			name: "Browser password reset session",
 			args: args{
 				s: account.MustNewPwResetSession(input.ForgotPasswordParams{
 					Email:     gofakeit.Email(),
+					SourceURL: null.String{},
+				}),
+			},
+			wantErr: false,
+		},
+		{
+			name: "App password reset session",
+			args: args{
+				s: account.MustNewPwResetSession(input.ForgotPasswordParams{
+					Email:     "neefrankie@163.com",
+					UseCode:   true,
 					SourceURL: null.String{},
 				}),
 			},
@@ -42,6 +53,8 @@ func TestEnv_SavePwResetSession(t *testing.T) {
 			if err := env.SavePwResetSession(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("SavePwResetSession() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
+			t.Logf("Save %v", tt.args.s)
 		})
 	}
 }
