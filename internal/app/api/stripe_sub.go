@@ -423,5 +423,12 @@ func (routes StripeRoutes) UpdateSubsDefaultPayMethod(w http.ResponseWriter, req
 
 	subs = stripe.NewSubs(subs.FtcUserID.String, rawSubs)
 
+	go func() {
+		err := routes.stripeRepo.UpsertSubs(subs, false)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
 	_ = render.New(w).OK(subs)
 }
