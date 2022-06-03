@@ -407,7 +407,7 @@ func (routes StripeRoutes) UpdateSubsDefaultPayMethod(w http.ResponseWriter, req
 	}
 
 	// Ensure the payment method exists
-	pm, err := routes.loadPaymentMethod(params.DefaultMethod, false)
+	pm, err := routes.loadPaymentMethod(params.ID, false)
 	if err != nil {
 		_ = xhttp.HandleSubsErr(w, err)
 		return

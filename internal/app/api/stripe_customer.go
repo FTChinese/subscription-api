@@ -189,7 +189,7 @@ func (routes StripeRoutes) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, 
 
 	rawCus, err := routes.stripeRepo.Client.SetCusDefaultPaymentMethod(
 		cusID,
-		params.DefaultMethod)
+		params.ID)
 	if err != nil {
 		err = xhttp.HandleSubsErr(w, err)
 		return
@@ -208,7 +208,7 @@ func (routes StripeRoutes) UpdateCusDefaultPaymentMethod(w http.ResponseWriter, 
 		}
 
 		// Fetch the related payment method from Stripe
-		pm, err := routes.stripeRepo.LoadOrFetchPaymentMethod(params.DefaultMethod, true)
+		pm, err := routes.stripeRepo.LoadOrFetchPaymentMethod(params.ID, true)
 		if err != nil {
 			sugar.Error(err)
 			return

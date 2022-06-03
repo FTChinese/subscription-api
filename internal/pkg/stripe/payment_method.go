@@ -13,13 +13,13 @@ import (
 
 // DefaultPaymentMethodParams contains a customer's default payment method.
 type DefaultPaymentMethodParams struct {
-	DefaultMethod string `json:"defaultPaymentMethod"`
+	ID string `json:"defaultPaymentMethod"`
 }
 
 func (p *DefaultPaymentMethodParams) Validate() *render.ValidationError {
-	p.DefaultMethod = strings.TrimSpace(p.DefaultMethod)
+	p.ID = strings.TrimSpace(p.ID)
 
-	return validator.New("defaultPaymentMethod").Required().Validate(p.DefaultMethod)
+	return validator.New("defaultPaymentMethod").Required().Validate(p.ID)
 }
 
 type PaymentMethodCard struct {
