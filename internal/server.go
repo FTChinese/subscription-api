@@ -37,8 +37,8 @@ func StartServer(s ServerStatus) {
 	myDBs := db.MustNewMyDBs(s.Production)
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
-	// Set the cache default expiration time to 2 hours.
-	paywallCache := cache.New(2*time.Hour, 0)
+	// Set the cache default expiration and cleanup interval both to 2 hours.
+	cacheStore := cache.New(2*time.Hour, 2*time.Hour)
 	emailService := letter.NewService(logger)
 
 	readerBaseRepo := shared.NewReaderCommon(myDBs)
@@ -54,7 +54,7 @@ func StartServer(s ServerStatus) {
 	accountRouter := api.NewAccountRouter(userShared)
 	ftcPayRoutes := api.NewFtcPayRoutes(
 		myDBs,
-		paywallCache,
+		cacheStore,
 		logger,
 		s.LiveMode)
 
@@ -69,14 +69,14 @@ func StartServer(s ServerStatus) {
 
 	stripeRoutes := api.NewStripeRoutes(
 		myDBs,
-		paywallCache,
+		cacheStore,
 		logger,
 		s.LiveMode)
 
 	//giftCardRouter := controller.NewGiftCardRouter(myDB, cfg)
 	paywallRouter := api.NewPaywallRouter(
 		myDBs,
-		paywallCache,
+		cacheStore,
 		logger,
 		s.LiveMode)
 
@@ -86,11 +86,14 @@ func StartServer(s ServerStatus) {
 
 	cmsRouter := api.NewCMSRouter(
 		myDBs,
-		paywallCache,
+		cacheStore,
 		logger,
 		s.LiveMode)
 
-	appRouter := api.NewAppRouter(myDBs)
+	appRouter := api.NewAndroidRouter(
+		myDBs,
+		cacheStore,
+		logger)
 
 	wxAuth := api.NewWxAuth(myDBs, logger)
 
@@ -512,14 +515,19 @@ func StartServer(s ServerStatus) {
 	})
 
 	r.Route("/apps", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+
 		r.Route("/android", func(r chi.Router) {
-			r.Get("/latest", appRouter.AndroidLatest)
-			r.Get("/releases", appRouter.AndroidList)
-			r.Get("/releases/{versionName}", appRouter.AndroidSingle)
+			// Use ?refresh=true to bust cache.
+			r.Get("/latest", appRouter.LatestRelease)
+			r.Get("/releases", appRouter.ListReleases)
+			r.Get("/releases/{versionName}", appRouter.LoadOneRelease)
 		})
 	})
 
 	r.Route("/legal", func(r chi.Router) {
+		r.Use(guard.CheckToken)
+
 		r.Get("/", legalRoutes.ListActive)
 		r.Get("/{id}", legalRoutes.Load)
 	})
@@ -561,6 +569,12 @@ func StartServer(s ServerStatus) {
 			r.Post("/", legalRoutes.Create)
 			r.Patch("/{id}", legalRoutes.Update)
 			r.Post("/{id}/publish", legalRoutes.Publish)
+		})
+
+		r.Route("/android", func(r chi.Router) {
+			r.Post("/", appRouter.CreateRelease)
+			r.Patch("/{versionName}", appRouter.UpdateRelease)
+			r.Delete("/{versionName}", appRouter.DeleteRelease)
 		})
 	})
 
