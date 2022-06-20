@@ -345,6 +345,8 @@ func StartServer(s ServerStatus) {
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
+		r.Get("/publishable-key", stripeRoutes.PublishableKey)
+
 		r.Route("/prices", func(r chi.Router) {
 			r.Use(xhttp.FormParsed)
 			// List stripe prices. If query parameter has refresh=true, no cached data will be used.

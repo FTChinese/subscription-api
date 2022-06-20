@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository"
 	"github.com/FTChinese/subscription-api/internal/repository/shared"
@@ -11,7 +12,13 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
+	"net/http"
 )
+
+type PublishableKey struct {
+	Key  string `json:"key"`
+	Live bool   `json:"live"`
+}
 
 type StripeRoutes struct {
 	signingKey     string
@@ -43,6 +50,13 @@ func NewStripeRoutes(
 		logger:    logger,
 		live:      live,
 	}
+}
+
+func (routes StripeRoutes) PublishableKey(w http.ResponseWriter, req *http.Request) {
+	_ = render.New(w).OK(PublishableKey{
+		Key:  routes.publishableKey,
+		Live: routes.live,
+	})
 }
 
 func (routes StripeRoutes) handleSubsResult(result stripe.SubsSuccess) {
