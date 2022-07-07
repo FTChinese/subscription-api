@@ -9,6 +9,7 @@ import (
 )
 
 type Invoice struct {
+	IsFromStripe         bool                    `json:"-"`
 	ID                   string                  `json:"id" db:"id"`
 	AutoAdvance          bool                    `json:"autoAdvance" db:"auto_advance"`
 	ChargeID             string                  `json:"chargeId" db:"charge_id"`
@@ -60,6 +61,7 @@ func NewInvoice(si *stripe.Invoice) Invoice {
 	}
 
 	return Invoice{
+		IsFromStripe:         true,
 		ID:                   si.ID,
 		AutoAdvance:          si.AutoAdvance,
 		ChargeID:             chargeID,
