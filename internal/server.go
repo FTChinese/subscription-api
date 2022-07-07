@@ -422,10 +422,13 @@ func StartServer(s ServerStatus) {
 			r.Post("/{id}/reactivate", stripeRoutes.ReactivateSubscription)
 			r.Get("/{id}/default-payment-method", stripeRoutes.GetSubsDefaultPaymentMethod)
 			r.Post("/{id}/default-payment-method", stripeRoutes.UpdateSubsDefaultPayMethod)
+			r.Get("/{id}/latest-invoice", stripeRoutes.LoadLatestInvoice)
+			r.Get("/{id}/latest-invoice/any-coupon", stripeRoutes.CouponOfLatestInvoice)
 		})
 
 		r.Route("/invoices", func(r chi.Router) {
-			r.Get("/{id}/coupon-applied", stripeRoutes.InvoiceHasCoupon)
+			// ?refresh=true
+			r.Get("/{id}", stripeRoutes.LoadInvoice)
 		})
 	})
 
