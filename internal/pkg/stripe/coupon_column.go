@@ -7,6 +7,8 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
+// CouponColumn is used to save a coupon as JSON column.
+// Used when saving a stripe shopping session.
 type CouponColumn struct {
 	price.StripeCoupon
 }
