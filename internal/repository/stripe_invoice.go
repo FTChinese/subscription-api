@@ -13,3 +13,13 @@ func (repo StripeRepo) UpsertInvoice(i stripe.Invoice) error {
 
 	return nil
 }
+
+func (repo StripeRepo) RetrieveInvoice(id string) (stripe.Invoice, error) {
+	var inv stripe.Invoice
+	err := repo.dbs.Read.Get(&inv, stripe.StmtRetrieveInvoice, id)
+	if err != nil {
+		return stripe.Invoice{}, err
+	}
+
+	return inv, nil
+}
