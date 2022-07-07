@@ -58,16 +58,16 @@ func (repo StripeRepo) InsertCouponRedeemed(r stripe.CouponRedeemed) error {
 	return err
 }
 
-func (repo StripeRepo) InvoiceHasCouponApplied(invoiceID string) (bool, error) {
-	var ok bool
+func (repo StripeRepo) LatestCouponApplied(invoiceID string) (stripe.CouponRedeemed, error) {
+	var r stripe.CouponRedeemed
 	err := repo.dbs.Read.Get(
-		&ok,
-		stripe.StmtInvoiceHasCoupon,
+		&r,
+		stripe.StmtLatestCouponRedeemed,
 		invoiceID)
 
 	if err != nil {
-		return false, err
+		return stripe.CouponRedeemed{}, err
 	}
 
-	return ok, nil
+	return r, nil
 }
