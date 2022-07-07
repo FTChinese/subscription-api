@@ -27,3 +27,27 @@ SET id = :id,
 ON DUPLICATE KEY UPDATE
 ` + colInsertInvoice + `,
 updated_utc = UTC_TIMESTAMP()`
+
+const StmtRetrieveInvoice = `
+SELECT id,
+	auto_advance,
+	charge_id,
+	collection_method,
+	currency,
+	customer_id,
+	default_payment_method,
+	hosted_invoice_url,
+	paid,
+	live_mode,
+	payment_intent_id,
+	period_end_utc,
+	period_start_utc,
+	receipt_number,
+	invoice_status,
+	subscription_id,
+	total,
+	created
+FROM premium.stripe_invoice
+WHERE id = ?
+LIMIT 1
+`
