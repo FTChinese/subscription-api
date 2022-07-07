@@ -36,3 +36,45 @@ func TestStripeRepo_UpsertInvoice(t *testing.T) {
 		})
 	}
 }
+
+func TestStripeRepo_RetrieveInvoice(t *testing.T) {
+	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
+
+	inv := test.StripeInvoice()
+
+	_ = repo.UpsertInvoice(inv)
+
+	type args struct {
+		id string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    stripe.Invoice
+		wantErr bool
+	}{
+		{
+			name: "Retrieve invoice",
+			args: args{
+				id: inv.ID,
+			},
+			want:    stripe.Invoice{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, err := repo.RetrieveInvoice(tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RetrieveInvoice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("RetrieveInvoice() got = %v, want %v", got, tt.want)
+			//}
+
+			t.Logf("%v", got)
+		})
+	}
+}
