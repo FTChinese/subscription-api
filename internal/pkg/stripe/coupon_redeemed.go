@@ -9,12 +9,12 @@ import (
 // One an invoice has any coupon applied to it, it can
 // no longer use any others.
 type CouponRedeemed struct {
-	InvoiceID   string      `db:"invoice_id"`
-	FtcID       string      `db:"ftc_user_id"`
-	SubsID      string      `db:"subs_id"`
-	CouponID    string      `db:"coupon_id"`
-	CreatedUTC  chrono.Time `db:"created_utc"`
-	RedeemedUTC chrono.Time `db:"redeemed_utc"`
+	InvoiceID   string      `json:"invoiceId" db:"invoice_id"`
+	FtcID       string      `json:"ftcId" db:"ftc_user_id"`
+	SubsID      string      `json:"subsId" db:"subs_id"`
+	CouponID    string      `json:"couponId" db:"coupon_id"`
+	CreatedUTC  chrono.Time `json:"createdUtc" db:"created_utc"`
+	RedeemedUTC chrono.Time `json:"redeemedUtc" db:"redeemed_utc"`
 }
 
 func (c CouponRedeemed) IsZero() bool {
