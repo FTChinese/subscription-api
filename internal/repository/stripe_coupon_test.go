@@ -19,8 +19,8 @@ func mockCouponRedeemed() stripe.CouponRedeemed {
 		FtcID:       uuid.New().String(),
 		SubsID:      faker.StripeSubsID(),
 		CouponID:    faker.StripeCouponID(),
-		CreatedUTC:  chrono.TimeNow(),
-		RedeemedUTC: chrono.TimeNow(),
+		CreatedUTC:  chrono.TimeUTCNow(),
+		RedeemedUTC: chrono.TimeUTCNow(),
 	}
 }
 
@@ -167,7 +167,7 @@ func TestStripeRepo_InsertCouponRedeemed(t *testing.T) {
 	}
 }
 
-func TestStripeRepo_InvoiceHasCouponApplied(t *testing.T) {
+func TestStripeRepo_LatestCouponApplied(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
 	cr := mockCouponRedeemed()
 
@@ -179,7 +179,7 @@ func TestStripeRepo_InvoiceHasCouponApplied(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    bool
+		want    stripe.CouponRedeemed
 		wantErr bool
 	}{
 		{
@@ -187,14 +187,14 @@ func TestStripeRepo_InvoiceHasCouponApplied(t *testing.T) {
 			args: args{
 				invoiceID: cr.InvoiceID,
 			},
-			want:    true,
+			want:    cr,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := repo.InvoiceHasCouponApplied(tt.args.invoiceID)
+			got, err := repo.LatestCouponApplied(tt.args.invoiceID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InvoiceHasCouponApplied() error = %v, wantErr %v", err, tt.wantErr)
 				return
