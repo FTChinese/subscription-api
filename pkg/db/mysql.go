@@ -5,6 +5,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"log"
 	"time"
 )
 
@@ -42,6 +43,7 @@ func NewMySQL(c config.Connect) (*sqlx.DB, error) {
 	//
 	// See https://github.com/go-sql-driver/mysql/issues/674
 	db.SetConnMaxLifetime(time.Second)
+	log.Printf("Connected to MySQL %s", c.Host)
 	return db, nil
 }
 

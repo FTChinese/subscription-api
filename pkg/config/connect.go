@@ -39,18 +39,23 @@ func MustMySQLConn(key string, prod bool) Connect {
 
 	log.Printf("Using mysql server %s. Production: %t", conn.Host, prod)
 
+	log.Printf("Got mysql ip %s", conn.Host)
+
 	return conn
 }
 
 func MustMySQLReadConn(prod bool) Connect {
+	log.Printf("Initializting MySQL read DB in %s", prodDev[prod])
 	return MustMySQLConn("mysql.read", prod)
 }
 
 func MustMySQLWriteConn(prod bool) Connect {
+	log.Printf("Intializng MySQL write DB in %s", prodDev[prod])
 	return MustMySQLConn("mysql.write", prod)
 }
 
 func MustMySQLDeleteConn(prod bool) Connect {
+	log.Printf("Intializng MySQL delete DB in %s", prodDev[prod])
 	return MustMySQLConn("mysql.delete", prod)
 }
 

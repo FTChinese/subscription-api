@@ -24,7 +24,7 @@ func (k AuthKeys) Validate() error {
 }
 
 func (k AuthKeys) Pick(prod bool) string {
-	log.Printf("Using %s for production %t", k.name, prod)
+	log.Printf("Pick %s for %s", k.name, prodDev[prod])
 
 	if prod {
 		return k.Prod
@@ -59,14 +59,17 @@ func MustLoadAuthKeys(name string) AuthKeys {
 }
 
 func MustStripeAPIKey() AuthKeys {
+	log.Printf("Loading stripe secret...")
 	return MustLoadAuthKeys("api_keys.stripe_secret")
 }
 
 func MustStripePubKey() AuthKeys {
+	log.Printf("Loading stripe publishable key...")
 	return MustLoadAuthKeys("api_keys.stripe_publishable")
 }
 
 func MustStripeWebhookKey() AuthKeys {
+	log.Printf("Loading stripe webhook key...")
 	return MustLoadAuthKeys(stripeWebhookKey)
 }
 
