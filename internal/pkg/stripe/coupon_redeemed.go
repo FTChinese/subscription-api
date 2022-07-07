@@ -31,10 +31,15 @@ SET invoice_id = :invoice_id,
 	redeemed_utc = :redeemed_utc
 `
 
-const StmtInvoiceHasCoupon = `
-SELECT EXISTS (
-	SELECT invoice_id
-	FROM premium.stripe_coupon_redeemed
-	WHERE invoice_id = ?
-) AS alreadyExists
+const StmtLatestCouponRedeemed = `
+SELECT invoice_id,
+	ftc_user_id,
+	subs_id,
+	coupon_id,
+	created_utc,
+	redeemed_utc
+FROM premium.stripe_coupon_redeemed
+WHERE invoice_id = ?
+ORDER BY redeemed_utc DESC
+LIMIT 1
 `
