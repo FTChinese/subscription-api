@@ -135,7 +135,7 @@ func (x SubsIntentKind) IsNewSubs() bool {
 }
 
 func (x SubsIntentKind) IsUpdating() bool {
-	return x == IntentUpgrade || x == IntentSwitchInterval
+	return x == IntentUpgrade || x == IntentDowngrade || x == IntentSwitchInterval || x == IntentApplyCoupon
 }
 
 func (x SubsIntentKind) IsSwitchToAutoRenew() bool {
