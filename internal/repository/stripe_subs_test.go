@@ -10,8 +10,9 @@ import (
 
 func TestStripeRepo_RetrieveSubs(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
+	p := test.NewPersona()
 
-	subs := test.NewPersona().StripeSubsBuilder().Build()
+	subs := stripe.NewMockSubsBuilder(p.FtcID).Build()
 
 	test.NewRepo().SaveStripeSubs(subs)
 
@@ -52,6 +53,7 @@ func TestStripeRepo_RetrieveSubs(t *testing.T) {
 
 func TestStripeRepo_UpsertSubs(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
+	p := test.NewPersona()
 
 	type args struct {
 		s        stripe.Subs
@@ -65,7 +67,7 @@ func TestStripeRepo_UpsertSubs(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				s:        test.NewPersona().StripeSubsBuilder().Build(),
+				s:        stripe.NewMockSubsBuilder(p.FtcID).WithDiscount().Build(),
 				expanded: true,
 			},
 			wantErr: false,
@@ -73,7 +75,7 @@ func TestStripeRepo_UpsertSubs(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				s:        test.NewPersona().StripeSubsBuilder().Build(),
+				s:        stripe.NewMockSubsBuilder(p.FtcID).Build(),
 				expanded: false,
 			},
 			wantErr: false,

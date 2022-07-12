@@ -22,7 +22,7 @@ func TestStripeRepo_UpsertPaymentMethod(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				pm: test.StripePaymentMethod(),
+				pm: stripe.MockPaymentMethod(),
 			},
 			wantErr: false,
 		},
@@ -39,7 +39,7 @@ func TestStripeRepo_UpsertPaymentMethod(t *testing.T) {
 func TestStripeRepo_RetrievePaymentMethod(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
 
-	pm := test.StripePaymentMethod()
+	pm := stripe.MockPaymentMethod()
 
 	test.NewRepo().SaveStripePM(pm)
 
