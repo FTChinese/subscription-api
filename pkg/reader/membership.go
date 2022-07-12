@@ -106,7 +106,7 @@ func (m Membership) IsZero() bool {
 
 // IsExpired tests if the membership's expiration date is before now.
 // A non-existing membership is treated as expired.
-// Auto renewal is treated as not expired.
+// Auto-renewal is treated as not expired.
 func (m Membership) IsExpired() bool {
 	// If membership does not exist, it is treated as expired.
 	if m.IsZero() {
@@ -255,6 +255,14 @@ func (m Membership) IsStripe() bool {
 
 func (m Membership) IsInvalidStripe() bool {
 	return m.IsStripe() && (m.Status == enum.SubsStatusIncompleteExpired || m.Status == enum.SubsStatusPastDue || m.Status == enum.SubsStatusCanceled || m.Status == enum.SubsStatusUnpaid)
+}
+
+func (m Membership) IsStripeSubsMatch(subsID string) bool {
+	if m.StripeSubsID.IsZero() {
+		return false
+	}
+
+	return m.StripeSubsID.String == subsID
 }
 
 func (m Membership) IsTrialing() bool {
