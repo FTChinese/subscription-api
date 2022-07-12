@@ -142,7 +142,7 @@ func (b StripeSubsBuilder) WithCanceled() StripeSubsBuilder {
 
 func (b StripeSubsBuilder) Build() stripe.Subs {
 	start := time.Now()
-	end := dt.NewTimeRange(start).WithPeriod(b.price.PeriodCount.YearMonthDay).End
+	end := dt.NewSlotBuilder(start).WithPeriod(b.price.PeriodCount.YearMonthDay).End
 	canceled := time.Time{}
 
 	subsID := faker.StripeSubsID()
