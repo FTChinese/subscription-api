@@ -415,8 +415,8 @@ func StartServer(s ServerStatus) {
 			r.Post("/", stripeRoutes.CreateSubs)
 			// Get a single subscription
 			r.Get("/{id}", stripeRoutes.LoadSubs)
-			r.Post("/{id}", stripeRoutes.UpdateSubs)
 			// Update a subscription
+			r.Post("/{id}", stripeRoutes.UpdateSubs)
 			r.Post("/{id}/refresh", stripeRoutes.RefreshSubs)
 			r.Post("/{id}/cancel", stripeRoutes.CancelSubs)
 			r.Post("/{id}/reactivate", stripeRoutes.ReactivateSubscription)
@@ -562,6 +562,7 @@ func StartServer(s ServerStatus) {
 
 		r.Route("/stripe", func(r chi.Router) {
 			r.Route("/coupons", func(r chi.Router) {
+				// Link a coupon to a price, or modify its metadata
 				r.Post("/{id}", stripeRoutes.UpdateStripeCoupon)
 				r.Delete("/{id}", stripeRoutes.DeleteStripeCoupon)
 			})
