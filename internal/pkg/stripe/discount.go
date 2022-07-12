@@ -40,18 +40,22 @@ LIMIT 1
 // Discount represents the actual application of a coupon or promotion code. It contains information about when the discount began, when it will end, and what it is applied to.
 type Discount struct {
 	IsFromStripe    bool         `json:"-"`
-	ID              string       `db:"id"`
-	Coupon          CouponColumn `db:"coupon"`
-	CustomerID      string       `db:"customer_id"`
-	End             null.Int     `db:"end_time"`
-	InvoiceID       null.String  `db:"invoice_id"`
-	InvoiceItemID   null.String  `db:"invoice_item_id"`
-	PromotionCodeID null.String  `db:"promotion_code_id"`
-	Start           int64        `db:"start_time"`
-	SubsID          null.String  `db:"subs_id"`
+	ID              string       `json:"id" db:"id"`
+	Coupon          CouponColumn `json:"coupon" db:"coupon"`
+	CustomerID      string       `json:"customerId" db:"customer_id"`
+	End             null.Int     `json:"end" db:"end_time"`
+	InvoiceID       null.String  `json:"invoiceId" db:"invoice_id"`
+	InvoiceItemID   null.String  `json:"invoiceItemId" db:"invoice_item_id"`
+	PromotionCodeID null.String  `json:"promotionCodeId" db:"promotion_code_id"`
+	Start           int64        `json:"start" db:"start_time"`
+	SubsID          null.String  `json:"subsId" db:"subs_id"`
 }
 
 func NewDiscount(d *stripe.Discount) Discount {
+	if d == nil {
+		return Discount{}
+	}
+
 	return Discount{
 		ID:              d.ID,
 		Coupon:          CouponColumn{price.NewStripeCoupon(d.Coupon)},
@@ -63,4 +67,8 @@ func NewDiscount(d *stripe.Discount) Discount {
 		Start:           d.Start,
 		SubsID:          null.NewString(d.Subscription, d.Subscription != ""),
 	}
+}
+
+func (d Discount) IsZero() bool {
+	return d.ID != ""
 }
