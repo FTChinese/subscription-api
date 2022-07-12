@@ -12,15 +12,14 @@ import (
 )
 
 var MockStripeStdIntroPrice = StripePrice{
-	IsFromStripe:   false,
-	ID:             "price_1Juuu2BzTK0hABgJTXiK4NTt",
-	Active:         true,
-	Currency:       "gbp",
-	IsIntroductory: true,
-	Kind:           KindOneTime,
-	LiveMode:       false,
-	Nickname:       "Trial period",
-	ProductID:      "",
+	IsFromStripe: false,
+	ID:           "price_1Juuu2BzTK0hABgJTXiK4NTt",
+	Active:       true,
+	Currency:     "gbp",
+	Kind:         KindOneTime,
+	LiveMode:     false,
+	Nickname:     "Trial period",
+	ProductID:    "",
 	PeriodCount: ColumnYearMonthDay{
 		YearMonthDay: dt.YearMonthDay{
 			Years:  0,
@@ -36,15 +35,14 @@ var MockStripeStdIntroPrice = StripePrice{
 }
 
 var MockStripeStdYearPrice = StripePrice{
-	IsFromStripe:   false,
-	ID:             "price_1IM2nFBzTK0hABgJiIDeDIox",
-	Active:         true,
-	Currency:       "gbp",
-	IsIntroductory: false,
-	Kind:           KindRecurring,
-	LiveMode:       false,
-	Nickname:       "Standard Edition/Year",
-	ProductID:      "",
+	IsFromStripe: false,
+	ID:           "price_1IM2nFBzTK0hABgJiIDeDIox",
+	Active:       true,
+	Currency:     "gbp",
+	Kind:         KindRecurring,
+	LiveMode:     false,
+	Nickname:     "Standard Edition/Year",
+	ProductID:    "",
 	PeriodCount: ColumnYearMonthDay{
 		YearMonthDay: dt.YearMonthDay{
 			Years:  1,
@@ -71,24 +69,25 @@ var MockStripeStdYearCoupons = []StripeCoupon{
 		Name:         "",
 		RedeemBy:     0,
 		StripeCouponMeta: StripeCouponMeta{
-			PriceID:  null.StringFrom(MockStripeStdYearPrice.ID),
-			StartUTC: chrono.Time{},
-			EndUTC:   chrono.Time{},
+			PriceID: null.StringFrom(MockStripeStdYearPrice.ID),
+			TimeSlot: dt.TimeSlot{
+				StartUTC: chrono.Time{},
+				EndUTC:   chrono.Time{},
+			},
 		},
 		Status: "",
 	},
 }
 
 var MockStripeStdMonthPrice = StripePrice{
-	IsFromStripe:   false,
-	ID:             "price_1IM2mgBzTK0hABgJVH8o9Sjm",
-	Active:         false,
-	Currency:       "gbp",
-	IsIntroductory: false,
-	Kind:           KindRecurring,
-	LiveMode:       false,
-	Nickname:       "Standard Edition/Month",
-	ProductID:      "",
+	IsFromStripe: false,
+	ID:           "price_1IM2mgBzTK0hABgJVH8o9Sjm",
+	Active:       false,
+	Currency:     "gbp",
+	Kind:         KindRecurring,
+	LiveMode:     false,
+	Nickname:     "Standard Edition/Month",
+	ProductID:    "",
 	PeriodCount: ColumnYearMonthDay{
 		YearMonthDay: dt.YearMonthDay{
 			Years:  0,
@@ -104,15 +103,14 @@ var MockStripeStdMonthPrice = StripePrice{
 }
 
 var MockStripePrmPrice = StripePrice{
-	IsFromStripe:   false,
-	ID:             "plan_FOde0uAr0V4WmT",
-	Active:         true,
-	Currency:       "gbp",
-	IsIntroductory: false,
-	Kind:           KindRecurring,
-	LiveMode:       false,
-	Nickname:       "Premium Edition",
-	ProductID:      "",
+	IsFromStripe: false,
+	ID:           "plan_FOde0uAr0V4WmT",
+	Active:       true,
+	Currency:     "gbp",
+	Kind:         KindRecurring,
+	LiveMode:     false,
+	Nickname:     "Premium Edition",
+	ProductID:    "",
 	PeriodCount: ColumnYearMonthDay{
 		YearMonthDay: dt.YearMonthDay{
 			Years:  1,
@@ -183,9 +181,11 @@ func mockRandomCouponOfPrice(priceId string) StripeCoupon {
 		Name:         "",
 		RedeemBy:     0,
 		StripeCouponMeta: StripeCouponMeta{
-			PriceID:  null.StringFrom(priceId),
-			StartUTC: chrono.TimeUTCNow(),
-			EndUTC:   chrono.TimeUTCFrom(time.Now().AddDate(0, 0, 7)),
+			PriceID: null.StringFrom(priceId),
+			TimeSlot: dt.TimeSlot{
+				StartUTC: chrono.TimeUTCNow(),
+				EndUTC:   chrono.TimeUTCFrom(time.Now().AddDate(0, 0, 7)),
+			},
 		},
 		Status: DiscountStatusActive,
 	}
