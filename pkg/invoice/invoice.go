@@ -41,7 +41,7 @@ type Invoice struct {
 	StripeSubsID  null.String    `json:"stripeSubsId" db:"stripe_subs_id"` // For carry-over by switching to Stripe, the stripe subscription id.
 	CreatedUTC    chrono.Time    `json:"createdUtc" db:"created_utc"`
 	ConsumedUTC   chrono.Time    `json:"consumedUtc" db:"consumed_utc"` // For order kind create, renew or upgrade, an invoice is consumed immediately; for addon, it is usually consumed at a future time.
-	dt.ChronoPeriod
+	dt.TimeSlot
 	CarriedOverUtc chrono.Time `json:"carriedOver" db:"carried_over_utc"` // In case user has carry-over for upgrading or switching stripe, add a timestamp to original invoice.
 }
 
@@ -62,7 +62,7 @@ func NewAddonInvoice(params AddOnParams) Invoice {
 		StripeSubsID:   null.String{},
 		CreatedUTC:     chrono.TimeNow(),
 		ConsumedUTC:    chrono.Time{},
-		ChronoPeriod:   dt.ChronoPeriod{},
+		TimeSlot:       dt.TimeSlot{},
 		CarriedOverUtc: chrono.Time{},
 	}
 }
@@ -73,11 +73,11 @@ func (i Invoice) SetPeriod(start time.Time) Invoice {
 		return i
 	}
 
-	period := dt.NewTimeRange(start).
+	period := dt.NewSlotBuilder(start).
 		WithPeriod(i.YearMonthDay)
 
 	i.ConsumedUTC = chrono.TimeNow()
-	i.ChronoPeriod = dt.ChronoPeriod{
+	i.TimeSlot = dt.TimeSlot{
 		StartUTC: period.StartTime(),
 		EndUTC:   period.EndTime(),
 	}

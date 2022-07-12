@@ -114,7 +114,7 @@ func TestMembership_addonToInvoice(t *testing.T) {
 				StripeSubsID:  null.String{},
 				CreatedUTC:    chrono.TimeNow(),
 				ConsumedUTC:   chrono.TimeNow(),
-				ChronoPeriod: dt.ChronoPeriod{
+				TimeSlot: dt.TimeSlot{
 					StartUTC: chrono.TimeFrom(m.ExpireDate.Time),
 					EndUTC:   chrono.TimeFrom(m.ExpireDate.AddDate(0, 0, 123)),
 				},
