@@ -27,7 +27,7 @@ type SubsParams struct {
 
 // Validate checks if customer and idempotency fields are set.
 func (pr SubsParams) Validate() *render.ValidationError {
-	if pr.IntroductoryPriceID.Valid || pr.CouponID.Valid {
+	if pr.IntroductoryPriceID.Valid && pr.CouponID.Valid {
 		return &render.ValidationError{
 			Message: "introductory price and coupon cannot be used together",
 			Field:   "couponId",
