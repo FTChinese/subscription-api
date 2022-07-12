@@ -2,15 +2,15 @@ package price
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 	"time"
 )
 
 type StripeCouponMeta struct {
-	PriceID  null.String `json:"priceId" db:"price_id"`
-	StartUTC chrono.Time `json:"startUtc" db:"start_utc"`
-	EndUTC   chrono.Time `json:"endUtc" db:"end_utc"`
+	PriceID null.String `json:"priceId" db:"price_id"`
+	dt.TimeSlot
 }
 
 func ParseStripeCouponMeta(m map[string]string) StripeCouponMeta {
@@ -28,9 +28,11 @@ func ParseStripeCouponMeta(m map[string]string) StripeCouponMeta {
 	}
 
 	return StripeCouponMeta{
-		PriceID:  null.NewString(priceId, priceId != ""),
-		StartUTC: chrono.TimeFrom(startTime),
-		EndUTC:   chrono.TimeFrom(endTime),
+		PriceID: null.NewString(priceId, priceId != ""),
+		TimeSlot: dt.TimeSlot{
+			StartUTC: chrono.TimeFrom(startTime),
+			EndUTC:   chrono.TimeFrom(endTime),
+		},
 	}
 }
 
@@ -100,11 +102,33 @@ func (c StripeCoupon) IsZero() bool {
 	return c.ID == ""
 }
 
+func (c StripeCoupon) IsValid() bool {
+	if c.ID == "" {
+		return false
+	}
+
+	if c.Status != DiscountStatusActive {
+		return false
+	}
+
+	if c.AmountOff <= 0 {
+		return false
+	}
+
+	if c.StartUTC.IsZero() || c.EndUTC.IsZero() {
+		return true
+	}
+
+	return c.NowIn()
+}
+
 func (c StripeCoupon) Cancelled() StripeCoupon {
 	c.Status = DiscountStatusCancelled
 	return c
 }
 
-func (c StripeCoupon) IsValid() bool {
+// IsRedeemable test if the redeemBy time set in strip dashboard is expired.
+// Currently, not used.
+func (c StripeCoupon) IsRedeemable() bool {
 	return (time.Now().Unix() <= c.RedeemBy) && (c.Status == DiscountStatusActive)
 }

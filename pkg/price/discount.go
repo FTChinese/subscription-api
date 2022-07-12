@@ -7,21 +7,20 @@ import (
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
-	"time"
 )
 
 // DiscountParams contains fields submitted by client
 // when creating a discount.
 type DiscountParams struct {
-	Description     null.String        `json:"description" db:"discount_desc"`
-	Kind            OfferKind          `json:"kind" db:"kind"`
-	OverridePeriod  ColumnYearMonthDay `json:"overridePeriod" db:"override_period"`
-	Percent         null.Int           `json:"percent" db:"percent"`
-	PriceOff        null.Float         `json:"priceOff" db:"price_off"`
-	PriceID         string             `json:"priceId" db:"price_id"`
-	Recurring       bool               `json:"recurring" db:"recurring"`
-	dt.ChronoPeriod                    // Optional. Zero value indicates permanent discount.
-	CreatedBy       string             `json:"createdBy" db:"created_by"`
+	Description    null.String        `json:"description" db:"discount_desc"`
+	Kind           OfferKind          `json:"kind" db:"kind"`
+	OverridePeriod ColumnYearMonthDay `json:"overridePeriod" db:"override_period"`
+	Percent        null.Int           `json:"percent" db:"percent"`
+	PriceOff       null.Float         `json:"priceOff" db:"price_off"`
+	PriceID        string             `json:"priceId" db:"price_id"`
+	Recurring      bool               `json:"recurring" db:"recurring"`
+	dt.TimeSlot                       // Optional. Zero value indicates permanent discount.
+	CreatedBy      string             `json:"createdBy" db:"created_by"`
 }
 
 func (p DiscountParams) Validate() *render.ValidationError {
@@ -94,11 +93,5 @@ func (d Discount) IsValid() bool {
 		return true
 	}
 
-	now := time.Now()
-
-	if now.Before(d.StartUTC.Time) || now.After(d.EndUTC.Time) {
-		return false
-	}
-
-	return true
+	return d.NowIn()
 }
