@@ -46,3 +46,7 @@ func (ci CartItemStripe) Validate() *render.ValidationError {
 
 	return nil
 }
+
+func (ci CartItemStripe) HasCoupon() bool {
+	return ci.Coupon.IsValid()
+}
