@@ -20,7 +20,7 @@ var unknownCheckout = CheckoutIntent{
 
 // NewCheckoutIntentStripe deduces what kind of action
 // when user is trying is subscribed via Stripe.
-func NewCheckoutIntentStripe(m Membership, p price.StripePrice) CheckoutIntent {
+func NewCheckoutIntentStripe(m Membership, item CartItemStripe) CheckoutIntent {
 	if m.IsExpired() || m.IsInvalidStripe() {
 		return CheckoutIntent{
 			Kind:  IntentCreate,
@@ -29,17 +29,26 @@ func NewCheckoutIntentStripe(m Membership, p price.StripePrice) CheckoutIntent {
 	}
 
 	switch m.PaymentMethod {
+	// One-off purchase -> Stripe
 	case enum.PayMethodAli, enum.PayMethodWx:
 		return CheckoutIntent{
 			Kind:  IntentOneTimeToAutoRenew,
 			Error: nil,
 		}
 
+	// Stripe -> Stripe
 	case enum.PayMethodStripe:
 		// Save tier.
-		if p.Tier == m.Tier {
+		if m.Tier == item.Recurring.Tier {
 			// Save edition
-			if p.PeriodCount.EqCycle() == m.Cycle {
+			if m.Cycle == item.Recurring.PeriodCount.EqCycle() {
+				if item.HasCoupon() {
+					return CheckoutIntent{
+						Kind:  IntentApplyCoupon,
+						Error: nil,
+					}
+				}
+
 				return CheckoutIntent{
 					Kind:  IntentForbidden,
 					Error: ErrAlreadyStripeSubs,
@@ -53,7 +62,7 @@ func NewCheckoutIntentStripe(m Membership, p price.StripePrice) CheckoutIntent {
 		}
 
 		// Different tier.
-		switch p.Tier {
+		switch item.Recurring.Tier {
 		// Current standard to Premium
 		case enum.TierPremium:
 			if m.IsTrialing() {
