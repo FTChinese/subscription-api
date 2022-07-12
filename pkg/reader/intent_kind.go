@@ -19,6 +19,7 @@ const (
 	IntentAddOn
 	IntentOneTimeToAutoRenew // Same as new, with valid remaining membership period.
 	IntentSwitchInterval     // Switching subscription billing cycle, e.g., from month to year.
+	IntentApplyCoupon        // When a stripe subscription already exists
 	IntentForbidden
 )
 
@@ -31,6 +32,7 @@ var intentKindNames = []string{
 	"addon",
 	"one_time_to_auto_renew",
 	"switch_interval",
+	"apply_coupon",
 	"forbidden",
 }
 
@@ -43,6 +45,7 @@ var subsKindMap = map[SubsIntentKind]string{
 	6: intentKindNames[6],
 	7: intentKindNames[7],
 	8: intentKindNames[8],
+	9: intentKindNames[9],
 }
 
 var subsKindValue = map[string]SubsIntentKind{
@@ -54,6 +57,7 @@ var subsKindValue = map[string]SubsIntentKind{
 	intentKindNames[6]: 6,
 	intentKindNames[7]: 7,
 	intentKindNames[8]: 8,
+	intentKindNames[9]: 9,
 }
 
 func ParseSubsKind(name string) (SubsIntentKind, error) {
