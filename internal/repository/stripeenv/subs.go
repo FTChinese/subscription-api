@@ -119,6 +119,7 @@ func (env Env) CreateSubscription(cart reader.ShoppingCart, params stripe.SubsPa
 // It could either change to a different billing cycle, for example from month to year,
 // to change to a different product, for example from standard to premium.
 func (env Env) UpdateSubscription(
+	subsID string,
 	cart reader.ShoppingCart,
 	params stripe.SubsParams,
 ) (reader.ShoppingCart, stripe.SubsSuccess, error) {
@@ -137,6 +138,11 @@ func (env Env) UpdateSubscription(
 		sugar.Error(err)
 		_ = tx.Rollback()
 		return cart, stripe.SubsSuccess{}, nil
+	}
+
+	if mmb.IsStripeSubsMatch(subsID) {
+		_ = tx.Rollback()
+		return cart, stripe.SubsSuccess{}, errors.New("mismatched stripe subscription id")
 	}
 
 	cart, err = cart.WithMember(mmb)

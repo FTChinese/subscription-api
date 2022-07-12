@@ -163,6 +163,14 @@ func (routes StripeRoutes) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 	// Get FTC id. Its presence is already checked by middleware.
 	ftcID := xhttp.GetFtcID(req.Header)
+	// Get the subscription id from url
+	subsID, err := xhttp.GetURLParam(req, "id").ToString()
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
 	var params stripe.SubsParams
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
 		_ = render.New(w).BadRequest(err.Error())
@@ -195,6 +203,7 @@ func (routes StripeRoutes) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 
 	cart := reader.NewShoppingCart(account).WithStripeItem(item)
 	cart, result, err := routes.stripeRepo.UpdateSubscription(
+		subsID,
 		cart,
 		params,
 	)
