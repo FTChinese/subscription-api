@@ -17,7 +17,7 @@ func NewPaywallStripe(prices []price.StripePrice, coupons []price.StripeCoupon) 
 	for _, sp := range prices {
 		coupons, ok := groupedCoupons[sp.ID]
 		// Introductory price should not contain coupons
-		if !ok || sp.IsIntroductory {
+		if !ok || sp.IsIntro() {
 			coupons = []price.StripeCoupon{}
 		}
 
@@ -56,7 +56,7 @@ func groupCoupons(coupons []price.StripeCoupon) map[string][]price.StripeCoupon 
 }
 
 func (item StripePaywallItem) FindCoupon(id string) price.StripeCoupon {
-	if item.Price.IsIntroductory {
+	if item.Price.IsIntro() {
 		return price.StripeCoupon{}
 	}
 
