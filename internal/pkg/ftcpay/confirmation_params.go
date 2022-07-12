@@ -66,7 +66,7 @@ func newOrderInvoice(timeParams PurchasedTimeParams, o Order) (invoice.Invoice, 
 		PaymentMethod: o.PaymentMethod,
 		CreatedUTC:    chrono.TimeNow(),
 		ConsumedUTC:   confirmedAt,
-		ChronoPeriod: dt.ChronoPeriod{
+		TimeSlot: dt.TimeSlot{
 			StartUTC: timeRange.StartTime(),
 			EndUTC:   timeRange.EndTime(),
 		},

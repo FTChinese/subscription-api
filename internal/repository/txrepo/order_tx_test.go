@@ -157,12 +157,12 @@ func TestOrderTx_ConfirmedOrder(t *testing.T) {
 
 	p := test.NewPersona()
 
-	timeRange := dt.NewTimeRange(time.Now()).AddYears(1)
+	timeRange := dt.NewSlotBuilder(time.Now()).AddYears(1)
 	orderCreate := p.OrderBuilder().Build()
 	repo.MustSaveOrder(orderCreate)
 	orderCreate = orderCreate.Confirmed(
 		chrono.TimeNow(),
-		dt.ChronoPeriod{
+		dt.TimeSlot{
 			StartUTC: timeRange.StartTime(),
 			EndUTC:   timeRange.EndTime(),
 		})

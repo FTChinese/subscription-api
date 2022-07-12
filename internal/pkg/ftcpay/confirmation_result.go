@@ -58,7 +58,7 @@ func NewConfirmationResult(p ConfirmationParams) (ConfirmationResult, error) {
 		Payment: p.Payment,
 		Order: p.Order.Confirmed(
 			p.Payment.ConfirmedUTC,
-			invoices.Purchased.ChronoPeriod),
+			invoices.Purchased.TimeSlot),
 		Invoices:   invoices,
 		Membership: newM,
 		Versioned: reader.NewMembershipVersioned(newM).

@@ -276,7 +276,7 @@ func TestCtxSubs_Render(t *testing.T) {
 						StripeSubsID:   null.String{},
 						CreatedUTC:     chrono.Time{},
 						ConsumedUTC:    chrono.Time{},
-						ChronoPeriod:   dt.ChronoPeriod{},
+						TimeSlot:       dt.TimeSlot{},
 						CarriedOverUtc: chrono.Time{},
 					},
 					CarriedOver: invoice.Invoice{},

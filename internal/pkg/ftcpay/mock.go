@@ -26,7 +26,7 @@ type MockOrderBuilder struct {
 	payMethod enum.PayMethod
 	wxAppId   null.String
 	confirmed bool
-	period    dt.TimeRange
+	period    dt.SlotBuilder
 	offerKind price.OfferKind
 }
 
@@ -122,7 +122,7 @@ func (b MockOrderBuilder) WithStartTime(from time.Time) MockOrderBuilder {
 	if !b.confirmed {
 		b.confirmed = true
 	}
-	b.period = dt.NewTimeRange(from).
+	b.period = dt.NewSlotBuilder(from).
 		WithCycle(b.price.Cycle)
 
 	return b

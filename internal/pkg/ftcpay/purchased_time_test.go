@@ -20,7 +20,7 @@ func TestPurchasedTimeParams_Build(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    dt.TimeRange
+		want    dt.SlotBuilder
 		wantErr bool
 	}{
 		{
@@ -35,7 +35,7 @@ func TestPurchasedTimeParams_Build(t *testing.T) {
 				},
 				OrderKind: enum.OrderKindCreate,
 			},
-			want: dt.TimeRange{
+			want: dt.SlotBuilder{
 				Start: now,
 				End:   now.AddDate(1, 0, 1),
 			},
@@ -53,7 +53,7 @@ func TestPurchasedTimeParams_Build(t *testing.T) {
 				},
 				OrderKind: enum.OrderKindRenew,
 			},
-			want: dt.TimeRange{
+			want: dt.SlotBuilder{
 				Start: now.Truncate(24*time.Hour).AddDate(0, 0, 1),
 				End:   now.Truncate(24*time.Hour).AddDate(1, 0, 2),
 			},
@@ -71,7 +71,7 @@ func TestPurchasedTimeParams_Build(t *testing.T) {
 				},
 				OrderKind: enum.OrderKindUpgrade,
 			},
-			want: dt.TimeRange{
+			want: dt.SlotBuilder{
 				Start: now,
 				End:   now.AddDate(1, 0, 1),
 			},
@@ -89,7 +89,7 @@ func TestPurchasedTimeParams_Build(t *testing.T) {
 				},
 				OrderKind: enum.OrderKindAddOn,
 			},
-			want:    dt.TimeRange{},
+			want:    dt.SlotBuilder{},
 			wantErr: false,
 		},
 	}

@@ -19,24 +19,24 @@ type PurchasedTimeParams struct {
 // For order kid of create or renew, always pick the latest time from confirmation time
 // and current membership's expiration time.
 // For addon, time range if unknown until a future moment.
-func (b PurchasedTimeParams) Build() (dt.TimeRange, error) {
+func (b PurchasedTimeParams) Build() (dt.SlotBuilder, error) {
 	switch b.OrderKind {
 
 	case enum.OrderKindCreate, enum.OrderKindRenew:
 		startTime := dt.PickLater(b.ConfirmedAt.Time, b.ExpirationDate.Time)
-		return dt.NewTimeRange(startTime).
+		return dt.NewSlotBuilder(startTime).
 			WithPeriod(b.PeriodCount), nil
 
 	// For upgrade, it always starts immediately.
 	case enum.OrderKindUpgrade:
-		return dt.NewTimeRange(b.ConfirmedAt.Time).
+		return dt.NewSlotBuilder(b.ConfirmedAt.Time).
 			WithPeriod(b.PeriodCount), nil
 
 	// For addon, you should not extend current subscription
 	// period.
 	case enum.OrderKindAddOn:
-		return dt.TimeRange{}, nil
+		return dt.SlotBuilder{}, nil
 	}
 
-	return dt.TimeRange{}, errors.New("cannot determine purchased time range due to unknown order kind")
+	return dt.SlotBuilder{}, errors.New("cannot determine purchased time range due to unknown order kind")
 }

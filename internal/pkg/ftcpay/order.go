@@ -249,7 +249,7 @@ func calibrateOrderKind(m reader.Membership, e price.Edition) enum.OrderKind {
 
 // Confirmed updates this order's ConfirmedAt field and set its starting and ending time.
 // For addon order, the starting and ending time will be null since it is not used yet.
-func (o Order) Confirmed(at chrono.Time, p dt.ChronoPeriod) Order {
+func (o Order) Confirmed(at chrono.Time, p dt.TimeSlot) Order {
 	o.ConfirmedAt = at
 	o.StartDate = chrono.DateFrom(p.StartUTC.Time)
 	o.EndDate = chrono.DateFrom(p.EndUTC.Time)
