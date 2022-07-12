@@ -44,7 +44,8 @@ type Subs struct {
 	// This takes precedence over default_source.
 	// If neither are set, invoices will use the customer’s invoice_settings.default_payment_method or default_source.
 	// It differs from customer default payment method which might exist even if this one does.
-	DefaultPaymentMethodID null.String `json:"defaultPaymentMethod" db:"default_payment_method_id"`
+	DefaultPaymentMethodID null.String    `json:"defaultPaymentMethod" db:"default_payment_method_id"`
+	Discount               DiscountColumn `json:"discount" db:"discount"`
 	// If the subscription has ended, the date the subscription ended
 	EndedUTC        chrono.Time  `json:"endedUtc" db:"ended_utc"`
 	FtcUserID       null.String  `json:"ftcUserId" db:"ftc_user_id"`
@@ -104,6 +105,7 @@ func NewSubs(ftcID string, ss *stripe.Subscription) Subs {
 		CurrentPeriodStart:     chrono.TimeFrom(dt.FromUnix(ss.CurrentPeriodStart)),
 		CustomerID:             ss.Customer.ID,
 		DefaultPaymentMethodID: dpm,
+		Discount:               DiscountColumn{NewDiscount(ss.Discount)},
 		EndedUTC:               chrono.TimeFrom(dt.FromUnix(ss.EndedAt)),
 		FtcUserID:              null.NewString(ftcID, ftcID != ""),
 		Items:                  items,
