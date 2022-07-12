@@ -34,8 +34,8 @@ func TestStripeCoupon_IsValid(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := tt.fields
 
-			if got := c.IsValid(); got != tt.want {
-				t.Errorf("IsValid() = %v, want %v", got, tt.want)
+			if got := c.IsRedeemable(); got != tt.want {
+				t.Errorf("IsRedeemable() = %v, want %v", got, tt.want)
 			}
 		})
 	}
