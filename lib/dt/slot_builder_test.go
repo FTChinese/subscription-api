@@ -15,14 +15,14 @@ func TestNewTimeRange(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want TimeRange
+		want SlotBuilder
 	}{
 		{
 			name: "New Date Range Instance",
 			args: args{
 				start: now,
 			},
-			want: TimeRange{
+			want: SlotBuilder{
 				Start: now,
 				End:   now,
 			},
@@ -30,7 +30,7 @@ func TestNewTimeRange(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewTimeRange(tt.args.start); !reflect.DeepEqual(got, tt.want) {
+			if got := NewSlotBuilder(tt.args.start); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewDateRange() = %v, want %v", got, tt.want)
 			}
 		})
