@@ -118,6 +118,11 @@ func (env Env) CreateSubscription(cart reader.ShoppingCart, params stripe.SubsPa
 // UpdateSubscription switches subscription plan.
 // It could either change to a different billing cycle, for example from month to year,
 // to change to a different product, for example from standard to premium.
+// Use cases:
+// - Change default payment method;
+// - Switch product between standard and premium; between monthly and yearly;
+// - Apply coupon. When applying coupon to an existing subscription, the amount will be deducted from
+// the next invoice. It won't affect an invoice already generated.
 func (env Env) UpdateSubscription(
 	subsID string,
 	cart reader.ShoppingCart,
@@ -140,7 +145,7 @@ func (env Env) UpdateSubscription(
 		return cart, stripe.SubsSuccess{}, nil
 	}
 
-	if mmb.IsStripeSubsMatch(subsID) {
+	if !mmb.IsStripeSubsMatch(subsID) {
 		_ = tx.Rollback()
 		return cart, stripe.SubsSuccess{}, errors.New("mismatched stripe subscription id")
 	}
