@@ -199,6 +199,10 @@ func (p StripePrice) IsZero() bool {
 	return p.ID == ""
 }
 
+func (p StripePrice) IsIntro() bool {
+	return p.Kind == KindOneTime
+}
+
 // Edition deduces the edition of stripe price since that
 // information might be missing.
 func (p StripePrice) Edition() Edition {
