@@ -68,6 +68,13 @@ func (routes StripeRoutes) handleSubsResult(result stripe.SubsSuccess) {
 		sugar.Error(err)
 	}
 
+	if !result.Subs.Discount.IsZero() {
+		err := routes.stripeRepo.UpsertDiscount(result.Subs.Discount.Discount)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}
+
 	err = routes.stripeRepo.UpsertInvoice(result.Subs.LatestInvoice)
 	if err != nil {
 		sugar.Error(err)
