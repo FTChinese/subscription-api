@@ -33,47 +33,45 @@ func NewShoppingCart(account account.BaseAccount) ShoppingCart {
 	}
 }
 
-func (s ShoppingCart) WithStripeItem(item CartItemStripe) ShoppingCart {
-	s.FtcItem = CartItemFtc{}
-	s.StripeItem = item
-	s.PayMethod = enum.PayMethodStripe
+func (cart ShoppingCart) WithStripeItem(item CartItemStripe) ShoppingCart {
+	cart.FtcItem = CartItemFtc{}
+	cart.StripeItem = item
+	cart.PayMethod = enum.PayMethodStripe
 
-	return s
+	return cart
 }
 
 // WithFtcItem puts an FTC item into cart and clears stripe item.
-func (s ShoppingCart) WithFtcItem(item CartItemFtc) ShoppingCart {
-	s.FtcItem = item
-	s.StripeItem = CartItemStripe{}
+func (cart ShoppingCart) WithFtcItem(item CartItemFtc) ShoppingCart {
+	cart.FtcItem = item
+	cart.StripeItem = CartItemStripe{}
 
-	return s
+	return cart
 }
 
-func (s ShoppingCart) WithAlipay() ShoppingCart {
-	s.PayMethod = enum.PayMethodAli
-	return s
+func (cart ShoppingCart) WithAlipay() ShoppingCart {
+	cart.PayMethod = enum.PayMethodAli
+	return cart
 }
 
-func (s ShoppingCart) WithWxPay(appID string) ShoppingCart {
-	s.PayMethod = enum.PayMethodWx
-	s.WxAppID = null.StringFrom(appID)
+func (cart ShoppingCart) WithWxPay(appID string) ShoppingCart {
+	cart.PayMethod = enum.PayMethodWx
+	cart.WxAppID = null.StringFrom(appID)
 
-	return s
+	return cart
 }
 
 // WithMember sets current membership.
-func (s ShoppingCart) WithMember(m Membership) (ShoppingCart, error) {
+func (cart ShoppingCart) WithMember(m Membership) (ShoppingCart, error) {
 
 	var intent CheckoutIntent
 
-	if !s.FtcItem.Price.IsZero() {
+	if !cart.FtcItem.Price.IsZero() {
 		intent = NewCheckoutIntentFtc(
 			m,
-			s.FtcItem.Price)
-	} else if !s.StripeItem.Recurring.IsZero() {
-		intent = NewCheckoutIntentStripe(
-			m,
-			s.StripeItem.Recurring)
+			cart.FtcItem.Price)
+	} else if !cart.StripeItem.Recurring.IsZero() {
+		intent = NewCheckoutIntentStripe(m, cart.StripeItem)
 	} else {
 		intent = CheckoutIntent{
 			Kind:  IntentForbidden,
@@ -81,8 +79,8 @@ func (s ShoppingCart) WithMember(m Membership) (ShoppingCart, error) {
 		}
 	}
 
-	s.CurrentMember = m
-	s.Intent = intent
+	cart.CurrentMember = m
+	cart.Intent = intent
 
-	return s, s.Intent.Error
+	return cart, cart.Intent.Error
 }
