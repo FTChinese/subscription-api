@@ -2,8 +2,8 @@ package ids
 
 import (
 	"errors"
+	"github.com/FTChinese/subscription-api/lib/sq"
 	"github.com/guregu/null"
-	"strings"
 )
 
 // UserIDs is used to identify an FTC user.
@@ -28,6 +28,18 @@ func NewFtcUserID(id string) UserIDs {
 		FtcID:      null.StringFrom(id),
 		UnionID:    null.String{},
 	}
+}
+
+func (u UserIDs) GetCompoundID() string {
+	if u.CompoundID != "" {
+		return u.CompoundID
+	}
+
+	if u.FtcID.Valid {
+		return u.FtcID.String
+	}
+
+	return u.UnionID.String
 }
 
 func (u UserIDs) Normalize() (UserIDs, error) {
@@ -56,19 +68,8 @@ func (u UserIDs) MustNormalize() UserIDs {
 // BuildFindInSet builds a value to be used in MySQL
 // function FIND_IN_SET(str, strlist) so that find
 // a user's data by both ftc id and union id.
-// Deprecated
 func (u UserIDs) BuildFindInSet() string {
-	strList := make([]string, 0)
-
-	if u.FtcID.Valid {
-		strList = append(strList, u.FtcID.String)
-	}
-
-	if u.UnionID.Valid {
-		strList = append(strList, u.UnionID.String)
-	}
-
-	return strings.Join(strList, ",")
+	return sq.FindInSetValue(u.CollectIDs())
 }
 
 func (u UserIDs) CollectIDs() []string {
