@@ -11,8 +11,11 @@ SET order_id = :order_id,
 	created_utc = :created_utc
 `
 
-const StmtOrderPrice = `
-SELECT price
+const StmtRetrievePaymentIntent = `
+SELECT order_id,
+	price,
+	offer,
+	membership
 FROM premium.ftc_payment_intent
 WHERE order_id = ?
 LIMIT 1
