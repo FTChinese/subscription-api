@@ -5,7 +5,6 @@ package test
 import (
 	"time"
 
-	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
@@ -23,30 +22,6 @@ func (p Persona) StripeCustomer() stripe.Customer {
 		DefaultPaymentMethodID: null.String{},
 		Email:                  p.Email,
 		LiveMode:               false,
-	}
-}
-
-func StripeInvoice() stripe.Invoice {
-	return stripe.Invoice{
-		ID:                   faker.StripeInvoiceID(),
-		AutoAdvance:          true,
-		ChargeID:             "",
-		CollectionMethod:     stripe.InvoiceCollectionMethod{},
-		Currency:             "gbp",
-		CustomerID:           faker.StripeCustomerID(),
-		DefaultPaymentMethod: null.StringFrom("payment-method-id"),
-		Discounts:            []string{"discount-1", "discount-b"},
-		HostedInvoiceURL:     null.String{},
-		LiveMode:             false,
-		Paid:                 true,
-		PaymentIntentID:      "",
-		PeriodEndUTC:         chrono.TimeNow(),
-		PeriodStartUTC:       chrono.TimeNow(),
-		ReceiptNumber:        "",
-		Status:               stripe.InvoiceStatus{},
-		SubscriptionID:       null.StringFrom(faker.StripeSubsID()),
-		Total:                0,
-		Created:              time.Now().Unix(),
 	}
 }
 

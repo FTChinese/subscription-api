@@ -8,6 +8,7 @@ import (
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
 	sdk "github.com/stripe/stripe-go/v72"
 	"time"
@@ -120,5 +121,29 @@ func MockPaymentMethod() PaymentMethod {
 		},
 		Created:  time.Now().Unix(),
 		LiveMode: false,
+	}
+}
+
+func MockInvoice() Invoice {
+	return Invoice{
+		ID:                   faker.StripeInvoiceID(),
+		AutoAdvance:          true,
+		ChargeID:             "",
+		CollectionMethod:     InvoiceCollectionMethod{},
+		Currency:             "gbp",
+		CustomerID:           faker.StripeCustomerID(),
+		DefaultPaymentMethod: null.StringFrom("payment-method-id"),
+		Discounts:            []string{"discount-1", "discount-b"},
+		HostedInvoiceURL:     gofakeit.URL(),
+		LiveMode:             false,
+		Paid:                 true,
+		PaymentIntentID:      "",
+		PeriodEndUTC:         chrono.TimeNow(),
+		PeriodStartUTC:       chrono.TimeNow(),
+		ReceiptNumber:        "",
+		Status:               InvoiceStatus{},
+		SubscriptionID:       null.StringFrom(faker.StripeSubsID()),
+		Total:                0,
+		Created:              time.Now().Unix(),
 	}
 }
