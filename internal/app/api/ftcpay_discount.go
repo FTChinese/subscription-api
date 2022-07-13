@@ -6,19 +6,19 @@ import (
 	"net/http"
 )
 
-func (routes FtcPayRoutes) IsDiscountRedeemed(w http.ResponseWriter, req *http.Request) {
+func (routes FtcPayRoutes) LoadDiscountRedeemed(w http.ResponseWriter, req *http.Request) {
 	id, _ := xhttp.GetURLParam(req, "id").ToString()
 
 	userIDs := xhttp.UserIDsFromHeader(req.Header)
 
-	ok, err := routes.SubsRepo.IsDiscountRedeemed(userIDs, id)
+	redeemed, err := routes.SubsRepo.RetrieveDiscountRedeemed(
+		userIDs,
+		id)
 
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		return
 	}
 
-	_ = render.New(w).OK(map[string]bool{
-		"redeemed": ok,
-	})
+	_ = render.New(w).OK(redeemed)
 }

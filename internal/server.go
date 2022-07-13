@@ -341,7 +341,7 @@ func StartServer(s ServerStatus) {
 	r.Route("/ftc-pay", func(r chi.Router) {
 		r.Use(xhttp.RequireFtcOrUnionID)
 		r.Route("/discounts", func(r chi.Router) {
-			r.Get("/{id}/redeemed", ftcPayRoutes.IsDiscountRedeemed)
+			r.Get("/{id}", ftcPayRoutes.LoadDiscountRedeemed)
 		})
 	})
 
