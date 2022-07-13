@@ -152,6 +152,7 @@ func (routes StripeRoutes) saveShoppingSession(s stripe.ShoppingSession) {
 		return
 	}
 
+	// Coupon is redeemed only when there's a subscription.
 	redeemed := s.CouponRedeemed()
 	if redeemed.IsZero() {
 		return
