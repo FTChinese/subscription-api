@@ -115,13 +115,13 @@ func TestEnv_RetrieveOrderPrice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := env.RetrieveOrderPrice(tt.args.orderID)
+			got, err := env.RetrievePaymentIntent(tt.args.orderID)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("RetrieveOrderPrice() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("RetrievePaymentIntent() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("RetrieveOrderPrice() got = %v, want %v", got, tt.want)
+			//	t.Errorf("RetrievePaymentIntent() got = %v, want %v", got, tt.want)
 			//}
 
 			t.Logf("%v", got)

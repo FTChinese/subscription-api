@@ -2,7 +2,6 @@ package subrepo
 
 import (
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
-	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
 func (env Env) SavePaymentIntent(pi ftcpay.PaymentIntentSchema) error {
@@ -17,14 +16,24 @@ func (env Env) SavePaymentIntent(pi ftcpay.PaymentIntentSchema) error {
 	return nil
 }
 
-func (env Env) RetrieveOrderPrice(orderID string) (price.FtcPriceJSON, error) {
-	var p price.FtcPriceJSON
+func (env Env) RetrievePaymentIntent(orderID string) (ftcpay.PaymentIntent, error) {
+	var intent ftcpay.PaymentIntentSchema
 
-	err := env.dbs.Read.Get(&p, ftcpay.StmtOrderPrice, orderID)
+	err := env.dbs.Read.Get(
+		&intent,
+		ftcpay.StmtRetrievePaymentIntent,
+		orderID)
 
 	if err != nil {
-		return price.FtcPriceJSON{}, err
+		return ftcpay.PaymentIntent{}, err
 	}
 
-	return p, nil
+	return ftcpay.PaymentIntent{
+		Price: intent.Price.FtcPrice,
+		Offer: intent.Offer.Discount,
+		Order: ftcpay.Order{
+			ID: intent.OrderID,
+		},
+		Membership: intent.Membership.Membership,
+	}, nil
 }
