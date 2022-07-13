@@ -90,6 +90,7 @@ func (pay FtcPayBase) ConfirmOrder(result ftcpay.PaymentResult, order ftcpay.Ord
 	}
 
 	go func() {
+		// Save membership change history.
 		if !confirmed.Versioned.IsZero() {
 			err := pay.ReaderRepo.VersionMembership(confirmed.Versioned)
 			if err != nil {
@@ -97,6 +98,8 @@ func (pay FtcPayBase) ConfirmOrder(result ftcpay.PaymentResult, order ftcpay.Ord
 			}
 		}
 
+		// Flag invoices as carried over if there are
+		// unused portion.
 		if !confirmed.Invoices.CarriedOver.IsZero() {
 			err := pay.AddOnRepo.InvoicesCarriedOver(confirmed.Membership.UserIDs)
 			if err != nil {
