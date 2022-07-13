@@ -94,9 +94,39 @@ func (routes FtcPayRoutes) processWebhookResult(result ftcpay.PaymentResult) (ft
 		return ftcpay.ConfirmationResult{}, result.ConfirmError(err.Error(), true)
 	}
 
-	return routes.ConfirmOrder(result, order)
+	confirmed, cfmErr := routes.ConfirmOrder(result, order)
+	if err != nil {
+		return ftcpay.ConfirmationResult{}, cfmErr
+	}
+
+	go func() {
+		// Create a discount consumption history.
+		pi, err := routes.SubsRepo.RetrievePaymentIntent(order.ID)
+		if err != nil {
+			sugar.Error(err)
+			return
+		}
+
+		pi.Order = confirmed.Order
+
+		if pi.Offer.IsZero() {
+			return
+		}
+
+		redeemed := ftcpay.NewDiscountRedeemed(
+			confirmed.Order,
+			pi.Offer)
+
+		err = routes.SubsRepo.InsertDiscountRedeemed(redeemed)
+		if err != nil {
+			sugar.Error(err)
+		}
+	}()
+
+	return confirmed, nil
 }
 
+// loadCheckoutItem tries to find the item user is trying to purchase.
 func (routes FtcPayRoutes) loadCheckoutItem(params ftcpay.FtcCartParams, live bool) (reader.CartItemFtc, *render.ResponseError) {
 	defer routes.Logger.Sync()
 	sugar := routes.Logger.Sugar()
