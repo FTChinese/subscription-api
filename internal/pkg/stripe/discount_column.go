@@ -11,6 +11,31 @@ type DiscountColumn struct {
 	Discount
 }
 
+func (x DiscountColumn) MarshalJSON() ([]byte, error) {
+	if x.ID == "" {
+		return []byte("null"), nil
+	}
+
+	return json.Marshal(x.Discount)
+}
+
+func (x *DiscountColumn) UnmarshalJSON(b []byte) error {
+	var d Discount
+	if b == nil {
+		*x = DiscountColumn{}
+		return nil
+	}
+
+	err := json.Unmarshal(b, &d)
+	if err != nil {
+		return err
+	}
+
+	*x = DiscountColumn{d}
+
+	return nil
+}
+
 // Value implements Valuer interface by serializing an Invitation into
 // JSON data.
 func (x DiscountColumn) Value() (driver.Value, error) {
