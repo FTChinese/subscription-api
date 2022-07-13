@@ -89,7 +89,7 @@ func (env Env) listReleases(p gorest.Pagination) ([]android.Release, error) {
 // ListReleases lists all releases.
 func (env Env) ListReleases(p gorest.Pagination) (android.ReleaseList, error) {
 	countCh := make(chan int64)
-	listCh := make(chan android.ReleaseList)
+	listCh := make(chan pkg.AsyncResult[[]android.Release])
 
 	go func() {
 		defer close(countCh)
@@ -104,13 +104,9 @@ func (env Env) ListReleases(p gorest.Pagination) (android.ReleaseList, error) {
 	go func() {
 		defer close(listCh)
 		list, err := env.listReleases(p)
-		listCh <- android.ReleaseList{
-			Data: list,
-			PagedList: pkg.PagedList{
-				Total:      0,
-				Pagination: gorest.Pagination{},
-				Err:        err,
-			},
+		listCh <- pkg.AsyncResult[[]android.Release]{
+			Err:   err,
+			Value: list,
 		}
 	}()
 
@@ -126,7 +122,7 @@ func (env Env) ListReleases(p gorest.Pagination) (android.ReleaseList, error) {
 			Pagination: p,
 			Err:        nil,
 		},
-		Data: listResult.Data,
+		Data: listResult.Value,
 	}, nil
 }
 

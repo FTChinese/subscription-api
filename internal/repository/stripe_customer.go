@@ -69,7 +69,7 @@ func (repo StripeRepo) ListCusPaymentMethods(cusID string, page gorest.Paginatio
 	sugar := repo.Logger.Sugar()
 
 	countCh := make(chan int64)
-	listCh := make(chan stripe.PagedPaymentMethods)
+	listCh := make(chan pkg.AsyncResult[[]stripe.PaymentMethod])
 
 	go func() {
 		defer close(countCh)
@@ -85,13 +85,9 @@ func (repo StripeRepo) ListCusPaymentMethods(cusID string, page gorest.Paginatio
 		defer close(listCh)
 		methods, err := repo.listCusPaymentMethods(cusID, page)
 
-		listCh <- stripe.PagedPaymentMethods{
-			PagedList: pkg.PagedList{
-				Total:      0,
-				Pagination: gorest.Pagination{},
-				Err:        err,
-			},
-			Data: methods,
+		listCh <- pkg.AsyncResult[[]stripe.PaymentMethod]{
+			Err:   err,
+			Value: methods,
 		}
 	}()
 
@@ -101,11 +97,11 @@ func (repo StripeRepo) ListCusPaymentMethods(cusID string, page gorest.Paginatio
 		return stripe.PagedPaymentMethods{}, listRes.Err
 	}
 
-	listRes.PagedList = pkg.PagedList{
-		Total:      count,
-		Pagination: page,
-		Err:        nil,
-	}
-
-	return listRes, nil
+	return stripe.PagedPaymentMethods{
+		PagedList: pkg.PagedList{
+			Total:      count,
+			Pagination: page,
+		},
+		Data: listRes.Value,
+	}, nil
 }
