@@ -11,15 +11,26 @@ import (
 type Invoice struct {
 	IsFromStripe         bool                    `json:"-"`
 	ID                   string                  `json:"id" db:"id"`
+	AccountCountry       string                  `json:"accountCountry" db:"account_country"`
+	AccountName          string                  `json:"accountName" db:"account_name"`
+	AmountDue            int64                   `json:"amountDue" db:"amount_due"`
+	AmountPaid           int64                   `json:"amountPaid" db:"amount_paid"`
+	AmountRemaining      int64                   `json:"amountRemaining" db:"amount_remaining"`
+	AttemptCount         int64                   `json:"attemptCount" db:"attempt_count"`
+	Attempted            bool                    `json:"attempted" db:"attempted"`
 	AutoAdvance          bool                    `json:"autoAdvance" db:"auto_advance"`
+	BillingReason        null.String             `json:"billingReason" db:"billing_reason"`
 	ChargeID             string                  `json:"chargeId" db:"charge_id"`
 	CollectionMethod     InvoiceCollectionMethod `json:"collectionMethod" db:"collection_method"`
 	Currency             string                  `json:"currency" db:"currency"`
 	CustomerID           string                  `json:"customerId" db:"customer_id"`
 	DefaultPaymentMethod null.String             `json:"defaultPaymentMethod" db:"default_payment_method"`
 	Discounts            sq.StringList           `json:"discounts" db:"discount_ids"`
-	HostedInvoiceURL     null.String             `json:"hostedInvoiceUrl" db:"hosted_invoice_url"`
+	HostedInvoiceURL     string                  `json:"hostedInvoiceUrl" db:"hosted_invoice_url"`
+	InvoicePDF           string                  `json:"invoicePdf" db:"invoice_pdf"`
 	LiveMode             bool                    `json:"liveMode" db:"live_mode"`
+	NextPaymentAttempt   int64                   `json:"nextPaymentAttempt" db:"next_payment_attempt"`
+	Number               string                  `json:"number" db:"identity_number"`
 	Paid                 bool                    `json:"paid" db:"paid"`
 	PaymentIntentID      string                  `json:"paymentIntentId" db:"payment_intent_id"`
 	PeriodEndUTC         chrono.Time             `json:"periodEndUtc" db:"period_end_utc"`
@@ -63,15 +74,26 @@ func NewInvoice(si *stripe.Invoice) Invoice {
 	return Invoice{
 		IsFromStripe:         true,
 		ID:                   si.ID,
+		AccountCountry:       si.AccountCountry,
+		AccountName:          si.AccountName,
+		AmountDue:            si.AmountDue,
+		AmountPaid:           si.AmountPaid,
+		AmountRemaining:      si.AmountRemaining,
+		AttemptCount:         si.AttemptCount,
+		Attempted:            si.Attempted,
 		AutoAdvance:          si.AutoAdvance,
+		BillingReason:        null.NewString(string(si.BillingReason), si.BillingReason != ""),
 		ChargeID:             chargeID,
 		CollectionMethod:     newInvoiceCollectionMethod(si.CollectionMethod),
 		Currency:             string(si.Currency),
 		CustomerID:           cusID,
 		DefaultPaymentMethod: null.NewString(pmID, pmID == ""),
 		Discounts:            collectDiscountIDs(si.Discounts),
-		HostedInvoiceURL:     null.NewString(si.HostedInvoiceURL, si.HostedInvoiceURL != ""),
+		HostedInvoiceURL:     si.HostedInvoiceURL,
+		InvoicePDF:           si.InvoicePDF,
 		LiveMode:             si.Livemode,
+		NextPaymentAttempt:   si.NextPaymentAttempt,
+		Number:               si.Number,
 		Paid:                 si.Paid,
 		PaymentIntentID:      piID,
 		PeriodEndUTC:         chrono.TimeFrom(dt.FromUnix(si.PeriodEnd)),
