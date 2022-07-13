@@ -6,5 +6,5 @@ import "github.com/FTChinese/go-rest"
 type PagedList struct {
 	Total int64 `json:"total" db:"row_count"`
 	gorest.Pagination
-	Err error `json:"-"`
+	Err error `json:"-"` // Deprecated
 }
