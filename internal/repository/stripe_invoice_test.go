@@ -3,7 +3,6 @@ package repository
 import (
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"github.com/FTChinese/subscription-api/test"
 	"go.uber.org/zap/zaptest"
 	"testing"
 )
@@ -22,7 +21,7 @@ func TestStripeRepo_UpsertInvoice(t *testing.T) {
 		{
 			name: "Upsert invoice",
 			args: args{
-				i: test.StripeInvoice(),
+				i: stripe.MockInvoice(),
 			},
 			wantErr: false,
 		},
@@ -40,7 +39,7 @@ func TestStripeRepo_UpsertInvoice(t *testing.T) {
 func TestStripeRepo_RetrieveInvoice(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
 
-	inv := test.StripeInvoice()
+	inv := stripe.MockInvoice()
 
 	_ = repo.UpsertInvoice(inv)
 
