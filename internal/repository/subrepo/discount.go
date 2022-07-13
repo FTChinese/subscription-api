@@ -2,7 +2,6 @@ package subrepo
 
 import (
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
-	"github.com/FTChinese/subscription-api/lib/sq"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 )
 
@@ -14,17 +13,17 @@ func (env Env) InsertDiscountRedeemed(r ftcpay.DiscountRedeemed) error {
 	return err
 }
 
-func (env Env) IsDiscountRedeemed(userIDs ids.UserIDs, discountID string) (bool, error) {
-	var ok bool
+func (env Env) RetrieveDiscountRedeemed(userIDs ids.UserIDs, discountID string) (ftcpay.DiscountRedeemed, error) {
+	var redeemed ftcpay.DiscountRedeemed
 	err := env.dbs.Read.Get(
-		&ok,
-		ftcpay.StmtDiscountRedeemed,
-		discountID,
-		sq.FindInSetValue(userIDs.CollectIDs()))
+		&redeemed,
+		ftcpay.StmtRetrieveDiscountRedeemed,
+		userIDs.BuildFindInSet(),
+		discountID)
 
 	if err != nil {
-		return false, err
+		return ftcpay.DiscountRedeemed{}, err
 	}
 
-	return ok, nil
+	return redeemed, nil
 }
