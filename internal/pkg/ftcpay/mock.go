@@ -12,6 +12,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
+	"github.com/google/uuid"
 	"github.com/guregu/null"
 	"github.com/smartwalle/alipay"
 	"time"
@@ -241,5 +242,14 @@ func MockAliNoti(order Order) *alipay.TradeNotification {
 		FundBillList:      "",
 		PassbackParams:    "",
 		VoucherDetailList: "",
+	}
+}
+
+func MockDiscountRedeemed() DiscountRedeemed {
+	return DiscountRedeemed{
+		CompoundID:  uuid.New().String(),
+		DiscountID:  ids.DiscountID(),
+		OrderID:     ids.MustOrderID(),
+		RedeemedUTC: chrono.TimeUTCNow(),
 	}
 }
