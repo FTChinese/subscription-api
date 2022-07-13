@@ -2,10 +2,10 @@ package ftcpay
 
 import (
 	"fmt"
-	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/conv"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -258,8 +258,6 @@ func (o Order) Confirmed(at chrono.Time, p dt.TimeSlot) Order {
 }
 
 type OrderList struct {
-	Total int64 `json:"total" db:"row_count"`
-	gorest.Pagination
+	pkg.PagedList
 	Data []Order `json:"data"`
-	Err  error   `json:"-"`
 }
