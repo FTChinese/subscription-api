@@ -56,6 +56,11 @@ func NewDiscount(d *stripe.Discount) Discount {
 		return Discount{}
 	}
 
+	var pcID string
+	if d.PromotionCode != nil {
+		pcID = d.PromotionCode.ID
+	}
+
 	return Discount{
 		ID:              d.ID,
 		Coupon:          CouponColumn{price.NewStripeCoupon(d.Coupon)},
@@ -63,7 +68,7 @@ func NewDiscount(d *stripe.Discount) Discount {
 		End:             null.NewInt(d.End, d.End != 0),
 		InvoiceID:       null.NewString(d.Invoice, d.Invoice != ""),
 		InvoiceItemID:   null.NewString(d.InvoiceItem, d.InvoiceItem != ""),
-		PromotionCodeID: null.NewString(d.PromotionCode.ID, d.PromotionCode.ID != ""),
+		PromotionCodeID: null.NewString(pcID, pcID != ""),
 		Start:           d.Start,
 		SubsID:          null.NewString(d.Subscription, d.Subscription != ""),
 	}
