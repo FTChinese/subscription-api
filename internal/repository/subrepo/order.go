@@ -3,6 +3,7 @@ package subrepo
 import (
 	"github.com/FTChinese/go-rest"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
@@ -137,7 +138,7 @@ func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (ftcpay.OrderLis
 	sugar := env.logger.Sugar()
 
 	countCh := make(chan int64)
-	listCh := make(chan ftcpay.OrderList)
+	listCh := make(chan pkg.AsyncResult[[]ftcpay.Order])
 
 	go func() {
 		defer close(countCh)
@@ -155,11 +156,9 @@ func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (ftcpay.OrderLis
 		if err != nil {
 			sugar.Error(err)
 		}
-		listCh <- ftcpay.OrderList{
-			Total:      0,
-			Pagination: gorest.Pagination{},
-			Data:       o,
-			Err:        err,
+		listCh <- pkg.AsyncResult[[]ftcpay.Order]{
+			Value: o,
+			Err:   err,
 		}
 	}()
 
@@ -170,9 +169,11 @@ func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (ftcpay.OrderLis
 	}
 
 	return ftcpay.OrderList{
-		Total:      count,
-		Pagination: p,
-		Data:       listResult.Data,
+		PagedList: pkg.PagedList{
+			Total:      count,
+			Pagination: p,
+		},
+		Data: listResult.Value,
 	}, nil
 }
 
