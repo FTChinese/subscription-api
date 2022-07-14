@@ -25,7 +25,8 @@ LIMIT 1
 `
 
 // DiscountRedeemed records user's redemption history of
-// discount. During the lifetime of a user, a discount
+// non-recurring discount.
+// During the lifetime of a user, a non-recurring discount
 // could only be redeemed exactly once.
 // CompoundID and DiscountID are uniquely constrained.
 type DiscountRedeemed struct {
@@ -36,10 +37,18 @@ type DiscountRedeemed struct {
 }
 
 func NewDiscountRedeemed(order Order, discount price.Discount) DiscountRedeemed {
+	if discount.IsZero() || discount.Recurring {
+		return DiscountRedeemed{}
+	}
+
 	return DiscountRedeemed{
 		CompoundID:  order.GetCompoundID(),
 		DiscountID:  discount.ID,
 		OrderID:     order.ID,
 		RedeemedUTC: chrono.TimeNow(),
 	}
+}
+
+func (dr DiscountRedeemed) IsZero() bool {
+	return dr.DiscountID == ""
 }
