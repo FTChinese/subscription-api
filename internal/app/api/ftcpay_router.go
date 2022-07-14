@@ -107,15 +107,13 @@ func (routes FtcPayRoutes) processWebhookResult(result ftcpay.PaymentResult) (ft
 			return
 		}
 
-		pi.Order = confirmed.Order
-
-		if pi.Offer.IsZero() {
-			return
-		}
-
 		redeemed := ftcpay.NewDiscountRedeemed(
 			confirmed.Order,
 			pi.Offer)
+
+		if redeemed.IsZero() {
+			return
+		}
 
 		err = routes.SubsRepo.InsertDiscountRedeemed(redeemed)
 		if err != nil {
