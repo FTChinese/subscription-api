@@ -65,8 +65,9 @@ func (s ShoppingSession) CouponRedeemed() CouponRedeemed {
 	}
 
 	return CouponRedeemed{
-		InvoiceID:   s.Subs.LatestInvoiceID,
 		FtcID:       s.FtcUserID,
+		InvoiceID:   s.Subs.LatestInvoiceID,
+		LiveMode:    s.Coupon.LiveMode,
 		SubsID:      s.Subs.ID,
 		CouponID:    s.Coupon.ID,
 		CreatedUTC:  chrono.TimeNow(),

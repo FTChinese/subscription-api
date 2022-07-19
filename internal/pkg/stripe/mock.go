@@ -9,6 +9,7 @@ import (
 	"github.com/FTChinese/subscription-api/lib/dt"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/brianvoe/gofakeit/v5"
+	"github.com/google/uuid"
 	"github.com/guregu/null"
 	sdk "github.com/stripe/stripe-go/v72"
 	"time"
@@ -145,5 +146,17 @@ func MockInvoice() Invoice {
 		SubscriptionID:       null.StringFrom(faker.StripeSubsID()),
 		Total:                0,
 		Created:              time.Now().Unix(),
+	}
+}
+
+func MockCouponRedeemed() CouponRedeemed {
+	return CouponRedeemed{
+		InvoiceID:   faker.StripeInvoiceID(),
+		FtcID:       uuid.New().String(),
+		LiveMode:    false,
+		SubsID:      faker.StripeSubsID(),
+		CouponID:    faker.StripeCouponID(),
+		CreatedUTC:  chrono.TimeUTCNow(),
+		RedeemedUTC: chrono.TimeUTCNow(),
 	}
 }

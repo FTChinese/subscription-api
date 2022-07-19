@@ -9,8 +9,9 @@ import (
 // One an invoice has any coupon applied to it, it can
 // no longer use any others.
 type CouponRedeemed struct {
-	InvoiceID   string      `json:"invoiceId" db:"invoice_id"`
 	FtcID       string      `json:"ftcId" db:"ftc_user_id"`
+	InvoiceID   string      `json:"invoiceId" db:"invoice_id"`
+	LiveMode    bool        `json:"liveMode" db:"live_mode"`
 	SubsID      string      `json:"subsId" db:"subs_id"`
 	CouponID    string      `json:"couponId" db:"coupon_id"`
 	CreatedUTC  chrono.Time `json:"createdUtc" db:"created_utc"`
@@ -23,8 +24,9 @@ func (c CouponRedeemed) IsZero() bool {
 
 const StmtInsertCouponRedeemed = `
 INSERT INTO premium.stripe_coupon_redeemed
-SET invoice_id = :invoice_id,
-	ftc_user_id = :ftc_user_id,
+SET ftc_user_id = :ftc_user_id,
+	invoice_id = :invoice_id,
+	live_mode = :live_mode,
 	subs_id = :subs_id,
 	coupon_id = :coupon_id,
 	created_utc = :created_utc,
@@ -32,8 +34,9 @@ SET invoice_id = :invoice_id,
 `
 
 const StmtLatestCouponRedeemed = `
-SELECT invoice_id,
-	ftc_user_id,
+SELECT ftc_user_id,
+	invoice_id,
+	live_mode,
 	subs_id,
 	coupon_id,
 	created_utc,
