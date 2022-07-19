@@ -66,11 +66,13 @@ func (cart ShoppingCart) WithMember(m Membership) (ShoppingCart, error) {
 
 	var intent CheckoutIntent
 
+	// Build intent for ftc pay.
 	if !cart.FtcItem.Price.IsZero() {
 		intent = NewCheckoutIntentFtc(
 			m,
 			cart.FtcItem.Price)
 	} else if !cart.StripeItem.Recurring.IsZero() {
+		// Build intent for stripe pay.
 		intent = NewCheckoutIntentStripe(m, cart.StripeItem)
 	} else {
 		intent = CheckoutIntent{

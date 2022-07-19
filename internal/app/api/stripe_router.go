@@ -94,7 +94,9 @@ func (routes StripeRoutes) handleSubsResult(result stripe.SubsSuccess) {
 }
 
 func (routes StripeRoutes) findCartItem(params stripe.SubsParams) (reader.CartItemStripe, error) {
+	// Get paywall from cache
 	paywall, err := routes.cacheRepo.LoadPaywall(routes.live)
+	// If paywall data is found in cache.
 	if err == nil {
 		item, err := params.BuildCartItem(paywall.Stripe)
 		if err == nil {
@@ -102,12 +104,15 @@ func (routes StripeRoutes) findCartItem(params stripe.SubsParams) (reader.CartIt
 		}
 	}
 
+	// Cannot build cart item from cached data.
+	// Load from db or stripe.
 	item, err := routes.stripeRepo.LoadCheckoutItem(params)
 	if err != nil {
 		return reader.CartItemStripe{}, err
 	}
 
-	// Save to our database if not saved yet.
+	// In case item in cart is fetched from Stripe API,
+	// save it to db.
 	if item.AnyFromStripe() {
 		go func() {
 			defer routes.logger.Sync()
