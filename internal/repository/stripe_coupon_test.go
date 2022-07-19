@@ -1,28 +1,14 @@
 package repository
 
 import (
-	"github.com/FTChinese/go-rest/chrono"
-	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/test"
-	"github.com/google/uuid"
 	"go.uber.org/zap/zaptest"
 	"reflect"
 	"testing"
 )
-
-func mockCouponRedeemed() stripe.CouponRedeemed {
-	return stripe.CouponRedeemed{
-		InvoiceID:   faker.StripeInvoiceID(),
-		FtcID:       uuid.New().String(),
-		SubsID:      faker.StripeSubsID(),
-		CouponID:    faker.StripeCouponID(),
-		CreatedUTC:  chrono.TimeUTCNow(),
-		RedeemedUTC: chrono.TimeUTCNow(),
-	}
-}
 
 func TestStripeRepo_UpsertCoupon(t *testing.T) {
 
@@ -145,14 +131,7 @@ func TestStripeRepo_InsertCouponRedeemed(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				r: stripe.CouponRedeemed{
-					InvoiceID:   faker.StripeInvoiceID(),
-					FtcID:       uuid.New().String(),
-					SubsID:      faker.StripeSubsID(),
-					CouponID:    faker.StripeCouponID(),
-					CreatedUTC:  chrono.TimeNow(),
-					RedeemedUTC: chrono.TimeNow(),
-				},
+				r: stripe.MockCouponRedeemed(),
 			},
 			wantErr: false,
 		},
@@ -169,7 +148,7 @@ func TestStripeRepo_InsertCouponRedeemed(t *testing.T) {
 
 func TestStripeRepo_LatestCouponApplied(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
-	cr := mockCouponRedeemed()
+	cr := stripe.MockCouponRedeemed()
 
 	_ = repo.InsertCouponRedeemed(cr)
 
