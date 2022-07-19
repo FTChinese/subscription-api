@@ -249,6 +249,7 @@ func MockDiscountRedeemed() DiscountRedeemed {
 	return DiscountRedeemed{
 		CompoundID:  uuid.New().String(),
 		DiscountID:  ids.DiscountID(),
+		LiveMode:    false,
 		OrderID:     ids.MustOrderID(),
 		RedeemedUTC: chrono.TimeUTCNow(),
 	}

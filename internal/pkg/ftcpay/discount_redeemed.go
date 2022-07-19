@@ -9,6 +9,7 @@ const StmtInsertDiscountRedeemed = `
 INSERT INTO premium.ftc_discount_redeemed
 SET compound_id = :compound_id,
 	discount_id = :discount_id,
+	live_mode = :live_mode,
 	order_id = :order_id,
 	redeemed_utc = :redeemed_utc
 `
@@ -16,6 +17,7 @@ SET compound_id = :compound_id,
 const StmtRetrieveDiscountRedeemed = `
 SELECT compound_id,
 	discount_id,
+	live_mode,
 	order_id,
 	redeemed_utc
 FROM premium.ftc_discount_redeemed
@@ -32,6 +34,7 @@ LIMIT 1
 type DiscountRedeemed struct {
 	CompoundID  string      `json:"compoundId" db:"compound_id"`
 	DiscountID  string      `json:"discountId" db:"discount_id"`
+	LiveMode    bool        `json:"liveMode" db:"live_mode"`
 	OrderID     string      `json:"orderId" db:"order_id"`
 	RedeemedUTC chrono.Time `json:"redeemedUtc" db:"redeemed_utc"`
 }
@@ -44,6 +47,7 @@ func NewDiscountRedeemed(order Order, discount price.Discount) DiscountRedeemed 
 	return DiscountRedeemed{
 		CompoundID:  order.GetCompoundID(),
 		DiscountID:  discount.ID,
+		LiveMode:    discount.LiveMode,
 		OrderID:     order.ID,
 		RedeemedUTC: chrono.TimeNow(),
 	}
