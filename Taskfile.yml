@@ -1,34 +1,24 @@
 version: '2'
 
 vars:
-  PORT: 8200
   VERSION: {sh: git tag -l --sort=-v:refname | head -n 1}
-  BUILD_DIR: build
-  SRC_DIR: .
-  BINARY: subscription-api
+  BUILD_TIME: {sh: date +%FT%T%z}
+  COMMIT: {sh: git log --max-count=1 --pretty=format:%aI_%h}
   LDFLAGS: -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
+  APP_NAME: subs-api-v6
+  SRC_DIR: .
+  BUILD_DIR: build
 
 tasks:
   build:
     desc: Build the go binary for current platform.
     cmds:
-      - go build -o {{.BUILD_DIR}}/{{.BINARY}}{{exeExt}} {{.LDFLAGS}}  -v {{.SRC_DIR}}
+      - go build -o {{.BUILD_DIR}}/{{.APP_NAME}}{{exeExt}} {{.LDFLAGS}} -tags production  -v {{.SRC_DIR}}
 
   run:
     desc: Run the program
     cmds:
-      - ./{{.BUILD_DIR}}/{{.BINARY}}{{exeExt}} -sandbox=true
-
-  deploy:
-    desc: Build Linux binary and copy to production machine.
-    deps: [linux]
-    cmds:
-      - rsync -v $(build_dir)/linux/$(BINARY) nodeserver:/home/node/go/bin/
-
-  linux:
-    desc: Build the go binary for Linux.
-    cmds:
-      - GOOS=linux GOARCH=amd64 go build {{.LDFLAGS}} -o {{.BUILD_DIR}}/linux/{{.BINARY}} -v .
+      - ./{{.BUILD_DIR}}/{{.APP_NAME}}{{exeExt}} -production=false -livemode=false
 
   now:
     desc: Show current time.
