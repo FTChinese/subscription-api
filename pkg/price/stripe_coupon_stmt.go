@@ -43,7 +43,9 @@ WHERE id = ?
 LIMIT 1
 `
 
-// StmtPriceCoupons retrieves all active coupons of a price.
+// StmtPriceCoupons retrieves all coupons of a price, regardless of
+// whether they are active or not.
+// When used in CMS, we need to ignore the status.
 const StmtPriceCoupons = `
 SELECT ` + colSelectCoupon + `
 FROM subs_product.stripe_coupon
@@ -51,7 +53,8 @@ WHERE price_id = ?
 ORDER BY amount_off DESC
 `
 
-// StmtActiveCouponsOfPrices retrieves coupons of the specified prices
+// StmtActiveCouponsOfPrices retrieves coupons of the specified prices.
+// Used to build paywall since we want to expose only the active ones.
 const StmtActiveCouponsOfPrices = `
 SELECT ` + colSelectCoupon + `
 FROM subs_product.stripe_coupon

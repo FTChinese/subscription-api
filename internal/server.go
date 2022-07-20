@@ -564,6 +564,8 @@ func StartServer(s ServerStatus) {
 			r.Route("/coupons", func(r chi.Router) {
 				// Link a coupon to a price, or modify its metadata
 				r.Post("/{id}", stripeRoutes.UpdateStripeCoupon)
+				// Delete coupon does not perform DB deletion operation.
+				// It simply flags the status field to cancelled status.
 				r.Delete("/{id}", stripeRoutes.DeleteStripeCoupon)
 			})
 		})
