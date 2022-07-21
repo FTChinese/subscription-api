@@ -27,12 +27,17 @@ func (repo StripeRepo) RetrieveCoupon(id string) (price.StripeCoupon, error) {
 	return c, nil
 }
 
-// RetrieveCouponsOfPrice retrieves all coupons of a price.
-func (repo StripeRepo) RetrieveCouponsOfPrice(priceID string) ([]price.StripeCoupon, error) {
+// ListPriceAllCoupons retrieves all coupons of a price.
+func (repo StripeRepo) ListPriceAllCoupons(priceID string, activeOnly bool) ([]price.StripeCoupon, error) {
+	var stmt = price.StmtPriceAllCoupons
+	if activeOnly {
+		stmt = price.StmtPriceActiveCoupons
+	}
+
 	var list = make([]price.StripeCoupon, 0)
 	err := repo.dbs.Read.Select(
 		&list,
-		price.StmtPriceCoupons,
+		stmt,
 		priceID)
 
 	if err != nil {
