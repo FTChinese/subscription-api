@@ -329,17 +329,15 @@ func StartServer(s ServerStatus) {
 		r.Post("/{id}/verify-payment", ftcPayRoutes.VerifyPayment)
 	})
 
-	r.Route("/invoices", func(r chi.Router) {
+	r.Route("/ftc-pay", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(xhttp.RequireFtcOrUnionID)
-		// List a user's invoices. Use query parameter `kind=create|renew|upgrade|addon` to filter.
-		r.Get("/", ftcPayRoutes.ListInvoices)
-		// Show a single invoice.
-		r.Get("/{id}", ftcPayRoutes.LoadInvoice)
-	})
-
-	r.Route("/ftc-pay", func(r chi.Router) {
-		r.Use(xhttp.RequireFtcOrUnionID)
+		r.Route("/invoices", func(r chi.Router) {
+			// List a user's invoices. Use query parameter `kind=create|renew|upgrade|addon` to filter.
+			r.Get("/", ftcPayRoutes.ListInvoices)
+			// Show a single invoice.
+			r.Get("/{id}", ftcPayRoutes.LoadInvoice)
+		})
 		r.Route("/discounts", func(r chi.Router) {
 			r.Get("/{id}", ftcPayRoutes.LoadDiscountRedeemed)
 		})
@@ -540,6 +538,12 @@ func StartServer(s ServerStatus) {
 	r.Route("/cms", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 		r.Use(xhttp.RequireStaffName)
+
+		r.Route("/orders", func(r chi.Router) {
+			r.With(xhttp.FormParsed).
+				Get("/", ftcPayRoutes.CMSListOrders)
+			r.Get("/{id}", ftcPayRoutes.CMSListOrders)
+		})
 
 		r.Route("/memberships", func(r chi.Router) {
 			// Create a membership for a user
