@@ -14,7 +14,7 @@ func (routes StripeRoutes) ListActiveCouponsOfPrice(w http.ResponseWriter, req *
 
 	priceId, _ := xhttp.GetURLParam(req, "id").ToString()
 
-	coupons, err := routes.stripeRepo.ListPriceAllCoupons(priceId, true)
+	coupons, err := routes.stripeRepo.ListPriceCoupons(priceId, true)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -30,7 +30,7 @@ func (routes StripeRoutes) ListAllCouponsOfPrice(w http.ResponseWriter, req *htt
 
 	priceId, _ := xhttp.GetURLParam(req, "id").ToString()
 
-	coupons, err := routes.stripeRepo.ListPriceAllCoupons(priceId, false)
+	coupons, err := routes.stripeRepo.ListPriceCoupons(priceId, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)

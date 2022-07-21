@@ -27,8 +27,8 @@ func (repo StripeRepo) RetrieveCoupon(id string) (price.StripeCoupon, error) {
 	return c, nil
 }
 
-// ListPriceAllCoupons retrieves all coupons of a price.
-func (repo StripeRepo) ListPriceAllCoupons(priceID string, activeOnly bool) ([]price.StripeCoupon, error) {
+// ListPriceCoupons retrieves all coupons of a price.
+func (repo StripeRepo) ListPriceCoupons(priceID string, activeOnly bool) ([]price.StripeCoupon, error) {
 	var stmt = price.StmtPriceAllCoupons
 	if activeOnly {
 		stmt = price.StmtPriceActiveCoupons
