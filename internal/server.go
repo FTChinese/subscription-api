@@ -357,7 +357,8 @@ func StartServer(s ServerStatus) {
 			r.Get("/", stripeRoutes.ListPrices)
 			// ?refresh=true
 			r.Get("/{id}", stripeRoutes.LoadStripePrice)
-			r.Get("/{id}/coupons", stripeRoutes.ListActiveCouponsOfPrice)
+			// ?active_only=<true|false>
+			r.Get("/{id}/coupons", stripeRoutes.ListPriceCoupons)
 		})
 
 		r.Route("/coupons", func(r chi.Router) {
@@ -561,9 +562,6 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/stripe", func(r chi.Router) {
-			r.Route("/prices", func(r chi.Router) {
-				r.Get("/{id}/coupons", stripeRoutes.ListAllCouponsOfPrice)
-			})
 
 			r.Route("/coupons", func(r chi.Router) {
 				// Link a coupon to a price, or modify its metadata
