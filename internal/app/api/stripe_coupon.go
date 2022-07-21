@@ -8,13 +8,29 @@ import (
 	"net/http"
 )
 
-func (routes StripeRoutes) ListCouponsOfPrice(w http.ResponseWriter, req *http.Request) {
+func (routes StripeRoutes) ListActiveCouponsOfPrice(w http.ResponseWriter, req *http.Request) {
 	defer routes.logger.Sync()
 	sugar := routes.logger.Sugar()
 
 	priceId, _ := xhttp.GetURLParam(req, "id").ToString()
 
-	coupons, err := routes.stripeRepo.RetrieveCouponsOfPrice(priceId)
+	coupons, err := routes.stripeRepo.ListPriceAllCoupons(priceId, true)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(coupons)
+}
+
+func (routes StripeRoutes) ListAllCouponsOfPrice(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
+
+	priceId, _ := xhttp.GetURLParam(req, "id").ToString()
+
+	coupons, err := routes.stripeRepo.ListPriceAllCoupons(priceId, false)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
