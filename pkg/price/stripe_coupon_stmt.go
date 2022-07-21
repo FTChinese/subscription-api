@@ -11,21 +11,8 @@ display_name = :name,
 price_id = :price_id,
 redeem_by = :redeem_by,
 start_utc = :start_utc,
-current_status = :status
-`
-
-const colSelectCoupon = `
-id,
-amount_off,
-created,
-currency,
-duration,
-end_utc,
-live_mode,
-display_name AS name,
-price_id,
-start_utc,
-current_status AS status
+current_status = :status,
+updated_utc = :updated_utc
 `
 
 const StmtUpsertCoupon = `
@@ -33,31 +20,48 @@ INSERT INTO subs_product.stripe_coupon
 SET id = :id,
 ` + colInsertCoupon + `
 ON DUPLICATE KEY UPDATE
-	updated_utc = UTC_TIMESTAMP(),
 ` + colInsertCoupon
 
-const StmtRetrieveCoupon = `
-SELECT ` + colSelectCoupon + `
+const colSelectCoupon = `
+SELECT id,
+	amount_off,
+	created,
+	currency,
+	duration,
+	end_utc,
+	live_mode,
+	display_name AS name,
+	price_id,
+	start_utc,
+	current_status AS status,
+	updated_utc
 FROM subs_product.stripe_coupon
+`
+
+const StmtRetrieveCoupon = colSelectCoupon + `
 WHERE id = ?
 LIMIT 1
 `
 
-// StmtPriceCoupons retrieves all coupons of a price, regardless of
+// StmtPriceAllCoupons retrieves all coupons of a price, regardless of
 // whether they are active or not.
-// When used in CMS, we need to ignore the status.
-const StmtPriceCoupons = `
-SELECT ` + colSelectCoupon + `
-FROM subs_product.stripe_coupon
+// Used by CMS.
+const StmtPriceAllCoupons = colSelectCoupon + `
 WHERE price_id = ?
+ORDER BY updated_utc DESC
+`
+
+// StmtPriceActiveCoupons retrieve all active coupons of a price.
+// Used by user-facing apps.
+const StmtPriceActiveCoupons = colSelectCoupon + `
+WHERE price_id = ?
+	AND current_status = 'active'
 ORDER BY amount_off DESC
 `
 
 // StmtActiveCouponsOfPrices retrieves coupons of the specified prices.
 // Used to build paywall since we want to expose only the active ones.
-const StmtActiveCouponsOfPrices = `
-SELECT ` + colSelectCoupon + `
-FROM subs_product.stripe_coupon
+const StmtActiveCouponsOfPrices = colSelectCoupon + `
 WHERE FIND_IN_SET(price_id, ?) > 0
 	AND current_status = 'active'
 	AND (end_utc IS NULL OR end_utc >= UTC_TIMESTAMP())

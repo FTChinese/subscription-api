@@ -72,7 +72,8 @@ type StripeCoupon struct {
 	Name         string      `json:"name" db:"name"`
 	RedeemBy     int64       `json:"redeemBy" db:"redeem_by"`
 	StripeCouponMeta
-	Status DiscountStatus `json:"status" db:"status"`
+	Status     DiscountStatus `json:"status" db:"status"`
+	UpdatedUTC chrono.Time    `json:"updatedUtc" db:"updated_utc"`
 }
 
 func NewStripeCoupon(c *stripe.Coupon) StripeCoupon {
@@ -95,6 +96,7 @@ func NewStripeCoupon(c *stripe.Coupon) StripeCoupon {
 		RedeemBy:         c.RedeemBy,
 		StripeCouponMeta: meta,
 		Status:           status,
+		UpdatedUTC:       chrono.TimeNow(),
 	}
 }
 
@@ -124,6 +126,7 @@ func (c StripeCoupon) IsValid() bool {
 
 func (c StripeCoupon) Cancelled() StripeCoupon {
 	c.Status = DiscountStatusCancelled
+	c.UpdatedUTC = chrono.TimeNow()
 	return c
 }
 
