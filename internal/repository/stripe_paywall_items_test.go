@@ -60,8 +60,8 @@ func TestStripeRepo_RetrievePaywallCoupons(t *testing.T) {
 	p2 := price.MockRandomStripePrice()
 
 	testRepo := test.NewRepo()
-	testRepo.SaveStripeCoupons(p1.MockRandomCoupons(2))
-	testRepo.SaveStripeCoupons(p2.MockRandomCoupons(1))
+	testRepo.SaveStripeCoupons(p1.MockRandomCouponN(2))
+	testRepo.SaveStripeCoupons(p2.MockRandomCouponN(1))
 
 	type args struct {
 		priceIDs []string

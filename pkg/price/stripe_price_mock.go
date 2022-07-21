@@ -127,15 +127,14 @@ var MockStripePrmPrice = StripePrice{
 
 func MockRandomStripePrice() StripePrice {
 	return StripePrice{
-		IsFromStripe:   false,
-		ID:             faker.StripePriceID(),
-		Active:         true,
-		Currency:       "gbp",
-		IsIntroductory: false,
-		Kind:           KindRecurring,
-		LiveMode:       false,
-		Nickname:       "A mocking price",
-		ProductID:      faker.StripeProductID(),
+		IsFromStripe: false,
+		ID:           faker.StripePriceID(),
+		Active:       true,
+		Currency:     "gbp",
+		Kind:         KindRecurring,
+		LiveMode:     false,
+		Nickname:     "A mocking price",
+		ProductID:    faker.StripeProductID(),
 		PeriodCount: ColumnYearMonthDay{
 			dt.YearMonthDay{
 				Years:  1,
@@ -151,15 +150,11 @@ func MockRandomStripePrice() StripePrice {
 	}
 }
 
-func MockRandomStripeCoupon() StripeCoupon {
-	return mockRandomCouponOfPrice(faker.StripePriceID())
-}
-
 func (p StripePrice) MockRandomCoupon() StripeCoupon {
 	return mockRandomCouponOfPrice(p.ID)
 }
 
-func (p StripePrice) MockRandomCoupons(n int) []StripeCoupon {
+func (p StripePrice) MockRandomCouponN(n int) []StripeCoupon {
 	var list = make([]StripeCoupon, 0)
 
 	for i := 0; i < n; i++ {
@@ -187,8 +182,13 @@ func mockRandomCouponOfPrice(priceId string) StripeCoupon {
 				EndUTC:   chrono.TimeUTCFrom(time.Now().AddDate(0, 0, 7)),
 			},
 		},
-		Status: DiscountStatusActive,
+		Status:     DiscountStatusActive,
+		UpdatedUTC: chrono.TimeNow(),
 	}
+}
+
+func MockRandomStripeCoupon() StripeCoupon {
+	return mockRandomCouponOfPrice(faker.StripePriceID())
 }
 
 func MockRandomCouponList(n int) []StripeCoupon {

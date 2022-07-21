@@ -78,7 +78,7 @@ func TestStripeRepo_RetrieveCoupon(t *testing.T) {
 	}
 }
 
-func TestStripeRepo_RetrieveActiveCouponsOfPrice(t *testing.T) {
+func TestStripeRepo_ListPriceCoupons(t *testing.T) {
 	repo := NewStripeRepo(db.MockMySQL(), zaptest.NewLogger(t))
 
 	coupons := price.MockRandomCouponList(3)
@@ -86,7 +86,8 @@ func TestStripeRepo_RetrieveActiveCouponsOfPrice(t *testing.T) {
 	test.NewRepo().SaveStripeCoupons(coupons)
 
 	type args struct {
-		priceID string
+		priceID    string
+		activeOnly bool
 	}
 	tests := []struct {
 		name    string
@@ -95,9 +96,19 @@ func TestStripeRepo_RetrieveActiveCouponsOfPrice(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "",
+			name: "All coupons",
 			args: args{
-				priceID: coupons[0].PriceID.String,
+				priceID:    coupons[0].PriceID.String,
+				activeOnly: false,
+			},
+			want:    len(coupons),
+			wantErr: false,
+		},
+		{
+			name: "Active coupons",
+			args: args{
+				priceID:    coupons[0].PriceID.String,
+				activeOnly: true,
 			},
 			want:    len(coupons),
 			wantErr: false,
@@ -105,13 +116,13 @@ func TestStripeRepo_RetrieveActiveCouponsOfPrice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := repo.RetrieveCouponsOfPrice(tt.args.priceID)
+			got, err := repo.ListPriceCoupons(tt.args.priceID, tt.args.activeOnly)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("RetrieveCouponsOfPrice() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListPriceCoupons() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if len(got) != tt.want {
-				t.Errorf("RetrieveCouponsOfPrice() got = %d, want %d", len(got), tt.want)
+				t.Errorf("ListPriceCoupons() got = %d, want %d", len(got), tt.want)
 			}
 		})
 	}
