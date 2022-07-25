@@ -128,7 +128,7 @@ func (pr SubsParams) UpdateSubParams(itemID string, ci reader.CartItemStripe) *s
 
 	params := &stripeSdk.SubscriptionParams{
 		CancelAtPeriodEnd: stripeSdk.Bool(false),
-		ProrationBehavior: stripeSdk.String(string(stripeSdk.SubscriptionProrationBehaviorCreateProrations)),
+		ProrationBehavior: stripeSdk.String(string(stripeSdk.SubscriptionProrationBehaviorAlwaysInvoice)),
 		Items: []*stripeSdk.SubscriptionItemsParams{
 			{
 				// Subscription item to update.
