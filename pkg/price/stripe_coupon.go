@@ -72,10 +72,12 @@ type StripeCoupon struct {
 	Name         string      `json:"name" db:"name"`
 	RedeemBy     int64       `json:"redeemBy" db:"redeem_by"`
 	StripeCouponMeta
-	Status     DiscountStatus `json:"status" db:"status"`
+	Status     DiscountStatus `json:"status" db:"status"` // This is a custom field not from stripe.
 	UpdatedUTC chrono.Time    `json:"updatedUtc" db:"updated_utc"`
 }
 
+// NewStripeCoupon converts a coupon retrieved from Stripe.
+// Note the Status field is always overridden.
 func NewStripeCoupon(c *stripe.Coupon) StripeCoupon {
 	meta := ParseStripeCouponMeta(c.Metadata)
 
@@ -122,6 +124,18 @@ func (c StripeCoupon) IsValid() bool {
 	}
 
 	return c.NowIn()
+}
+
+func (c StripeCoupon) Activate() StripeCoupon {
+	c.Status = DiscountStatusActive
+	c.UpdatedUTC = chrono.TimeNow()
+	return c
+}
+
+func (c StripeCoupon) Pause() StripeCoupon {
+	c.Status = DiscountStatusPaused
+	c.UpdatedUTC = chrono.TimeNow()
+	return c
 }
 
 func (c StripeCoupon) Cancelled() StripeCoupon {
