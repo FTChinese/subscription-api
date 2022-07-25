@@ -55,6 +55,10 @@ func (routes StripeRoutes) LoadStripeCoupon(w http.ResponseWriter, req *http.Req
 }
 
 // UpdateStripeCoupon changes a coupon's metadata.
+// This will hit Stripe API before updating FTC's database.
+// It adds price id, start utc and end utc to Stripe coupon's metadata.
+// Do not use this to change a coupon's status field since the status field
+// is not stored on Stripe's side.
 // Limited only to internal use.
 func (routes StripeRoutes) UpdateStripeCoupon(w http.ResponseWriter, req *http.Request) {
 	defer routes.logger.Sync()
@@ -78,9 +82,57 @@ func (routes StripeRoutes) UpdateStripeCoupon(w http.ResponseWriter, req *http.R
 	_ = render.New(w).OK(c)
 }
 
-// DeleteStripeCoupon flags a stripe coupon as invalid.
-// Limited only to internal usagte.
-func (routes StripeRoutes) DeleteStripeCoupon(w http.ResponseWriter, req *http.Request) {
+func (routes StripeRoutes) ActivateCoupon(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
+
+	var id, _ = xhttp.GetURLParam(req, "id").ToString()
+
+	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, false)
+	if err != nil {
+		sugar.Error(err)
+		_ = xhttp.HandleSubsErr(w, err)
+		return
+	}
+
+	c = c.Activate()
+
+	err = routes.stripeRepo.UpdateCouponStatus(c)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+	}
+
+	_ = render.New(w).OK(c)
+}
+
+func (routes StripeRoutes) PauseCoupon(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
+
+	var id, _ = xhttp.GetURLParam(req, "id").ToString()
+
+	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, false)
+	if err != nil {
+		sugar.Error(err)
+		_ = xhttp.HandleSubsErr(w, err)
+		return
+	}
+
+	c = c.Pause()
+
+	err = routes.stripeRepo.UpdateCouponStatus(c)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+	}
+
+	_ = render.New(w).OK(c)
+}
+
+// DeleteCoupon flags a stripe coupon as invalid.
+// Limited only to internal usage.
+func (routes StripeRoutes) DeleteCoupon(w http.ResponseWriter, req *http.Request) {
 	defer routes.logger.Sync()
 	sugar := routes.logger.Sugar()
 
@@ -95,7 +147,7 @@ func (routes StripeRoutes) DeleteStripeCoupon(w http.ResponseWriter, req *http.R
 
 	c = c.Cancelled()
 
-	err = routes.stripeRepo.UpsertCoupon(c)
+	err = routes.stripeRepo.UpdateCouponStatus(c)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
