@@ -72,6 +72,11 @@ func (routes StripeRoutes) UpdateStripeCoupon(w http.ResponseWriter, req *http.R
 		return
 	}
 
+	if ve := params.Validate(); ve != nil {
+		_ = render.New(w).Unprocessable(ve)
+		return
+	}
+
 	// Modify the coupon against Stripe API, then upsert it in database.
 	c, err := routes.stripeRepo.ModifyCoupon(id, params)
 	if err != nil {

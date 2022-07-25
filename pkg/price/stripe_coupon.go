@@ -2,7 +2,9 @@ package price
 
 import (
 	"github.com/FTChinese/go-rest/chrono"
+	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 	"time"
@@ -34,6 +36,10 @@ func ParseStripeCouponMeta(m map[string]string) StripeCouponMeta {
 			EndUTC:   chrono.TimeFrom(endTime),
 		},
 	}
+}
+
+func (p StripeCouponMeta) Validate() *render.ValidationError {
+	return validator.New("priceId").Required().Validate(p.PriceID.String)
 }
 
 func (p StripeCouponMeta) ToMap() map[string]string {
