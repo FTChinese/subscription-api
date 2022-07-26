@@ -57,10 +57,14 @@ type Subs struct {
 	// This does not exist when refreshing current subscription.
 	// Occasionally stripe just does not expand it.
 	// Do not rely on it.
-	PaymentIntentID null.String     `json:"-" db:"payment_intent_id"`
-	PaymentIntent   PaymentIntent   `json:"paymentIntent"` // To be saved in a separate table.
-	StartDateUTC    chrono.Time     `json:"startDateUtc" db:"start_date_utc"`
-	Status          enum.SubsStatus `json:"status" db:"sub_status"`
+	PaymentIntentID null.String `json:"-" db:"payment_intent_id"`
+	// Saved in a separate table as traditional SQL columns.
+	// Pitfalls: when a subscription is created via introductory offer, the payment intent does not exist.
+	// If there's coupon offered immediately after user created a subscription via introductory offer,
+	// then the user is eligible for the coupon.
+	PaymentIntent PaymentIntent   `json:"paymentIntent"`
+	StartDateUTC  chrono.Time     `json:"startDateUtc" db:"start_date_utc"`
+	Status        enum.SubsStatus `json:"status" db:"sub_status"`
 	// Time at which the object was created. Measured in seconds since the Unix epoch.
 	Created int64 `json:"-" db:"created"`
 
@@ -112,7 +116,7 @@ func NewSubs(ftcID string, ss *stripe.Subscription) Subs {
 		LatestInvoiceID:        inv.ID,
 		LatestInvoice:          inv,
 		LiveMode:               ss.Livemode,
-		PaymentIntentID:        null.NewString(pi.ID, pi.ID == ""),
+		PaymentIntentID:        null.NewString(pi.ID, pi.ID != ""),
 		PaymentIntent:          pi,
 		StartDateUTC:           chrono.TimeFrom(dt.FromUnix(ss.StartDate)),
 		Status:                 status,
