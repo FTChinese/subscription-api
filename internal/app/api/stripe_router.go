@@ -80,9 +80,12 @@ func (routes StripeRoutes) handleSubsResult(result stripe.SubsSuccess) {
 		sugar.Error(err)
 	}
 
-	err = routes.stripeRepo.UpsertPaymentIntent(result.Subs.PaymentIntent)
-	if err != nil {
-		sugar.Error(err)
+	// Payment intent is zero value if subscription is created via introductory offer
+	if !result.Subs.PaymentIntent.IsZero() {
+		err = routes.stripeRepo.UpsertPaymentIntent(result.Subs.PaymentIntent)
+		if err != nil {
+			sugar.Error(err)
+		}
 	}
 
 	if !result.Versioned.IsZero() {

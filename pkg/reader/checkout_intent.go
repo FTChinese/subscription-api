@@ -65,12 +65,12 @@ func NewCheckoutIntentStripe(m Membership, item CartItemStripe) CheckoutIntent {
 		switch item.Recurring.Tier {
 		// Current standard to Premium
 		case enum.TierPremium:
-			if m.IsTrialing() {
-				return CheckoutIntent{
-					Kind:  IntentForbidden,
-					Error: ErrTrialUpgradeForbidden,
-				}
-			}
+			//if m.IsTrialing() {
+			//	return CheckoutIntent{
+			//		Kind:  IntentForbidden,
+			//		Error: ErrTrialUpgradeForbidden,
+			//	}
+			//}
 			return CheckoutIntent{
 				Kind:  IntentUpgrade,
 				Error: nil,
