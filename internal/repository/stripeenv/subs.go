@@ -177,7 +177,7 @@ func (env Env) UpdateSubscription(
 		_ = tx.Rollback()
 		return cart, stripe.SubsSuccess{}, err
 	}
-	sugar.Infof("Subscription id %s, status %s, payment intent status %s", ss.ID, ss.Status, ss.LatestInvoice.PaymentIntent.Status)
+	sugar.Infof("Subscription id %s, status %s, latest invoice %v", ss.ID, ss.Status, ss.LatestInvoice)
 
 	result := stripe.NewSubsResultBuilder(
 		cart,
