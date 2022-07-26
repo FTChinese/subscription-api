@@ -225,10 +225,12 @@ func (routes StripeRoutes) UpdateSubs(w http.ResponseWriter, req *http.Request) 
 		routes.saveShoppingSession(session.WithSubs(result.Subs))
 	}()
 
-	if result.Subs.PaymentIntent.IsZero() {
-		_ = render.New(w).BadRequest("PaymentIntent not expanded")
-		return
-	}
+	// When a user in trial period is redeeming a coupon, there's no payment intent under latest invoice.
+	// We should not check payment intent in such case.
+	//if result.Subs.PaymentIntent.IsZero() {
+	//	_ = render.New(w).BadRequest("PaymentIntent not expanded")
+	//	return
+	//}
 
 	_ = render.New(w).OK(result)
 }
