@@ -45,7 +45,8 @@ func TestStripeRepo_RetrievePrice(t *testing.T) {
 	test.NewRepo().SaveStripePrice(sp)
 
 	type args struct {
-		id string
+		id   string
+		live bool
 	}
 	tests := []struct {
 		name    string
@@ -56,7 +57,8 @@ func TestStripeRepo_RetrievePrice(t *testing.T) {
 		{
 			name: "Retrieve stripe price",
 			args: args{
-				id: sp.ID,
+				id:   sp.ID,
+				live: false,
 			},
 			want:    sp,
 			wantErr: false,
@@ -65,7 +67,7 @@ func TestStripeRepo_RetrievePrice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := repo.RetrievePrice(tt.args.id)
+			got, err := repo.RetrievePrice(tt.args.id, tt.args.live)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrievePrice() error = %v, wantErr %v", err, tt.wantErr)
 				return

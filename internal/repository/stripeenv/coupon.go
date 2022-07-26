@@ -2,12 +2,12 @@ package stripeenv
 
 import "github.com/FTChinese/subscription-api/pkg/price"
 
-func (env Env) LoadOrFetchCoupon(id string, refresh bool) (price.StripeCoupon, error) {
+func (env Env) LoadOrFetchCoupon(id string, refresh bool, live bool) (price.StripeCoupon, error) {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
 
 	if !refresh {
-		c, err := env.RetrieveCoupon(id)
+		c, err := env.RetrieveCoupon(id, live)
 		if err == nil {
 			return c, nil
 		}

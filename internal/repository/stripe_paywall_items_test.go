@@ -21,7 +21,8 @@ func TestStripeRepo_RetrievePaywallPrices(t *testing.T) {
 	testRepo.SaveStripePrice(p3)
 
 	type args struct {
-		ids []string
+		ids  []string
+		live bool
 	}
 	tests := []struct {
 		name    string
@@ -32,7 +33,8 @@ func TestStripeRepo_RetrievePaywallPrices(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				ids: []string{p1.ID, p2.ID, p3.ID},
+				ids:  []string{p1.ID, p2.ID, p3.ID},
+				live: false,
 			},
 			want:    3,
 			wantErr: false,
@@ -41,7 +43,7 @@ func TestStripeRepo_RetrievePaywallPrices(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := repo.RetrievePaywallPrices(tt.args.ids)
+			got, err := repo.RetrievePaywallPrices(tt.args.ids, tt.args.live)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrievePaywallPrices() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -65,6 +67,7 @@ func TestStripeRepo_RetrievePaywallCoupons(t *testing.T) {
 
 	type args struct {
 		priceIDs []string
+		live     bool
 	}
 	tests := []struct {
 		name    string
@@ -79,6 +82,7 @@ func TestStripeRepo_RetrievePaywallCoupons(t *testing.T) {
 					p1.ID,
 					p2.ID,
 				},
+				live: false,
 			},
 			want:    3,
 			wantErr: false,
@@ -87,7 +91,7 @@ func TestStripeRepo_RetrievePaywallCoupons(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := repo.RetrievePaywallCoupons(tt.args.priceIDs)
+			got, err := repo.RetrievePaywallCoupons(tt.args.priceIDs, tt.args.live)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrievePaywallCoupons() error = %v, wantErr %v", err, tt.wantErr)
 				return

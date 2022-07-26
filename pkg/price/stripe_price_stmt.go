@@ -43,10 +43,12 @@ ON DUPLICATE KEY UPDATE
 
 const StmtRetrieveStripePrice = colSelectStripePrice + `
 WHERE id = ?
+	AND live_mode = ?
 LIMIT 1
 `
 
 const StmtListStripePrice = colSelectStripePrice + `
 WHERE FIND_IN_SET(id, ?) > 0
+	AND live_mode = ?
 ORDER BY created
 `

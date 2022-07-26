@@ -13,12 +13,13 @@ func (repo StripeRepo) UpsertCoupon(c price.StripeCoupon) error {
 	return err
 }
 
-func (repo StripeRepo) RetrieveCoupon(id string) (price.StripeCoupon, error) {
+func (repo StripeRepo) RetrieveCoupon(id string, live bool) (price.StripeCoupon, error) {
 	var c price.StripeCoupon
 	err := repo.dbs.Read.Get(
 		&c,
 		price.StmtRetrieveCoupon,
-		id)
+		id,
+		live)
 
 	if err != nil {
 		return price.StripeCoupon{}, err
@@ -28,7 +29,7 @@ func (repo StripeRepo) RetrieveCoupon(id string) (price.StripeCoupon, error) {
 }
 
 // ListPriceCoupons retrieves all coupons of a price.
-func (repo StripeRepo) ListPriceCoupons(priceID string, activeOnly bool) ([]price.StripeCoupon, error) {
+func (repo StripeRepo) ListPriceCoupons(priceID string, activeOnly bool, live bool) ([]price.StripeCoupon, error) {
 	var stmt = price.StmtPriceAllCoupons
 	if activeOnly {
 		stmt = price.StmtPriceActiveCoupons
@@ -38,7 +39,8 @@ func (repo StripeRepo) ListPriceCoupons(priceID string, activeOnly bool) ([]pric
 	err := repo.dbs.Read.Select(
 		&list,
 		stmt,
-		priceID)
+		priceID,
+		live)
 
 	if err != nil {
 		return nil, err

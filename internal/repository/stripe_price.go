@@ -17,13 +17,14 @@ func (repo StripeRepo) UpsertPrice(p price.StripePrice) error {
 	return nil
 }
 
-func (repo StripeRepo) RetrievePrice(id string) (price.StripePrice, error) {
+func (repo StripeRepo) RetrievePrice(id string, live bool) (price.StripePrice, error) {
 	var p price.StripePrice
 
 	err := repo.dbs.Read.Get(
 		&p,
 		price.StmtRetrieveStripePrice,
-		id)
+		id,
+		live)
 
 	if err != nil {
 		return price.StripePrice{}, err

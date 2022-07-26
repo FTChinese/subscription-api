@@ -40,6 +40,7 @@ FROM subs_product.stripe_coupon
 
 const StmtRetrieveCoupon = colSelectCoupon + `
 WHERE id = ?
+	AND live_mode = ?
 LIMIT 1
 `
 
@@ -48,6 +49,7 @@ LIMIT 1
 // Used by CMS.
 const StmtPriceAllCoupons = colSelectCoupon + `
 WHERE price_id = ?
+	AND live_mode = ?
 ORDER BY updated_utc DESC
 `
 
@@ -55,6 +57,7 @@ ORDER BY updated_utc DESC
 // Used by user-facing apps.
 const StmtPriceActiveCoupons = colSelectCoupon + `
 WHERE price_id = ?
+	AND live_mode = ?
 	AND current_status = 'active'
 ORDER BY amount_off DESC
 `
@@ -63,6 +66,7 @@ ORDER BY amount_off DESC
 // Used to build paywall since we want to expose only the active ones.
 const StmtActiveCouponsOfPrices = colSelectCoupon + `
 WHERE FIND_IN_SET(price_id, ?) > 0
+	AND live_mode = ?
 	AND current_status = 'active'
 	AND (end_utc IS NULL OR end_utc >= UTC_TIMESTAMP())
 ORDER BY amount_off DESC

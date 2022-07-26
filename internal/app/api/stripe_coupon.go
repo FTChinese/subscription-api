@@ -15,7 +15,7 @@ func (routes StripeRoutes) ListPriceCoupons(w http.ResponseWriter, req *http.Req
 
 	priceId, _ := xhttp.GetURLParam(req, "id").ToString()
 
-	coupons, err := routes.stripeRepo.ListPriceCoupons(priceId, activeOnly)
+	coupons, err := routes.stripeRepo.ListPriceCoupons(priceId, activeOnly, routes.live)
 	if err != nil {
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
@@ -35,7 +35,7 @@ func (routes StripeRoutes) LoadStripeCoupon(w http.ResponseWriter, req *http.Req
 	var refresh = xhttp.ParseQueryBool(req, "refresh")
 	var id, _ = xhttp.GetURLParam(req, "id").ToString()
 
-	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, refresh)
+	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, refresh, routes.live)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)
@@ -93,7 +93,7 @@ func (routes StripeRoutes) ActivateCoupon(w http.ResponseWriter, req *http.Reque
 
 	var id, _ = xhttp.GetURLParam(req, "id").ToString()
 
-	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, false)
+	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, false, routes.live)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)
@@ -117,7 +117,7 @@ func (routes StripeRoutes) PauseCoupon(w http.ResponseWriter, req *http.Request)
 
 	var id, _ = xhttp.GetURLParam(req, "id").ToString()
 
-	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, false)
+	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, false, routes.live)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)
@@ -143,7 +143,7 @@ func (routes StripeRoutes) DeleteCoupon(w http.ResponseWriter, req *http.Request
 
 	var id, _ = xhttp.GetURLParam(req, "id").ToString()
 
-	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, false)
+	c, err := routes.stripeRepo.LoadOrFetchCoupon(id, false, routes.live)
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)

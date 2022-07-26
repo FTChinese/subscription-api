@@ -41,7 +41,7 @@ func (routes StripeRoutes) LoadStripePrice(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	sp, err := routes.stripeRepo.LoadOrFetchPrice(id, refresh)
+	sp, err := routes.stripeRepo.LoadOrFetchPrice(id, refresh, routes.live)
 
 	if err != nil {
 		_ = xhttp.HandleSubsErr(w, err)

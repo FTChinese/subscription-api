@@ -109,7 +109,7 @@ func (routes StripeRoutes) findCartItem(params stripe.SubsParams) (reader.CartIt
 
 	// Cannot build cart item from cached data.
 	// Load from db or stripe.
-	item, err := routes.stripeRepo.LoadCheckoutItem(params)
+	item, err := routes.stripeRepo.LoadCheckoutItem(params, routes.live)
 	if err != nil {
 		return reader.CartItemStripe{}, err
 	}
