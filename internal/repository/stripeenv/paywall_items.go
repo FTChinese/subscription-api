@@ -7,14 +7,14 @@ import (
 )
 
 // loadOrFetchPaywallPrices loads all stripe prices for a list of ids.
-func (env Env) loadOrFetchPaywallPrices(ids []string, refresh bool) ([]price.StripePrice, error) {
+func (env Env) loadOrFetchPaywallPrices(ids []string, refresh bool, live bool) ([]price.StripePrice, error) {
 	defer env.Logger.Sync()
 	sugar := env.Logger.Sugar()
 
 	var diff []string
 	if !refresh {
 		sugar.Infof("Load stripe prices from db")
-		list, err := env.RetrievePaywallPrices(ids)
+		list, err := env.RetrievePaywallPrices(ids, live)
 		if err != nil {
 			sugar.Error(err)
 			diff = ids
@@ -55,13 +55,13 @@ func isAllPriceRetrieved(ids []string, prices []price.StripePrice) []string {
 	return result
 }
 
-func (env Env) LoadOrFetchPaywallItems(priceIDs []string, refresh bool) ([]reader.StripePaywallItem, error) {
-	prices, err := env.loadOrFetchPaywallPrices(priceIDs, refresh)
+func (env Env) LoadOrFetchPaywallItems(priceIDs []string, refresh bool, live bool) ([]reader.StripePaywallItem, error) {
+	prices, err := env.loadOrFetchPaywallPrices(priceIDs, refresh, live)
 	if err != nil {
 		return nil, err
 	}
 
-	coupons, err := env.RetrievePaywallCoupons(priceIDs)
+	coupons, err := env.RetrievePaywallCoupons(priceIDs, live)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +70,8 @@ func (env Env) LoadOrFetchPaywallItems(priceIDs []string, refresh bool) ([]reade
 }
 
 // LoadCheckoutItem from database, or from Stripe API if not found in database.
-func (env Env) LoadCheckoutItem(params stripe.SubsParams) (reader.CartItemStripe, error) {
-	recurring, err := env.LoadOrFetchPrice(params.PriceID, false)
+func (env Env) LoadCheckoutItem(params stripe.SubsParams, live bool) (reader.CartItemStripe, error) {
+	recurring, err := env.LoadOrFetchPrice(params.PriceID, false, live)
 	if err != nil {
 		return reader.CartItemStripe{}, err
 	}
@@ -79,14 +79,14 @@ func (env Env) LoadCheckoutItem(params stripe.SubsParams) (reader.CartItemStripe
 	var introPrice price.StripePrice
 	var coupon price.StripeCoupon
 	if params.IntroductoryPriceID.Valid {
-		introPrice, err = env.LoadOrFetchPrice(params.IntroductoryPriceID.String, false)
+		introPrice, err = env.LoadOrFetchPrice(params.IntroductoryPriceID.String, false, live)
 		if err != nil {
 			return reader.CartItemStripe{}, err
 		}
 	}
 
 	if params.CouponID.Valid {
-		coupon, err = env.LoadOrFetchCoupon(params.CouponID.String, false)
+		coupon, err = env.LoadOrFetchCoupon(params.CouponID.String, false, live)
 		if err != nil {
 			return reader.CartItemStripe{}, err
 		}
