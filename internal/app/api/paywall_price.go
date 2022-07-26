@@ -60,7 +60,7 @@ func (router PaywallRouter) updateStripPriceMeta(ftcPrice price.FtcPrice) (price
 }
 
 func (router PaywallRouter) ensureStripePrice(id string) (price.StripePrice, error) {
-	sp, err := router.stripeRepo.LoadOrFetchPrice(id, false)
+	sp, err := router.stripeRepo.LoadOrFetchPrice(id, false, router.live)
 	if err != nil {
 		return price.StripePrice{}, err
 	}
