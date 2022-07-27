@@ -27,8 +27,7 @@ func (env Env) LoadOrFetchPrice(id string, refresh bool, live bool) (price.Strip
 	return price.NewStripePrice(rawPrice), nil
 }
 
-// ListPricesCompat fetches stripe prices from cache or
-// for API.
+// ListPricesCompat fetches stripe prices from cache or from API.
 // Deprecated.
 func (env Env) ListPricesCompat(live bool, refresh bool) ([]price.StripePrice, error) {
 	if !refresh && env.Cache.Len() != 0 {
