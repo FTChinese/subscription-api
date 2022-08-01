@@ -4,6 +4,7 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/guregu/null"
 )
 
@@ -13,11 +14,9 @@ import (
 type MemberParams struct {
 	FtcID      null.String    `json:"ftcId"`
 	UnionID    null.String    `json:"unionId"`
-	Tier       enum.Tier      `json:"tier"`
-	Cycle      enum.Cycle     `json:"cycle"`
+	PriceID    string         `json:"priceId"`
 	ExpireDate chrono.Date    `json:"expireDate"`
 	PayMethod  enum.PayMethod `json:"payMethod"`
-	PriceID    string         `json:"-"`
 }
 
 func (i MemberParams) Validate(isNew bool) *render.ValidationError {
@@ -30,28 +29,9 @@ func (i MemberParams) Validate(isNew bool) *render.ValidationError {
 		}
 	}
 
-	if i.Tier == enum.TierNull {
-		return &render.ValidationError{
-			Message: "Tier is required",
-			Field:   "tier",
-			Code:    render.CodeMissingField,
-		}
-	}
-
-	if i.Cycle == enum.CycleNull {
-		return &render.ValidationError{
-			Message: "Cycle is required",
-			Field:   "cycle",
-			Code:    render.CodeMissingField,
-		}
-	}
-
-	if i.Tier == enum.TierPremium && i.Cycle == enum.CycleMonth {
-		return &render.ValidationError{
-			Message: "Premium edition does not have monthly billing cycle",
-			Field:   "cycle",
-			Code:    render.CodeInvalid,
-		}
+	ve := validator.New("priceId").Required().Validate(i.PriceID)
+	if ve != nil {
+		return ve
 	}
 
 	if i.PayMethod != enum.PayMethodAli && i.PayMethod != enum.PayMethodWx {
