@@ -6,7 +6,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-// RetrievePaywallPrice retrieves a single row by plan id.
+// RetrievePaywallPrice retrieves a single row of price id.
 func (repo PaywallRepo) RetrievePaywallPrice(id string, live bool) (reader.PaywallPrice, error) {
 	var p reader.PaywallPrice
 	err := repo.dbs.Read.Get(
