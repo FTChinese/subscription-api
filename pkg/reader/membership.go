@@ -67,18 +67,18 @@ type Membership struct {
 
 // NewMembership attaches membership directly to a user,
 // without any means of payment.
-func NewMembership(ba account.BaseAccount, params input.MemberParams) Membership {
+func NewMembership(ba account.BaseAccount, params input.MemberParams, p price.FtcPrice) Membership {
 	return Membership{
 		UserIDs: ba.CompoundIDs(),
 		Edition: price.Edition{
-			Tier:  params.Tier,
-			Cycle: params.Cycle,
+			Tier:  p.Tier,
+			Cycle: p.PeriodCount.EqCycle(),
 		},
 		LegacyTier:    null.Int{},
 		LegacyExpire:  null.Int{},
 		ExpireDate:    params.ExpireDate,
 		PaymentMethod: params.PayMethod,
-		FtcPlanID:     null.StringFrom(params.PriceID),
+		FtcPlanID:     null.StringFrom(p.ID),
 		StripeSubsID:  null.String{},
 		StripePlanID:  null.String{},
 		AutoRenewal:   false,
@@ -88,15 +88,6 @@ func NewMembership(ba account.BaseAccount, params input.MemberParams) Membership
 		AddOn:         addon.AddOn{},
 		VIP:           false,
 	}.Sync()
-}
-
-func (m Membership) Update(params input.MemberParams) Membership {
-	m.Tier = params.Tier
-	m.Cycle = params.Cycle
-	m.ExpireDate = params.ExpireDate
-	m.PaymentMethod = params.PayMethod
-
-	return m
 }
 
 // IsZero test whether the instance is empty.
