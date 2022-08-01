@@ -1,58 +1,13 @@
 package cmsrepo
 
 import (
-	"database/sql"
 	"errors"
-	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/internal/pkg/input"
-	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
-// CreateMembership manually.
-func (env Env) CreateMembership(ba account.BaseAccount, params input.MemberParams) (reader.Membership, error) {
-	defer env.logger.Sync()
-	sugar := env.logger.Sugar()
-
-	tx, err := env.beginMemberTx()
-	if err != nil {
-		sugar.Error(err)
-		return reader.Membership{}, err
-	}
-
-	mmb, err := tx.RetrieveMember(ba.CompoundID())
-	if err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return reader.Membership{}, err
-	}
-
-	if !mmb.IsZero() {
-		_ = tx.Rollback()
-		return reader.Membership{}, &render.ValidationError{
-			Message: "Membership already exists",
-			Field:   "membership",
-			Code:    render.CodeAlreadyExists,
-		}
-	}
-
-	mmb = reader.NewMembership(ba, params)
-
-	err = tx.CreateMember(mmb)
-	if err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return reader.Membership{}, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return reader.Membership{}, err
-	}
-
-	return mmb, nil
-}
-
-func (env Env) UpdateMembership(compoundID string, params input.MemberParams, by string) (reader.MembershipVersioned, error) {
+// UpsertMembership manually create a new membership if not exists,
+// or update an existing one.
+func (env Env) UpsertMembership(m reader.Membership, by string) (reader.MembershipVersioned, error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -62,7 +17,7 @@ func (env Env) UpdateMembership(compoundID string, params input.MemberParams, by
 		return reader.MembershipVersioned{}, err
 	}
 
-	current, err := tx.RetrieveMember(compoundID)
+	current, err := tx.RetrieveMember(m.GetCompoundID())
 	if err != nil {
 		sugar.Error(err)
 		_ = tx.Rollback()
@@ -70,35 +25,29 @@ func (env Env) UpdateMembership(compoundID string, params input.MemberParams, by
 	}
 
 	if current.IsZero() {
-		_ = tx.Rollback()
-		return reader.MembershipVersioned{}, sql.ErrNoRows
-	}
-
-	if !current.IsOneTime() {
-		_ = tx.Rollback()
-		return reader.MembershipVersioned{}, &render.ValidationError{
-			Message: "Only membership created via alipay or wxpay can be modified directly",
-			Field:   "payMethod",
-			Code:    render.CodeAlreadyExists,
+		err = tx.CreateMember(m)
+		if err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return reader.MembershipVersioned{}, err
 		}
-	}
-
-	updated := current.Update(params)
-
-	err = tx.UpdateMember(updated)
-	if err != nil {
-		sugar.Error(err)
-		_ = tx.Rollback()
-		return reader.MembershipVersioned{}, err
+	} else {
+		err = tx.UpdateMember(m)
+		if err != nil {
+			sugar.Error(err)
+			_ = tx.Rollback()
+			return reader.MembershipVersioned{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		return reader.MembershipVersioned{}, err
 	}
 
-	v := reader.NewMembershipVersioned(updated).
+	v := reader.NewMembershipVersioned(m).
 		WithPriorVersion(current).
 		ArchivedBy(reader.NewArchiver().By(by).ActionUpdate())
+
 	return v, nil
 }
 
