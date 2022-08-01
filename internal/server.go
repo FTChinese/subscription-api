@@ -84,11 +84,7 @@ func StartServer(s ServerStatus) {
 		myDBs,
 		logger)
 
-	cmsRouter := api.NewCMSRouter(
-		myDBs,
-		cacheStore,
-		logger,
-		s.LiveMode)
+	cmsRouter := api.NewCMSRouter(myDBs, s.LiveMode, logger)
 
 	appRouter := api.NewAndroidRouter(
 		myDBs,
@@ -546,10 +542,8 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/memberships", func(r chi.Router) {
-			// Create a membership for a user
-			r.Post("/", cmsRouter.CreateMembership)
-			// Update the membership of a user
-			r.Patch("/{id}", cmsRouter.UpdateMembership)
+			// Create or update a membership for a user
+			r.Post("/", cmsRouter.UpsertMembership)
 			r.Delete("/{id}", cmsRouter.DeleteMembership)
 		})
 
