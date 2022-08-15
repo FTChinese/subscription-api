@@ -7,6 +7,8 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
+	"github.com/google/martian/log"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -22,7 +24,12 @@ import (
 //
 // The footprint.Client headers are required.
 func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request) {
-	defer router.Logger.Sync()
+	defer func(Logger *zap.Logger) {
+		err := Logger.Sync()
+		if err != nil {
+			log.Errorf("%s", err)
+		}
+	}(router.Logger)
 	sugar := router.Logger.Sugar()
 
 	var params input.ForgotPasswordParams
