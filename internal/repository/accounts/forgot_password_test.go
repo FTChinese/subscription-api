@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
@@ -97,53 +96,6 @@ func TestEnv_PwResetSessionByToken(t *testing.T) {
 			}
 			//if !reflect.DeepEqual(got, tt.want) {
 			//	t.Errorf("PwResetSessionByToken() got = %v, want %v", got, tt.want)
-			//}
-
-			t.Logf("%s", faker.MustMarshalIndent(got))
-		})
-	}
-}
-
-func TestEnv_PwResetSessionByCode(t *testing.T) {
-	faker.SeedGoFake()
-
-	sess := account.MustNewPwResetSession(input.ForgotPasswordParams{
-		Email:     gofakeit.Email(),
-		SourceURL: null.String{},
-	}).WithPlatform(enum.PlatformAndroid)
-
-	env := New(test.SplitDB, zaptest.NewLogger(t))
-	_ = env.SavePwResetSession(sess)
-
-	type args struct {
-		params input.AppResetPwSessionParams
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    account.PwResetSession
-		wantErr bool
-	}{
-		{
-			name: "Retrieve password reset session for mobile app",
-			args: args{
-				params: input.AppResetPwSessionParams{
-					Email:   sess.Email,
-					AppCode: sess.AppCode.String,
-				},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := env.PwResetSessionByCode(tt.args.params)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("PwResetSessionByCode() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("PwResetSessionByCode() got = %v, want %v", got, tt.want)
 			//}
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
