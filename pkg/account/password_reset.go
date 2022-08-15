@@ -64,7 +64,7 @@ func NewPwResetSession(params input.ForgotPasswordParams) (PwResetSession, error
 	if params.UseCode {
 		// For mobile apps we removed the SourceURL
 		sess.SourceURL = null.String{}
-		// Add add an easy-to-type 6-digit code
+		// Add an easy-to-type 6-digit code
 		sess.AppCode = null.StringFrom(ids.PwResetCode())
 		sess.ExpiresIn = 30 * 60 // Valid for 30 minutes.
 	}
