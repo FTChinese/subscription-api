@@ -82,21 +82,6 @@ func MustNewPwResetSession(params input.ForgotPasswordParams) PwResetSession {
 	return s
 }
 
-// WithPlatform determines whether the AppCode should be generated.
-// For mobile apps, a 6 character string will be generated.
-// Deprecated
-func (s PwResetSession) WithPlatform(p enum.Platform) PwResetSession {
-
-	if p == enum.PlatformIOS || p == enum.PlatformAndroid {
-		s.ExpiresIn = 300
-		s.AppCode = null.StringFrom(ids.PwResetCode())
-		// For mobile apps we removed the SourceURL
-		s.SourceURL = null.String{}
-	}
-
-	return s
-}
-
 // BuildURL creates password reset link.
 // Returns an empty string if AppCode field exists so that
 // the template will not render the URL section.
