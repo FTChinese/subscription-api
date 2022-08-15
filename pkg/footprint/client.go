@@ -21,6 +21,10 @@ type Client struct {
 	UserAgent null.String   `db:"user_agent"`     // For X-User-Agent, User-Agent
 }
 
+func (c Client) IsApp() bool {
+	return c.Platform == enum.PlatformAndroid || c.Platform == enum.PlatformIOS
+}
+
 // NewClient collects information from a request.
 func NewClient(req *http.Request) Client {
 	c := Client{}
