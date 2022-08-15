@@ -111,8 +111,8 @@ func (s *MobileSignUpParams) Validate() *render.ValidationError {
 // ForgotPasswordParams is used to create a password reset session.
 type ForgotPasswordParams struct {
 	Email     string      `json:"email"`
-	UseCode   bool        `json:"useCode"`
-	SourceURL null.String `json:"sourceUrl"`
+	UseCode   bool        `json:"useCode"`   // Used by mobile apps
+	SourceURL null.String `json:"sourceUrl"` // Used by web apps
 }
 
 func (f ForgotPasswordParams) Validate() *render.ValidationError {
