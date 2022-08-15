@@ -46,6 +46,13 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	// A fallback resort to handle a strange problem in
+	// android app being unable to stringify JSON userCode field.
+	client := footprint.NewClient(req)
+	if client.IsApp() && !params.UseCode {
+		params.UseCode = true
+	}
+
 	// Load account for this email
 	baseAccount, err := router.Repo.BaseAccountByEmail(params.Email)
 	// Not Found.
@@ -69,7 +76,7 @@ func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	fp := footprint.New(baseAccount.FtcID, footprint.NewClient(req)).
+	fp := footprint.New(baseAccount.FtcID, client).
 		FromPwReset()
 
 	go func() {
