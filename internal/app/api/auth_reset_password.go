@@ -7,8 +7,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/account"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
-	"github.com/google/martian/log"
-	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -24,12 +22,7 @@ import (
 //
 // The footprint.Client headers are required.
 func (router AuthRouter) ForgotPassword(w http.ResponseWriter, req *http.Request) {
-	defer func(Logger *zap.Logger) {
-		err := Logger.Sync()
-		if err != nil {
-			log.Errorf("%s", err)
-		}
-	}(router.Logger)
+	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
 
 	var params input.ForgotPasswordParams
@@ -168,7 +161,7 @@ func (router AuthRouter) VerifyResetCode(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	// Send token to client so that it can sent the token back
+	// Send token to client so that it send the token back
 	// together with the new password.
 	// In this way we could keep it backward-compatible
 	// when calling ResetPassword.
