@@ -14,10 +14,16 @@ import (
 //go:embed build/api.toml
 var tomlConfig string
 
+//go:embed build/version
+var version string
+
+//go:embed build/build_time
+var build string
+
+//go:embed build/commit
+var commit string
+
 var (
-	version    string
-	build      string
-	commit     string
 	production bool // Determine which db to use
 	liveMode   bool // Determine pricing mode.
 )
