@@ -1,14 +1,8 @@
 config_file_name := api.toml
 local_config_file := $(HOME)/config/$(config_file_name)
 
-version := `git tag -l --sort=-v:refname | head -n 1`
-build_time := `date +%FT%T%z`
-commit := `git log --max-count=1 --pretty=format:%aI_%h`
-
-ldflags := -ldflags "-w -s -X main.version=$(version) -X main.build=$(build_time) -X main.commit=$(commit)"
-
 app_name := subs-api-v6
-go_version := go1.16
+go_version := go1.18
 
 current_dir := $(shell pwd)
 sys := $(shell uname -s)
@@ -18,24 +12,31 @@ build_dir_name := build
 build_dir := $(current_dir)/$(build_dir_name)
 
 default_exec := $(build_dir)/$(sys)/$(hardware)/$(app_name)
-compile_default_exec := go build -o $(default_exec) $(ldflags) -tags production -v $(src_dir)
+compile_default_exec := go build -o $(default_exec) -tags production -v $(src_dir)
 
 linux_x86_exec := $(build_dir)/linux/x86/$(app_name)
-compile_linux_x86 := GOOS=linux GOARCH=amd64 go build -o $(linux_x86_exec) $(ldflags) -tags production -v $(src_dir)
+compile_linux_x86 := GOOS=linux GOARCH=amd64 go build -o $(linux_x86_exec) -tags production -v $(src_dir)
 
 linux_arm_exec := $(build_dir)/linux/arm/$(app_name)
-compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec) $(ldflags) -tags production -v $(src_dir)
+compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec) -tags production -v $(src_dir)
 
 server_dir := /data/node/go/bin
 
-.PHONY: dev
-dev :
-	go build -o $(default_exec) $(ldflags) -v $(src_dir)
-
 .PHONY: build
-build :
+build : version
 	$(compile_default_exec)
 
+.PHONY: run
+run :
+	$(default_exec) -production=false -livemode=false
+
+.PHONY: version
+version :
+	git describe --tags > build/version
+	git log --max-count=1 --pretty=format:%aI_%h > build/commit
+	date +%FT%T%z > build/build_time
+
+.PHONY: outdir
 outdir :
 	mkdir -p $(build_dir)
 
@@ -48,10 +49,6 @@ devconfig : outdir
 	rsync $(local_config_file) ./cmd/iap-poller/build/$(config_file_name)
 	mkdir -p ./cmd/subs_sandbox/build
 	rsync $(local_config_file) ./cmd/subs_sandbox/build/$(config_file_name)
-
-.PHONY: run
-run :
-	$(default_exec) -production=false -livemode=false
 
 .PHONY: amd64
 amd64 :
