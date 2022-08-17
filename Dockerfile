@@ -1,11 +1,17 @@
-FROM golang:1.18
+FROM golang:1.18 AS builder
 
 ENV GOPROXY="https://goproxy.io"
-WORKDIR /usr/src/app
-
-EXPOSE 8206
-CMD ["ftc-api-v6", "-production=false", "-livemode=false"]
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
 
 COPY . .
-RUN go mod download && go mod verify
-RUN go build -o /usr/local/bin/ftc-api-v6 -tags production .
+RUN go build -o /app/out/ftc-api-v6 -tags production .
+RUN chmod +x /app/out/ftc-api-v6
+
+FROM ubuntu
+EXPOSE 8206
+CMD ["ftc-api-v6", "-production=false", "-livemode=false"]
+WORKDIR /web
+COPY --from=builder /app/out/ftc-api-v6 .
+
