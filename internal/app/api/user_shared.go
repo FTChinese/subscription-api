@@ -18,6 +18,9 @@ type UserShared struct {
 	EmailService letter.Service
 }
 
+// SendEmailVerification sends an email to user to verify email.
+// Client could specify a sourceURL to determine the URL used to perform verification.
+// If the url is empty, a default one will be used.
 func (us UserShared) SendEmailVerification(baseAccount account.BaseAccount, sourceURL string, isSignUp bool) error {
 
 	defer us.Logger.Sync()

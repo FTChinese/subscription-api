@@ -7,6 +7,7 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
+	"io"
 	"net/http"
 )
 
@@ -98,10 +99,14 @@ func (router AccountRouter) RequestVerification(w http.ResponseWriter, req *http
 
 	var params input.ReqEmailVrfParams
 
-	// Ignore empty body for backward-compatibility.
 	if err := gorest.ParseJSON(req.Body, &params); err != nil {
-		_ = render.New(w).BadRequest(err.Error())
-		return
+		// Ignore empty body for backward-compatibility.
+		// Apps does not provide a source url since they are not hosted
+		// on any website. In such case use fallback url.
+		if err != io.EOF {
+			_ = render.New(w).BadRequest(err.Error())
+			return
+		}
 	}
 
 	// Retrieve this user info by user id.
