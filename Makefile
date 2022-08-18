@@ -109,4 +109,4 @@ dockerbuild :
 
 .PHONY : dockerrun
 dockerrun :
-	docker run -p 8206:8206 --network my-api subs-api
+	docker run --name subs-api -p 8206:8206 --network my-api subs-api
