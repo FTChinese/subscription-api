@@ -102,3 +102,11 @@ network :
 .PHONY: mysql
 mysql :
 	docker run -d -p 3306:3306 --network my-api --network-alias mysql --name dev-mysql -v api-mysql-data:/var/lib/mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:5.7 --default-time-zone='+00:00'
+
+.PHONY : dockerbuild
+dockerbuild :
+	docker build -t subs-api .
+
+.PHONY : dockerrun
+dockerrun :
+	docker run -p 8206:8206 --network my-api subs-api
