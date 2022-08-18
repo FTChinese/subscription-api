@@ -9,22 +9,20 @@ sys := $(shell uname -s)
 hardware := $(shell uname -m)
 src_dir := $(current_dir)
 build_dir_name := build
-build_dir := $(current_dir)/$(build_dir_name)
+out_dir := $(current_dir)/out
+build_dir := $(current_dir)/build
 
-default_exec := $(build_dir)/$(sys)/$(hardware)/$(app_name)
-compile_default_exec := go build -o $(default_exec) -tags production -v $(src_dir)
+default_exec := $(out_dir)/$(sys)/$(hardware)/$(app_name)
 
-linux_x86_exec := $(build_dir)/linux/x86/$(app_name)
-compile_linux_x86 := GOOS=linux GOARCH=amd64 go build -o $(linux_x86_exec) -tags production -v $(src_dir)
+linux_x86_exec := $(out_dir)/linux/x86/$(app_name)
 
-linux_arm_exec := $(build_dir)/linux/arm/$(app_name)
-compile_linux_arm := GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec) -tags production -v $(src_dir)
+linux_arm_exec := $(out_dir)/linux/arm/$(app_name)
 
 server_dir := /data/node/go/bin
 
 .PHONY: build
 build : version
-	$(compile_default_exec)
+	go build -o $(default_exec) -tags production -v $(src_dir)
 
 .PHONY: run
 run :
@@ -38,13 +36,13 @@ version :
 
 .PHONY: amd64
 amd64 :
-	@echo "Build production linux version $(version)"
-	$(compile_linux_x86)
+	@echo "Build production linux version"
+	GOOS=linux GOARCH=amd64 go build -o $(linux_x86_exec) -tags production -v $(src_dir)
 
 .PHONY: arm
 arm :
-	@echo "Build production arm version $(version)"
-	$(compile_linux_arm)
+	@echo "Build production arm version"
+	GOOS=linux GOARM=7 GOARCH=arm go build -o $(linux_arm_exec) -tags production -v $(src_dir)
 
 .PHONY: install-go
 install-go:
@@ -52,7 +50,7 @@ install-go:
 	gvm install $(go_version)
 
 .PHONY: config
-config : outdir
+config : builddir
 	@echo "* Pulling config  file from server"
 	# Download configuration file
 	rsync -v node@tk11:/home/node/config/$(config_file_name) $(build_dir)/$(config_file_name)
@@ -77,12 +75,12 @@ clean :
 	go clean -x
 	rm -rf build/*
 
-.PHONY: outdir
-outdir :
+.PHONY: builddir
+builddir :
 	mkdir -p $(build_dir)
 
 .PHONY: devconfig
-devenv : outdir
+devenv : builddir
 	rsync $(HOME)/config/env.dev.toml $(build_dir)/$(config_file_name)
 	mkdir -p ./cmd/aliwx-poller/build
 	rsync $(local_config_file) ./cmd/aliwx-poller/build/$(config_file_name)
@@ -92,7 +90,7 @@ devenv : outdir
 	rsync $(local_config_file) ./cmd/subs_sandbox/build/$(config_file_name)
 
 .PHONY: dockerconfig
-dockerenv : outdir
+dockerenv : builddir
 	rsync $(HOME)/config/env.docker.toml $(build_dir)/$(config_file_name)
 
 .PHONY: network
