@@ -36,20 +36,6 @@ version :
 	git log --max-count=1 --pretty=format:%aI_%h > build/commit
 	date +%FT%T%z > build/build_time
 
-.PHONY: outdir
-outdir :
-	mkdir -p $(build_dir)
-
-.PHONY: devconfig
-devconfig : outdir
-	rsync $(local_config_file) $(build_dir)/$(config_file_name)
-	mkdir -p ./cmd/aliwx-poller/build
-	rsync $(local_config_file) ./cmd/aliwx-poller/build/$(config_file_name)
-	mkdir -p ./cmd/iap-poller/build
-	rsync $(local_config_file) ./cmd/iap-poller/build/$(config_file_name)
-	mkdir -p ./cmd/subs_sandbox/build
-	rsync $(local_config_file) ./cmd/subs_sandbox/build/$(config_file_name)
-
 .PHONY: amd64
 amd64 :
 	@echo "Build production linux version $(version)"
@@ -90,3 +76,29 @@ restart :
 clean :
 	go clean -x
 	rm -rf build/*
+
+.PHONY: outdir
+outdir :
+	mkdir -p $(build_dir)
+
+.PHONY: devconfig
+devenv : outdir
+	rsync $(HOME)/config/env.dev.toml $(build_dir)/$(config_file_name)
+	mkdir -p ./cmd/aliwx-poller/build
+	rsync $(local_config_file) ./cmd/aliwx-poller/build/$(config_file_name)
+	mkdir -p ./cmd/iap-poller/build
+	rsync $(local_config_file) ./cmd/iap-poller/build/$(config_file_name)
+	mkdir -p ./cmd/subs_sandbox/build
+	rsync $(local_config_file) ./cmd/subs_sandbox/build/$(config_file_name)
+
+.PHONY: dockerconfig
+dockerenv : outdir
+	rsync $(HOME)/config/env.docker.toml $(build_dir)/$(config_file_name)
+
+.PHONY: network
+network :
+	docker network create my-api
+
+.PHONY: mysql
+mysql :
+	docker run -d -p 3306:3306 --network my-api --network-alias mysql --name dev-mysql -v api-mysql-data:/var/lib/mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:5.7 --default-time-zone='+00:00'
