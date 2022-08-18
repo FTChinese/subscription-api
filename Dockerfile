@@ -11,7 +11,7 @@ RUN chmod +x /app/out/ftc-api-v6
 
 FROM ubuntu
 EXPOSE 8206
-CMD ["/web/ftc-api-v6", "-production=false", "-livemode=false"]
-WORKDIR /web
+WORKDIR /app
+CMD ["./ftc-api-v6", "-production=false", "-livemode=false"]
 COPY --from=builder /app/out/ftc-api-v6 .
 
