@@ -9,6 +9,7 @@ services:
 
   mysql:
     image: mysql:5.7
+    command: ["mysqld", "--default-time-zone='+00:00"]
     volumes:
       - api-mysql-data:/var/lib/mysql
     environment:
