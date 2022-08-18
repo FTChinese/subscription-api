@@ -34,7 +34,7 @@ type ServerStatus struct {
 
 func StartServer(s ServerStatus) {
 	logger := config.MustGetLogger(s.Production)
-	myDBs := db.MustNewMyDBs(s.Production)
+	myDBs := db.MustNewMyDBs()
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
 	// Set the cache default expiration and cleanup interval both to 2 hours.

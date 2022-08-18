@@ -31,7 +31,7 @@ var (
 func init() {
 	faker.MustSetupViper()
 
-	SplitDB = db.MustNewMyDBs(false)
+	SplitDB = db.MustNewMyDBs()
 	DB = SplitDB.Write
 	Postman = postman.New(config.MustGetHanqiConn())
 	Redis = db.NewRedis(config.MustRedisAddress().Pick(false))

@@ -44,7 +44,7 @@ func task() {
 	log.Printf("Starting aliwx polling job at %s", time.Now().Format(time.RFC3339))
 
 	logger := config.MustGetLogger(production)
-	myDB := db.MustNewMyDBs(production)
+	myDB := db.MustNewMyDBs()
 
 	poller := poll.NewOrderPoller(myDB, logger)
 
@@ -58,7 +58,7 @@ func task() {
 
 func main() {
 	logger := config.MustGetLogger(production)
-	rwdMyDB := db.MustNewMyDBs(production)
+	rwdMyDB := db.MustNewMyDBs()
 
 	log.Println("Launching ali-wx poller...")
 

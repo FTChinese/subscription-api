@@ -56,11 +56,11 @@ func MustNewMySQL(c config.Connect) *sqlx.DB {
 	return db
 }
 
-func MustNewMyDBs(prod bool) ReadWriteMyDBs {
+func MustNewMyDBs() ReadWriteMyDBs {
 	return ReadWriteMyDBs{
-		Read:   MustNewMySQL(config.MustMySQLReadConn(prod)),
-		Write:  MustNewMySQL(config.MustMySQLWriteConn(prod)),
-		Delete: MustNewMySQL(config.MustMySQLDeleteConn(prod)),
+		Read:   MustNewMySQL(config.MustMySQLReadConn()),
+		Write:  MustNewMySQL(config.MustMySQLWriteConn()),
+		Delete: MustNewMySQL(config.MustMySQLDeleteConn()),
 	}
 }
 

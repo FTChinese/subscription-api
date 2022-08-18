@@ -23,40 +23,28 @@ func GetConn(key string) (Connect, error) {
 	return conn, nil
 }
 
-func MustMySQLConn(key string, prod bool) Connect {
-	var conn Connect
-	var err error
-
-	if prod {
-		conn, err = GetConn(key)
-	} else {
-		conn, err = GetConn("mysql.dev")
-	}
+func MustMySQLConn(key string) Connect {
+	conn, err := GetConn(key)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("Using mysql server %s. Production: %t", conn.Host, prod)
-
-	log.Printf("Got mysql ip %s", conn.Host)
+	log.Printf("Got MySQL %s ip %s", key, conn.Host)
 
 	return conn
 }
 
-func MustMySQLReadConn(prod bool) Connect {
-	log.Printf("Initializting MySQL read DB in %s", prodDev[prod])
-	return MustMySQLConn("mysql.read", prod)
+func MustMySQLReadConn() Connect {
+	return MustMySQLConn("mysql.read")
 }
 
-func MustMySQLWriteConn(prod bool) Connect {
-	log.Printf("Intializng MySQL write DB in %s", prodDev[prod])
-	return MustMySQLConn("mysql.write", prod)
+func MustMySQLWriteConn() Connect {
+	return MustMySQLConn("mysql.write")
 }
 
-func MustMySQLDeleteConn(prod bool) Connect {
-	log.Printf("Intializng MySQL delete DB in %s", prodDev[prod])
-	return MustMySQLConn("mysql.delete", prod)
+func MustMySQLDeleteConn() Connect {
+	return MustMySQLConn("mysql.delete")
 }
 
 func MustGetHanqiConn() Connect {
