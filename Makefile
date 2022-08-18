@@ -8,7 +8,6 @@ current_dir := $(shell pwd)
 sys := $(shell uname -s)
 hardware := $(shell uname -m)
 src_dir := $(current_dir)
-build_dir_name := build
 out_dir := $(current_dir)/out
 build_dir := $(current_dir)/build
 
