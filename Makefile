@@ -78,7 +78,7 @@ clean :
 builddir :
 	mkdir -p $(build_dir)
 
-.PHONY: devconfig
+.PHONY: devenv
 devenv : builddir
 	rsync $(HOME)/config/env.dev.toml $(build_dir)/$(config_file_name)
 	mkdir -p ./cmd/aliwx-poller/build
