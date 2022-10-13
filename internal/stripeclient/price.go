@@ -37,13 +37,24 @@ func (c Client) FetchPrice(id string) (*stripeSdk.Price, error) {
 	return c.sc.Prices.Get(id, nil)
 }
 
+func (c Client) fetchPrice(id string, s *semaphore.Weighted, priceCh chan<- price.StripePrice) {
+	defer s.Release(1)
+
+	p, err := c.FetchPrice(id)
+	// TODO: properly handle error
+	if err != nil {
+		return
+	}
+
+	priceCh <- price.NewStripePrice(p)
+}
+
 func (c Client) FetchPricesOf(ids []string) ([]price.StripePrice, error) {
 	defer c.logger.Sync()
 	sugar := c.logger.Sugar()
 	ctx := context.Background()
 
-	var priceStore = NewSyncPrices()
-	var anyErr error
+	priceCh := make(chan price.StripePrice)
 
 	for _, id := range ids {
 		if err := sem.Acquire(ctx, 1); err != nil {
@@ -52,30 +63,23 @@ func (c Client) FetchPricesOf(ids []string) ([]price.StripePrice, error) {
 		}
 
 		sugar.Infof("Start a new goroutine to fetch stripe price %s", id)
-		go func(id string) {
-			p, err := c.FetchPrice(id)
-			if err != nil {
-				sugar.Error(err)
-				anyErr = err
-			} else {
-				priceStore.Add(price.NewStripePrice(p))
-			}
-			sem.Release(1)
-			sugar.Infof("Release goroutine")
-		}(id)
+		go c.fetchPrice(id, sem, priceCh)
 	}
 
-	if anyErr != nil {
-		sugar.Error(anyErr)
-		return nil, anyErr
+	go func() {
+		if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
+			sugar.Error(err)
+		} else {
+			close(priceCh)
+		}
+	}()
+
+	var prices []price.StripePrice
+	for p := range priceCh {
+		prices = append(prices, p)
 	}
 
-	if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
-		sugar.Error(err)
-		return nil, err
-	}
-
-	return priceStore.Map(ids), nil
+	return prices, nil
 }
 
 func (c Client) SetPriceMeta(id string, meta map[string]string) (*stripeSdk.Price, error) {
