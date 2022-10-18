@@ -1,6 +1,6 @@
 # Data Type Definition
 
-Here documents common data types used for all everywhere, including this API, various backend service and clients.
+Here documents common data types used everywhere, including this API, various backend services and clients.
 
 ## Type Annotation
 
@@ -8,7 +8,7 @@ We use TypeScript interface to denote data types.
 
 ## Account
 
-A user's full account consists of 3 parts: base account data, wechat user info, and membership.
+A user's full complete consists of 3 parts: base account data, wechat user info, and membership.
 
 ### Base Account
 
