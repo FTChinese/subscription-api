@@ -33,7 +33,8 @@ func (env Env) UpdateDiscount(d price.Discount) error {
 // user is requesting a price.
 func (env Env) ListActiveDiscounts(priceID string, live bool) ([]price.Discount, error) {
 	var list = make([]price.Discount, 0)
-	err := env.dbs.Read.Select(
+	// Use write db to circumvent intermittent db sync failures.
+	err := env.dbs.Write.Select(
 		&list,
 		price.StmtListPriceActiveDiscounts,
 		priceID,

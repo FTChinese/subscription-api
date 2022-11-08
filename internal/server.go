@@ -477,6 +477,8 @@ func StartServer(s ServerStatus) {
 		// List discounts of a price.
 		// ?price_id=<string>
 		r.Route("/discounts", func(r chi.Router) {
+			// List discounts of specified price.
+			// Query parameter: ?price_id=<price id>
 			r.Get("/", paywallRouter.ListDiscounts)
 			// Creates a new discounts for a price.
 			r.Post("/", paywallRouter.CreateDiscount)
