@@ -133,6 +133,22 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 	_ = render.New(w).OK(p)
 }
 
+func (router PaywallRouter) LoadPrice(w http.ResponseWriter, req *http.Request) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	id, _ := xhttp.GetURLParam(req, "id").ToString()
+
+	ftcPrice, err := router.paywallRepo.RetrievePaywallPrice(id, router.live)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(ftcPrice)
+}
+
 // UpdatePrice changes a price's Title, Nickname, or StripePriceID fields
 // Input body:
 // - description?: string;

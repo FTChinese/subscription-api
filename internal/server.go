@@ -466,6 +466,7 @@ func StartServer(s ServerStatus) {
 				Get("/", paywallRouter.ListPrices)
 			// Create a price for a product. The price's live mode is determined by client.
 			r.Post("/", paywallRouter.CreatePrice)
+			r.Get("/{id}", paywallRouter.LoadPrice)
 			// Activate a price under a product. All its sibling price of same tier and kind will be deactivated.
 			// To activate an introductory price ,use PATCH /products/{id}/intro.
 			r.Post("/{id}/activate", paywallRouter.ActivatePrice)
