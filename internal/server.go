@@ -480,6 +480,7 @@ func StartServer(s ServerStatus) {
 			// List discounts of specified price.
 			// Query parameter: ?price_id=<price id>
 			r.Get("/", paywallRouter.ListDiscounts)
+			r.Get("/{id}", paywallRouter.LoadDiscount)
 			// Creates a new discounts for a price.
 			r.Post("/", paywallRouter.CreateDiscount)
 			// Delete discount and refresh the related price.

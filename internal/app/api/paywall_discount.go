@@ -65,6 +65,22 @@ func (router PaywallRouter) ListDiscounts(w http.ResponseWriter, req *http.Reque
 	_ = render.New(w).OK(discounts)
 }
 
+func (router PaywallRouter) LoadDiscount(w http.ResponseWriter, req *http.Request) {
+	id, err := xhttp.GetURLParam(req, "id").ToString()
+	if err != nil {
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	discount, err := router.paywallRepo.LoadDiscount(id)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(discount)
+}
+
 func (router PaywallRouter) DropDiscount(w http.ResponseWriter, req *http.Request) {
 	id, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
