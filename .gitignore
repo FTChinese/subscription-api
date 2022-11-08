@@ -22,3 +22,4 @@ _docs/build
 .env
 *.pem
 _doc/*.pdf
+.fleet
