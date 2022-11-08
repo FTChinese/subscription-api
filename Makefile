@@ -79,7 +79,7 @@ builddir :
 	mkdir -p $(build_dir)
 
 .PHONY: devenv
-devenv : builddir
+dev-env : builddir
 	rsync $(HOME)/config/env.dev.toml $(build_dir)/$(config_file_name)
 	mkdir -p ./cmd/aliwx-poller/build
 	rsync $(local_config_file) ./cmd/aliwx-poller/build/$(config_file_name)
