@@ -352,6 +352,7 @@ func StartServer(s ServerStatus) {
 			// ?refresh=true
 			r.Get("/{id}", stripeRoutes.LoadStripePrice)
 			// ?active_only=<true|false>
+			// To create/update/delete a coupon, use the /cms section.`
 			r.Get("/{id}/coupons", stripeRoutes.ListPriceCoupons)
 		})
 
