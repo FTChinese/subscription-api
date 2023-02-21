@@ -60,6 +60,10 @@ func (routes StripeRoutes) LoadStripeCoupon(w http.ResponseWriter, req *http.Req
 // Do not use this to change a coupon's status field since the status field
 // is not stored on Stripe's side.
 // Limited only to internal use.
+// Request body:
+// * priceId: string;
+// * startUtc: string;
+// * endUtc: string;
 func (routes StripeRoutes) UpdateStripeCoupon(w http.ResponseWriter, req *http.Request) {
 	defer routes.logger.Sync()
 	sugar := routes.logger.Sugar()
