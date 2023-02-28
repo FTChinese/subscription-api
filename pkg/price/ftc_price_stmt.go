@@ -27,17 +27,17 @@ SET nickname = :nickname,
 	stripe_price_id = :stripe_price_id,
 	period_count = :period_count,
 	title = :title
-WHERE id =:price_id
+WHERE id = :price_id
 LIMIT 1
 `
 
 // StmtActivatePrice turns a price to activated state.
-// Used together with the above statement to ensure that
+// Used together with the StmtDeactivateSiblingPrices to ensure
 // uniqueness of edition under a product.
 const StmtActivatePrice = `
 UPDATE subs_product.price
 SET is_active = :is_active
-WHERE id =:price_id
+WHERE id = :price_id
 LIMIT 1
 `
 
