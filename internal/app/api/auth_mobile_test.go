@@ -1,26 +1,37 @@
 package api
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/FTChinese/subscription-api/faker"
+	"github.com/FTChinese/subscription-api/internal/pkg/letter"
+	"github.com/FTChinese/subscription-api/internal/repository/accounts"
+	"github.com/FTChinese/subscription-api/internal/repository/shared"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/guregu/null"
 	"go.uber.org/zap/zaptest"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
+
+func newMockAuthRouter(t *testing.T) AuthRouter {
+	myDB := db.MockMySQL()
+	logger := zaptest.NewLogger(t)
+	return NewAuthRouter(UserShared{
+		Repo:         accounts.New(myDB, logger),
+		ReaderRepo:   shared.NewReaderCommon(myDB),
+		SMSClient:    ztsms.NewClient(logger),
+		EmailService: letter.NewService(logger),
+	})
+}
 
 func TestAuthRouter_VerifySMSCode(t *testing.T) {
 
 	repo := test.NewRepo()
 
-	router := NewAuthRouter(
-		db.MockMySQL(),
-		zaptest.NewLogger(t),
-		test.Postman,
-	)
+	router := newMockAuthRouter(t)
 
 	type args struct {
 		w   *httptest.ResponseRecorder
@@ -74,7 +85,7 @@ func TestAuthRouter_LinkMobile(t *testing.T) {
 
 	repo := test.NewRepo()
 
-	router := NewAuthRouter(test.SplitDB, zaptest.NewLogger(t), test.Postman)
+	router := newMockAuthRouter(t)
 
 	type args struct {
 		w   *httptest.ResponseRecorder
