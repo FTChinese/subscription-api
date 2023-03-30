@@ -1,6 +1,8 @@
 package invoice
 
 import (
+	"time"
+
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
@@ -9,7 +11,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/guregu/null"
-	"time"
 )
 
 // Invoice is the result of a successfully paid order.
@@ -27,6 +28,7 @@ import (
 // * An one-time-purchase membership, regardless of current edition,
 // decides to select subscription model, either via IAP or stripe,
 // and the remaining period of current subscription is frozen into a Invoice.
+// Save into premium.ftc_invoice
 type Invoice struct {
 	ID         string `json:"id" db:"id"`
 	CompoundID string `json:"compoundId" db:"compound_id"`

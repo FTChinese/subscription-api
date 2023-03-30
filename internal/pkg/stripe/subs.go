@@ -1,6 +1,8 @@
 package stripe
 
 import (
+	"time"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
@@ -10,7 +12,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
-	"time"
 )
 
 func getStatus(sts stripe.SubscriptionStatus) enum.SubsStatus {
@@ -21,6 +22,7 @@ func getStatus(sts stripe.SubscriptionStatus) enum.SubsStatus {
 // Subs contains the essential data of a stripe subscription.
 // It is created from stripe's subscription upon initial creation,
 // or refresh, or upgrade.
+// Save into table premium.stripe_subscription
 type Subs struct {
 	IsFromStripe bool   `json:"-"` // Flat indicating whether the data comes from Stripe API
 	ID           string `json:"id" db:"id"`

@@ -6,7 +6,7 @@ import (
 
 // CouponRedeemed records which invoice has redeemed
 // a coupon.
-// One an invoice has any coupon applied to it, it can
+// Once an invoice has any coupon applied to it, it can
 // no longer use any others.
 type CouponRedeemed struct {
 	FtcID       string      `json:"ftcId" db:"ftc_user_id"`

@@ -62,10 +62,12 @@ Requires header `X-User-Id`
 * POST `/stripe/subs/{id}/reactivate` Undo a scheduled cancellation of subscription.
 * GET `/stripe/subs/{id}/default-payment-method` Get the default payment method of a subscription.
 * POST `/stripe/subs/{id}/default-payment-method` Modify a subscription's default payment method.
+* GET `/stripe/subs/{id}/latest-invoice` Get latest invocie
+* GET `/stripe/subs/{id}/latest-invoice/any-coupon` Is there any coupon applied to latest invoice.
 
 ### Invoice
 
-* GET `/stripe/invoices/{id}/coupon-applied` Check if an invoice has any coupon applied on it.
+* GET `/stripe/invoices/{id}` Get an invoice.
 
 ### 注意
 
