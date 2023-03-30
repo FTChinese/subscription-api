@@ -367,36 +367,36 @@ An `Invoice` object:
 
 ```json
 {
-    "id": "in_1K6TCdBzTK0hABgJxiI7nfaI",
+    "id": "in_1KsLy7BzTK0hABgJbbOw0VgV",
     "accountCountry": "GB",
     "accountName": "THE FINANCIAL TIMES LIMITED",
-    "amountDue": 26999,
-    "amountPaid": 26999,
+    "amountDue": 3999,
+    "amountPaid": 3999,
     "amountRemaining": 0,
     "attemptCount": 1,
     "attempted": true,
     "autoAdvance": false,
-    "billingReason": "subscription_cycle",
-    "chargeId": "ch_3K6U9iBzTK0hABgJ1WEGr1jo",
+    "billingReason": "subscription_create",
+    "chargeId": "ch_3KsLy7BzTK0hABgJ1s7fE4Sb",
     "collectionMethod": "charge_automatically",
     "currency": "gbp",
-    "customerId": "cus_GMB9tFWvWtmY07",
+    "customerId": "cus_LZUxfDsrEGhd2h",
     "defaultPaymentMethod": "",
     "discounts": [],
-    "hostedInvoiceUrl": "https://invoice.stripe.com/i/acct_1EpW3EBzTK0hABgJ/live_YWNjdF8xRXBXM0VCelRLMGhBQmdKLF9LbTFGZ1pJQUdaSXpmdE1OQjhJcnNQM0VrUFJPYktILDY3NDkzODQ402000aPSch3I?s=ap",
-    "invoicePdf": "https://pay.stripe.com/invoice/acct_1EpW3EBzTK0hABgJ/live_YWNjdF8xRXBXM0VCelRLMGhBQmdKLF9LbTFGZ1pJQUdaSXpmdE1OQjhJcnNQM0VrUFJPYktILDY3NDkzODQ402000aPSch3I/pdf?s=ap",
-    "liveMode": true,
+    "hostedInvoiceUrl": "https://invoice.stripe.com/i/acct_1EpW3EBzTK0hABgJ/test_YWNjdF8xRXBXM0VCelRLMGhBQmdKLF9MWlV5a2g4dGVwWVMwVnVqTlVhdmpCeUdiZHRSZk5ELDQ5MjgxMTg00200ZEI67rqJ?s=ap",
+    "invoicePdf": "https://pay.stripe.com/invoice/acct_1EpW3EBzTK0hABgJ/test_YWNjdF8xRXBXM0VCelRLMGhBQmdKLF9MWlV5a2g4dGVwWVMwVnVqTlVhdmpCeUdiZHRSZk5ELDQ5MjgxMTg00200ZEI67rqJ/pdf?s=ap",
+    "liveMode": false,
     "nextPaymentAttempt": 0,
-    "number": "36299EB4-0003",
+    "number": "1D6C8171-0001",
     "paid": true,
-    "paymentIntentId": "pi_3K6U9iBzTK0hABgJ1vOemU5k",
-    "periodEndUtc": "2021-12-14T05:04:36Z",
-    "periodStartUtc": "2020-12-14T05:04:36Z",
-    "receiptNumber": "2861-9757",
+    "paymentIntentId": "pi_3KsLy7BzTK0hABgJ1963s1ot",
+    "periodEndUtc": "2022-04-25T07:04:23Z",
+    "periodStartUtc": "2022-04-25T07:04:23Z",
+    "receiptNumber": "2686-5534",
     "status": "paid",
-    "subscriptionId": "sub_GMBA8uRcJtNXQ0",
-    "total": 26999,
-    "created": 1639458327
+    "subscriptionId": "sub_1KsLy7BzTK0hABgJKv02yjaV",
+    "total": 3999,
+    "created": 1650870263
 }
 ```
 
@@ -409,6 +409,20 @@ GET /stripe/subs/{id}/latest-invoice/any-coupon
 ```
 
 Response is a `CouponRedeemed` object. It always returned the same data structure with all fields set to zero values if not found.
+
+```json
+{
+    "ftcId": "4eab2991-9669-41c2-b51e-75e1a0e76183",
+    "invoiceId": "in_1KsLy7BzTK0hABgJbbOw0VgV",
+    "liveMode": false,
+    "subsId": "sub_1KsLy7BzTK0hABgJKv02yjaV",
+    "couponId": "sj2iz99D",
+    "createdUtc": "2022-07-25T09:13:04Z",
+    "redeemedUtc": "2022-07-25T09:13:04Z"
+}
+```
+
+Empty response:
 
 ```json
 {
