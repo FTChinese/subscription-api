@@ -408,7 +408,7 @@ Used to check if there's any coupon applied to a subscription's latest invoice. 
 GET /stripe/subs/{id}/latest-invoice/any-coupon
 ```
 
-Response is a `CouponRedeemed` object. It always returned the same data structure with all fields set to zero values if not found.
+Response is a `CouponRedeemed` object. It always returns the same data structure with all fields set to zero values if not found.
 
 ```json
 {
