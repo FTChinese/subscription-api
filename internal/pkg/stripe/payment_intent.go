@@ -18,7 +18,7 @@ type PaymentIntent struct {
 	CustomerID         string                                 `json:"customerId" db:"customer_id"`
 	InvoiceID          string                                 `json:"invoiceId" db:"invoice_id"`
 	LiveMode           bool                                   `json:"liveMode" db:"live_mode"`
-	NextAction         PINextActionJSON                       `json:"next_action" db:"next_action"`
+	NextAction         PINextActionJSON                       `json:"nextAction" db:"next_action"`
 	PaymentMethodID    string                                 `json:"paymentMethodId" db:"payment_method_id"`
 	PaymentMethodTypes sq.StringList                          `json:"-" db:"payment_method_types"`
 	ReceiptEmail       string                                 `json:"-" db:"receipt_email"`
