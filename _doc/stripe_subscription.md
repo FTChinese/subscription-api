@@ -93,9 +93,13 @@ POST /stripe/subs
 
 * `priceId: string` Required
 * `introductoryPriceId?: string` Optional
-* `coupon?: string` Optional
+* `coupon?: string` Optional, Stripe coupon id.
 * `defaultPaymentMethod: string` Optional but recommended.
 * `idempotency?: string` Optional. Only required for Android SDK.
+
+`introductoryPriceId`和`coupon`是互斥的，一个人享用intro price的时候，是不应该有coupon的。
+
+当coupon存在的时候，既可以用于新订阅，也可以用在现有订阅。但是请注意，coupon一定是从客户端发起的。对于新用户，在订阅的时候就默认带上，但是对于已有用户则不同，由于已有用户默认是Stripe从银行直接扣款，因此，coupon需要用户在订阅界面点击额外的领取按钮，更新订阅，所以coupon的使用对于新老用户而言是不同的操作。如果在coupon存在期间，现有订阅用户没有去订阅界面领取，那么是不可能使用本次coupon的。
 
 ### Workflow
 
