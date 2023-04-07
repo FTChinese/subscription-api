@@ -288,13 +288,49 @@ See the subscription object.
 POST /stripe/subs/{id}/cancel
 ```
 
+* `id`是Stripe的订阅id
+
 ### Request
 
 NULL
 
+### Workflow
+
+1. 从Header的`X-User-Id`获取uuid；
+
+2. 获取路径中的`id`，这是Stripe的订阅id；
+
+3. 开始锁表；
+
+4. 根据uuid从vip表中取出会员记录；
+
+5. 验证会员数据：是否存在、payment method是不是stripe、stripe订阅id是不是存在、订阅id是否与请求中传入的id一致；
+
+6. 检测auto renew字段，如果已经是false，直接返回当前会员数据，不做任何操作；
+
+7. 调用Stripe sdk请求取消该订阅；
+
+8. 更新vip表中该会员记录；
+
+9. 锁表结束。
+
+10. 返回数据给客户端。
+
+11. 后台更新本次更改涉及到的数据：
+
+  * stripe_subscription
+
+  * stripe_discount，如果存在
+
+  * stripe_invoice
+
+  * stripe_payment_intent，如果存在
+
+  * 本分会员变更前后对比数据到member_versioned.
+
 ### Response
 
-The subscription object.
+见新建订阅返回数据
 
 ## Reactivate subscription
 
@@ -306,7 +342,7 @@ Reactivate a canceled subscription before its current period ends
 
 ### Response
 
-The subscription object
+见新建订阅返回数据
 
 ## Load Subscription's Default Payment Method
 
