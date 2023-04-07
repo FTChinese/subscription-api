@@ -244,7 +244,7 @@ GET /stripe/subs/{id}
 
 ### Response
 
-See the subscription object at the start of this page.
+见本页开始部分的subscription object
 
 ## Update a Subscription
 
@@ -270,7 +270,7 @@ Change a subscription to other price.
 
 ### Response
 
-See the subscription object.
+见新建订阅返回数据
 
 ## Refresh Subscription
 
@@ -280,7 +280,7 @@ POST /stripe/subs/{id}/refresh
 
 ### Response
 
-See the subscription object.
+见新建订阅返回数据
 
 ## Cancel subscription
 
