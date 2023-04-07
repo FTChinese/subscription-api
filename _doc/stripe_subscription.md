@@ -73,6 +73,20 @@ The Subscription object:
 }
 ```
 
+对订阅的变更操作结束后都会存储或更新一下数据
+
+* stripe_subscription
+
+* stripe_discount，如果存在
+
+* stripe_invoice
+
+* stripe_payment_intent，如果存在
+
+* 备份会员变更前后对比数据到member_versioned.
+
+为不影响响应速度，这些写操作在goroutine中完成，它们存在失败的可能性，但是这些不是关键数据。
+
 ## 新建订阅
 
 ```
@@ -316,17 +330,7 @@ NULL
 
 10. 返回数据给客户端。
 
-11. 后台更新本次更改涉及到的数据：
-
-  * stripe_subscription
-
-  * stripe_discount，如果存在
-
-  * stripe_invoice
-
-  * stripe_payment_intent，如果存在
-
-  * 备份会员变更前后对比数据到member_versioned.
+11. 后台更新本次更改涉及到的数据
 
 ### Response
 
