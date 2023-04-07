@@ -1,6 +1,10 @@
 package internal
 
 import (
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/access"
 	"github.com/FTChinese/subscription-api/internal/app/api"
@@ -18,9 +22,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/patrickmn/go-cache"
-	"log"
-	"net/http"
-	"time"
 )
 
 type ServerStatus struct {
@@ -339,6 +340,7 @@ func StartServer(s ServerStatus) {
 		})
 	})
 
+	// All the following endpoints require `X-User-Id` header set except publishable-key and prices section.
 	r.Route("/stripe", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 

@@ -1,5 +1,7 @@
 ## Subscription
 
+**注意**：本部分所有http请求要求设置`X-User-Id`字段，用以识别用户身份。
+
 The Subscription object:
 
 ```json
