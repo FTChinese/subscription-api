@@ -326,7 +326,7 @@ NULL
 
   * stripe_payment_intent，如果存在
 
-  * 本分会员变更前后对比数据到member_versioned.
+  * 备份会员变更前后对比数据到member_versioned.
 
 ### Response
 
