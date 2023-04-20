@@ -1,7 +1,7 @@
 package subrepo
 
 import (
-	"github.com/FTChinese/go-rest"
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
@@ -102,12 +102,12 @@ func (env Env) RetrieveOrder(orderID string) (ftcpay.Order, error) {
 	return order, nil
 }
 
-func (env Env) countOrders(ids ids.UserIDs) (int64, error) {
+func (env Env) countOrders(uids ids.UserIDs) (int64, error) {
 	var count int64
 	err := env.dbs.Read.Get(
 		&count,
 		ftcpay.StmtCountOrders,
-		ids.BuildFindInSet(),
+		uids.BuildFindInSet(),
 	)
 
 	if err != nil {
