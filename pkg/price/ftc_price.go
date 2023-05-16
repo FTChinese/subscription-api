@@ -1,13 +1,16 @@
 package price
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/lib/enc"
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
-	"strings"
 )
 
 type FtcUpdateParams struct {
@@ -148,6 +151,39 @@ func New(p FtcCreationParams, live bool) FtcPrice {
 		EndUTC:        p.EndUTC,
 		CreatedUTC:    chrono.TimeNow(),
 	}
+}
+
+// Active generate a hash for a price active under a product.
+// A product should not have duplicate prices with the same features:
+// * edition
+// * kind
+// * mode
+func (p FtcPrice) ActiveHash() string {
+	f := p.uniqueFeatures()
+	return enc.HexStringSum(f)
+}
+
+// uniqueFeatures is a string to uniquely
+// identify an active price of a product, in format:
+// <source>.<tier>.<cycle>.<kind>.<mode>
+// * source: ftc or stripe
+// * tier: standard or premium
+// * cycle: year or month
+// * kind: one_time or recurring
+// * mode: live or sandbox.
+// In theory there are a total of 2^5 entries.
+// However, a premium edition usually does not have
+// month and one_time options.
+func (p FtcPrice) uniqueFeatures() string {
+	return fmt.Sprintf("ftc.%s.%s.%s.%s", p.Tier.String(), p.Cycle.String(), p.Kind, modeStr(p.LiveMode))
+}
+
+func modeStr(b bool) string {
+	if b {
+		return "live"
+	}
+
+	return "sandbox"
 }
 
 func (p FtcPrice) IsZero() bool {
