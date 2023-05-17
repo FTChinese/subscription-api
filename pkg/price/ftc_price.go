@@ -7,8 +7,8 @@ import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/lib/enc"
 	"github.com/FTChinese/subscription-api/lib/validator"
+	"github.com/FTChinese/subscription-api/pkg/conv"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/guregu/null"
 )
@@ -160,7 +160,7 @@ func New(p FtcCreationParams, live bool) FtcPrice {
 // * mode
 func (p FtcPrice) ActiveHash() string {
 	f := p.uniqueFeatures()
-	return enc.HexStringSum(f)
+	return conv.HashString(f)
 }
 
 // uniqueFeatures is a string to uniquely

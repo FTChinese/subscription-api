@@ -1,4 +1,4 @@
-package sq
+package conv
 
 import (
 	"database/sql/driver"

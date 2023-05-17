@@ -1,4 +1,4 @@
-package collection
+package conv
 
 type StringSet map[string]interface{}
 
