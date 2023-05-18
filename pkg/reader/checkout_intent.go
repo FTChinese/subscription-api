@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/pkg/price"
 )
@@ -38,9 +39,9 @@ func NewCheckoutIntentStripe(m Membership, item CartItemStripe) CheckoutIntent {
 
 	// Stripe -> Stripe
 	case enum.PayMethodStripe:
-		// Save tier.
+		// Same tier.
 		if m.Tier == item.Recurring.Tier {
-			// Save edition
+			// Same edition
 			if m.Cycle == item.Recurring.PeriodCount.EqCycle() {
 				if item.HasCoupon() {
 					return CheckoutIntent{
