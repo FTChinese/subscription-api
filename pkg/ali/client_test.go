@@ -1,19 +1,19 @@
 package ali
 
 import (
+	"testing"
+
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/ids"
-	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
 	"go.uber.org/zap/zaptest"
-	"testing"
 )
 
 func TestAliPayClient_CreateOrder(t *testing.T) {
 
 	faker.SeedGoFake()
 
-	client := NewPayClient(test.AliApp, zaptest.NewLogger(t))
+	client := NewPayClient(MustInitApp(), zaptest.NewLogger(t))
 
 	type args struct {
 		or OrderReq
@@ -81,7 +81,7 @@ func TestAliPayClient_CreateOrder(t *testing.T) {
 }
 
 func TestAliPayClient_QueryOrder(t *testing.T) {
-	c := NewPayClient(test.AliApp, zaptest.NewLogger(t))
+	c := NewPayClient(MustInitApp(), zaptest.NewLogger(t))
 
 	resp, err := c.QueryOrder("FT8F0438FFE67C7443")
 
