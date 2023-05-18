@@ -5,37 +5,75 @@ import (
 	"testing"
 )
 
-func TestNewHexBin(t *testing.T) {
-	hash := MD5ToHex(`hello world`)
+func TestDecodeHexString(t *testing.T) {
+	inStr := `hello world`
+	hash := MD5ToHex(inStr)
 
-	hb, err := NewHexBin(hash)
+	hb, err := DecodeHexString(hash)
 	if err != nil {
 		t.Error(err)
 	}
 
-	t.Logf("Hashed: %s", hb)
-	t.Logf("Hashed bin: %b", hb)
-
-	jsonOut, err := hb.MarshalJSON()
-	if err != nil {
-		t.Error(err)
+	if hb.String() != `hello world` {
+		t.Errorf("Execpted %s, got %s", inStr, hb.String())
 	}
-	t.Logf("JSON string: %s", jsonOut)
+
+	t.Logf("Decoded hex: %b", hb)
+}
+
+func TestJSONUnmarshal(t *testing.T) {
+	inStr := `hello world`
+	hash := MD5ToHex(inStr)
 
 	jsonIn := []byte(`"` + hash + `"`)
 	var target string
-	err = json.Unmarshal(jsonIn, &target)
+	err := json.Unmarshal(jsonIn, &target)
 	if err != nil {
 		t.Error(err)
 	}
 	t.Logf("Parsed json: %s", target)
+}
 
-	var parsed HexBin
-	err = parsed.UnmarshalJSON(jsonIn)
+func TestHexBin_UnmarshalJSON(t *testing.T) {
+	inStr := `hello world`
+	expected := MD5ToHex(inStr)
+	t.Logf("Input hash %s", expected)
+
+	jsonIn := []byte(`"` + expected + `"`)
+
+	var got HexBin
+	err := got.UnmarshalJSON(jsonIn)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if got.String() != expected {
+		t.Errorf("expcted %s, got %s", expected, got)
+	}
+
+	t.Logf("Unmarshal result: %s", got)
+}
+
+func TestHexBin_MarshalJSON(t *testing.T) {
+	inStr := `hello world`
+	hash := MD5ToHex(inStr)
+
+	hb, err := DecodeHexString(hash)
 	if err != nil {
 		t.Error(err)
 	}
 
-	t.Logf("Parsed from json: %s", parsed)
-	t.Logf("Pared as bin: %b", parsed)
+	got, err := hb.MarshalJSON()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := `"` + hash + `"`
+
+	if string(got) != expected {
+		t.Errorf("expected %s, got %s", expected, got)
+	}
+
+	t.Logf("Marshal result: %s", got)
 }
