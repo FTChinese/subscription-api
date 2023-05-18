@@ -74,7 +74,7 @@ func (y YearMonthDay) EqCycle() enum.Cycle {
 		return enum.CycleMonth
 	}
 
-	return enum.CycleMonth
+	return enum.CycleNull
 }
 
 // Plus adds two instances.
