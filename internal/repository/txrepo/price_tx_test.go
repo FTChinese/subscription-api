@@ -134,7 +134,7 @@ func TestPriceTx_UpsertActivePrice(t *testing.T) {
 				Tx: db.MockMySQL().Write.MustBegin(),
 			},
 			args: args{
-				p: price.NewActivePriceFtc(price.MockFtcStdIntroPrice),
+				p: price.MockFtcStdIntroPrice.ActiveEntry(),
 			},
 			wantErr: false,
 		},
@@ -146,6 +146,44 @@ func TestPriceTx_UpsertActivePrice(t *testing.T) {
 			}
 			if err := tx.UpsertActivePrice(tt.args.p); (err != nil) != tt.wantErr {
 				t.Errorf("PriceTx.UpsertActivePrice() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			_ = tx.Commit()
+		})
+	}
+}
+
+func TestPriceTx_RemoveActivePrice(t *testing.T) {
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		p price.ActivePrice
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Insert active price",
+			fields: fields{
+				Tx: db.MockMySQL().Write.MustBegin(),
+			},
+			args: args{
+				p: price.MockFtcStdIntroPrice.ActiveEntry(),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := PriceTx{
+				Tx: tt.fields.Tx,
+			}
+			if err := tx.RemoveActivePrice(tt.args.p); (err != nil) != tt.wantErr {
+				t.Errorf("PriceTx.RemoveActivePrice() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			_ = tx.Commit()

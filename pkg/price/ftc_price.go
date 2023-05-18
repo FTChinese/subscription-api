@@ -180,6 +180,16 @@ func (p FtcPrice) uniqueFeatures() string {
 	return fmt.Sprintf("ftc.%s.%s.%s.%s", p.Tier.String(), cycleStr, p.Kind, conv.LiveMode(p.LiveMode))
 }
 
+func (p FtcPrice) ActiveEntry() ActivePrice {
+	return ActivePrice{
+		ID:         p.ActiveID().ToHexBin(),
+		Source:     PriceSourceFTC,
+		ProductID:  p.ProductID,
+		PriceID:    p.ID,
+		UpdatedUTC: chrono.TimeUTCNow(),
+	}
+}
+
 func (p FtcPrice) IsZero() bool {
 	return p.ID == ""
 }
