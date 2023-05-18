@@ -24,16 +24,6 @@ type ActivePrice struct {
 	UpdatedUTC chrono.Time `db:"updated_utc"`
 }
 
-func NewActivePriceFtc(p FtcPrice) ActivePrice {
-	return ActivePrice{
-		ID:         p.ActiveID().ToHexBin(),
-		Source:     PriceSourceFTC,
-		ProductID:  p.ProductID,
-		PriceID:    p.ID,
-		UpdatedUTC: chrono.TimeUTCNow(),
-	}
-}
-
 const colActivePrice = `
 source = :source,
 product_id = :product_id,
@@ -49,7 +39,8 @@ ON DUPLICATE KEY UPDATE
 ` + colActivePrice
 
 const StmtRemoveActivePrice = `
-DELETE subs_product.product_active_price
+DELETE 
+FROM subs_product.product_active_price
 WHERE id = ?
 LIMIT 1
 `
