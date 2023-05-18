@@ -146,6 +146,8 @@ func TestPriceTx_UpsertActivePrice(t *testing.T) {
 			}
 			if err := tx.UpsertActivePrice(tt.args.p); (err != nil) != tt.wantErr {
 				t.Errorf("PriceTx.UpsertActivePrice() error = %v, wantErr %v", err, tt.wantErr)
+				_ = tx.Rollback()
+				return
 			}
 
 			_ = tx.Commit()
@@ -184,6 +186,8 @@ func TestPriceTx_RemoveActivePrice(t *testing.T) {
 			}
 			if err := tx.RemoveActivePrice(tt.args.p); (err != nil) != tt.wantErr {
 				t.Errorf("PriceTx.RemoveActivePrice() error = %v, wantErr %v", err, tt.wantErr)
+				_ = tx.Rollback()
+				return
 			}
 
 			_ = tx.Commit()
