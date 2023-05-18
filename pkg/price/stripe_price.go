@@ -209,6 +209,16 @@ func (p StripePrice) uniqueFeatures() string {
 	return fmt.Sprintf("stripe.%s.%s.%s.%s", p.Tier.String(), cycleStr, p.Kind, conv.LiveMode(p.LiveMode))
 }
 
+func (p StripePrice) ActiveEntry() ActivePrice {
+	return ActivePrice{
+		ID:         p.ActiveID().ToHexBin(),
+		Source:     PriceSourceStripe,
+		ProductID:  p.ProductID,
+		PriceID:    p.ID,
+		UpdatedUTC: chrono.TimeUTCNow(),
+	}
+}
+
 func (p StripePrice) IsZero() bool {
 	return p.ID == ""
 }
