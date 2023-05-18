@@ -107,7 +107,7 @@ func (env Env) RefreshPriceOffers(p reader.PaywallPrice) (reader.PaywallPrice, e
 	return updated, nil
 }
 
-// ListProductPrices retrieves all prices of a product, regardless whether they are live or not.
+// ListProductPrices retrieves all prices of a product, regardless whether they are active or not.
 // This is used by CMS to list a product's prices so that
 // user should be able to activate an inactive one.
 func (env Env) ListProductPrices(prodID string, live bool) ([]reader.PaywallPrice, error) {
