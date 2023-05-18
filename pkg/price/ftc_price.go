@@ -175,15 +175,9 @@ func (p FtcPrice) ActiveID() conv.MD5Sum {
 // However, a premium edition usually does not have
 // month and one_time options.
 func (p FtcPrice) uniqueFeatures() string {
-	return fmt.Sprintf("ftc.%s.%s.%s.%s", p.Tier.String(), p.Cycle.String(), p.Kind, modeStr(p.LiveMode))
-}
+	cycleStr := cycleStrOfKind(p.Kind, p.PeriodCount.EqCycle())
 
-func modeStr(b bool) string {
-	if b {
-		return "live"
-	}
-
-	return "sandbox"
+	return fmt.Sprintf("ftc.%s.%s.%s.%s", p.Tier.String(), cycleStr, p.Kind, conv.LiveMode(p.LiveMode))
 }
 
 func (p FtcPrice) IsZero() bool {
