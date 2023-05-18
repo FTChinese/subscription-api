@@ -21,6 +21,10 @@ func DecodeHexBytes(src []byte) (HexBin, error) {
 	return src[:n], err
 }
 
+func (x HexBin) ToBytes() []byte {
+	return []byte(x)
+}
+
 func (x HexBin) String() string {
 	return hex.EncodeToString(x[:])
 }
