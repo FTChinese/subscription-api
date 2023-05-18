@@ -1,12 +1,15 @@
 package price
 
 import (
+	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
+	"github.com/FTChinese/subscription-api/pkg/conv"
 	"github.com/stripe/stripe-go/v72"
-	"strconv"
-	"time"
 )
 
 // StripePriceMeta parsed the fields defined in stripe price's medata field.
@@ -193,6 +196,17 @@ func NewStripePrice(p *stripe.Price) StripePrice {
 		Recurring: NewPriceRecurring(p.Recurring),
 		Type:      p.Type,
 	}
+}
+
+func (p StripePrice) ActiveID() conv.MD5Sum {
+	f := p.uniqueFeatures()
+	return conv.NewMD5Sum(f)
+}
+
+func (p StripePrice) uniqueFeatures() string {
+	cycleStr := cycleStrOfKind(p.Kind, p.PeriodCount.EqCycle())
+
+	return fmt.Sprintf("stripe.%s.%s.%s.%s", p.Tier.String(), cycleStr, p.Kind, conv.LiveMode(p.LiveMode))
 }
 
 func (p StripePrice) IsZero() bool {
