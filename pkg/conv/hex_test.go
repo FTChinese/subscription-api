@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewHexBin(t *testing.T) {
-	hash := HashString(`hello world`)
+	hash := MD5ToHex(`hello world`)
 
 	hb, err := NewHexBin(hash)
 	if err != nil {

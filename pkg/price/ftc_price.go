@@ -160,7 +160,7 @@ func New(p FtcCreationParams, live bool) FtcPrice {
 // * mode
 func (p FtcPrice) ActiveHash() string {
 	f := p.uniqueFeatures()
-	return conv.HashString(f)
+	return conv.MD5ToHex(f)
 }
 
 // uniqueFeatures is a string to uniquely

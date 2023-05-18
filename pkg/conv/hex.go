@@ -7,11 +7,11 @@ import (
 	"errors"
 )
 
-// HashString returns a hexdecimal string of a string's md5 checksum.
+// MD5ToHex returns a hexdecimal string of a string's md5 checksum.
 // You are recommended to use VARBINARY(16) to save it in SQL.
 // Two hex chars requires 8-bit (1 byte).
 // 128-bits md5 checksum requires 128/8 = 16 bytes.
-func HashString(s string) string {
+func MD5ToHex(s string) string {
 	h := md5.Sum([]byte(s))
 	return hex.EncodeToString(h[:])
 }
