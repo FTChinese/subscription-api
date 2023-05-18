@@ -3,7 +3,7 @@ package stripe
 import (
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/lib/sq"
+	"github.com/FTChinese/subscription-api/pkg/conv"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 )
@@ -25,7 +25,7 @@ type Invoice struct {
 	Currency             string                  `json:"currency" db:"currency"`
 	CustomerID           string                  `json:"customerId" db:"customer_id"`
 	DefaultPaymentMethod null.String             `json:"defaultPaymentMethod" db:"default_payment_method"`
-	Discounts            sq.StringList           `json:"discounts" db:"discount_ids"`
+	Discounts            conv.StringList         `json:"discounts" db:"discount_ids"`
 	HostedInvoiceURL     string                  `json:"hostedInvoiceUrl" db:"hosted_invoice_url"`
 	InvoicePDF           string                  `json:"invoicePdf" db:"invoice_pdf"`
 	LiveMode             bool                    `json:"liveMode" db:"live_mode"`

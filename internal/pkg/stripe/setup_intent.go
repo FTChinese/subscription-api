@@ -1,7 +1,7 @@
 package stripe
 
 import (
-	"github.com/FTChinese/subscription-api/lib/sq"
+	"github.com/FTChinese/subscription-api/pkg/conv"
 	"github.com/guregu/null"
 	"github.com/stripe/stripe-go/v72"
 )
@@ -16,7 +16,7 @@ type SetupIntent struct {
 	LiveMode           bool             `json:"liveMode" db:"live_mode"`
 	NextAction         SINextActionJSON `json:"nextAction" db:"next_action"`
 	PaymentMethodID    null.String      `json:"paymentMethodId" db:"payment_method_id"`
-	PaymentMethodTypes sq.StringList    `json:"-" db:"payment_method_types"`
+	PaymentMethodTypes conv.StringList  `json:"-" db:"payment_method_types"`
 	Status             SIStatus         `json:"status" db:"intent_status"`
 	Usage              SIUsage          `json:"usage" db:"intent_usage"`
 }
