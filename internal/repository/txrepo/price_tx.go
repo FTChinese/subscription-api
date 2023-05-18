@@ -71,8 +71,8 @@ func (tx PriceTx) DeactivateFtcPrice(p price.FtcPrice) error {
 	return nil
 }
 
-func (tx PriceTx) RemoveActivePrice(id string) error {
-	_, err := tx.Exec(price.StmtRemoveActivePrice, id)
+func (tx PriceTx) RemoveActivePrice(p price.ActivePrice) error {
+	_, err := tx.Exec(price.StmtRemoveActivePrice, p.ID.ToBytes())
 	if err != nil {
 		return err
 	}
