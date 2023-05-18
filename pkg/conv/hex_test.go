@@ -7,7 +7,7 @@ import (
 
 func TestDecodeHexString(t *testing.T) {
 	inStr := `hello world`
-	hash := MD5ToHex(inStr)
+	hash := NewMD5Sum(inStr).String()
 
 	hb, err := DecodeHexString(hash)
 	if err != nil {
@@ -23,7 +23,7 @@ func TestDecodeHexString(t *testing.T) {
 
 func TestJSONUnmarshal(t *testing.T) {
 	inStr := `hello world`
-	hash := MD5ToHex(inStr)
+	hash := NewMD5Sum(inStr).String()
 
 	jsonIn := []byte(`"` + hash + `"`)
 	var target string
@@ -36,7 +36,7 @@ func TestJSONUnmarshal(t *testing.T) {
 
 func TestHexBin_UnmarshalJSON(t *testing.T) {
 	inStr := `hello world`
-	expected := MD5ToHex(inStr)
+	expected := NewMD5Sum(inStr).String()
 	t.Logf("Input hash %s", expected)
 
 	jsonIn := []byte(`"` + expected + `"`)
@@ -57,7 +57,7 @@ func TestHexBin_UnmarshalJSON(t *testing.T) {
 
 func TestHexBin_MarshalJSON(t *testing.T) {
 	inStr := `hello world`
-	hash := MD5ToHex(inStr)
+	hash := NewMD5Sum(inStr).String()
 
 	hb, err := DecodeHexString(hash)
 	if err != nil {
