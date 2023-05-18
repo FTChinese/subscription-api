@@ -60,6 +60,13 @@ func (env Env) ActivatePrice(p price.FtcPrice) error {
 		return err
 	}
 
+	// Also update product_active_price table.
+	err = tx.UpsertActivePrice(p.ActiveEntry())
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -68,11 +75,24 @@ func (env Env) ActivatePrice(p price.FtcPrice) error {
 }
 
 func (env Env) DeactivatePrice(p price.FtcPrice) error {
-	_, err := env.dbs.Write.NamedExec(
-		price.StmtActivatePrice,
-		p)
-
+	tx, err := env.beginPriceTx()
 	if err != nil {
+		return err
+	}
+
+	err = tx.DeactivateFtcPrice(p)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	err = tx.RemoveActivePrice(p.ActiveEntry())
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
