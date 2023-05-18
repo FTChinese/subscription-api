@@ -153,14 +153,14 @@ func New(p FtcCreationParams, live bool) FtcPrice {
 	}
 }
 
-// Active generate a hash for a price active under a product.
+// ActiveID generate a hash for a price active under a product.
 // A product should not have duplicate prices with the same features:
 // * edition
 // * kind
 // * mode
-func (p FtcPrice) ActiveHash() string {
+func (p FtcPrice) ActiveID() conv.MD5Sum {
 	f := p.uniqueFeatures()
-	return conv.MD5ToHex(f)
+	return conv.NewMD5Sum(f)
 }
 
 // uniqueFeatures is a string to uniquely
