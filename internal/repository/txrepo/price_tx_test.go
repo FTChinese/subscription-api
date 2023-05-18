@@ -1,11 +1,12 @@
 package txrepo
 
 import (
+	"testing"
+
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/jmoiron/sqlx"
-	"testing"
 )
 
 func TestPriceTx_DeactivateSiblingPrice(t *testing.T) {
@@ -62,7 +63,7 @@ func TestPriceTx_DeactivateSiblingPrice(t *testing.T) {
 			tx := PriceTx{
 				Tx: tt.fields.Tx,
 			}
-			if err := tx.DeactivateSiblingPrice(tt.args.p); (err != nil) != tt.wantErr {
+			if err := tx.DeactivateFtcSiblingPrice(tt.args.p); (err != nil) != tt.wantErr {
 				t.Errorf("DeactivateSiblingPrice() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -102,11 +103,49 @@ func TestPriceTx_ActivatePrice(t *testing.T) {
 			tx := PriceTx{
 				Tx: tt.fields.Tx,
 			}
-			if err := tx.ActivatePrice(tt.args.p); (err != nil) != tt.wantErr {
+			if err := tx.ActivateFtcPrice(tt.args.p); (err != nil) != tt.wantErr {
 				t.Errorf("ActivatePrice() error = %v, wantErr %v", err, tt.wantErr)
 
 				_ = tx.Rollback()
 				return
+			}
+
+			_ = tx.Commit()
+		})
+	}
+}
+
+func TestPriceTx_UpsertActivePrice(t *testing.T) {
+	type fields struct {
+		Tx *sqlx.Tx
+	}
+	type args struct {
+		p price.ActivePrice
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Insert active price",
+			fields: fields{
+				Tx: db.MockMySQL().Write.MustBegin(),
+			},
+			args: args{
+				p: price.NewActivePriceFtc(price.MockFtcStdIntroPrice),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tx := PriceTx{
+				Tx: tt.fields.Tx,
+			}
+			if err := tx.UpsertActivePrice(tt.args.p); (err != nil) != tt.wantErr {
+				t.Errorf("PriceTx.UpsertActivePrice() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			_ = tx.Commit()

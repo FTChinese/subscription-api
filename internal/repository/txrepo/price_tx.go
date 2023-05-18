@@ -15,13 +15,13 @@ func NewPriceTx(tx *sqlx.Tx) PriceTx {
 	}
 }
 
-// DeactivateSiblingPrice turns to false the is_active flag of
+// DeactivateFtcSiblingPrice turns to false the is_active flag of
 // all prices' under a product of the same edition
 // to ensure there won't be multiple editions being in active
 // state simultaneously.
 // The passed-in PaywallPrice is the one that should be excluded
 // from deactivating.s
-func (tx PriceTx) DeactivateSiblingPrice(p price.FtcPrice) error {
+func (tx PriceTx) DeactivateFtcSiblingPrice(p price.FtcPrice) error {
 	_, err := tx.NamedExec(
 		price.StmtDeactivateSiblingPrices,
 		p)
@@ -33,11 +33,46 @@ func (tx PriceTx) DeactivateSiblingPrice(p price.FtcPrice) error {
 	return nil
 }
 
-// ActivatePrice turns the is_active state to true for the
+// ActivateFtcPrice turns the is_active state to true for the
 // specified price.
 // It should be called immediately following the above one.
-func (tx PriceTx) ActivatePrice(p price.FtcPrice) error {
+func (tx PriceTx) ActivateFtcPrice(p price.FtcPrice) error {
 	_, err := tx.NamedExec(price.StmtActivatePrice, p)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpsertActivePrice inserts a new entry into subs_product.product_active_plans,
+// or update it in case of id conflict.
+func (tx PriceTx) UpsertActivePrice(p price.ActivePrice) error {
+	_, err := tx.NamedExec(
+		price.StmtUpsertActivePrice,
+		p)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx PriceTx) DeactivateFtcPrice(p price.FtcPrice) error {
+	_, err := tx.NamedExec(
+		price.StmtActivatePrice,
+		p)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx PriceTx) RemoveActivePrice(id string) error {
+	_, err := tx.Exec(price.StmtRemoveActivePrice, id)
 	if err != nil {
 		return err
 	}

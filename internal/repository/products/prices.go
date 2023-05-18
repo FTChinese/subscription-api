@@ -47,14 +47,14 @@ func (env Env) ActivatePrice(p price.FtcPrice) error {
 	}
 
 	// Deactivate all other prices.
-	err = tx.DeactivateSiblingPrice(p)
+	err = tx.DeactivateFtcSiblingPrice(p)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
 	}
 
 	// Activate the price
-	err = tx.ActivatePrice(p)
+	err = tx.ActivateFtcPrice(p)
 	if err != nil {
 		_ = tx.Rollback()
 		return err

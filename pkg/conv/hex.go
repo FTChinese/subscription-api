@@ -79,5 +79,5 @@ func (x *HexBin) Scan(src interface{}) error {
 }
 
 func (x HexBin) Value() (driver.Value, error) {
-	return x, nil
+	return []byte(x), nil
 }
