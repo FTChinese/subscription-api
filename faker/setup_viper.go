@@ -1,10 +1,11 @@
 package faker
 
 import (
-	"github.com/FTChinese/subscription-api/pkg/config"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/FTChinese/subscription-api/pkg/config"
 )
 
 func ReadConfigFile() ([]byte, error) {
@@ -13,7 +14,7 @@ func ReadConfigFile() ([]byte, error) {
 		return nil, err
 	}
 
-	return ioutil.ReadFile(filepath.Join(home, "config", "api.toml"))
+	return ioutil.ReadFile(filepath.Join(home, "config", "env.dev.toml"))
 }
 
 func MustReadConfigFile() []byte {
