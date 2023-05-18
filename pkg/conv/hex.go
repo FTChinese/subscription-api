@@ -1,9 +1,10 @@
 package conv
 
 import (
+	"bytes"
 	"crypto/md5"
+	"database/sql/driver"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 )
 
@@ -16,42 +17,34 @@ func MD5ToHex(s string) string {
 	return hex.EncodeToString(h[:])
 }
 
-// HexBin holds a slice of bytes that could be converted to hexdeciaml string.
+// HexBin holds a slice of bytes
+// that could be converted to hexdeciaml string,
+// used for SQL VARBINARY type.
 type HexBin []byte
+
+func DecodeHexString(s string) (HexBin, error) {
+	return hex.DecodeString(s)
+}
+
+func DecodeHexBytes(src []byte) (HexBin, error) {
+	n, err := hex.Decode(src, src)
+	return src[:n], err
+}
 
 func (x HexBin) String() string {
 	return hex.EncodeToString(x[:])
 }
 
-func NewHexBin(s string) (HexBin, error) {
-	return hex.DecodeString(s)
-}
-
-func MustNewHexBin(s string) HexBin {
-	x, err := NewHexBin(s)
-	if err != nil {
-		panic("cannot decode string as hexdecimal")
-	}
-
-	return x
-}
-
 func (x *HexBin) UnmarshalJSON(b []byte) error {
 
-	var tmp string
-	err := json.Unmarshal(b, &tmp)
+	b = bytes.Trim(b, `"`)
+
+	hb, err := DecodeHexBytes(b)
+
 	if err != nil {
 		return err
 	}
 
-	// The bytes passed into this function
-	// is simply the binary equivalent of
-	// a string. We need to decode it
-	// as hexdecimal.
-	hb, err := NewHexBin(tmp)
-	if err != nil {
-		return err
-	}
 	*x = hb
 
 	return nil
@@ -75,11 +68,15 @@ func (x *HexBin) Scan(src interface{}) error {
 
 	switch s := src.(type) {
 	case []byte:
+		// If we got bytes, assume bytes are
+		// already in hexdecimal format.
 		*x = s
 		return nil
 
 	case string:
-		tmp, err := NewHexBin(s)
+		// If we got string, it must be HEXed,
+		// so we need to decode it.
+		tmp, err := DecodeHexString(s)
 		if err != nil {
 			return err
 		}
@@ -89,4 +86,8 @@ func (x *HexBin) Scan(src interface{}) error {
 	default:
 		return errors.New("incompatible type to scan")
 	}
+}
+
+func (x HexBin) Value() (driver.Value, error) {
+	return x, nil
 }
