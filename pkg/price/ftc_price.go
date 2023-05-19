@@ -164,16 +164,7 @@ func (p FtcPrice) ActiveID() conv.MD5Sum {
 }
 
 // uniqueFeatures is a string to uniquely
-// identify an active price of a product, in format:
-// <source>.<tier>.<cycle>.<kind>.<mode>
-// * source: ftc or stripe
-// * tier: standard or premium
-// * cycle: year or month
-// * kind: one_time or recurring
-// * mode: live or sandbox.
-// In theory there are a total of 2^5 entries.
-// However, a premium edition usually does not have
-// month and one_time options.
+// identify an active price of a product.
 func (p FtcPrice) uniqueFeatures() string {
 	cycleStr := cycleStrOfKind(p.Kind, p.PeriodCount.EqCycle())
 
