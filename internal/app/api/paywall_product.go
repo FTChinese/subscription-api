@@ -147,6 +147,7 @@ func (router PaywallRouter) ActivateProduct(w http.ResponseWriter, req *http.Req
 // or override existing introductory price of a product.
 // Request body:
 // - priceId: string;
+// Deprecated
 func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -215,6 +216,7 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 	_ = render.New(w).OK(prod)
 }
 
+// DropIntroPrice removeds an intro price attached to a product.
 func (router PaywallRouter) DropIntroPrice(w http.ResponseWriter, req *http.Request) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
