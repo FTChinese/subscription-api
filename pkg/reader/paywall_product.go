@@ -31,7 +31,7 @@ func NewPaywallProducts(prods []Product, prices []PaywallPrice) []PaywallProduct
 	return result
 }
 
-// GroupProductPrices put prices with the same price id into the same group
+// GroupProductPrices put prices with the same product id into the same group
 func groupProductPrices(prices []PaywallPrice) map[string][]PaywallPrice {
 	var g = make(map[string][]PaywallPrice)
 
