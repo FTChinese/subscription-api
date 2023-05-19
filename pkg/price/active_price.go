@@ -38,9 +38,10 @@ SET id = :id,
 ON DUPLICATE KEY UPDATE
 ` + colActivePrice
 
-const StmtRemoveActivePrice = `
+const StmtRemoveFtcActivePrice = `
 DELETE 
 FROM subs_product.product_active_price
-WHERE id = ?
+WHERE source = 'ftc'
+	AND price_id = ?
 LIMIT 1
 `
