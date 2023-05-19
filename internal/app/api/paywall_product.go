@@ -169,6 +169,13 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 		params.PriceID,
 		router.live)
 
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		sugar.Error(err)
+		return
+	}
+
+	// If this price is not of type one_time
 	if !pwPrice.IsOneTime() {
 		_ = render.New(w).Unprocessable(&render.ValidationError{
 			Message: "Only one_time price could be used for introductory",
@@ -203,12 +210,6 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
 		return
-	}
-
-	if pwPrice.StripePriceID != "" {
-		go func() {
-			_, _ = router.updateStripPriceMeta(pwPrice.FtcPrice)
-		}()
 	}
 
 	_ = render.New(w).OK(prod)
