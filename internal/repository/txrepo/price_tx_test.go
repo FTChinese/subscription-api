@@ -160,7 +160,7 @@ func TestPriceTx_RemoveActivePrice(t *testing.T) {
 		Tx *sqlx.Tx
 	}
 	type args struct {
-		p price.ActivePrice
+		p price.FtcPrice
 	}
 	tests := []struct {
 		name    string
@@ -174,7 +174,7 @@ func TestPriceTx_RemoveActivePrice(t *testing.T) {
 				Tx: db.MockMySQL().Write.MustBegin(),
 			},
 			args: args{
-				p: price.MockFtcStdIntroPrice.ActiveEntry(),
+				p: price.MockFtcStdIntroPrice,
 			},
 			wantErr: false,
 		},
@@ -184,7 +184,7 @@ func TestPriceTx_RemoveActivePrice(t *testing.T) {
 			tx := PriceTx{
 				Tx: tt.fields.Tx,
 			}
-			if err := tx.RemoveActivePrice(tt.args.p); (err != nil) != tt.wantErr {
+			if err := tx.RemoveFtcActivePrice(tt.args.p); (err != nil) != tt.wantErr {
 				t.Errorf("PriceTx.RemoveActivePrice() error = %v, wantErr %v", err, tt.wantErr)
 				_ = tx.Rollback()
 				return

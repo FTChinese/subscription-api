@@ -37,7 +37,7 @@ func (tx PriceTx) DeactivateFtcSiblingPrice(p price.FtcPrice) error {
 // specified price.
 // It should be called immediately following the above one.
 func (tx PriceTx) ActivateFtcPrice(p price.FtcPrice) error {
-	_, err := tx.NamedExec(price.StmtActivatePrice, p)
+	_, err := tx.NamedExec(price.StmtFtcPriceState, p)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (tx PriceTx) UpsertActivePrice(p price.ActivePrice) error {
 
 func (tx PriceTx) DeactivateFtcPrice(p price.FtcPrice) error {
 	_, err := tx.NamedExec(
-		price.StmtActivatePrice,
+		price.StmtFtcPriceState,
 		p)
 
 	if err != nil {
@@ -71,8 +71,16 @@ func (tx PriceTx) DeactivateFtcPrice(p price.FtcPrice) error {
 	return nil
 }
 
-func (tx PriceTx) RemoveActivePrice(p price.ActivePrice) error {
-	_, err := tx.Exec(price.StmtRemoveActivePrice, p.ID.ToBytes())
+// RemoveFtcActivePrice from product_active_price if
+// the table has this entry.
+// DO NOT use the id field to perform this operation
+// since you might be accidentally remove a valid
+// price in case the the price to be removed
+// is attached to an inactive product.
+func (tx PriceTx) RemoveFtcActivePrice(p price.FtcPrice) error {
+	_, err := tx.Exec(
+		price.StmtRemoveFtcActivePrice,
+		p.ID)
 	if err != nil {
 		return err
 	}
