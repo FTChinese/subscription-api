@@ -1,6 +1,7 @@
 package products
 
 import (
+	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
@@ -41,7 +42,7 @@ func (env Env) UpdatePrice(p price.FtcPrice) error {
 // prices of the same edition and same live mode under the same product id
 // is turned to inactive.
 func (env Env) ActivatePrice(p price.FtcPrice) error {
-	tx, err := env.beginPriceTx()
+	tx, err := txrepo.BeginPriceTx(env.dbs.Write)
 	if err != nil {
 		return err
 	}
@@ -75,7 +76,7 @@ func (env Env) ActivatePrice(p price.FtcPrice) error {
 }
 
 func (env Env) DeactivatePrice(p price.FtcPrice) error {
-	tx, err := env.beginPriceTx()
+	tx, err := txrepo.BeginPriceTx(env.dbs.Delete)
 	if err != nil {
 		return err
 	}
@@ -88,7 +89,7 @@ func (env Env) DeactivatePrice(p price.FtcPrice) error {
 	}
 
 	// Remove the price from product_active_price table if exists.
-	err = tx.RemoveFtcActivePrice(p)
+	err = tx.RemoveActivePrice(p.ActiveEntry())
 	if err != nil {
 		_ = tx.Rollback()
 		return err
