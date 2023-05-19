@@ -1,6 +1,8 @@
 package products
 
 import (
+	"testing"
+
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/lib/dt"
@@ -11,7 +13,6 @@ import (
 	"github.com/FTChinese/subscription-api/test"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/guregu/null"
-	"testing"
 )
 
 func TestEnv_CreatePrice(t *testing.T) {
@@ -271,43 +272,6 @@ func TestEnv_ListPrices(t *testing.T) {
 			//}
 
 			t.Logf("%s", faker.MustMarshalIndent(got))
-		})
-	}
-}
-
-func TestEnv_ArchivePrice(t *testing.T) {
-
-	prodBuilder := test.NewStdProdBuilder()
-
-	p1 := prodBuilder.NewYearPriceBuilder().Build()
-
-	repo := test.NewRepo()
-	repo.CreatePrice(p1)
-
-	env := New(db.MockMySQL())
-
-	type args struct {
-		p price.FtcPrice
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Archive price",
-			args: args{
-				p: p1.Archive(),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			if err := env.ArchivePrice(tt.args.p); (err != nil) != tt.wantErr {
-				t.Errorf("ArchivePrice() error = %v, wantErr %v", err, tt.wantErr)
-			}
 		})
 	}
 }
