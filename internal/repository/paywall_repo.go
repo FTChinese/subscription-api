@@ -2,6 +2,8 @@ package repository
 
 import (
 	"database/sql"
+
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
@@ -16,32 +18,33 @@ func NewPaywallRepo(dbs db.ReadWriteMyDBs) PaywallRepo {
 	}
 }
 
-// RetrievePaywall retrieves all elements of paywall concurrently
+// RetrievePaywall retrieves all components of paywall concurrently
 // and then build them into a single Paywall instance.
+// TODO: change price retrieval using product_active_price table.
 func (repo PaywallRepo) RetrievePaywall(live bool) (reader.Paywall, error) {
-	pwDocCh, productsCh, plansCh := repo.asyncPwDoc(live), repo.asyncRetrieveActiveProducts(live), repo.asyncListActivePrices(live)
+	pwDocCh, productsCh, pricesCh := repo.asyncPwDoc(live), repo.asyncRetrieveActiveProducts(live), repo.asyncListActivePrices(live)
 
 	// Retrieve banner and its promo, products, and each price's plans
 	// in 3 goroutine.
-	pwDocRes, productsRes, plansRes := <-pwDocCh, <-productsCh, <-plansCh
+	pwDocRes, productsRes, pricesRes := <-pwDocCh, <-productsCh, <-pricesCh
 
-	if pwDocRes.error != nil {
-		return reader.Paywall{}, pwDocRes.error
+	if pwDocRes.Err != nil {
+		return reader.Paywall{}, pwDocRes.Err
 	}
 
-	if productsRes.error != nil {
-		return reader.Paywall{}, productsRes.error
+	if productsRes.Err != nil {
+		return reader.Paywall{}, productsRes.Err
 	}
 
-	if plansRes.error != nil {
-		return reader.Paywall{}, plansRes.error
+	if pricesRes.Err != nil {
+		return reader.Paywall{}, pricesRes.Err
 	}
 
-	// Zip products with its plans.
-	products := reader.NewPaywallProducts(productsRes.value, plansRes.value)
+	// Zip products with its prices.
+	products := reader.NewPaywallProducts(productsRes.Value, pricesRes.Value)
 
 	// Build paywall.
-	return reader.NewPaywall(pwDocRes.value, products), nil
+	return reader.NewPaywall(pwDocRes.Value, products).Flatten(), nil
 }
 
 // RetrievePaywallDoc loads the latest row of paywall document.
@@ -67,32 +70,22 @@ func (repo PaywallRepo) RetrievePaywallDoc(live bool) (reader.PaywallDoc, error)
 	return pwb, nil
 }
 
-type pwDocResult struct {
-	value reader.PaywallDoc
-	error error
-}
-
 // asyncPwDoc loads paywall document in background.
-func (repo PaywallRepo) asyncPwDoc(live bool) <-chan pwDocResult {
-	c := make(chan pwDocResult)
+func (repo PaywallRepo) asyncPwDoc(live bool) <-chan pkg.AsyncResult[reader.PaywallDoc] {
+	c := make(chan pkg.AsyncResult[reader.PaywallDoc])
 
 	go func() {
 		defer close(c)
 
 		pwDoc, err := repo.RetrievePaywallDoc(live)
 
-		c <- pwDocResult{
-			value: pwDoc,
-			error: err,
+		c <- pkg.AsyncResult[reader.PaywallDoc]{
+			Value: pwDoc,
+			Err:   err,
 		}
 	}()
 
 	return c
-}
-
-type productsResult struct {
-	value []reader.Product
-	error error
 }
 
 // retrieveActiveProducts retrieve all products present on paywall.
@@ -112,25 +105,19 @@ func (repo PaywallRepo) retrieveActiveProducts(live bool) ([]reader.Product, err
 }
 
 // asyncRetrieveActiveProducts retrieves products in a goroutine.
-func (repo PaywallRepo) asyncRetrieveActiveProducts(live bool) <-chan productsResult {
-	ch := make(chan productsResult)
+func (repo PaywallRepo) asyncRetrieveActiveProducts(live bool) <-chan pkg.AsyncResult[[]reader.Product] {
+	ch := make(chan pkg.AsyncResult[[]reader.Product])
 
 	go func() {
 		products, err := repo.retrieveActiveProducts(live)
 
-		ch <- productsResult{
-			value: products,
-			error: err,
+		ch <- pkg.AsyncResult[[]reader.Product]{
+			Value: products,
+			Err:   err,
 		}
 	}()
 
 	return ch
-}
-
-// activePricesResult contains a list of pricing plans and error occurred.
-type activePricesResult struct {
-	value []reader.PaywallPrice
-	error error
 }
 
 // ListActivePrices lists active prices of products on paywall, directly from DB.
@@ -150,17 +137,17 @@ func (repo PaywallRepo) ListActivePrices(live bool) ([]reader.PaywallPrice, erro
 
 // asyncListActivePrices retrieves a list of plans in a goroutine.
 // This is used to construct the paywall data.
-func (repo PaywallRepo) asyncListActivePrices(live bool) <-chan activePricesResult {
-	ch := make(chan activePricesResult)
+func (repo PaywallRepo) asyncListActivePrices(live bool) <-chan pkg.AsyncResult[[]reader.PaywallPrice] {
+	ch := make(chan pkg.AsyncResult[[]reader.PaywallPrice])
 
 	go func() {
 		defer close(ch)
 
 		plans, err := repo.ListActivePrices(live)
 
-		ch <- activePricesResult{
-			value: plans,
-			error: err,
+		ch <- pkg.AsyncResult[[]reader.PaywallPrice]{
+			Value: plans,
+			Err:   err,
 		}
 	}()
 
