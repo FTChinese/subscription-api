@@ -31,16 +31,6 @@ WHERE id = :price_id
 LIMIT 1
 `
 
-// StmtActivatePrice turns a price to activated state.
-// Used together with the StmtDeactivateSiblingPrices to ensure
-// uniqueness of edition under a product.
-const StmtActivatePrice = `
-UPDATE subs_product.price
-SET is_active = :is_active
-WHERE id = :price_id
-LIMIT 1
-`
-
 // StmtDeactivateSiblingPrices flags all sibling prices of
 // specified price_id to inactive so that we could ensure a
 // product won't have duplicate active price of the same edition.
@@ -62,11 +52,14 @@ WHERE product_id = :product_id
 	AND archived = FALSE
 `
 
-const StmtArchivePrice = `
+// StmtFtcPriceState changes a price's archive and
+// active state.
+// When used together with the StmtDeactivateSiblingPrices you can ensure
+// uniqueness of edition under a product.
+const StmtFtcPriceState = `
 UPDATE subs_product.price
 SET archived = :archived,
-	is_active = :is_active,
-	discount_list = NULL
+	is_active = :is_active
 WHERE id = :price_id
 LIMIT 1
 `
