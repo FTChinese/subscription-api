@@ -1,13 +1,14 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/repository/products"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 // PaywallRouter handles pricing plans.
@@ -92,4 +93,31 @@ func (router PaywallRouter) LoadFtcActivePrices(w http.ResponseWriter, _ *http.R
 	}
 
 	_ = render.New(w).JSON(http.StatusOK, p)
+}
+
+// MigrateToActivePrices performs migration to product_active_price table.
+func (router PaywallRouter) MigrateToActivePrices(w http.ResponseWriter, req *http.Request) {
+	paywall, err := router.LoadCachedPaywall(false)
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	for _, v := range paywall.FTCPrices {
+		err = router.productRepo.ActivatePrice(v.FtcPrice)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			return
+		}
+	}
+
+	for _, v := range paywall.Stripe {
+		err = router.stripeRepo.ActivatePrice(v.Price)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			return
+		}
+	}
+
+	_ = render.New(w).NoContent()
 }

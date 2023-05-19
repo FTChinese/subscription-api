@@ -441,6 +441,7 @@ func StartServer(s ServerStatus) {
 		// Live server only outputs live data while sandbox for sandbox data only.
 		// ?refresh=true
 		r.With(xhttp.FormParsed).Get("/", paywallRouter.LoadPaywall)
+		r.Post("/__migrate/active_prices", paywallRouter.MigrateToActivePrices)
 
 		// List active prices used on paywall.
 		r.Get("/active/prices", paywallRouter.LoadFtcActivePrices)
