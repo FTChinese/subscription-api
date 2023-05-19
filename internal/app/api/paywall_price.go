@@ -1,11 +1,12 @@
 package api
 
 import (
-	"github.com/FTChinese/go-rest"
+	"net/http"
+
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
-	"net/http"
 )
 
 // ListPrices retrieves all prices under a product.
@@ -246,10 +247,8 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 	}
 
 	// Check if stripe price present.
+	// TODO: deprecate this.
 	_, err = router.ensureStripePrice(pwPrice.StripePriceID)
-	if err != nil {
-		sugar.Error(err)
-	}
 	if err != nil {
 		_ = xhttp.HandleSubsErr(w, err)
 		sugar.Error(err)
@@ -264,49 +263,67 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	pwPrice.FtcPrice = activated
 	// If the price is a one_time price,
-	_ = render.New(w).OK(activated)
+	_ = render.New(w).OK(pwPrice)
 }
 
-// ArchivePrice flags a price as deleted.
-// It should never be touched after this operation.
-// The returned price has no offers attached since they are
-// all removed.
-// Returns price.Price.
-func (router PaywallRouter) ArchivePrice(w http.ResponseWriter, req *http.Request) {
-	priceID, err := xhttp.GetURLParam(req, "id").ToString()
-	if err != nil {
-		_ = render.New(w).BadRequest(err.Error())
-		return
+// DeactiveOrArchivePrice returns a http.HandlerFunc
+// to deactivate or archive a price.
+// Pass false to deactivate it only.
+// Pass true to deactivate and archive it.
+// Archive price should never be touched anymore.
+func (router PaywallRouter) DeactivateOrArchivePrice(archive bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		defer router.logger.Sync()
+		sugar := router.logger.Sugar()
+
+		priceID, err := xhttp.GetURLParam(req, "id").ToString()
+		if err != nil {
+			_ = render.New(w).BadRequest(err.Error())
+			sugar.Error(err)
+			return
+		}
+
+		// Load this price.
+		pwPrice, err := router.paywallRepo.RetrievePaywallPrice(priceID, router.live)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			sugar.Error(err)
+			return
+		}
+
+		deactivated := pwPrice.FtcPrice.Deactivate(archive)
+
+		err = router.productRepo.DeactivatePrice(deactivated)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			return
+		}
+
+		pwPrice.FtcPrice = deactivated
+
+		// If this router is also used for archive.
+		if !archive {
+			// If the price is a one_time price,
+			_ = render.New(w).OK(pwPrice)
+			return
+		}
+
+		// If this price has not discount, stop.
+		if len(pwPrice.Offers) == 0 {
+			_ = render.New(w).OK(pwPrice)
+			return
+		}
+
+		err = router.productRepo.ArchivePriceDiscounts(pwPrice)
+		if err != nil {
+			_ = render.New(w).DBError(err)
+			return
+		}
+
+		// The offers are already removed from price.
+		// Simply return the price without offers.
+		_ = render.New(w).OK(pwPrice)
 	}
-
-	p, err := router.paywallRepo.RetrievePaywallPrice(priceID, router.live)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	archived := p.FtcPrice.Archive()
-
-	err = router.productRepo.ArchivePrice(archived)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	// If this price has not discount, stop.
-	if len(p.Offers) == 0 {
-		_ = render.New(w).OK(archived)
-		return
-	}
-
-	err = router.productRepo.ArchivePriceDiscounts(p)
-	if err != nil {
-		_ = render.New(w).DBError(err)
-		return
-	}
-
-	// The offers are already removed from price.
-	// Simply return the price without offers.
-	_ = render.New(w).OK(archived)
 }
