@@ -184,7 +184,7 @@ func TestPriceTx_RemoveActivePrice(t *testing.T) {
 			tx := PriceTx{
 				Tx: tt.fields.Tx,
 			}
-			if err := tx.RemoveFtcActivePrice(tt.args.p); (err != nil) != tt.wantErr {
+			if err := tx.RemoveActivePrice(tt.args.p.ActiveEntry()); (err != nil) != tt.wantErr {
 				t.Errorf("PriceTx.RemoveActivePrice() error = %v, wantErr %v", err, tt.wantErr)
 				_ = tx.Rollback()
 				return
