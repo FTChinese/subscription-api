@@ -117,7 +117,7 @@ type FtcPrice struct {
 	ID            string             `json:"id" db:"price_id"`
 	Edition                          // Sibling requirement
 	Active        bool               `json:"active" db:"is_active"`
-	Archived      bool               `json:"archived" db:"archived"` // Once archived, it should never be touched.
+	Archived      bool               `json:"archived" db:"archived"` // Once archived, it should never be touched and should be hidden from endpoints.
 	Currency      Currency           `json:"currency" db:"currency"`
 	Kind          Kind               `json:"kind" db:"kind"`          // Sibling requirement
 	LiveMode      bool               `json:"liveMode" db:"live_mode"` // Sibling requirement
@@ -208,18 +208,21 @@ func (p FtcPrice) Update(params FtcUpdateParams) FtcPrice {
 // Activate put a price on paywall.
 func (p FtcPrice) Activate() FtcPrice {
 	p.Active = true
-
-	return p
-}
-
-func (p FtcPrice) Deactivate() FtcPrice {
-	p.Active = false
+	p.Archived = false
 
 	return p
 }
 
 // Archive put a price into archive and no longer usable.
-// No idea why I created this.
+func (p FtcPrice) Deactivate(archive bool) FtcPrice {
+	p.Active = false
+	if archive {
+		p.Archived = true
+	}
+
+	return p
+}
+
 func (p FtcPrice) Archive() FtcPrice {
 	p.Archived = true
 	p.Active = false
