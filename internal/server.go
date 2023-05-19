@@ -351,7 +351,11 @@ func StartServer(s ServerStatus) {
 			// List stripe prices. If query parameter has refresh=true, no cached data will be used.
 			// ?refresh=true|false
 			r.Get("/", stripeRoutes.ListPrices)
-			// ?refresh=true
+			// Load a stripe price. It first queries ftc's db.
+			// If not found, then query Stripe API.
+			// Any price loade directly from Stripe API will
+			// be inserted/updated in ftc's db.
+			// Use query parameter `?refresh=true` to hit Stripe API directly.
 			r.Get("/{id}", stripeRoutes.LoadStripePrice)
 			// ?active_only=<true|false>
 			// To create/update/delete a coupon, use the /cms section.`
@@ -568,6 +572,10 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/stripe", func(r chi.Router) {
+
+			r.Route("/prices", func(r chi.Router) {
+
+			})
 
 			r.Route("/coupons", func(r chi.Router) {
 				// Link a coupon to a price, or modify its metadata
