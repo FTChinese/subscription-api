@@ -2,13 +2,15 @@ package reader
 
 import (
 	"database/sql"
+
 	"github.com/FTChinese/subscription-api/pkg/price"
 )
 
 type Paywall struct {
 	PaywallDoc
-	Products []PaywallProduct    `json:"products"`
-	Stripe   []StripePaywallItem `json:"stripe"`
+	Products  []PaywallProduct    `json:"products"`
+	FTCPrices []PaywallPrice      `json:"ftcPrices"`
+	Stripe    []StripePaywallItem `json:"stripe"`
 }
 
 func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
