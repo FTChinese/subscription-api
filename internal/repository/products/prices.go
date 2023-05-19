@@ -80,13 +80,15 @@ func (env Env) DeactivatePrice(p price.FtcPrice) error {
 		return err
 	}
 
+	// Flag active to false in price table
 	err = tx.DeactivateFtcPrice(p)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
 	}
 
-	err = tx.RemoveActivePrice(p.ActiveEntry())
+	// Remove the price from product_active_price table if exists.
+	err = tx.RemoveFtcActivePrice(p)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
@@ -143,15 +145,4 @@ func (env Env) ListProductPrices(prodID string, live bool) ([]reader.PaywallPric
 	}
 
 	return list, nil
-}
-
-func (env Env) ArchivePrice(p price.FtcPrice) error {
-	_, err := env.dbs.Write.NamedExec(
-		price.StmtArchivePrice,
-		p)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
