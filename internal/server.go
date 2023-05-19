@@ -574,7 +574,8 @@ func StartServer(s ServerStatus) {
 		r.Route("/stripe", func(r chi.Router) {
 
 			r.Route("/prices", func(r chi.Router) {
-
+				r.Post("/{id}/activate", stripeRoutes.ActivatePrice)
+				r.Post("/{id}/deactivate", stripeRoutes.DeactivatePrice)
 			})
 
 			r.Route("/coupons", func(r chi.Router) {
