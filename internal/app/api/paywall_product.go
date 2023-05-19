@@ -1,11 +1,12 @@
 package api
 
 import (
-	"github.com/FTChinese/go-rest"
+	"net/http"
+
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
-	"net/http"
 )
 
 func (router PaywallRouter) ListProducts(w http.ResponseWriter, req *http.Request) {
@@ -231,7 +232,7 @@ func (router PaywallRouter) DropIntroPrice(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	err = router.productRepo.DeactivatePrice(prod.Introductory.Deactivate())
+	err = router.productRepo.DeactivatePrice(prod.Introductory.Deactivate(false))
 	if err != nil {
 		_ = render.New(w).DBError(err)
 		sugar.Error(err)
