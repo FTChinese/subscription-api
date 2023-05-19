@@ -473,9 +473,10 @@ func StartServer(s ServerStatus) {
 			// Activate a price under a product. All its sibling price of same tier and kind will be deactivated.
 			// To activate an introductory price ,use PATCH /products/{id}/intro.
 			r.Post("/{id}/activate", paywallRouter.ActivatePrice)
+			r.Post("/{id}/deactivate", paywallRouter.DeactivateOrArchivePrice(false))
 			r.Patch("/{id}", paywallRouter.UpdatePrice)
 			r.Patch("/{id}/discounts", paywallRouter.RefreshPriceOffers)
-			r.Delete("/{id}", paywallRouter.ArchivePrice)
+			r.Delete("/{id}", paywallRouter.DeactivateOrArchivePrice(true))
 		})
 
 		// List discounts of a price.
