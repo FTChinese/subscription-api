@@ -3,7 +3,7 @@ package reader
 // PaywallProduct describes the data used to present to user on paywall.
 type PaywallProduct struct {
 	Product
-	Prices []PaywallPrice `json:"prices"`
+	Prices []PaywallPrice `json:"prices"` // Deprecated. Hoisted to parent level to flatten data structure.
 }
 
 // NewPaywallProducts zips price body with its prices.
