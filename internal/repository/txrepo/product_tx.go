@@ -9,10 +9,15 @@ type ProductTx struct {
 	*sqlx.Tx
 }
 
-func NewProductTx(tx *sqlx.Tx) ProductTx {
+func BeginProductTx(dbx *sqlx.DB) (ProductTx, error) {
+	tx, err := dbx.Beginx()
+	if err != nil {
+		return ProductTx{}, err
+	}
+
 	return ProductTx{
 		Tx: tx,
-	}
+	}, nil
 }
 
 // DeactivateSiblingProduct turns products of same tier in same mode to inactive except the specified one.
