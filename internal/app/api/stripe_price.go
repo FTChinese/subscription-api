@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/pkg/price"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
@@ -53,11 +54,11 @@ func (routes StripeRoutes) loadPrice(w http.ResponseWriter, id string, refresh b
 	return sp, nil
 }
 
-// LoadStripePrice retrieves a stripe price either from database or
+// LoadPrice retrieves a stripe price either from database or
 // stripe API.
 // Query parameters:
 // - refresh=true
-func (routes StripeRoutes) LoadStripePrice(w http.ResponseWriter, req *http.Request) {
+func (routes StripeRoutes) LoadPrice(w http.ResponseWriter, req *http.Request) {
 	defer routes.logger.Sync()
 	sugar := routes.logger.Sugar()
 
@@ -75,6 +76,76 @@ func (routes StripeRoutes) LoadStripePrice(w http.ResponseWriter, req *http.Requ
 	if err != nil {
 		return
 	}
+
+	_ = render.New(w).OK(sp)
+}
+
+// Set a stripe price's metadata.
+//
+// For introductory price, you have to provide:
+// - introductory: true
+// - tier: string
+// - periodCount.years: int
+// - periodCount.months: int
+// - periodCount.days: int
+// - startUtc: string
+// - endUtc: string
+//
+// For recurring price, you only provide:
+// - introductory: false
+// - tier: string
+// Since periodCount fields could be deduced from
+// stripe price fields in such case,
+// We'd better not touch it to avoid any data inconsistency.
+func (routes StripeRoutes) SetPriceMeta(w http.ResponseWriter, req *http.Request) {
+	defer routes.logger.Sync()
+	sugar := routes.logger.Sugar()
+
+	// Get body and validate it.
+	var params price.StripePriceMeta
+	if err := gorest.ParseJSON(req.Body, &params); err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	if ve := params.Validate(); ve != nil {
+		sugar.Error(ve)
+		_ = render.New(w).Unprocessable(ve)
+		return
+	}
+
+	id, err := xhttp.GetURLParam(req, "id").ToString()
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).BadRequest(err.Error())
+		return
+	}
+
+	sp, err := routes.loadPrice(w, id, false)
+	if err != nil {
+		return
+	}
+
+	// Merge the period count deduced from stripe fields.
+	params.PeriodCount = sp.PeriodCount.YearMonthDay
+
+	rawPrice, err := routes.stripeRepo.Client.SetPriceMeta(id, params.ToParams())
+	if err != nil {
+		_ = xhttp.HandleSubsErr(w, err)
+		return
+	}
+
+	// Refresh db with updated data.
+	sp = price.NewStripePrice(rawPrice)
+	go func() {
+		err := routes.stripeRepo.UpsertPrice(sp)
+		if err != nil {
+			defer routes.logger.Sync()
+			sugar := routes.logger.Sugar()
+			sugar.Error(err)
+		}
+	}()
 
 	_ = render.New(w).OK(sp)
 }

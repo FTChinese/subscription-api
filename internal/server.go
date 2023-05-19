@@ -356,7 +356,7 @@ func StartServer(s ServerStatus) {
 			// Any price loade directly from Stripe API will
 			// be inserted/updated in ftc's db.
 			// Use query parameter `?refresh=true` to hit Stripe API directly.
-			r.Get("/{id}", stripeRoutes.LoadStripePrice)
+			r.Get("/{id}", stripeRoutes.LoadPrice)
 			// ?active_only=<true|false>
 			// To create/update/delete a coupon, use the /cms section.`
 			r.Get("/{id}/coupons", stripeRoutes.ListPriceCoupons)
@@ -574,6 +574,8 @@ func StartServer(s ServerStatus) {
 		r.Route("/stripe", func(r chi.Router) {
 
 			r.Route("/prices", func(r chi.Router) {
+				// Add some essential metadata to a stripe price.
+				r.Post("/{id}", stripeRoutes.SetPriceMeta)
 				r.Post("/{id}/activate", stripeRoutes.ActivatePrice)
 				r.Post("/{id}/deactivate", stripeRoutes.DeactivatePrice)
 			})
