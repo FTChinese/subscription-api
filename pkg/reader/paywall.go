@@ -20,6 +20,20 @@ func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
 	}
 }
 
+// Flatten is a temporay solution to hoist prices embedded in products field.
+func (w Paywall) Flatten() Paywall {
+	for _, prod := range w.Products {
+		if prod.Introductory.ID != "" {
+			w.FTCPrices = append(w.FTCPrices, PaywallPrice{
+				FtcPrice: prod.Introductory.FtcPrice,
+			})
+		}
+		w.FTCPrices = append(w.FTCPrices, prod.Prices...)
+	}
+
+	return w
+}
+
 // FindPriceByEdition tries to find a price for a specific edition.
 // Deprecated.
 func (w Paywall) FindPriceByEdition(e price.Edition) (PaywallPrice, error) {
