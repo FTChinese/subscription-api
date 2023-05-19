@@ -1,6 +1,7 @@
 package products
 
 import (
+	"github.com/FTChinese/subscription-api/internal/repository/txrepo"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 )
 
@@ -58,7 +59,8 @@ func (env Env) UpdateProduct(p reader.Product) error {
 }
 
 func (env Env) SetProductOnPaywall(p reader.Product) error {
-	tx, err := env.beginProductTx()
+
+	tx, err := txrepo.BeginProductTx(env.dbs.Write)
 	if err != nil {
 		return err
 	}
