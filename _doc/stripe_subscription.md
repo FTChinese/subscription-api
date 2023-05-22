@@ -1,3 +1,11 @@
+## Endpoints that modifies a Stripe subscription
+
+* POST `/stripe/subs/{id}`
+* POST `/stripe/subs/{id}/refresh`
+* POST `/stripe/subs/{id}/cancel`
+* POST `/stripe/subs/{id}/reactivate`
+* POST `/webhook/stripe`
+
 ## Subscription
 
 **注意**：本部分所有http请求要求设置`X-User-Id`字段，用以识别用户身份。

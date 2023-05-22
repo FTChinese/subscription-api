@@ -2,6 +2,7 @@ package stripe
 
 import (
 	"errors"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/subscription-api/pkg/addon"
 	"github.com/FTChinese/subscription-api/pkg/ids"
@@ -49,15 +50,16 @@ type WebhookResultBuilder struct {
 
 // Build generates WebhookSubsResult.
 // Possibilities:
-// * No membership correspond to stripe subscription id. In such case what you can do depends on the ftc side:
-//    * Ftc side has no membership. You are safe to create a stripe membership directly;
-//    * Ftc side has membership but expired. You can override it.
-//    * Ftc side is a one-time purchase, possibilities are:
-//        * Stripe subscription expired, you are not allowed to touch ftc membership
-//        * Stripe subscription is not expired, override ftc side with carry over addon.
+// * No membership corresponds to stripe subscription id. In such case what you can do depends on the ftc side:
+//   - Ftc side has no membership. You are safe to create a stripe membership directly;
+//   - Ftc side has membership but expired. You can override it.
+//   - Ftc side is a one-time purchase, possibilities are:
+//   - Stripe subscription expired, you are not allowed to touch ftc membership
+//   - Stripe subscription is not expired, override ftc side with carry over addon.
+//
 // * Stripe side has membership:
-//    * If its user id does not match the account retrieve using customer id, it indicates data inconsistency, stop;
-//    * Otherwise the stripe membership already exists, simply update it.
+//   - If its user id does not match the account retrieve using customer id, it indicates data inconsistency, stop;
+//   - Otherwise the stripe membership already exists, simply update it.
 func (b WebhookResultBuilder) Build() (WebhookSubsResult, error) {
 	if b.StripeMember.IsZero() {
 		// If ftc side does not have membership.

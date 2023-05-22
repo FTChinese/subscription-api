@@ -65,6 +65,10 @@ Requires header `X-User-Id`
 * GET `/stripe/subs/{id}/latest-invoice` Get latest invocie
 * GET `/stripe/subs/{id}/latest-invoice/any-coupon` Is there any coupon applied to latest invoice.
 
+### Webhook
+
+* POST `/webhook/stripe`
+
 ### Invoice
 
 * GET `/stripe/invoices/{id}` Get an invoice.

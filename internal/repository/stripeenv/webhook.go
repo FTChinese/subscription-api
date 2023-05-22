@@ -33,6 +33,7 @@ func (env Env) OnWebhookSubs(subs stripe.Subs, userIDs ids.UserIDs) (stripe.Webh
 	// Since stripe side does not have membership, concurrency lock won't happen.
 	var ftcMmb reader.Membership
 	if stripeMmb.IsZero() {
+		// Try to retrieve membership from FTC side.
 		ftcMmb, err = tx.RetrieveMember(userIDs.CompoundID)
 		if err != nil {
 			_ = tx.Rollback()
