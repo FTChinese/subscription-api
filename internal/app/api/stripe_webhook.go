@@ -403,11 +403,10 @@ func (routes StripeRoutes) eventSubscription(ss *sdk.Subscription) error {
 	}
 
 	// stripe.Subs could always be created regardless of user account present or not.
-	userIDs := account.CompoundIDs()
 	subs := stripe.NewSubs("", ss)
 
 	result, err := routes.stripeRepo.SyncSubs(
-		userIDs,
+		account.CompoundIDs(),
 		subs,
 		reader.NewArchiver().ByStripe().ActionWebhook())
 	if err != nil {
@@ -424,20 +423,7 @@ func (routes StripeRoutes) eventSubscription(ss *sdk.Subscription) error {
 		return err
 	}
 
-	// Update subscription
-	err = routes.stripeRepo.UpsertSubs(
-		stripe.NewSubs("", ss), false)
+	routes.handleSubsResult(result)
 
-	if err != nil {
-		sugar.Error(err)
-	}
-
-	// Backup old membership
-	err = routes.readerRepo.VersionMembership(result.Versioned)
-
-	if err != nil {
-		sugar.Error(err)
-	}
-
-	return err
+	return nil
 }
