@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/internal/repository"
@@ -12,7 +14,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 type PublishableKey struct {
@@ -59,7 +60,7 @@ func (routes StripeRoutes) PublishableKey(w http.ResponseWriter, req *http.Reque
 	})
 }
 
-func (routes StripeRoutes) handleSubsResult(result stripe.SubsSuccess) {
+func (routes StripeRoutes) handleSubsResult(result stripe.SubsResult) {
 	defer routes.logger.Sync()
 	sugar := routes.logger.Sugar()
 
