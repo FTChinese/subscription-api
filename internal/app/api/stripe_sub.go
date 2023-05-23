@@ -1,12 +1,13 @@
 package api
 
 import (
-	"github.com/FTChinese/go-rest"
+	"net/http"
+
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
-	"net/http"
 )
 
 // CreateSubs create a stripe subscription.
@@ -240,6 +241,8 @@ func (routes StripeRoutes) RefreshSubs(w http.ResponseWriter, req *http.Request)
 	defer routes.logger.Sync()
 	sugar := routes.logger.Sugar()
 
+	ftcID := xhttp.GetFtcID(req.Header)
+
 	// Get the subscription id from url
 	subsID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {
@@ -248,37 +251,47 @@ func (routes StripeRoutes) RefreshSubs(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	// Find user account by uuid.
+	account, err := routes.readerRepo.BaseAccountByUUID(ftcID)
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
 	// Use Stripe SDK to retrieve data.
 	// The latest invoice field is expanded.
 	ss, err := routes.stripeRepo.Client.FetchSubs(subsID, true)
-	if err != nil {
-		sugar.Error(err)
-		err = xhttp.HandleSubsErr(w, err)
-		return
-	}
-
-	// Use Stripe customer id to find user account.
-	ba, err := routes.readerRepo.BaseAccountByStripeID(ss.Customer.ID)
-	if err != nil {
-		sugar.Error(err)
-		_ = render.New(w).NotFound("Stripe customer not found")
-		return
-	}
-
-	result, err := routes.stripeRepo.RefreshSubscription(ss, ba)
-
 	if err != nil {
 		sugar.Error(err)
 		_ = xhttp.HandleSubsErr(w, err)
 		return
 	}
 
+	// Verify customer id matches.
+	if !account.IsStripeCustomer(ss.Customer.ID) {
+		_ = render.New(w).BadRequest("customer id mismatched")
+		return
+	}
+
+	subs := stripe.NewSubs(ftcID, ss)
+	refreshed, err := routes.stripeRepo.SyncSubs(
+		account.CompoundIDs(),
+		subs,
+		reader.NewArchiver().ByStripe().ActionRefresh())
+
+	if err != nil {
+		sugar.Error(err)
+		_ = render.New(w).DBError(err)
+		return
+	}
+
 	// Only update subs and snapshot if actually modified.
 	go func() {
-		routes.handleSubsResult(result)
+		routes.handleSubsResult(refreshed)
 	}()
 
-	_ = render.New(w).OK(result)
+	_ = render.New(w).OK(refreshed)
 }
 
 // CancelSubs cancels a stripe subscription at period end.
