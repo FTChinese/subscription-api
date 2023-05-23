@@ -95,6 +95,19 @@ The Subscription object:
 
 为不影响响应速度，这些写操作在goroutine中完成，它们存在失败的可能性，但是这些不是关键数据。
 
+## Checkout intent
+
+在用户购买/升级订阅时，会产生一个关键的数据类型叫`CheckoutIntent`，用以推测用户本次支付的意图，以决定是否允许购买。其中包括一个`Kind`字段，是本次订阅的归类：
+  * IntentCreate
+  * IntentRenew
+  * IntentUpgrade
+  * IntentDowngrade
+  * IntentAddOn
+  * IntentOneTimeToAutoRenew: 一次性购买转为Stripe订阅
+  * IntentSwitchInterval：月/年转换
+  * IntentApplyCoupon：使用Stripe的coupon
+  * IntentForbidden
+
 ## 新建订阅
 
 ```
@@ -143,7 +156,7 @@ POST /stripe/subs
 
 获取购物车数据后，如果存在`Introductory`，会做如下验证：
 
-  * `Recurring`价格和`Introductory`价格必须数据同一个Stripe的product id，否则会认为无效；
+  * `Recurring`价格和`Introductory`价格数据必须同一个Stripe的product id，否则会认为无效；
 
   * `Introductory`的类别字段(`Kind`)必须为`one_time`，以防误把自动续订的价格关联成试用价格。
 
@@ -281,14 +294,33 @@ Change a subscription to other price.
 ```json
 {
   "priceId": "required",
-  "coupon": "optional",
-  "defaultPaymentMethod": "optional",
+  "coupon": "coupon id, optional string",
+  "defaultPaymentMethod": "optional string",
   "idempotency": "optional string"
 }
 ```
 
 * `priceId` is the price user wants to change to
 * `defaultPaymentMethod` an existing subscription is not required to provide a payment method.
+
+### Workflow
+
+1. 从header获取ftc user id，从url中获取stripe订阅id。
+2. 解析request body并验证字段
+3. 使用ftc user id取账号数据
+4. 如果账号中没有stripe customer id，则返回not found
+5. 根据请求参数找出CartItemStripe，同新建订阅部分
+6. 根据CartItemStripe构建新的购物车，包括
+  * Account
+  * CartItemStripe
+  * CheckoutIntent
+7. 开始尝试更新Stripe订阅，一下操作要缩表
+8. 首先根据ftc id或者wechat id从 ftc_vip表取数据membeship。
+9. 比较membership中的stripe subscription id是否与请求url中的id相等，不相等则为无效请求，结束。
+10. 检查CheckoutIntent.Kind是否属于IntentUpgrade、IntentDowngrade、IntentSwitchInterval、IntentApplyCoupon之一，不是则结束。
+11. 从stripe_subscription表取出当前订阅数据（如果不存在则取访问Stripe API）
+12. 调用stripe sdk更新当前订阅
+13. 更新当前ftc_vip
 
 ### Response
 
@@ -299,6 +331,22 @@ Change a subscription to other price.
 ```
 POST /stripe/subs/{id}/refresh
 ```
+
+同步Stripe API的订阅信息到我方数据库，通常用于用户在客户端的手动更新请求，如下拉刷新等功能。
+
+### Request body
+
+无
+
+### Workflow
+
+1. 获取url中的subscription id
+2. 调用Stripe sdk获取数据subscription，这里会绕过我方数据库
+3. 用subscription中的customer id从数据库中去用户账号
+4. 开始锁表处理会员数据
+5. 用账号数据中的ftc id取ftc_vip
+
+
 
 ### Response
 
