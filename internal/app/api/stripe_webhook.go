@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
-	"github.com/FTChinese/subscription-api/pkg/price"
-	sdk "github.com/stripe/stripe-go/v72"
-	"github.com/stripe/stripe-go/v72/webhook"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
+	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/FTChinese/subscription-api/pkg/reader"
+	sdk "github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/webhook"
 )
 
 // WebHook to listen to those events:
@@ -404,7 +406,10 @@ func (routes StripeRoutes) eventSubscription(ss *sdk.Subscription) error {
 	userIDs := account.CompoundIDs()
 	subs := stripe.NewSubs("", ss)
 
-	result, err := routes.stripeRepo.OnWebhookSubs(subs, userIDs)
+	result, err := routes.stripeRepo.SyncSubs(
+		userIDs,
+		subs,
+		reader.NewArchiver().ByStripe().ActionWebhook())
 	if err != nil {
 		sugar.Error(err)
 
