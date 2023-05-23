@@ -33,6 +33,7 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 // - creating ftc price;
 // - updating ftc price;
 // - attaching ftc intro price to product.
+// Deprecated
 func (router PaywallRouter) updateStripPriceMeta(ftcPrice price.FtcPrice) (price.StripePrice, error) {
 	defer router.logger.Sync()
 	sugar := router.logger.Sugar()
@@ -60,6 +61,7 @@ func (router PaywallRouter) updateStripPriceMeta(ftcPrice price.FtcPrice) (price
 	return price.NewStripePrice(rawPrice), nil
 }
 
+// Deprecated
 func (router PaywallRouter) ensureStripePrice(id string) (price.StripePrice, error) {
 	sp, err := router.stripeRepo.LoadOrFetchPrice(id, false, router.live)
 	if err != nil {

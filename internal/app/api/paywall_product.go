@@ -213,6 +213,12 @@ func (router PaywallRouter) AttachIntroPrice(w http.ResponseWriter, req *http.Re
 		return
 	}
 
+	if pwPrice.StripePriceID != "" {
+		go func() {
+			_, _ = router.updateStripPriceMeta(pwPrice.FtcPrice)
+		}()
+	}
+
 	_ = render.New(w).OK(prod)
 }
 
