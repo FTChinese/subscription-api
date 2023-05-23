@@ -63,7 +63,7 @@ func (m *StripePriceMeta) Validate() *render.ValidationError {
 	return nil
 }
 
-// WithRecurring updates metadata base on stripe's recurring field.
+// WithRecurring updates metadata based on stripe's recurring field.
 // The first time a stripe price is save to ftc's db,
 // chances are that no metadata fields set.
 // In such case we could only deduce from a price's
@@ -141,6 +141,7 @@ func (m StripePriceMeta) ToParams() map[string]string {
 // StripePriceMetaFromFtc extracts metadata from
 // an ftc equivalent price.
 // TODO: this might no longer be needed.
+// Deprecated.
 func StripePriceMetaFromFtc(p FtcPrice) StripePriceMeta {
 	return StripePriceMeta{
 		Introductory: p.IsOneTime(),
