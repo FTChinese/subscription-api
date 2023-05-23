@@ -340,12 +340,27 @@ POST /stripe/subs/{id}/refresh
 
 ### Workflow
 
-1. 获取url中的subscription id
-2. 调用Stripe sdk获取数据subscription，这里会绕过我方数据库
-3. 用subscription中的customer id从数据库中去用户账号
-4. 开始锁表处理会员数据
-5. 用账号数据中的ftc id取ftc_vip
-
+1. 获取url中的subscription id，获取header中的ftc id
+2. 用ftc id取账号
+3. 用subscription id从Stripe API获取订阅数据
+4. 验证账号中的strip customer id和subscription中的customer id是否一致
+5. 开始同步subscription到数据库，锁表
+6. 首先使用subscription id从ftc_vip中取出membership，下称stripe方；
+7. 如果上一步值为空，则使用ftc id再次从ftc_vip中取一次membership，下称ftc方。注意，这两次取数据只能执行一个，否则会死锁；
+8. 如果以stripe的membership为空，需考虑如下情况：
+  1. 如果ftc方也为空，则从stripe subscription构建新的membership；
+  2. 否则，检车ftc方是否过期，如果过期，则视同上一步，从stripe构建membership；
+  3. ftc方未过期，检查是否为一次性购买；
+  4. ftc方是一次性购买，检查stripe subscription是否过期；
+  5. 如果stripe subscription过期，则不过任何改动；
+  6. stripe subscription未过期，则覆盖一次性购买membership，剩余时间转为addon；
+  7. ftc方不是一次性购买，则可能为apple，不做任何改动
+9. stripe的membership不为空：
+  1. 如果stripe membership中的ftc id和账号的id不匹配，则是一个错误
+  2. 从stripe subscription构建新的membership，替代当前的stripe membership。
+10. 更新后的membership存储到ftc_vip；
+11. 如果存在carry over，则存储到ftc_invoice；
+12. 存储本次涉及到的所有数据：stripe的原始subscription、invoice、payment intent，备份变更前后的membership。
 
 
 ### Response
