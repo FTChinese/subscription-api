@@ -1,13 +1,14 @@
 package account
 
 import (
+	"strings"
+
 	"github.com/FTChinese/go-rest/rand"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/lib/validator"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/google/uuid"
 	"github.com/guregu/null"
-	"strings"
 )
 
 const mobileEmailSuffix = "@ftchinese.user"
@@ -85,6 +86,14 @@ func (a BaseAccount) IsMobileEmail() bool {
 
 func (a BaseAccount) IsMobileOnly() bool {
 	return strings.HasSuffix(a.Email, mobileEmailSuffix) && (a.Mobile.IsZero() || strings.HasPrefix(a.Email, a.Mobile.String))
+}
+
+func (a BaseAccount) IsStripeCustomer(targetID string) bool {
+	if a.StripeID.IsZero() {
+		return false
+	}
+
+	return a.StripeID.String == targetID
 }
 
 func (a BaseAccount) ExtractEmailName() string {
