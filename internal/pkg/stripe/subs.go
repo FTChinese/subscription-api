@@ -174,7 +174,9 @@ func (s Subs) IsExpired() bool {
 
 	expiresAt := s.ExpiresAt()
 
-	return expiresAt.Before(time.Now().Truncate(24 * time.Hour))
+	// Do not use Truncate here since Stripe has
+	// a precision of seconds.
+	return expiresAt.Before(time.Now().UTC())
 }
 
 // ShouldUpsert checks whether stripe subscription should be allowed to
