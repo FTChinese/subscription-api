@@ -498,6 +498,23 @@ func StartServer(s ServerStatus) {
 		})
 	})
 
+	r.Route("/webhook", func(r chi.Router) {
+		r.Post("/wxpay", ftcPayRoutes.WxWebHook)
+		r.Post("/alipay", ftcPayRoutes.AliWebHook)
+		// Events
+		//invoice.finalized
+		//invoice.payment_succeeded
+		//invoice.payment_failed
+		//invoice.created
+		//customer.subscription.deleted
+		//customer.subscription.updated
+		//customer.subscription.created
+		// http://www.ftacademy.cn/api/v1/webhook/stripe For version 1
+		// http://www.ftacademy.cn/api/v2/webhook/stripe For version 2
+		r.Post("/stripe", stripeRoutes.WebHook)
+		r.Post("/apple", iapRouter.WebHook)
+	})
+
 	r.Route("/apple", func(r chi.Router) {
 		r.Use(guard.CheckToken)
 
@@ -604,23 +621,6 @@ func StartServer(s ServerStatus) {
 			r.Patch("/{versionName}", appRouter.UpdateRelease)
 			r.Delete("/{versionName}", appRouter.DeleteRelease)
 		})
-	})
-
-	r.Route("/webhook", func(r chi.Router) {
-		r.Post("/wxpay", ftcPayRoutes.WxWebHook)
-		r.Post("/alipay", ftcPayRoutes.AliWebHook)
-		// Events
-		//invoice.finalized
-		//invoice.payment_succeeded
-		//invoice.payment_failed
-		//invoice.created
-		//customer.subscription.deleted
-		//customer.subscription.updated
-		//customer.subscription.created
-		// http://www.ftacademy.cn/api/v1/webhook/stripe For version 1
-		// http://www.ftacademy.cn/api/v2/webhook/stripe For version 2
-		r.Post("/stripe", stripeRoutes.WebHook)
-		r.Post("/apple", iapRouter.WebHook)
 	})
 
 	r.Get("/__version", func(w http.ResponseWriter, req *http.Request) {
