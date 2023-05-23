@@ -28,6 +28,54 @@ func (router PaywallRouter) ListPrices(w http.ResponseWriter, req *http.Request)
 	_ = render.New(w).OK(prices)
 }
 
+// update stripe price based on ftc price settings.
+// This should be used when
+// - creating ftc price;
+// - updating ftc price;
+// - attaching ftc intro price to product.
+func (router PaywallRouter) updateStripPriceMeta(ftcPrice price.FtcPrice) (price.StripePrice, error) {
+	defer router.logger.Sync()
+	sugar := router.logger.Sugar()
+
+	sugar.Infof("Updating stripe price meta")
+
+	rawPrice, err := router.
+		stripeRepo.
+		Client.
+		SetPriceMeta(
+			ftcPrice.StripePriceID,
+			price.StripePriceMetaFromFtc(ftcPrice).ToParams())
+
+	if err != nil {
+		return price.StripePrice{}, err
+	}
+
+	p := price.NewStripePrice(rawPrice)
+
+	err = router.stripeRepo.UpsertPrice(p)
+	if err != nil {
+		sugar.Error(err)
+	}
+
+	return price.NewStripePrice(rawPrice), nil
+}
+
+func (router PaywallRouter) ensureStripePrice(id string) (price.StripePrice, error) {
+	sp, err := router.stripeRepo.LoadOrFetchPrice(id, false, router.live)
+	if err != nil {
+		return price.StripePrice{}, err
+	}
+
+	if sp.IsFromStripe {
+		err := router.stripeRepo.UpsertPrice(sp)
+		if err != nil {
+			return price.StripePrice{}, err
+		}
+	}
+
+	return sp, nil
+}
+
 // CreatePrice creates a new price.
 // Request body:
 // - createdBy: string
@@ -64,6 +112,14 @@ func (router PaywallRouter) CreatePrice(w http.ResponseWriter, req *http.Request
 		sugar.Error(err)
 		_ = render.New(w).DBError(err)
 		return
+	}
+
+	// Sync stripe price metadata
+	// TODO: remove this.
+	if p.StripePriceID != "" {
+		go func() {
+			_, _ = router.updateStripPriceMeta(p)
+		}()
 	}
 
 	// Sync legacy table.
@@ -129,6 +185,13 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	// TODO: remove this.
+	if params.StripePriceID != "" {
+		go func() {
+			_, _ = router.updateStripPriceMeta(updated)
+		}()
+	}
+
 	_ = render.New(w).OK(updated)
 }
 
@@ -181,6 +244,15 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 	pwPrice, err := router.paywallRepo.RetrievePaywallPrice(priceID, router.live)
 	if err != nil {
 		_ = render.New(w).DBError(err)
+		sugar.Error(err)
+		return
+	}
+
+	// Check if stripe price present.
+	// TODO: remove this.
+	_, err = router.ensureStripePrice(pwPrice.StripePriceID)
+	if err != nil {
+		_ = xhttp.HandleSubsErr(w, err)
 		sugar.Error(err)
 		return
 	}
