@@ -350,7 +350,7 @@ func StartServer(s ServerStatus) {
 			r.Use(xhttp.FormParsed)
 			// List stripe prices. If query parameter has refresh=true, no cached data will be used.
 			// ?refresh=true|false
-			r.Get("/", stripeRoutes.ListPrices)
+			r.Get("/", stripeRoutes.ListPricesCompat)
 			// Load a stripe price. It first queries ftc's db.
 			// If not found, then query Stripe API.
 			// Any price loade directly from Stripe API will

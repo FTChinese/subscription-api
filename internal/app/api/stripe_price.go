@@ -9,9 +9,9 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 )
 
-// ListPrices retrieves all prices defined in Stripe.
+// ListPricesCompat retrieves all prices defined in Stripe.
 // Deprecated
-func (routes StripeRoutes) ListPrices(w http.ResponseWriter, req *http.Request) {
+func (routes StripeRoutes) ListPricesCompat(w http.ResponseWriter, req *http.Request) {
 	refresh := xhttp.ParseQueryRefresh(req)
 
 	prices, err := routes.stripeRepo.ListPricesCompat(routes.live, refresh)
