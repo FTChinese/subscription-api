@@ -194,7 +194,8 @@ func (router PaywallRouter) UpdatePrice(w http.ResponseWriter, req *http.Request
 		}()
 	}
 
-	_ = render.New(w).OK(updated)
+	ftcPrice.FtcPrice = updated
+	_ = render.New(w).OK(ftcPrice)
 }
 
 // RefreshPriceOffers attaches all valid discounts to
