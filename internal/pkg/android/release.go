@@ -1,12 +1,12 @@
 package android
 
 import (
+	"strings"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/guregu/null"
-	"strings"
 )
 
 // ReleaseInput contains the fields required to create or update a release.
@@ -72,9 +72,4 @@ func (r Release) Update(i ReleaseInput) Release {
 	r.UpdatedAt = chrono.TimeNow()
 
 	return r
-}
-
-type ReleaseList struct {
-	pkg.PagedList
-	Data []Release `json:"data"`
 }
