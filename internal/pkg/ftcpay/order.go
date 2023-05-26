@@ -2,10 +2,10 @@ package ftcpay
 
 import (
 	"fmt"
+
 	"github.com/FTChinese/go-rest/chrono"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/subscription-api/lib/dt"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/conv"
 	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/price"
@@ -255,9 +255,4 @@ func (o Order) Confirmed(at chrono.Time, p dt.TimeSlot) Order {
 	o.EndDate = chrono.DateFrom(p.EndUTC.Time)
 
 	return o
-}
-
-type OrderList struct {
-	pkg.PagedList
-	Data []Order `json:"data"`
 }
