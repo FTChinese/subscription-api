@@ -29,6 +29,19 @@ func (routes StripeRoutes) ListPricesCompat(w http.ResponseWriter, req *http.Req
 	_ = render.New(w).OK(prices)
 }
 
+func (routes StripeRoutes) ListPrices(w http.ResponseWriter, req *http.Request) {
+	p := gorest.GetPagination(req)
+
+	prices, err := routes.stripeRepo.ListPrices(p)
+
+	if err != nil {
+		_ = render.New(w).DBError(err)
+		return
+	}
+
+	_ = render.New(w).OK(prices)
+}
+
 // loadPrice wraps repeated codes of loading and
 // optinally saving a price.
 func (routes StripeRoutes) loadPrice(w http.ResponseWriter, id string, refresh bool) (price.StripePrice, error) {
