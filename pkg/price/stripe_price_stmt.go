@@ -52,3 +52,13 @@ WHERE FIND_IN_SET(id, ?) > 0
 	AND live_mode = ?
 ORDER BY created
 `
+
+const StmtCountStripePrice = `
+SELECT COUNT(*)
+FROM subs_product.stripe_price
+`
+
+const StmtStripePrices = colSelectStripePrice + `
+ORDER BY updated_utc
+LIMIT ? OFFSET ?
+`
