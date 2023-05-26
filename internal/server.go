@@ -592,6 +592,8 @@ func StartServer(s ServerStatus) {
 		r.Route("/stripe", func(r chi.Router) {
 
 			r.Route("/prices", func(r chi.Router) {
+				// ?page=<int>&per_page=<int>
+				r.With(xhttp.FormParsed).Get("/", stripeRoutes.ListPrices)
 				// Add some essential metadata to a stripe price.
 				r.Post("/{id}", stripeRoutes.SetPriceMeta)
 				r.Post("/{id}/activate", stripeRoutes.ActivatePrice)
