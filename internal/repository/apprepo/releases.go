@@ -1,10 +1,11 @@
 package apprepo
 
 import (
+	"log"
+
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/subscription-api/internal/pkg/android"
 	"github.com/FTChinese/subscription-api/pkg"
-	"log"
 )
 
 // CreateRelease insert a new row of android release.
@@ -87,7 +88,7 @@ func (env Env) listReleases(p gorest.Pagination) ([]android.Release, error) {
 }
 
 // ListReleases lists all releases.
-func (env Env) ListReleases(p gorest.Pagination) (android.ReleaseList, error) {
+func (env Env) ListReleases(p gorest.Pagination) (pkg.PagedData[android.Release], error) {
 	countCh := make(chan int64)
 	listCh := make(chan pkg.AsyncResult[[]android.Release])
 
@@ -113,16 +114,13 @@ func (env Env) ListReleases(p gorest.Pagination) (android.ReleaseList, error) {
 	count, listResult := <-countCh, <-listCh
 
 	if listResult.Err != nil {
-		return android.ReleaseList{}, listResult.Err
+		return pkg.PagedData[android.Release]{}, listResult.Err
 	}
 
-	return android.ReleaseList{
-		PagedList: pkg.PagedList{
-			Total:      count,
-			Pagination: p,
-			Err:        nil,
-		},
-		Data: listResult.Value,
+	return pkg.PagedData[android.Release]{
+		Total:      count,
+		Pagination: p,
+		Data:       listResult.Value,
 	}, nil
 }
 
