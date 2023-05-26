@@ -4,11 +4,11 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"strings"
+
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/lib/validator"
-	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/stripe/stripe-go/v72"
-	"strings"
 )
 
 // DefaultPaymentMethodParams contains a customer's default payment method.
@@ -185,9 +185,4 @@ func (pm *PaymentMethodJSON) Scan(src interface{}) error {
 	default:
 		return errors.New("incompatible type to scan to PaymentMethodCard")
 	}
-}
-
-type PagedPaymentMethods struct {
-	pkg.PagedList
-	Data []PaymentMethod `json:"data"`
 }

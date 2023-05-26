@@ -1,10 +1,12 @@
 package apprepo
 
 import (
+	"testing"
+
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/subscription-api/internal/pkg/android"
+	"github.com/FTChinese/subscription-api/pkg"
 	"github.com/FTChinese/subscription-api/pkg/db"
-	"testing"
 )
 
 func TestEnv_CreateRelease(t *testing.T) {
@@ -128,7 +130,7 @@ func TestEnv_ListReleases(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    android.ReleaseList
+		want    pkg.PagedData[android.Release]
 		wantErr bool
 	}{
 		{
@@ -136,7 +138,7 @@ func TestEnv_ListReleases(t *testing.T) {
 			args: args{
 				p: gorest.NewPagination(1, 20),
 			},
-			want:    android.ReleaseList{},
+			want:    pkg.PagedData[android.Release]{},
 			wantErr: false,
 		},
 	}

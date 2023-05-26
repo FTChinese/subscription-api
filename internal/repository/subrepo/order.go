@@ -133,7 +133,7 @@ func (env Env) listOrders(ids ids.UserIDs, p gorest.Pagination) ([]ftcpay.Order,
 	return orders, nil
 }
 
-func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (ftcpay.OrderList, error) {
+func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (pkg.PagedData[ftcpay.Order], error) {
 	defer env.logger.Sync()
 	sugar := env.logger.Sugar()
 
@@ -165,15 +165,13 @@ func (env Env) ListOrders(ids ids.UserIDs, p gorest.Pagination) (ftcpay.OrderLis
 	count, listResult := <-countCh, <-listCh
 
 	if listResult.Err != nil {
-		return ftcpay.OrderList{}, listResult.Err
+		return pkg.PagedData[ftcpay.Order]{}, listResult.Err
 	}
 
-	return ftcpay.OrderList{
-		PagedList: pkg.PagedList{
-			Total:      count,
-			Pagination: p,
-		},
-		Data: listResult.Value,
+	return pkg.PagedData[ftcpay.Order]{
+		Total:      count,
+		Pagination: p,
+		Data:       listResult.Value,
 	}, nil
 }
 

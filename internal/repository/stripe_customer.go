@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/FTChinese/go-rest"
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/subscription-api/internal/pkg/stripe"
 	"github.com/FTChinese/subscription-api/pkg"
 )
@@ -64,7 +64,7 @@ func (repo StripeRepo) countCusPaymentMethods(cusID string) (int64, error) {
 // ListCusPaymentMethods list a payment methods belongs to a customer.
 // NOT a payment method does not belong to any customer
 // upon initial creation. It must be attached.
-func (repo StripeRepo) ListCusPaymentMethods(cusID string, page gorest.Pagination) (stripe.PagedPaymentMethods, error) {
+func (repo StripeRepo) ListCusPaymentMethods(cusID string, page gorest.Pagination) (pkg.PagedData[stripe.PaymentMethod], error) {
 	defer repo.Logger.Sync()
 	sugar := repo.Logger.Sugar()
 
@@ -94,14 +94,12 @@ func (repo StripeRepo) ListCusPaymentMethods(cusID string, page gorest.Paginatio
 	count, listRes := <-countCh, <-listCh
 
 	if listRes.Err != nil {
-		return stripe.PagedPaymentMethods{}, listRes.Err
+		return pkg.PagedData[stripe.PaymentMethod]{}, listRes.Err
 	}
 
-	return stripe.PagedPaymentMethods{
-		PagedList: pkg.PagedList{
-			Total:      count,
-			Pagination: page,
-		},
-		Data: listRes.Value,
+	return pkg.PagedData[stripe.PaymentMethod]{
+		Total:      count,
+		Pagination: page,
+		Data:       listRes.Value,
 	}, nil
 }
