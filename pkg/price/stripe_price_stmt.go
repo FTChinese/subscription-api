@@ -59,6 +59,6 @@ FROM subs_product.stripe_price
 `
 
 const StmtStripePrices = colSelectStripePrice + `
-ORDER BY updated_utc
+ORDER BY updated_utc DESC
 LIMIT ? OFFSET ?
 `
