@@ -1,5 +1,14 @@
 package main
 
+import (
+	_ "embed"
+	"flag"
+	"fmt"
+	"os"
+
+	"github.com/FTChinese/subscription-api/pkg/config"
+)
+
 //go:embed build/api.toml
 var tomlConfig string
 
@@ -29,5 +38,5 @@ func init() {
 }
 
 func main() {
-	
+
 }
