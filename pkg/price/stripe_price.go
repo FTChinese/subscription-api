@@ -18,6 +18,7 @@ type StripePrice struct {
 	Kind           Kind               `json:"kind" db:"kind"`
 	LiveMode       bool               `json:"liveMode" db:"live_mode"`
 	Nickname       string             `json:"nickname" db:"nickname"`
+	OnPaywall      bool               `json:"onPaywall" db:"on_paywall"`
 	ProductID      string             `json:"productId" db:"product_id"`
 	PeriodCount    ColumnYearMonthDay `json:"periodCount" db:"period_count"`
 	Tier           enum.Tier          `json:"tier" db:"tier"` // The tier of this price.
@@ -67,9 +68,9 @@ func (p StripePrice) ActiveID() conv.MD5Sum {
 }
 
 func (p StripePrice) uniqueFeatures() string {
-	cycleStr := cycleStrOfKind(p.Kind, p.PeriodCount.EqCycle())
+	e := p.Edition()
 
-	return fmt.Sprintf("stripe.%s.%s.%s.%s", p.Tier.String(), cycleStr, p.Kind, conv.LiveMode(p.LiveMode))
+	return fmt.Sprintf("stripe.%s.%s.%s.%s", e.TierString(), e.CycleString(), p.Kind, conv.LiveMode(p.LiveMode))
 }
 
 func (p StripePrice) ActiveEntry() ActivePrice {
@@ -93,6 +94,13 @@ func (p StripePrice) IsIntro() bool {
 // Edition deduces the edition of stripe price since that
 // information might be missing.
 func (p StripePrice) Edition() Edition {
+	if p.Kind == KindOneTime {
+		return Edition{
+			Tier:  p.Tier,
+			Cycle: enum.CycleNull,
+		}
+	}
+
 	return Edition{
 		Tier:  p.Tier,
 		Cycle: p.PeriodCount.EqCycle(),
