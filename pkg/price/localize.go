@@ -1,10 +1,11 @@
 package price
 
 import (
-	"github.com/FTChinese/go-rest/enum"
-	"github.com/FTChinese/subscription-api/lib/dt"
 	"strconv"
 	"strings"
+
+	"github.com/FTChinese/go-rest/enum"
+	"github.com/FTChinese/subscription-api/lib/dt"
 )
 
 var tiersCN = map[enum.Tier]string{
