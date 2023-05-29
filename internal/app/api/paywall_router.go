@@ -34,6 +34,8 @@ func NewPaywallRouter(
 }
 
 // LoadPaywall loads paywall data from db or cache.
+// Query parameter:
+// ?fresh=<bool>
 func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request) {
 
 	refresh := xhttp.ParseQueryRefresh(req)
@@ -69,18 +71,6 @@ func (router PaywallRouter) LoadPaywall(w http.ResponseWriter, req *http.Request
 			}
 		}
 	}()
-
-	if refresh {
-		go func() {
-			defer router.logger.Sync()
-			sugar := router.logger.Sugar()
-
-			_, err := router.stripeRepo.ListPricesCompat(router.live, true)
-			if err != nil {
-				sugar.Error(err)
-			}
-		}()
-	}
 
 	_ = render.New(w).JSON(http.StatusOK, paywall)
 }
