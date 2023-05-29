@@ -9,12 +9,12 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 )
 
-// ListPricesCompat retrieves all prices defined in Stripe.
+// ListPaywallPrices retrieves all prices defined in Stripe.
 // Deprecated
-func (routes StripeRoutes) ListPricesCompat(w http.ResponseWriter, req *http.Request) {
+func (routes StripeRoutes) ListPaywallPrices(w http.ResponseWriter, req *http.Request) {
 	refresh := xhttp.ParseQueryRefresh(req)
 
-	prices, err := routes.stripeRepo.ListPricesCompat(routes.live, refresh)
+	prices, err := routes.stripeRepo.LoadOrFetchPaywallPrices(refresh, routes.live)
 
 	if err != nil {
 		_ = xhttp.HandleSubsErr(w, err)
@@ -29,10 +29,13 @@ func (routes StripeRoutes) ListPricesCompat(w http.ResponseWriter, req *http.Req
 	_ = render.New(w).OK(prices)
 }
 
-func (routes StripeRoutes) ListPrices(w http.ResponseWriter, req *http.Request) {
+// ListPricesPages retrieves a list of stripe prices with pagination.
+// Query parameter:
+// ?page=<int>&per_page=<int>
+func (routes StripeRoutes) ListPricesPaged(w http.ResponseWriter, req *http.Request) {
 	p := gorest.GetPagination(req)
 
-	prices, err := routes.stripeRepo.ListPrices(p)
+	prices, err := routes.stripeRepo.ListPricesPaged(routes.live, p)
 
 	if err != nil {
 		_ = render.New(w).DBError(err)
