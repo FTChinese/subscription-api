@@ -20,15 +20,33 @@ func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
 	}
 }
 
-// Flatten is a temporay solution to hoist prices embedded in products field.
-func (w Paywall) Flatten() Paywall {
-	for _, prod := range w.Products {
-		if prod.Introductory.ID != "" {
-			w.FTCPrices = append(w.FTCPrices, PaywallPrice{
-				FtcPrice: prod.Introductory.FtcPrice,
-			})
+// Normalize keeps backward compatibility.
+// TODO: sync stripe ids from Stripe field to FTCprices;
+// then sync FTCPrices to each products' prices field.
+func (w Paywall) Normalize() Paywall {
+	stripeIds := map[string]string{}
+
+	for _, v := range w.Stripe {
+		stripeIds[v.Price.Edition().String()] = v.Price.ID
+	}
+
+	for i, prod := range w.Products {
+		for j, price := range prod.Prices {
+			if prod.Introductory.ID != "" {
+				sid := stripeIds[prod.Introductory.Edition.String()]
+
+				w.Products[i].Introductory.StripePriceID = sid
+
+				w.FTCPrices = append(w.FTCPrices, PaywallPrice{
+					FtcPrice: w.Products[i].Introductory.FtcPrice,
+				})
+			}
+
+			sid := stripeIds[price.Edition.String()]
+			w.Products[i].Prices[j].StripePriceID = sid
+
+			w.FTCPrices = append(w.FTCPrices, w.Products[i].Prices...)
 		}
-		w.FTCPrices = append(w.FTCPrices, prod.Prices...)
 	}
 
 	return w
@@ -46,23 +64,4 @@ func (w Paywall) FindPriceByEdition(e price.Edition) (PaywallPrice, error) {
 	}
 
 	return PaywallPrice{}, sql.ErrNoRows
-}
-
-// StripePriceIDs collect all stripe price id present on paywall.
-func (w Paywall) StripePriceIDs() []string {
-	var ids = make([]string, 0)
-
-	for _, pwProd := range w.Products {
-		if pwProd.Introductory.StripePriceID != "" {
-			ids = append(ids, pwProd.Introductory.StripePriceID)
-		}
-
-		for _, pwPrice := range pwProd.Prices {
-			if pwPrice.StripePriceID != "" {
-				ids = append(ids, pwPrice.StripePriceID)
-			}
-		}
-	}
-
-	return ids
 }
