@@ -45,31 +45,6 @@ func (routes StripeRoutes) ListPricesPaged(w http.ResponseWriter, req *http.Requ
 	_ = render.New(w).OK(prices)
 }
 
-// loadPrice wraps repeated codes of loading and
-// optinally saving a price.
-func (routes StripeRoutes) loadPrice(w http.ResponseWriter, id string, refresh bool) (price.StripePrice, error) {
-
-	sp, err := routes.stripeRepo.LoadOrFetchPrice(id, refresh, routes.live)
-
-	if err != nil {
-		_ = xhttp.HandleSubsErr(w, err)
-		return price.StripePrice{}, err
-	}
-
-	if sp.IsFromStripe {
-		go func() {
-			err := routes.stripeRepo.UpsertPrice(sp)
-			if err != nil {
-				defer routes.logger.Sync()
-				sugar := routes.logger.Sugar()
-				sugar.Error(err)
-			}
-		}()
-	}
-
-	return sp, nil
-}
-
 // LoadPrice retrieves a stripe price either from database or
 // stripe API.
 // Query parameters:
@@ -87,7 +62,7 @@ func (routes StripeRoutes) LoadPrice(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sp, err := routes.loadPrice(w, id, refresh)
+	sp, err := routes.stripeRepo.LoadOrFetchPrice(id, refresh, routes.live)
 
 	if err != nil {
 		return
@@ -138,13 +113,15 @@ func (routes StripeRoutes) SetPriceMeta(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	sp, err := routes.loadPrice(w, id, false)
+	sp, err := routes.stripeRepo.LoadOrFetchPrice(id, false, routes.live)
 	if err != nil {
 		return
 	}
 
-	// Merge the period count deduced from stripe fields.
-	params.PeriodCount = sp.PeriodCount.YearMonthDay
+	// Use client period count only for introductory.
+	if !params.Introductory {
+		params.PeriodCount = sp.PeriodCount.YearMonthDay
+	}
 
 	rawPrice, err := routes.stripeRepo.Client.SetPriceMeta(id, params.ToParams())
 	if err != nil {
@@ -153,7 +130,7 @@ func (routes StripeRoutes) SetPriceMeta(w http.ResponseWriter, req *http.Request
 	}
 
 	// Refresh db with updated data.
-	sp = price.NewStripePrice(rawPrice)
+	newPrice := price.NewStripePrice(rawPrice)
 	go func() {
 		err := routes.stripeRepo.UpsertPrice(sp)
 		if err != nil {
@@ -163,7 +140,9 @@ func (routes StripeRoutes) SetPriceMeta(w http.ResponseWriter, req *http.Request
 		}
 	}()
 
-	_ = render.New(w).OK(sp)
+	newPrice.OnPaywall = sp.OnPaywall
+
+	_ = render.New(w).OK(newPrice)
 }
 
 func (routes StripeRoutes) ActivatePrice(w http.ResponseWriter, req *http.Request) {
@@ -177,12 +156,13 @@ func (routes StripeRoutes) ActivatePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	sp, err := routes.loadPrice(w, id, false)
+	sp, err := routes.stripeRepo.LoadOrFetchPrice(id, false, routes.live)
 
 	if err != nil {
 		return
 	}
 
+	// Put this price on paywall.
 	err = routes.stripeRepo.ActivatePrice(sp)
 	if err != nil {
 		_ = render.New(w).DBError(err)
@@ -203,12 +183,13 @@ func (routes StripeRoutes) DeactivatePrice(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	sp, err := routes.loadPrice(w, id, false)
+	sp, err := routes.stripeRepo.LoadOrFetchPrice(id, false, routes.live)
 
 	if err != nil {
 		return
 	}
 
+	// Remove price from paywall.
 	err = routes.stripeRepo.DeactivePrice(sp)
 	if err != nil {
 		_ = render.New(w).DBError(err)
