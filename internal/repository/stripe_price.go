@@ -102,6 +102,23 @@ func (repo StripeRepo) RetrievePrice(id string, live bool) (price.StripePrice, e
 	return p, nil
 }
 
+func (repo StripeRepo) IsPriceOnPaywall(id string) (bool, error) {
+	var ok bool
+
+	err := repo.dbs.Read.Get(
+		&ok,
+		price.StmtIsActivePrice,
+		id,
+		price.PriceSourceStripe,
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
+}
+
 func (repo StripeRepo) UpsertPrice(p price.StripePrice) error {
 
 	_, err := repo.dbs.Write.NamedExec(
