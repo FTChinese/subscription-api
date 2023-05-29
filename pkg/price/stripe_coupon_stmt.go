@@ -23,24 +23,24 @@ ON DUPLICATE KEY UPDATE
 ` + colInsertCoupon
 
 const colSelectCoupon = `
-SELECT id,
-	amount_off,
-	created,
-	currency,
-	duration,
-	end_utc,
-	live_mode,
-	display_name AS name,
-	price_id,
-	start_utc,
-	current_status AS status,
-	updated_utc
-FROM subs_product.stripe_coupon
+SELECT c.id,
+	c.amount_off,
+	c.created,
+	c.currency,
+	c.duration,
+	c.end_utc,
+	c.live_mode,
+	c.display_name AS name,
+	c.price_id,
+	c.start_utc,
+	c.current_status AS status,
+	c.updated_utc
+FROM subs_product.stripe_coupon AS c
 `
 
 const StmtRetrieveCoupon = colSelectCoupon + `
-WHERE id = ?
-	AND live_mode = ?
+WHERE c.id = ?
+	AND c.live_mode = ?
 LIMIT 1
 `
 
@@ -48,28 +48,35 @@ LIMIT 1
 // whether they are active or not.
 // Used by CMS.
 const StmtPriceAllCoupons = colSelectCoupon + `
-WHERE price_id = ?
-	AND live_mode = ?
-ORDER BY updated_utc DESC
+WHERE c.price_id = ?
+	AND c.live_mode = ?
+ORDER BY c.updated_utc DESC
 `
 
-// StmtPriceActiveCoupons retrieve all active coupons of a price.
+// StmtPriceActiveCoupons retrieve all active coupons
+// of a price, regardless of whether the price is
+// active on paywall or not.
 // Used by user-facing apps.
 const StmtPriceActiveCoupons = colSelectCoupon + `
-WHERE price_id = ?
-	AND live_mode = ?
-	AND current_status = 'active'
-ORDER BY amount_off DESC
+WHERE c.price_id = ?
+	AND c.live_mode = ?
+	AND c.current_status = 'active'
+ORDER BY c.amount_off DESC
 `
 
-// StmtActiveCouponsOfPrices retrieves coupons of the specified prices.
-// Used to build paywall since we want to expose only the active ones.
-const StmtActiveCouponsOfPrices = colSelectCoupon + `
-WHERE FIND_IN_SET(price_id, ?) > 0
-	AND live_mode = ?
-	AND current_status = 'active'
-	AND (end_utc IS NULL OR end_utc >= UTC_TIMESTAMP())
-ORDER BY amount_off DESC
+// StmtPaywallStripeCoupons retrieves all coupons
+// of prices that are currently present on paywall.
+// It is achieved by LEFT JOIN product_active_price,
+// and ensure that rows from product_active_price
+// is not null and source is tripe.
+const StmtPaywallStripeCoupons = colSelectCoupon + `
+LEFT JOIN subs_product.product_active_price AS a
+	on c.price_id = a.price_id
+WHERE c.live_mode = ?
+	AND a.source = 'stripe'
+	AND c.current_status = 'active'
+	AND (c.end_utc IS NULL OR c.end_utc >= UTC_TIMESTAMP())
+ORDER BY c.amount_off DESC
 `
 
 const StmtChangeCouponStatus = `
