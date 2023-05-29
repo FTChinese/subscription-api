@@ -123,8 +123,8 @@ type FtcPrice struct {
 	LiveMode      bool               `json:"liveMode" db:"live_mode"` // Sibling requirement
 	Nickname      null.String        `json:"nickname" db:"nickname"`
 	PeriodCount   ColumnYearMonthDay `json:"periodCount" db:"period_count"`
-	ProductID     string             `json:"productId" db:"product_id"` // Sibling requirement. Price's parent.
-	StripePriceID string             `json:"stripePriceId" db:"stripe_price_id"`
+	ProductID     string             `json:"productId" db:"product_id"`          // Sibling requirement. Price's parent.
+	StripePriceID string             `json:"stripePriceId" db:"stripe_price_id"` // Deprecated, but should not be removed to keep client app compatible.
 	Title         null.String        `json:"title" db:"title"`
 	UnitAmount    float64            `json:"unitAmount" db:"unit_amount"`
 	StartUTC      chrono.Time        `json:"startUtc" db:"start_utc"`
@@ -166,9 +166,7 @@ func (p FtcPrice) ActiveID() conv.MD5Sum {
 // uniqueFeatures is a string to uniquely
 // identify an active price of a product.
 func (p FtcPrice) uniqueFeatures() string {
-	cycleStr := cycleStrOfKind(p.Kind, p.PeriodCount.EqCycle())
-
-	return fmt.Sprintf("ftc.%s.%s.%s.%s", p.Tier.String(), cycleStr, p.Kind, conv.LiveMode(p.LiveMode))
+	return fmt.Sprintf("ftc.%s.%s.%s.%s", p.Edition.TierString(), p.Edition.CycleString(), p.Kind, conv.LiveMode(p.LiveMode))
 }
 
 func (p FtcPrice) ActiveEntry() ActivePrice {
