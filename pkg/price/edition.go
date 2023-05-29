@@ -47,6 +47,7 @@ func (e Edition) Validate() *render.ValidationError {
 	return nil
 }
 
+// NamedKey generates a string representation.
 func (e Edition) NamedKey() string {
 	return e.Tier.String() + "_" + e.Cycle.String()
 }
@@ -57,4 +58,32 @@ func (e Edition) NamedKey() string {
 // * 高端会员/年
 func (e Edition) StringCN() string {
 	return e.Tier.StringCN() + "/" + e.Cycle.StringCN()
+}
+
+func cycleString(c enum.Cycle) string {
+	if c == enum.CycleNull {
+		return "null"
+	}
+
+	return c.String()
+}
+
+func tierString(t enum.Tier) string {
+	if t == enum.TierNull {
+		return "null"
+	}
+
+	return t.String()
+}
+
+func (e Edition) String() string {
+	return tierString(e.Tier) + "_" + cycleString(e.Cycle)
+}
+
+func (e Edition) TierString() string {
+	return tierString(e.Tier)
+}
+
+func (e Edition) CycleString() string {
+	return cycleString(e.Cycle)
 }
