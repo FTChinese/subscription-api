@@ -44,7 +44,7 @@ func (repo PaywallRepo) RetrievePaywall(live bool) (reader.Paywall, error) {
 	products := reader.NewPaywallProducts(productsRes.Value, pricesRes.Value)
 
 	// Build paywall.
-	return reader.NewPaywall(pwDocRes.Value, products).Flatten(), nil
+	return reader.NewPaywall(pwDocRes.Value, products), nil
 }
 
 // RetrievePaywallDoc loads the latest row of paywall document.
