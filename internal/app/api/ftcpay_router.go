@@ -3,6 +3,8 @@ package api
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/app/paybase"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
@@ -12,7 +14,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 // FtcPayRoutes is the base type used to handle shared payment operations.
@@ -135,7 +136,9 @@ func (routes FtcPayRoutes) loadCheckoutItem(params ftcpay.FtcCartParams, live bo
 	// If price and discount could be found in paywall.
 	if err == nil {
 		sugar.Infof("Paywall Cache found. Search checkout item.")
-		item, err := params.BuildCartItem(paywall.Products)
+
+		item, err := paywall.CartItemFtc(params.PriceID, params.DiscountID)
+
 		if err == nil {
 			sugar.Infof("Checkout item found in cache")
 			return item, nil

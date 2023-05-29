@@ -2,8 +2,10 @@ package reader
 
 import (
 	"database/sql"
+	"errors"
 
 	"github.com/FTChinese/subscription-api/pkg/price"
+	"github.com/guregu/null"
 )
 
 type Paywall struct {
@@ -50,6 +52,27 @@ func (w Paywall) Normalize() Paywall {
 	}
 
 	return w
+}
+
+func (w Paywall) FindFtcPrice(priceID string) (PaywallPrice, error) {
+	for _, v := range w.FTCPrices {
+		if v.ID == priceID {
+			return v, nil
+		}
+	}
+
+	return PaywallPrice{}, errors.New("the requested price is not found")
+}
+
+// CartItemFtc finds a price and an optional discount.
+func (w Paywall) CartItemFtc(priceID string, discountID null.String) (CartItemFtc, error) {
+	pwPrice, err := w.FindFtcPrice(priceID)
+
+	if err != nil {
+		return CartItemFtc{}, err
+	}
+
+	return pwPrice.BuildCartItem(discountID)
 }
 
 // FindPriceByEdition tries to find a price for a specific edition.
