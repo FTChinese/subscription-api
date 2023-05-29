@@ -11,9 +11,13 @@ import (
 
 // countPrices gets the total entry of stripe prices
 // in db.
-func (repo StripeRepo) countPrices() (int64, error) {
+func (repo StripeRepo) countPrices(live bool) (int64, error) {
 	var count int64
-	err := repo.dbs.Read.Get(&count, price.StmtCountStripePrice)
+	err := repo.dbs.Read.Get(
+		&count,
+		price.StmtCountStripePrice,
+		live,
+	)
 	if err != nil {
 		return 0, err
 	}
@@ -21,12 +25,13 @@ func (repo StripeRepo) countPrices() (int64, error) {
 	return count, nil
 }
 
-func (repo StripeRepo) listPrices(p gorest.Pagination) ([]price.StripePrice, error) {
+func (repo StripeRepo) listPrices(live bool, p gorest.Pagination) ([]price.StripePrice, error) {
 	list := make([]price.StripePrice, 0)
 
 	err := repo.dbs.Read.Select(
 		&list,
-		price.StmtStripePrices,
+		price.StmtStripePagedPrices,
+		live,
 		p.Limit,
 		p.Offset(),
 	)
@@ -38,14 +43,19 @@ func (repo StripeRepo) listPrices(p gorest.Pagination) ([]price.StripePrice, err
 	return list, nil
 }
 
-func (repo StripeRepo) ListPrices(p gorest.Pagination) (pkg.PagedData[price.StripePrice], error) {
+// ListPricesPages retrieves a list of stripe prices
+// with pagination.
+func (repo StripeRepo) ListPricesPaged(
+	live bool,
+	p gorest.Pagination,
+) (pkg.PagedData[price.StripePrice], error) {
 
 	countCh := make(chan int64)
 	listCh := make(chan pkg.AsyncResult[[]price.StripePrice])
 
 	go func() {
 		defer close(countCh)
-		n, err := repo.countPrices()
+		n, err := repo.countPrices(live)
 		if err != nil {
 			log.Print(err)
 		}
@@ -55,7 +65,7 @@ func (repo StripeRepo) ListPrices(p gorest.Pagination) (pkg.PagedData[price.Stri
 
 	go func() {
 		defer close(listCh)
-		list, err := repo.listPrices(p)
+		list, err := repo.listPrices(live, p)
 		listCh <- pkg.AsyncResult[[]price.StripePrice]{
 			Err:   err,
 			Value: list,
@@ -75,6 +85,23 @@ func (repo StripeRepo) ListPrices(p gorest.Pagination) (pkg.PagedData[price.Stri
 	}, nil
 }
 
+// Retrieveprice retrieves a single stripe price.
+func (repo StripeRepo) RetrievePrice(id string, live bool) (price.StripePrice, error) {
+	var p price.StripePrice
+
+	err := repo.dbs.Read.Get(
+		&p,
+		price.StmtStripePrice,
+		id,
+		live)
+
+	if err != nil {
+		return price.StripePrice{}, err
+	}
+
+	return p, nil
+}
+
 func (repo StripeRepo) UpsertPrice(p price.StripePrice) error {
 
 	_, err := repo.dbs.Write.NamedExec(
@@ -86,22 +113,6 @@ func (repo StripeRepo) UpsertPrice(p price.StripePrice) error {
 	}
 
 	return nil
-}
-
-func (repo StripeRepo) RetrievePrice(id string, live bool) (price.StripePrice, error) {
-	var p price.StripePrice
-
-	err := repo.dbs.Read.Get(
-		&p,
-		price.StmtRetrieveStripePrice,
-		id,
-		live)
-
-	if err != nil {
-		return price.StripePrice{}, err
-	}
-
-	return p, nil
 }
 
 // ActivatePrice adds an entry into product_active_price table.
