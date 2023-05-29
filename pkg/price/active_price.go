@@ -74,6 +74,7 @@ const StmtIsActivePrice = `
 SELECT EXISTS (
 	SELECT *
 	FROM subs_product.product_active_price
-	WHERE id = ?
+	WHERE price_id = ?
+		AND source = ?
 ) AS active
 `
