@@ -68,3 +68,12 @@ WHERE source = :source
 	AND price_id = :price_id
 LIMIT 1
 `
+
+// Check if a price is present on paywall
+const StmtIsActivePrice = `
+SELECT EXISTS (
+	SELECT *
+	FROM subs_product.product_active_price
+	WHERE id = ?
+) AS active
+`
