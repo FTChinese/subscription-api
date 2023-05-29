@@ -24,5 +24,16 @@ func (env Env) LoadOrFetchPrice(id string, refresh bool, live bool) (price.Strip
 		return price.StripePrice{}, err
 	}
 
-	return price.NewStripePrice(rawPrice), nil
+	sp := price.NewStripePrice(rawPrice)
+
+	err = env.UpsertPrice(sp)
+	if err != nil {
+		sugar.Error(err)
+	}
+
+	ok, _ := env.IsPriceOnPaywall(id)
+
+	sp.OnPaywall = ok
+
+	return sp, nil
 }
