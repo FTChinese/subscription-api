@@ -31,7 +31,10 @@ func (env Env) LoadOrFetchPrice(id string, refresh bool, live bool) (price.Strip
 		sugar.Error(err)
 	}
 
-	ok, _ := env.IsPriceOnPaywall(id)
+	ok, err := env.IsPriceOnPaywall(id)
+	if err != nil {
+		sugar.Error(err)
+	}
 
 	sp.OnPaywall = ok
 
