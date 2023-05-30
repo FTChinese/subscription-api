@@ -595,9 +595,9 @@ func StartServer(s ServerStatus) {
 				// ?page=<int>&per_page=<int>
 				r.With(xhttp.FormParsed).Get("/", stripeRoutes.ListPricesPaged)
 				// Add some essential metadata to a stripe price.
-				r.Post("/{id}", stripeRoutes.SetPriceMeta)
-				r.Post("/{id}/activate", stripeRoutes.ActivatePrice)
-				r.Post("/{id}/deactivate", stripeRoutes.DeactivatePrice)
+				r.Patch("/{id}", stripeRoutes.SetPriceMeta)
+				r.Patch("/{id}/activate", stripeRoutes.ActivatePrice)
+				r.Patch("/{id}/deactivate", stripeRoutes.DeactivatePrice)
 			})
 
 			r.Route("/coupons", func(r chi.Router) {
