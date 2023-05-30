@@ -169,7 +169,7 @@ func (routes StripeRoutes) ActivatePrice(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	_ = render.New(w).OK(sp)
+	_ = render.New(w).OK(sp.Activate())
 }
 
 func (routes StripeRoutes) DeactivatePrice(w http.ResponseWriter, req *http.Request) {
@@ -196,5 +196,5 @@ func (routes StripeRoutes) DeactivatePrice(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	_ = render.New(w).OK(sp)
+	_ = render.New(w).OK(sp.Deactivate())
 }

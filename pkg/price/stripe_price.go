@@ -83,6 +83,17 @@ func (p StripePrice) ActiveEntry() ActivePrice {
 	}
 }
 
+// Activate changes OnPaywall field to true after being put on paywall.
+func (p StripePrice) Activate() StripePrice {
+	p.OnPaywall = true
+	return p
+}
+
+func (p StripePrice) Deactivate() StripePrice {
+	p.OnPaywall = false
+	return p
+}
+
 func (p StripePrice) IsZero() bool {
 	return p.ID == ""
 }
