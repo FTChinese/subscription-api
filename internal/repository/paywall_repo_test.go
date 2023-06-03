@@ -1,10 +1,11 @@
 package repository
 
 import (
+	"testing"
+
 	"github.com/FTChinese/subscription-api/faker"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/reader"
-	"testing"
 )
 
 func TestEnv_retrievePaywall(t *testing.T) {
@@ -164,6 +165,38 @@ func TestEnv_RetrievePaywallDoc(t *testing.T) {
 			got, err := env.RetrievePaywallDoc(tt.args.live)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrievePaywallDoc() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			t.Logf("%s", faker.MustMarshalIndent(got))
+		})
+	}
+}
+
+func TestPaywallRepo_RetrievePaywallV2(t *testing.T) {
+	repo := NewPaywallRepo(db.MockMySQL())
+
+	type args struct {
+		live bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Retrieve paywall",
+			args: args{
+				live: false,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := repo.RetrievePaywallV2(tt.args.live)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PaywallRepo.RetrievePaywallV2() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 

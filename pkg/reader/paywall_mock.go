@@ -12,6 +12,10 @@ import (
 	"github.com/guregu/null"
 )
 
+var MockPwPriceStdIntro = PaywallPrice{
+	FtcPrice: price.MockFtcStdIntroPrice,
+}
+
 var MockPwPriceStdYear = PaywallPrice{
 	FtcPrice: price.MockFtcStdYearPrice,
 	Offers:   price.MockFtcStdYearOffers,
@@ -25,6 +29,40 @@ var MockPwPriceStdMonth = PaywallPrice{
 var MockPwPricePrm = PaywallPrice{
 	FtcPrice: price.MockFtcPrmPrice,
 	Offers:   price.MockFtcPrmOffers,
+}
+
+var MockStdProduct = Product{
+	ID:       "prod_9xrJdHFq0wmq",
+	Active:   true,
+	LiveMode: false,
+	ProductParams: ProductParams{
+		CreatedBy:   "anonymous",
+		Description: null.String{},
+		Heading:     "Standard Edition",
+		SmallPrint:  null.String{},
+		Tier:        enum.TierStandard,
+	},
+	Introductory: price.FtcPriceJSON{
+		FtcPrice: price.MockFtcStdIntroPrice,
+	},
+	CreatedUTC: chrono.TimeNow(),
+	UpdatedUTC: chrono.Time{},
+}
+
+var MockPrmProduct = Product{
+	ID:       "prod_zSgOTS6DWLmu",
+	Active:   true,
+	LiveMode: false,
+	ProductParams: ProductParams{
+		CreatedBy:   "",
+		Description: null.String{},
+		Heading:     "Premium Edition",
+		SmallPrint:  null.String{},
+		Tier:        enum.TierPremium,
+	},
+	Introductory: price.FtcPriceJSON{},
+	CreatedUTC:   chrono.TimeNow(),
+	UpdatedUTC:   chrono.Time{},
 }
 
 var MockPaywall = Paywall{
@@ -53,57 +91,23 @@ var MockPaywall = Paywall{
 	},
 	Products: []PaywallProduct{
 		{
-			Product: Product{
-				ID:       ids.ProductID(),
-				Active:   true,
-				LiveMode: false,
-				ProductParams: ProductParams{
-					CreatedBy:   "anonymous",
-					Description: null.String{},
-					Heading:     "Standard Edition",
-					SmallPrint:  null.String{},
-					Tier:        enum.TierStandard,
-				},
-				Introductory: price.FtcPriceJSON{
-					FtcPrice: price.MockFtcStdIntroPrice,
-				},
-				CreatedUTC: chrono.TimeNow(),
-				UpdatedUTC: chrono.Time{},
-			},
+			Product: MockStdProduct,
 			Prices: []PaywallPrice{
-				{
-					FtcPrice: price.MockFtcStdYearPrice,
-					Offers:   price.MockFtcStdYearOffers,
-				},
-				{
-					FtcPrice: price.MockFtcStdMonthPrice,
-					Offers:   price.MockFtcStdMonthOffers,
-				},
+				MockPwPriceStdYear,
+				MockPwPriceStdMonth,
 			},
 		},
 		{
-			Product: Product{
-				ID:       ids.ProductID(),
-				Active:   true,
-				LiveMode: false,
-				ProductParams: ProductParams{
-					CreatedBy:   "",
-					Description: null.String{},
-					Heading:     "Premium Edition",
-					SmallPrint:  null.String{},
-					Tier:        enum.TierPremium,
-				},
-				Introductory: price.FtcPriceJSON{},
-				CreatedUTC:   chrono.TimeNow(),
-				UpdatedUTC:   chrono.Time{},
-			},
+			Product: MockPrmProduct,
 			Prices: []PaywallPrice{
-				{
-					FtcPrice: price.MockFtcPrmPrice,
-					Offers:   price.MockFtcPrmOffers,
-				},
+				MockPwPricePrm,
 			},
 		},
+	},
+	FTCPrices: []PaywallPrice{
+		MockPwPriceStdYear,
+		MockPwPricePrm,
+		MockPwPriceStdMonth,
 	},
 	Stripe: []StripePaywallItem{
 		{

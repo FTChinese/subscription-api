@@ -69,3 +69,38 @@ func TestPaywall_Normalize(t *testing.T) {
 		t.Errorf("got %s, expected %s", pw.Products[0].Prices[0].StripePriceID, price.MockStripePrmPrice.ID)
 	}
 }
+
+func TestNewPaywallProduct(t *testing.T) {
+	products := NewPaywallProductsV2(
+		[]Product{
+			MockStdProduct,
+			MockPrmProduct,
+		},
+		[]PaywallPrice{
+			MockPwPriceStdIntro,
+			MockPwPriceStdYear,
+			MockPwPricePrm,
+			MockPwPriceStdMonth,
+		},
+	)
+
+	t.Logf("%s", faker.MustMarshalIndent(products))
+}
+
+func Test_groupProductPrices(t *testing.T) {
+
+	prices := []PaywallPrice{
+		MockPwPriceStdIntro,
+		MockPwPriceStdYear,
+		MockPwPricePrm,
+		MockPwPriceStdMonth,
+	}
+
+	g := groupProductPricesV2(prices)
+
+	for k, v := range g {
+		t.Logf("Product %s", k)
+		t.Logf("Recurring %s", faker.MustMarshalIndent(v.recurring))
+		t.Logf("Intro %s", faker.MustMarshalIndent(v.intro))
+	}
+}
