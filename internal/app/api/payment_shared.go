@@ -66,7 +66,7 @@ func (ps PaymentShared) loadPaywall() (reader.Paywall, error) {
 	sugar := ps.logger.Sugar()
 
 	sugar.Infof("Loading paywall from db")
-	paywall, err := ps.paywallRepo.RetrievePaywall(ps.live)
+	paywall, err := ps.paywallRepo.RetrievePaywallV2(ps.live)
 	if err != nil {
 		sugar.Error(err)
 		return reader.Paywall{}, err
