@@ -20,10 +20,6 @@ type FtcUpdateParams struct {
 	StripePriceID string             `json:"stripePriceId"`
 }
 
-func (p FtcUpdateParams) Validate() *render.ValidationError {
-	return validator.New("stripePriceId").Required().Validate(p.StripePriceID)
-}
-
 // FtcCreationParams is the form data submitted to create a price.
 // A new plan is always created under a certain product.
 // Therefore, the input data does not have tier field.
@@ -104,12 +100,7 @@ func (p *FtcCreationParams) Validate() *render.ValidationError {
 
 	p.Title.String = strings.TrimSpace(p.Title.String)
 
-	ve := validator.New("productId").Required().Validate(p.ProductID)
-	if ve != nil {
-		return ve
-	}
-
-	return p.FtcUpdateParams.Validate()
+	return validator.New("productId").Required().Validate(p.ProductID)
 }
 
 // FtcPrice contains ftc pricing plan.
