@@ -15,6 +15,7 @@ type Paywall struct {
 	Stripe    []StripePaywallItem `json:"stripe"`
 }
 
+// Deprecated.
 func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
 	return Paywall{
 		PaywallDoc: pwb,
@@ -22,32 +23,39 @@ func NewPaywall(pwb PaywallDoc, p []PaywallProduct) Paywall {
 	}
 }
 
+func BuildFtcPaywall(pwd PaywallDoc, products []Product, prices []PaywallPrice) Paywall {
+	return Paywall{
+		PaywallDoc: pwd,
+		Products:   NewPaywallProductsV2(products, prices),
+		FTCPrices:  prices,
+	}
+}
+
 // Normalize keeps backward compatibility.
-// TODO: sync stripe ids from Stripe field to FTCprices;
-// then sync FTCPrices to each products' prices field.
+// Sync stripe ids from Stripe field to each products' prices field.
 func (w Paywall) Normalize() Paywall {
 	stripeIds := map[string]string{}
 
+	// Collection stripe ids into a map.
 	for _, v := range w.Stripe {
 		stripeIds[v.Price.Edition().String()] = v.Price.ID
 	}
 
+	// Loop over each product.
 	for i, prod := range w.Products {
+		// Link introductory price
+		if prod.Introductory.ID != "" {
+			sid := stripeIds[prod.Introductory.Edition.String()]
+
+			w.Products[i].Introductory.StripePriceID = sid
+		}
+
+		// Loop over each price.
 		for j, price := range prod.Prices {
-			if prod.Introductory.ID != "" {
-				sid := stripeIds[prod.Introductory.Edition.String()]
-
-				w.Products[i].Introductory.StripePriceID = sid
-
-				w.FTCPrices = append(w.FTCPrices, PaywallPrice{
-					FtcPrice: w.Products[i].Introductory.FtcPrice,
-				})
-			}
 
 			sid := stripeIds[price.Edition.String()]
-			w.Products[i].Prices[j].StripePriceID = sid
 
-			w.FTCPrices = append(w.FTCPrices, w.Products[i].Prices...)
+			w.Products[i].Prices[j].StripePriceID = sid
 		}
 	}
 
