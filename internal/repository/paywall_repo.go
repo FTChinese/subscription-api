@@ -21,6 +21,7 @@ func NewPaywallRepo(dbs db.ReadWriteMyDBs) PaywallRepo {
 // RetrievePaywall retrieves all components of paywall concurrently
 // and then build them into a single Paywall instance.
 // TODO: change price retrieval using product_active_price table.
+// Deprecated.
 func (repo PaywallRepo) RetrievePaywall(live bool) (reader.Paywall, error) {
 	pwDocCh, productsCh, pricesCh := repo.asyncPwDoc(live), repo.asyncRetrieveActiveProducts(live), repo.asyncListActivePrices(live)
 
@@ -121,6 +122,7 @@ func (repo PaywallRepo) asyncRetrieveActiveProducts(live bool) <-chan pkg.AsyncR
 }
 
 // ListActivePrices lists active prices of products on paywall, directly from DB.
+// Deprecated
 func (repo PaywallRepo) ListActivePrices(live bool) ([]reader.PaywallPrice, error) {
 	var prices = make([]reader.PaywallPrice, 0)
 
@@ -137,6 +139,7 @@ func (repo PaywallRepo) ListActivePrices(live bool) ([]reader.PaywallPrice, erro
 
 // asyncListActivePrices retrieves a list of plans in a goroutine.
 // This is used to construct the paywall data.
+// Deprecated.
 func (repo PaywallRepo) asyncListActivePrices(live bool) <-chan pkg.AsyncResult[[]reader.PaywallPrice] {
 	ch := make(chan pkg.AsyncResult[[]reader.PaywallPrice])
 
@@ -152,4 +155,67 @@ func (repo PaywallRepo) asyncListActivePrices(live bool) <-chan pkg.AsyncResult[
 	}()
 
 	return ch
+}
+
+func (repo PaywallRepo) ListActivePricesV2(live bool) ([]reader.PaywallPrice, error) {
+	var prices = make([]reader.PaywallPrice, 0)
+
+	err := repo.dbs.Read.Select(
+		&prices,
+		reader.StmtListActivePrices,
+		live,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return prices, nil
+}
+
+func (repo PaywallRepo) asyncListActivePricesV2(live bool) <-chan pkg.AsyncResult[[]reader.PaywallPrice] {
+
+	ch := make(chan pkg.AsyncResult[[]reader.PaywallPrice])
+
+	go func() {
+		defer close(ch)
+
+		plans, err := repo.ListActivePricesV2(live)
+
+		ch <- pkg.AsyncResult[[]reader.PaywallPrice]{
+			Value: plans,
+			Err:   err,
+		}
+	}()
+
+	return ch
+}
+
+// RetrievePaywall retrieves all components of paywall concurrently
+// and then build them into a single Paywall instance.
+func (repo PaywallRepo) RetrievePaywallV2(live bool) (reader.Paywall, error) {
+	pwDocCh, productsCh, pricesCh := repo.asyncPwDoc(live), repo.asyncRetrieveActiveProducts(live), repo.asyncListActivePricesV2(live)
+
+	// Retrieve banner and its promo, products, and each price's plans
+	// in 3 goroutine.
+	pwDocRes, productsRes, pricesRes := <-pwDocCh, <-productsCh, <-pricesCh
+
+	if pwDocRes.Err != nil {
+		return reader.Paywall{}, pwDocRes.Err
+	}
+
+	if productsRes.Err != nil {
+		return reader.Paywall{}, productsRes.Err
+	}
+
+	if pricesRes.Err != nil {
+		return reader.Paywall{}, pricesRes.Err
+	}
+
+	// Build paywall.
+	return reader.BuildFtcPaywall(
+		pwDocRes.Value,
+		productsRes.Value,
+		pricesRes.Value,
+	), nil
 }
