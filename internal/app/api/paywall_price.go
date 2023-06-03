@@ -253,12 +253,12 @@ func (router PaywallRouter) ActivatePrice(w http.ResponseWriter, req *http.Reque
 
 	// Check if stripe price present.
 	// TODO: remove this.
-	_, err = router.ensureStripePrice(pwPrice.StripePriceID)
-	if err != nil {
-		_ = xhttp.HandleSubsErr(w, err)
-		sugar.Error(err)
-		return
-	}
+	// _, err = router.ensureStripePrice(pwPrice.StripePriceID)
+	// if err != nil {
+	// 	_ = xhttp.HandleSubsErr(w, err)
+	// 	sugar.Error(err)
+	// 	return
+	// }
 
 	activated := pwPrice.FtcPrice.Activate()
 
