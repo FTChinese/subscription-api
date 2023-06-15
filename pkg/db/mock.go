@@ -15,3 +15,8 @@ func MockMySQL() ReadWriteMyDBs {
 func MockTx() *sqlx.Tx {
 	return MockMySQL().Write.MustBegin()
 }
+
+func MockGorm() MultiGormDBs {
+	faker.MustSetupViper()
+	return MustNewMultiGormDBs(false)
+}
