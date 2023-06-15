@@ -2,14 +2,15 @@ package db
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	"log"
-	"time"
 )
 
-func NewMySQL(c config.Connect) (*sqlx.DB, error) {
+func buildDSN(c config.Connect) string {
 	cfg := &mysql.Config{
 		User:   c.User,
 		Passwd: c.Pass,
@@ -28,7 +29,12 @@ func NewMySQL(c config.Connect) (*sqlx.DB, error) {
 		AllowNativePasswords: true,
 	}
 
-	db, err := sqlx.Open("mysql", cfg.FormatDSN())
+	return cfg.FormatDSN()
+}
+
+func NewMySQL(c config.Connect) (*sqlx.DB, error) {
+
+	db, err := sqlx.Open("mysql", buildDSN(c))
 
 	if err != nil {
 		return nil, err
