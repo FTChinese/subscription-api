@@ -12,21 +12,22 @@ Authorization: Bearer <token>
 package access
 
 import (
+	"time"
+
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/patrickmn/go-cache"
-	"time"
 )
 
 type Env struct {
-	dbs   db.ReadWriteMyDBs
-	cache *cache.Cache
+	cache   *cache.Cache
+	gormDBs db.MultiGormDBs
 }
 
-func NewEnv(dbs db.ReadWriteMyDBs) Env {
+func NewEnv(dbs db.MultiGormDBs) Env {
 	return Env{
-		dbs: dbs,
 		// Default expiration 24 hours, and purges the expired items every hour.
-		cache: cache.New(24*time.Hour, 1*time.Hour),
+		cache:   cache.New(24*time.Hour, 1*time.Hour),
+		gormDBs: dbs,
 	}
 }
 
@@ -63,7 +64,9 @@ func (env Env) loadCachedToken(token string) (OAuth, bool) {
 func (env Env) retrieveFromDB(token string) (OAuth, error) {
 	var access OAuth
 
-	if err := env.dbs.Read.Get(&access, stmtOAuth, token); err != nil {
+	err := env.gormDBs.Read.First(&access, "access_token = UNHEX(?)", token).Error
+
+	if err != nil {
 		return access, err
 	}
 

@@ -2,18 +2,19 @@ package access
 
 import (
 	"database/sql"
+	"log"
+	"net/http"
+
 	"github.com/FTChinese/go-rest/view"
 	"github.com/FTChinese/subscription-api/pkg/db"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
-	"log"
-	"net/http"
 )
 
 type Guard struct {
 	env Env
 }
 
-func NewGuard(dbs db.ReadWriteMyDBs) Guard {
+func NewGuard(dbs db.MultiGormDBs) Guard {
 	return Guard{
 		env: NewEnv(dbs),
 	}

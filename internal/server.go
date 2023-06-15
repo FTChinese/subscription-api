@@ -36,6 +36,7 @@ type ServerStatus struct {
 func StartServer(s ServerStatus) {
 	logger := config.MustGetLogger(s.Production)
 	myDBs := db.MustNewMyDBs()
+	gormDBs := db.MustNewMultiGormDBs(s.Production)
 	rdb := db.NewRedis(config.MustRedisAddress().Pick(s.Production))
 
 	// Set the cache default expiration and cleanup interval both to 2 hours.
@@ -94,7 +95,7 @@ func StartServer(s ServerStatus) {
 
 	wxAuth := api.NewWxAuth(myDBs, logger)
 
-	guard := access.NewGuard(myDBs)
+	guard := access.NewGuard(gormDBs)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
