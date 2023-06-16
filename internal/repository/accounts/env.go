@@ -7,14 +7,23 @@ import (
 )
 
 type Env struct {
-	dbs    db.ReadWriteMyDBs
-	logger *zap.Logger
+	dbs     db.ReadWriteMyDBs // Deprecated
+	logger  *zap.Logger
+	gormDBs db.MultiGormDBs
 }
 
-func New(dbs db.ReadWriteMyDBs, logger *zap.Logger) Env {
+// Deprecated
+func New(myDBs db.ReadWriteMyDBs, logger *zap.Logger) Env {
 	return Env{
-		dbs:    dbs,
+		dbs:    myDBs,
 		logger: logger,
+	}
+}
+
+func NewV2(gormDBs db.MultiGormDBs, logger *zap.Logger) Env {
+	return Env{
+		logger:  logger,
+		gormDBs: gormDBs,
 	}
 }
 
@@ -34,13 +43,4 @@ func (env Env) beginUnlinkTx() (txrepo.UnlinkTx, error) {
 	}
 
 	return txrepo.UnlinkTx{Tx: tx}, nil
-}
-
-func (env Env) beginMemberTx() (txrepo.SharedTx, error) {
-	tx, err := env.dbs.Write.Beginx()
-	if err != nil {
-		return txrepo.SharedTx{}, err
-	}
-
-	return txrepo.NewSharedTx(tx), nil
 }

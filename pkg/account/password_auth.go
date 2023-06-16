@@ -12,8 +12,8 @@ import (
 // If the PasswordMatched field is false, it indicates the account
 // exists but password is not correct.
 type AuthResult struct {
-	UserID          string `db:"user_id"`
-	PasswordMatched bool   `db:"password_matched"`
+	UserID          string `db:"user_id" gorm:"column:user_id"`
+	PasswordMatched bool   `db:"password_matched" gorm:"column:password_matched"`
 }
 
 // IDCredentials holds a user's password.

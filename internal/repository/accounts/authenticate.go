@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"database/sql"
+
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
 	"github.com/FTChinese/subscription-api/pkg/account"
 )
@@ -13,10 +14,17 @@ import (
 // field indicates whether the password is correct.
 func (env Env) Authenticate(params input.EmailCredentials) (account.AuthResult, error) {
 	var r account.AuthResult
-	err := env.dbs.Read.Get(&r,
+	err := env.gormDBs.Read.Raw(
 		account.StmtVerifyEmailPassword,
 		params.Password,
-		params.Email)
+		params.Email,
+	).
+		Scan(&r).
+		Error
+	// err := env.dbs.Read.Get(&r,
+	// 	account.StmtVerifyEmailPassword,
+	// 	params.Password,
+	// 	params.Email)
 
 	if err != nil {
 		return r, err
