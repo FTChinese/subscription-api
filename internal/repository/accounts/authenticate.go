@@ -14,17 +14,11 @@ import (
 // field indicates whether the password is correct.
 func (env Env) Authenticate(params input.EmailCredentials) (account.AuthResult, error) {
 	var r account.AuthResult
-	err := env.gormDBs.Read.Raw(
+
+	err := env.dbs.Read.Get(&r,
 		account.StmtVerifyEmailPassword,
 		params.Password,
-		params.Email,
-	).
-		Scan(&r).
-		Error
-	// err := env.dbs.Read.Get(&r,
-	// 	account.StmtVerifyEmailPassword,
-	// 	params.Password,
-	// 	params.Email)
+		params.Email)
 
 	if err != nil {
 		return r, err

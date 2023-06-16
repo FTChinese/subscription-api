@@ -7,9 +7,8 @@ import (
 )
 
 type Env struct {
-	dbs     db.ReadWriteMyDBs // Deprecated
-	logger  *zap.Logger
-	gormDBs db.MultiGormDBs
+	dbs    db.ReadWriteMyDBs // Deprecated
+	logger *zap.Logger
 }
 
 // Deprecated
@@ -17,13 +16,6 @@ func New(myDBs db.ReadWriteMyDBs, logger *zap.Logger) Env {
 	return Env{
 		dbs:    myDBs,
 		logger: logger,
-	}
-}
-
-func NewV2(gormDBs db.MultiGormDBs, logger *zap.Logger) Env {
-	return Env{
-		logger:  logger,
-		gormDBs: gormDBs,
 	}
 }
 
