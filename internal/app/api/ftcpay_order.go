@@ -1,13 +1,15 @@
 package api
 
 import (
+	"net/http"
+
 	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
-	"net/http"
 )
 
 // ListOrders loads a list of order under a user.
@@ -16,7 +18,7 @@ import (
 func (routes FtcPayRoutes) ListOrders(w http.ResponseWriter, req *http.Request) {
 
 	p := gorest.GetPagination(req)
-	userIDs := xhttp.UserIDsFromHeader(req.Header)
+	userIDs := ids.UserIDsFromHeader(req.Header)
 
 	list, err := routes.SubsRepo.ListOrders(userIDs, p)
 	if err != nil {
@@ -32,7 +34,7 @@ func (routes FtcPayRoutes) ListOrders(w http.ResponseWriter, req *http.Request) 
 // is set in query parameter rather than header.
 func (routes FtcPayRoutes) CMSListOrders(w http.ResponseWriter, req *http.Request) {
 	p := gorest.GetPagination(req)
-	userIDs := xhttp.UserIDsFromQuery(req.Form)
+	userIDs := ids.UserIDsFromQuery(req.Form)
 
 	list, err := routes.SubsRepo.ListOrders(userIDs, p)
 	if err != nil {
@@ -44,7 +46,7 @@ func (routes FtcPayRoutes) CMSListOrders(w http.ResponseWriter, req *http.Reques
 }
 
 func (routes FtcPayRoutes) LoadOrder(w http.ResponseWriter, req *http.Request) {
-	userIDs := xhttp.UserIDsFromHeader(req.Header)
+	userIDs := ids.UserIDsFromHeader(req.Header)
 
 	orderID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {

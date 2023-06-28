@@ -1,17 +1,19 @@
 package api
 
 import (
-	"github.com/FTChinese/go-rest"
+	"net/http"
+
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/wechat"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"github.com/objcoding/wxpay"
-	"net/http"
 )
 
 // WxPay creates order for wechat pay.
@@ -39,7 +41,7 @@ func (routes FtcPayRoutes) WxPay(tradeType wechat.TradeType) http.HandlerFunc {
 		sugar.Info("Start creating a wechat order")
 
 		clientMeta := footprint.NewClient(req)
-		readerIDs := xhttp.UserIDsFromHeader(req.Header)
+		readerIDs := ids.UserIDsFromHeader(req.Header)
 
 		// Find user account.
 		acnt, err := routes.ReaderRepo.FindBaseAccount(readerIDs)

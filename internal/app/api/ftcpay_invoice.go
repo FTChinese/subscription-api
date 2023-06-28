@@ -1,10 +1,12 @@
 package api
 
 import (
-	"github.com/FTChinese/go-rest"
-	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
+
+	gorest "github.com/FTChinese/go-rest"
+	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/ids"
+	"github.com/FTChinese/subscription-api/pkg/xhttp"
 )
 
 func (routes FtcPayRoutes) ListInvoices(w http.ResponseWriter, req *http.Request) {
@@ -14,7 +16,7 @@ func (routes FtcPayRoutes) ListInvoices(w http.ResponseWriter, req *http.Request
 	}
 
 	p := gorest.GetPagination(req)
-	userIDs := xhttp.UserIDsFromHeader(req.Header)
+	userIDs := ids.UserIDsFromHeader(req.Header)
 
 	list, err := routes.AddOnRepo.ListInvoices(
 		userIDs,
@@ -29,7 +31,7 @@ func (routes FtcPayRoutes) ListInvoices(w http.ResponseWriter, req *http.Request
 }
 
 func (routes FtcPayRoutes) LoadInvoice(w http.ResponseWriter, req *http.Request) {
-	userIDs := xhttp.UserIDsFromHeader(req.Header)
+	userIDs := ids.UserIDsFromHeader(req.Header)
 
 	invID, err := xhttp.GetURLParam(req, "id").ToString()
 	if err != nil {

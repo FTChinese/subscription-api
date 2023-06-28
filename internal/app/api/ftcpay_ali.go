@@ -1,22 +1,24 @@
 package api
 
 import (
-	"github.com/FTChinese/go-rest"
+	"net/http"
+
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/ftcpay"
 	"github.com/FTChinese/subscription-api/pkg/ali"
 	"github.com/FTChinese/subscription-api/pkg/config"
 	"github.com/FTChinese/subscription-api/pkg/footprint"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/xhttp"
-	"net/http"
 )
 
 // AliPay creates an http handler function depending
 // on the device platform.
 //
-// 	POST /<desktop|mobile|app>/{tier}/{cycle}?<test=true>&<return_url=xxx>
+//	POST /<desktop|mobile|app>/{tier}/{cycle}?<test=true>&<return_url=xxx>
 //
 // Header: X-User-Id or X-Union-Id, or both.
 // `return_url` parameter is only required for apps running on ftacademy.cn. It is deprecated and changed to request body.
@@ -37,7 +39,7 @@ func (routes FtcPayRoutes) AliPay(kind ali.EntryKind) http.HandlerFunc {
 		// Collect client metadata from header.
 		clientApp := footprint.NewClient(req)
 		// Get user compound ids from header.
-		readerIDs := xhttp.UserIDsFromHeader(req.Header)
+		readerIDs := ids.UserIDsFromHeader(req.Header)
 
 		sugar.Infof("Alipay from app for %v", readerIDs)
 

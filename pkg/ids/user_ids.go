@@ -2,6 +2,8 @@ package ids
 
 import (
 	"errors"
+	"net/url"
+
 	"github.com/FTChinese/subscription-api/lib/sq"
 	"github.com/guregu/null"
 )
@@ -28,6 +30,17 @@ func NewFtcUserID(id string) UserIDs {
 		FtcID:      null.StringFrom(id),
 		UnionID:    null.String{},
 	}
+}
+
+func UserIDsFromQuery(v url.Values) UserIDs {
+	ftcId := v.Get("ftc_id")
+	unionID := v.Get("union_id")
+
+	return UserIDs{
+		CompoundID: "",
+		FtcID:      null.NewString(ftcId, ftcId != ""),
+		UnionID:    null.NewString(unionID, unionID != ""),
+	}.MustNormalize()
 }
 
 func (u UserIDs) GetCompoundID() string {

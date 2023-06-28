@@ -1,9 +1,10 @@
 package api
 
 import (
-	"github.com/FTChinese/go-rest/render"
-	"github.com/FTChinese/subscription-api/pkg/xhttp"
 	"net/http"
+
+	"github.com/FTChinese/go-rest/render"
+	"github.com/FTChinese/subscription-api/pkg/ids"
 )
 
 // ClaimAddOn extends expiration time by transferring addon periods.
@@ -12,7 +13,7 @@ import (
 // TODO: when claiming addon for an expired b2b, we
 // revoke the linked licence automatically.
 func (routes FtcPayRoutes) ClaimAddOn(w http.ResponseWriter, req *http.Request) {
-	readerIDs := xhttp.UserIDsFromHeader(req.Header)
+	readerIDs := ids.UserIDsFromHeader(req.Header)
 
 	result, err := routes.AddOnRepo.ClaimAddOn(readerIDs)
 	if err != nil {
