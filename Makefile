@@ -27,6 +27,23 @@ build : version
 run :
 	$(default_exec) -production=false -livemode=false
 
+# Create `build` direcetory under the project root, 
+# since some tools cannot create this dir automatically.
+.PHONY: builddir
+builddir :
+	mkdir -p $(build_dir)
+
+# Copy configuration from your computer's `~/config` directory.
+.PHONY: devenv
+dev-env : builddir
+	rsync $(HOME)/config/env.dev.toml $(build_dir)/$(config_file_name)
+	mkdir -p ./cmd/aliwx-poller/build
+	rsync $(local_config_file) ./cmd/aliwx-poller/build/$(config_file_name)
+	mkdir -p ./cmd/iap-poller/build
+	rsync $(local_config_file) ./cmd/iap-poller/build/$(config_file_name)
+	mkdir -p ./cmd/subs_sandbox/build
+	rsync $(local_config_file) ./cmd/subs_sandbox/build/$(config_file_name)
+
 .PHONY: version
 version :
 	git describe --tags > build/version
@@ -74,19 +91,7 @@ clean :
 	go clean -x
 	rm -rf build/*
 
-.PHONY: builddir
-builddir :
-	mkdir -p $(build_dir)
 
-.PHONY: devenv
-dev-env : builddir
-	rsync $(HOME)/config/env.dev.toml $(build_dir)/$(config_file_name)
-	mkdir -p ./cmd/aliwx-poller/build
-	rsync $(local_config_file) ./cmd/aliwx-poller/build/$(config_file_name)
-	mkdir -p ./cmd/iap-poller/build
-	rsync $(local_config_file) ./cmd/iap-poller/build/$(config_file_name)
-	mkdir -p ./cmd/subs_sandbox/build
-	rsync $(local_config_file) ./cmd/subs_sandbox/build/$(config_file_name)
 
 .PHONY: dockerconfig
 dockerenv : builddir
