@@ -2,6 +2,7 @@
 
 ## TOC
 
+* [Development](./_doc/development.md)
 * [Getting Started](./_doc/getting_started.md)
 * [Common Data Type Definition](./_doc/common_types.md)
 * [Account Endpoints](./_doc/account_intro.md)
