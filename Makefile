@@ -39,7 +39,7 @@ builddir :
 
 # Copy configuration from your computer's `~/config` directory.
 .PHONY: devenv
-dev-env : builddir
+devenv : builddir
 	rsync $(HOME)/config/env.dev.toml $(build_dir)/$(config_file_name)
 	mkdir -p ./cmd/aliwx-poller/build
 	rsync $(local_config_file) ./cmd/aliwx-poller/build/$(config_file_name)

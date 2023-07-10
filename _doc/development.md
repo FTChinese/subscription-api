@@ -20,7 +20,7 @@
 
     * `version` 文本文件，包含一个字符串，是当前的最新版本，用这个命令生成：`git describe --tags > build/version`
 
-4. 可用用Makefile中的命令自动化上述生成的文件，执行`make dev-env`从本机的`~/config/api.toml`（你的机器上需要有这个文件）文件复制到`build/api.toml`。 运行 `make version`生成`build_time`, `commit`和`version`文件。见`main.go`文件中`go:embed`指令的用法。
+4. 可用用Makefile中的命令自动化上述生成的文件，执行`make devenv`从本机的`~/config/api.toml`（你的机器上需要有这个文件）文件复制到`build/api.toml`。 运行 `make version`生成`build_time`, `commit`和`version`文件。见`main.go`文件中`go:embed`指令的用法。
 
 5. 运行`make build`编译，生成的二进制在`out`目录。
 
