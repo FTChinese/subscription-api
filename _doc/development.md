@@ -36,6 +36,12 @@
 
 `Makefile`包括了编译、运行、持续集成的所有命令。Golang项目的管理是使用Makefile，类似于node的gulp、Java的gradle，使用方法参加官方手册。
 
+`cmd`下面包含三个文件夹，分成生成三个二进制文件：
+
+* aliwx-poller: 轮询支付宝和微信的支付状态
+* iap-poller：轮询苹果订阅状态
+* subs_sandbox：API的sandbox版
+
 ## 命令行参数
 
 有两个命令行参数控制连接的数据库目标和订阅使用的价格模式。
