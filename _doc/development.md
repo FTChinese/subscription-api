@@ -85,3 +85,13 @@ Golang禁止循环引用，很多编程语言中的包管理机制允许包`a`�
 ## Run on Server
 
 Supervisor负责程序的运行。
+
+## Test with Postman
+
+When you want to test an endpoint with Postman, follow these steps:
+
+1. Get a personal access token from Superyard. On your development machine, you can directly insert a new entry into `oauth.access` table and use this token.
+2. Open Postman. Create a new collection.
+3. In this collection's **Authorization** tab, select `Bearer Token` under `Type`.
+4. Enter the access token you abtained in step 1 into the `Token` field.
+5. Whenever you create a new HTTP request, select `Inherit from parent` in the `Type` field under the `Authorization` tab of this request.
