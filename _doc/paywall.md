@@ -6,7 +6,7 @@
 * GET `/paywall/__migrate/active_prices` Use table subs_product.product_active_price to store which price is currently visible on paywall.
 * POST `/paywall/banner` Create a banner
 * POST `/paywall/banner/promo` Create a new promo
-* DELETE `/paywall/banner/promo` Deelete latest promo
+* DELETE `/paywall/banner/promo` Delete latest promo
 
 Products:
 
