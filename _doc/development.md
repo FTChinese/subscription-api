@@ -64,7 +64,16 @@ Golang禁止循环引用，很多编程语言中的包管理机制允许包`a`�
 
 ## 版本
 
-本项目有很多branch，每个branch对应一个版本，一般有重要breaking change而又难以保持兼容时，使用一个新的版本，这要求服务器上运行一个新的binary，并且产生新的url共客户端使用。目前我在master branch上开发，完成后merge到当前版本的branch中，Jenkins持续集成时至使用最新版本对应的branch，不使用master。
+本项目有很多branch，每个branch对应一个版本，一般有重要breaking change而又难以保持兼容时，使用一个新的版本，这要求服务器上运行一个新的binary，并且产生新的url供客户端使用。
+
+例如，目前我在master branch上开发，正在运行的版本是v6 branch。在master上开发完成后:
+
+```
+git checkout v6
+git merge master
+```
+
+merge到当前版本的branch中，Jenkins持续集成时仅使用最新版本对应的branch，不使用master。发布前请记得用`git tag`加版本号，可以使用我做的工具[bump](https://github.com/neefrankie/bump)自动化`git tag`流程。
 
 ## Continuous Integration
 
