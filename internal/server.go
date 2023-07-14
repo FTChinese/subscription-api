@@ -166,9 +166,15 @@ func StartServer(s ServerStatus) {
 		})
 
 		r.Route("/password-reset", func(r chi.Router) {
+			// Reset password after user's identifiy is verified.
 			r.Post("/", authRouter.ResetPassword)
+			// Request password reset letter.
+			// The letter contains a url if client is a web app,
+			// or a string of digits for native apps for typing convenience.
 			r.Post("/letter", authRouter.ForgotPassword)
+			// Verify the url contained in a password reset letter targeting web app.
 			r.Get("/tokens/{token}", authRouter.VerifyResetToken)
+			// Verify the digital code contained in a password reset letter targeting native app.
 			r.Get("/codes", authRouter.VerifyResetCode)
 		})
 

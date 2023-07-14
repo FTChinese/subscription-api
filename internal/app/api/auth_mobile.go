@@ -2,7 +2,9 @@ package api
 
 import (
 	"errors"
-	"github.com/FTChinese/go-rest"
+	"net/http"
+
+	gorest "github.com/FTChinese/go-rest"
 	"github.com/FTChinese/go-rest/enum"
 	"github.com/FTChinese/go-rest/render"
 	"github.com/FTChinese/subscription-api/internal/pkg/input"
@@ -12,7 +14,6 @@ import (
 	"github.com/FTChinese/subscription-api/pkg/reader"
 	"github.com/FTChinese/subscription-api/pkg/ztsms"
 	"github.com/guregu/null"
-	"net/http"
 )
 
 // RequestSMSVerification sends an SMS to user for login.
@@ -316,8 +317,10 @@ func (router AuthRouter) MobileLinkExistingEmail(w http.ResponseWriter, req *htt
 
 // MobileSignUp creates a new mobile account.
 // Input:
-// * mobile: string;
-// * deviceToken?: string; - Required for Android app.
+// - email: string
+// - password: string
+// - mobile: string;
+// - deviceToken?: string; - Required for Android app.
 func (router AuthRouter) MobileSignUp(w http.ResponseWriter, req *http.Request) {
 	defer router.Logger.Sync()
 	sugar := router.Logger.Sugar()
