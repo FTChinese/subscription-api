@@ -446,7 +446,7 @@ func StartServer(s ServerStatus) {
 
 		// Data used to build a paywall.
 		// Live server only outputs live data while sandbox for sandbox data only.
-		// ?refresh=true
+		// ?live=<bool>&refresh=<bool>
 		r.With(xhttp.FormParsed).Get("/", paywallRouter.LoadPaywall)
 		r.Post("/__migrate/active_prices", paywallRouter.MigrateToActivePrices)
 
@@ -483,7 +483,6 @@ func StartServer(s ServerStatus) {
 			r.Post("/", paywallRouter.CreatePrice)
 			r.Get("/{id}", paywallRouter.LoadPrice)
 			// Activate a price under a product. All its sibling price of same tier and kind will be deactivated.
-			// To activate an introductory price ,use PATCH /products/{id}/intro.
 			r.Post("/{id}/activate", paywallRouter.ActivatePrice)
 			r.Post("/{id}/deactivate", paywallRouter.DeactivateOrArchivePrice(false))
 			r.Patch("/{id}", paywallRouter.UpdatePrice)
@@ -497,9 +496,9 @@ func StartServer(s ServerStatus) {
 			// List discounts of specified price.
 			// Query parameter: ?price_id=<price id>
 			r.Get("/", paywallRouter.ListDiscounts)
-			r.Get("/{id}", paywallRouter.LoadDiscount)
 			// Creates a new discounts for a price.
 			r.Post("/", paywallRouter.CreateDiscount)
+			r.Get("/{id}", paywallRouter.LoadDiscount)
 			// Delete discount and refresh the related price.
 			r.Delete("/{id}", paywallRouter.DropDiscount)
 		})
